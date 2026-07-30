@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -16,6 +18,7 @@ import numpy as np
 from swarm_inference.exceptions import IntegrityError
 from swarm_inference.model.manifest import load_manifest, verify_manifest_shards
 from swarm_inference.model.qwen3 import Qwen3Adapter
+from swarm_inference.protocol.checksums import sha256_file
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,9 +75,14 @@ def execute_reference(
 ) -> dict[str, Any]:
     """Load the full model only inside the explicitly disclosed reference phase."""
 
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
+    if device.startswith("cuda"):
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+        torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
     output_dir.mkdir(parents=True, exist_ok=True)
     dtype = _torch_dtype(dtype_name)
     tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
@@ -89,7 +97,7 @@ def execute_reference(
     model.eval()
     boundary_outputs: dict[int, Any] = {}
     hooks = []
-    for layer_end in stage_layer_ends[:-1]:
+    for layer_end in stage_layer_ends:
         layer_index = layer_end - 1
 
         def capture(
@@ -143,6 +151,285 @@ def execute_reference(
     return payload
 
 
+def execute_reference_suite(
+    *,
+    model_id: str,
+    model_revision: str,
+    model_path: Path,
+    requests_path: Path,
+    device: str,
+    dtype_name: str,
+    stage_layer_ends: list[int],
+    output_dir: Path,
+) -> dict[str, Any]:
+    """Run all correctness-oracle requests in one isolated full-model process."""
+
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    import psutil
+    import torch
+    import transformers
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    if device.startswith("cuda"):
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+        torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
+    output_dir.mkdir(parents=True, exist_ok=True)
+    boundary_root = output_dir / ".reference-boundaries"
+    boundary_root.mkdir(parents=True, exist_ok=True)
+    requests = json.loads(requests_path.read_text(encoding="utf-8"))
+    if not isinstance(requests, list) or not requests:
+        raise IntegrityError("reference suite input must be a non-empty request list")
+    dtype = _torch_dtype(dtype_name)
+    tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+        model_path,
+        local_files_only=True,
+    )
+    process = psutil.Process()
+    host_before = int(process.memory_info().rss)
+    cuda_before = 0
+    if device.startswith("cuda"):
+        torch.cuda.reset_peak_memory_stats(device)
+        cuda_before = int(torch.cuda.memory_allocated(device))
+    load_started = time.perf_counter()
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        local_files_only=True,
+        torch_dtype=dtype,
+        attn_implementation="eager",
+    ).to(device)  # type: ignore[arg-type]
+    model.eval()
+    model.requires_grad_(False)
+    if device.startswith("cuda"):
+        torch.cuda.synchronize(device)
+    model_load_s = time.perf_counter() - load_started
+    boundary_outputs: dict[int, Any] = {}
+    hooks = []
+    for layer_end in stage_layer_ends:
+        layer_index = layer_end - 1
+
+        def capture(
+            module: Any,
+            inputs: Any,
+            output: Any,
+            *,
+            layer_end: int = layer_end,
+        ) -> None:
+            value = output[0] if isinstance(output, tuple) else output
+            boundary_outputs[layer_end] = value.detach().float().cpu().numpy()
+
+        hooks.append(model.model.layers[layer_index].register_forward_hook(capture))
+    configured_eos = getattr(model.config, "eos_token_id", None)
+    eos_ids = (
+        {int(value) for value in configured_eos}
+        if isinstance(configured_eos, list)
+        else ({int(configured_eos)} if configured_eos is not None else set())
+    )
+    results: list[dict[str, Any]] = []
+    with torch.inference_mode():
+        for request in requests:
+            request_id = str(request["request_id"])
+            prompt_ids = [int(value) for value in request["prompt_token_ids"]]
+            maximum = int(request["max_new_tokens"])
+            input_ids = torch.tensor([prompt_ids], dtype=torch.long, device=device)
+            boundary_outputs.clear()
+            prefill_started = time.perf_counter()
+            forward = model(input_ids=input_ids, use_cache=True)
+            if device.startswith("cuda"):
+                torch.cuda.synchronize(device)
+            prefill_s = time.perf_counter() - prefill_started
+            request_boundary_dir = boundary_root / request_id
+            request_boundary_dir.mkdir(parents=True, exist_ok=True)
+            boundary_hashes: dict[str, str] = {}
+            for layer_end, value in boundary_outputs.items():
+                boundary_path = request_boundary_dir / f"reference-layer-{layer_end:04d}.npy"
+                np.save(boundary_path, value)
+                boundary_hashes[str(layer_end)] = sha256_file(boundary_path)
+            generated: list[int] = []
+            step_results: list[dict[str, Any]] = []
+            cache = forward.past_key_values
+            logits = forward.logits
+            decode_s = 0.0
+            for step in range(maximum):
+                selected = int(torch.argmax(logits[:, -1, :], dim=-1).item())
+                top_values, top_indices = torch.topk(
+                    logits[0, -1, :].float(),
+                    k=min(10, int(logits.shape[-1])),
+                )
+                step_results.append(
+                    {
+                        "step": step,
+                        "selected_token_id": selected,
+                        "selected_token_text": tokenizer.decode([selected]),
+                        "selected_token_logit": float(logits[0, -1, selected].float().item()),
+                        "top_logits": [
+                            {
+                                "token_id": int(token_id),
+                                "token_text": tokenizer.decode([int(token_id)]),
+                                "logit": float(logit),
+                            }
+                            for token_id, logit in zip(
+                                top_indices.tolist(),
+                                top_values.tolist(),
+                                strict=True,
+                            )
+                        ],
+                    }
+                )
+                generated.append(selected)
+                if selected in eos_ids or step + 1 >= maximum:
+                    break
+                decode_started = time.perf_counter()
+                forward = model(
+                    input_ids=torch.tensor([[selected]], device=device),
+                    past_key_values=cache,
+                    use_cache=True,
+                )
+                if device.startswith("cuda"):
+                    torch.cuda.synchronize(device)
+                decode_s += time.perf_counter() - decode_started
+                cache = forward.past_key_values
+                logits = forward.logits
+            results.append(
+                {
+                    "request_id": request_id,
+                    "name": request.get("name", request_id),
+                    "prompt": request.get("prompt"),
+                    "prompt_token_ids": prompt_ids,
+                    "input_token_count": len(prompt_ids),
+                    "generated_token_ids": generated,
+                    "output_token_count": len(generated),
+                    "decoded_text": tokenizer.decode(
+                        generated,
+                        skip_special_tokens=False,
+                    ),
+                    "steps": step_results,
+                    "prefill_latency_s": prefill_s,
+                    "decode_latency_s": decode_s,
+                    "boundary_hashes": boundary_hashes,
+                    "eos_token_ids": sorted(eos_ids),
+                }
+            )
+    for hook in hooks:
+        hook.remove()
+    if device.startswith("cuda"):
+        torch.cuda.synchronize(device)
+    memory = {
+        "host_rss_before_load": host_before,
+        "host_rss_after_execution": int(process.memory_info().rss),
+        "cuda_allocated_before_load": cuda_before,
+        "cuda_allocated_after_execution": (
+            int(torch.cuda.memory_allocated(device)) if device.startswith("cuda") else 0
+        ),
+        "cuda_peak_allocated": (
+            int(torch.cuda.max_memory_allocated(device)) if device.startswith("cuda") else 0
+        ),
+        "cuda_peak_reserved": (
+            int(torch.cuda.max_memory_reserved(device)) if device.startswith("cuda") else 0
+        ),
+    }
+    payload = {
+        "phase": "independent-full-model-reference",
+        "process_id": os.getpid(),
+        "parent_process_id": os.getppid(),
+        "model_id": model_id,
+        "model_revision": model_revision,
+        "model_path": str(model_path),
+        "device": device,
+        "dtype": dtype_name,
+        "full_model_loaded": True,
+        "memory_counted_as_swarm": False,
+        "model_load_s": model_load_s,
+        "thinking_enabled": False,
+        "greedy": True,
+        "temperature": 0,
+        "results": results,
+        "memory": memory,
+        "environment": {
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "transformers": transformers.__version__,
+            "cuda_runtime": torch.version.cuda,
+            "gpu": (torch.cuda.get_device_name(0) if device.startswith("cuda") else None),
+        },
+        "boundary_root": str(boundary_root),
+    }
+    (output_dir / "reference.json").write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return payload
+
+
+def run_reference_suite_subprocess(
+    *,
+    model_id: str,
+    model_revision: str,
+    model_path: Path,
+    requests: list[dict[str, Any]],
+    device: str,
+    dtype_name: str,
+    stage_layer_ends: list[int],
+    output_dir: Path,
+    log_path: Path | None = None,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    requests_path = output_dir / "reference-requests.json"
+    requests_path.write_text(
+        json.dumps(requests, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "swarm_inference.model.reference",
+        "--reference-suite",
+        "--model-id",
+        model_id,
+        "--model-revision",
+        model_revision,
+        "--model-path",
+        str(model_path),
+        "--suite-input",
+        str(requests_path),
+        "--device",
+        device,
+        "--dtype",
+        dtype_name,
+        "--stage-layer-ends",
+        ",".join(str(value) for value in stage_layer_ends),
+        "--output-dir",
+        str(output_dir),
+    ]
+    environment = os.environ.copy()
+    environment.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    source_root = Path(__file__).resolve().parents[2]
+    environment["PYTHONPATH"] = str(source_root) + os.pathsep + environment.get("PYTHONPATH", "")
+    result = subprocess.run(
+        command,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=3600,
+        check=False,
+    )
+    if log_path is not None:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(
+            result.stdout + ("\n" if result.stdout else "") + result.stderr,
+            encoding="utf-8",
+        )
+    if result.returncode != 0:
+        raise IntegrityError(
+            "reference suite subprocess failed: "
+            f"exit={result.returncode}\nstdout={result.stdout}\nstderr={result.stderr}"
+        )
+    return cast(
+        dict[str, Any],
+        json.loads((output_dir / "reference.json").read_text(encoding="utf-8")),
+    )
+
+
 def run_reference_subprocess(
     *,
     model_path: Path,
@@ -174,6 +461,7 @@ def run_reference_subprocess(
         str(output_dir),
     ]
     environment = os.environ.copy()
+    environment.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     source_root = Path(__file__).resolve().parents[2]
     environment["PYTHONPATH"] = str(source_root) + os.pathsep + environment.get("PYTHONPATH", "")
     result = subprocess.run(
@@ -382,25 +670,52 @@ def validate_qwen_correctness(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference-only", action="store_true")
+    parser.add_argument("--reference-suite", action="store_true")
+    parser.add_argument("--model-id")
+    parser.add_argument("--model-revision")
     parser.add_argument("--model-path", required=True)
-    parser.add_argument("--prompt", required=True)
-    parser.add_argument("--max-new-tokens", type=int, required=True)
+    parser.add_argument("--prompt")
+    parser.add_argument("--max-new-tokens", type=int)
+    parser.add_argument("--suite-input")
     parser.add_argument("--device", required=True)
     parser.add_argument("--dtype", required=True)
     parser.add_argument("--stage-layer-ends", required=True)
     parser.add_argument("--output-dir", required=True)
     arguments = parser.parse_args()
-    if not arguments.reference_only:
-        parser.error("only --reference-only is supported by this module entrypoint")
-    execute_reference(
-        model_path=Path(arguments.model_path).resolve(),
-        prompt=arguments.prompt,
-        max_new_tokens=arguments.max_new_tokens,
-        device=arguments.device,
-        dtype_name=arguments.dtype,
-        stage_layer_ends=[int(value) for value in arguments.stage_layer_ends.split(",") if value],
-        output_dir=Path(arguments.output_dir).resolve(),
-    )
+    stage_ends = [int(value) for value in arguments.stage_layer_ends.split(",") if value]
+    if arguments.reference_suite:
+        if (
+            arguments.suite_input is None
+            or arguments.model_id is None
+            or arguments.model_revision is None
+        ):
+            parser.error(
+                "--reference-suite requires --suite-input, --model-id, and --model-revision"
+            )
+        execute_reference_suite(
+            model_id=arguments.model_id,
+            model_revision=arguments.model_revision,
+            model_path=Path(arguments.model_path).resolve(),
+            requests_path=Path(arguments.suite_input).resolve(),
+            device=arguments.device,
+            dtype_name=arguments.dtype,
+            stage_layer_ends=stage_ends,
+            output_dir=Path(arguments.output_dir).resolve(),
+        )
+    elif arguments.reference_only:
+        if arguments.prompt is None or arguments.max_new_tokens is None:
+            parser.error("--reference-only requires --prompt and --max-new-tokens")
+        execute_reference(
+            model_path=Path(arguments.model_path).resolve(),
+            prompt=arguments.prompt,
+            max_new_tokens=arguments.max_new_tokens,
+            device=arguments.device,
+            dtype_name=arguments.dtype,
+            stage_layer_ends=stage_ends,
+            output_dir=Path(arguments.output_dir).resolve(),
+        )
+    else:
+        parser.error("select --reference-only or --reference-suite")
 
 
 if __name__ == "__main__":

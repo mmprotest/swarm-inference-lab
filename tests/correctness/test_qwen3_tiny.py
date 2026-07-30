@@ -12,8 +12,8 @@ from swarm_inference.model.shard_builder import (
 torch = pytest.importorskip("torch")
 
 
-@pytest.fixture
-def tiny_qwen(tmp_path):
+@pytest.fixture(params=[2, 4], ids=["two-stages", "four-stages"])
+def tiny_qwen(tmp_path, request):
     from transformers import Qwen3Config, Qwen3ForCausalLM
 
     torch.manual_seed(7)
@@ -51,7 +51,9 @@ def tiny_qwen(tmp_path):
         target_stage_bytes=average_layer + 4096,
         maximum_stage_bytes=average_layer * 3,
         maximum_output_file_bytes=1024 * 1024,
+        stage_count=request.param,
     )
+    assert len(manifest.stages) == request.param
     return model, config, output, manifest
 
 
@@ -85,6 +87,34 @@ def test_stage_created_from_serialised_config_selects_eager_attention(tiny_qwen)
         torch.float32,
     )
     assert module.config._attn_implementation == "eager"
+
+
+def test_stage_rotary_frequencies_follow_reference_cpu_initialisation(
+    tiny_qwen, monkeypatch
+) -> None:
+    from transformers.models.qwen3 import modeling_qwen3
+
+    _, config, _, manifest = tiny_qwen
+    original = modeling_qwen3.Qwen3RotaryEmbedding
+    construction_devices = []
+
+    class RecordingRotaryEmbedding(original):
+        def __init__(self, *args, device=None, **kwargs):
+            construction_devices.append(device)
+            super().__init__(*args, device=device, **kwargs)
+
+    monkeypatch.setattr(
+        modeling_qwen3,
+        "Qwen3RotaryEmbedding",
+        RecordingRotaryEmbedding,
+    )
+    Qwen3Adapter().create_stage_module(
+        config,
+        manifest.stages[0],
+        torch.device("cpu"),
+        torch.float32,
+    )
+    assert construction_devices == [None]
 
 
 def test_no_stage_loads_full_model_and_tensor_union_is_exact(tiny_qwen) -> None:
@@ -178,3 +208,57 @@ def test_multiple_concurrent_prompt_caches_are_isolated(tiny_qwen) -> None:
         for module in modules:
             module.cancel("a")
         assert all(module.state_summary()["cache_count"] == 1 for module in modules)
+
+
+def test_tied_embedding_split_forward_matches_unsplit(tmp_path) -> None:
+    from transformers import Qwen3Config, Qwen3ForCausalLM
+
+    torch.manual_seed(11)
+    config = Qwen3Config(
+        vocab_size=64,
+        hidden_size=32,
+        intermediate_size=64,
+        num_hidden_layers=4,
+        num_attention_heads=4,
+        num_key_value_heads=2,
+        head_dim=8,
+        max_position_embeddings=128,
+        tie_word_embeddings=True,
+        attention_dropout=0,
+    )
+    config._attn_implementation = "eager"
+    model = Qwen3ForCausalLM(config).eval()
+    model.tie_weights()
+    source = tmp_path / "tied-source"
+    model.save_pretrained(source, safe_serialization=True)
+    description = inspect_qwen3_model(
+        ResolvedModel(
+            model_id="tiny-tied-qwen3",
+            revision="test",
+            path=source,
+            downloaded=False,
+        )
+    )
+    output = tmp_path / "tied-shards"
+    manifest = shard_model(
+        description,
+        output=output,
+        target_stage_bytes=32 * 1024,
+        maximum_stage_bytes=128 * 1024,
+        maximum_output_file_bytes=1024 * 1024,
+        stage_count=2,
+    )
+    assert manifest.shared_tensors == {"model.embed_tokens.weight": [0, 1]}
+    modules = _split_modules(config, output, manifest)
+    ids = torch.tensor([[1, 7, 3, 9]], dtype=torch.long)
+    with torch.inference_mode():
+        reference = model(input_ids=ids, use_cache=True).logits
+        current = ids
+        for module in modules:
+            current = module.forward(
+                current,
+                request_id="tied",
+                token_position=0,
+                use_cache=True,
+            )
+    assert torch.allclose(current, reference, atol=1e-5, rtol=1e-4)

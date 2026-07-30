@@ -1,0 +1,56 @@
+name: experiment-002-qwen3-real-loopback
+execution_mode: single-host-loopback-real-model
+backend: torch-cuda
+data_plane: direct
+scheduler: static-stage-route
+
+model:
+  model_id: Qwen/Qwen3-0.6B
+  revision: null
+  shard_directory: artifacts/models/qwen3-0.6b-four-stage
+  stage_count: 4
+  dtype: bfloat16
+  device: cuda
+
+generation:
+  max_new_tokens: 16
+  greedy: true
+  temperature: 0
+  top_p: null
+  top_k: null
+  thinking_enabled: false
+  batch_size: 1
+
+workers:
+  count: 4
+  one_stage_per_worker: true
+  logical_weight_limit_bytes: null
+  logical_total_memory_limit_bytes: null
+  spawn_method: spawn
+  cuda_device: 0
+
+transport:
+  persistent_streams: true
+  coordinator_relay_fallback: false
+  checksum: true
+  activation_transfer_dtype: bfloat16
+
+queues:
+  capacity: 32
+  max_microbatch_size: 1
+  max_microbatch_wait_ms: 0
+
+correctness:
+  require_exact_token_identity: true
+  boundary_atol: 0.02
+  boundary_rtol: 0.02
+  minimum_cosine_similarity: 0.999
+  require_cache_replay: true
+  require_stage_isolation: true
+  require_direct_data_plane: true
+
+timeouts:
+  worker_start_seconds: 120
+  model_load_seconds: 300
+  request_seconds: 300
+  shutdown_seconds: 30

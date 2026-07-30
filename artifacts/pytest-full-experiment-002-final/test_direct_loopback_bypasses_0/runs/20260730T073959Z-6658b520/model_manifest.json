@@ -1,0 +1,87 @@
+{
+  "architecture": "synthetic-dense",
+  "evidence_kind": "measured synthetic execution",
+  "model_id": "synthetic-loopback-4gib-calibrated",
+  "model_revision": "experiment-001-v2",
+  "stages": [
+    {
+      "cache_spec": {
+        "bytes_per_token": 4096,
+        "format": "dynamic-kv",
+        "reconstructable_by_replay": true
+      },
+      "estimated_execution_ms": {},
+      "input_spec": {
+        "byte_order": "little",
+        "dtype": "float32",
+        "shape": [
+          "batch",
+          "sequence",
+          4096
+        ]
+      },
+      "layer_end": 1,
+      "layer_start": 0,
+      "output_spec": {
+        "byte_order": "little",
+        "dtype": "float32",
+        "shape": [
+          "batch",
+          "sequence",
+          4096
+        ]
+      },
+      "owns_embeddings": true,
+      "owns_final_norm": false,
+      "owns_output_head": false,
+      "required_memory_bytes": 2147483648,
+      "required_total_memory_bytes": null,
+      "shard_hash": null,
+      "stage_id": 0,
+      "tensor_count": 0,
+      "tensor_names": [
+        "synthetic.layers.0"
+      ]
+    },
+    {
+      "cache_spec": {
+        "bytes_per_token": 4096,
+        "format": "dynamic-kv",
+        "reconstructable_by_replay": true
+      },
+      "estimated_execution_ms": {},
+      "input_spec": {
+        "byte_order": "little",
+        "dtype": "float32",
+        "shape": [
+          "batch",
+          "sequence",
+          4096
+        ]
+      },
+      "layer_end": 2,
+      "layer_start": 1,
+      "output_spec": {
+        "byte_order": "little",
+        "dtype": "float32",
+        "shape": [
+          "batch",
+          "sequence",
+          4096
+        ]
+      },
+      "owns_embeddings": false,
+      "owns_final_norm": true,
+      "owns_output_head": true,
+      "required_memory_bytes": 2147483648,
+      "required_total_memory_bytes": null,
+      "shard_hash": null,
+      "stage_id": 1,
+      "tensor_count": 0,
+      "tensor_names": [
+        "synthetic.layers.1"
+      ]
+    }
+  ],
+  "total_weight_bytes": 4294967296
+}

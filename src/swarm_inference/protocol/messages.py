@@ -69,6 +69,7 @@ class ActivationMetadata(StrictModel):
     token_position: int = Field(ge=0)
     sequence_length: int = Field(gt=0)
     cache_generation: int = Field(ge=0)
+    route_generation: int = Field(default=0, ge=0)
     model_id: str
     model_revision: str
     deadline_monotonic_ns: int | None = Field(default=None, ge=0)
@@ -227,6 +228,28 @@ class CancelRequest(StrictModel):
     model_revision: str
 
 
+class CacheControlRequest(StrictModel):
+    worker_id: str
+    request_id: str
+    model_revision: str
+    stage_id: int = Field(ge=0)
+    action: Literal["inspect", "clear", "replay", "clear-and-replay"]
+
+
+class CacheControlResponse(StrictModel):
+    accepted: bool
+    worker_id: str
+    request_id: str
+    stage_id: int = Field(ge=0)
+    action: str
+    replay_input_count: int = Field(default=0, ge=0)
+    replay_bytes: int = Field(default=0, ge=0)
+    replay_duration_s: float = Field(default=0.0, ge=0)
+    cache_before: list[dict[str, Any]] = Field(default_factory=list)
+    cache_after: list[dict[str, Any]] = Field(default_factory=list)
+    detail: str = ""
+
+
 class Ack(StrictModel):
     accepted: bool
     detail: str = ""
@@ -250,11 +273,17 @@ class SubmitRequest(StrictModel):
     workload_class: str = "standard"
     model_id: str = "synthetic"
     model_revision: str = "synthetic-v1"
+    cache_replay_stage_id: int | None = Field(default=None, ge=0)
+    cache_replay_after_tokens: int | None = Field(default=None, gt=0)
 
     @model_validator(mode="after")
     def require_prompt(self) -> SubmitRequest:
         if self.prompt is None and not self.prompt_token_ids:
             raise ValueError("either prompt or prompt_token_ids is required")
+        if (self.cache_replay_stage_id is None) != (self.cache_replay_after_tokens is None):
+            raise ValueError(
+                "cache_replay_stage_id and cache_replay_after_tokens must be supplied together"
+            )
         return self
 
 
@@ -283,6 +312,8 @@ WireMessage = (
     | FinalResultMessage
     | HealthResponse
     | CancelRequest
+    | CacheControlRequest
+    | CacheControlResponse
     | Ack
     | WireChunk
     | SubmitRequest

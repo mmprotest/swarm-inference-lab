@@ -31,6 +31,7 @@ from swarm_inference.model.manifest import (
 from swarm_inference.model.reference import validate_qwen_correctness
 from swarm_inference.model.shard_builder import (
     inspect_qwen3_model,
+    model_inspection_payload,
     resolve_model,
     shard_model,
 )
@@ -110,30 +111,7 @@ def inspect_model_command(
         description = inspect_qwen3_model(resolved)
     except (SwarmError, OSError, ValueError) as exc:
         _fail(f"inspect-model failed: {exc}")
-    layer_bytes: dict[int, int] = {}
-    for tensor in description.tensors:
-        if tensor.component.layer_index is not None:
-            layer_bytes[tensor.component.layer_index] = (
-                layer_bytes.get(tensor.component.layer_index, 0) + tensor.bytes
-            )
-    typer.echo(
-        json.dumps(
-            {
-                "model_id": description.model_id,
-                "resolved_revision": description.model_revision,
-                "local_path": str(description.model_path),
-                "architecture": description.config.get("architectures"),
-                "model_type": description.config.get("model_type"),
-                "tensor_count": len(description.tensors),
-                "total_source_bytes": sum(item.bytes for item in description.tensors),
-                "per_layer_bytes": layer_bytes,
-                "source_file_hashes": description.source_file_hashes,
-                "full_model_instantiated": False,
-            },
-            indent=2,
-            sort_keys=True,
-        )
-    )
+    typer.echo(json.dumps(model_inspection_payload(description), indent=2, sort_keys=True))
 
 
 @app.command("shard-model")
@@ -155,6 +133,14 @@ def shard_model_command(
             help="Hard logical weight cap; oversized stages are refused.",
         ),
     ] = 512 * 1024 * 1024,
+    stage_count: Annotated[
+        int | None,
+        typer.Option(
+            "--stage-count",
+            min=1,
+            help="Require exactly this many contiguous tensor-size-balanced stages.",
+        ),
+    ] = None,
     cache_dir: Annotated[Path | None, typer.Option()] = None,
     allow_download: Annotated[bool, typer.Option()] = True,
 ) -> None:
@@ -173,6 +159,7 @@ def shard_model_command(
             output=output,
             target_stage_bytes=target_stage_bytes,
             maximum_stage_bytes=max_stage_bytes,
+            stage_count=stage_count,
         )
     except (SwarmError, OSError, ValueError) as exc:
         _fail(f"shard-model failed: {exc}")
@@ -524,6 +511,8 @@ def validate_model_command(
     distributed_loopback_workers: Annotated[
         int,
         typer.Option(
+            "--distributed-workers",
+            "--distributed-loopback-workers",
             min=0,
             help="Also run this many process-isolated stage workers over gRPC; 0 disables.",
         ),
@@ -623,6 +612,58 @@ def validate_model_command(
             typer.echo(f"worker_count={distributed_result['worker_count']}")
             typer.echo(f"process_worker_token_ids={distributed_result['output_token_ids']}")
     if not payload["passed"]:
+        raise typer.Exit(1)
+
+
+@app.command("real-experiment")
+def real_experiment_command(
+    config: Annotated[
+        Path,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Experiment 002 real-model configuration.",
+        ),
+    ] = Path("configs/experiments/experiment_002_qwen3_real_loopback.yaml"),
+    model_id: Annotated[str | None, typer.Option("--model-id")] = None,
+    revision: Annotated[str | None, typer.Option()] = None,
+    max_new_tokens: Annotated[
+        int | None,
+        typer.Option(min=4),
+    ] = None,
+    output_root: Annotated[
+        Path,
+        typer.Option(),
+    ] = Path("artifacts/runs"),
+    skip_download: Annotated[bool, typer.Option()] = False,
+    skip_sharding: Annotated[bool, typer.Option()] = False,
+    skip_prompt_suite: Annotated[bool, typer.Option()] = False,
+    skip_replay_test: Annotated[bool, typer.Option()] = False,
+    keep_workers: Annotated[bool, typer.Option()] = False,
+) -> None:
+    """Run the complete process-isolated real Qwen3 Experiment 002."""
+
+    from swarm_inference.experiments.experiment_002 import run_experiment_002
+
+    try:
+        run = run_experiment_002(
+            config_path=config,
+            model_id=model_id,
+            revision=revision,
+            max_new_tokens=max_new_tokens,
+            output_root=output_root,
+            skip_download=skip_download,
+            skip_sharding=skip_sharding,
+            skip_prompt_suite=skip_prompt_suite,
+            skip_replay_test=skip_replay_test,
+            keep_workers=keep_workers,
+        )
+    except (SwarmError, OSError, TimeoutError, ValueError) as exc:
+        _fail(f"real-experiment failed: {exc}")
+    typer.echo(f"run_directory={run.run_directory}")
+    typer.echo(f"report={run.report_path}")
+    typer.echo(f"overall_status={run.summary['overall_status']}")
+    if not run.passed:
         raise typer.Exit(1)
 
 

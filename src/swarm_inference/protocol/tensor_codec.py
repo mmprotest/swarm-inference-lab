@@ -35,6 +35,7 @@ class ActivationTensor:
     token_position: int
     sequence_length: int
     array: np.ndarray
+    logical_dtype: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,14 +56,18 @@ def encode_tensor(tensor: ActivationTensor) -> bytes:
     array = np.ascontiguousarray(tensor.array)
     raw = array.tobytes(order="C")
     dtype = array.dtype
+    logical_dtype = tensor.logical_dtype
+    if logical_dtype == "bfloat16" and dtype != np.dtype(np.uint16):
+        raise IntegrityError("bfloat16 transport requires a uint16 raw-bit array")
     byte_order = dtype.byteorder
     if byte_order == "=":
         byte_order = "<" if sys.byteorder == "little" else ">"
     if byte_order == "|":
         byte_order = "<"
     header = {
-        "dtype": dtype.str,
+        "dtype": logical_dtype or dtype.str,
         "shape": list(array.shape),
+        "strides": [int(value) for value in array.strides],
         "byte_order": "little" if byte_order == "<" else "big",
         "tensor_id": tensor.tensor_id,
         "request_id": tensor.request_id,
@@ -102,7 +107,8 @@ def decode_tensor(payload: bytes, *, copy: bool = True) -> ActivationTensor:
             f"actual={actual_checksum}"
         )
     try:
-        dtype = np.dtype(str(header["dtype"]))
+        logical_dtype = str(header["dtype"])
+        dtype = np.dtype("<u2") if logical_dtype == "bfloat16" else np.dtype(logical_dtype)
         shape = tuple(int(dimension) for dimension in header["shape"])
         array = np.frombuffer(raw, dtype=dtype).reshape(shape)
     except (KeyError, TypeError, ValueError) as exc:
@@ -116,6 +122,7 @@ def decode_tensor(payload: bytes, *, copy: bool = True) -> ActivationTensor:
         token_position=int(header["token_position"]),
         sequence_length=int(header["sequence_length"]),
         array=array,
+        logical_dtype=("bfloat16" if str(header["dtype"]) == "bfloat16" else None),
     )
 
 

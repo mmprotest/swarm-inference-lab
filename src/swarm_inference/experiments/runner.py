@@ -33,6 +33,7 @@ from swarm_inference.experiments.scaling import (
     predicted_ideal_throughput,
     throughput_gain,
 )
+from swarm_inference.model.manifest import hash_shard_directory
 from swarm_inference.protocol.checksums import sha256_file
 from swarm_inference.simulation.simulator import SimulationResult, Simulator
 
@@ -371,7 +372,7 @@ def run_experiment(config: ExperimentConfig) -> ExperimentRun:
         scaling_rows=scaling_rows,
         request_rows=requests,
     )
-    _write_artifact_manifest(run_dir)
+    write_artifact_manifest(run_dir)
     return ExperimentRun(
         run_id=run_id,
         run_dir=run_dir,
@@ -422,7 +423,7 @@ def _scaling_rows(results: list[SimulationResult]) -> list[dict[str, Any]]:
     return rows
 
 
-def _write_artifact_manifest(run_dir: Path) -> None:
+def write_artifact_manifest(run_dir: Path) -> None:
     manifest_path = run_dir / "artifact_manifest.json"
     files = sorted(path for path in run_dir.rglob("*") if path.is_file() and path != manifest_path)
     _write_json(
@@ -434,8 +435,275 @@ def _write_artifact_manifest(run_dir: Path) -> None:
     )
 
 
+_REAL_MODEL_REQUIRED_ARTIFACTS = (
+    "config.requested.yaml",
+    "config.resolved.yaml",
+    "environment.json",
+    "git.json",
+    "model_inspection.json",
+    "model_manifest.json",
+    "shard_hashes.json",
+    "reference.json",
+    "distributed.json",
+    "correctness.json",
+    "worker_load_proofs.json",
+    "coordinator_proof.json",
+    "transport_metrics.json",
+    "cache_metrics.json",
+    "prompt_results.jsonl",
+    "cache_replay.json",
+    "events.jsonl",
+    "summary.json",
+    "report.html",
+    "quality_gates.json",
+    "log_validation.json",
+    "artifact_manifest.json",
+    "tensors/boundary-diagnostics.json",
+)
+_REAL_MODEL_REQUIRED_LOGS = (
+    "logs/coordinator.log",
+    "logs/reference.log",
+    "logs/worker-000.log",
+    "logs/worker-001.log",
+    "logs/worker-002.log",
+    "logs/worker-003.log",
+)
+_REAL_MODEL_REQUIRED_CHARTS = (
+    "charts/stage_weight_bytes.png",
+    "charts/worker_memory.png",
+    "charts/prefill_latency.png",
+    "charts/decode_latency.png",
+    "charts/boundary_errors.png",
+    "charts/activation_bytes.png",
+    "charts/kv_cache_bytes.png",
+)
+_REAL_MODEL_STATUS_FIELDS = (
+    "experiment_integrity_status",
+    "environment_status",
+    "model_revision_status",
+    "sharding_status",
+    "stage_isolation_status",
+    "real_model_execution_status",
+    "direct_data_plane_status",
+    "kv_cache_status",
+    "boundary_correctness_status",
+    "token_identity_status",
+    "cache_replay_status",
+    "prompt_suite_status",
+)
+
+
+def _read_json_artifact(
+    root: Path,
+    relative: str,
+    errors: list[str],
+) -> Any:
+    path = root / relative
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, TypeError) as exc:
+        errors.append(f"invalid {relative}: {exc}")
+        return None
+
+
+def _validate_artifact_manifest(root: Path, errors: list[str]) -> None:
+    manifest_path = root / "artifact_manifest.json"
+    if not manifest_path.is_file():
+        return
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        files = manifest.get("files")
+        if manifest.get("algorithm") != "sha256" or not isinstance(files, dict):
+            errors.append("invalid artifact_manifest.json: expected sha256 files mapping")
+            return
+        for relative, expected in files.items():
+            path = (root / relative).resolve()
+            if not path.is_relative_to(root):
+                errors.append(f"artifact manifest path escapes run directory: {relative}")
+            elif not path.is_file():
+                errors.append(f"manifest file missing: {relative}")
+            elif sha256_file(path) != expected:
+                errors.append(f"artifact checksum mismatch: {relative}")
+    except (json.JSONDecodeError, OSError, TypeError) as exc:
+        errors.append(f"invalid artifact_manifest.json: {exc}")
+
+
+def _validate_real_model_run(root: Path, summary: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    required = (
+        *_REAL_MODEL_REQUIRED_ARTIFACTS,
+        *_REAL_MODEL_REQUIRED_LOGS,
+        *_REAL_MODEL_REQUIRED_CHARTS,
+    )
+    for relative in required:
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"missing required real-model artifact: {relative}")
+        elif path.stat().st_size <= 0:
+            errors.append(f"empty required real-model artifact: {relative}")
+
+    for relative in ("config.requested.yaml", "config.resolved.yaml"):
+        path = root / relative
+        if not path.is_file():
+            continue
+        try:
+            payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                errors.append(f"invalid {relative}: expected YAML mapping")
+        except (OSError, yaml.YAMLError) as exc:
+            errors.append(f"invalid {relative}: {exc}")
+
+    environment = _read_json_artifact(root, "environment.json", errors)
+    manifest = _read_json_artifact(root, "model_manifest.json", errors)
+    shard_hashes = _read_json_artifact(root, "shard_hashes.json", errors)
+    reference = _read_json_artifact(root, "reference.json", errors)
+    distributed = _read_json_artifact(root, "distributed.json", errors)
+    worker_proofs = _read_json_artifact(root, "worker_load_proofs.json", errors)
+    quality_gates = _read_json_artifact(root, "quality_gates.json", errors)
+    _read_json_artifact(root, "correctness.json", errors)
+    _read_json_artifact(root, "coordinator_proof.json", errors)
+    _read_json_artifact(root, "transport_metrics.json", errors)
+    _read_json_artifact(root, "cache_metrics.json", errors)
+    _read_json_artifact(root, "cache_replay.json", errors)
+    _read_json_artifact(root, "log_validation.json", errors)
+    _read_json_artifact(root, "tensors/boundary-diagnostics.json", errors)
+
+    for relative in ("prompt_results.jsonl", "events.jsonl"):
+        path = root / relative
+        if not path.is_file():
+            continue
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(),
+            start=1,
+        ):
+            try:
+                json.loads(line)
+            except json.JSONDecodeError as exc:
+                errors.append(f"invalid {relative} line {line_number}: {exc}")
+                break
+
+    invalid_statuses = [
+        field
+        for field in (*_REAL_MODEL_STATUS_FIELDS, "overall_status")
+        if summary.get(field) not in {"PASS", "FAIL"}
+    ]
+    if invalid_statuses:
+        errors.append("missing or invalid real-model status fields: " + ", ".join(invalid_statuses))
+    else:
+        derived_overall = (
+            "PASS"
+            if all(summary.get(field) == "PASS" for field in _REAL_MODEL_STATUS_FIELDS)
+            else "FAIL"
+        )
+        if summary.get("overall_status") != derived_overall:
+            errors.append("overall_status is inconsistent with mandatory real-model statuses")
+
+    shard_validation: dict[str, Any] = {}
+    if isinstance(worker_proofs, list) and worker_proofs:
+        from swarm_inference.worker.shard_manager import verify_load_record_checksum
+
+        shard_paths: dict[int, Path] = {}
+        for proof in worker_proofs:
+            if not isinstance(proof, dict) or not isinstance(proof.get("stage_id"), int):
+                errors.append("invalid worker load proof entry")
+                continue
+            stage_id = int(proof["stage_id"])
+            if not verify_load_record_checksum(proof):
+                errors.append(f"worker proof stage {stage_id} load-record checksum mismatch")
+            shard_path = Path(str(proof.get("shard_path", ""))).expanduser().resolve()
+            shard_paths[stage_id] = shard_path
+            weights_path = shard_path / "weights.safetensors"
+            expected_hash = str(proof.get("shard_hash", ""))
+            if not weights_path.is_file():
+                errors.append(f"worker proof stage {stage_id} shard is unavailable")
+            elif hash_shard_directory(shard_path) != expected_hash:
+                errors.append(f"worker proof stage {stage_id} shard checksum mismatch")
+        if len(shard_paths) != 4:
+            errors.append("worker load proofs do not identify exactly four stage shards")
+        model_root = next(iter(shard_paths.values())).parent if shard_paths else None
+        if model_root is not None:
+            validation_path = model_root / "validation.json"
+            try:
+                shard_validation = json.loads(validation_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError, TypeError) as exc:
+                errors.append(f"invalid model shard validation.json: {exc}")
+            model_manifest_path = model_root / "manifest.json"
+            try:
+                model_manifest = json.loads(model_manifest_path.read_text(encoding="utf-8"))
+                if isinstance(manifest, dict) and model_manifest != manifest:
+                    errors.append("run model_manifest.json differs from loaded shard manifest")
+            except (json.JSONDecodeError, OSError, TypeError) as exc:
+                errors.append(f"invalid model shard manifest.json: {exc}")
+            model_hashes_path = model_root / "hashes.json"
+            try:
+                model_hashes = json.loads(model_hashes_path.read_text(encoding="utf-8"))
+                if isinstance(shard_hashes, dict) and model_hashes != shard_hashes:
+                    errors.append("run shard_hashes.json differs from model hashes.json")
+            except (json.JSONDecodeError, OSError, TypeError) as exc:
+                errors.append(f"invalid model hashes.json: {exc}")
+    else:
+        errors.append("worker_load_proofs.json must contain four proofs")
+
+    if all(
+        isinstance(payload, dict)
+        for payload in (environment, manifest, reference, distributed, quality_gates)
+    ):
+        from swarm_inference.experiments.real_status import (
+            evaluate_experiment_002_status,
+        )
+
+        evaluated = evaluate_experiment_002_status(
+            {
+                "environment": environment,
+                "manifest": manifest,
+                "shard_validation": shard_validation,
+                "reference": reference,
+                "distributed": distributed,
+                "quality_gates": quality_gates,
+            }
+        )
+        for field, expected in evaluated.items():
+            if summary.get(field) != expected:
+                errors.append(
+                    f"recorded {field}={summary.get(field)!r} "
+                    f"does not match evaluated status {expected!r}"
+                )
+
+    report_path = root / "report.html"
+    if report_path.is_file():
+        report = report_path.read_text(encoding="utf-8")
+        conclusion = (
+            "PASS: A real Qwen3 model was split across four process-isolated workers, "
+            "real hidden states crossed worker boundaries, stage-local KV caches were "
+            "used, and distributed greedy output matched the independent full-model "
+            "reference exactly."
+            if summary.get("overall_status") == "PASS"
+            else "FAIL: The real distributed Qwen3 experiment did not satisfy all "
+            "correctness and isolation criteria."
+        )
+        if conclusion not in report:
+            errors.append("report.html is missing the status-appropriate conclusion")
+
+    _validate_artifact_manifest(root, errors)
+    return errors
+
+
 def validate_run(run_dir: str | Path) -> list[str]:
     root = Path(run_dir).expanduser().resolve()
+    summary_payload: dict[str, Any] = {}
+    summary_path = root / "summary.json"
+    if summary_path.is_file():
+        try:
+            loaded_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            if isinstance(loaded_summary, dict):
+                summary_payload = loaded_summary
+        except (json.JSONDecodeError, OSError, TypeError):
+            summary_payload = {}
+    if summary_payload.get("execution_mode") == "single-host-loopback-real-model":
+        return _validate_real_model_run(root, summary_payload)
+
     required = [
         "config.resolved.yaml",
         "environment.json",
@@ -456,13 +724,6 @@ def validate_run(run_dir: str | Path) -> list[str]:
     errors = [
         f"missing required artifact: {name}" for name in required if not (root / name).is_file()
     ]
-    summary_payload: dict[str, Any] = {}
-    summary_path = root / "summary.json"
-    if summary_path.is_file():
-        try:
-            summary_payload = json.loads(summary_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError, TypeError):
-            summary_payload = {}
     if summary_payload.get("schema_version") == "2" and summary_payload.get("child_runs"):
         matrix_required = [
             "calibration.json",
@@ -501,16 +762,5 @@ def validate_run(run_dir: str | Path) -> list[str]:
         ]:
             if not (root / "charts" / chart).is_file():
                 errors.append(f"missing required matrix chart: charts/{chart}")
-    manifest_path = root / "artifact_manifest.json"
-    if manifest_path.is_file():
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            for relative, expected in manifest.get("files", {}).items():
-                path = root / relative
-                if not path.is_file():
-                    errors.append(f"manifest file missing: {relative}")
-                elif sha256_file(path) != expected:
-                    errors.append(f"artifact checksum mismatch: {relative}")
-        except (json.JSONDecodeError, OSError, TypeError) as exc:
-            errors.append(f"invalid artifact_manifest.json: {exc}")
+    _validate_artifact_manifest(root, errors)
     return errors

@@ -48,6 +48,7 @@ from swarm_inference.protocol.messages import (
     ActivationMetadata,
     ActivationRequest,
     ActivationResult,
+    CacheControlRequest,
     DataPlaneEnvelope,
     FinalResultMessage,
     Heartbeat,
@@ -96,6 +97,7 @@ class RuntimeRequestMetrics:
     route_generation: int = 0
     data_plane_mode: str = DataPlaneMode.COORDINATOR_RELAY.value
     per_stage: list[dict[str, Any]] = field(default_factory=list)
+    token_steps: list[dict[str, Any]] = field(default_factory=list)
 
 
 class CoordinatorCore:
@@ -663,6 +665,7 @@ class CoordinatorCore:
             token_position=entry.token_position,
             sequence_length=decoded.sequence_length,
             cache_generation=entry.cache_generation,
+            route_generation=route.route_generation,
             model_id=self.runtime_model_id,
             model_revision=self.runtime_model_revision,
         )
@@ -891,6 +894,7 @@ class CoordinatorCore:
             token_position=token_position,
             sequence_length=sequence_length,
             cache_generation=0,
+            route_generation=route.route_generation,
             model_id=self.runtime_model_id,
             model_revision=self.runtime_model_revision,
         )
@@ -1035,6 +1039,51 @@ class CoordinatorCore:
         )
         return final.result
 
+    async def _perform_direct_cache_replay(
+        self,
+        *,
+        submission: SubmitRequest,
+        route: RoutePlan,
+        metrics: RuntimeRequestMetrics,
+        stage_id: int,
+        tokens_committed_before_failure: int,
+    ) -> None:
+        if not 0 <= stage_id < len(route.assignments):
+            raise IntegrityError(f"cache replay stage {stage_id} is outside the installed route")
+        hop = route.assignments[stage_id]
+        response = await self.transport.cache_control(
+            hop.worker_data_endpoint,
+            CacheControlRequest(
+                worker_id=hop.worker_id,
+                request_id=submission.request_id,
+                model_revision=self.runtime_model_revision,
+                stage_id=stage_id,
+                action="clear-and-replay",
+            ),
+        )
+        if not response.accepted:
+            raise IntegrityError(f"stage {stage_id} cache replay failed: {response.detail}")
+        metrics.replay_s += response.replay_duration_s
+        metrics.replay_bytes += response.replay_bytes
+        self.events.append(
+            {
+                "event_type": "stage_cache_replayed",
+                "request_id": submission.request_id,
+                "route_id": route.route_id,
+                "route_generation_before": route.route_generation,
+                "route_generation_after": route.route_generation,
+                "stage_id": stage_id,
+                "failed_stage_id": stage_id,
+                "worker_id": hop.worker_id,
+                "tokens_committed_before_failure": tokens_committed_before_failure,
+                "replay_input_count": response.replay_input_count,
+                "replay_bytes": response.replay_bytes,
+                "replay_duration_s": response.replay_duration_s,
+                "cache_before": response.cache_before,
+                "cache_after": response.cache_after,
+            }
+        )
+
     async def submit(self, submission: SubmitRequest) -> SubmitResponse:
         started = time.perf_counter()
         metrics = RuntimeRequestMetrics(
@@ -1109,6 +1158,7 @@ class CoordinatorCore:
                 + metrics.admission_time_ms
             )
             for output_position in range(submission.max_new_tokens):
+                token_step_started = time.perf_counter()
                 operation = OperationKind.PREFILL if output_position == 0 else OperationKind.DECODE
                 token_ids = prompt_token_ids if output_position == 0 else [outputs[-1]]
                 if self.model_manifest is None:
@@ -1233,12 +1283,68 @@ class CoordinatorCore:
                         raise IntegrityError(
                             "final real-model stage did not return [batch, sequence, vocabulary] logits"
                         )
-                    token_id = int(np.argmax(activation[0, -1, :]))
+                    coordinator_started = time.perf_counter()
+                    token_logits = activation[0, -1, :].astype(np.float32, copy=False)
+                    token_id = int(np.argmax(token_logits))
+                    top_count = min(10, int(token_logits.shape[0]))
+                    top_indices = np.argpartition(token_logits, -top_count)[-top_count:]
+                    top_indices = top_indices[np.argsort(token_logits[top_indices])[::-1]]
+                    coordinator_processing_ms = (time.perf_counter() - coordinator_started) * 1000
+                    metrics.token_steps.append(
+                        {
+                            "step": output_position,
+                            "operation": operation.value,
+                            "token_position": token_position,
+                            "selected_token_id": token_id,
+                            "selected_token_text": (
+                                self.tokenizer.decode([token_id])
+                                if self.tokenizer is not None
+                                else None
+                            ),
+                            "selected_token_logit": float(token_logits[token_id]),
+                            "top_logits": [
+                                {
+                                    "token_id": int(index),
+                                    "token_text": (
+                                        self.tokenizer.decode([int(index)])
+                                        if self.tokenizer is not None
+                                        else None
+                                    ),
+                                    "logit": float(token_logits[index]),
+                                }
+                                for index in top_indices
+                            ],
+                            "coordinator_processing_ms": coordinator_processing_ms,
+                            "total_token_latency_ms": (time.perf_counter() - token_step_started)
+                            * 1000,
+                        }
+                    )
                 outputs.append(token_id)
                 request_state.committed_output_tokens.append(token_id)
                 request_state.current_token_position += 1
                 if metrics.first_token_s is None:
                     metrics.first_token_s = time.perf_counter()
+                if (
+                    route_plan is not None
+                    and submission.cache_replay_stage_id is not None
+                    and submission.cache_replay_after_tokens == output_position + 1
+                ):
+                    await self._perform_direct_cache_replay(
+                        submission=submission,
+                        route=route_plan,
+                        metrics=metrics,
+                        stage_id=submission.cache_replay_stage_id,
+                        tokens_committed_before_failure=output_position + 1,
+                    )
+                if self.model_manifest is not None and self.architecture_config is not None:
+                    configured_eos = self.architecture_config.get("eos_token_id")
+                    eos_ids = (
+                        {int(value) for value in configured_eos}
+                        if isinstance(configured_eos, list)
+                        else ({int(configured_eos)} if configured_eos is not None else set())
+                    )
+                    if token_id in eos_ids:
+                        break
             request_state.status = RequestStatus.COMPLETED
             request_state.verification_state = VerificationState.VERIFIED
             metrics.completed_s = time.perf_counter()
@@ -1310,6 +1416,7 @@ class CoordinatorCore:
                     "route_generation": metrics.route_generation,
                     "data_plane_mode": metrics.data_plane_mode,
                     "per_stage": metrics.per_stage,
+                    "token_steps": metrics.token_steps,
                 }
             )
             if route_id is not None:

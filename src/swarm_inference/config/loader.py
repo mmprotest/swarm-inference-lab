@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -59,6 +59,14 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
     raw = deepcopy(load_yaml(resolved))
     expanded = _load_reference(raw, base=resolved.parent)
     try:
+        if expanded.get("execution_mode") == "single-host-loopback-real-model":
+            from swarm_inference.config.real_model import RealExperimentConfig
+
+            real = RealExperimentConfig.model_validate(expanded)
+            # The generic loader validates every shipped experiment file. Real
+            # execution is deliberately routed through ``real-experiment``;
+            # callers of that command use ``load_real_experiment_config``.
+            return cast(ExperimentConfig, real)
         return ExperimentConfig.model_validate(expanded)
     except ValueError as exc:
         raise ConfigurationError(f"invalid experiment configuration {resolved}: {exc}") from exc

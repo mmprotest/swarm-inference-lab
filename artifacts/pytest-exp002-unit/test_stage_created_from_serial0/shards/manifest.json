@@ -1,0 +1,406 @@
+{
+  "schema_version": "1",
+  "model_id": "tiny-random-qwen3",
+  "model_revision": "test",
+  "architecture": "Qwen3ForCausalLM",
+  "tokenizer_id": "tiny-random-qwen3",
+  "layer_count": 4,
+  "hidden_size": 32,
+  "attention": {
+    "head_count": 4,
+    "key_value_head_count": 2,
+    "head_dimension": 8,
+    "rope_theta": 10000.0,
+    "sliding_window": null
+  },
+  "vocabulary_size": 64,
+  "weight_dtype": "F32",
+  "quantisation_format": null,
+  "total_weight_bytes": 165248,
+  "embedding_bytes": 8192,
+  "output_head_bytes": 8192,
+  "per_layer_weight_bytes": [
+    37184,
+    37184,
+    37184,
+    37184
+  ],
+  "estimated_cache_bytes_per_token_per_layer": 128,
+  "activation_bytes_per_stage_boundary": 128,
+  "stages": [
+    {
+      "stage_id": 0,
+      "layer_start": 0,
+      "layer_end": 1,
+      "owns_embeddings": true,
+      "owns_final_norm": false,
+      "owns_output_head": false,
+      "required_memory_bytes": 45376,
+      "estimated_execution_ms": {},
+      "input_spec": {
+        "dtype": "int64",
+        "shape": [
+          "batch",
+          "sequence"
+        ],
+        "byte_order": "little"
+      },
+      "output_spec": {
+        "dtype": "f32",
+        "shape": [
+          "batch",
+          "sequence",
+          32
+        ],
+        "byte_order": "little"
+      },
+      "cache_spec": {
+        "format": "dynamic-kv",
+        "bytes_per_token": 128,
+        "reconstructable_by_replay": true
+      },
+      "tensor_names": [
+        "model.embed_tokens.weight",
+        "model.layers.0.input_layernorm.weight",
+        "model.layers.0.mlp.down_proj.weight",
+        "model.layers.0.mlp.gate_proj.weight",
+        "model.layers.0.mlp.up_proj.weight",
+        "model.layers.0.post_attention_layernorm.weight",
+        "model.layers.0.self_attn.k_norm.weight",
+        "model.layers.0.self_attn.k_proj.weight",
+        "model.layers.0.self_attn.o_proj.weight",
+        "model.layers.0.self_attn.q_norm.weight",
+        "model.layers.0.self_attn.q_proj.weight",
+        "model.layers.0.self_attn.v_proj.weight"
+      ],
+      "tensor_count": 12,
+      "shard_hash": "7ec01f0929ed920685637ad88d3e5cae160329882661d02572b503afc950482a",
+      "required_total_memory_bytes": 134525248
+    },
+    {
+      "stage_id": 1,
+      "layer_start": 1,
+      "layer_end": 2,
+      "owns_embeddings": false,
+      "owns_final_norm": false,
+      "owns_output_head": false,
+      "required_memory_bytes": 37184,
+      "estimated_execution_ms": {},
+      "input_spec": {
+        "dtype": "f32",
+        "shape": [
+          "batch",
+          "sequence",
+          32
+        ],
+        "byte_order": "little"
+      },
+      "output_spec": {
+        "dtype": "f32",
+        "shape": [
+          "batch",
+          "sequence",
+          32
+        ],
+        "byte_order": "little"
+      },
+      "cache_spec": {
+        "format": "dynamic-kv",
+        "bytes_per_token": 128,
+        "reconstructable_by_replay": true
+      },
+      "tensor_names": [
+        "model.layers.1.input_layernorm.weight",
+        "model.layers.1.mlp.down_proj.weight",
+        "model.layers.1.mlp.gate_proj.weight",
+        "model.layers.1.mlp.up_proj.weight",
+        "model.layers.1.post_attention_layernorm.weight",
+        "model.layers.1.self_attn.k_norm.weight",
+        "model.layers.1.self_attn.k_proj.weight",
+        "model.layers.1.self_attn.o_proj.weight",
+        "model.layers.1.self_attn.q_norm.weight",
+        "model.layers.1.self_attn.q_proj.weight",
+        "model.layers.1.self_attn.v_proj.weight"
+      ],
+      "tensor_count": 11,
+      "shard_hash": "7c3c7fb0ae63613879df3bf30b8e9581b1efdedec977a53f73a7c9e7331c7428",
+      "required_total_memory_bytes": 134517056
+    },
+    {
+      "stage_id": 2,
+      "layer_start": 2,
+      "layer_end": 3,
+      "owns_embeddings": false,
+      "owns_final_norm": false,
+      "owns_output_head": false,
+      "required_memory_bytes": 37184,
+      "estimated_execution_ms": {},
+      "input_spec": {
+        "dtype": "f32",
+        "shape": [
+          "batch",
+          "sequence",
+          32
+        ],
+        "byte_order": "little"
+      },
+      "output_spec": {
+        "dtype": "f32",
+        "shape": [
+          "batch",
+          "sequence",
+          32
+        ],
+        "byte_order": "little"
+      },
+      "cache_spec": {
+        "format": "dynamic-kv",
+        "bytes_per_token": 128,
+        "reconstructable_by_replay": true
+      },
+      "tensor_names": [
+        "model.layers.2.input_layernorm.weight",
+        "model.layers.2.mlp.down_proj.weight",
+        "model.layers.2.mlp.gate_proj.weight",
+        "model.layers.2.mlp.up_proj.weight",
+        "model.layers.2.post_attention_layernorm.weight",
+        "model.layers.2.self_attn.k_norm.weight",
+        "model.layers.2.self_attn.k_proj.weight",
+        "model.layers.2.self_attn.o_proj.weight",
+        "model.layers.2.self_attn.q_norm.weight",
+        "model.layers.2.self_attn.q_proj.weight",
+        "model.layers.2.self_attn.v_proj.weight"
+      ],
+      "tensor_count": 11,
+      "shard_hash": "b3d7ac61cc40a82d3627bf483f345166a23c031810e68d759400edbeb04871f9",
+      "required_total_memory_bytes": 134517056
+    },
+    {
+      "stage_id": 3,
+      "layer_start": 3,
+      "layer_end": 4,
+      "owns_embeddings": false,
+      "owns_final_norm": true,
+      "owns_output_head": true,
+      "required_memory_bytes": 45504,
+      "estimated_execution_ms": {},
+      "input_spec": {
+        "dtype": "f32",
+        "shape": [
+          "batch",
+          "sequence",
+          32
+        ],
+        "byte_order": "little"
+      },
+      "output_spec": {
+        "dtype": "f32",
+        "shape": [
+          "batch",
+          "sequence",
+          64
+        ],
+        "byte_order": "little"
+      },
+      "cache_spec": {
+        "format": "dynamic-kv",
+        "bytes_per_token": 128,
+        "reconstructable_by_replay": true
+      },
+      "tensor_names": [
+        "lm_head.weight",
+        "model.layers.3.input_layernorm.weight",
+        "model.layers.3.mlp.down_proj.weight",
+        "model.layers.3.mlp.gate_proj.weight",
+        "model.layers.3.mlp.up_proj.weight",
+        "model.layers.3.post_attention_layernorm.weight",
+        "model.layers.3.self_attn.k_norm.weight",
+        "model.layers.3.self_attn.k_proj.weight",
+        "model.layers.3.self_attn.o_proj.weight",
+        "model.layers.3.self_attn.q_norm.weight",
+        "model.layers.3.self_attn.q_proj.weight",
+        "model.layers.3.self_attn.v_proj.weight",
+        "model.norm.weight"
+      ],
+      "tensor_count": 13,
+      "shard_hash": "831a09c9227466de55ac8f017ab2c3fb8ba59e9ab600f6cbff8746bca62bb989",
+      "required_total_memory_bytes": 134525376
+    }
+  ],
+  "shard_hashes": {
+    "stage-000": "7ec01f0929ed920685637ad88d3e5cae160329882661d02572b503afc950482a",
+    "stage-001": "7c3c7fb0ae63613879df3bf30b8e9581b1efdedec977a53f73a7c9e7331c7428",
+    "stage-002": "b3d7ac61cc40a82d3627bf483f345166a23c031810e68d759400edbeb04871f9",
+    "stage-003": "831a09c9227466de55ac8f017ab2c3fb8ba59e9ab600f6cbff8746bca62bb989"
+  },
+  "compatible_worker_backends": [
+    "torch-cpu",
+    "torch-cuda",
+    "torch-mps"
+  ],
+  "source_tensor_hashes": {},
+  "shared_tensors": {},
+  "source_files": {
+    "model.safetensors": "ba3826e1a3efd36f850702ab15ecb6284f529eb1c090e4540833e5612e257da3"
+  },
+  "config_files": {
+    "config.json": "da69e24c4458d94de8ed02b31979107becedc7c33f6b8047b8e2988ce0515eb7",
+    "generation_config.json": "c8b0fa1817241273739e519098b3c8dffa2f0edd593dafc6eac4e58816677a43"
+  },
+  "tokenizer_files": {},
+  "total_sharded_weight_bytes": 165248,
+  "duplicated_tensor_bytes": 0,
+  "duplicated_tensors": {},
+  "tensor_to_stages": {
+    "lm_head.weight": [
+      3
+    ],
+    "model.embed_tokens.weight": [
+      0
+    ],
+    "model.layers.0.input_layernorm.weight": [
+      0
+    ],
+    "model.layers.0.mlp.down_proj.weight": [
+      0
+    ],
+    "model.layers.0.mlp.gate_proj.weight": [
+      0
+    ],
+    "model.layers.0.mlp.up_proj.weight": [
+      0
+    ],
+    "model.layers.0.post_attention_layernorm.weight": [
+      0
+    ],
+    "model.layers.0.self_attn.k_norm.weight": [
+      0
+    ],
+    "model.layers.0.self_attn.k_proj.weight": [
+      0
+    ],
+    "model.layers.0.self_attn.o_proj.weight": [
+      0
+    ],
+    "model.layers.0.self_attn.q_norm.weight": [
+      0
+    ],
+    "model.layers.0.self_attn.q_proj.weight": [
+      0
+    ],
+    "model.layers.0.self_attn.v_proj.weight": [
+      0
+    ],
+    "model.layers.1.input_layernorm.weight": [
+      1
+    ],
+    "model.layers.1.mlp.down_proj.weight": [
+      1
+    ],
+    "model.layers.1.mlp.gate_proj.weight": [
+      1
+    ],
+    "model.layers.1.mlp.up_proj.weight": [
+      1
+    ],
+    "model.layers.1.post_attention_layernorm.weight": [
+      1
+    ],
+    "model.layers.1.self_attn.k_norm.weight": [
+      1
+    ],
+    "model.layers.1.self_attn.k_proj.weight": [
+      1
+    ],
+    "model.layers.1.self_attn.o_proj.weight": [
+      1
+    ],
+    "model.layers.1.self_attn.q_norm.weight": [
+      1
+    ],
+    "model.layers.1.self_attn.q_proj.weight": [
+      1
+    ],
+    "model.layers.1.self_attn.v_proj.weight": [
+      1
+    ],
+    "model.layers.2.input_layernorm.weight": [
+      2
+    ],
+    "model.layers.2.mlp.down_proj.weight": [
+      2
+    ],
+    "model.layers.2.mlp.gate_proj.weight": [
+      2
+    ],
+    "model.layers.2.mlp.up_proj.weight": [
+      2
+    ],
+    "model.layers.2.post_attention_layernorm.weight": [
+      2
+    ],
+    "model.layers.2.self_attn.k_norm.weight": [
+      2
+    ],
+    "model.layers.2.self_attn.k_proj.weight": [
+      2
+    ],
+    "model.layers.2.self_attn.o_proj.weight": [
+      2
+    ],
+    "model.layers.2.self_attn.q_norm.weight": [
+      2
+    ],
+    "model.layers.2.self_attn.q_proj.weight": [
+      2
+    ],
+    "model.layers.2.self_attn.v_proj.weight": [
+      2
+    ],
+    "model.layers.3.input_layernorm.weight": [
+      3
+    ],
+    "model.layers.3.mlp.down_proj.weight": [
+      3
+    ],
+    "model.layers.3.mlp.gate_proj.weight": [
+      3
+    ],
+    "model.layers.3.mlp.up_proj.weight": [
+      3
+    ],
+    "model.layers.3.post_attention_layernorm.weight": [
+      3
+    ],
+    "model.layers.3.self_attn.k_norm.weight": [
+      3
+    ],
+    "model.layers.3.self_attn.k_proj.weight": [
+      3
+    ],
+    "model.layers.3.self_attn.o_proj.weight": [
+      3
+    ],
+    "model.layers.3.self_attn.q_norm.weight": [
+      3
+    ],
+    "model.layers.3.self_attn.q_proj.weight": [
+      3
+    ],
+    "model.layers.3.self_attn.v_proj.weight": [
+      3
+    ],
+    "model.norm.weight": [
+      3
+    ]
+  },
+  "final_normalisation_bytes": 128,
+  "embedding_owner": 0,
+  "final_normalisation_owner": 3,
+  "lm_head_owner": 3,
+  "tied_weight_treatment": "explicit-lm-head",
+  "transformers_version_requirement": "4.57.6",
+  "supported_dtypes": [
+    "f32"
+  ]
+}

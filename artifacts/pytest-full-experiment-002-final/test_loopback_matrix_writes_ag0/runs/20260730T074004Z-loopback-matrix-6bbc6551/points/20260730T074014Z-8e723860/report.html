@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>swarm-inference-lab report</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 1200px; padding: 0 1rem; color: #17202a; }
+h1, h2 { color: #102a43; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0 2rem; font-size: .9rem; }
+th, td { border: 1px solid #bcccdc; padding: .45rem; text-align: left; vertical-align: top; }
+th { background: #f0f4f8; }
+.pass { color: #137333; font-weight: 700; }
+.fail { color: #b31412; font-weight: 700; }
+.warning { background: #fff3cd; border: 1px solid #f0c36d; padding: 1rem; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1rem; }
+.charts figure { margin: 0; }
+.charts img { width: 100%; border: 1px solid #bcccdc; }
+code { white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<h1>swarm-inference-lab experiment report</h1>
+<h2>Acceptance status</h2>
+<table class="status-table"><tr><th>Experiment integrity</th><td class="fail">FAIL</td></tr>
+<tr><th>Correctness</th><td class="fail">FAIL</td></tr>
+<tr><th>Direct data plane</th><td class="fail">FAIL</td></tr>
+<tr><th>Replica utilisation</th><td class="fail">FAIL</td></tr>
+<tr><th>Capacity prediction</th><td class="fail">FAIL</td></tr>
+<tr><th>Scaling hypothesis</th><td class="fail">FAIL</td></tr>
+<tr><th>Overall</th><td class="fail">FAIL</td></tr></table>
+<table><tr><th>Execution mode</th><td>single-host-loopback</td></tr>
+<tr><th>PASS or FAIL</th><td>FAIL</td></tr>
+<tr><th>Primary aggregate verified output tokens/s</th><td>406.0450</td></tr>
+<tr><th>Baseline aggregate verified output tokens/s</th><td>406.0450</td></tr>
+<tr><th>Node count</th><td>4</td></tr>
+<tr><th>Concurrent request count</th><td>16</td></tr>
+<tr><th>Model</th><td>synthetic-loopback-4gib-heavy</td></tr>
+<tr><th>Values</th><td>measured local synthetic execution and local gRPC transport; no emulated delays</td></tr>
+<tr><th>Failed acceptance criteria</th><td>19</td></tr></table>
+<div class="warning"><strong>Interpretation:</strong> Aggregate verified throughput is
+not single-request generation speed. This run is labelled
+<strong>single-host-loopback</strong>; measured local synthetic execution and local gRPC transport; no emulated delays
+values must not be presented as physical distributed performance.</div>
+<h2>Failed acceptance criteria</h2>
+<ul><li><strong>throughput_milestone</strong>: The milestone must be sustained after warm-up and use multiple workers.</li>
+<li><strong>steady_state_stage_utilisation</strong>: Uses the least-utilised stage, not the mean.</li>
+<li><strong>two_consecutive_capacity_doublings</strong>: Aggregate throughput is compared only at matching concurrency.</li>
+<li><strong>nonnegative_useful_node_marginal_throughput</strong>: A negative observed step fails even if a later step recovers.</li>
+<li><strong>capacity:model_larger_than_each_worker</strong>: Measured capacity evidence.</li>
+<li><strong>capacity:distributed_real_model_valid_output</strong>: Not demonstrated by this simulation run; physical or real-model evidence is required.</li>
+<li><strong>correctness:greedy_token_identity</strong>: Not demonstrated by this simulation run; physical or real-model evidence is required.</li>
+<li><strong>correctness:stage_tolerance</strong>: Not demonstrated by this simulation run; physical or real-model evidence is required.</li>
+<li><strong>correctness:cache_replay_preserves_output</strong>: A timing simulation is not numerical correctness evidence.</li>
+<li><strong>correctness:corrupt_workers_detected</strong>: Project acceptance is asserted by the dedicated executable test.</li>
+<li><strong>correctness:invalid_shard_hash_rejected</strong>: Run artifacts do not replace the correctness test.</li>
+<li><strong>scaling:two_consecutive_doublings</strong>: Simulation evidence remains labelled simulation.</li>
+<li><strong>scaling:adding_eligible_worker_never_reduces_throughput</strong>: Compared within this run&#x27;s execution mode only.</li>
+<li><strong>scaling:stage_utilisation</strong>: Least-utilised stage during the simulated run.</li>
+<li><strong>throughput:20_verified_tokens_s_for_5_minutes</strong>: Execution-mode label is preserved.</li>
+<li><strong>resilience:99_percent_completion_at_10_percent_hourly_churn</strong>: Requires the specified churn arm, not extrapolation.</li>
+<li><strong>resilience:throughput_degradation_below_20_percent</strong>: A paired baseline comparison is required.</li>
+<li><strong>resilience:failed_stage_reconstructed</strong>: Numerical replay must be demonstrated outside simulation.</li>
+<li><strong>resilience:corrupt_workers_quarantined</strong>: No claim is made from an arm that may sample no corrupt operation.</li></ul>
+<h2>Acceptance criteria</h2>
+<table><thead><tr><th>Criterion</th><th>Status</th><th>Observed</th><th>Required</th><th>Interpretation</th></tr></thead>
+<tbody><tr><td>completed_verified_requests</td><td class="pass">PASS</td><td><code>32</code></td><td><code>&quot;&gt; 0&quot;</code></td><td>Only successfully completed, verified requests count.</td></tr>
+<tr><td>throughput_milestone</td><td class="fail">FAIL</td><td><code>{&quot;tokens_s&quot;: 406.0449944176956, &quot;duration_s&quot;: 0.0788090000860393, &quot;workers&quot;: 4}</code></td><td><code>{&quot;tokens_s&quot;: &quot;&gt;= 20.0&quot;, &quot;duration_s&quot;: &quot;&gt;= 30.0&quot;, &quot;workers&quot;: &quot;&gt; 1&quot;}</code></td><td>The milestone must be sustained after warm-up and use multiple workers.</td></tr>
+<tr><td>steady_state_stage_utilisation</td><td class="fail">FAIL</td><td><code>0.01056478092172431</code></td><td><code>&quot;&gt;= 0.7&quot;</code></td><td>Uses the least-utilised stage, not the mean.</td></tr>
+<tr><td>capacity_balance</td><td class="pass">PASS</td><td><code>0.0</code></td><td><code>&quot;&lt;= 0.2&quot;</code></td><td>Maximum service-capacity gap relative to the largest stage.</td></tr>
+<tr><td>accepted_request_completion</td><td class="pass">PASS</td><td><code>1.0</code></td><td><code>&quot;&gt;= 0.99&quot;</code></td><td>Completion requires successful verification.</td></tr>
+<tr><td>two_consecutive_capacity_doublings</td><td class="fail">FAIL</td><td><code>[]</code></td><td><code>&quot;two consecutive gains &gt;= 1.6 at concurrency &gt;= 16&quot;</code></td><td>Aggregate throughput is compared only at matching concurrency.</td></tr>
+<tr><td>nonnegative_useful_node_marginal_throughput</td><td class="fail">FAIL</td><td><code>[]</code></td><td><code>&quot;all &gt;= 0&quot;</code></td><td>A negative observed step fails even if a later step recovers.</td></tr>
+<tr><td>capacity:model_larger_than_each_worker</td><td class="fail">FAIL</td><td><code>{&quot;model_bytes&quot;: 2097152, &quot;largest_worker_bytes&quot;: 2214592512}</code></td><td><code>&quot;model_bytes &gt; every worker memory cap&quot;</code></td><td>Measured capacity evidence.</td></tr>
+<tr><td>capacity:no_worker_loads_full_model</td><td class="pass">PASS</td><td><code>{&quot;stage_count&quot;: 2}</code></td><td><code>&quot;each assigned shard &lt; full model&quot;</code></td><td>Logical memory accounting in this execution mode.</td></tr>
+<tr><td>capacity:distributed_real_model_valid_output</td><td class="fail">FAIL</td><td><code>&quot;not independently validated&quot;</code></td><td><code>&quot;valid Qwen3 output from at least two workers&quot;</code></td><td>Not demonstrated by this simulation run; physical or real-model evidence is required.</td></tr>
+<tr><td>correctness:greedy_token_identity</td><td class="fail">FAIL</td><td><code>&quot;not run&quot;</code></td><td><code>&quot;distributed token IDs exactly equal reference&quot;</code></td><td>Not demonstrated by this simulation run; physical or real-model evidence is required.</td></tr>
+<tr><td>correctness:stage_tolerance</td><td class="fail">FAIL</td><td><code>&quot;not run&quot;</code></td><td><code>&quot;all intermediate outputs within configured tolerance&quot;</code></td><td>Not demonstrated by this simulation run; physical or real-model evidence is required.</td></tr>
+<tr><td>correctness:cache_replay_preserves_output</td><td class="fail">FAIL</td><td><code>&quot;not run&quot;</code></td><td><code>&quot;subsequent output unchanged after replay&quot;</code></td><td>A timing simulation is not numerical correctness evidence.</td></tr>
+<tr><td>correctness:corrupt_workers_detected</td><td class="fail">FAIL</td><td><code>&quot;run may contain probabilistic audit events&quot;</code></td><td><code>&quot;deterministic corrupt-worker integration test passes&quot;</code></td><td>Project acceptance is asserted by the dedicated executable test.</td></tr>
+<tr><td>correctness:invalid_shard_hash_rejected</td><td class="fail">FAIL</td><td><code>&quot;not part of this run&quot;</code></td><td><code>&quot;dedicated shard-integrity test passes&quot;</code></td><td>Run artifacts do not replace the correctness test.</td></tr>
+<tr><td>scaling:two_consecutive_doublings</td><td class="fail">FAIL</td><td><code>[]</code></td><td><code>&quot;two consecutive &gt;= 1.6x gains&quot;</code></td><td>Simulation evidence remains labelled simulation.</td></tr>
+<tr><td>scaling:adding_eligible_worker_never_reduces_throughput</td><td class="fail">FAIL</td><td><code>[]</code></td><td><code>&quot;all observed marginals &gt;= 0&quot;</code></td><td>Compared within this run&#x27;s execution mode only.</td></tr>
+<tr><td>scaling:stage_utilisation</td><td class="fail">FAIL</td><td><code>0.01056478092172431</code></td><td><code>&quot;&gt;= 70%&quot;</code></td><td>Least-utilised stage during the simulated run.</td></tr>
+<tr><td>scaling:balanced_stage_capacity</td><td class="pass">PASS</td><td><code>0.0</code></td><td><code>&quot;&lt;= 20% gap&quot;</code></td><td>Configured/measured service-capacity balance.</td></tr>
+<tr><td>throughput:20_verified_tokens_s_for_5_minutes</td><td class="fail">FAIL</td><td><code>{&quot;tokens_s&quot;: 406.0449944176956, &quot;duration_s&quot;: 0.0788090000860393, &quot;workers&quot;: 4}</code></td><td><code>&quot;&gt;=20 tokens/s, &gt;1 worker, &gt;=300s&quot;</code></td><td>Execution-mode label is preserved.</td></tr>
+<tr><td>resilience:99_percent_completion_at_10_percent_hourly_churn</td><td class="fail">FAIL</td><td><code>{&quot;churn_rate&quot;: 0.0, &quot;completion&quot;: 1.0, &quot;failures_during_active_requests&quot;: null}</code></td><td><code>&quot;churn=0.10/hour, active failures&gt;0, and completion&gt;=0.99&quot;</code></td><td>Requires the specified churn arm, not extrapolation.</td></tr>
+<tr><td>resilience:throughput_degradation_below_20_percent</td><td class="fail">FAIL</td><td><code>&quot;no paired no-churn baseline in this run&quot;</code></td><td><code>&quot;&lt;20% degradation versus matched baseline&quot;</code></td><td>A paired baseline comparison is required.</td></tr>
+<tr><td>resilience:failed_stage_reconstructed</td><td class="fail">FAIL</td><td><code>&quot;timing events only&quot;</code></td><td><code>&quot;exact replay integration output remains correct&quot;</code></td><td>Numerical replay must be demonstrated outside simulation.</td></tr>
+<tr><td>resilience:corrupt_workers_quarantined</td><td class="fail">FAIL</td><td><code>&quot;probabilistic simulation is not dedicated test evidence&quot;</code></td><td><code>&quot;dedicated corruption experiment and audit evidence&quot;</code></td><td>No claim is made from an arm that may sample no corrupt operation.</td></tr></tbody></table>
+<h2>Required metrics</h2>
+<ul>
+<li>Aggregate verified output tokens/s: 406.0450</li>
+<li>Per-request tokens/s: see request table and chart.</li>
+<li>Mean time to first token: 0.0303 s.</li>
+<li>Mean end-to-end latency: 0.0303 s.</li>
+<li>Minimum stage utilisation: 0.0106.</li>
+<li>Network traffic: 48736 bytes.</li>
+<li>Recovery: 0 route changes,
+0 replay bytes.</li>
+</ul>
+<h2>Scaling observations</h2>
+<table><thead><tr><th>node_count</th><th>concurrent_requests</th><th>throughput</th><th>throughput_gain</th><th>marginal_throughput</th><th>homogeneous_scaling_efficiency</th><th>capacity_normalised_efficiency</th></tr></thead><tbody><tr><td>4</td><td>16</td><td>406.0450</td><td>1.0000</td><td>0.0000</td><td>1.0000</td><td>1.0000</td></tr></tbody></table>
+
+<h2>Per-request results</h2>
+<table><thead><tr><th>request_id</th><th>status</th><th>verification_state</th><th>decode_tokens_s</th><th>time_to_first_token_s</th><th>end_to_end_s</th><th>retry_count</th><th>route_changes</th></tr></thead><tbody><tr><td>loopback-0000-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0273</td><td>0.0273</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0000-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0316</td><td>0.0316</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0001-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0210</td><td>0.0210</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0001-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0357</td><td>0.0357</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0002-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0278</td><td>0.0278</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0002-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0320</td><td>0.0320</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0003-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0218</td><td>0.0218</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0003-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0350</td><td>0.0350</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0004-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0278</td><td>0.0278</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0004-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0326</td><td>0.0327</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0005-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0224</td><td>0.0224</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0005-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0336</td><td>0.0336</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0006-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0288</td><td>0.0288</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0006-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0336</td><td>0.0336</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0007-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0226</td><td>0.0226</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0007-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0331</td><td>0.0331</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0008-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0296</td><td>0.0296</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0008-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0308</td><td>0.0308</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0009-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0237</td><td>0.0237</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0009-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0348</td><td>0.0348</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0010-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0318</td><td>0.0318</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0010-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0281</td><td>0.0281</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0011-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0360</td><td>0.0360</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0011-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0298</td><td>0.0298</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0012-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0323</td><td>0.0323</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0012-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0307</td><td>0.0307</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0013-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0374</td><td>0.0374</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0013-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0295</td><td>0.0295</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0014-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0333</td><td>0.0333</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0014-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0282</td><td>0.0282</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0015-00000000</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0377</td><td>0.0377</td><td>0</td><td>0</td></tr>
+<tr><td>loopback-0015-00000001</td><td>completed</td><td>verified</td><td>0.0000</td><td>0.0297</td><td>0.0297</td><td>0</td><td>0</td></tr></tbody></table>
+<h2>Charts</h2>
+<div class="charts">
+<figure><img src="charts/aggregate_throughput.png" alt="Aggregate verified throughput"><figcaption>Aggregate verified throughput</figcaption></figure>
+<figure><img src="charts/per_request_throughput.png" alt="Per-request throughput"><figcaption>Per-request throughput</figcaption></figure>
+<figure><img src="charts/scaling_efficiency.png" alt="Scaling efficiency"><figcaption>Scaling efficiency</figcaption></figure>
+<figure><img src="charts/stage_utilisation.png" alt="Stage utilisation"><figcaption>Stage utilisation</figcaption></figure>
+<figure><img src="charts/queue_depth.png" alt="Queue depth"><figcaption>Queue depth</figcaption></figure>
+<figure><img src="charts/network_bytes.png" alt="Network traffic"><figcaption>Network traffic</figcaption></figure>
+<figure><img src="charts/failure_recovery.png" alt="Failure and recovery"><figcaption>Failure and recovery</figcaption></figure>
+<figure><img src="charts/scaling_ratios.png" alt="Primary scaling ratios"><figcaption>Primary scaling ratios</figcaption></figure>
+<figure><img src="charts/replica_distribution.png" alt="Replica distribution"><figcaption>Replica distribution</figcaption></figure>
+<figure><img src="charts/latency_breakdown.png" alt="Latency breakdown"><figcaption>Latency breakdown</figcaption></figure>
+<figure><img src="charts/coordinator_vs_peer_bytes.png" alt="Coordinator versus peer bytes"><figcaption>Coordinator versus peer bytes</figcaption></figure>
+<figure><img src="charts/capacity_prediction_error.png" alt="Capacity prediction error"><figcaption>Capacity prediction error</figcaption></figure>
+<figure><img src="charts/stream_reuse.png" alt="Persistent stream reuse"><figcaption>Persistent stream reuse</figcaption></figure>
+</div>
+<h2>Reproducibility</h2>
+<p>See <code>config.resolved.yaml</code>, <code>environment.json</code>,
+<code>model_manifest.json</code>, and the JSONL metric streams in this directory.
+Artifact hashes are recorded in <code>artifact_manifest.json</code>.</p>
+</body>
+</html>

@@ -1,0 +1,1207 @@
+{
+  "acceptance_criteria": [
+    {
+      "mandatory_for": [
+        "experiment_integrity",
+        "scaling_hypothesis"
+      ],
+      "name": "integrity:complete_matrix",
+      "observed": {
+        "duplicates": 0,
+        "expected_points": 4,
+        "missing": [],
+        "observed_points": 4
+      },
+      "reason": "Incomplete or duplicated points invalidate the matrix.",
+      "required": "every configured worker/concurrency/repeat point exactly once",
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "experiment_integrity",
+        "scaling_hypothesis"
+      ],
+      "name": "integrity:measurement_duration",
+      "observed": 0.051071399939246476,
+      "reason": "Every primary measurement must cover the configured interval.",
+      "required": ">= 0.048s at every point",
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "experiment_integrity",
+        "scaling_hypothesis"
+      ],
+      "name": "integrity:child_artifacts",
+      "observed": [],
+      "reason": "Every child result must retain its evidence bundle.",
+      "required": "no child artifact validation errors",
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "experiment_integrity",
+        "scaling_hypothesis"
+      ],
+      "name": "integrity:dependency_preservation",
+      "observed": false,
+      "reason": "The experiment may not remove unrelated optional dependencies.",
+      "required": false,
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "correctness",
+        "scaling_hypothesis"
+      ],
+      "name": "correctness:committed_tokens",
+      "observed": 1.0,
+      "reason": "Only correctly committed tokens support the hypothesis.",
+      "required": 1.0,
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "correctness",
+        "scaling_hypothesis"
+      ],
+      "name": "correctness:completion",
+      "observed": 1.0,
+      "reason": "Failure-free runs require every admitted request to complete.",
+      "required": 1.0,
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "direct_data_plane",
+        "scaling_hypothesis"
+      ],
+      "name": "direct:explicit_mode",
+      "observed": [
+        "coordinator-relay"
+      ],
+      "reason": "The selected data plane must be explicit in every child.",
+      "required": "coordinator-relay",
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "direct_data_plane",
+        "scaling_hypothesis"
+      ],
+      "name": "direct:no_coordinator_activation_relay",
+      "observed": 72004,
+      "reason": "Direct mode may not relay intermediate activation payloads.",
+      "required": "explicit relay mode",
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "direct_data_plane",
+        "scaling_hypothesis"
+      ],
+      "name": "direct:persistent_stream_reuse",
+      "observed": [],
+      "reason": "Stream creation must scale with peer pairs, not token operations.",
+      "required": "streams <= active peer pairs + reconnects at every point",
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "replica_utilisation",
+        "scaling_hypothesis"
+      ],
+      "name": "utilisation:meaningful_replicas",
+      "observed": 1.0,
+      "reason": "Assigned replicas must perform at least 5% of their stage work.",
+      "required": 0.75,
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "replica_utilisation",
+        "scaling_hypothesis"
+      ],
+      "name": "utilisation:replica_balance",
+      "observed": 1.0,
+      "reason": "The busiest meaningful replica may not starve its peers.",
+      "required": 1.5,
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "capacity_prediction",
+        "scaling_hypothesis"
+      ],
+      "name": "capacity:median_prediction_error",
+      "observed": 0.0,
+      "reason": "Capacity estimates must reflect the measured critical path.",
+      "required": 0.25,
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "scaling_hypothesis"
+      ],
+      "name": "scaling:ratio_2_to_4",
+      "observed": 0.8750126774438047,
+      "reason": "Two replicas per stage must materially beat one.",
+      "required": 1.5,
+      "status": "FAIL"
+    },
+    {
+      "mandatory_for": [
+        "scaling_hypothesis"
+      ],
+      "name": "scaling:ratio_4_to_8",
+      "observed": 0.0,
+      "reason": "Four replicas per stage must materially beat two.",
+      "required": 1.5,
+      "status": "FAIL"
+    },
+    {
+      "mandatory_for": [
+        "scaling_hypothesis"
+      ],
+      "name": "scaling:ratio_2_to_8",
+      "observed": 0.0,
+      "reason": "The end-to-end gain must exceed the configured floor.",
+      "required": 2.25,
+      "status": "FAIL"
+    },
+    {
+      "mandatory_for": [
+        "scaling_hypothesis"
+      ],
+      "name": "scaling:repeatability",
+      "observed": {
+        "2": 0.0,
+        "4": 0.0
+      },
+      "reason": "A single unusually fast repeat may not determine PASS.",
+      "required": 0.1,
+      "status": "PASS"
+    },
+    {
+      "mandatory_for": [
+        "scaling_hypothesis"
+      ],
+      "name": "scaling:minimum_milestone",
+      "observed": {
+        "2": 501.24449635761897,
+        "4": 438.5952888118516
+      },
+      "reason": "The legacy milestone remains necessary but is not sufficient.",
+      "required": 20.0,
+      "status": "PASS"
+    }
+  ],
+  "backend": "synthetic",
+  "baseline_result": {
+    "absolute_prediction_error": 0.0,
+    "accepted_requests": 32,
+    "active_peer_pairs": 0,
+    "affinity_status": [
+      "dedicated"
+    ],
+    "aggregate_verified_output_tokens_s": 501.24449635761897,
+    "backend": "synthetic",
+    "capacity_imbalance": 0.0,
+    "capacity_normalised_efficiency": 1.0,
+    "committed_token_correctness": 1.0,
+    "completed_verified_requests": 32,
+    "completion_fraction": 1.0,
+    "concurrent_request_count": 16,
+    "coordinator_activation_bytes": 24512,
+    "coordinator_control_bytes": 0,
+    "data_messages_received": 0,
+    "data_messages_sent": 0,
+    "data_plane_mode": "coordinator-relay",
+    "failed_requests": 0,
+    "idle_workers": 0,
+    "mean_end_to_end_s": 0.02456602810707409,
+    "mean_request_tokens_s": 0.0,
+    "mean_stage_utilisation": 0.020970035363808835,
+    "mean_time_to_first_token_s": 0.02456331560097169,
+    "meaningful_replica_fraction": 1.0,
+    "measured_duration_s": 0.06384109996724874,
+    "minimum_stage_utilisation": 0.020825144185067427,
+    "network_bytes": 48736,
+    "node_count": 2,
+    "peer_channels_created": 0,
+    "peer_stream_reconnects": 0,
+    "peer_streams_created": 0,
+    "predicted_throughput": 501.24449635761897,
+    "prediction_error_fraction": 0.0,
+    "quarantined_workers": 0,
+    "recovered_route_changes": 0,
+    "repeat_count": 1,
+    "replay_bytes": 0,
+    "replay_duration_s": 0.0,
+    "replica_imbalance_ratio": 1.0,
+    "reservation_leaks": 0,
+    "simulated_duration_s": 0.06384109996724874,
+    "throughput_ci95_high": null,
+    "throughput_ci95_low": null,
+    "throughput_cv": 0.0,
+    "throughput_max": 501.24449635761897,
+    "throughput_mean": 501.24449635761897,
+    "throughput_min": 501.24449635761897,
+    "throughput_stdev": 0.0,
+    "verified_output_tokens": 32,
+    "worker_to_worker_activation_bytes": 0
+  },
+  "calibration": {
+    "acceptable": false,
+    "frozen_across_matrix": true,
+    "mode": "legacy",
+    "work_units": 0
+  },
+  "capacity_prediction_status": "PASS",
+  "child_runs": [
+    {
+      "artifact_validation_errors": [],
+      "concurrent_requests": 1,
+      "data_plane_mode": "coordinator-relay",
+      "point_id": "n2-c1-r1",
+      "repeat": 1,
+      "report": "points\\20260730T083006Z-23230db1\\report.html",
+      "run_dir": "points\\20260730T083006Z-23230db1",
+      "run_id": "20260730T083006Z-23230db1",
+      "worker_count": 2
+    },
+    {
+      "artifact_validation_errors": [],
+      "concurrent_requests": 16,
+      "data_plane_mode": "coordinator-relay",
+      "point_id": "n2-c16-r1",
+      "repeat": 1,
+      "report": "points\\20260730T083009Z-6d85cc27\\report.html",
+      "run_dir": "points\\20260730T083009Z-6d85cc27",
+      "run_id": "20260730T083009Z-6d85cc27",
+      "worker_count": 2
+    },
+    {
+      "artifact_validation_errors": [],
+      "concurrent_requests": 1,
+      "data_plane_mode": "coordinator-relay",
+      "point_id": "n4-c1-r1",
+      "repeat": 1,
+      "report": "points\\20260730T083012Z-c85ef1ed\\report.html",
+      "run_dir": "points\\20260730T083012Z-c85ef1ed",
+      "run_id": "20260730T083012Z-c85ef1ed",
+      "worker_count": 4
+    },
+    {
+      "artifact_validation_errors": [],
+      "concurrent_requests": 16,
+      "data_plane_mode": "coordinator-relay",
+      "point_id": "n4-c16-r1",
+      "repeat": 1,
+      "report": "points\\20260730T083016Z-c9030e6d\\report.html",
+      "run_dir": "points\\20260730T083016Z-c9030e6d",
+      "run_id": "20260730T083016Z-c9030e6d",
+      "worker_count": 4
+    }
+  ],
+  "correctness_status": "PASS",
+  "data_plane": "coordinator-relay",
+  "dependency_diff": {
+    "added": {},
+    "changed": {},
+    "mutation_failure": false,
+    "policy": "Packages present before the run must remain at the same version; additions are recorded but are not performed by the experiment runner.",
+    "removed": {}
+  },
+  "direct_data_plane_status": "PASS",
+  "end_timestamp": "2026-07-30T08:30:20.281858+00:00",
+  "environment_after": {
+    "backend": "synthetic",
+    "cpu": {
+      "logical_count": 20,
+      "model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+      "physical_count": 20
+    },
+    "cuda_runtime_version": "13.0",
+    "data_plane": "coordinator-relay",
+    "driver_version": "591.86",
+    "end_timestamp": "2026-07-30T08:30:20.281858+00:00",
+    "execution_mode": "single-host-loopback",
+    "git": {
+      "commit": "6fdea3e328d687c0657b9eefd0f6761686d65d70",
+      "dirty": true,
+      "status": "M src/swarm_inference/cli.py\n M src/swarm_inference/config/loader.py\n M src/swarm_inference/config/models.py\n M src/swarm_inference/coordinator/service.py\n M src/swarm_inference/experiments/loopback.py\n M src/swarm_inference/experiments/loopback_matrix.py\n M src/swarm_inference/experiments/real_model.py\n M src/swarm_inference/experiments/runner.py\n M src/swarm_inference/model/adapter.py\n M src/swarm_inference/model/manifest.py\n M src/swarm_inference/model/qwen3.py\n M src/swarm_inference/model/reference.py\n M src/swarm_inference/model/shard_builder.py\n M src/swarm_inference/model/stage_module.py\n M src/swarm_inference/model/synthetic.py\n M src/swarm_inference/protocol/messages.py\n M src/swarm_inference/protocol/tensor_codec.py\n M src/swarm_inference/transport/base.py\n M src/swarm_inference/transport/emulated_transport.py\n M src/swarm_inference/transport/fault_proxy.py\n M src/swarm_inference/transport/grpc_transport.py\n M src/swarm_inference/worker/agent.py\n M src/swarm_inference/worker/execution.py\n M src/swarm_inference/worker/process_main.py\n M src/swarm_inference/worker/shard_manager.py\n M tests/correctness/test_qwen3_tiny.py\n?? artifacts/experiment-002-launcher-precision.stderr.log\n?? artifacts/experiment-002-launcher-precision.stdout.log\n?? artifacts/experiment-002-launcher-rope.stderr.log\n?? artifacts/experiment-002-launcher-rope.stdout.log\n?? artifacts/experiment-002-launcher.stderr.log\n?? artifacts/experiment-002-launcher.stdout.log\n?? artifacts/preflight-qwen3-real/\n?? artifacts/pytest-config/\n?? artifacts/pytest-determinism-check-2/\n?? artifacts/pytest-exp002-smoke-2/\n?? artifacts/pytest-exp002-smoke/\n?? artifacts/pytest-exp002-unit/\n?? artifacts/pytest-final-focused-20260730/\n?? artifacts/pytest-final-validator-20260730/\n?? artifacts/pytest-full-experiment-002-final/\n?? artifacts/pytest-milestone-a/\n?? artifacts/pytest-milestone-c/\n?? artifacts/pytest-reference/\n?? artifacts/pytest-reporting-regression/\n?? artifacts/pytest-rope-regression/\n?? artifacts/pytest-shutdown-regression/\n?? artifacts/uv-b0a4632469f83d9a.lock\n?? configs/experiments/experiment_002_qwen3_real_loopback.yaml\n?? docs/experiment-002-real-qwen3.md\n?? scripts/run_real_llm_experiment.ps1\n?? src/swarm_inference/config/real_model.py\n?? src/swarm_inference/experiments/environment_probe.py\n?? src/swarm_inference/experiments/experiment_002.py\n?? src/swarm_inference/experiments/real_status.py\n?? tests/integration/test_experiment_002_cuda.py\n?? tests/unit/test_experiment_002.py"
+    },
+    "gpu": {
+      "devices": [
+        {
+          "driver_version": "591.86",
+          "free_vram_mib": 29449.0,
+          "gpu_model": "NVIDIA GeForce RTX 5090",
+          "summary": "NVIDIA GeForce RTX 5090, 32607, 29449, 591.86",
+          "total_vram_mib": 32607.0
+        }
+      ],
+      "driver_version": "591.86",
+      "free_vram_mib": 29449.0,
+      "gpu_model": "NVIDIA GeForce RTX 5090",
+      "summary": "NVIDIA GeForce RTX 5090, 32607, 29449, 591.86",
+      "total_vram_mib": 32607.0
+    },
+    "hostname": "DESKTOP-VFIMO5P",
+    "installed_packages": {
+      "annotated-doc": "0.0.5",
+      "annotated-types": "0.8.0",
+      "ast_serialize": "0.6.0",
+      "certifi": "2026.7.22",
+      "cffi": "2.1.0",
+      "charset-normalizer": "3.4.9",
+      "colorama": "0.4.6",
+      "contourpy": "1.3.3",
+      "coverage": "7.15.2",
+      "cryptography": "49.0.0",
+      "cycler": "0.12.1",
+      "filelock": "3.32.0",
+      "fonttools": "4.63.0",
+      "fsspec": "2026.7.0",
+      "grpcio": "1.83.0",
+      "huggingface_hub": "0.36.2",
+      "hypothesis": "6.163.0",
+      "idna": "3.18",
+      "iniconfig": "2.3.0",
+      "jinja2": "3.1.6",
+      "kiwisolver": "1.5.0",
+      "librt": "0.13.0",
+      "markdown-it-py": "4.2.0",
+      "markupsafe": "3.0.3",
+      "matplotlib": "3.11.1",
+      "mdurl": "0.1.2",
+      "mpmath": "1.3.0",
+      "mypy": "2.3.0",
+      "mypy_extensions": "1.1.0",
+      "networkx": "3.6.1",
+      "numpy": "2.4.6",
+      "packaging": "26.2",
+      "pandas": "3.0.5",
+      "pathspec": "1.1.1",
+      "pillow": "12.3.0",
+      "pluggy": "1.6.0",
+      "protobuf": "7.35.1",
+      "psutil": "7.2.2",
+      "pycparser": "3.0",
+      "pydantic": "2.13.4",
+      "pydantic_core": "2.46.4",
+      "pygments": "2.20.0",
+      "pyparsing": "3.3.2",
+      "pytest": "9.1.1",
+      "pytest-asyncio": "1.4.0",
+      "pytest-cov": "7.1.0",
+      "python-dateutil": "2.9.0.post0",
+      "pyyaml": "6.0.3",
+      "regex": "2026.7.19",
+      "requests": "2.34.2",
+      "rich": "15.0.0",
+      "ruff": "0.16.0",
+      "safetensors": "0.8.0",
+      "setuptools": "78.1.0",
+      "shellingham": "1.5.4",
+      "six": "1.17.0",
+      "sortedcontainers": "2.4.0",
+      "swarm-inference-lab": "0.1.0",
+      "sympy": "1.14.0",
+      "tokenizers": "0.22.2",
+      "torch": "2.13.0+cu130",
+      "tqdm": "4.70.0",
+      "transformers": "4.57.6",
+      "typer": "0.27.0",
+      "types-protobuf": "7.34.1.20260518",
+      "types-psutil": "7.2.2.20260518",
+      "types-pyyaml": "6.0.12.20260724",
+      "typing-inspection": "0.4.2",
+      "typing_extensions": "4.16.0",
+      "tzdata": "2026.3",
+      "urllib3": "2.7.0"
+    },
+    "model_file_hashes": {},
+    "model_identifier": "synthetic-loopback-4gib-heavy",
+    "model_revision": "synthetic-v1",
+    "operating_system": {
+      "machine": "AMD64",
+      "release": "11 build 26200",
+      "system": "Windows",
+      "version": "10.0.26200"
+    },
+    "package_lock_hash": "3ff89d640be8fa0ffcbfe2ae5ec73bd95688fd23edbfc391c135c9f8c6a42e6e",
+    "packages": {
+      "grpcio": "1.83.0",
+      "matplotlib": "3.11.1",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "protobuf": "7.35.1",
+      "pydantic": "2.13.4",
+      "safetensors": "0.8.0",
+      "swarm-inference-lab": "0.1.0",
+      "torch": "2.13.0+cu130",
+      "transformers": "4.57.6",
+      "typer": "0.27.0"
+    },
+    "process_id": 18500,
+    "python_executable": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Scripts\\python.exe",
+    "python_version": "3.11.9",
+    "pytorch_version": "2.13.0+cu130",
+    "random_seed": 20260730,
+    "start_timestamp": "2026-07-30T08:30:06.605546+00:00",
+    "system_ram_bytes": 102496780288
+  },
+  "execution_mode": "single-host-loopback",
+  "experiment_integrity_status": "PASS",
+  "failed_acceptance_criteria": [
+    "scaling:ratio_2_to_4",
+    "scaling:ratio_4_to_8",
+    "scaling:ratio_2_to_8"
+  ],
+  "historical_baseline": {
+    "concurrency": 64,
+    "label": "measured historical artifact",
+    "scaling_ratios": {
+      "2_to_4": 1.0011912370556173,
+      "2_to_8": 0.9765094830065381,
+      "4_to_8": 0.975347612788077
+    },
+    "source": "artifacts\\runs\\20260730T032044Z-loopback-matrix-7cf6e3a7",
+    "throughput_by_workers": {
+      "2": 330.18607160331686,
+      "4": 330.57940148705944,
+      "8": 322.4298300773147
+    }
+  },
+  "limitations": [
+    "All workers share one physical host, memory subsystem, operating system, and loopback network stack.",
+    "Calibrated deterministic CPU work is not real-model kernel performance evidence.",
+    "Routes remain fixed for a request lifetime; admissions are balanced atomically and generation changes are reserved for failure recovery.",
+    "Aggregate throughput is not single-request generation speed."
+  ],
+  "matrix_results": [
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 16,
+      "active_peer_pairs": 0,
+      "affinity_status": [
+        "dedicated"
+      ],
+      "aggregate_verified_output_tokens_s": 306.91675279710165,
+      "backend": "synthetic",
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 16,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 1,
+      "coordinator_activation_bytes": 12256,
+      "coordinator_control_bytes": 0,
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane_mode": "coordinator-relay",
+      "failed_requests": 0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.002589737508969847,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.016840139521702328,
+      "mean_time_to_first_token_s": 0.0025869312667055055,
+      "meaningful_replica_fraction": 1.0,
+      "measured_duration_s": 0.05213139997795224,
+      "minimum_stage_utilisation": 0.01536694352239445,
+      "network_bytes": 24368,
+      "node_count": 2,
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "predicted_throughput": 306.91675279710165,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat_count": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "simulated_duration_s": 0.05213139997795224,
+      "throughput_ci95_high": null,
+      "throughput_ci95_low": null,
+      "throughput_cv": 0.0,
+      "throughput_max": 306.91675279710165,
+      "throughput_mean": 306.91675279710165,
+      "throughput_min": 306.91675279710165,
+      "throughput_stdev": 0.0,
+      "verified_output_tokens": 16,
+      "worker_to_worker_activation_bytes": 0
+    },
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 32,
+      "active_peer_pairs": 0,
+      "affinity_status": [
+        "dedicated"
+      ],
+      "aggregate_verified_output_tokens_s": 501.24449635761897,
+      "backend": "synthetic",
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 32,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 16,
+      "coordinator_activation_bytes": 24512,
+      "coordinator_control_bytes": 0,
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane_mode": "coordinator-relay",
+      "failed_requests": 0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.02456602810707409,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.020970035363808835,
+      "mean_time_to_first_token_s": 0.02456331560097169,
+      "meaningful_replica_fraction": 1.0,
+      "measured_duration_s": 0.06384109996724874,
+      "minimum_stage_utilisation": 0.020825144185067427,
+      "network_bytes": 48736,
+      "node_count": 2,
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "predicted_throughput": 501.24449635761897,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat_count": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "simulated_duration_s": 0.06384109996724874,
+      "throughput_ci95_high": null,
+      "throughput_ci95_low": null,
+      "throughput_cv": 0.0,
+      "throughput_max": 501.24449635761897,
+      "throughput_mean": 501.24449635761897,
+      "throughput_min": 501.24449635761897,
+      "throughput_stdev": 0.0,
+      "verified_output_tokens": 32,
+      "worker_to_worker_activation_bytes": 0
+    },
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 14,
+      "active_peer_pairs": 0,
+      "affinity_status": [
+        "dedicated"
+      ],
+      "aggregate_verified_output_tokens_s": 274.1260278091872,
+      "backend": "synthetic",
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 14,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 1,
+      "coordinator_activation_bytes": 10724,
+      "coordinator_control_bytes": 0,
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane_mode": "coordinator-relay",
+      "failed_requests": 0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.002779400009395821,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.006900142702307136,
+      "mean_time_to_first_token_s": 0.002776699997152069,
+      "meaningful_replica_fraction": 0.5,
+      "measured_duration_s": 0.051071399939246476,
+      "minimum_stage_utilisation": 0.006136505794500996,
+      "network_bytes": 21322,
+      "node_count": 4,
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "predicted_throughput": 274.1260278091872,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat_count": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "simulated_duration_s": 0.051071399939246476,
+      "throughput_ci95_high": null,
+      "throughput_ci95_low": null,
+      "throughput_cv": 0.0,
+      "throughput_max": 274.1260278091872,
+      "throughput_mean": 274.1260278091872,
+      "throughput_min": 274.1260278091872,
+      "throughput_stdev": 0.0,
+      "verified_output_tokens": 14,
+      "worker_to_worker_activation_bytes": 0
+    },
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 32,
+      "active_peer_pairs": 0,
+      "affinity_status": [
+        "dedicated"
+      ],
+      "aggregate_verified_output_tokens_s": 438.5952888118516,
+      "backend": "synthetic",
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 32,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 16,
+      "coordinator_activation_bytes": 24512,
+      "coordinator_control_bytes": 0,
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane_mode": "coordinator-relay",
+      "failed_requests": 0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.02794309063392575,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.010747297101646507,
+      "mean_time_to_first_token_s": 0.027940249994571786,
+      "meaningful_replica_fraction": 1.0,
+      "measured_duration_s": 0.07296020002104342,
+      "minimum_stage_utilisation": 0.010193913376253898,
+      "network_bytes": 48736,
+      "node_count": 4,
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "predicted_throughput": 438.5952888118516,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat_count": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "simulated_duration_s": 0.07296020002104342,
+      "throughput_ci95_high": null,
+      "throughput_ci95_low": null,
+      "throughput_cv": 0.0,
+      "throughput_max": 438.5952888118516,
+      "throughput_mean": 438.5952888118516,
+      "throughput_min": 438.5952888118516,
+      "throughput_stdev": 0.0,
+      "verified_output_tokens": 32,
+      "worker_to_worker_activation_bytes": 0
+    }
+  ],
+  "model_id": "synthetic-loopback-4gib-heavy",
+  "model_revision": "synthetic-v1",
+  "overall_status": "FAIL",
+  "primary_metric_definition": "median committed verified output tokens per measured second across three repeats",
+  "primary_result": {
+    "absolute_prediction_error": 0.0,
+    "accepted_requests": 32,
+    "active_peer_pairs": 0,
+    "affinity_status": [
+      "dedicated"
+    ],
+    "aggregate_verified_output_tokens_s": 438.5952888118516,
+    "backend": "synthetic",
+    "capacity_imbalance": 0.0,
+    "capacity_normalised_efficiency": 1.0,
+    "committed_token_correctness": 1.0,
+    "completed_verified_requests": 32,
+    "completion_fraction": 1.0,
+    "concurrent_request_count": 16,
+    "coordinator_activation_bytes": 24512,
+    "coordinator_control_bytes": 0,
+    "data_messages_received": 0,
+    "data_messages_sent": 0,
+    "data_plane_mode": "coordinator-relay",
+    "failed_requests": 0,
+    "idle_workers": 0,
+    "mean_end_to_end_s": 0.02794309063392575,
+    "mean_request_tokens_s": 0.0,
+    "mean_stage_utilisation": 0.010747297101646507,
+    "mean_time_to_first_token_s": 0.027940249994571786,
+    "meaningful_replica_fraction": 1.0,
+    "measured_duration_s": 0.07296020002104342,
+    "minimum_stage_utilisation": 0.010193913376253898,
+    "network_bytes": 48736,
+    "node_count": 4,
+    "peer_channels_created": 0,
+    "peer_stream_reconnects": 0,
+    "peer_streams_created": 0,
+    "predicted_throughput": 438.5952888118516,
+    "prediction_error_fraction": 0.0,
+    "quarantined_workers": 0,
+    "recovered_route_changes": 0,
+    "repeat_count": 1,
+    "replay_bytes": 0,
+    "replay_duration_s": 0.0,
+    "replica_imbalance_ratio": 1.0,
+    "reservation_leaks": 0,
+    "simulated_duration_s": 0.07296020002104342,
+    "throughput_ci95_high": null,
+    "throughput_ci95_low": null,
+    "throughput_cv": 0.0,
+    "throughput_max": 438.5952888118516,
+    "throughput_mean": 438.5952888118516,
+    "throughput_min": 438.5952888118516,
+    "throughput_stdev": 0.0,
+    "verified_output_tokens": 32,
+    "worker_to_worker_activation_bytes": 0
+  },
+  "profile": null,
+  "raw_point_results": [
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 16,
+      "active_peer_pairs": 0,
+      "admission_time_ms": 2.3826000979170203,
+      "affinity_status": "dedicated",
+      "aggregate_verified_output_tokens_s": 306.91675279710165,
+      "assigned_replicas": 2,
+      "backend": "synthetic",
+      "busy_time_by_replica": {
+        "0:loopback-worker-000": 0.0008011002792045474,
+        "1:loopback-worker-001": 0.0009546998189762235
+      },
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "child_run_dir": "points\\20260730T083006Z-23230db1",
+      "child_run_id": "20260730T083006Z-23230db1",
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 16,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 1,
+      "coordinator_activation_bytes": 12256,
+      "coordinator_control_bytes": 0,
+      "coordinator_cpu_affinity": [
+        0
+      ],
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane": "coordinator-relay",
+      "data_plane_mode": "coordinator-relay",
+      "deserialisation_time_ms": 0.0,
+      "execution_mode": "single-host-loopback",
+      "failed_requests": 0,
+      "hop_transfer_time_ms": 0.0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.002589737508969847,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.016840139521702328,
+      "mean_time_to_first_token_s": 0.0025869312667055055,
+      "meaningful_replica_fraction": 1.0,
+      "meaningfully_used_replicas": 2,
+      "measured_duration_s": 0.05213139997795224,
+      "measurement_categories": {
+        "data_plane_mode": "coordinator-relay",
+        "emulated_compute_delay": 0,
+        "emulated_wan_delay": 0,
+        "gpu_kernel_time": "not applicable (synthetic NumPy backend)",
+        "local_transport_time": 0.029672900564037263,
+        "physical_network_delay": 0
+      },
+      "minimum_stage_utilisation": 0.01536694352239445,
+      "model": "synthetic-loopback-4gib-heavy",
+      "network_bytes": 24368,
+      "network_lost_transmissions": 0,
+      "node_count": 2,
+      "operations_by_replica": {
+        "0:loopback-worker-000": 16,
+        "1:loopback-worker-001": 16
+      },
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "point_id": "n2-c1-r1",
+      "predicted_throughput": 306.91675279710165,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "route_assignments_by_replica": {
+        "0:loopback-worker-000": 16,
+        "1:loopback-worker-001": 16
+      },
+      "route_reservation_time_ms": 0.6258999999999999,
+      "serialisation_time_ms": 0.0,
+      "simulated_duration_s": 0.05213139997795224,
+      "stage_execution_time_ms": 0.0,
+      "stream_queue_time_ms": 0.0,
+      "tokens_by_replica": {
+        "0:loopback-worker-000": 16,
+        "1:loopback-worker-001": 16
+      },
+      "values": "measured",
+      "verified_output_tokens": 16,
+      "worker_cpu_affinities": {
+        "loopback-worker-000": [
+          1
+        ],
+        "loopback-worker-001": [
+          2
+        ]
+      },
+      "worker_to_worker_activation_bytes": 0
+    },
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 32,
+      "active_peer_pairs": 0,
+      "admission_time_ms": 5.553399561904371,
+      "affinity_status": "dedicated",
+      "aggregate_verified_output_tokens_s": 501.24449635761897,
+      "assigned_replicas": 2,
+      "backend": "synthetic",
+      "busy_time_by_replica": {
+        "0:loopback-worker-001": 0.0013295001117512584,
+        "1:loopback-worker-000": 0.001348000136204064
+      },
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "child_run_dir": "points\\20260730T083009Z-6d85cc27",
+      "child_run_id": "20260730T083009Z-6d85cc27",
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 32,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 16,
+      "coordinator_activation_bytes": 24512,
+      "coordinator_control_bytes": 0,
+      "coordinator_cpu_affinity": [
+        0
+      ],
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane": "coordinator-relay",
+      "data_plane_mode": "coordinator-relay",
+      "deserialisation_time_ms": 0.0,
+      "execution_mode": "single-host-loopback",
+      "failed_requests": 0,
+      "hop_transfer_time_ms": 0.0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.02456602810707409,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.020970035363808835,
+      "mean_time_to_first_token_s": 0.02456331560097169,
+      "meaningful_replica_fraction": 1.0,
+      "meaningfully_used_replicas": 2,
+      "measured_duration_s": 0.06384109996724874,
+      "measurement_categories": {
+        "data_plane_mode": "coordinator-relay",
+        "emulated_compute_delay": 0,
+        "emulated_wan_delay": 0,
+        "gpu_kernel_time": "not applicable (synthetic NumPy backend)",
+        "local_transport_time": 0.7636283001629636,
+        "physical_network_delay": 0
+      },
+      "minimum_stage_utilisation": 0.020825144185067427,
+      "model": "synthetic-loopback-4gib-heavy",
+      "network_bytes": 48736,
+      "network_lost_transmissions": 0,
+      "node_count": 2,
+      "operations_by_replica": {
+        "0:loopback-worker-001": 32,
+        "1:loopback-worker-000": 32
+      },
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "point_id": "n2-c16-r1",
+      "predicted_throughput": 501.24449635761897,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "route_assignments_by_replica": {
+        "0:loopback-worker-001": 32,
+        "1:loopback-worker-000": 32
+      },
+      "route_reservation_time_ms": 1.3303999999999998,
+      "serialisation_time_ms": 0.0,
+      "simulated_duration_s": 0.06384109996724874,
+      "stage_execution_time_ms": 0.0,
+      "stream_queue_time_ms": 0.0,
+      "tokens_by_replica": {
+        "0:loopback-worker-001": 32,
+        "1:loopback-worker-000": 32
+      },
+      "values": "measured",
+      "verified_output_tokens": 32,
+      "worker_cpu_affinities": {
+        "loopback-worker-000": [
+          1
+        ],
+        "loopback-worker-001": [
+          2
+        ]
+      },
+      "worker_to_worker_activation_bytes": 0
+    },
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 14,
+      "active_peer_pairs": 0,
+      "admission_time_ms": 2.884000074118376,
+      "affinity_status": "dedicated",
+      "aggregate_verified_output_tokens_s": 274.1260278091872,
+      "assigned_replicas": 4,
+      "backend": "synthetic",
+      "busy_time_by_replica": {
+        "0:loopback-worker-001": 0.0007827999070286751,
+        "0:loopback-worker-002": 0,
+        "1:loopback-worker-000": 0.0006267998833209276,
+        "1:loopback-worker-003": 0
+      },
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "child_run_dir": "points\\20260730T083012Z-c85ef1ed",
+      "child_run_id": "20260730T083012Z-c85ef1ed",
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 14,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 1,
+      "coordinator_activation_bytes": 10724,
+      "coordinator_control_bytes": 0,
+      "coordinator_cpu_affinity": [
+        0
+      ],
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane": "coordinator-relay",
+      "data_plane_mode": "coordinator-relay",
+      "deserialisation_time_ms": 0.0,
+      "execution_mode": "single-host-loopback",
+      "failed_requests": 0,
+      "hop_transfer_time_ms": 0.0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.002779400009395821,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.006900142702307136,
+      "mean_time_to_first_token_s": 0.002776699997152069,
+      "meaningful_replica_fraction": 0.5,
+      "meaningfully_used_replicas": 2,
+      "measured_duration_s": 0.051071399939246476,
+      "measurement_categories": {
+        "data_plane_mode": "coordinator-relay",
+        "emulated_compute_delay": 0,
+        "emulated_wan_delay": 0,
+        "gpu_kernel_time": "not applicable (synthetic NumPy backend)",
+        "local_transport_time": 0.027963300235569477,
+        "physical_network_delay": 0
+      },
+      "minimum_stage_utilisation": 0.006136505794500996,
+      "model": "synthetic-loopback-4gib-heavy",
+      "network_bytes": 21322,
+      "network_lost_transmissions": 0,
+      "node_count": 4,
+      "operations_by_replica": {
+        "0:loopback-worker-001": 14,
+        "0:loopback-worker-002": 0,
+        "1:loopback-worker-000": 14,
+        "1:loopback-worker-003": 0
+      },
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "point_id": "n4-c1-r1",
+      "predicted_throughput": 274.1260278091872,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "route_assignments_by_replica": {
+        "0:loopback-worker-001": 14,
+        "0:loopback-worker-002": 0,
+        "1:loopback-worker-000": 14,
+        "1:loopback-worker-003": 0
+      },
+      "route_reservation_time_ms": 0.6415,
+      "serialisation_time_ms": 0.0,
+      "simulated_duration_s": 0.051071399939246476,
+      "stage_execution_time_ms": 0.0,
+      "stream_queue_time_ms": 0.0,
+      "tokens_by_replica": {
+        "0:loopback-worker-001": 14,
+        "0:loopback-worker-002": 0,
+        "1:loopback-worker-000": 14,
+        "1:loopback-worker-003": 0
+      },
+      "values": "measured",
+      "verified_output_tokens": 14,
+      "worker_cpu_affinities": {
+        "loopback-worker-000": [
+          1
+        ],
+        "loopback-worker-001": [
+          2
+        ],
+        "loopback-worker-002": [
+          3
+        ],
+        "loopback-worker-003": [
+          4
+        ]
+      },
+      "worker_to_worker_activation_bytes": 0
+    },
+    {
+      "absolute_prediction_error": 0.0,
+      "accepted_requests": 32,
+      "active_peer_pairs": 0,
+      "admission_time_ms": 6.829000078141689,
+      "affinity_status": "dedicated",
+      "aggregate_verified_output_tokens_s": 438.5952888118516,
+      "assigned_replicas": 4,
+      "backend": "synthetic",
+      "busy_time_by_replica": {
+        "0:loopback-worker-001": 0.0007876997115090489,
+        "0:loopback-worker-002": 0.0008613001555204391,
+        "1:loopback-worker-000": 0.000676700146868825,
+        "1:loopback-worker-003": 0.000810799770988524
+      },
+      "capacity_imbalance": 0.0,
+      "capacity_normalised_efficiency": 1.0,
+      "child_run_dir": "points\\20260730T083016Z-c9030e6d",
+      "child_run_id": "20260730T083016Z-c9030e6d",
+      "committed_token_correctness": 1.0,
+      "completed_verified_requests": 32,
+      "completion_fraction": 1.0,
+      "concurrent_request_count": 16,
+      "coordinator_activation_bytes": 24512,
+      "coordinator_control_bytes": 0,
+      "coordinator_cpu_affinity": [
+        0
+      ],
+      "data_messages_received": 0,
+      "data_messages_sent": 0,
+      "data_plane": "coordinator-relay",
+      "data_plane_mode": "coordinator-relay",
+      "deserialisation_time_ms": 0.0,
+      "execution_mode": "single-host-loopback",
+      "failed_requests": 0,
+      "hop_transfer_time_ms": 0.0,
+      "idle_workers": 0,
+      "mean_end_to_end_s": 0.02794309063392575,
+      "mean_request_tokens_s": 0.0,
+      "mean_stage_utilisation": 0.010747297101646507,
+      "mean_time_to_first_token_s": 0.027940249994571786,
+      "meaningful_replica_fraction": 1.0,
+      "meaningfully_used_replicas": 4,
+      "measured_duration_s": 0.07296020002104342,
+      "measurement_categories": {
+        "data_plane_mode": "coordinator-relay",
+        "emulated_compute_delay": 0,
+        "emulated_wan_delay": 0,
+        "gpu_kernel_time": "not applicable (synthetic NumPy backend)",
+        "local_transport_time": 0.8691441997652873,
+        "physical_network_delay": 0
+      },
+      "minimum_stage_utilisation": 0.010193913376253898,
+      "model": "synthetic-loopback-4gib-heavy",
+      "network_bytes": 48736,
+      "network_lost_transmissions": 0,
+      "node_count": 4,
+      "operations_by_replica": {
+        "0:loopback-worker-001": 16,
+        "0:loopback-worker-002": 16,
+        "1:loopback-worker-000": 16,
+        "1:loopback-worker-003": 16
+      },
+      "peer_channels_created": 0,
+      "peer_stream_reconnects": 0,
+      "peer_streams_created": 0,
+      "point_id": "n4-c16-r1",
+      "predicted_throughput": 438.5952888118516,
+      "prediction_error_fraction": 0.0,
+      "quarantined_workers": 0,
+      "recovered_route_changes": 0,
+      "repeat": 1,
+      "replay_bytes": 0,
+      "replay_duration_s": 0.0,
+      "replica_imbalance_ratio": 1.0,
+      "reservation_leaks": 0,
+      "route_assignments_by_replica": {
+        "0:loopback-worker-001": 16,
+        "0:loopback-worker-002": 16,
+        "1:loopback-worker-000": 16,
+        "1:loopback-worker-003": 16
+      },
+      "route_reservation_time_ms": 1.4208,
+      "serialisation_time_ms": 0.0,
+      "simulated_duration_s": 0.07296020002104342,
+      "stage_execution_time_ms": 0.0,
+      "stream_queue_time_ms": 0.0,
+      "tokens_by_replica": {
+        "0:loopback-worker-001": 16,
+        "0:loopback-worker-002": 16,
+        "1:loopback-worker-000": 16,
+        "1:loopback-worker-003": 16
+      },
+      "values": "measured",
+      "verified_output_tokens": 32,
+      "worker_cpu_affinities": {
+        "loopback-worker-000": [
+          1
+        ],
+        "loopback-worker-001": [
+          2
+        ],
+        "loopback-worker-002": [
+          3
+        ],
+        "loopback-worker-003": [
+          4
+        ]
+      },
+      "worker_to_worker_activation_bytes": 0
+    }
+  ],
+  "replica_utilisation_status": "PASS",
+  "run_id": "20260730T083006Z-loopback-matrix-ebe18e7b",
+  "scaling_hypothesis_status": "FAIL",
+  "schema_version": "2",
+  "seed": 20260730,
+  "start_timestamp": "2026-07-30T08:30:06.605546+00:00",
+  "status": "FAIL",
+  "status_evidence": {
+    "coordinator_activation_bytes": 72004,
+    "maximum_replica_imbalance_ratio": 1.0,
+    "median_capacity_prediction_error": 0.0,
+    "median_throughput_by_worker_count": {
+      "2": 501.24449635761897,
+      "4": 438.5952888118516
+    },
+    "minimum_meaningful_replica_fraction": 1.0,
+    "primary_concurrency": 16,
+    "primary_cv_by_worker_count": {
+      "2": 0.0,
+      "4": 0.0
+    },
+    "scaling_ratios": {
+      "2_to_4": 0.8750126774438047,
+      "2_to_8": 0.0,
+      "4_to_8": 0.0
+    }
+  },
+  "values": "Measured deterministic synthetic CPU execution across process-isolated workers on one host with loopback transport. This is single-host-loopback evidence, not physical distributed scaling."
+}

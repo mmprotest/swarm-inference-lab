@@ -8,6 +8,7 @@ import time
 from swarm_inference.config.models import (
     DataPlaneMode,
     ModelManifest,
+    OperationKind,
     QueueConfig,
     StageDefinition,
     SyntheticModelConfig,
@@ -19,6 +20,8 @@ from swarm_inference.protocol.messages import (
     Ack,
     ActivationRequest,
     ActivationResult,
+    CacheControlRequest,
+    CacheControlResponse,
     DataPlaneAck,
     DataPlaneEnvelope,
     FinalResultMessage,
@@ -36,6 +39,7 @@ from swarm_inference.protocol.routes import (
 )
 from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tensor, encode_tensor
 from swarm_inference.security.identity import WorkerIdentity
+from swarm_inference.security.signatures import canonical_json_bytes
 from swarm_inference.transport.peer import FinalResultClient, PeerConnectionPool
 from swarm_inference.worker.execution import ExecutionEngine
 from swarm_inference.worker.metrics import WorkerMetrics
@@ -49,6 +53,7 @@ class WorkerAgent:
         capability: WorkerCapability,
         identity: WorkerIdentity,
         queue_config: QueueConfig,
+        total_memory_limit_bytes: int | None = None,
         outbound_queue_capacity: int = 1024,
         inbound_queue_capacity: int = 1024,
         max_inflight_operations: int = 256,
@@ -60,7 +65,10 @@ class WorkerAgent:
             raise ValueError("worker capability must declare an enforced memory limit")
         self.capability = capability
         self.identity = identity
-        self.shards = ShardManager(memory_limit_bytes=capability.memory_limit_bytes)
+        self.shards = ShardManager(
+            memory_limit_bytes=capability.memory_limit_bytes,
+            total_memory_limit_bytes=total_memory_limit_bytes,
+        )
         self.metrics = WorkerMetrics(worker_id=capability.worker_id)
         self.execution = ExecutionEngine(
             worker_id=capability.worker_id,
@@ -89,6 +97,7 @@ class WorkerAgent:
         self._message_results: dict[str, DataPlaneAck] = {}
         self._message_futures: dict[str, asyncio.Future[DataPlaneAck]] = {}
         self._message_lock = asyncio.Lock()
+        self._stage_replay_inputs: dict[tuple[str, int], list[ActivationRequest]] = {}
 
     async def start(self) -> None:
         await self.execution.start()
@@ -103,6 +112,15 @@ class WorkerAgent:
             await self._final_client.close()
             self._final_client = None
         await self.execution.stop()
+        for stage_id in list(self.shards.modules):
+            self.shards.unload(stage_id)
+        try:
+            import torch
+
+            if torch.cuda.is_available() and torch.cuda.is_initialized():  # type: ignore[no-untyped-call]
+                torch.cuda.empty_cache()
+        except (ImportError, OSError, RuntimeError):
+            pass
 
     def configure_data_plane(self, assignment: StageAssignmentMessage) -> None:
         self._data_plane_mode = assignment.data_plane_mode
@@ -205,6 +223,90 @@ class WorkerAgent:
             route_id for route_id, route in self._routes.items() if route.request_id == request_id
         ]:
             self._routes.pop(route_id, None)
+        for key in [key for key in self._stage_replay_inputs if key[0] == request_id]:
+            self._stage_replay_inputs.pop(key, None)
+
+    async def cache_control(
+        self,
+        request: CacheControlRequest,
+    ) -> CacheControlResponse:
+        if request.stage_id not in self.shards.modules:
+            return CacheControlResponse(
+                accepted=False,
+                worker_id=self.capability.worker_id,
+                request_id=request.request_id,
+                stage_id=request.stage_id,
+                action=request.action,
+                detail="stage is not loaded by this worker",
+            )
+        module = self.shards.module(request.stage_id)
+        inspect_cache = getattr(module, "inspect_cache", None)
+        reset_cache = getattr(module, "reset_cache", None)
+        if not callable(inspect_cache) or not callable(reset_cache):
+            return CacheControlResponse(
+                accepted=False,
+                worker_id=self.capability.worker_id,
+                request_id=request.request_id,
+                stage_id=request.stage_id,
+                action=request.action,
+                detail="loaded stage does not expose real-model cache control",
+            )
+        module_revision = str(getattr(module, "model_revision", ""))
+        if module_revision != request.model_revision:
+            return CacheControlResponse(
+                accepted=False,
+                worker_id=self.capability.worker_id,
+                request_id=request.request_id,
+                stage_id=request.stage_id,
+                action=request.action,
+                detail=(
+                    f"model revision mismatch: loaded={module_revision} "
+                    f"requested={request.model_revision}"
+                ),
+            )
+        before = list(inspect_cache(request.request_id))
+        replay_count = 0
+        replay_bytes = 0
+        replay_started = time.perf_counter()
+        if request.action in {"clear", "clear-and-replay"}:
+            reset_cache(request.request_id, for_replay=True)
+        if request.action in {"replay", "clear-and-replay"}:
+            entries = self._stage_replay_inputs.get(
+                (request.request_id, request.stage_id),
+                [],
+            )
+            for entry in entries:
+                decoded = decode_tensor(entry.tensor_payload)
+                module.execute(
+                    decoded.array,
+                    request_id=request.request_id,
+                    operation=OperationKind.REPLAY,
+                    token_position=entry.metadata.token_position,
+                    sequence_length=entry.metadata.sequence_length,
+                    cache_generation=entry.metadata.cache_generation,
+                    route_generation=entry.metadata.route_generation,
+                )
+                replay_count += 1
+                replay_bytes += len(entry.tensor_payload)
+        duration = (
+            time.perf_counter() - replay_started
+            if request.action in {"replay", "clear-and-replay"}
+            else 0.0
+        )
+        after = list(inspect_cache(request.request_id))
+        return CacheControlResponse(
+            accepted=True,
+            worker_id=self.capability.worker_id,
+            request_id=request.request_id,
+            stage_id=request.stage_id,
+            action=request.action,
+            replay_input_count=replay_count,
+            replay_bytes=replay_bytes,
+            replay_duration_s=duration,
+            cache_before=before,
+            cache_after=after,
+            detail="cache operation completed",
+        )
 
     async def _claim_message(
         self,
@@ -316,6 +418,7 @@ class WorkerAgent:
             or metadata.stage_id != hop.stage_id
             or metadata.token_position != envelope.token_position
             or metadata.operation != envelope.operation
+            or metadata.route_generation != envelope.route_generation
             or metadata.model_id != route.model_id
             or metadata.model_revision != route.model_revision
         ):
@@ -422,6 +525,11 @@ class WorkerAgent:
             metadata=envelope.tensor_metadata,
             tensor_payload=envelope.tensor_payload,
         )
+        if not envelope.replay_only:
+            self._stage_replay_inputs.setdefault(
+                (envelope.request_id, envelope.stage_id),
+                [],
+            ).append(request.model_copy(deep=True))
         result = await self.execute(request)
         next_hop = (
             route.assignments[stage_index + 1] if stage_index + 1 < len(route.assignments) else None
@@ -439,6 +547,7 @@ class WorkerAgent:
                     token_position=envelope.token_position,
                     sequence_length=decoded.sequence_length,
                     array=decoded.array,
+                    logical_dtype=decoded.logical_dtype,
                 )
             )
         else:
@@ -542,7 +651,7 @@ class WorkerAgent:
         )
 
     def proof(self) -> dict[str, object]:
-        return {
+        proof: dict[str, object] = {
             "capability": self.capability.model_dump(mode="json"),
             "shards": self.shards.proof(),
             "metrics": self.metrics.snapshot(),
@@ -552,3 +661,7 @@ class WorkerAgent:
             "inbound_active": self._inbound_active,
             "inbound_capacity": self._inbound_capacity,
         }
+        canonical = canonical_json_bytes(proof)
+        proof["proof_checksum"] = sha256_bytes(canonical)
+        proof["proof_signature"] = self.identity.sign(canonical)
+        return proof

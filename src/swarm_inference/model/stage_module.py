@@ -23,6 +23,7 @@ class StageModule(Protocol):
         token_position: int,
         sequence_length: int,
         cache_generation: int,
+        route_generation: int = 0,
     ) -> np.ndarray: ...
 
     def cancel(self, request_id: str) -> None: ...

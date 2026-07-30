@@ -17,6 +17,8 @@ from swarm_inference.protocol.messages import (
     Ack,
     ActivationRequest,
     ActivationResult,
+    CacheControlRequest,
+    CacheControlResponse,
     CancelRequest,
     DataPlaneAck,
     DataPlaneEnvelope,
@@ -232,6 +234,18 @@ class GrpcTransport:
             Ack,
         )
 
+    async def cache_control(
+        self,
+        endpoint: str,
+        request: CacheControlRequest,
+    ) -> CacheControlResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/CacheControl",
+            request,
+            CacheControlResponse,
+        )
+
     async def health(self, endpoint: str) -> HealthResponse:
         return await self._unary(
             endpoint,
@@ -302,6 +316,11 @@ class WorkerRpcServer:
             ),
             "Cancel": grpc.unary_unary_rpc_method_handler(
                 self._cancel,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "CacheControl": grpc.unary_unary_rpc_method_handler(
+                self._cache_control,
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
@@ -502,6 +521,20 @@ class WorkerRpcServer:
         request = parse_message(data, CancelRequest)
         self.agent.cancel(request.request_id)
         return serialize_message(Ack(accepted=True, detail="request state deleted"))
+
+    async def _cache_control(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        request = parse_message(data, CacheControlRequest)
+        if request.worker_id != self.agent.capability.worker_id:
+            await context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                "cache control addressed to another worker",
+            )
+        response = await self.agent.cache_control(request)
+        return serialize_message(response)
 
     async def _health(self, data: bytes, context: grpc.aio.ServicerContext[Any, Any]) -> bytes:
         parse_message(data, Ack)

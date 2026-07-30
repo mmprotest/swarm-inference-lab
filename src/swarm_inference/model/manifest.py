@@ -69,7 +69,11 @@ def manifest_summary(manifest: ModelManifest) -> dict[str, object]:
         "layer_count": manifest.layer_count,
         "stage_count": len(manifest.stages),
         "total_weight_bytes": manifest.total_weight_bytes,
+        "total_sharded_weight_bytes": manifest.total_sharded_weight_bytes,
+        "duplicated_tensor_bytes": manifest.duplicated_tensor_bytes,
         "largest_stage_bytes": max(stage.required_memory_bytes for stage in manifest.stages),
+        "stage_layer_ranges": [[stage.layer_start, stage.layer_end] for stage in manifest.stages],
+        "stage_weight_bytes": [stage.required_memory_bytes for stage in manifest.stages],
         "compatible_worker_backends": [
             backend.value for backend in manifest.compatible_worker_backends
         ],

@@ -1,0 +1,1360 @@
+{
+  "affinity_status": "dedicated",
+  "coordinator_cpu_affinity": [
+    0
+  ],
+  "data_plane_mode": "coordinator-relay",
+  "full_model_bytes": 2097152,
+  "replicas": [
+    {
+      "current_requests": [],
+      "endpoint": "127.0.0.1:58807",
+      "failure_count": 0,
+      "health": "healthy",
+      "last_successful_output": null,
+      "load_status": "loaded",
+      "measured_service_rate": 10042.17816152154,
+      "queue_depth": 0,
+      "reputation": 1.0,
+      "shard_hash": "synthetic-deterministic",
+      "stage_id": 0,
+      "warm": true,
+      "worker_id": "loopback-worker-001"
+    },
+    {
+      "current_requests": [],
+      "endpoint": "127.0.0.1:58806",
+      "failure_count": 0,
+      "health": "healthy",
+      "last_successful_output": null,
+      "load_status": "loaded",
+      "measured_service_rate": 8701.70626867994,
+      "queue_depth": 0,
+      "reputation": 1.0,
+      "shard_hash": "synthetic-deterministic",
+      "stage_id": 1,
+      "warm": true,
+      "worker_id": "loopback-worker-000"
+    },
+    {
+      "current_requests": [],
+      "endpoint": "127.0.0.1:58809",
+      "failure_count": 0,
+      "health": "healthy",
+      "last_successful_output": null,
+      "load_status": "loaded",
+      "measured_service_rate": 10052.270557225356,
+      "queue_depth": 0,
+      "reputation": 1.0,
+      "shard_hash": "synthetic-deterministic",
+      "stage_id": 0,
+      "warm": true,
+      "worker_id": "loopback-worker-003"
+    },
+    {
+      "current_requests": [],
+      "endpoint": "127.0.0.1:58808",
+      "failure_count": 0,
+      "health": "healthy",
+      "last_successful_output": null,
+      "load_status": "loaded",
+      "measured_service_rate": 9669.307820874878,
+      "queue_depth": 0,
+      "reputation": 1.0,
+      "shard_hash": "synthetic-deterministic",
+      "stage_id": 1,
+      "warm": true,
+      "worker_id": "loopback-worker-002"
+    }
+  ],
+  "worker_memory_limits": {
+    "loopback-worker-000": 2097151,
+    "loopback-worker-001": 2097151,
+    "loopback-worker-002": 2097151,
+    "loopback-worker-003": 2097151
+  },
+  "worker_proofs_after_measurement": {
+    "loopback-worker-000": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 70017171456,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.11200003791600466,
+        "cpu_affinity": [
+          1
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          1
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58806",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:09.923962Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 3442751313.491126,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "8HmviYb9+hsw6vP7bWseaPQ29TlQx8SbSsUnOirx01w=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.1149199903011322,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.1997999846935272,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-000"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0007219001417979598,
+        "bytes_received": 6064,
+        "bytes_sent": 6128,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 4.511875886237249e-05,
+        "operations": 16,
+        "p50_service_s": 3.81499994546175e-05,
+        "p95_service_s": 7.210002513602376e-05,
+        "p99_service_s": 9.298004442825912e-05,
+        "worker_id": "loopback-worker-000"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "e130cd96814b50ab85e86afaf96e0207fc83689283e52d7a98e10f048473eeba",
+      "proof_signature": "epmJPF7u1mglquR+A28VmJOFTiLaUC9+fR9jZhQMe4TNoKdUv7RausmoihyuxegA2ErxaZ5CFDuhya8J59BBBw==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 563236864
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 39020,
+        "stages": {
+          "1": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 1,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.1"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    },
+    "loopback-worker-001": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 69967478784,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.18360000103712082,
+        "cpu_affinity": [
+          2
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          0
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58807",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:10.281861Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 6295863021.869456,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "AlDh/3xdb+FT5bZPBWlox5DS9+ONxG3NhX8OTefj64g=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.09957998991012573,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.16562002710998056,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-001"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0007728001801297069,
+        "bytes_received": 6048,
+        "bytes_sent": 6128,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 4.830001125810668e-05,
+        "operations": 16,
+        "p50_service_s": 4.1450082790106535e-05,
+        "p95_service_s": 7.559990626759827e-05,
+        "p99_service_s": 0.0001036799105349928,
+        "worker_id": "loopback-worker-001"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "d14be91a5b845ed68a6edbab9c922af73c2cb3872f0adb6ad9fb03fbe16a6403",
+      "proof_signature": "pZwyqgMqgu3qitTLtMqD4d2Jgwtjb4H+5nJTizPkTvk2beYsDn0Mme6+x3GeJu6AwF2CLgVoSRKfunJrHeeJCQ==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 563879936
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 14996,
+        "stages": {
+          "0": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 0,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.0"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    },
+    "loopback-worker-002": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 69967134720,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.1984999980777502,
+        "cpu_affinity": [
+          3
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          1
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58808",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:10.337368Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 6510366929.875327,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "eHJv1gw1Bh5Fi4SxSZ2NbCHy9o/CEHbLNc38pVld90g=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.10342001914978027,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.18076004926115272,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-002"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0007999001536518335,
+        "bytes_received": 6064,
+        "bytes_sent": 6128,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 4.9993759603239596e-05,
+        "operations": 16,
+        "p50_service_s": 4.6250002924352884e-05,
+        "p95_service_s": 8.03999719209969e-05,
+        "p99_service_s": 0.00010103998938575386,
+        "worker_id": "loopback-worker-002"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "f14bcdcd6d79b454ecffeab36306fe689c1e46d82f7270ac404658141dd6fabc",
+      "proof_signature": "TUjoA2r8eD09pSVr1PMIhyE1q2367DBClWTc6OIoiessv8MnowbCGxA9O/qf7WWWC/gXMcH28yx1d2MpyIP+Ag==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 563961856
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 27624,
+        "stages": {
+          "1": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 1,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.1"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    },
+    "loopback-worker-003": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 69956747264,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.21950004156678915,
+        "cpu_affinity": [
+          4
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          0
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58809",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:10.339369Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 6580848601.447903,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "xqpG0QpYUI52y5dTkha4kVSMBr1v2voGnc1qcGzsKmQ=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.09948001243174076,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.1635000109672546,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-003"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0008141001453623176,
+        "bytes_received": 6048,
+        "bytes_sent": 6128,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 5.088125908514485e-05,
+        "operations": 16,
+        "p50_service_s": 4.4599990360438824e-05,
+        "p95_service_s": 7.629994070157409e-05,
+        "p99_service_s": 0.0001067800330929458,
+        "worker_id": "loopback-worker-003"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "45dd1be9555532216962c6e6571dc499c46e9850de7f2373c2b2bd86294ce866",
+      "proof_signature": "3X9/q+Y5DBzvc442e/x+7qUOdpzrVnZHqTXhfEnPhrvEyT+93GWZydbO1Sc+FX69hwo7538qV/NzNxjSNP2EDQ==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 563273728
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 29400,
+        "stages": {
+          "0": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 0,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.0"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    }
+  },
+  "worker_proofs_before_measurement": {
+    "loopback-worker-000": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 70017171456,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.11200003791600466,
+        "cpu_affinity": [
+          1
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          1
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58806",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:09.923962Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 3442751313.491126,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "8HmviYb9+hsw6vP7bWseaPQ29TlQx8SbSsUnOirx01w=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.1149199903011322,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.1997999846935272,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-000"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0,
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 0.0,
+        "operations": 0,
+        "p50_service_s": 0.0,
+        "p95_service_s": 0.0,
+        "p99_service_s": 0.0,
+        "worker_id": "loopback-worker-000"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "dd9a1ec2bfd519f507764e0e8fab4e000e5cf4c613e333a36ff1ed0d9e8c21cc",
+      "proof_signature": "yxdrXnR7Jm4xjV+xH7urBZMImxWGNr4qMLzmftQt/NMA8HlT6jhIpVfsP+tJDfDEsNkvvUj2f/4hb+fa5O5pCQ==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 65585152
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 39020,
+        "stages": {
+          "1": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 1,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.1"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    },
+    "loopback-worker-001": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 69967478784,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.18360000103712082,
+        "cpu_affinity": [
+          2
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          0
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58807",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:10.281861Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 6295863021.869456,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "AlDh/3xdb+FT5bZPBWlox5DS9+ONxG3NhX8OTefj64g=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.09957998991012573,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.16562002710998056,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-001"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0,
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 0.0,
+        "operations": 0,
+        "p50_service_s": 0.0,
+        "p95_service_s": 0.0,
+        "p99_service_s": 0.0,
+        "worker_id": "loopback-worker-001"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "c5c76bc5b2758dd0d09d62f43491786e2431def4c5b4e3fb2ec7f97382fc9dcf",
+      "proof_signature": "eJsV/aKJvsrNP8olEDsoXP97IJXyY0GTPA2LMakoWAnA00ssYlebwt7wlsnx2FR5IjNoHfW6f3RnwkxMtWExAA==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 65830912
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 14996,
+        "stages": {
+          "0": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 0,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.0"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    },
+    "loopback-worker-002": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 69967134720,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.1984999980777502,
+        "cpu_affinity": [
+          3
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          1
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58808",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:10.337368Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 6510366929.875327,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "eHJv1gw1Bh5Fi4SxSZ2NbCHy9o/CEHbLNc38pVld90g=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.10342001914978027,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.18076004926115272,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-002"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0,
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 0.0,
+        "operations": 0,
+        "p50_service_s": 0.0,
+        "p95_service_s": 0.0,
+        "p99_service_s": 0.0,
+        "worker_id": "loopback-worker-002"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "77136d1e60f607ec0301d52294703a6f3d7301f116189c033ac45556dd0f4ba9",
+      "proof_signature": "+l+C3DF9vRguZD8I67hqmykT6n6q0zaaWlg4+Rt2A08xLhnadwD8yqrJBhNIwagsyPkKngk+9RUxAPTlBx94Cw==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 65581056
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 27624,
+        "stages": {
+          "1": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 1,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.1"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    },
+    "loopback-worker-003": {
+      "capability": {
+        "architecture": "AMD64",
+        "available_ram_bytes": 69956747264,
+        "available_vram_bytes": 0,
+        "backend": "synthetic",
+        "coordinator_latency_ms": 0.21950004156678915,
+        "cpu_affinity": [
+          4
+        ],
+        "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+        "current_queue_depth": 0,
+        "current_shard_assignments": [
+          0
+        ],
+        "download_bandwidth_bytes_s": 125000000.0,
+        "endpoint": "127.0.0.1:58809",
+        "gpu_model": null,
+        "hostname": "DESKTOP-VFIMO5P",
+        "last_heartbeat": "2026-07-30T08:35:10.339369Z",
+        "logical_cpu_count": 20,
+        "max_concurrent_stage_operations": 1,
+        "measured_memory_bandwidth_bytes_s": 6580848601.447903,
+        "memory_limit_bytes": 2097151,
+        "operating_system": "Windows 11 build 26200",
+        "physical_cpu_count": 20,
+        "profile_source": "mixed",
+        "public_key": "xqpG0QpYUI52y5dTkha4kVSMBr1v2voGnc1qcGzsKmQ=",
+        "reliability_score": 1.0,
+        "single_thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "stage_benchmarks": [
+          {
+            "batch_size": 1,
+            "mean_ms": 0.09948001243174076,
+            "measured": true,
+            "operation": "decode",
+            "p95_ms": 0.1635000109672546,
+            "samples": 5,
+            "sequence_length": 1,
+            "stage_id": null,
+            "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+          }
+        ],
+        "supported_dtypes": [
+          "float32",
+          "float16",
+          "bfloat16"
+        ],
+        "supported_quantisation_formats": [
+          "none"
+        ],
+        "total_ram_bytes": 102496780288,
+        "total_vram_bytes": 0,
+        "upload_bandwidth_bytes_s": 125000000.0,
+        "worker_id": "loopback-worker-003"
+      },
+      "data_plane_mode": "coordinator-relay",
+      "inbound_active": 0,
+      "inbound_capacity": 1024,
+      "installed_routes": 0,
+      "metrics": {
+        "busy_time_s": 0.0,
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "failures": 0,
+        "maximum_queue_depth": 0,
+        "mean_service_s": 0.0,
+        "operations": 0,
+        "p50_service_s": 0.0,
+        "p95_service_s": 0.0,
+        "p99_service_s": 0.0,
+        "worker_id": "loopback-worker-003"
+      },
+      "peer_connections": {
+        "active_peer_pairs": 0,
+        "backpressure_events": 0,
+        "channels_created": 0,
+        "control_bytes": 0,
+        "deserialisation_time_ms": 0.0,
+        "duplicate_acks": 0,
+        "end_to_end_hop_time_ms": 0.0,
+        "messages_received": 0,
+        "messages_sent": 0,
+        "network_transfer_time_ms": 0.0,
+        "outbound_queue_capacity": 1024,
+        "payload_bytes": 0,
+        "peer_endpoints": [],
+        "queue_wait_ms": 0.0,
+        "serialisation_time_ms": 0.0,
+        "stream_reconnects": 0,
+        "streams_created": 0
+      },
+      "proof_checksum": "e7efbeaeeaedda6af3100a29ebc41b22e7f908eeded891cbcadb987045b5d935",
+      "proof_signature": "0Zv6/fMWOXMLhQCgdDhxtfV7i04o99A0SDCvnSEhk9q3iEh4hMLowlNBQoIhTEnzijqvCjTA8ly5W5y8obGDDA==",
+      "shards": {
+        "current_process_memory": {
+          "cuda_allocated_bytes": 0,
+          "cuda_free_bytes": 0,
+          "cuda_peak_allocated_bytes": 0,
+          "cuda_peak_reserved_bytes": 0,
+          "cuda_reserved_bytes": 0,
+          "cuda_total_bytes": 0,
+          "host_rss_bytes": 65581056
+        },
+        "memory_limit_bytes": 2097151,
+        "process_id": 29400,
+        "stages": {
+          "0": {
+            "load_record": {},
+            "logical_loaded_bytes": 1048576,
+            "module_state": {
+              "cache_bytes": 0,
+              "corrupt": false,
+              "request_states": 0,
+              "stage_id": 0,
+              "state_checksums": {}
+            },
+            "tensor_names": [
+              "synthetic.layers.0"
+            ]
+          }
+        },
+        "total_loaded_bytes": 1048576
+      }
+    }
+  },
+  "workers": [
+    {
+      "architecture": "AMD64",
+      "available_ram_bytes": 70017171456,
+      "available_vram_bytes": 0,
+      "backend": "synthetic",
+      "coordinator_latency_ms": 0.11200003791600466,
+      "cpu_affinity": [
+        1
+      ],
+      "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+      "current_queue_depth": 0,
+      "current_shard_assignments": [
+        1
+      ],
+      "download_bandwidth_bytes_s": 125000000.0,
+      "endpoint": "127.0.0.1:58806",
+      "gpu_model": null,
+      "hostname": "DESKTOP-VFIMO5P",
+      "last_heartbeat": "2026-07-30T08:35:09.923962Z",
+      "logical_cpu_count": 20,
+      "max_concurrent_stage_operations": 1,
+      "measured_memory_bandwidth_bytes_s": 3442751313.491126,
+      "memory_limit_bytes": 2097151,
+      "operating_system": "Windows 11 build 26200",
+      "physical_cpu_count": 20,
+      "profile_source": "mixed",
+      "public_key": "8HmviYb9+hsw6vP7bWseaPQ29TlQx8SbSsUnOirx01w=",
+      "reliability_score": 1.0,
+      "single_thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "stage_benchmarks": [
+        {
+          "batch_size": 1,
+          "mean_ms": 0.1149199903011322,
+          "measured": true,
+          "operation": "decode",
+          "p95_ms": 0.1997999846935272,
+          "samples": 5,
+          "sequence_length": 1,
+          "stage_id": null,
+          "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+        }
+      ],
+      "supported_dtypes": [
+        "float32",
+        "float16",
+        "bfloat16"
+      ],
+      "supported_quantisation_formats": [
+        "none"
+      ],
+      "total_ram_bytes": 102496780288,
+      "total_vram_bytes": 0,
+      "upload_bandwidth_bytes_s": 125000000.0,
+      "worker_id": "loopback-worker-000"
+    },
+    {
+      "architecture": "AMD64",
+      "available_ram_bytes": 69967478784,
+      "available_vram_bytes": 0,
+      "backend": "synthetic",
+      "coordinator_latency_ms": 0.18360000103712082,
+      "cpu_affinity": [
+        2
+      ],
+      "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+      "current_queue_depth": 0,
+      "current_shard_assignments": [
+        0
+      ],
+      "download_bandwidth_bytes_s": 125000000.0,
+      "endpoint": "127.0.0.1:58807",
+      "gpu_model": null,
+      "hostname": "DESKTOP-VFIMO5P",
+      "last_heartbeat": "2026-07-30T08:35:10.281861Z",
+      "logical_cpu_count": 20,
+      "max_concurrent_stage_operations": 1,
+      "measured_memory_bandwidth_bytes_s": 6295863021.869456,
+      "memory_limit_bytes": 2097151,
+      "operating_system": "Windows 11 build 26200",
+      "physical_cpu_count": 20,
+      "profile_source": "mixed",
+      "public_key": "AlDh/3xdb+FT5bZPBWlox5DS9+ONxG3NhX8OTefj64g=",
+      "reliability_score": 1.0,
+      "single_thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "stage_benchmarks": [
+        {
+          "batch_size": 1,
+          "mean_ms": 0.09957998991012573,
+          "measured": true,
+          "operation": "decode",
+          "p95_ms": 0.16562002710998056,
+          "samples": 5,
+          "sequence_length": 1,
+          "stage_id": null,
+          "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+        }
+      ],
+      "supported_dtypes": [
+        "float32",
+        "float16",
+        "bfloat16"
+      ],
+      "supported_quantisation_formats": [
+        "none"
+      ],
+      "total_ram_bytes": 102496780288,
+      "total_vram_bytes": 0,
+      "upload_bandwidth_bytes_s": 125000000.0,
+      "worker_id": "loopback-worker-001"
+    },
+    {
+      "architecture": "AMD64",
+      "available_ram_bytes": 69967134720,
+      "available_vram_bytes": 0,
+      "backend": "synthetic",
+      "coordinator_latency_ms": 0.1984999980777502,
+      "cpu_affinity": [
+        3
+      ],
+      "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+      "current_queue_depth": 0,
+      "current_shard_assignments": [],
+      "download_bandwidth_bytes_s": 125000000.0,
+      "endpoint": "127.0.0.1:58808",
+      "gpu_model": null,
+      "hostname": "DESKTOP-VFIMO5P",
+      "last_heartbeat": "2026-07-30T08:35:10.337368Z",
+      "logical_cpu_count": 20,
+      "max_concurrent_stage_operations": 1,
+      "measured_memory_bandwidth_bytes_s": 6510366929.875327,
+      "memory_limit_bytes": 2097151,
+      "operating_system": "Windows 11 build 26200",
+      "physical_cpu_count": 20,
+      "profile_source": "mixed",
+      "public_key": "eHJv1gw1Bh5Fi4SxSZ2NbCHy9o/CEHbLNc38pVld90g=",
+      "reliability_score": 1.0,
+      "single_thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "stage_benchmarks": [
+        {
+          "batch_size": 1,
+          "mean_ms": 0.10342001914978027,
+          "measured": true,
+          "operation": "decode",
+          "p95_ms": 0.18076004926115272,
+          "samples": 5,
+          "sequence_length": 1,
+          "stage_id": null,
+          "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+        }
+      ],
+      "supported_dtypes": [
+        "float32",
+        "float16",
+        "bfloat16"
+      ],
+      "supported_quantisation_formats": [
+        "none"
+      ],
+      "total_ram_bytes": 102496780288,
+      "total_vram_bytes": 0,
+      "upload_bandwidth_bytes_s": 125000000.0,
+      "worker_id": "loopback-worker-002"
+    },
+    {
+      "architecture": "AMD64",
+      "available_ram_bytes": 69956747264,
+      "available_vram_bytes": 0,
+      "backend": "synthetic",
+      "coordinator_latency_ms": 0.21950004156678915,
+      "cpu_affinity": [
+        4
+      ],
+      "cpu_model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+      "current_queue_depth": 0,
+      "current_shard_assignments": [
+        0
+      ],
+      "download_bandwidth_bytes_s": 125000000.0,
+      "endpoint": "127.0.0.1:58809",
+      "gpu_model": null,
+      "hostname": "DESKTOP-VFIMO5P",
+      "last_heartbeat": "2026-07-30T08:35:10.339369Z",
+      "logical_cpu_count": 20,
+      "max_concurrent_stage_operations": 1,
+      "measured_memory_bandwidth_bytes_s": 6580848601.447903,
+      "memory_limit_bytes": 2097151,
+      "operating_system": "Windows 11 build 26200",
+      "physical_cpu_count": 20,
+      "profile_source": "mixed",
+      "public_key": "xqpG0QpYUI52y5dTkha4kVSMBr1v2voGnc1qcGzsKmQ=",
+      "reliability_score": 1.0,
+      "single_thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "stage_benchmarks": [
+        {
+          "batch_size": 1,
+          "mean_ms": 0.09948001243174076,
+          "measured": true,
+          "operation": "decode",
+          "p95_ms": 0.1635000109672546,
+          "samples": 5,
+          "sequence_length": 1,
+          "stage_id": null,
+          "worker_class": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel"
+        }
+      ],
+      "supported_dtypes": [
+        "float32",
+        "float16",
+        "bfloat16"
+      ],
+      "supported_quantisation_formats": [
+        "none"
+      ],
+      "total_ram_bytes": 102496780288,
+      "total_vram_bytes": 0,
+      "upload_bandwidth_bytes_s": 125000000.0,
+      "worker_id": "loopback-worker-003"
+    }
+  ]
+}

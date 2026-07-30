@@ -122,6 +122,7 @@ class SyntheticStageModule:
         token_position: int,
         sequence_length: int,
         cache_generation: int,
+        route_generation: int = 0,
     ) -> np.ndarray:
         if activation.ndim < 2:
             raise ConfigurationError("synthetic activation must have rank >= 2")

@@ -28,9 +28,9 @@ from swarm_inference.experiments.loopback import run_loopback_experiment
 from swarm_inference.experiments.reporting import render_html_report
 from swarm_inference.experiments.runner import (
     ExperimentRun,
-    _write_artifact_manifest,
     collect_environment,
     validate_run,
+    write_artifact_manifest,
 )
 from swarm_inference.experiments.scaling import (
     capacity_normalised_efficiency,
@@ -1060,7 +1060,7 @@ async def run_loopback_matrix(
         repeats=resolved_repeats,
         child_runs=child_runs,
     )
-    _write_artifact_manifest(run_dir)
+    write_artifact_manifest(run_dir)
     return ExperimentRun(
         run_id=run_id,
         run_dir=run_dir,

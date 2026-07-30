@@ -23,6 +23,7 @@ class StrictModel(BaseModel):
 class ExecutionMode(StrEnum):
     SIMULATION = "simulation"
     SINGLE_HOST_LOOPBACK = "single-host-loopback"
+    SINGLE_HOST_LOOPBACK_REAL_MODEL = "single-host-loopback-real-model"
     PHYSICAL_LAN = "physical-lan"
     PHYSICAL_WAN = "physical-wan"
 
@@ -126,6 +127,9 @@ class StageDefinition(StrictModel):
     output_spec: TensorSpec
     cache_spec: CacheSpec
     tensor_names: list[str] = Field(default_factory=list)
+    tensor_count: NonNegativeInt = 0
+    shard_hash: str | None = None
+    required_total_memory_bytes: PositiveInt | None = None
 
     @model_validator(mode="after")
     def validate_layer_range(self) -> StageDefinition:
@@ -239,6 +243,19 @@ class ModelManifest(StrictModel):
     source_tensor_hashes: dict[str, str] = Field(default_factory=dict)
     shared_tensors: dict[str, list[int]] = Field(default_factory=dict)
     source_files: dict[str, str] = Field(default_factory=dict)
+    config_files: dict[str, str] = Field(default_factory=dict)
+    tokenizer_files: dict[str, str] = Field(default_factory=dict)
+    total_sharded_weight_bytes: PositiveInt | None = None
+    duplicated_tensor_bytes: NonNegativeInt = 0
+    duplicated_tensors: dict[str, list[int]] = Field(default_factory=dict)
+    tensor_to_stages: dict[str, list[int]] = Field(default_factory=dict)
+    final_normalisation_bytes: NonNegativeInt = 0
+    embedding_owner: NonNegativeInt = 0
+    final_normalisation_owner: NonNegativeInt | None = None
+    lm_head_owner: NonNegativeInt | None = None
+    tied_weight_treatment: str = "not-tied"
+    transformers_version_requirement: str | None = None
+    supported_dtypes: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_manifest(self) -> ModelManifest:
@@ -254,6 +271,31 @@ class ModelManifest(StrictModel):
             cursor = stage.layer_end
         if cursor != self.layer_count:
             raise ValueError("stages must cover every model layer")
+        if self.total_sharded_weight_bytes is not None:
+            expected = sum(stage.required_memory_bytes for stage in ordered)
+            if self.total_sharded_weight_bytes != expected:
+                raise ValueError(
+                    "total_sharded_weight_bytes must equal the sum of stage weight bytes"
+                )
+            if self.total_sharded_weight_bytes < self.total_weight_bytes:
+                raise ValueError("sharded weight bytes cannot be smaller than source weight bytes")
+            if (
+                self.total_sharded_weight_bytes - self.total_weight_bytes
+                != self.duplicated_tensor_bytes
+            ):
+                raise ValueError(
+                    "duplicated_tensor_bytes must reconcile source and sharded weight bytes"
+                )
+        if self.tensor_to_stages:
+            assigned = {
+                name: sorted(stage_ids) for name, stage_ids in self.tensor_to_stages.items()
+            }
+            declared = {name: sorted(stage_ids) for name, stage_ids in self.shared_tensors.items()}
+            actual_duplicates = {
+                name: stage_ids for name, stage_ids in assigned.items() if len(stage_ids) > 1
+            }
+            if actual_duplicates != declared:
+                raise ValueError("tensor_to_stages duplicates must exactly match shared_tensors")
         return self
 
 

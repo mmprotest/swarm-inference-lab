@@ -8,6 +8,8 @@ from swarm_inference.protocol.messages import (
     Ack,
     ActivationRequest,
     ActivationResult,
+    CacheControlRequest,
+    CacheControlResponse,
     CancelRequest,
     DataPlaneAck,
     DataPlaneEnvelope,
@@ -53,6 +55,11 @@ class EmulatedTransport:
 
     async def cancel(self, endpoint: str, request: CancelRequest) -> Ack:
         return await self.inner.cancel(endpoint, request)
+
+    async def cache_control(
+        self, endpoint: str, request: CacheControlRequest
+    ) -> CacheControlResponse:
+        return await self.inner.cache_control(endpoint, request)
 
     async def health(self, endpoint: str) -> HealthResponse:
         return await self.inner.health(endpoint)

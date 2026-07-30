@@ -7,6 +7,8 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass
 
+import numpy as np
+
 from swarm_inference.config.models import BackpressurePolicy, QueueConfig
 from swarm_inference.exceptions import BackpressureError
 from swarm_inference.protocol.checksums import sha256_bytes
@@ -160,6 +162,7 @@ class ExecutionEngine:
             token_position=request.metadata.token_position,
             sequence_length=request.metadata.sequence_length,
             cache_generation=request.metadata.cache_generation,
+            route_generation=request.metadata.route_generation,
         )
         elapsed = time.perf_counter() - started
         output = encode_tensor(
@@ -170,6 +173,7 @@ class ExecutionEngine:
                 token_position=activation.token_position,
                 sequence_length=activation.sequence_length,
                 array=output_array,
+                logical_dtype=("bfloat16" if output_array.dtype == np.dtype(np.uint16) else None),
             )
         )
         checksum = sha256_bytes(output)

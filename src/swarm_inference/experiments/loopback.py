@@ -34,8 +34,8 @@ from swarm_inference.experiments.metrics import (
 from swarm_inference.experiments.reporting import render_html_report
 from swarm_inference.experiments.runner import (
     ExperimentRun,
-    _write_artifact_manifest,
     collect_environment,
+    write_artifact_manifest,
 )
 from swarm_inference.host import qualifies_as_remote_physical_worker, stop_process
 from swarm_inference.protocol.messages import SubmitRequest, SubmitResponse
@@ -1400,7 +1400,7 @@ async def _run_runtime_experiment(
         scaling_rows=scaling_rows,
         request_rows=request_rows,
     )
-    _write_artifact_manifest(run_dir)
+    write_artifact_manifest(run_dir)
     return ExperimentRun(
         run_id=run_id,
         run_dir=run_dir,

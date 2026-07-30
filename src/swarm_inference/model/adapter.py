@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Protocol
@@ -41,6 +41,8 @@ class ModelDescription:
     config: dict[str, Any]
     tensors: list[TensorInfo]
     source_file_hashes: dict[str, str]
+    config_file_hashes: dict[str, str] = field(default_factory=dict)
+    tokenizer_file_hashes: dict[str, str] = field(default_factory=dict)
 
 
 class ModelAdapter(Protocol):
