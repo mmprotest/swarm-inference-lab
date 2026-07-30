@@ -69,3 +69,55 @@ def test_replay_gap_and_duplicate_are_rejected() -> None:
             payload=b"x",
             recorded_monotonic_ns=3,
         )
+
+
+def test_replay_log_accepts_prefill_span_followed_by_contiguous_decode() -> None:
+    log = ReplayLog(maximum_bytes=100)
+    for position, operation in [
+        (0, OperationKind.PREFILL),
+        (128, OperationKind.DECODE),
+        (129, OperationKind.DECODE),
+    ]:
+        log.append(
+            request_id="r",
+            model_revision="v",
+            stage_id=0,
+            cache_generation=0,
+            token_position=position,
+            operation=operation,
+            payload=bytes([position % 256]),
+            recorded_monotonic_ns=position,
+        )
+    entries = log.entries_for(
+        request_id="r",
+        model_revision="v",
+        stage_id=0,
+        cache_generation=0,
+    )
+    assert [entry.token_position for entry in entries] == [0, 128, 129]
+
+
+def test_replay_log_rejects_gap_between_decode_positions_after_prefill() -> None:
+    log = ReplayLog(maximum_bytes=100)
+    for position, operation in [
+        (0, OperationKind.PREFILL),
+        (128, OperationKind.DECODE),
+        (130, OperationKind.DECODE),
+    ]:
+        log.append(
+            request_id="r",
+            model_revision="v",
+            stage_id=0,
+            cache_generation=0,
+            token_position=position,
+            operation=operation,
+            payload=bytes([position % 256]),
+            recorded_monotonic_ns=position,
+        )
+    with pytest.raises(ReplayUnavailableError, match="gap"):
+        log.entries_for(
+            request_id="r",
+            model_revision="v",
+            stage_id=0,
+            cache_generation=0,
+        )

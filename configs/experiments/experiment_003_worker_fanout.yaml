@@ -1,0 +1,99 @@
+name: experiment-003-worker-fanout
+seed: 20260730
+execution_mode: single-host-loopback-real-model-fanout
+backend: torch-cuda
+data_plane: direct
+
+model:
+  model_id: Qwen/Qwen3-0.6B
+  revision: c1899de289a04d12100db370d81485cdf75e47ca
+  dtype: bfloat16
+  device: cuda
+
+sweep:
+  initial_worker_counts: [1, 2, 4, 7, 14, 21, 28]
+  adaptive_search: true
+  maximum_worker_count: 28
+  repeats: 3
+
+workloads:
+  cold:
+    input_tokens_approx: 128
+    max_new_tokens: 32
+  warm:
+    input_tokens_approx: 128
+    max_new_tokens: 128
+    concurrency_levels: [1, 4]
+
+warmup:
+  cuda_context: true
+  stage_local: true
+  full_pipeline_tokens: 4
+
+node_states:
+  cached_cold: true
+  hot_standby: true
+  unprovisioned:
+    enabled: true
+    representative_stage_counts: [4, 14, maximum_stable]
+    acquisition_profiles:
+      - local_disk
+      - gigabit_lan
+      - residential_fast
+      - residential_slow
+
+shard_acquisition_profiles:
+  local_disk:
+    bandwidth_mbps: null
+    latency_ms: 0
+  gigabit_lan:
+    bandwidth_mbps: 1000
+    latency_ms: 2
+  residential_fast:
+    bandwidth_mbps: 100
+    latency_ms: 20
+  residential_slow:
+    bandwidth_mbps: 20
+    latency_ms: 50
+
+hot_standby_idle_seconds: [0, 10, 60]
+
+resource_limits:
+  max_gpu_memory_fraction_for_stable: 0.95
+  max_system_memory_fraction_for_stable: 0.90
+  max_worker_start_seconds: 180
+  max_pipeline_ready_seconds: 300
+  max_request_seconds: 600
+
+correctness:
+  require_exact_token_identity: true
+  require_direct_data_plane: true
+  require_stage_isolation: true
+  boundary_validation_counts: [1, 4, 14, maximum_runnable]
+  boundary_atol: 0.02
+  boundary_rtol: 0.02
+  minimum_cosine_similarity: 0.999
+
+rejoin:
+  enabled: true
+  committed_tokens_before_failure: 4
+  failure_stage: middle
+
+economics:
+  availability_seconds:
+    - 30
+    - 60
+    - 300
+    - 900
+    - 3600
+    - 14400
+    - 86400
+  productive_fraction_targets:
+    - 0.50
+    - 0.75
+    - 0.90
+    - 0.95
+
+file_cache_control:
+  controlled: false
+  method: Windows operating-system file cache is not flushed; measurements are local-shard-read-with-uncontrolled-os-cache.

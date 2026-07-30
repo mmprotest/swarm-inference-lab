@@ -1,20 +1,47 @@
 .venv/
 .uv-cache/
+.cache/
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+.test-temp/
+.tox/
+.nox/
 .mypy_cache/
 .ruff_cache/
 .hypothesis/
+.ipynb_checkpoints/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 dist/
 build/
+
+# Local secrets and machine-specific configuration.
+.env
+.env.*
+!.env.example
+
+# Generated experiment outputs, model shards, profiles, and test evidence.
+# Keep only the placeholder files needed to retain the directory structure.
+artifacts/*
+!artifacts/.gitkeep
+!artifacts/runs/
+!artifacts/models/
+!artifacts/validation/
 artifacts/runs/*
 artifacts/models/*
 artifacts/validation/*
-!artifacts/.gitkeep
 !artifacts/runs/.gitkeep
 !artifacts/models/.gitkeep
 !artifacts/validation/.gitkeep
+
+# Local profiler/compiler output and operating-system metadata.
+torchinductor_*/
+*.prof
+*.pstats
+.DS_Store
+Thumbs.db
+Desktop.ini

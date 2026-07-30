@@ -7,6 +7,7 @@ import hashlib
 import math
 import os
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
 
@@ -113,6 +114,8 @@ class CoordinatorCore:
         architecture_config: dict[str, Any] | None = None,
         runtime_dtype: str | None = None,
         tokenizer: Any | None = None,
+        worker_stage_affinity: dict[str, int] | None = None,
+        after_token_hook: (Callable[[dict[str, Any]], Awaitable[RoutePlan | None]] | None) = None,
     ) -> None:
         if (model_manifest is None) != (architecture_config is None):
             raise ValueError(
@@ -125,6 +128,8 @@ class CoordinatorCore:
         self.architecture_config = architecture_config
         self.runtime_dtype = runtime_dtype
         self.tokenizer = tokenizer
+        self.worker_stage_affinity = dict(worker_stage_affinity or {})
+        self.after_token_hook = after_token_hook
         if model_manifest is None:
             self.stages = build_synthetic_stages(config.model)
             self.runtime_model_id = config.model_id
@@ -197,6 +202,9 @@ class CoordinatorCore:
         ]
 
     def _worker_can_host(self, worker: Any, stage: Any) -> bool:
+        desired_stage = self.worker_stage_affinity.get(str(worker.worker_id))
+        if desired_stage is not None and desired_stage != int(stage.stage_id):
+            return False
         if stage.required_memory_bytes > worker.effective_memory_bytes:
             return False
         if estimate_worker_stage_rate(worker, stage) <= 0:
@@ -241,10 +249,28 @@ class CoordinatorCore:
                 "worker_id": request.capability.worker_id,
                 "endpoint": request.capability.endpoint,
                 "timestamp_monotonic_s": time.monotonic(),
+                "timestamp_monotonic_ns": time.monotonic_ns(),
             }
         )
         await self.rebalance()
         return RegistrationResponse(accepted=True, heartbeat_interval_s=2.0)
+
+    def remove_worker(self, worker_id: str) -> None:
+        """Remove an exited process so a cached-cold replacement can own its stage."""
+
+        self.registry.remove_worker(worker_id)
+        self._assigned = {
+            (stage_id, assigned_worker)
+            for stage_id, assigned_worker in self._assigned
+            if assigned_worker != worker_id
+        }
+        self.events.append(
+            {
+                "event_type": "worker_removed",
+                "worker_id": worker_id,
+                "timestamp_monotonic_ns": time.monotonic_ns(),
+            }
+        )
 
     async def heartbeat(self, request: Heartbeat) -> Ack:
         capability = self.registry.capability(request.worker_id)
@@ -541,6 +567,7 @@ class CoordinatorCore:
                 },
                 "candidate_costs_ms": decision.candidate_costs_ms,
                 "reservation_time_ms": decision.reservation_time_ms,
+                "timestamp_monotonic_ns": time.monotonic_ns(),
             }
         )
         return decision
@@ -705,8 +732,18 @@ class CoordinatorCore:
         metrics: RuntimeRequestMetrics,
         committed_through_token_position: int,
         failure: BaseException,
+        known_failed_stage_ids: list[int] | None = None,
     ) -> RoutePlan:
-        failed_stage_ids = await self._failed_route_stage_ids(route)
+        failed_stage_ids = (
+            sorted(set(known_failed_stage_ids))
+            if known_failed_stage_ids is not None
+            else await self._failed_route_stage_ids(route)
+        )
+        route_stage_ids = {hop.stage_id for hop in route.assignments}
+        if any(stage_id not in route_stage_ids for stage_id in failed_stage_ids):
+            raise TransportError(
+                f"known failed stages {failed_stage_ids} are outside route {route.route_id}"
+            )
         if not failed_stage_ids:
             raise TransportError(
                 f"direct hop failed but every assigned worker remains healthy: {failure}"
@@ -1268,6 +1305,7 @@ class CoordinatorCore:
                         if replacement is not None:
                             route[stage.stage_id] = replacement
                         activation = decode_tensor(result.tensor_payload).array
+                token_produced_ns = time.monotonic_ns()
                 if self.model_manifest is None:
                     digest = hashlib.sha256(
                         np.ascontiguousarray(activation).tobytes()
@@ -1290,6 +1328,7 @@ class CoordinatorCore:
                     top_indices = np.argpartition(token_logits, -top_count)[-top_count:]
                     top_indices = top_indices[np.argsort(token_logits[top_indices])[::-1]]
                     coordinator_processing_ms = (time.perf_counter() - coordinator_started) * 1000
+                    token_produced_ns = time.monotonic_ns()
                     metrics.token_steps.append(
                         {
                             "step": output_position,
@@ -1317,6 +1356,7 @@ class CoordinatorCore:
                             "coordinator_processing_ms": coordinator_processing_ms,
                             "total_token_latency_ms": (time.perf_counter() - token_step_started)
                             * 1000,
+                            "token_produced_monotonic_ns": token_produced_ns,
                         }
                     )
                 outputs.append(token_id)
@@ -1324,6 +1364,14 @@ class CoordinatorCore:
                 request_state.current_token_position += 1
                 if metrics.first_token_s is None:
                     metrics.first_token_s = time.perf_counter()
+                    self.events.append(
+                        {
+                            "event_type": "first_token_produced",
+                            "request_id": submission.request_id,
+                            "token_id": token_id,
+                            "timestamp_monotonic_ns": token_produced_ns,
+                        }
+                    )
                 if (
                     route_plan is not None
                     and submission.cache_replay_stage_id is not None
@@ -1336,6 +1384,28 @@ class CoordinatorCore:
                         stage_id=submission.cache_replay_stage_id,
                         tokens_committed_before_failure=output_position + 1,
                     )
+                if self.after_token_hook is not None:
+                    hook_route = await self.after_token_hook(
+                        {
+                            "core": self,
+                            "submission": submission,
+                            "request_state": request_state,
+                            "route_plan": route_plan,
+                            "metrics": metrics,
+                            "output_position": output_position,
+                            "token_position": token_position,
+                            "token_id": token_id,
+                            "committed_tokens": list(outputs),
+                            "timestamp_monotonic_ns": token_produced_ns,
+                        }
+                    )
+                    if hook_route is not None:
+                        if route_plan is None:
+                            raise IntegrityError(
+                                "after-token hook returned a route for a non-direct request"
+                            )
+                        route_plan = hook_route
+                        route = self.route_allocator.lease(route_plan.route_id).assignments
                 if self.model_manifest is not None and self.architecture_config is not None:
                     configured_eos = self.architecture_config.get("eos_token_id")
                     eos_ids = (

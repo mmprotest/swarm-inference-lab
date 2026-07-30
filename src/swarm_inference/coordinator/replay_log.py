@@ -99,9 +99,24 @@ class ReplayLog:
             )
         if through_token_position is not None:
             entries = [entry for entry in entries if entry.token_position <= through_token_position]
-        expected = list(range(entries[0].token_position, entries[-1].token_position + 1))
         actual = [entry.token_position for entry in entries]
-        if actual != expected:
+        operations = [entry.operation for entry in entries]
+        if operations[0] == OperationKind.PREFILL:
+            decode_positions = actual[1:]
+            valid_positions = (
+                actual[0] == 0
+                and all(operation == OperationKind.DECODE for operation in operations[1:])
+                and (
+                    not decode_positions
+                    or decode_positions
+                    == list(range(decode_positions[0], decode_positions[-1] + 1))
+                )
+            )
+        else:
+            valid_positions = all(
+                operation == OperationKind.DECODE for operation in operations
+            ) and actual == list(range(actual[0], actual[-1] + 1))
+        if not valid_positions:
             raise ReplayUnavailableError(
                 f"replay log has a position gap for request={request_id} stage={stage_id}: "
                 f"{actual!r}"

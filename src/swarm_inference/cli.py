@@ -45,6 +45,13 @@ app = typer.Typer(
     no_args_is_help=True,
     pretty_exceptions_show_locals=False,
 )
+experiment_app = typer.Typer(
+    name="experiment",
+    help="Run simulation, loopback, physical, and named real-model experiments.",
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
+app.add_typer(experiment_app, name="experiment")
 
 
 def _fail(message: str, *, code: int = 1) -> None:
@@ -183,9 +190,13 @@ def simulate_command(
         raise typer.Exit(1)
 
 
-@app.command("experiment")
+@experiment_app.callback(invoke_without_command=True)
 def experiment_command(
-    config: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    ctx: typer.Context,
+    config: Annotated[
+        Path | None,
+        typer.Option(exists=True, dir_okay=False),
+    ] = None,
     workers: Annotated[
         int | None,
         typer.Option(
@@ -245,6 +256,11 @@ def experiment_command(
 ) -> None:
     """Run a simulation, native loopback, or remote physical experiment."""
 
+    if ctx.invoked_subcommand is not None:
+        return
+    if config is None:
+        _fail("experiment requires --config, or use a named subcommand")
+    assert config is not None
     experiment = load_experiment_config(config)
     if profile:
         experiment.profiling.enabled = True
@@ -333,6 +349,86 @@ def experiment_command(
     typer.echo(f"execution_mode={experiment.execution_mode.value}")
     typer.echo(f"report={run.report_path}")
     typer.echo(f"status={run.summary.get('overall_status', run.summary['status'])}")
+    if not run.passed:
+        raise typer.Exit(1)
+
+
+@experiment_app.command("worker-fanout")
+def worker_fanout_command(
+    config: Annotated[
+        Path,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Experiment 003 worker-fanout YAML configuration.",
+        ),
+    ] = Path("configs/experiments/experiment_003_worker_fanout.yaml"),
+    model_id: Annotated[str | None, typer.Option("--model-id")] = None,
+    revision: Annotated[str | None, typer.Option("--revision")] = None,
+    worker_counts: Annotated[
+        str | None,
+        typer.Option(
+            "--worker-counts",
+            help="Comma-separated initial worker counts.",
+        ),
+    ] = None,
+    repeats: Annotated[int | None, typer.Option("--repeats", min=1)] = None,
+    max_worker_count: Annotated[
+        int | None,
+        typer.Option("--max-worker-count", min=1, max=28),
+    ] = None,
+    skip_acquisition_tests: Annotated[
+        bool,
+        typer.Option("--skip-acquisition-tests"),
+    ] = False,
+    skip_rejoin_test: Annotated[
+        bool,
+        typer.Option("--skip-rejoin-test"),
+    ] = False,
+    resume: Annotated[bool, typer.Option("--resume")] = False,
+    output: Annotated[
+        Path,
+        typer.Option("--output", help="Run root, or existing run directory with --resume."),
+    ] = Path("artifacts/runs"),
+    profile: Annotated[bool, typer.Option("--profile")] = False,
+    smoke: Annotated[bool, typer.Option("--smoke")] = False,
+) -> None:
+    """Run real Qwen3 worker fan-out, lifecycle, acquisition, rejoin, and economics."""
+
+    parsed_counts: list[int] | None = None
+    if worker_counts is not None:
+        try:
+            parsed_counts = [
+                int(value.strip()) for value in worker_counts.split(",") if value.strip()
+            ]
+        except ValueError as exc:
+            _fail(f"--worker-counts must be comma-separated integers: {exc}")
+        if not parsed_counts:
+            _fail("--worker-counts cannot be empty")
+    from swarm_inference.experiments.worker_fanout import (
+        run_worker_fanout_experiment,
+    )
+
+    try:
+        run = run_worker_fanout_experiment(
+            config_path=config,
+            model_id=model_id,
+            revision=revision,
+            worker_counts=parsed_counts,
+            repeats=repeats,
+            max_worker_count=max_worker_count,
+            skip_acquisition_tests=skip_acquisition_tests,
+            skip_rejoin_test=skip_rejoin_test,
+            resume=resume,
+            output=output,
+            profile=profile,
+            smoke=smoke,
+        )
+    except (SwarmError, OSError, TimeoutError, ValueError) as exc:
+        _fail(f"worker-fanout experiment failed: {exc}")
+    typer.echo(f"run_directory={run.run_directory}")
+    typer.echo(f"report={run.report_path}")
+    typer.echo(f"overall_status={run.summary['overall_status']}")
     if not run.passed:
         raise typer.Exit(1)
 

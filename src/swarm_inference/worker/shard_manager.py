@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ from swarm_inference.config.models import (
     SyntheticModelConfig,
 )
 from swarm_inference.exceptions import IntegrityError, MemoryLimitExceededError
+from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.model.manifest import hash_shard_directory
 from swarm_inference.model.qwen3 import Qwen3Adapter
 from swarm_inference.model.stage_module import StageModule
@@ -149,7 +151,30 @@ class ShardManager:
         root = Path(shard_path).expanduser().resolve()
         if not root.is_dir():
             raise IntegrityError(f"Qwen3 stage shard directory does not exist: {root}")
+        recorder = lifecycle_recorder()
+        verification_started = time.monotonic_ns()
+        if recorder is not None:
+            recorder.emit(
+                "shard_verification_started",
+                monotonic_ns=verification_started,
+                bytes_count=stage.required_memory_bytes,
+                details={"shard_path": str(root)},
+            )
         actual_hash = hash_shard_directory(root)
+        verification_completed = time.monotonic_ns()
+        if recorder is not None:
+            recorder.emit(
+                "shard_verification_completed",
+                monotonic_ns=verification_completed,
+                duration_ns=verification_completed - verification_started,
+                bytes_count=stage.required_memory_bytes,
+                details={
+                    "shard_path": str(root),
+                    "expected_hash": expected_hash,
+                    "actual_hash": actual_hash,
+                    "hash_valid": actual_hash == expected_hash,
+                },
+            )
         if actual_hash != expected_hash:
             raise IntegrityError(
                 f"stage directory hash mismatch for {root}: "
@@ -181,11 +206,46 @@ class ShardManager:
         before = self._process_memory_snapshot(torch)
         if backend == Backend.TORCH_CUDA:
             torch.cuda.reset_peak_memory_stats(device)
+        construction_started = time.monotonic_ns()
+        if recorder is not None:
+            recorder.emit(
+                "stage_module_construction_started",
+                monotonic_ns=construction_started,
+                bytes_count=stage.required_memory_bytes,
+            )
         try:
             module = adapter.create_stage_module(config, stage, device, dtype)
+            if backend == Backend.TORCH_CUDA:
+                torch.cuda.synchronize(device)
+            construction_completed = time.monotonic_ns()
+            if recorder is not None:
+                recorder.emit(
+                    "stage_module_construction_completed",
+                    monotonic_ns=construction_completed,
+                    duration_ns=construction_completed - construction_started,
+                    memory_metrics=self._process_memory_snapshot(torch),
+                )
+            weight_load_started = time.monotonic_ns()
+            if recorder is not None:
+                recorder.emit(
+                    "weight_load_started",
+                    monotonic_ns=weight_load_started,
+                    bytes_count=stage.required_memory_bytes,
+                    details={"weight_materialisation_mode": "host-to-device-copy"},
+                )
             loaded = adapter.load_stage_weights(module, root, manifest=manifest)
             if backend == Backend.TORCH_CUDA:
                 torch.cuda.synchronize(device)
+            weight_load_completed = time.monotonic_ns()
+            if recorder is not None:
+                recorder.emit(
+                    "weight_load_completed",
+                    monotonic_ns=weight_load_completed,
+                    duration_ns=weight_load_completed - weight_load_started,
+                    bytes_count=stage.required_memory_bytes,
+                    memory_metrics=self._process_memory_snapshot(torch),
+                    details={"weight_materialisation_mode": "host-to-device-copy"},
+                )
         except torch.cuda.OutOfMemoryError as exc:
             failure = self._process_memory_snapshot(torch)
             raise MemoryLimitExceededError(

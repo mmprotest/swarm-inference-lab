@@ -67,6 +67,11 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
             # execution is deliberately routed through ``real-experiment``;
             # callers of that command use ``load_real_experiment_config``.
             return cast(ExperimentConfig, real)
+        if expanded.get("execution_mode") == "single-host-loopback-real-model-fanout":
+            from swarm_inference.config.worker_fanout import FanoutExperimentConfig
+
+            fanout = FanoutExperimentConfig.model_validate(expanded)
+            return cast(ExperimentConfig, fanout)
         return ExperimentConfig.model_validate(expanded)
     except ValueError as exc:
         raise ConfigurationError(f"invalid experiment configuration {resolved}: {exc}") from exc

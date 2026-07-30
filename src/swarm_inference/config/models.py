@@ -24,6 +24,7 @@ class ExecutionMode(StrEnum):
     SIMULATION = "simulation"
     SINGLE_HOST_LOOPBACK = "single-host-loopback"
     SINGLE_HOST_LOOPBACK_REAL_MODEL = "single-host-loopback-real-model"
+    SINGLE_HOST_LOOPBACK_REAL_MODEL_FANOUT = "single-host-loopback-real-model-fanout"
     PHYSICAL_LAN = "physical-lan"
     PHYSICAL_WAN = "physical-wan"
 

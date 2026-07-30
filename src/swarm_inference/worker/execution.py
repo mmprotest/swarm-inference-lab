@@ -11,6 +11,7 @@ import numpy as np
 
 from swarm_inference.config.models import BackpressurePolicy, QueueConfig
 from swarm_inference.exceptions import BackpressureError
+from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.messages import ActivationRequest, ActivationResult
 from swarm_inference.protocol.tensor_codec import decode_tensor, encode_tensor
@@ -154,6 +155,28 @@ class ExecutionEngine:
         if activation.stage_id != request.metadata.stage_id:
             raise BackpressureError("activation stage ID does not match metadata")
         module = self.shards.module(request.metadata.stage_id)
+        recorder = lifecycle_recorder()
+        operation_started_ns = time.monotonic_ns()
+        if recorder is not None:
+            operation_details = {
+                "request_id": request.metadata.request_id,
+                "operation": request.metadata.operation.value,
+                "token_position": request.metadata.token_position,
+                "sequence_length": request.metadata.sequence_length,
+                "route_generation": request.metadata.route_generation,
+            }
+            recorder.emit_once(
+                "first-stage-operation-started",
+                "first_stage_operation_started",
+                monotonic_ns=operation_started_ns,
+                details=operation_details,
+            )
+            recorder.emit_once(
+                f"request-stage-started:{request.metadata.request_id}",
+                "request_stage_operation_started",
+                monotonic_ns=operation_started_ns,
+                details=operation_details,
+            )
         started = time.perf_counter()
         output_array = module.execute(
             activation.array,
@@ -165,6 +188,29 @@ class ExecutionEngine:
             route_generation=request.metadata.route_generation,
         )
         elapsed = time.perf_counter() - started
+        operation_completed_ns = time.monotonic_ns()
+        if recorder is not None:
+            completion_details = {
+                "request_id": request.metadata.request_id,
+                "operation": request.metadata.operation.value,
+                "token_position": request.metadata.token_position,
+                "sequence_length": request.metadata.sequence_length,
+                "route_generation": request.metadata.route_generation,
+            }
+            recorder.emit_once(
+                "first-stage-operation-completed",
+                "first_stage_operation_completed",
+                monotonic_ns=operation_completed_ns,
+                duration_ns=operation_completed_ns - operation_started_ns,
+                details=completion_details,
+            )
+            recorder.emit_once(
+                f"request-stage-completed:{request.metadata.request_id}",
+                "request_stage_operation_completed",
+                monotonic_ns=operation_completed_ns,
+                duration_ns=operation_completed_ns - operation_started_ns,
+                details=completion_details,
+            )
         output = encode_tensor(
             type(activation)(
                 tensor_id=f"{activation.tensor_id}:out",

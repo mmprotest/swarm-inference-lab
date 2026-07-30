@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import shutil
+import time
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -254,10 +255,12 @@ def _partition_exact_stage_count(
 ) -> list[tuple[int, int]]:
     """Return exactly ``stage_count`` balanced contiguous ranges.
 
-    The minimum possible maximum stage weight is found first.  Among all
-    partitions at that cap, the dynamic program minimises squared distance
-    from the ideal byte count.  Endpoint ownership is part of each candidate's
-    actual byte cost, so tied-output duplication is never hidden.
+    The minimum possible maximum stage weight is found first. Among all
+    partitions at that cap, the dynamic program balances actual tensor bytes,
+    decoder execution work, and KV-cache work. Qwen3 decoder layers share the
+    same cache geometry, so both latter estimates are proportional to owned
+    layer count. Endpoint ownership is part of each candidate's actual byte
+    cost, so tied-output duplication is never hidden.
     """
 
     layer_count = len(layer_bytes)
@@ -314,6 +317,7 @@ def _partition_exact_stage_count(
             lower = middle + 1
     optimal_cap = lower
     ideal = (sum(layer_bytes) + embedding_bytes + final_bytes) / stage_count
+    ideal_layer_work = layer_count / stage_count
     states: dict[int, tuple[float, list[tuple[int, int]]]] = {
         0: (0.0, []),
     }
@@ -326,7 +330,14 @@ def _partition_exact_stage_count(
                 cost = stage_cost(stage_id, start, end)
                 if cost > optimal_cap:
                     break
-                candidate = (score + (cost - ideal) ** 2, [*ranges, (start, end)])
+                layer_work = end - start
+                byte_deviation = (cost - ideal) / max(ideal, 1)
+                execution_deviation = (layer_work - ideal_layer_work) / ideal_layer_work
+                kv_cache_deviation = execution_deviation
+                balance_score = (
+                    byte_deviation**2 + 0.25 * execution_deviation**2 + 0.25 * kv_cache_deviation**2
+                )
+                candidate = (score + balance_score, [*ranges, (start, end)])
                 previous = next_states.get(end)
                 if previous is None or candidate[0] < previous[0]:
                     next_states[end] = candidate
@@ -343,6 +354,7 @@ def build_manifest(
     target_stage_bytes: int,
     maximum_stage_bytes: int,
     stage_count: int | None = None,
+    timings: dict[str, float] | None = None,
 ) -> ModelManifest:
     config = description.config
     layer_count = int(config["num_hidden_layers"])
@@ -366,6 +378,7 @@ def build_manifest(
     head = explicit_head or (embedding if tied else 0)
     if head == 0:
         raise IntegrityError("Qwen3 model has neither lm_head weights nor tied embeddings")
+    partition_started = time.perf_counter()
     if stage_count is None:
         ranges = _partition_ranges(
             layer_bytes=per_layer,
@@ -382,6 +395,8 @@ def build_manifest(
             stage_count=stage_count,
             maximum_stage_bytes=maximum_stage_bytes,
         )
+    if timings is not None:
+        timings["partitioning_seconds"] = time.perf_counter() - partition_started
     dtype = description.tensors[0].dtype
     hidden = int(config["hidden_size"])
     dtype_bytes = {
@@ -417,8 +432,9 @@ def build_manifest(
                 if tensor.component.kind == ComponentKind.EMBEDDING
             ]
             names.extend(tied_names)
-            for name in tied_names:
-                shared_tensors[name] = sorted({0, stage_id})
+            if stage_id != 0:
+                for name in tied_names:
+                    shared_tensors[name] = [0, stage_id]
         required = sum(tensor.bytes for tensor in description.tensors if tensor.name in set(names))
         if required > maximum_stage_bytes:
             raise MemoryLimitExceededError(
@@ -433,7 +449,13 @@ def build_manifest(
                 owns_final_norm=last,
                 owns_output_head=last,
                 required_memory_bytes=required,
-                estimated_execution_ms={},
+                estimated_execution_ms={
+                    "relative_layer_weight_cost": float(
+                        sum(per_layer[start:end]) / max(sum(per_layer), 1)
+                    ),
+                    "relative_decoder_layer_cost": float((end - start) / layer_count),
+                    "relative_kv_cache_cost": float((end - start) / layer_count),
+                },
                 input_spec=TensorSpec(
                     dtype="int64" if first else dtype.lower(),
                     shape=["batch", "sequence"]
@@ -592,21 +614,27 @@ def shard_model(
     maximum_stage_bytes: int,
     maximum_output_file_bytes: int = 512 * 1024 * 1024,
     stage_count: int | None = None,
+    build_timings: dict[str, float] | None = None,
 ) -> ModelManifest:
     root = Path(output).expanduser().resolve()
     if root.exists() and any(root.iterdir()):
         raise IntegrityError(f"refusing to overwrite non-empty shard output directory: {root}")
     root.mkdir(parents=True, exist_ok=True)
+    manifest_started = time.perf_counter()
     manifest = build_manifest(
         description,
         target_stage_bytes=target_stage_bytes,
         maximum_stage_bytes=maximum_stage_bytes,
         stage_count=stage_count,
+        timings=build_timings,
     )
+    if build_timings is not None:
+        build_timings["manifest_generation_seconds"] = time.perf_counter() - manifest_started
     tensor_by_name = {tensor.name: tensor for tensor in description.tensors}
     from safetensors import safe_open
     from safetensors.torch import save_file
 
+    writing_started = time.perf_counter()
     for stage in manifest.stages:
         stage_dir = root / f"stage-{stage.stage_id:03d}"
         stage_dir.mkdir()
@@ -662,11 +690,19 @@ def shard_model(
             + "\n",
             encoding="utf-8",
         )
+    if build_timings is not None:
+        build_timings["shard_writing_seconds"] = time.perf_counter() - writing_started
+    validation_started = time.perf_counter()
     _verify_generated_union(root, manifest, description)
+    if build_timings is not None:
+        build_timings["shard_validation_seconds"] = time.perf_counter() - validation_started
+    hashing_started = time.perf_counter()
     shard_hashes = {
         f"stage-{stage.stage_id:03d}": hash_shard_directory(root / f"stage-{stage.stage_id:03d}")
         for stage in manifest.stages
     }
+    if build_timings is not None:
+        build_timings["shard_hashing_seconds"] = time.perf_counter() - hashing_started
     manifest.shard_hashes = shard_hashes
     manifest.stages = [
         stage.model_copy(update={"shard_hash": shard_hashes[f"stage-{stage.stage_id:03d}"]})
@@ -731,6 +767,18 @@ def shard_model(
         json.dumps(validation, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    if build_timings is not None:
+        build_timings["one_time_shard_build_seconds"] = sum(
+            value
+            for key, value in build_timings.items()
+            if key
+            in {
+                "manifest_generation_seconds",
+                "shard_writing_seconds",
+                "shard_validation_seconds",
+                "shard_hashing_seconds",
+            }
+        )
     return manifest
 
 

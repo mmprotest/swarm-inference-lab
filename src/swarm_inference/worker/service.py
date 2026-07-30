@@ -10,6 +10,7 @@ from pathlib import Path
 
 from swarm_inference.config.models import Backend, QueueConfig
 from swarm_inference.coordinator.service import CoordinatorClient
+from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
@@ -91,6 +92,10 @@ async def run_worker(
             "benchmark_nonce": nonce,
         }
     )
+    recorder = lifecycle_recorder()
+    registration_started = time.monotonic_ns()
+    if recorder is not None:
+        recorder.emit("worker_registration_started", monotonic_ns=registration_started)
     response = await client.register(
         RegistrationRequest(
             capability=capability,
@@ -98,6 +103,17 @@ async def run_worker(
             signature=identity.sign(registration_payload),
         )
     )
+    registration_completed = time.monotonic_ns()
+    if recorder is not None:
+        recorder.emit(
+            "worker_registered",
+            monotonic_ns=registration_completed,
+            duration_ns=registration_completed - registration_started,
+            details={
+                "coordinator_endpoint": coordinator_endpoint,
+                "registration_includes_assignment_ack": True,
+            },
+        )
     if not response.accepted:
         await server.stop()
         await client.close()
@@ -124,6 +140,14 @@ async def run_worker(
             )
             await asyncio.sleep(response.heartbeat_interval_s)
 
+    if recorder is not None:
+        recorder.emit(
+            "worker_routable",
+            details={
+                "loaded_stage_ids": sorted(agent.shards.modules),
+                "stage_local_warmup": os.environ.get("SWARM_STAGE_LOCAL_WARMUP") == "1",
+            },
+        )
     heartbeat_task = asyncio.create_task(heartbeat_loop(), name=f"heartbeat:{capability.worker_id}")
     try:
         if stop_event is None:
@@ -131,6 +155,8 @@ async def run_worker(
         else:
             await stop_event.wait()
     finally:
+        if recorder is not None:
+            recorder.emit("worker_shutdown_started")
         heartbeat_task.cancel()
         with suppress(asyncio.CancelledError):
             await heartbeat_task

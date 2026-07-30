@@ -22,6 +22,7 @@ from swarm_inference.exceptions import (
     UnsupportedArchitectureError,
     UnsupportedCacheFormatError,
 )
+from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.model.adapter import (
     ComponentKind,
     ComponentRef,
@@ -411,6 +412,14 @@ class Qwen3StageModule:
             if stage.owns_output_head
             else None
         )
+        if (
+            self.embed_tokens is not None
+            and self.lm_head is not None
+            and bool(getattr(config, "tie_word_embeddings", False))
+        ):
+            # A one-stage layout must retain the official model's tied parameter
+            # identity instead of allocating a second vocabulary matrix.
+            self.lm_head.weight = self.embed_tokens.weight
         # Match the official full-model construction order exactly: Transformers
         # creates RoPE frequencies on CPU and subsequently moves the model.  Direct
         # CUDA construction changes two float32 inv_freq values for Qwen3-0.6B by
@@ -434,6 +443,7 @@ class Qwen3StageModule:
             "transport_tensor_bytes": 0,
         }
         self._transfer_history: list[dict[str, Any]] = []
+        self._finite_output_checks = 0
         self.loaded_source_tensors: list[str] = []
         for layer in self.layers.values():
             layer.eval()
@@ -450,6 +460,48 @@ class Qwen3StageModule:
             return DynamicCache(config=self.config)
         except TypeError:
             return DynamicCache()
+
+    def warmup(self, *, sequence_length: int = 128) -> dict[str, object]:
+        """Run a disposable representative operation without retaining KV state."""
+
+        if sequence_length <= 0:
+            raise ValueError("warmup sequence length must be positive")
+        started = time.perf_counter_ns()
+        if self.embed_tokens is not None:
+            inputs = self.torch.zeros(
+                (1, sequence_length),
+                device=self.device,
+                dtype=self.torch.long,
+            )
+        else:
+            inputs = self.torch.zeros(
+                (1, sequence_length, self.config.hidden_size),
+                device=self.device,
+                dtype=self.dtype,
+            )
+        with self.torch.inference_mode():
+            output = self.forward(
+                inputs,
+                request_id=f"stage-local-warmup-{self.stage_id}",
+                token_position=0,
+                cache_generation=0,
+                route_generation=0,
+                use_cache=False,
+            )
+        if self.device.type == "cuda":
+            self.torch.cuda.synchronize(self.device)
+        duration_ns = time.perf_counter_ns() - started
+        output_shape = [int(value) for value in output.shape]
+        del output
+        del inputs
+        return {
+            "sequence_length": sequence_length,
+            "dtype": str(self.dtype),
+            "device": str(self.device),
+            "output_shape": output_shape,
+            "disposable_cache": True,
+            "duration_seconds": duration_ns / 1_000_000_000,
+        }
 
     def _causal_mask(
         self,
@@ -647,6 +699,11 @@ class Qwen3StageModule:
             if self.device.type == "cuda"
             else 0.0
         )
+        self._finite_output_checks += 1
+        if not bool(self.torch.isfinite(output).all().item()):
+            raise IntegrityError(
+                f"stage {self.stage_id} produced NaN or infinity for request {request_id}"
+            )
         if output.dtype == self.torch.bfloat16:
             if self.lm_head is None:
                 result = output.contiguous().view(self.torch.uint16).numpy()
@@ -821,6 +878,8 @@ class Qwen3StageModule:
             "boundary_records": list(self._boundary_records.values()),
             "transfer_metrics": dict(self._transfer_metrics),
             "transfer_history": self._transfer_history[-1000:],
+            "finite_output_checks": self._finite_output_checks,
+            "all_checked_outputs_finite": True,
         }
 
     def _target_parameter_name(
@@ -849,6 +908,27 @@ class Qwen3StageModule:
         if source_name.startswith("lm_head.") and self.lm_head is not None:
             return source_name
         return None
+
+    def _target_parameter_names(
+        self,
+        source_name: str,
+        *,
+        manifest: ModelManifest,
+    ) -> list[str]:
+        primary = self._target_parameter_name(source_name, manifest=manifest)
+        targets = [primary] if primary is not None else []
+        if (
+            source_name.startswith("model.embed_tokens.")
+            and self.embed_tokens is not None
+            and self.lm_head is not None
+            and self.stage.owns_embeddings
+            and self.stage.owns_output_head
+        ):
+            suffix = source_name.removeprefix("model.embed_tokens.")
+            lm_target = f"lm_head.{suffix}"
+            if lm_target not in targets:
+                targets.append(lm_target)
+        return targets
 
     def _parameters(self) -> dict[str, Any]:
         parameters: dict[str, Any] = {}
@@ -904,43 +984,88 @@ class Qwen3StageModule:
         }.get(manifest.weight_dtype.upper())
         if expected_source_dtype is None:
             raise IntegrityError(f"unsupported manifest source dtype {manifest.weight_dtype}")
-        with self.torch.no_grad():
-            for file in files:
-                with safe_open(file, framework="pt", device="cpu") as handle:
-                    for source_name in handle.keys():  # noqa: SIM118
-                        if source_name not in declared_stage.tensor_names:
-                            raise IntegrityError(
-                                f"stage {self.stage_id} shard contains tensor not declared "
-                                f"by stage manifest: {source_name}"
-                            )
-                        target_name = self._target_parameter_name(
-                            source_name,
-                            manifest=manifest,
+        recorder = lifecycle_recorder()
+        read_started = time.monotonic_ns()
+        if recorder is not None:
+            recorder.emit(
+                "shard_read_started",
+                monotonic_ns=read_started,
+                bytes_count=declared_stage.required_memory_bytes,
+                details={"file_count": len(files)},
+            )
+        cpu_values: dict[str, Any] = {}
+        for file in files:
+            with safe_open(file, framework="pt", device="cpu") as handle:
+                for source_name in handle.keys():  # noqa: SIM118
+                    if source_name not in declared_stage.tensor_names:
+                        raise IntegrityError(
+                            f"stage {self.stage_id} shard contains tensor not declared "
+                            f"by stage manifest: {source_name}"
                         )
-                        if target_name is None:
-                            raise IntegrityError(
-                                f"stage {self.stage_id} shard contains unowned tensor {source_name}"
-                            )
-                        try:
-                            parameter = parameters[target_name]
-                        except KeyError as exc:
-                            raise IntegrityError(
-                                f"no stage parameter {target_name} for source {source_name}"
-                            ) from exc
-                        value = handle.get_tensor(source_name)
-                        if value.dtype != expected_source_dtype:
-                            raise IntegrityError(
-                                f"dtype mismatch for {source_name}: "
-                                f"shard={value.dtype} manifest={expected_source_dtype}"
-                            )
-                        if tuple(value.shape) != tuple(parameter.shape):
-                            raise IntegrityError(
-                                f"shape mismatch for {source_name}: shard={tuple(value.shape)} "
-                                f"module={tuple(parameter.shape)}"
-                            )
-                        parameter.copy_(value.to(device=self.device, dtype=self.dtype))
-                        loaded_parameters.add(target_name)
-                        loaded_sources.append(source_name)
+                    if source_name in cpu_values:
+                        raise IntegrityError(
+                            f"stage {self.stage_id} shard repeats tensor {source_name}"
+                        )
+                    cpu_values[source_name] = handle.get_tensor(source_name)
+        read_completed = time.monotonic_ns()
+        if recorder is not None:
+            recorder.emit(
+                "shard_read_completed",
+                monotonic_ns=read_completed,
+                duration_ns=read_completed - read_started,
+                bytes_count=declared_stage.required_memory_bytes,
+                details={"file_count": len(files), "tensor_count": len(cpu_values)},
+            )
+        transfer_started = time.monotonic_ns()
+        if recorder is not None:
+            recorder.emit(
+                "host_to_device_transfer_started",
+                monotonic_ns=transfer_started,
+                bytes_count=declared_stage.required_memory_bytes,
+                details={"weight_materialisation_mode": "host-to-device-copy"},
+            )
+        with self.torch.no_grad():
+            for source_name, value in cpu_values.items():
+                target_names = self._target_parameter_names(
+                    source_name,
+                    manifest=manifest,
+                )
+                if not target_names:
+                    raise IntegrityError(
+                        f"stage {self.stage_id} shard contains unowned tensor {source_name}"
+                    )
+                if value.dtype != expected_source_dtype:
+                    raise IntegrityError(
+                        f"dtype mismatch for {source_name}: "
+                        f"shard={value.dtype} manifest={expected_source_dtype}"
+                    )
+                for target_name in target_names:
+                    try:
+                        parameter = parameters[target_name]
+                    except KeyError as exc:
+                        raise IntegrityError(
+                            f"no stage parameter {target_name} for source {source_name}"
+                        ) from exc
+                    if tuple(value.shape) != tuple(parameter.shape):
+                        raise IntegrityError(
+                            f"shape mismatch for {source_name}: shard={tuple(value.shape)} "
+                            f"module={tuple(parameter.shape)}"
+                        )
+                    parameter.copy_(value.to(device=self.device, dtype=self.dtype))
+                    loaded_parameters.add(target_name)
+                loaded_sources.append(source_name)
+        if self.device.type == "cuda":
+            self.torch.cuda.synchronize(self.device)
+        transfer_completed = time.monotonic_ns()
+        if recorder is not None:
+            recorder.emit(
+                "host_to_device_transfer_completed",
+                monotonic_ns=transfer_completed,
+                duration_ns=transfer_completed - transfer_started,
+                bytes_count=declared_stage.required_memory_bytes,
+                details={"weight_materialisation_mode": "host-to-device-copy"},
+            )
+        cpu_values.clear()
         missing = sorted(set(parameters) - loaded_parameters)
         if missing:
             raise IntegrityError(

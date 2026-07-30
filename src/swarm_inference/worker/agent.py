@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 
 from swarm_inference.config.models import (
@@ -15,6 +16,7 @@ from swarm_inference.config.models import (
     WorkerCapability,
 )
 from swarm_inference.exceptions import BackpressureError, RouteMessageError, TransportError
+from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.messages import (
     Ack,
@@ -201,7 +203,7 @@ class WorkerAgent:
         shard_hash: str,
         dtype: str | None,
     ) -> None:
-        self.shards.load_qwen3(
+        module = self.shards.load_qwen3(
             config=config,
             manifest=manifest,
             stage=stage,
@@ -210,6 +212,55 @@ class WorkerAgent:
             backend=self.capability.backend,
             dtype_name=dtype,
         )
+        recorder = lifecycle_recorder()
+        warmup_started = time.monotonic_ns()
+        perform_warmup = os.environ.get("SWARM_STAGE_LOCAL_WARMUP", "0") == "1"
+        if recorder is not None:
+            recorder.emit(
+                "local_warmup_started",
+                monotonic_ns=warmup_started,
+                details={
+                    "warmup_level": "stage-local",
+                    "warmup_performed": perform_warmup,
+                },
+            )
+        try:
+            warmup_metrics: dict[str, object] = {}
+            if perform_warmup:
+                warmup = getattr(module, "warmup", None)
+                if not callable(warmup):
+                    raise RuntimeError("real stage module does not expose stage-local warmup")
+                warmup_metrics = dict(
+                    warmup(
+                        sequence_length=int(os.environ.get("SWARM_WARMUP_SEQUENCE_LENGTH", "128"))
+                    )
+                )
+            warmup_completed = time.monotonic_ns()
+            if recorder is not None:
+                recorder.emit(
+                    "local_warmup_completed",
+                    monotonic_ns=warmup_completed,
+                    duration_ns=warmup_completed - warmup_started,
+                    details={
+                        "warmup_level": "stage-local",
+                        "warmup_performed": perform_warmup,
+                        **warmup_metrics,
+                    },
+                )
+        except Exception as exc:
+            warmup_completed = time.monotonic_ns()
+            if recorder is not None:
+                recorder.emit(
+                    "local_warmup_completed",
+                    monotonic_ns=warmup_completed,
+                    duration_ns=warmup_completed - warmup_started,
+                    error=f"{type(exc).__name__}: {exc}",
+                    details={
+                        "warmup_level": "stage-local",
+                        "warmup_performed": perform_warmup,
+                    },
+                )
+            raise
         self.capability.current_shard_assignments = sorted(self.shards.modules)
 
     async def execute(self, request: ActivationRequest) -> ActivationResult:
@@ -439,6 +490,17 @@ class WorkerAgent:
         return route, stage_index
 
     async def handle_data_plane(self, envelope: DataPlaneEnvelope) -> DataPlaneAck:
+        recorder = lifecycle_recorder()
+        if recorder is not None and not envelope.replay_only:
+            recorder.emit_once(
+                "first-request-received",
+                "first_request_received",
+                details={
+                    "request_id": envelope.request_id,
+                    "operation": envelope.operation.value,
+                    "token_position": envelope.token_position,
+                },
+            )
         owner, prior = await self._claim_message(envelope.message_id)
         if not owner:
             prior_ack = await prior
