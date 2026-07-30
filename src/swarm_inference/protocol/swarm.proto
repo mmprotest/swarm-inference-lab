@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package swarm.v1;
+
+// Source-package copy of proto/swarm.proto for wheels and source distributions.
+import "google/protobuf/any.proto";
+
+message Chunk {
+  string tensor_id = 1;
+  uint32 chunk_index = 2;
+  uint32 chunk_count = 3;
+  uint64 total_length = 4;
+  bytes payload = 5;
+  string checksum = 6;
+}
+
+message ActivationTensor {
+  string dtype = 1;
+  repeated uint64 shape = 2;
+  string byte_order = 3;
+  string tensor_id = 4;
+  string request_id = 5;
+  uint32 stage_id = 6;
+  uint64 token_position = 7;
+  uint64 sequence_length = 8;
+  uint64 payload_length = 9;
+  string checksum = 10;
+  bytes payload = 11;
+}
+
+service Coordinator {
+  rpc Register(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc Heartbeat(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc Submit(google.protobuf.Any) returns (google.protobuf.Any);
+}
+
+service Worker {
+  rpc Assign(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc Execute(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc ExecuteStream(stream Chunk) returns (stream Chunk);
+  rpc Cancel(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc Health(google.protobuf.Any) returns (google.protobuf.Any);
+}

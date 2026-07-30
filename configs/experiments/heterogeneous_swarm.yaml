@@ -1,0 +1,60 @@
+schema_version: "1"
+name: workload-tier-heterogeneous-swarm
+execution_mode: simulation
+seed: 424242
+scheduler: workload-tier
+model:
+  layer_count: 64
+  bytes_per_layer: 536870912
+  hidden_size: 2048
+  activation_dtype: float16
+  cache_bytes_per_token_per_layer: 8192
+  compute_work_per_layer: 1
+  routing: dense
+  expert_count: 1
+  active_experts: 1
+  model_seed: 73
+  stage_count: 8
+workload:
+  concurrent_requests: 64
+  prompt_tokens: 32
+  output_tokens: 32
+  workload_class: background
+  arrival_interval_ms: 1
+queue:
+  capacity: 512
+  max_microbatch_size: 4
+  max_microbatch_wait_ms: 2
+  request_deadline_ms: 300000
+  backpressure_policy: reject
+faults: {}
+integrity:
+  enabled: true
+  audit_fraction: 0.05
+network:
+  from: ../networks/residential_wan.yaml
+nodes:
+  - from: ../nodes/rtx5090.yaml
+    count: 8
+  - from: ../nodes/rtx4090.yaml
+    count: 8
+  - from: ../nodes/midrange_gpu.yaml
+    count: 24
+  - from: ../nodes/apple_silicon.yaml
+    count: 16
+  - from: ../nodes/laptop_cpu.yaml
+    count: 24
+  - from: ../nodes/desktop_cpu.yaml
+    count: 24
+  - from: ../nodes/raspberry_pi5.yaml
+    count: 24
+node_counts: [8, 16, 32, 64, 128]
+concurrent_request_counts: [1, 4, 16, 64, 256]
+warmup_s: 10
+steady_state_s: 300
+output_root: artifacts/runs
+model_id: synthetic-heterogeneous-32gib
+model_revision: synthetic-v1
+notes:
+  - Every shipped hardware profile is an assumption until replaced by registration measurements.
+

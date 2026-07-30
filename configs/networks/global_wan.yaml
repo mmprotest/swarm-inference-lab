@@ -1,0 +1,17 @@
+name: global-wan
+base_latency_ms: 160
+jitter_ms: 60
+jitter_distribution: normal
+upload_bandwidth_bytes_s: 2500000
+download_bandwidth_bytes_s: 12500000
+packet_loss: 0.01
+duplication_probability: 0.0005
+reordering_probability: 0.005
+outage_windows:
+  - start_s: 900
+    end_s: 920
+  - start_s: 2700
+    end_s: 2730
+max_in_flight_bytes: 16777216
+measured: false
+

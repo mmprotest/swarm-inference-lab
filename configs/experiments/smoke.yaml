@@ -1,0 +1,51 @@
+schema_version: "1"
+name: deterministic-smoke
+execution_mode: simulation
+seed: 20260729
+scheduler: fastest-route
+model:
+  layer_count: 48
+  bytes_per_layer: 1073741824
+  hidden_size: 1024
+  activation_dtype: float16
+  cache_bytes_per_token_per_layer: 4096
+  compute_work_per_layer: 1
+  routing: dense
+  expert_count: 1
+  active_experts: 1
+  model_seed: 17
+  stage_count: 4
+workload:
+  concurrent_requests: 4
+  prompt_tokens: 8
+  output_tokens: 8
+  workload_class: standard
+  arrival_interval_ms: 0
+queue:
+  capacity: 64
+  max_microbatch_size: 1
+  max_microbatch_wait_ms: 0
+  request_deadline_ms: 120000
+  backpressure_policy: reject
+faults: {}
+integrity:
+  enabled: true
+  audit_fraction: 0.05
+network:
+  from: ../networks/localhost.yaml
+nodes:
+  - from: ../nodes/desktop_cpu.yaml
+    count: 4
+    memory_bytes: 17179869184
+    compute_rate_layers_s: 1200
+    max_concurrent_stage_operations: 2
+node_counts: [4]
+concurrent_request_counts: [4]
+warmup_s: 0
+steady_state_s: 30
+output_root: artifacts/runs
+model_id: synthetic-dense-48x1gib
+model_revision: synthetic-v1
+notes:
+  - All compute and network values are emulated.
+

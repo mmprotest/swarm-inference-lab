@@ -1,0 +1,51 @@
+schema_version: "1"
+name: four-worker-loopback
+execution_mode: single-host-loopback
+seed: 271828
+scheduler: replicated-stage
+model:
+  layer_count: 16
+  bytes_per_layer: 268435456
+  hidden_size: 512
+  activation_dtype: float32
+  cache_bytes_per_token_per_layer: 2048
+  compute_work_per_layer: 0.2
+  routing: dense
+  expert_count: 1
+  active_experts: 1
+  model_seed: 23
+  stage_count: 2
+workload:
+  concurrent_requests: 4
+  prompt_tokens: 4
+  output_tokens: 16
+  workload_class: standard
+  arrival_interval_ms: 0
+queue:
+  capacity: 64
+  max_microbatch_size: 1
+  max_microbatch_wait_ms: 0
+  request_deadline_ms: 120000
+  backpressure_policy: reject
+faults: {}
+integrity:
+  enabled: true
+  audit_fraction: 0
+network:
+  from: ../networks/localhost.yaml
+nodes:
+  - from: ../nodes/desktop_cpu.yaml
+    count: 4
+    memory_bytes: 2214592512
+    measured: false
+node_counts: []
+concurrent_request_counts: []
+warmup_s: 0
+steady_state_s: 30
+output_root: artifacts/runs
+model_id: synthetic-loopback-4gib
+model_revision: synthetic-v1
+notes:
+  - Worker capability values are measured during registration.
+  - The configured logical shard memory does not allocate equivalent physical bytes.
+

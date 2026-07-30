@@ -1,0 +1,200 @@
+"""Bounded asynchronous stage execution queue."""
+
+from __future__ import annotations
+
+import asyncio
+import time
+from contextlib import suppress
+from dataclasses import dataclass
+
+from swarm_inference.config.models import BackpressurePolicy, QueueConfig
+from swarm_inference.exceptions import BackpressureError
+from swarm_inference.protocol.checksums import sha256_bytes
+from swarm_inference.protocol.messages import ActivationRequest, ActivationResult
+from swarm_inference.protocol.tensor_codec import decode_tensor, encode_tensor
+from swarm_inference.security.identity import WorkerIdentity
+from swarm_inference.security.signatures import canonical_json_bytes
+from swarm_inference.worker.metrics import WorkerMetrics
+from swarm_inference.worker.shard_manager import ShardManager
+
+
+@dataclass(slots=True)
+class QueuedExecution:
+    request: ActivationRequest
+    enqueued_at: float
+    future: asyncio.Future[ActivationResult]
+
+
+class ExecutionEngine:
+    """One bounded queue; correctness does not depend on microbatching."""
+
+    def __init__(
+        self,
+        *,
+        worker_id: str,
+        identity: WorkerIdentity,
+        shards: ShardManager,
+        queue_config: QueueConfig,
+        metrics: WorkerMetrics,
+    ) -> None:
+        self.worker_id = worker_id
+        self.identity = identity
+        self.shards = shards
+        self.queue_config = queue_config
+        self.metrics = metrics
+        self._queue: asyncio.Queue[QueuedExecution] = asyncio.Queue(maxsize=queue_config.capacity)
+        self._runner: asyncio.Task[None] | None = None
+        self._stopping = False
+
+    @property
+    def queue_depth(self) -> int:
+        return self._queue.qsize()
+
+    async def start(self) -> None:
+        if self._runner is None:
+            self._runner = asyncio.create_task(self._run(), name=f"execute:{self.worker_id}")
+
+    async def stop(self) -> None:
+        self._stopping = True
+        if self._runner is not None:
+            self._runner.cancel()
+            with suppress(asyncio.CancelledError):
+                await self._runner
+            self._runner = None
+
+    async def submit(self, request: ActivationRequest) -> ActivationResult:
+        if self._runner is None:
+            await self.start()
+        loop = asyncio.get_running_loop()
+        future: asyncio.Future[ActivationResult] = loop.create_future()
+        item = QueuedExecution(
+            request=request,
+            enqueued_at=time.perf_counter(),
+            future=future,
+        )
+        if (
+            self.queue_config.backpressure_policy == BackpressurePolicy.REJECT
+            and self._queue.full()
+        ):
+            raise BackpressureError(
+                f"worker {self.worker_id} queue capacity {self._queue.maxsize} reached"
+            )
+        try:
+            await asyncio.wait_for(
+                self._queue.put(item),
+                timeout=self.queue_config.request_deadline_ms / 1000,
+            )
+            return await asyncio.wait_for(
+                future,
+                timeout=self.queue_config.request_deadline_ms / 1000,
+            )
+        except TimeoutError as exc:
+            if not future.done():
+                future.cancel()
+            raise BackpressureError("stage operation deadline exceeded") from exc
+
+    async def _run(self) -> None:
+        while not self._stopping:
+            first = await self._queue.get()
+            batch = [first]
+            maximum = self.queue_config.max_microbatch_size
+            wait_s = self.queue_config.max_microbatch_wait_ms / 1000
+            if maximum > 1 and wait_s > 0:
+                deadline = asyncio.get_running_loop().time() + wait_s
+                while len(batch) < maximum:
+                    remaining = deadline - asyncio.get_running_loop().time()
+                    if remaining <= 0:
+                        break
+                    try:
+                        candidate = await asyncio.wait_for(self._queue.get(), remaining)
+                    except TimeoutError:
+                        break
+                    if self._compatible(first.request, candidate.request):
+                        batch.append(candidate)
+                    else:
+                        # Preserve boundedness and ordering. This branch is rare
+                        # because coordinators route a stage queue homogeneously.
+                        self._queue.task_done()
+                        if not candidate.future.done():
+                            candidate.future.set_exception(
+                                BackpressureError("incompatible operation reached microbatch")
+                            )
+            for item in batch:
+                try:
+                    result = self._execute_one(item)
+                except Exception as exc:
+                    self.metrics.failures += 1
+                    if not item.future.done():
+                        item.future.set_exception(exc)
+                else:
+                    if not item.future.done():
+                        item.future.set_result(result)
+                finally:
+                    self._queue.task_done()
+                await asyncio.sleep(0)
+
+    @staticmethod
+    def _compatible(left: ActivationRequest, right: ActivationRequest) -> bool:
+        first = left.metadata
+        second = right.metadata
+        return (
+            first.model_revision == second.model_revision
+            and first.stage_id == second.stage_id
+            and first.operation == second.operation
+            and first.sequence_length.bit_length() == second.sequence_length.bit_length()
+        )
+
+    def _execute_one(self, item: QueuedExecution) -> ActivationResult:
+        request = item.request
+        activation = decode_tensor(request.tensor_payload)
+        if activation.request_id != request.metadata.request_id:
+            raise BackpressureError("activation request ID does not match metadata")
+        if activation.stage_id != request.metadata.stage_id:
+            raise BackpressureError("activation stage ID does not match metadata")
+        module = self.shards.module(request.metadata.stage_id)
+        started = time.perf_counter()
+        output_array = module.execute(
+            activation.array,
+            request_id=request.metadata.request_id,
+            operation=request.metadata.operation,
+            token_position=request.metadata.token_position,
+            sequence_length=request.metadata.sequence_length,
+            cache_generation=request.metadata.cache_generation,
+        )
+        elapsed = time.perf_counter() - started
+        output = encode_tensor(
+            type(activation)(
+                tensor_id=f"{activation.tensor_id}:out",
+                request_id=activation.request_id,
+                stage_id=activation.stage_id,
+                token_position=activation.token_position,
+                sequence_length=activation.sequence_length,
+                array=output_array,
+            )
+        )
+        checksum = sha256_bytes(output)
+        signed = canonical_json_bytes(
+            {
+                "worker_id": self.worker_id,
+                "request_id": request.metadata.request_id,
+                "stage_id": request.metadata.stage_id,
+                "token_position": request.metadata.token_position,
+                "checksum": checksum,
+            }
+        )
+        queue_ms = (started - item.enqueued_at) * 1000
+        self.metrics.record_success(
+            received_bytes=len(request.tensor_payload),
+            sent_bytes=len(output),
+            service_s=elapsed,
+            queue_depth=self.queue_depth,
+        )
+        return ActivationResult(
+            metadata=request.metadata,
+            tensor_payload=output,
+            worker_id=self.worker_id,
+            execution_ms=elapsed * 1000,
+            queue_ms=max(0.0, queue_ms),
+            checksum=checksum,
+            signature=self.identity.sign(signed),
+        )

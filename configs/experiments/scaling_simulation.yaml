@@ -1,0 +1,51 @@
+schema_version: "1"
+name: replicated-stage-scaling
+execution_mode: simulation
+seed: 314159
+scheduler: replicated-stage
+model:
+  layer_count: 64
+  bytes_per_layer: 1073741824
+  hidden_size: 2048
+  activation_dtype: float16
+  cache_bytes_per_token_per_layer: 8192
+  compute_work_per_layer: 1
+  routing: dense
+  expert_count: 1
+  active_experts: 1
+  model_seed: 41
+  stage_count: 4
+workload:
+  concurrent_requests: 16
+  prompt_tokens: 16
+  output_tokens: 32
+  workload_class: standard
+  arrival_interval_ms: 0
+queue:
+  capacity: 512
+  max_microbatch_size: 1
+  max_microbatch_wait_ms: 0
+  request_deadline_ms: 120000
+  backpressure_policy: reject
+faults: {}
+integrity:
+  enabled: true
+  audit_fraction: 0.02
+network:
+  from: ../networks/localhost.yaml
+nodes:
+  - from: ../nodes/desktop_cpu.yaml
+    count: 128
+    memory_bytes: 21474836480
+    compute_rate_layers_s: 1600
+    max_concurrent_stage_operations: 1
+node_counts: [4, 8, 16, 32, 64, 128]
+concurrent_request_counts: [1, 4, 16, 64, 256]
+warmup_s: 5
+steady_state_s: 300
+output_root: artifacts/runs
+model_id: synthetic-dense-64x1gib
+model_revision: synthetic-v1
+notes:
+  - Full required scaling matrix; simulation results are emulated.
+

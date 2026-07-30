@@ -1,0 +1,53 @@
+schema_version: "1"
+name: corrupt-worker-audit
+execution_mode: simulation
+seed: 112358
+scheduler: adversarial
+model:
+  layer_count: 32
+  bytes_per_layer: 536870912
+  hidden_size: 1024
+  activation_dtype: float16
+  cache_bytes_per_token_per_layer: 4096
+  compute_work_per_layer: 1
+  routing: dense
+  expert_count: 1
+  active_experts: 1
+  model_seed: 101
+  stage_count: 4
+workload:
+  concurrent_requests: 64
+  prompt_tokens: 16
+  output_tokens: 64
+  workload_class: standard
+  arrival_interval_ms: 0
+queue:
+  capacity: 512
+  max_microbatch_size: 1
+  max_microbatch_wait_ms: 0
+  request_deadline_ms: 300000
+  backpressure_policy: reject
+faults:
+  corrupt_worker_fraction: 0.10
+  audit_fraction: 1.0
+integrity:
+  enabled: true
+  audit_fraction: 1.0
+  disagreement_penalty: 0.3
+  agreement_reward: 0.01
+  quarantine_threshold: 0.5
+network:
+  from: ../networks/home_lan.yaml
+nodes:
+  - from: ../nodes/desktop_cpu.yaml
+    count: 32
+    memory_bytes: 5368709120
+    compute_rate_layers_s: 900
+node_counts: [32]
+concurrent_request_counts: [64]
+warmup_s: 5
+steady_state_s: 300
+output_root: artifacts/runs
+model_id: synthetic-corruption-16gib
+model_revision: synthetic-v1
+

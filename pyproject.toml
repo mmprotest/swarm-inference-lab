@@ -1,0 +1,129 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "swarm-inference-lab"
+version = "0.1.0"
+description = "A falsifiable research harness for heterogeneous consumer-device LLM inference swarms"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "Apache-2.0" }
+authors = [{ name = "swarm-inference-lab contributors" }]
+dependencies = [
+  "cryptography>=42",
+  "grpcio>=1.64",
+  "huggingface-hub>=0.30",
+  "matplotlib>=3.8",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "protobuf>=5",
+  "psutil>=5.9",
+  "pydantic>=2.7",
+  "PyYAML>=6",
+  "safetensors>=0.4",
+  "transformers>=4.51,<5",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+cpu = [
+  "torch>=2.11",
+]
+cuda = [
+  "torch>=2.11; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')",
+]
+mps = [
+  "torch>=2.11; sys_platform == 'darwin'",
+]
+dev = [
+  "hypothesis>=6.100",
+  "mypy>=1.10",
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "pytest-cov>=5",
+  "ruff>=0.5",
+  "types-protobuf>=5",
+  "types-psutil>=5.9",
+  "types-PyYAML>=6",
+]
+
+[project.scripts]
+swarm = "swarm_inference.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/swarm_inference"]
+
+[tool.uv]
+conflicts = [
+  [
+    { extra = "cpu" },
+    { extra = "cuda" },
+  ],
+  [
+    { extra = "cpu" },
+    { extra = "mps" },
+  ],
+  [
+    { extra = "cuda" },
+    { extra = "mps" },
+  ],
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu", marker = "(sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')" },
+  { index = "pytorch-cu130", extra = "cuda", marker = "(sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+markers = [
+  "gpu: requires a CUDA-capable PyTorch installation",
+  "model_download: downloads model artifacts",
+  "physical: requires multiple physical hosts",
+  "slow: long-running experiment",
+]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["swarm_inference"]
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+  "grpc.*",
+  "huggingface_hub.*",
+  "matplotlib.*",
+  "pandas.*",
+  "safetensors.*",
+  "torch.*",
+  "transformers.*",
+]
+ignore_missing_imports = true
