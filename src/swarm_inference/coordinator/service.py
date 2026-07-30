@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import math
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
@@ -13,6 +14,7 @@ import grpc
 import numpy as np
 
 from swarm_inference.config.models import (
+    DataPlaneMode,
     ExperimentConfig,
     HealthStatus,
     ModelManifest,
@@ -28,7 +30,11 @@ from swarm_inference.config.models import (
 )
 from swarm_inference.coordinator.placement import estimate_worker_stage_rate
 from swarm_inference.coordinator.registry import WorkerRegistry
-from swarm_inference.coordinator.replay_log import ReplayLog
+from swarm_inference.coordinator.replay_log import ReplayEntry, ReplayLog
+from swarm_inference.coordinator.reservations import (
+    AtomicRouteAllocator,
+    ReservationDecision,
+)
 from swarm_inference.exceptions import (
     IntegrityError,
     NoValidRouteError,
@@ -42,14 +48,25 @@ from swarm_inference.protocol.messages import (
     ActivationMetadata,
     ActivationRequest,
     ActivationResult,
+    DataPlaneEnvelope,
+    FinalResultMessage,
     Heartbeat,
     RegistrationRequest,
     RegistrationResponse,
+    RouteHop,
+    RouteInstallRequest,
+    RoutePlan,
     StageAssignmentMessage,
     SubmitRequest,
     SubmitResponse,
     parse_message,
     serialize_message,
+)
+from swarm_inference.protocol.routes import (
+    encode_route_key,
+    sign_data_envelope,
+    sign_route_plan,
+    verify_final_result,
 )
 from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tensor, encode_tensor
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
@@ -73,6 +90,11 @@ class RuntimeRequestMetrics:
     replay_bytes: int = 0
     retries: int = 0
     route_changes: int = 0
+    admission_time_ms: float = 0.0
+    route_reservation_time_ms: float = 0.0
+    route_id: str | None = None
+    route_generation: int = 0
+    data_plane_mode: str = DataPlaneMode.COORDINATOR_RELAY.value
     per_stage: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -114,6 +136,30 @@ class CoordinatorCore:
         self.request_metrics: list[dict[str, Any]] = []
         self._rebalance_lock = asyncio.Lock()
         self._assigned: set[tuple[int, str]] = set()
+        self.route_allocator = AtomicRouteAllocator()
+        self.route_signing_key = os.urandom(32)
+        self.final_result_endpoint: str | None = None
+        self._pending_final_results: dict[
+            tuple[str, int, int], asyncio.Future[FinalResultMessage]
+        ] = {}
+        self._committed_route_generations: dict[tuple[str, int], int] = {}
+        self.runtime_transport_metrics: dict[str, int | float | str] = {
+            "data_plane_mode": config.data_plane.value,
+            "coordinator_control_bytes": 0,
+            "coordinator_activation_bytes": 0,
+            "coordinator_input_activation_bytes": 0,
+            "coordinator_final_result_bytes": 0,
+            "worker_to_worker_activation_bytes": 0,
+            "data_messages_sent": 0,
+            "data_messages_received": 0,
+            "serialisation_time_ms": 0.0,
+            "deserialisation_time_ms": 0.0,
+            "stream_queue_time_ms": 0.0,
+            "hop_transfer_time_ms": 0.0,
+            "stage_execution_time_ms": 0.0,
+            "admission_time_ms": 0.0,
+            "route_reservation_time_ms": 0.0,
+        }
 
     @staticmethod
     def _runtime_stages(
@@ -167,6 +213,11 @@ class CoordinatorCore:
         return required_dtype in worker.supported_dtypes
 
     async def close(self) -> None:
+        for future in self._pending_final_results.values():
+            if not future.done():
+                future.set_exception(TransportError("coordinator is shutting down"))
+        self._pending_final_results.clear()
+        self.route_allocator.release_all(reason="coordinator-shutdown")
         await self.transport.close()
 
     async def register(self, request: RegistrationRequest) -> RegistrationResponse:
@@ -313,6 +364,13 @@ class CoordinatorCore:
                         model_id=self.runtime_model_id,
                         model_revision=self.runtime_model_revision,
                         synthetic_model=self.config.model,
+                        data_plane_mode=self.config.data_plane,
+                        coordinator_data_endpoint=self.final_result_endpoint,
+                        route_signing_key=(
+                            encode_route_key(self.route_signing_key)
+                            if self.config.data_plane == DataPlaneMode.DIRECT
+                            else None
+                        ),
                     )
                 else:
                     shard_name = f"stage-{stage.stage_id:03d}"
@@ -332,6 +390,13 @@ class CoordinatorCore:
                         architecture_config=self.architecture_config,
                         model_manifest=self.model_manifest,
                         dtype=self.runtime_dtype,
+                        data_plane_mode=self.config.data_plane,
+                        coordinator_data_endpoint=self.final_result_endpoint,
+                        route_signing_key=(
+                            encode_route_key(self.route_signing_key)
+                            if self.config.data_plane == DataPlaneMode.DIRECT
+                            else None
+                        ),
                     )
                 try:
                     ack = await self.transport.assign(capability.endpoint, assignment)
@@ -347,13 +412,19 @@ class CoordinatorCore:
                     continue
                 if not ack.accepted:
                     continue
+                replica_service_rate = (
+                    1000.0 / self.config.synthetic_compute.target_stage_ms
+                    if self.model_manifest is None
+                    and self.config.synthetic_compute.mode == "calibrated_cpu"
+                    else rate
+                )
                 replica = StageReplica(
                     stage_id=stage.stage_id,
                     worker_id=capability.worker_id,
                     shard_hash=shard_hash,
                     load_status="loaded",
                     warm=True,
-                    measured_service_rate=rate,
+                    measured_service_rate=replica_service_rate,
                     health=HealthStatus.HEALTHY,
                     endpoint=capability.endpoint,
                 )
@@ -364,7 +435,7 @@ class CoordinatorCore:
                         "event_type": "stage_assigned",
                         "worker_id": replica.worker_id,
                         "stage_id": replica.stage_id,
-                        "predicted_service_rate": rate,
+                        "predicted_service_rate": replica_service_rate,
                         "marginal_basis": (
                             "required coverage"
                             if replica_counts[stage.stage_id] == 1
@@ -429,51 +500,614 @@ class CoordinatorCore:
             route[stage.stage_id] = replicas[0]
         return route
 
+    def _reserve_request_route(
+        self,
+        submission: SubmitRequest,
+        workload_class: WorkloadClass,
+    ) -> ReservationDecision:
+        expired = self.route_allocator.reconcile_expired()
+        if expired:
+            self.events.append(
+                {
+                    "event_type": "route_leases_reconciled",
+                    "route_ids": expired,
+                }
+            )
+        decision = self.route_allocator.allocate(
+            request_id=submission.request_id,
+            stages=self.stages,
+            replicas=self.registry.replicas(),
+            workers=self.registry.workers(),
+            token_steps=submission.max_new_tokens,
+            activation_bytes=self.config.model.activation_bytes,
+            workload_class=workload_class,
+            lease_seconds=self.config.worker.route_lease_seconds,
+        )
+        self.runtime_transport_metrics["route_reservation_time_ms"] = (
+            float(self.runtime_transport_metrics["route_reservation_time_ms"])
+            + decision.reservation_time_ms
+        )
+        self.events.append(
+            {
+                "event_type": "route_reserved",
+                "request_id": submission.request_id,
+                "route_id": decision.route_id,
+                "route_generation": decision.generation,
+                "assignments": {
+                    str(stage_id): replica.worker_id
+                    for stage_id, replica in sorted(decision.assignments.items())
+                },
+                "candidate_costs_ms": decision.candidate_costs_ms,
+                "reservation_time_ms": decision.reservation_time_ms,
+            }
+        )
+        return decision
+
+    def _route_plan(
+        self,
+        submission: SubmitRequest,
+        decision: ReservationDecision,
+    ) -> RoutePlan:
+        if self.final_result_endpoint is None:
+            raise TransportError("coordinator final-result endpoint is not configured")
+        stages = {stage.stage_id: stage for stage in self.stages}
+        hops = [
+            RouteHop(
+                stage_id=stage_id,
+                worker_id=replica.worker_id,
+                worker_data_endpoint=replica.endpoint or "",
+                expected_shard_hash=replica.shard_hash,
+                expected_input_spec=stages[stage_id].input_spec,
+                expected_output_spec=stages[stage_id].output_spec,
+            )
+            for stage_id, replica in sorted(decision.assignments.items())
+        ]
+        unsigned = RoutePlan(
+            route_id=decision.route_id,
+            route_generation=decision.generation,
+            request_id=submission.request_id,
+            model_id=self.runtime_model_id,
+            model_revision=self.runtime_model_revision,
+            assignments=hops,
+            route_lease_expiry_unix_ns=(
+                time.time_ns() + int(self.config.worker.route_lease_seconds * 1_000_000_000)
+            ),
+            workload_class=submission.workload_class,
+            cancellation_generation=0,
+            integrity_policy="hmac-sha256+activation-sha256+worker-ed25519",
+            final_result_destination=self.final_result_endpoint,
+        )
+        return sign_route_plan(unsigned, self.route_signing_key)
+
+    async def _install_direct_route(self, route: RoutePlan) -> None:
+        requests = [
+            (
+                hop,
+                RouteInstallRequest(
+                    worker_id=hop.worker_id,
+                    route=route,
+                ),
+            )
+            for hop in route.assignments
+        ]
+        serialized_route_bytes = len(serialize_message(route))
+        self.runtime_transport_metrics["coordinator_control_bytes"] = int(
+            self.runtime_transport_metrics["coordinator_control_bytes"]
+        ) + serialized_route_bytes * len(requests)
+        try:
+            acknowledgements = await asyncio.gather(
+                *(
+                    self.transport.install_route(hop.worker_data_endpoint, request)
+                    for hop, request in requests
+                )
+            )
+        except Exception:
+            self.route_allocator.dispatch_failed(route.route_id)
+            raise
+        rejected = [ack.detail for ack in acknowledgements if not ack.accepted]
+        if rejected:
+            self.route_allocator.dispatch_failed(route.route_id)
+            raise TransportError(
+                f"route {route.route_id} installation rejected: {'; '.join(rejected)}"
+            )
+
+    async def _cancel_worker_request_state(
+        self,
+        request_id: str,
+        model_revision: str,
+    ) -> None:
+        from swarm_inference.protocol.messages import CancelRequest
+
+        endpoints = {
+            replica.endpoint for replica in self.registry.replicas() if replica.endpoint is not None
+        }
+        await asyncio.gather(
+            *(
+                self.transport.cancel(
+                    endpoint,
+                    CancelRequest(
+                        request_id=request_id,
+                        model_revision=model_revision,
+                    ),
+                )
+                for endpoint in endpoints
+            ),
+            return_exceptions=True,
+        )
+
+    async def _failed_route_stage_ids(self, route: RoutePlan) -> list[int]:
+        async def probe(hop: RouteHop) -> tuple[int, bool]:
+            try:
+                health = await self.transport.health(hop.worker_data_endpoint)
+            except Exception:
+                return hop.stage_id, True
+            return hop.stage_id, not health.healthy
+
+        results = await asyncio.gather(*(probe(hop) for hop in route.assignments))
+        return sorted(stage_id for stage_id, failed in results if failed)
+
+    async def _dispatch_direct_replay(
+        self,
+        *,
+        submission: SubmitRequest,
+        route: RoutePlan,
+        entry: ReplayEntry,
+    ) -> None:
+        first = route.assignments[0]
+        decoded = decode_tensor(entry.payload, copy=False)
+        metadata = ActivationMetadata(
+            request_id=submission.request_id,
+            tensor_id=f"{submission.request_id}:{entry.token_position}:0:replay",
+            stage_id=0,
+            operation=entry.operation,
+            token_position=entry.token_position,
+            sequence_length=decoded.sequence_length,
+            cache_generation=entry.cache_generation,
+            model_id=self.runtime_model_id,
+            model_revision=self.runtime_model_revision,
+        )
+        replay = sign_data_envelope(
+            DataPlaneEnvelope(
+                message_id=(
+                    f"replay:{route.route_id}:{route.route_generation}:{entry.token_position}:0"
+                ),
+                route_id=route.route_id,
+                route_generation=route.route_generation,
+                request_id=submission.request_id,
+                stage_id=0,
+                source_worker="coordinator",
+                destination_worker=first.worker_id,
+                token_position=entry.token_position,
+                operation=entry.operation,
+                tensor_metadata=metadata,
+                tensor_payload=entry.payload,
+                payload_length=len(entry.payload),
+                payload_checksum=entry.checksum,
+                sequence_number=0,
+                timestamp_unix_ns=time.time_ns(),
+                replay_only=True,
+            ),
+            self.route_signing_key,
+        )
+        ack = await self.transport.dispatch(first.worker_data_endpoint, replay)
+        if not ack.accepted:
+            raise TransportError(f"direct replay rejected ({ack.status}): {ack.detail}")
+
+    async def _recover_direct_route(
+        self,
+        *,
+        submission: SubmitRequest,
+        request_state: RequestState,
+        route: RoutePlan,
+        metrics: RuntimeRequestMetrics,
+        committed_through_token_position: int,
+        failure: BaseException,
+    ) -> RoutePlan:
+        failed_stage_ids = await self._failed_route_stage_ids(route)
+        if not failed_stage_ids:
+            raise TransportError(
+                f"direct hop failed but every assigned worker remains healthy: {failure}"
+            ) from failure
+        failed_workers: list[str] = []
+        replacements: dict[int, str] = {}
+        for stage_id in failed_stage_ids:
+            failed_worker_id = route.assignments[stage_id].worker_id
+            failed_workers.append(failed_worker_id)
+            self.registry.mark_unhealthy(failed_worker_id)
+            self.route_allocator.mark_failed(stage_id, failed_worker_id)
+            replacement, _ = self.route_allocator.replace_failed(
+                route.route_id,
+                stage_id=stage_id,
+                candidates=self.registry.replicas(stage_id),
+            )
+            replacements[stage_id] = replacement.worker_id
+
+        lease = self.route_allocator.lease(route.route_id)
+        decision = ReservationDecision(
+            route_id=lease.route_id,
+            generation=lease.generation,
+            assignments=lease.assignments,
+            candidate_costs_ms={},
+            reservation_time_ms=0,
+            lease_expiry_monotonic_s=lease.expires_monotonic_s,
+        )
+        replacement_route = self._route_plan(submission, decision)
+        await self._cancel_worker_request_state(
+            submission.request_id,
+            self.runtime_model_revision,
+        )
+        await self._install_direct_route(replacement_route)
+
+        replay_started = time.perf_counter()
+        replay_bytes = 0
+        if committed_through_token_position >= 0:
+            entries = self.replay.entries_for(
+                request_id=submission.request_id,
+                model_revision=self.runtime_model_revision,
+                stage_id=0,
+                cache_generation=0,
+                through_token_position=committed_through_token_position,
+            )
+            for entry in entries:
+                replay_bytes += len(entry.payload)
+                await self._dispatch_direct_replay(
+                    submission=submission,
+                    route=replacement_route,
+                    entry=entry,
+                )
+        replay_elapsed = time.perf_counter() - replay_started
+        metrics.replay_s += replay_elapsed
+        metrics.replay_bytes += replay_bytes
+        metrics.retries += 1
+        metrics.route_changes += 1
+        metrics.route_generation = replacement_route.route_generation
+        request_state.retry_count += 1
+        request_state.stage_route = [hop.worker_id for hop in replacement_route.assignments]
+        request_state.stage_local_cache_ownership = {
+            hop.stage_id: hop.worker_id for hop in replacement_route.assignments
+        }
+        self.events.append(
+            {
+                "event_type": "stage_recovered",
+                "request_id": submission.request_id,
+                "route_id": route.route_id,
+                "old_route_generation": route.route_generation,
+                "route_generation": replacement_route.route_generation,
+                "failed_stage_ids": failed_stage_ids,
+                "failed_worker_ids": failed_workers,
+                "replacements": replacements,
+                "replay_bytes": replay_bytes,
+                "replay_duration_s": replay_elapsed,
+                "failure": str(failure),
+                "data_plane_mode": DataPlaneMode.DIRECT.value,
+            }
+        )
+        return replacement_route
+
+    async def accept_final_result(self, message: FinalResultMessage) -> Ack:
+        try:
+            verify_final_result(message, self.route_signing_key)
+            if sha256_bytes(message.result.tensor_payload) != message.payload_checksum:
+                raise IntegrityError(f"final result {message.message_id} checksum mismatch")
+            lease = self.route_allocator.lease(message.route_id)
+            if lease.released:
+                raise IntegrityError(f"route {message.route_id} is already released")
+            if (
+                lease.request_id != message.request_id
+                or lease.generation != message.route_generation
+            ):
+                raise IntegrityError(
+                    f"stale final result route generation "
+                    f"{message.route_generation}; current={lease.generation}"
+                )
+            final_replica = lease.assignments[max(lease.assignments)]
+            if message.result.worker_id != final_replica.worker_id:
+                raise IntegrityError(
+                    f"final result came from {message.result.worker_id}, expected "
+                    f"{final_replica.worker_id}"
+                )
+            if message.result.metadata.stage_id != max(lease.assignments):
+                raise IntegrityError("final result did not come from the final stage")
+            capability = self.registry.capability(message.result.worker_id)
+            signed_payload = canonical_json_bytes(
+                {
+                    "worker_id": message.result.worker_id,
+                    "request_id": message.result.metadata.request_id,
+                    "stage_id": message.result.metadata.stage_id,
+                    "token_position": message.result.metadata.token_position,
+                    "checksum": message.result.checksum,
+                }
+            )
+            verify_signature(
+                capability.public_key,
+                signed_payload,
+                message.result.signature,
+            )
+            commit_key = (message.request_id, message.token_position)
+            committed_generation = self._committed_route_generations.get(commit_key)
+            if (
+                committed_generation is not None
+                and committed_generation != message.route_generation
+            ):
+                raise IntegrityError(
+                    f"token {message.token_position} already committed by route "
+                    f"generation {committed_generation}"
+                )
+            pending_key = (
+                message.route_id,
+                message.route_generation,
+                message.token_position,
+            )
+            future = self._pending_final_results.get(pending_key)
+            if future is None:
+                if committed_generation == message.route_generation:
+                    return Ack(accepted=True, detail="duplicate final result")
+                raise IntegrityError(f"no pending token for final result {message.message_id}")
+            if message.hop_telemetry:
+                last = message.hop_telemetry[-1]
+                transfer_ms = max(
+                    0.0,
+                    (time.time_ns() - message.timestamp_unix_ns) / 1_000_000,
+                )
+                message.hop_telemetry[-1] = last.model_copy(
+                    update={
+                        "transfer_ms": transfer_ms,
+                        "hop_end_to_end_ms": last.hop_end_to_end_ms + transfer_ms,
+                    }
+                )
+            self._committed_route_generations[commit_key] = message.route_generation
+            if not future.done():
+                future.set_result(message)
+            return Ack(accepted=True, detail="final result committed")
+        except Exception as exc:
+            self.events.append(
+                {
+                    "event_type": "final_result_rejected",
+                    "route_id": message.route_id,
+                    "request_id": message.request_id,
+                    "token_position": message.token_position,
+                    "detail": str(exc),
+                }
+            )
+            return Ack(accepted=False, detail=str(exc))
+
+    async def _call_direct_route(
+        self,
+        *,
+        submission: SubmitRequest,
+        route: RoutePlan,
+        metrics: RuntimeRequestMetrics,
+        operation: OperationKind,
+        token_position: int,
+        sequence_length: int,
+        encoded: bytes,
+    ) -> ActivationResult:
+        first = route.assignments[0]
+        metadata = ActivationMetadata(
+            request_id=submission.request_id,
+            tensor_id=f"{submission.request_id}:{token_position}:0",
+            stage_id=0,
+            operation=operation,
+            token_position=token_position,
+            sequence_length=sequence_length,
+            cache_generation=0,
+            model_id=self.runtime_model_id,
+            model_revision=self.runtime_model_revision,
+        )
+        unsigned = DataPlaneEnvelope(
+            message_id=(f"{route.route_id}:{route.route_generation}:{token_position}:0"),
+            route_id=route.route_id,
+            route_generation=route.route_generation,
+            request_id=submission.request_id,
+            stage_id=0,
+            source_worker="coordinator",
+            destination_worker=first.worker_id,
+            token_position=token_position,
+            operation=operation,
+            tensor_metadata=metadata,
+            tensor_payload=encoded,
+            payload_length=len(encoded),
+            payload_checksum=sha256_bytes(encoded),
+            sequence_number=0,
+            timestamp_unix_ns=time.time_ns(),
+        )
+        envelope = sign_data_envelope(unsigned, self.route_signing_key)
+        pending_key = (
+            route.route_id,
+            route.route_generation,
+            token_position,
+        )
+        loop = asyncio.get_running_loop()
+        future: asyncio.Future[FinalResultMessage] = loop.create_future()
+        self._pending_final_results[pending_key] = future
+        serialized_bytes = len(serialize_message(envelope))
+        self.runtime_transport_metrics["coordinator_control_bytes"] = int(
+            self.runtime_transport_metrics["coordinator_control_bytes"]
+        ) + max(0, serialized_bytes - len(encoded))
+        self.runtime_transport_metrics["coordinator_input_activation_bytes"] = int(
+            self.runtime_transport_metrics["coordinator_input_activation_bytes"]
+        ) + len(encoded)
+        for hop in route.assignments:
+            self.route_allocator.record_operation_start(
+                hop.stage_id,
+                hop.worker_id,
+                len(encoded),
+            )
+        started = time.perf_counter_ns()
+        completed_path = False
+        try:
+            dispatch_ack = await self.transport.dispatch(
+                first.worker_data_endpoint,
+                envelope,
+            )
+            if not dispatch_ack.accepted:
+                raise TransportError(
+                    f"direct route rejected ({dispatch_ack.status}): {dispatch_ack.detail}"
+                )
+            final = await asyncio.wait_for(
+                future,
+                timeout=self.config.queue.request_deadline_ms / 1000,
+            )
+            completed_path = True
+        finally:
+            self._pending_final_results.pop(pending_key, None)
+            if not completed_path:
+                for hop in route.assignments:
+                    self.route_allocator.record_operation_aborted(
+                        hop.stage_id,
+                        hop.worker_id,
+                        len(encoded),
+                    )
+        elapsed_ms = (time.perf_counter_ns() - started) / 1_000_000
+        self.runtime_transport_metrics["coordinator_final_result_bytes"] = int(
+            self.runtime_transport_metrics["coordinator_final_result_bytes"]
+        ) + len(final.result.tensor_payload)
+        self.runtime_transport_metrics["worker_to_worker_activation_bytes"] = int(
+            self.runtime_transport_metrics["worker_to_worker_activation_bytes"]
+        ) + sum(item.payload_bytes for item in final.hop_telemetry[:-1])
+        peer_messages = max(0, len(final.hop_telemetry) - 1)
+        self.runtime_transport_metrics["data_messages_sent"] = (
+            int(self.runtime_transport_metrics["data_messages_sent"]) + peer_messages
+        )
+        self.runtime_transport_metrics["data_messages_received"] = (
+            int(self.runtime_transport_metrics["data_messages_received"]) + peer_messages
+        )
+        total_execution_ms = 0.0
+        total_queue_ms = 0.0
+        for item in final.hop_telemetry:
+            total_execution_ms += item.execution_ms
+            total_queue_ms += item.queue_ms
+            effective_ms = item.effective_service_ms
+            self.route_allocator.record_operation_complete(
+                item.stage_id,
+                item.worker_id,
+                payload_bytes=item.payload_bytes,
+                effective_service_ms=effective_ms,
+                execution_ms=item.execution_ms,
+            )
+            metrics.per_stage.append(
+                {
+                    "stage_id": item.stage_id,
+                    "worker_id": item.worker_id,
+                    "source_worker": item.source_worker,
+                    "destination_worker": item.destination_worker,
+                    "token_position": token_position,
+                    "execution_ms": item.execution_ms,
+                    "queue_ms": item.queue_ms,
+                    "serialisation_ms": item.serialisation_ms,
+                    "deserialisation_ms": item.deserialisation_ms,
+                    "integrity_validation_ms": item.integrity_validation_ms,
+                    "cache_update_ms": item.cache_update_ms,
+                    "stream_queue_ms": item.stream_queue_ms,
+                    "transfer_ms": item.transfer_ms,
+                    "hop_end_to_end_ms": item.hop_end_to_end_ms,
+                    "effective_service_ms": effective_ms,
+                    "activation_bytes_sent": item.payload_bytes,
+                    "activation_bytes_received": item.payload_bytes,
+                    "transport_elapsed_s": item.hop_end_to_end_ms / 1000,
+                    "route_id": route.route_id,
+                    "route_generation": route.route_generation,
+                    "data_plane_mode": DataPlaneMode.DIRECT.value,
+                }
+            )
+            self.runtime_transport_metrics["serialisation_time_ms"] = (
+                float(self.runtime_transport_metrics["serialisation_time_ms"])
+                + item.serialisation_ms
+            )
+            self.runtime_transport_metrics["deserialisation_time_ms"] = (
+                float(self.runtime_transport_metrics["deserialisation_time_ms"])
+                + item.deserialisation_ms
+            )
+            self.runtime_transport_metrics["stream_queue_time_ms"] = (
+                float(self.runtime_transport_metrics["stream_queue_time_ms"]) + item.stream_queue_ms
+            )
+            self.runtime_transport_metrics["hop_transfer_time_ms"] = (
+                float(self.runtime_transport_metrics["hop_transfer_time_ms"]) + item.transfer_ms
+            )
+            self.runtime_transport_metrics["stage_execution_time_ms"] = (
+                float(self.runtime_transport_metrics["stage_execution_time_ms"]) + item.execution_ms
+            )
+        metrics.stage_execution_s += total_execution_ms / 1000
+        metrics.queue_s += total_queue_ms / 1000
+        metrics.transport_s += max(
+            0.0,
+            (elapsed_ms - total_execution_ms - total_queue_ms) / 1000,
+        )
+        return final.result
+
     async def submit(self, submission: SubmitRequest) -> SubmitResponse:
         started = time.perf_counter()
         metrics = RuntimeRequestMetrics(
             request_id=submission.request_id,
             started_s=started,
+            data_plane_mode=self.config.data_plane.value,
         )
-        if submission.prompt_token_ids:
-            prompt_token_ids = submission.prompt_token_ids
-        elif self.model_manifest is not None:
-            if self.tokenizer is None:
-                raise IntegrityError(
-                    "real-model text submission requires a coordinator tokenizer; "
-                    "provide prompt_token_ids or configure tokenizer_path"
-                )
-            encoded_prompt = self.tokenizer(submission.prompt or "", return_tensors=None)
-            prompt_token_ids = [int(value) for value in encoded_prompt["input_ids"]]
-        else:
-            prompt_token_ids = [byte + 1 for byte in (submission.prompt or "").encode("utf-8")]
-        if self.model_manifest is not None:
-            if submission.model_id not in {"synthetic", self.runtime_model_id}:
-                raise IntegrityError(
-                    f"request model {submission.model_id!r} does not match {self.runtime_model_id!r}"
-                )
-            if submission.model_revision not in {
-                "synthetic-v1",
-                self.runtime_model_revision,
-            }:
-                raise IntegrityError(
-                    "request model revision does not match the assigned immutable revision"
-                )
-        request_state = RequestState(
-            request_id=submission.request_id,
-            workload_class=WorkloadClass(submission.workload_class),
-            prompt_token_ids=prompt_token_ids,
-            sampling=SamplingConfig(
-                temperature=0,
-                max_new_tokens=submission.max_new_tokens,
-            ),
-            random_seed=submission.random_seed,
-            status=RequestStatus.RUNNING,
-        )
-        route = self._choose_route()
-        request_state.stage_route = [route[index].worker_id for index in range(len(self.stages))]
         outputs: list[int] = []
+        route_id: str | None = None
+        request_state: RequestState | None = None
+        release_reason = "request-failed"
         try:
+            if submission.prompt_token_ids:
+                prompt_token_ids = submission.prompt_token_ids
+            elif self.model_manifest is not None:
+                if self.tokenizer is None:
+                    raise IntegrityError(
+                        "real-model text submission requires a coordinator tokenizer; "
+                        "provide prompt_token_ids or configure tokenizer_path"
+                    )
+                encoded_prompt = self.tokenizer(submission.prompt or "", return_tensors=None)
+                prompt_token_ids = [int(value) for value in encoded_prompt["input_ids"]]
+            else:
+                prompt_token_ids = [byte + 1 for byte in (submission.prompt or "").encode("utf-8")]
+            if self.model_manifest is not None:
+                if submission.model_id not in {"synthetic", self.runtime_model_id}:
+                    raise IntegrityError(
+                        f"request model {submission.model_id!r} does not match "
+                        f"{self.runtime_model_id!r}"
+                    )
+                if submission.model_revision not in {
+                    "synthetic-v1",
+                    self.runtime_model_revision,
+                }:
+                    raise IntegrityError(
+                        "request model revision does not match the assigned immutable revision"
+                    )
+            workload_class = WorkloadClass(submission.workload_class)
+            request_state = RequestState(
+                request_id=submission.request_id,
+                workload_class=workload_class,
+                prompt_token_ids=prompt_token_ids,
+                sampling=SamplingConfig(
+                    temperature=0,
+                    max_new_tokens=submission.max_new_tokens,
+                ),
+                random_seed=submission.random_seed,
+                status=RequestStatus.RUNNING,
+            )
+            decision = self._reserve_request_route(submission, workload_class)
+            route_id = decision.route_id
+            route = decision.assignments
+            metrics.route_id = route_id
+            metrics.route_generation = decision.generation
+            metrics.route_reservation_time_ms = decision.reservation_time_ms
+            request_state.stage_route = [
+                route[index].worker_id for index in range(len(self.stages))
+            ]
+            request_state.stage_local_cache_ownership = {
+                stage_id: replica.worker_id for stage_id, replica in route.items()
+            }
+            route_plan = (
+                self._route_plan(submission, decision)
+                if self.config.data_plane == DataPlaneMode.DIRECT
+                else None
+            )
+            if route_plan is not None:
+                await self._install_direct_route(route_plan)
+            metrics.admission_time_ms = (time.perf_counter() - started) * 1000
+            self.runtime_transport_metrics["admission_time_ms"] = (
+                float(self.runtime_transport_metrics["admission_time_ms"])
+                + metrics.admission_time_ms
+            )
             for output_position in range(submission.max_new_tokens):
                 operation = OperationKind.PREFILL if output_position == 0 else OperationKind.DECODE
                 token_ids = prompt_token_ids if output_position == 0 else [outputs[-1]]
@@ -491,12 +1125,11 @@ class CoordinatorCore:
                         else len(prompt_token_ids) + output_position - 1
                     )
                     activation = np.asarray([token_ids], dtype=np.int64)
-                for stage in self.stages:
-                    replica = route[stage.stage_id]
+                if route_plan is not None:
                     tensor = ActivationTensor(
-                        tensor_id=(f"{submission.request_id}:{output_position}:{stage.stage_id}"),
+                        tensor_id=f"{submission.request_id}:{output_position}:0",
                         request_id=submission.request_id,
-                        stage_id=stage.stage_id,
+                        stage_id=0,
                         token_position=token_position,
                         sequence_length=len(token_ids),
                         array=activation,
@@ -505,28 +1138,86 @@ class CoordinatorCore:
                     self.replay.append(
                         request_id=submission.request_id,
                         model_revision=self.runtime_model_revision,
-                        stage_id=stage.stage_id,
+                        stage_id=0,
                         cache_generation=0,
                         token_position=token_position,
                         operation=operation,
                         payload=encoded,
                         recorded_monotonic_ns=time.monotonic_ns(),
                     )
-                    result, replacement = await self._execute_with_recovery(
-                        request=submission,
-                        request_state=request_state,
-                        metrics=metrics,
-                        route=route,
-                        replica=replica,
-                        stage_id=stage.stage_id,
-                        operation=operation,
-                        token_position=token_position,
-                        sequence_length=len(token_ids),
-                        encoded=encoded,
-                    )
-                    if replacement is not None:
-                        route[stage.stage_id] = replacement
+                    try:
+                        result = await self._call_direct_route(
+                            submission=submission,
+                            route=route_plan,
+                            metrics=metrics,
+                            operation=operation,
+                            token_position=token_position,
+                            sequence_length=len(token_ids),
+                            encoded=encoded,
+                        )
+                    except (TransportError, TimeoutError) as exc:
+                        route_plan = await self._recover_direct_route(
+                            submission=submission,
+                            request_state=request_state,
+                            route=route_plan,
+                            metrics=metrics,
+                            committed_through_token_position=token_position - 1,
+                            failure=exc,
+                        )
+                        route = self.route_allocator.lease(route_plan.route_id).assignments
+                        result = await self._call_direct_route(
+                            submission=submission,
+                            route=route_plan,
+                            metrics=metrics,
+                            operation=operation,
+                            token_position=token_position,
+                            sequence_length=len(token_ids),
+                            encoded=encoded,
+                        )
                     activation = decode_tensor(result.tensor_payload).array
+                else:
+                    for stage in self.stages:
+                        replica = route[stage.stage_id]
+                        tensor = ActivationTensor(
+                            tensor_id=(
+                                f"{submission.request_id}:{output_position}:{stage.stage_id}"
+                            ),
+                            request_id=submission.request_id,
+                            stage_id=stage.stage_id,
+                            token_position=token_position,
+                            sequence_length=len(token_ids),
+                            array=activation,
+                        )
+                        encoded = encode_tensor(tensor)
+                        self.replay.append(
+                            request_id=submission.request_id,
+                            model_revision=self.runtime_model_revision,
+                            stage_id=stage.stage_id,
+                            cache_generation=0,
+                            token_position=token_position,
+                            operation=operation,
+                            payload=encoded,
+                            recorded_monotonic_ns=time.monotonic_ns(),
+                        )
+                        result, replacement = await self._execute_with_recovery(
+                            request=submission,
+                            request_state=request_state,
+                            metrics=metrics,
+                            route=route,
+                            replica=replica,
+                            stage_id=stage.stage_id,
+                            operation=operation,
+                            token_position=token_position,
+                            sequence_length=len(token_ids),
+                            encoded=encoded,
+                        )
+                        if stage.stage_id < len(self.stages) - 1:
+                            self.runtime_transport_metrics["coordinator_activation_bytes"] = int(
+                                self.runtime_transport_metrics["coordinator_activation_bytes"]
+                            ) + 2 * len(result.tensor_payload)
+                        if replacement is not None:
+                            route[stage.stage_id] = replacement
+                        activation = decode_tensor(result.tensor_payload).array
                 if self.model_manifest is None:
                     digest = hashlib.sha256(
                         np.ascontiguousarray(activation).tobytes()
@@ -551,6 +1242,7 @@ class CoordinatorCore:
             request_state.status = RequestStatus.COMPLETED
             request_state.verification_state = VerificationState.VERIFIED
             metrics.completed_s = time.perf_counter()
+            release_reason = "request-finished"
             self.events.append(
                 {
                     "event_type": "request_completed",
@@ -569,8 +1261,9 @@ class CoordinatorCore:
                 end_to_end_s=metrics.completed_s - started,
             )
         except Exception as exc:
-            request_state.status = RequestStatus.FAILED
-            request_state.verification_state = VerificationState.REJECTED
+            if request_state is not None:
+                request_state.status = RequestStatus.FAILED
+                request_state.verification_state = VerificationState.REJECTED
             metrics.completed_s = time.perf_counter()
             self.events.append(
                 {
@@ -611,9 +1304,16 @@ class CoordinatorCore:
                     "replay_bytes": metrics.replay_bytes,
                     "retry_count": metrics.retries,
                     "route_changes": metrics.route_changes,
+                    "admission_time_ms": metrics.admission_time_ms,
+                    "route_reservation_time_ms": metrics.route_reservation_time_ms,
+                    "route_id": metrics.route_id,
+                    "route_generation": metrics.route_generation,
+                    "data_plane_mode": metrics.data_plane_mode,
                     "per_stage": metrics.per_stage,
                 }
             )
+            if route_id is not None:
+                self.route_allocator.release(route_id, reason=release_reason)
             await self._cancel_all(submission.request_id, self.runtime_model_revision)
 
     async def _call_replica(
@@ -803,24 +1503,7 @@ class CoordinatorCore:
             return result, replacement
 
     async def _cancel_all(self, request_id: str, model_revision: str) -> None:
-        from swarm_inference.protocol.messages import CancelRequest
-
-        endpoints = {
-            replica.endpoint for replica in self.registry.replicas() if replica.endpoint is not None
-        }
-        await asyncio.gather(
-            *(
-                self.transport.cancel(
-                    endpoint,
-                    CancelRequest(
-                        request_id=request_id,
-                        model_revision=model_revision,
-                    ),
-                )
-                for endpoint in endpoints
-            ),
-            return_exceptions=True,
-        )
+        await self._cancel_worker_request_state(request_id, model_revision)
         self.replay.delete_request(request_id)
 
 
@@ -854,6 +1537,11 @@ class CoordinatorRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "FinalResult": grpc.unary_unary_rpc_method_handler(
+                self._final_result,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
         }
         self.server.add_generic_rpc_handlers(
             (grpc.method_handlers_generic_handler("swarm.v1.Coordinator", handlers),)
@@ -864,6 +1552,10 @@ class CoordinatorRpcServer:
         self.bound_port = self.server.add_insecure_port(endpoint)
         if self.bound_port == 0:
             raise TransportError(f"could not bind coordinator endpoint {endpoint}")
+        host = endpoint.rsplit(":", 1)[0].strip("[]")
+        if host in {"", "0.0.0.0", "::"}:
+            host = "127.0.0.1"
+        self.core.final_result_endpoint = f"{host}:{self.bound_port}"
         await self.server.start()
         return self.bound_port
 
@@ -893,6 +1585,18 @@ class CoordinatorRpcServer:
     async def _submit(self, data: bytes, context: grpc.aio.ServicerContext[Any, Any]) -> bytes:
         response = await self.core.submit(parse_message(data, SubmitRequest))
         return serialize_message(response)
+
+    async def _final_result(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.accept_final_result(parse_message(data, FinalResultMessage))
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.DATA_LOSS, str(exc))
+            raise
 
 
 class CoordinatorClient:

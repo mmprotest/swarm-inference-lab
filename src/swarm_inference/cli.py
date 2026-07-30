@@ -19,6 +19,7 @@ from swarm_inference.experiments.loopback import (
     run_loopback_experiment,
     run_physical_experiment,
 )
+from swarm_inference.experiments.loopback_matrix import run_loopback_matrix
 from swarm_inference.experiments.reporting import render_html_report
 from swarm_inference.experiments.runner import run_experiment, validate_run
 from swarm_inference.host import resolve_advertised_endpoint
@@ -214,8 +215,22 @@ def experiment_command(
     ] = 300.0,
     duration_s: Annotated[
         float | None,
-        typer.Option(min=0.01, help="Override physical steady-state duration."),
+        typer.Option(
+            min=0.01,
+            help="Override sustained loopback or physical steady-state duration.",
+        ),
     ] = None,
+    repeats: Annotated[
+        int | None,
+        typer.Option(min=1, help="Repeats per point for a loopback scaling matrix."),
+    ] = None,
+    profile: Annotated[
+        bool,
+        typer.Option(
+            "--profile",
+            help="Capture lightweight CPU, memory, event-loop, queue, and transport profiles.",
+        ),
+    ] = False,
     model_manifest: Annotated[
         Path | None,
         typer.Option(
@@ -244,6 +259,8 @@ def experiment_command(
     """Run a simulation, native loopback, or remote physical experiment."""
 
     experiment = load_experiment_config(config)
+    if profile:
+        experiment.profiling.enabled = True
     if experiment.execution_mode not in {
         ExecutionMode.PHYSICAL_LAN,
         ExecutionMode.PHYSICAL_WAN,
@@ -252,8 +269,29 @@ def experiment_command(
     if experiment.execution_mode == ExecutionMode.SIMULATION:
         run = run_experiment(experiment)
     elif experiment.execution_mode == ExecutionMode.SINGLE_HOST_LOOPBACK:
-        count = workers or sum(item.count for item in experiment.nodes)
-        run = asyncio.run(run_loopback_experiment(experiment, worker_count=count))
+        matrix_requested = (
+            workers is None
+            and len(experiment.node_counts) >= 2
+            and bool(experiment.concurrent_request_counts)
+        )
+        if matrix_requested:
+            run = asyncio.run(
+                run_loopback_matrix(
+                    experiment,
+                    repeats=repeats,
+                    duration_s=duration_s,
+                )
+            )
+        else:
+            count = workers or sum(item.count for item in experiment.nodes)
+            run = asyncio.run(
+                run_loopback_experiment(
+                    experiment,
+                    worker_count=count,
+                    sustained=duration_s is not None,
+                    duration_s=duration_s,
+                )
+            )
     elif experiment.execution_mode in {
         ExecutionMode.PHYSICAL_LAN,
         ExecutionMode.PHYSICAL_WAN,
@@ -307,7 +345,7 @@ def experiment_command(
         _fail(f"unsupported execution mode: {experiment.execution_mode.value}")
     typer.echo(f"execution_mode={experiment.execution_mode.value}")
     typer.echo(f"report={run.report_path}")
-    typer.echo(f"status={run.summary['status']}")
+    typer.echo(f"status={run.summary.get('overall_status', run.summary['status'])}")
     if not run.passed:
         raise typer.Exit(1)
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from contextlib import suppress
 from pathlib import Path
@@ -32,6 +33,12 @@ async def run_worker(
     model_shard_root: str | Path | None = None,
     queue_config: QueueConfig | None = None,
     stop_event: asyncio.Event | None = None,
+    outbound_queue_capacity: int = 1024,
+    inbound_queue_capacity: int = 1024,
+    max_inflight_operations: int = 256,
+    reconnect_attempts: int = 5,
+    reconnect_initial_backoff_ms: float = 25.0,
+    reconnect_max_backoff_ms: float = 1000.0,
 ) -> None:
     identity = WorkerIdentity.load_or_create(identity_path)
     coordinator_latency_ms = measure_coordinator_latency_ms(coordinator_endpoint)
@@ -43,10 +50,31 @@ async def run_worker(
         memory_limit_bytes=memory_limit_bytes,
         coordinator_latency_ms=coordinator_latency_ms,
     )
+    try:
+        import psutil
+
+        capability.cpu_affinity = list(psutil.Process().cpu_affinity())
+    except (AttributeError, OSError, ValueError):
+        capability.cpu_affinity = []
+    capability.single_thread_environment = {
+        name: os.environ.get(name, "")
+        for name in (
+            "OMP_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OPENBLAS_NUM_THREADS",
+            "NUMEXPR_NUM_THREADS",
+        )
+    }
     agent = WorkerAgent(
         capability=capability,
         identity=identity,
         queue_config=queue_config or QueueConfig(),
+        outbound_queue_capacity=outbound_queue_capacity,
+        inbound_queue_capacity=inbound_queue_capacity,
+        max_inflight_operations=max_inflight_operations,
+        reconnect_attempts=reconnect_attempts,
+        reconnect_initial_backoff_ms=reconnect_initial_backoff_ms,
+        reconnect_max_backoff_ms=reconnect_max_backoff_ms,
     )
     server = WorkerRpcServer(
         agent=agent,

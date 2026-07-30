@@ -80,3 +80,21 @@ The runner accepts an optional verified Qwen manifest/model path pair. Without
 them it exercises synthetic stages over the actual network and labels model
 compute accordingly. Physical classification additionally requires a remote
 hostname and non-local advertised endpoint; worker count alone is insufficient.
+
+## Experiment 1: single-host replicated-stage calibration
+
+Configuration: `configs/experiments/first_loopback_scaling.yaml`
+
+Command:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_first_experiment.ps1
+```
+
+Question:
+
+> Does the measured process-isolated loopback runtime produce a complete and reproducible scaling curve when replicated workers are added under sustained concurrent load?
+
+The matrix uses worker counts 2, 4, and 8, with concurrency 1, 16, and 64. A single request is included as a negative control because stage replicas should not accelerate one autoregressive request. The higher concurrency points test whether the scheduler distributes independent requests across replicas.
+
+The experiment passes when every matrix point completes sustained verified work, retains valid evidence artifacts, covers every stage, and reports at least two worker counts and two concurrency levels. Positive throughput scaling is an observation, not a pilot pass condition. All workers share one physical host, so the result is not physical scaling evidence.

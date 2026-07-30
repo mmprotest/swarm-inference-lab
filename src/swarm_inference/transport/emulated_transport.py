@@ -9,7 +9,10 @@ from swarm_inference.protocol.messages import (
     ActivationRequest,
     ActivationResult,
     CancelRequest,
+    DataPlaneAck,
+    DataPlaneEnvelope,
     HealthResponse,
+    RouteInstallRequest,
     StageAssignmentMessage,
 )
 from swarm_inference.transport.base import ActivationTransport
@@ -36,6 +39,17 @@ class EmulatedTransport:
         # clock schedules completion using this recorded delay.
         self.injected_delays_s.append(self.delay_for_payload_s(len(request.tensor_payload)))
         return await self.inner.execute(endpoint, request)
+
+    async def install_route(self, endpoint: str, request: RouteInstallRequest) -> Ack:
+        return await self.inner.install_route(endpoint, request)
+
+    async def dispatch(
+        self,
+        endpoint: str,
+        request: DataPlaneEnvelope,
+    ) -> DataPlaneAck:
+        self.injected_delays_s.append(self.delay_for_payload_s(len(request.tensor_payload)))
+        return await self.inner.dispatch(endpoint, request)
 
     async def cancel(self, endpoint: str, request: CancelRequest) -> Ack:
         return await self.inner.cancel(endpoint, request)

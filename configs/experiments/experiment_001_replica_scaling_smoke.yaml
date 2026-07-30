@@ -1,0 +1,13 @@
+from: experiment_001_replica_scaling.yaml
+name: experiment-001-replica-scaling-smoke
+matrix:
+  worker_counts: [2, 4, 8]
+  concurrency_levels: [1, 16, 64]
+  repeats: 1
+  warmup_seconds: 3
+  measurement_seconds: 10
+warmup_s: 3
+steady_state_s: 10
+notes:
+  - This one-repeat smoke matrix verifies functionality only and cannot determine the research result.
+  - It remains single-host-loopback evidence, not physical distributed scaling.

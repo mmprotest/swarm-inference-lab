@@ -11,7 +11,10 @@ from swarm_inference.protocol.messages import (
     ActivationRequest,
     ActivationResult,
     CancelRequest,
+    DataPlaneAck,
+    DataPlaneEnvelope,
     HealthResponse,
+    RouteInstallRequest,
     StageAssignmentMessage,
 )
 from swarm_inference.transport.base import ActivationTransport
@@ -67,6 +70,22 @@ class FaultProxy:
             result.tensor_payload = bytes(corrupted)
             self.events.append({"type": "emulated_corrupt_activation", "endpoint": endpoint})
         return result
+
+    async def install_route(self, endpoint: str, request: RouteInstallRequest) -> Ack:
+        return await self.inner.install_route(endpoint, request)
+
+    async def dispatch(
+        self,
+        endpoint: str,
+        request: DataPlaneEnvelope,
+    ) -> DataPlaneAck:
+        fault = self.faults.setdefault(endpoint, EndpointFault())
+        if fault.disconnected:
+            raise TransportError(f"fault proxy disconnected endpoint {endpoint}")
+        if fault.timeout_next:
+            fault.timeout_next = False
+            raise TransportError(f"fault proxy timed out endpoint {endpoint}")
+        return await self.inner.dispatch(endpoint, request)
 
     async def cancel(self, endpoint: str, request: CancelRequest) -> Ack:
         return await self.inner.cancel(endpoint, request)

@@ -1,0 +1,24 @@
+from: experiment_001_replica_scaling.yaml
+name: experiment-001-transport-only-diagnostic
+synthetic_compute:
+  mode: transport_only
+  work_units: 0
+  target_stage_ms: 8
+  acceptable_min_ms: 6
+  acceptable_max_ms: 10
+  activation_bytes: 16384
+  calibration_warmup_iterations: 10
+  calibration_measurement_iterations: 10
+  single_threaded: true
+  cpu_affinity: true
+matrix:
+  worker_counts: [2, 4, 8]
+  concurrency_levels: [64]
+  repeats: 1
+  warmup_seconds: 3
+  measurement_seconds: 10
+warmup_s: 3
+steady_state_s: 10
+notes:
+  - This is a near-zero-compute transport diagnostic and is never the primary scaling result.
+  - It remains single-host-loopback evidence, not physical distributed scaling.

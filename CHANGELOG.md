@@ -14,3 +14,10 @@
   workers on an RTX 5090 using PyTorch 2.13.0+cu130.
 - Add a standard artifact-producing physical LAN/WAN runner that waits for
   remote workers and rejects single-host registrations as physical evidence.
+
+## Unreleased
+
+- Added a sustained single-host loopback scaling matrix with repeated 2, 4, and 8 worker measurements.
+- Added a parent scaling report that aggregates child evidence bundles without claiming physical scaling.
+- Added `scripts/run_first_experiment.ps1` and `configs/experiments/first_loopback_scaling.yaml`.
+- Added sustained loopback duration and matrix repeat options to `swarm experiment`.

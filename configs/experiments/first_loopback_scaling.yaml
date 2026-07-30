@@ -1,0 +1,59 @@
+schema_version: "1"
+name: first-loopback-scaling-pilot
+execution_mode: single-host-loopback
+seed: 20260730
+scheduler: replicated-stage
+model:
+  layer_count: 16
+  bytes_per_layer: 268435456
+  hidden_size: 8192
+  activation_dtype: float32
+  cache_bytes_per_token_per_layer: 4096
+  compute_work_per_layer: 1
+  routing: dense
+  expert_count: 1
+  active_experts: 1
+  model_seed: 307
+  stage_count: 2
+workload:
+  concurrent_requests: 16
+  prompt_tokens: 8
+  output_tokens: 32
+  workload_class: standard
+  arrival_interval_ms: 0
+queue:
+  capacity: 512
+  max_microbatch_size: 1
+  max_microbatch_wait_ms: 0
+  request_deadline_ms: 300000
+  backpressure_policy: reject
+faults: {}
+integrity:
+  enabled: true
+  audit_fraction: 0
+acceptance:
+  minimum_aggregate_verified_tokens_s: 20
+  minimum_duration_s: 30
+  minimum_stage_utilisation: 0.70
+  minimum_doubling_gain: 1.6
+  maximum_capacity_imbalance: 0.20
+  minimum_completion_fraction: 0.99
+  maximum_churn_throughput_degradation: 0.20
+network:
+  from: ../networks/localhost.yaml
+nodes:
+  - from: ../nodes/desktop_cpu.yaml
+    count: 8
+    memory_bytes: 2214592512
+    measured: false
+node_counts: [2, 4, 8]
+concurrent_request_counts: [1, 16, 64]
+warmup_s: 5
+steady_state_s: 30
+output_root: artifacts/runs
+model_id: synthetic-loopback-4gib-heavy
+model_revision: synthetic-v1
+notes:
+  - This pilot measures the scheduler, process isolation, gRPC transport, and local CPU execution.
+  - All workers share one physical host, so the result cannot establish physical hardware scaling.
+  - The synthetic model is logically 4 GiB, larger than each worker memory limit, but does not allocate 4 GiB physically.

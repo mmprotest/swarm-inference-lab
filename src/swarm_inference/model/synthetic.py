@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -19,6 +20,43 @@ class SyntheticCacheState:
     last_token_position: int
     digest: bytes
     tokens: int
+
+
+def deterministic_cpu_kernel(
+    payload: bytes,
+    *,
+    seed_material: bytes,
+    work_units: int,
+    buffer_bytes: int = 16 * 1024,
+) -> bytes:
+    """Run deterministic, single-threaded CPU work and return its digest.
+
+    Each work unit hashes a fixed-size buffer and the previous digest. The
+    dependency chain prevents the interpreter or hashing library from
+    precomputing or parallelising units, and unlike a sleep it consumes actual
+    CPU time. ``hashlib`` delegates one call at a time to the platform crypto
+    implementation and does not create a worker thread pool.
+    """
+
+    if work_units < 0:
+        raise ValueError("work_units cannot be negative")
+    if buffer_bytes <= 0:
+        raise ValueError("buffer_bytes must be positive")
+    seed = hashlib.blake2b(
+        payload + seed_material,
+        digest_size=64,
+        person=b"swarm-cpu-v1",
+    ).digest()
+    repeats = math.ceil(buffer_bytes / len(seed))
+    block = (seed * repeats)[:buffer_bytes]
+    digest = seed
+    for unit in range(work_units):
+        transform = hashlib.blake2b(digest_size=64, person=b"swarm-cpu-v1")
+        transform.update(block)
+        transform.update(digest)
+        transform.update(unit.to_bytes(8, "little", signed=False))
+        digest = transform.digest()
+    return digest
 
 
 def synthetic_activation(
@@ -109,13 +147,29 @@ class SyntheticStageModule:
                     f"expected {existing.last_token_position + 1}, got {token_position}"
                 )
             prior_digest = existing.digest
+        cpu_digest = deterministic_cpu_kernel(
+            np.ascontiguousarray(activation).tobytes(),
+            seed_material=b"|".join(
+                (
+                    str(self.config.model_seed).encode(),
+                    str(self.stage_id).encode(),
+                    f"{self.stage.layer_start}:{self.stage.layer_end}".encode(),
+                    request_id.encode(),
+                    str(token_position).encode(),
+                    str(cache_generation).encode(),
+                )
+            ),
+            work_units=self.config.cpu_work_units,
+            buffer_bytes=self.config.cpu_kernel_buffer_bytes,
+        )
+        transform_digest = hashlib.sha256(prior_digest + cpu_digest).digest()
         output = np.ascontiguousarray(activation)
         for layer_id in range(self.stage.layer_start, self.stage.layer_end):
             output = self._layer_transform(
                 output,
                 layer_id=layer_id,
                 token_position=token_position,
-                cache_digest=prior_digest,
+                cache_digest=transform_digest,
             )
         if self.corrupt and output.size:
             output = output.copy()

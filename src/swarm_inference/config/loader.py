@@ -30,7 +30,10 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
 def _load_reference(value: Any, *, base: Path) -> Any:
     if isinstance(value, dict) and "from" in value:
         referenced = (base / str(value["from"])).resolve()
-        referenced_config = load_yaml(referenced)
+        referenced_config = _load_reference(
+            load_yaml(referenced),
+            base=referenced.parent,
+        )
         overrides = {
             key: _load_reference(item, base=base) for key, item in value.items() if key != "from"
         }

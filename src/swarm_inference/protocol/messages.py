@@ -12,11 +12,13 @@ from google.protobuf.any_pb2 import Any as ProtoAny
 from pydantic import Field, model_validator
 
 from swarm_inference.config.models import (
+    DataPlaneMode,
     ModelManifest,
     OperationKind,
     StageDefinition,
     StrictModel,
     SyntheticModelConfig,
+    TensorSpec,
     WorkerCapability,
 )
 from swarm_inference.exceptions import IntegrityError
@@ -54,6 +56,9 @@ class StageAssignmentMessage(StrictModel):
     architecture_config: dict[str, Any] | None = None
     model_manifest: ModelManifest | None = None
     dtype: str | None = None
+    data_plane_mode: DataPlaneMode = DataPlaneMode.COORDINATOR_RELAY
+    coordinator_data_endpoint: str | None = None
+    route_signing_key: str | None = None
 
 
 class ActivationMetadata(StrictModel):
@@ -82,6 +87,129 @@ class ActivationResult(StrictModel):
     execution_ms: float = Field(ge=0)
     queue_ms: float = Field(ge=0)
     checksum: str
+    signature: str = ""
+
+
+class RouteHop(StrictModel):
+    stage_id: int = Field(ge=0)
+    worker_id: str
+    worker_data_endpoint: str
+    expected_shard_hash: str
+    expected_input_spec: TensorSpec
+    expected_output_spec: TensorSpec
+
+
+class RoutePlan(StrictModel):
+    route_id: str
+    route_generation: int = Field(ge=1)
+    request_id: str
+    model_id: str
+    model_revision: str
+    assignments: list[RouteHop]
+    route_lease_expiry_unix_ns: int = Field(gt=0)
+    workload_class: str
+    cancellation_generation: int = Field(ge=0)
+    integrity_policy: str
+    final_result_destination: str
+    signature: str = ""
+
+    @model_validator(mode="after")
+    def validate_order(self) -> RoutePlan:
+        stages = [hop.stage_id for hop in self.assignments]
+        if stages != list(range(len(stages))):
+            raise ValueError("route assignments must be ordered and contiguous from stage zero")
+        if len({hop.worker_id for hop in self.assignments}) != len(self.assignments):
+            raise ValueError("one worker cannot own multiple hops in one route")
+        return self
+
+
+class RouteInstallRequest(StrictModel):
+    worker_id: str
+    route: RoutePlan
+
+
+class HopTelemetry(StrictModel):
+    stage_id: int = Field(ge=0)
+    worker_id: str
+    source_worker: str
+    destination_worker: str
+    execution_ms: float = Field(ge=0)
+    queue_ms: float = Field(ge=0)
+    serialisation_ms: float = Field(ge=0)
+    deserialisation_ms: float = Field(ge=0)
+    integrity_validation_ms: float = Field(ge=0)
+    cache_update_ms: float = Field(ge=0)
+    stream_queue_ms: float = Field(ge=0)
+    transfer_ms: float = Field(ge=0)
+    hop_end_to_end_ms: float = Field(ge=0)
+    payload_bytes: int = Field(ge=0)
+
+    @property
+    def effective_service_ms(self) -> float:
+        return (
+            self.execution_ms
+            + self.queue_ms
+            + self.serialisation_ms
+            + self.deserialisation_ms
+            + self.integrity_validation_ms
+            + self.cache_update_ms
+            + self.stream_queue_ms
+            + self.transfer_ms
+        )
+
+
+class DataPlaneEnvelope(StrictModel):
+    message_id: str
+    route_id: str
+    route_generation: int = Field(ge=1)
+    request_id: str
+    stage_id: int = Field(ge=0)
+    source_worker: str
+    destination_worker: str
+    token_position: int = Field(ge=0)
+    operation: OperationKind
+    tensor_metadata: ActivationMetadata
+    tensor_payload: bytes
+    payload_length: int = Field(ge=0)
+    payload_checksum: str
+    sequence_number: int = Field(ge=0)
+    timestamp_unix_ns: int = Field(gt=0)
+    hop_telemetry: list[HopTelemetry] = Field(default_factory=list)
+    replay_only: bool = False
+    integrity_metadata: str = "hmac-sha256"
+    signature: str = ""
+
+
+class DataPlaneAck(StrictModel):
+    message_id: str
+    status: Literal[
+        "accepted",
+        "backpressured",
+        "duplicate",
+        "stale_route",
+        "invalid_checksum",
+        "invalid_stage_transition",
+        "unknown_request",
+        "destination_unavailable",
+    ]
+    detail: str = ""
+    accepted_timestamp_unix_ns: int = Field(gt=0)
+
+    @property
+    def accepted(self) -> bool:
+        return self.status in {"accepted", "duplicate"}
+
+
+class FinalResultMessage(StrictModel):
+    message_id: str
+    route_id: str
+    route_generation: int = Field(ge=1)
+    request_id: str
+    token_position: int = Field(ge=0)
+    result: ActivationResult
+    hop_telemetry: list[HopTelemetry]
+    payload_checksum: str
+    timestamp_unix_ns: int = Field(gt=0)
     signature: str = ""
 
 
@@ -148,6 +276,11 @@ WireMessage = (
     | StageAssignmentMessage
     | ActivationRequest
     | ActivationResult
+    | RoutePlan
+    | RouteInstallRequest
+    | DataPlaneEnvelope
+    | DataPlaneAck
+    | FinalResultMessage
     | HealthResponse
     | CancelRequest
     | Ack

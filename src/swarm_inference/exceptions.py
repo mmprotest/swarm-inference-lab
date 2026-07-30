@@ -55,5 +55,14 @@ class ReplayUnavailableError(SwarmError):
     """Required stage inputs are missing from the replay log."""
 
 
+class RouteMessageError(IntegrityError):
+    """A direct data-plane message violates its installed route."""
+
+    def __init__(self, status: str, detail: str) -> None:
+        super().__init__(detail)
+        self.status = status
+        self.detail = detail
+
+
 class EnvironmentIncompatibleError(SwarmError):
     """The requested execution backend cannot run in the current environment."""

@@ -3,7 +3,9 @@ param(
     [ValidateSet("auto", "synthetic", "cpu", "cuda", "mps")]
     [string]$Backend = "auto",
     [switch]$AllowCpuDoctor,
-    [switch]$SkipSync
+    [switch]$SkipSync,
+    [int]$Repeats = 1,
+    [double]$DurationS = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -69,7 +71,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Starting native coordinator and process-isolated workers..."
-& $uv run --no-sync swarm experiment --config $configPath
+$experimentArguments = @(
+    "run", "--no-sync", "swarm", "experiment",
+    "--config", $configPath,
+    "--repeats", $Repeats
+)
+if ($DurationS -gt 0) {
+    $experimentArguments += @("--duration-s", $DurationS)
+}
+& $uv @experimentArguments
 $status = $LASTEXITCODE
 Write-Host "Experiment process cleanup completed."
 if ($status -ne 0) {

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import AsyncIterator
+from dataclasses import asdict, dataclass
 from typing import Any, TypeVar
 
 import grpc
@@ -16,7 +18,10 @@ from swarm_inference.protocol.messages import (
     ActivationRequest,
     ActivationResult,
     CancelRequest,
+    DataPlaneAck,
+    DataPlaneEnvelope,
     HealthResponse,
+    RouteInstallRequest,
     StageAssignmentMessage,
     WireChunk,
     parse_message,
@@ -25,6 +30,23 @@ from swarm_inference.protocol.messages import (
 from swarm_inference.worker.agent import WorkerAgent
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
+
+
+@dataclass(slots=True)
+class GrpcTransportMetrics:
+    channels_created: int = 0
+    streams_created: int = 0
+    messages_sent: int = 0
+    messages_received: int = 0
+    payload_bytes_sent: int = 0
+    payload_bytes_received: int = 0
+    control_bytes: int = 0
+    serialisation_time_ms: float = 0.0
+    deserialisation_time_ms: float = 0.0
+    call_time_ms: float = 0.0
+
+    def snapshot(self) -> dict[str, int | float]:
+        return asdict(self)
 
 
 def _wire_chunks(
@@ -86,6 +108,7 @@ class GrpcTransport:
         self.maximum_message_bytes = maximum_message_bytes
         self.timeout_s = timeout_s
         self._channels: dict[str, grpc.aio.Channel] = {}
+        self.metrics = GrpcTransportMetrics()
 
     def _channel(self, endpoint: str) -> grpc.aio.Channel:
         channel = self._channels.get(endpoint)
@@ -96,6 +119,7 @@ class GrpcTransport:
             ]
             channel = grpc.aio.insecure_channel(endpoint, options=options)
             self._channels[endpoint] = channel
+            self.metrics.channels_created += 1
         return channel
 
     async def _unary(
@@ -111,8 +135,24 @@ class GrpcTransport:
             response_deserializer=lambda value: value,
         )
         try:
-            response = await call(serialize_message(request), timeout=self.timeout_s)
-            return parse_message(response, response_type)
+            serialization_started = time.perf_counter_ns()
+            serialized = serialize_message(request)
+            self.metrics.serialisation_time_ms += (
+                time.perf_counter_ns() - serialization_started
+            ) / 1_000_000
+            self.metrics.messages_sent += 1
+            self.metrics.payload_bytes_sent += len(serialized)
+            call_started = time.perf_counter_ns()
+            response = await call(serialized, timeout=self.timeout_s)
+            self.metrics.call_time_ms += (time.perf_counter_ns() - call_started) / 1_000_000
+            deserialization_started = time.perf_counter_ns()
+            parsed = parse_message(response, response_type)
+            self.metrics.deserialisation_time_ms += (
+                time.perf_counter_ns() - deserialization_started
+            ) / 1_000_000
+            self.metrics.messages_received += 1
+            self.metrics.payload_bytes_received += len(response)
+            return parsed
         except grpc.aio.AioRpcError as exc:
             raise TransportError(
                 f"gRPC {path} to {endpoint} failed ({exc.code().name}): {exc.details()}"
@@ -124,6 +164,26 @@ class GrpcTransport:
             "/swarm.v1.Worker/Assign",
             assignment,
             Ack,
+        )
+
+    async def install_route(self, endpoint: str, request: RouteInstallRequest) -> Ack:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/InstallRoute",
+            request,
+            Ack,
+        )
+
+    async def dispatch(
+        self,
+        endpoint: str,
+        request: DataPlaneEnvelope,
+    ) -> DataPlaneAck:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/DispatchRoute",
+            request,
+            DataPlaneAck,
         )
 
     async def execute(
@@ -151,9 +211,13 @@ class GrpcTransport:
             request_serializer=lambda value: value,
             response_deserializer=lambda value: value,
         )
+        self.metrics.streams_created += 1
         try:
             responses = call(chunks(), timeout=self.timeout_s)
             response_chunks = [parse_message(response, WireChunk) async for response in responses]
+            self.metrics.messages_sent += len(request_chunks)
+            self.metrics.messages_received += len(response_chunks)
+            self.metrics.payload_bytes_sent += len(serialized)
             return parse_message(_reassemble_wire_chunks(response_chunks), ActivationResult)
         except grpc.aio.AioRpcError as exc:
             raise TransportError(
@@ -221,6 +285,21 @@ class WorkerRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "InstallRoute": grpc.unary_unary_rpc_method_handler(
+                self._install_route,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "DispatchRoute": grpc.unary_unary_rpc_method_handler(
+                self._dispatch_route,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "PeerStream": grpc.stream_stream_rpc_method_handler(
+                self._peer_stream,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
             "Cancel": grpc.unary_unary_rpc_method_handler(
                 self._cancel,
                 request_deserializer=lambda value: value,
@@ -285,10 +364,108 @@ class WorkerRpcServer:
                 raise TransportError(
                     "assignment supplies neither synthetic config nor Qwen3 config/manifest"
                 )
+            self.agent.configure_data_plane(assignment)
             return serialize_message(Ack(accepted=True, detail="stage loaded"))
         except Exception as exc:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
             raise
+
+    async def _install_route(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, RouteInstallRequest)
+            if request.worker_id != self.agent.capability.worker_id:
+                raise TransportError("route installation addressed to another worker")
+            self.agent.install_route(request.route)
+            return serialize_message(Ack(accepted=True, detail="route installed"))
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _dispatch_route(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            envelope = parse_message(data, DataPlaneEnvelope)
+            ack = await self.agent.handle_data_plane(envelope)
+            return serialize_message(ack)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INTERNAL, str(exc))
+            raise
+
+    async def _peer_stream(
+        self,
+        iterator: AsyncIterator[bytes],
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> AsyncIterator[bytes]:
+        responses: asyncio.Queue[bytes] = asyncio.Queue(maxsize=max(1, self.agent.inbound_capacity))
+        inbound_slots = asyncio.Semaphore(self.agent.inbound_capacity)
+        tasks: set[asyncio.Task[None]] = set()
+        input_finished = asyncio.Event()
+
+        async def process(raw: bytes) -> None:
+            try:
+                deserialization_started = time.perf_counter_ns()
+                envelope = parse_message(raw, DataPlaneEnvelope)
+                deserialization_ms = (time.perf_counter_ns() - deserialization_started) / 1_000_000
+                transfer_ms = max(
+                    0.0,
+                    (time.time_ns() - envelope.timestamp_unix_ns) / 1_000_000,
+                )
+                self.agent.peer_pool.record_received(
+                    payload_bytes=envelope.payload_length,
+                    control_bytes=max(0, len(raw) - envelope.payload_length),
+                    deserialisation_ms=deserialization_ms,
+                    transfer_ms=transfer_ms,
+                )
+                ack = await self.agent.handle_data_plane(envelope)
+            except Exception as exc:
+                ack = DataPlaneAck(
+                    message_id=(envelope.message_id if "envelope" in locals() else "unparseable"),
+                    status="invalid_stage_transition",
+                    detail=f"{type(exc).__name__}: {exc}",
+                    accepted_timestamp_unix_ns=time.time_ns(),
+                )
+            await responses.put(serialize_message(ack))
+
+        async def read_requests() -> None:
+            def release_slot(completed: asyncio.Task[None]) -> None:
+                tasks.discard(completed)
+                inbound_slots.release()
+
+            try:
+                async for raw in iterator:
+                    await inbound_slots.acquire()
+                    task = asyncio.create_task(process(raw))
+                    tasks.add(task)
+                    task.add_done_callback(release_slot)
+            finally:
+                input_finished.set()
+
+        reader = asyncio.create_task(read_requests())
+        try:
+            while not input_finished.is_set() or tasks or not responses.empty():
+                try:
+                    response = await asyncio.wait_for(responses.get(), timeout=0.1)
+                except TimeoutError:
+                    continue
+                try:
+                    yield response
+                finally:
+                    responses.task_done()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.UNAVAILABLE, str(exc))
+            raise
+        finally:
+            reader.cancel()
+            await asyncio.gather(reader, *tasks, return_exceptions=True)
 
     async def _execute(self, data: bytes, context: grpc.aio.ServicerContext[Any, Any]) -> bytes:
         try:

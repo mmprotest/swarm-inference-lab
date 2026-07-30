@@ -113,6 +113,30 @@ Synthetic loopback without a PyTorch backend:
 .\scripts\run_loopback.ps1 -Backend synthetic
 ```
 
+## First measured experiment
+
+The first experiment is a single-host loopback scaling pilot. It compares 2, 4,
+and 8 process-isolated workers at 1, 16, and 64 concurrent requests. Each point
+uses sustained measured execution, and the default PowerShell script repeats
+every point twice.
+
+Run from the repository root on Windows:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_first_experiment.ps1
+```
+
+For a quicker harness check:
+
+```powershell
+.\scripts\run_first_experiment.ps1 -Repeats 1 -DurationS 10
+```
+
+The parent report contains the median scaling curve and links to every child
+run. The pilot can validate the scheduler, process isolation, local gRPC
+transport, measurement stability, and artifact integrity. It cannot establish
+physical multi-machine scaling because every worker shares one host.
+
 ## Quick experiments
 
 Deterministic simulation:

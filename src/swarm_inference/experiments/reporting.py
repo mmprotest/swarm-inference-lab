@@ -23,9 +23,31 @@ def render_html_report(
 ) -> Path:
     criteria = summary["acceptance_criteria"]
     failed = [item for item in criteria if item["status"] == "FAIL"]
-    status = "PASS" if not failed else "FAIL"
+    status = str(
+        summary.get(
+            "overall_status",
+            "PASS" if not failed else "FAIL",
+        )
+    )
     primary = summary["primary_result"]
     baseline = summary["baseline_result"]
+    status_fields = [
+        ("Experiment integrity", "experiment_integrity_status"),
+        ("Correctness", "correctness_status"),
+        ("Direct data plane", "direct_data_plane_status"),
+        ("Replica utilisation", "replica_utilisation_status"),
+        ("Capacity prediction", "capacity_prediction_status"),
+        ("Scaling hypothesis", "scaling_hypothesis_status"),
+        ("Overall", "overall_status"),
+    ]
+    status_rows = "\n".join(
+        "<tr>"
+        f"<th>{html.escape(label)}</th>"
+        f'<td class="{str(summary.get(field, status)).lower()}">'
+        f"{html.escape(str(summary.get(field, status)))}</td>"
+        "</tr>"
+        for label, field in status_fields
+    )
     headline = [
         ("Execution mode", summary["execution_mode"]),
         ("PASS or FAIL", status),
@@ -112,6 +134,8 @@ code {{ white-space: pre-wrap; overflow-wrap: anywhere; }}
 </head>
 <body>
 <h1>swarm-inference-lab experiment report</h1>
+<h2>Acceptance status</h2>
+<table class="status-table">{status_rows}</table>
 <table>{headline_rows}</table>
 <div class="warning"><strong>Interpretation:</strong> Aggregate verified throughput is
 not single-request generation speed. This run is labelled
@@ -135,6 +159,7 @@ values must not be presented as physical distributed performance.</div>
 </ul>
 <h2>Scaling observations</h2>
 {scaling_table}
+{_historical_baseline(summary)}
 <h2>Per-request results</h2>
 {request_table}
 <h2>Charts</h2>
@@ -182,9 +207,43 @@ def _chart_figures() -> str:
         ("queue_depth.png", "Queue depth"),
         ("network_bytes.png", "Network traffic"),
         ("failure_recovery.png", "Failure and recovery"),
+        ("scaling_ratios.png", "Primary scaling ratios"),
+        ("replica_distribution.png", "Replica distribution"),
+        ("latency_breakdown.png", "Latency breakdown"),
+        ("coordinator_vs_peer_bytes.png", "Coordinator versus peer bytes"),
+        ("capacity_prediction_error.png", "Capacity prediction error"),
+        ("stream_reuse.png", "Persistent stream reuse"),
     ]
     return "\n".join(
         f'<figure><img src="charts/{filename}" alt="{html.escape(caption)}">'
         f"<figcaption>{html.escape(caption)}</figcaption></figure>"
         for filename, caption in names
+    )
+
+
+def _historical_baseline(summary: dict[str, Any]) -> str:
+    historical = summary.get("historical_baseline")
+    if not isinstance(historical, dict):
+        return ""
+    throughputs = historical.get("throughput_by_workers", {})
+    ratios = historical.get("scaling_ratios", {})
+    return (
+        "<h2>Historical baseline comparison</h2>"
+        "<p>The prior values are labelled "
+        f"<strong>{html.escape(str(historical.get('label', 'historical evidence')))}</strong>. "
+        f"{html.escape(str(historical.get('source', '')))}</p>"
+        "<table><thead><tr><th>Workers</th><th>Verified tokens/s</th></tr></thead><tbody>"
+        + "".join(
+            f"<tr><td>{html.escape(str(worker))}</td><td>{_fmt(value)}</td></tr>"
+            for worker, value in sorted(
+                dict(throughputs).items(),
+                key=lambda item: int(item[0]),
+            )
+        )
+        + "</tbody></table>"
+        "<p>Historical ratios: "
+        + ", ".join(
+            f"{html.escape(str(name))}={_fmt(value)}" for name, value in dict(ratios).items()
+        )
+        + ".</p>"
     )

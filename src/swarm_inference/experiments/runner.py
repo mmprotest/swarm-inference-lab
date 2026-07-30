@@ -456,6 +456,29 @@ def validate_run(run_dir: str | Path) -> list[str]:
     errors = [
         f"missing required artifact: {name}" for name in required if not (root / name).is_file()
     ]
+    summary_payload: dict[str, Any] = {}
+    summary_path = root / "summary.json"
+    if summary_path.is_file():
+        try:
+            summary_payload = json.loads(summary_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError, TypeError):
+            summary_payload = {}
+    if summary_payload.get("schema_version") == "2" and summary_payload.get("child_runs"):
+        matrix_required = [
+            "calibration.json",
+            "environment_before.json",
+            "environment_after.json",
+            "dependency_diff.json",
+            "matrix.csv",
+            "replica_distribution.csv",
+            "transport_breakdown.csv",
+            "capacity_prediction.csv",
+        ]
+        errors.extend(
+            f"missing required matrix artifact: {name}"
+            for name in matrix_required
+            if not (root / name).is_file()
+        )
     for chart in [
         "aggregate_throughput.png",
         "per_request_throughput.png",
@@ -467,6 +490,17 @@ def validate_run(run_dir: str | Path) -> list[str]:
     ]:
         if not (root / "charts" / chart).is_file():
             errors.append(f"missing required chart: charts/{chart}")
+    if summary_payload.get("schema_version") == "2" and summary_payload.get("child_runs"):
+        for chart in [
+            "scaling_ratios.png",
+            "replica_distribution.png",
+            "latency_breakdown.png",
+            "coordinator_vs_peer_bytes.png",
+            "capacity_prediction_error.png",
+            "stream_reuse.png",
+        ]:
+            if not (root / "charts" / chart).is_file():
+                errors.append(f"missing required matrix chart: charts/{chart}")
     manifest_path = root / "artifact_manifest.json"
     if manifest_path.is_file():
         try:

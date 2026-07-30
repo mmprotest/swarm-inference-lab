@@ -27,6 +27,18 @@ class ExecutionMode(StrEnum):
     PHYSICAL_WAN = "physical-wan"
 
 
+class DataPlaneMode(StrEnum):
+    """Explicit activation transport mode.
+
+    There is intentionally no ``auto`` value: changing between direct and
+    coordinator-relay changes the architecture being measured.
+    """
+
+    DIRECT = "direct"
+    COORDINATOR_RELAY = "coordinator-relay"
+    EMULATED = "emulated"
+
+
 class Backend(StrEnum):
     SYNTHETIC = "synthetic"
     TORCH_CPU = "torch-cpu"
@@ -180,6 +192,8 @@ class WorkerCapability(StrictModel):
     max_concurrent_stage_operations: PositiveInt = 1
     endpoint: str | None = None
     profile_source: Literal["measured", "assumed", "mixed"] = "measured"
+    cpu_affinity: list[NonNegativeInt] = Field(default_factory=list)
+    single_thread_environment: dict[str, str] = Field(default_factory=dict)
 
     @property
     def effective_memory_bytes(self) -> int:
@@ -336,6 +350,8 @@ class SyntheticModelConfig(StrictModel):
     active_experts: PositiveInt = 1
     model_seed: int = 1
     stage_count: PositiveInt = 4
+    cpu_work_units: NonNegativeInt = 0
+    cpu_kernel_buffer_bytes: PositiveInt = 16 * 1024
 
     @model_validator(mode="after")
     def validate_experts_and_stages(self) -> SyntheticModelConfig:
@@ -397,6 +413,65 @@ class AcceptanceConfig(StrictModel):
     maximum_capacity_imbalance: Probability = 0.20
     minimum_completion_fraction: Probability = 0.99
     maximum_churn_throughput_degradation: Probability = 0.20
+    min_ratio_2_to_4: NonNegativeFloat = 1.50
+    min_ratio_4_to_8: NonNegativeFloat = 1.50
+    min_ratio_2_to_8: NonNegativeFloat = 2.25
+    max_primary_cv: NonNegativeFloat = 0.10
+    min_meaningful_replica_fraction: Probability = 0.75
+    max_replica_imbalance_ratio: NonNegativeFloat = 1.50
+    max_capacity_prediction_error: Probability = 0.25
+    require_zero_coordinator_activation_bytes: bool = True
+
+
+class SyntheticComputeConfig(StrictModel):
+    mode: Literal["legacy", "calibrated_cpu", "transport_only"] = "legacy"
+    target_stage_ms: float = Field(default=8.0, gt=0)
+    acceptable_min_ms: float = Field(default=6.0, gt=0)
+    acceptable_max_ms: float = Field(default=10.0, gt=0)
+    activation_bytes: PositiveInt = 16 * 1024
+    calibration_warmup_iterations: PositiveInt = 100
+    calibration_measurement_iterations: PositiveInt = 500
+    work_units: NonNegativeInt | None = None
+    single_threaded: bool = True
+    cpu_affinity: bool = True
+
+    @model_validator(mode="after")
+    def validate_calibration_range(self) -> SyntheticComputeConfig:
+        if not self.acceptable_min_ms <= self.target_stage_ms <= self.acceptable_max_ms:
+            raise ValueError("target_stage_ms must be inside the acceptable calibration range")
+        if self.mode == "calibrated_cpu" and self.work_units == 0:
+            raise ValueError("calibrated_cpu work_units must be positive when supplied")
+        return self
+
+
+class MatrixConfig(StrictModel):
+    worker_counts: list[PositiveInt] = Field(default_factory=list)
+    concurrency_levels: list[PositiveInt] = Field(default_factory=list)
+    repeats: PositiveInt = 3
+    warmup_seconds: NonNegativeFloat = 10.0
+    measurement_seconds: float = Field(default=30.0, gt=0)
+
+
+class ExperimentWorkerConfig(StrictModel):
+    logical_memory_limit_bytes: PositiveInt | None = None
+    outbound_queue_capacity: PositiveInt = 1024
+    inbound_queue_capacity: PositiveInt = 1024
+    max_inflight_operations: PositiveInt = 256
+    route_lease_seconds: float = Field(default=600.0, gt=0)
+
+
+class TransportConfig(StrictModel):
+    persistent_streams: bool = True
+    coordinator_relay_fallback: bool = False
+    checksum: bool = True
+    reconnect_attempts: PositiveInt = 5
+    reconnect_initial_backoff_ms: float = Field(default=25.0, gt=0)
+    reconnect_max_backoff_ms: float = Field(default=1000.0, gt=0)
+
+
+class ProfilingConfig(StrictModel):
+    enabled: bool = False
+    sample_interval_ms: float = Field(default=100.0, gt=0)
 
 
 class ExperimentConfig(StrictModel):
@@ -405,7 +480,14 @@ class ExperimentConfig(StrictModel):
     execution_mode: ExecutionMode
     seed: int
     scheduler: SchedulerMode
+    backend: Literal["synthetic", "cpu", "cuda"] = "synthetic"
+    data_plane: DataPlaneMode = DataPlaneMode.COORDINATOR_RELAY
     model: SyntheticModelConfig = Field(default_factory=SyntheticModelConfig)
+    synthetic_compute: SyntheticComputeConfig = Field(default_factory=SyntheticComputeConfig)
+    matrix: MatrixConfig | None = None
+    worker: ExperimentWorkerConfig = Field(default_factory=ExperimentWorkerConfig)
+    transport: TransportConfig = Field(default_factory=TransportConfig)
+    profiling: ProfilingConfig = Field(default_factory=ProfilingConfig)
     workload: WorkloadConfig = Field(default_factory=WorkloadConfig)
     queue: QueueConfig = Field(default_factory=QueueConfig)
     faults: FaultConfig = Field(default_factory=FaultConfig)
@@ -426,4 +508,26 @@ class ExperimentConfig(StrictModel):
     def validate_experiment(self) -> ExperimentConfig:
         if not self.nodes:
             raise ValueError("at least one node profile is required")
+        if self.matrix is not None:
+            if self.matrix.worker_counts:
+                object.__setattr__(self, "node_counts", list(self.matrix.worker_counts))
+            if self.matrix.concurrency_levels:
+                object.__setattr__(
+                    self,
+                    "concurrent_request_counts",
+                    list(self.matrix.concurrency_levels),
+                )
+            object.__setattr__(self, "warmup_s", self.matrix.warmup_seconds)
+            object.__setattr__(self, "steady_state_s", self.matrix.measurement_seconds)
+        expected_activation = self.model.activation_bytes
+        if (
+            self.synthetic_compute.mode != "legacy"
+            and expected_activation != self.synthetic_compute.activation_bytes
+        ):
+            raise ValueError(
+                "synthetic_compute.activation_bytes must equal "
+                "model.hidden_size * activation dtype width"
+            )
+        if self.data_plane == DataPlaneMode.DIRECT and self.transport.coordinator_relay_fallback:
+            raise ValueError("direct data plane cannot silently enable coordinator relay fallback")
         return self

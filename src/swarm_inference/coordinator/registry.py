@@ -109,6 +109,14 @@ class WorkerRegistry:
                 if key[1] == worker_id:
                     replica.health = HealthStatus.QUARANTINED
 
+    def mark_unhealthy(self, worker_id: str) -> None:
+        """Exclude a failed worker immediately, without waiting for heartbeat expiry."""
+
+        with self._lock:
+            for key, replica in self._replicas.items():
+                if key[1] == worker_id and replica.health != HealthStatus.QUARANTINED:
+                    replica.health = HealthStatus.UNHEALTHY
+
     def workers(self) -> list[WorkerCapability]:
         with self._lock:
             return [record.capability.model_copy(deep=True) for record in self._workers.values()]
