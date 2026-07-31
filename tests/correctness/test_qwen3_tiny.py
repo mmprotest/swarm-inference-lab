@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from swarm_inference.model.qwen3 import Qwen3Adapter
+from swarm_inference.model.qwen3 import Qwen3Adapter, Qwen3StageModule
+from swarm_inference.model.qwen3_runtime import Qwen3EngineOptions
 from swarm_inference.model.shard_builder import (
     ResolvedModel,
     inspect_qwen3_model,
     shard_model,
+)
+from swarm_inference.model.stage_module import (
+    BatchExecutionMetadata,
+    StageExecutionMetadata,
 )
 
 torch = pytest.importorskip("torch")
@@ -262,3 +267,126 @@ def test_tied_embedding_split_forward_matches_unsplit(tmp_path) -> None:
                 use_cache=True,
             )
     assert torch.allclose(current, reference, atol=1e-5, rtol=1e-4)
+
+
+def test_fast_batched_gpu_native_path_matches_reference_without_hot_reflection_or_numpy(
+    tiny_qwen,
+    monkeypatch,
+) -> None:
+    import swarm_inference.model.qwen3 as qwen3_module
+
+    model, config, output, manifest = tiny_qwen
+    options = Qwen3EngineOptions.from_values(
+        profile="qwen3_fast",
+        attention_backend="eager",
+        cache_backend="static",
+        max_sequence_length=16,
+        max_batch_size=2,
+        final_worker_sampling=True,
+        boundary_diagnostics=False,
+    )
+    adapter = Qwen3Adapter()
+    modules = []
+    for stage in manifest.stages:
+        module = Qwen3StageModule(
+            config=config,
+            stage=stage,
+            device=torch.device("cpu"),
+            dtype=torch.bfloat16,
+            engine_options=options,
+        )
+        adapter.load_stage_weights(
+            module,
+            output / f"stage-{stage.stage_id:03d}",
+            manifest=manifest,
+        )
+        modules.append(module)
+
+    def forbidden_reflection(*_args, **_kwargs):
+        raise AssertionError("inspect.signature entered the measured decode path")
+
+    monkeypatch.setattr(qwen3_module.inspect, "signature", forbidden_reflection)
+
+    prompts = torch.tensor(
+        [[1, 5, 9, 2], [4, 6, 8, 3]],
+        dtype=torch.long,
+    )
+    request_ids = ("fast-a", "fast-b")
+    output_tokens = 4
+    fast_rows = torch.empty((2, output_tokens), dtype=torch.long)
+    current = prompts
+    prefill_metadata = BatchExecutionMetadata(
+        requests=tuple(
+            StageExecutionMetadata(
+                request_id=request_id,
+                token_position=0,
+                sequence_length=prompts.shape[1],
+            )
+            for request_id in request_ids
+        )
+    )
+    for module in modules:
+        current = module.prefill_batch_cuda(current, prefill_metadata)
+    sampled = modules[-1].sample_cuda(current, request_ids=request_ids)
+    assert sampled.full_logits is None
+    fast_rows[:, 0] = sampled.token_ids
+    for output_index in range(1, output_tokens):
+        current = fast_rows[:, output_index - 1 : output_index]
+        metadata = BatchExecutionMetadata(
+            requests=tuple(
+                StageExecutionMetadata(
+                    request_id=request_id,
+                    token_position=prompts.shape[1] + output_index - 1,
+                    sequence_length=1,
+                )
+                for request_id in request_ids
+            )
+        )
+        for module in modules:
+            current = module.decode_batch_cuda(current, metadata)
+        sampled = modules[-1].sample_cuda(current, request_ids=request_ids)
+        fast_rows[:, output_index] = sampled.token_ids
+
+    reference_model = model.to(dtype=torch.bfloat16).eval()
+    with torch.inference_mode():
+        reference = reference_model(input_ids=prompts, use_cache=True)
+        reference_rows = torch.empty_like(fast_rows)
+        reference_rows[:, 0] = torch.argmax(reference.logits[:, -1, :], dim=-1)
+        cache = reference.past_key_values
+        for output_index in range(1, output_tokens):
+            reference = reference_model(
+                input_ids=reference_rows[:, output_index - 1 : output_index],
+                past_key_values=cache,
+                use_cache=True,
+            )
+            cache = reference.past_key_values
+            reference_rows[:, output_index] = torch.argmax(
+                reference.logits[:, -1, :],
+                dim=-1,
+            )
+
+    assert torch.equal(fast_rows, reference_rows)
+    for module in modules:
+        state = module.state_summary()
+        assert state["fast_batch_forward_count"] == output_tokens
+        assert state["caches"][0]["request_slots"] == {
+            "fast-a": 0,
+            "fast-b": 1,
+        }
+        module.cancel_batch(request_ids)
+        assert module.state_summary()["cache_count"] == 0
+    final_state = modules[-1].state_summary()
+    assert final_state["full_logit_return_count"] == 0
+    assert final_state["sampled_token_return_count"] == 2 * output_tokens
+
+
+def test_fast_decode_method_has_no_reflection_numpy_or_explicit_synchronisation() -> None:
+    import inspect
+
+    source = inspect.getsource(Qwen3StageModule.decode_batch_cuda)
+    forward_source = inspect.getsource(Qwen3StageModule._fast_forward_cuda)
+    combined = source + forward_source
+    assert "inspect.signature" not in combined
+    assert "numpy" not in combined
+    assert "np." not in combined
+    assert ".synchronize(" not in combined

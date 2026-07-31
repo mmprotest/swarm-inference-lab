@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
-from contextlib import suppress
+from collections.abc import Iterator
+from contextlib import contextmanager, suppress
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -19,6 +21,33 @@ from swarm_inference.protocol.messages import (
     parse_message,
     serialize_message,
 )
+
+
+@contextmanager
+def _grpc_nvtx_range(name: str) -> Iterator[None]:
+    """Avoid importing torch on control-plane-only processes unless profiling."""
+
+    if os.environ.get("SWARM_NVTX_ENABLED") != "1":
+        yield
+        return
+    torch_module: Any | None = None
+    try:
+        import torch as imported_torch
+
+        torch_module = imported_torch
+        enabled = bool(imported_torch.cuda.is_available())
+    except (ImportError, OSError):
+        enabled = False
+    if not enabled or torch_module is None:
+        yield
+        return
+    range_push = torch_module.cuda.nvtx.range_push
+    range_pop = torch_module.cuda.nvtx.range_pop
+    range_push(name)
+    try:
+        yield
+    finally:
+        range_pop()
 
 
 @dataclass(slots=True)
@@ -158,7 +187,8 @@ class _PeerConnection:
                             0, len(serialized) - item.envelope.payload_length
                         )
                         self._pending[item.envelope.message_id] = item
-                        yield serialized
+                        with _grpc_nvtx_range("grpc_send"):
+                            yield serialized
                     finally:
                         self._queue.task_done()
 
@@ -175,7 +205,8 @@ class _PeerConnection:
             try:
                 async for raw in self._stream_call:
                     deserialisation_started = time.perf_counter_ns()
-                    ack = parse_message(raw, DataPlaneAck)
+                    with _grpc_nvtx_range("grpc_receive"):
+                        ack = parse_message(raw, DataPlaneAck)
                     self.metrics.deserialisation_time_ms += (
                         time.perf_counter_ns() - deserialisation_started
                     ) / 1_000_000

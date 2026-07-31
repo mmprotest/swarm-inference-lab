@@ -33,3 +33,25 @@ def test_matrix_runner_emits_progress_and_partial_summary(repository_root) -> No
     assert "Warm-up:" not in child
     assert 'label="Warm-up"' in child
     assert 'label="Measurement"' in child
+
+
+def test_engine_performance_launcher_preserves_project_environment(
+    repository_root,
+) -> None:
+    script = (repository_root / "scripts" / "run_engine_performance_experiment.ps1").read_text(
+        encoding="utf-8"
+    )
+    lowered = script.lower()
+    assert "run" in lowered
+    assert "--no-sync" in lowered
+    assert "uv sync" not in lowered
+    assert "engine-performance" in lowered
+    assert "experiment_004_engine_performance.yaml" in lowered
+    assert "[switch]$SkipSecondary" in script
+    assert "[switch]$SkipOptionalEngines" in script
+    assert "[switch]$Resume" in script
+    assert "[switch]$Smoke" in script
+    assert "[switch]$Profile" in script
+    assert "[switch]$KeepServers" in script
+    assert "finally {" in script
+    assert "exit $ExitCode" in script

@@ -173,6 +173,94 @@ def shard_model_command(
     typer.echo(json.dumps(manifest_summary(manifest), indent=2, sort_keys=True))
 
 
+@app.command("inspect-partition")
+def inspect_partition_command(
+    path: Annotated[
+        Path,
+        typer.Option("--path", exists=True, file_okay=False, help="Microshard artifact root."),
+    ],
+) -> None:
+    """Inspect a hierarchical tensor/pipeline microshard artifact."""
+
+    from swarm_inference.microsharding.builder import inspect_partition
+
+    try:
+        payload = inspect_partition(path)
+    except (SwarmError, OSError, ValueError) as exc:
+        _fail(f"inspect-partition failed: {exc}")
+    typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+
+
+@app.command("build-microshards")
+def build_microshards_command(
+    model: Annotated[str, typer.Option(help="Hugging Face model ID or local path.")],
+    output: Annotated[Path, typer.Option(help="New empty microshard directory.")],
+    revision: Annotated[str | None, typer.Option(help="Immutable model revision.")] = None,
+    pipeline_stages: Annotated[
+        int, typer.Option("--pipeline-stages", min=1, help="Pipeline-stage count.")
+    ] = 1,
+    tensor_parallel_degree: Annotated[
+        int,
+        typer.Option("--tensor-parallel-degree", min=1, help="Ranks in each parallel cell."),
+    ] = 1,
+    vocabulary_parallel: Annotated[
+        bool,
+        typer.Option(
+            "--vocabulary-parallel/--no-vocabulary-parallel",
+            help="Shard embedding and LM-head vocabulary rows.",
+        ),
+    ] = True,
+    cache_dir: Annotated[Path | None, typer.Option()] = None,
+    allow_download: Annotated[bool, typer.Option()] = True,
+) -> None:
+    """Build rank-local safetensors directly from checkpoint slices."""
+
+    from swarm_inference.microsharding.builder import build_microshards
+
+    try:
+        result = build_microshards(
+            model=model,
+            revision=revision,
+            pipeline_stage_count=pipeline_stages,
+            tensor_parallel_degree=tensor_parallel_degree,
+            output=output,
+            vocabulary_parallel=vocabulary_parallel,
+            cache_dir=cache_dir,
+            allow_download=allow_download,
+        )
+    except (SwarmError, OSError, ValueError) as exc:
+        _fail(f"build-microshards failed: {exc}")
+    typer.echo(json.dumps(result.validation, indent=2, sort_keys=True))
+    if result.validation["status"] != "PASS":
+        raise typer.Exit(1)
+
+
+@app.command("validate-microshards")
+def validate_microshards_command(
+    path: Annotated[
+        Path,
+        typer.Option("--path", exists=True, file_okay=False, help="Microshard artifact root."),
+    ],
+    source_model: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True, file_okay=False, help="Optional source checkpoint for rehashing."
+        ),
+    ] = None,
+) -> None:
+    """Validate shard unions, tensor hashes, strict coverage, and memory gates."""
+
+    from swarm_inference.microsharding.builder import validate_microshards
+
+    try:
+        payload = validate_microshards(path, source_model=source_model)
+    except (SwarmError, OSError, ValueError) as exc:
+        _fail(f"validate-microshards failed: {exc}")
+    typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+    if payload["status"] != "PASS":
+        raise typer.Exit(1)
+
+
 @app.command("simulate")
 def simulate_command(
     config: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
@@ -349,6 +437,143 @@ def experiment_command(
     typer.echo(f"execution_mode={experiment.execution_mode.value}")
     typer.echo(f"report={run.report_path}")
     typer.echo(f"status={run.summary.get('overall_status', run.summary['status'])}")
+    if not run.passed:
+        raise typer.Exit(1)
+
+
+def _positive_csv(value: str | None, option_name: str) -> tuple[int, ...] | None:
+    if value is None:
+        return None
+    try:
+        parsed = tuple(int(item.strip()) for item in value.split(",") if item.strip())
+    except ValueError as exc:
+        raise typer.BadParameter(f"{option_name} must be comma-separated integers") from exc
+    if not parsed or any(item <= 0 for item in parsed):
+        raise typer.BadParameter(f"{option_name} values must be positive")
+    return parsed
+
+
+@experiment_app.command("microsharding")
+def microsharding_command(
+    config: Annotated[
+        Path,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Experiment 006 YAML configuration.",
+        ),
+    ] = Path("configs/experiments/experiment_006_microsharding.yaml"),
+    dense_model: Annotated[str | None, typer.Option("--dense-model")] = None,
+    dense_revision: Annotated[str | None, typer.Option("--dense-revision")] = None,
+    pipeline_stages: Annotated[
+        str | None,
+        typer.Option("--pipeline-stages", help="Comma-separated pipeline-stage counts."),
+    ] = None,
+    tensor_parallel_degrees: Annotated[
+        str | None,
+        typer.Option("--tensor-parallel-degrees", help="Comma-separated TP degrees."),
+    ] = None,
+    skip_secondary_model: Annotated[bool, typer.Option("--skip-secondary-model")] = False,
+    skip_real_moe: Annotated[bool, typer.Option("--skip-real-moe")] = False,
+    real_moe_download_budget_gib: Annotated[
+        float | None,
+        typer.Option("--real-moe-download-budget-gib", min=0.001),
+    ] = None,
+    skip_k3_projection: Annotated[bool, typer.Option("--skip-k3-projection")] = False,
+    resume: Annotated[bool, typer.Option("--resume")] = False,
+    smoke: Annotated[bool, typer.Option("--smoke")] = False,
+    profile: Annotated[bool, typer.Option("--profile")] = False,
+    output: Annotated[Path | None, typer.Option("--output")] = None,
+) -> None:
+    """Run Experiment 006 intra-layer tensor and expert microsharding."""
+
+    from swarm_inference.config.microsharding import load_microsharding_config
+    from swarm_inference.experiments.microsharding import (
+        MicroshardingOptions,
+        run_microsharding_experiment,
+    )
+
+    try:
+        experiment = load_microsharding_config(config)
+        run = run_microsharding_experiment(
+            experiment,
+            requested_config_path=config,
+            options=MicroshardingOptions(
+                pipeline_stage_counts=_positive_csv(pipeline_stages, "--pipeline-stages"),
+                tensor_parallel_degrees=_positive_csv(
+                    tensor_parallel_degrees, "--tensor-parallel-degrees"
+                ),
+                dense_model=dense_model,
+                dense_revision=dense_revision,
+                skip_secondary_model=skip_secondary_model,
+                skip_real_moe=skip_real_moe,
+                real_moe_download_budget_gib=real_moe_download_budget_gib,
+                skip_k3_projection=skip_k3_projection,
+                resume=resume,
+                smoke=smoke,
+                profile=profile,
+                output=output,
+            ),
+        )
+    except (SwarmError, OSError, RuntimeError, ValueError) as exc:
+        _fail(f"microsharding experiment failed: {exc}")
+    typer.echo(f"run_directory={run.run_directory}")
+    typer.echo(f"report={run.report_path}")
+    typer.echo(f"status={run.summary['overall_status']}")
+    if run.summary["overall_status"] in {"FAIL", "BLOCKED"}:
+        raise typer.Exit(1)
+
+
+@experiment_app.command("engine-performance")
+def engine_performance_command(
+    config: Annotated[
+        Path,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Experiment 004 production-engine benchmark configuration.",
+        ),
+    ] = Path("configs/experiments/experiment_004_engine_performance.yaml"),
+    primary_model: Annotated[str | None, typer.Option("--primary-model")] = None,
+    secondary_model: Annotated[str | None, typer.Option("--secondary-model")] = None,
+    skip_secondary: Annotated[bool, typer.Option("--skip-secondary")] = False,
+    skip_optional_engines: Annotated[bool, typer.Option("--skip-optional-engines")] = False,
+    output_root: Annotated[Path | None, typer.Option("--output-root", file_okay=False)] = None,
+    resume: Annotated[bool, typer.Option("--resume")] = False,
+    smoke: Annotated[bool, typer.Option("--smoke")] = False,
+    profile: Annotated[bool, typer.Option("--profile")] = False,
+    keep_servers: Annotated[bool, typer.Option("--keep-servers")] = False,
+) -> None:
+    """Run Experiment 004's isolated production-engine benchmark matrix."""
+
+    from swarm_inference.config.engine_performance import (
+        load_engine_performance_config,
+    )
+    from swarm_inference.experiments.engine_performance import (
+        run_engine_performance_experiment,
+    )
+
+    try:
+        experiment = load_engine_performance_config(config)
+        run = run_engine_performance_experiment(
+            experiment,
+            config_path=config,
+            primary_model=primary_model,
+            secondary_model=secondary_model,
+            skip_secondary=skip_secondary,
+            skip_optional_engines=skip_optional_engines,
+            output_root=output_root,
+            resume=resume,
+            smoke=smoke,
+            profile=profile,
+            keep_servers=keep_servers,
+        )
+    except (SwarmError, OSError, TimeoutError, ValueError) as exc:
+        _fail(f"engine-performance experiment failed: {exc}")
+    typer.echo("execution_mode=single-host-engine-benchmark")
+    typer.echo(f"run_directory={run.run_directory}")
+    typer.echo(f"report={run.report_path}")
+    typer.echo(f"overall_status={run.summary['overall_status']}")
     if not run.passed:
         raise typer.Exit(1)
 

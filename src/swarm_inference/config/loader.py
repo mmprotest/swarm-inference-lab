@@ -72,6 +72,18 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
 
             fanout = FanoutExperimentConfig.model_validate(expanded)
             return cast(ExperimentConfig, fanout)
+        if expanded.get("execution_mode") == "single-host-engine-benchmark":
+            from swarm_inference.config.engine_performance import (
+                EnginePerformanceConfig,
+            )
+
+            engine = EnginePerformanceConfig.model_validate(expanded)
+            return cast(ExperimentConfig, engine)
+        if expanded.get("execution_mode") == "logical-single-gpu-microsharding":
+            from swarm_inference.config.microsharding import MicroshardingExperimentConfig
+
+            microsharding = MicroshardingExperimentConfig.model_validate(expanded)
+            return cast(ExperimentConfig, microsharding)
         return ExperimentConfig.model_validate(expanded)
     except ValueError as exc:
         raise ConfigurationError(f"invalid experiment configuration {resolved}: {exc}") from exc

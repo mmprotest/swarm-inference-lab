@@ -32,6 +32,7 @@ cpu = [
 ]
 cuda = [
   "torch>=2.11; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')",
+  "triton-windows>=3.7.1.post27; sys_platform == 'win32' and platform_machine == 'AMD64'",
 ]
 mps = [
   "torch>=2.11; sys_platform == 'darwin'",

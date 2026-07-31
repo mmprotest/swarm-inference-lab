@@ -1,0 +1,91 @@
+name: experiment-006-microsharding
+execution_mode: logical-single-gpu-microsharding
+backend: torch-cuda
+
+experiment_004_run: null
+
+dense_models:
+  primary:
+    model_id: Qwen/Qwen3-0.6B
+    revision: c1899de289a04d12100db370d81485cdf75e47ca
+    dtype: bfloat16
+  secondary:
+    model_id: Qwen/Qwen3-4B
+    revision: null
+    dtype: bfloat16
+
+dense_parallelism:
+  pipeline_stage_counts: [1, 4]
+  tensor_parallel_degrees: [1, 2, 4, 8]
+  vocabulary_parallel: true
+  sequence_parallel_prefill: optional
+
+collectives:
+  exact_format: bfloat16
+  optional_formats: [float16, fp8, int8]
+  algorithms:
+    - ring
+    - binary_tree
+    - recursive_doubling
+    - leader_gather_broadcast
+
+correctness:
+  require_exact_greedy_tokens: true
+  boundary_atol: 0.02
+  boundary_rtol: 0.02
+  minimum_cosine_similarity: 0.999
+  prompts: 8
+  max_new_tokens: 32
+
+measurement:
+  isolated_rank_warmup_iterations: 25
+  isolated_rank_measurement_iterations: 100
+  repeats: 5
+
+projection:
+  batch_sizes: [1, 4, 16, 64]
+  prefill_lengths: [128, 512, 2048]
+  decode_tokens: 256
+  network_profiles:
+    - nvlink_class
+    - thunderbolt_rdma_class
+    - datacentre_ethernet
+    - home_lan_10gbe
+    - home_lan_1gbe
+    - nearby_residential
+    - regional
+    - international
+    - global_residential
+
+moe:
+  deterministic_fixture:
+    enabled: true
+    expert_counts: [8, 16, 32]
+    top_k_values: [2, 4]
+    expert_parallel_degrees: [1, 2, 4, 8]
+    expert_tensor_degrees: [1, 2, 4]
+  real_layer:
+    enabled: true
+    model_id: Qwen/Qwen3-30B-A3B
+    revision: null
+    maximum_download_gib: 25
+    expert_parallel_degrees: [1, 2, 4, 8, 16]
+    expert_tensor_degrees: [1, 2, 4]
+    selected_layer: 24
+
+k3_projection:
+  enabled: true
+  metadata_only: true
+  model_id: moonshotai/Kimi-K3
+  revision: 9f62e4e9fffbd0a83ddd60e1c209d828994b3569
+  node_memory_gib: [1, 8, 16, 32]
+  target_single_stream_tps: 20
+
+acceptance:
+  dense_token_identity_required: true
+  dense_shard_memory_tolerance: 0.05
+  kv_partition_required: true
+  collective_projector_required: true
+  deterministic_moe_required: true
+  real_moe_layer_required_when_downloadable: true
+  maximum_result_cv: 0.10

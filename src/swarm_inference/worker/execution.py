@@ -6,12 +6,18 @@ import asyncio
 import time
 from contextlib import suppress
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
 from swarm_inference.config.models import BackpressurePolicy, QueueConfig
 from swarm_inference.exceptions import BackpressureError
 from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
+from swarm_inference.model.stage_module import (
+    BatchExecutionMetadata,
+    BatchStageModule,
+    StageExecutionMetadata,
+)
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.messages import ActivationRequest, ActivationResult
 from swarm_inference.protocol.tensor_codec import decode_tensor, encode_tensor
@@ -122,6 +128,24 @@ class ExecutionEngine:
                             candidate.future.set_exception(
                                 BackpressureError("incompatible operation reached microbatch")
                             )
+            if len(batch) > 1:
+                module = self.shards.module(first.request.metadata.stage_id)
+                if isinstance(module, BatchStageModule):
+                    try:
+                        results = self._execute_batch(batch, module=module)
+                    except Exception as exc:
+                        self.metrics.failures += len(batch)
+                        for item in batch:
+                            if not item.future.done():
+                                item.future.set_exception(exc)
+                            self._queue.task_done()
+                    else:
+                        for item, result in zip(batch, results, strict=True):
+                            if not item.future.done():
+                                item.future.set_result(result)
+                            self._queue.task_done()
+                    await asyncio.sleep(0)
+                    continue
             for item in batch:
                 try:
                     result = self._execute_one(item)
@@ -144,8 +168,78 @@ class ExecutionEngine:
             first.model_revision == second.model_revision
             and first.stage_id == second.stage_id
             and first.operation == second.operation
-            and first.sequence_length.bit_length() == second.sequence_length.bit_length()
+            and first.sequence_length == second.sequence_length
+            and first.token_position == second.token_position
+            and first.cache_generation == second.cache_generation
+            and first.route_generation == second.route_generation
         )
+
+    def _execute_batch(
+        self,
+        items: list[QueuedExecution],
+        *,
+        module: BatchStageModule,
+    ) -> list[ActivationResult]:
+        decoded = [decode_tensor(item.request.tensor_payload) for item in items]
+        for item, activation in zip(items, decoded, strict=True):
+            if activation.request_id != item.request.metadata.request_id:
+                raise BackpressureError("activation request ID does not match metadata")
+            if activation.stage_id != item.request.metadata.stage_id:
+                raise BackpressureError("activation stage ID does not match metadata")
+        first_metadata = items[0].request.metadata
+        batch_metadata = BatchExecutionMetadata(
+            requests=tuple(
+                StageExecutionMetadata(
+                    request_id=item.request.metadata.request_id,
+                    token_position=item.request.metadata.token_position,
+                    sequence_length=item.request.metadata.sequence_length,
+                    cache_generation=item.request.metadata.cache_generation,
+                    route_generation=item.request.metadata.route_generation,
+                )
+                for item in items
+            )
+        )
+        activation_batch = np.concatenate(
+            [activation.array for activation in decoded],
+            axis=0,
+        )
+        started = time.perf_counter()
+        output_batch = module.execute_batch(
+            activation_batch,
+            metadata=batch_metadata,
+            operation=first_metadata.operation,
+        )
+        elapsed = time.perf_counter() - started
+        if int(output_batch.shape[0]) != len(items):
+            raise BackpressureError(
+                f"batched stage returned batch {int(output_batch.shape[0])}, expected {len(items)}"
+            )
+        recorder = lifecycle_recorder()
+        if recorder is not None:
+            recorder.emit(
+                "real_batch_forward_completed",
+                duration_ns=int(elapsed * 1_000_000_000),
+                details={
+                    "execution_profile": getattr(
+                        module,
+                        "execution_profile",
+                        "unknown",
+                    ),
+                    "batch_size": len(items),
+                    "request_ids": batch_metadata.request_ids,
+                    "operation": first_metadata.operation.value,
+                },
+            )
+        return [
+            self._encode_result(
+                item,
+                activation,
+                output_batch[index : index + 1],
+                elapsed=elapsed,
+                started=started,
+            )
+            for index, (item, activation) in enumerate(zip(items, decoded, strict=True))
+        ]
 
     def _execute_one(self, item: QueuedExecution) -> ActivationResult:
         request = item.request
@@ -159,6 +253,11 @@ class ExecutionEngine:
         operation_started_ns = time.monotonic_ns()
         if recorder is not None:
             operation_details = {
+                "execution_profile": getattr(
+                    module,
+                    "execution_profile",
+                    "qwen3_correctness",
+                ),
                 "request_id": request.metadata.request_id,
                 "operation": request.metadata.operation.value,
                 "token_position": request.metadata.token_position,
@@ -191,6 +290,11 @@ class ExecutionEngine:
         operation_completed_ns = time.monotonic_ns()
         if recorder is not None:
             completion_details = {
+                "execution_profile": getattr(
+                    module,
+                    "execution_profile",
+                    "qwen3_correctness",
+                ),
                 "request_id": request.metadata.request_id,
                 "operation": request.metadata.operation.value,
                 "token_position": request.metadata.token_position,
@@ -211,6 +315,24 @@ class ExecutionEngine:
                 duration_ns=operation_completed_ns - operation_started_ns,
                 details=completion_details,
             )
+        return self._encode_result(
+            item,
+            activation,
+            output_array,
+            elapsed=elapsed,
+            started=started,
+        )
+
+    def _encode_result(
+        self,
+        item: QueuedExecution,
+        activation: Any,
+        output_array: np.ndarray,
+        *,
+        elapsed: float,
+        started: float,
+    ) -> ActivationResult:
+        request = item.request
         output = encode_tensor(
             type(activation)(
                 tensor_id=f"{activation.tensor_id}:out",

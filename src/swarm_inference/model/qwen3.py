@@ -11,7 +11,9 @@ import json
 import math
 import os
 import re
+import statistics
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
@@ -28,6 +30,31 @@ from swarm_inference.model.adapter import (
     ComponentRef,
     ModelDescription,
     TensorInfo,
+)
+from swarm_inference.model.qwen3_cache import StaticStageKVCache
+from swarm_inference.model.qwen3_runtime import (
+    AttentionBackend,
+    AttentionBackendEvidence,
+    CompileDiagnostics,
+    Qwen3CacheBackend,
+    Qwen3CompileMode,
+    Qwen3EngineOptions,
+    Qwen3ExecutionProfile,
+    attention_backend_availability,
+    auto_attention_candidates,
+    nvtx_range,
+    resolve_cache_torch_dtype,
+    validate_attention_backend,
+)
+from swarm_inference.model.qwen3_sampling import (
+    SamplingParameters,
+    SamplingResult,
+    SamplingState,
+    sample_final_logits,
+)
+from swarm_inference.model.stage_module import (
+    BatchExecutionMetadata,
+    StageExecutionMetadata,
 )
 from swarm_inference.protocol.checksums import sha256_file
 
@@ -65,6 +92,8 @@ class StageLocalKVCache:
     cache_generation: int
     sequence_length: int = 0
     replay_generation: int = 0
+    allocation_count: int = 0
+    append_count: int = 0
 
     def global_to_local(self, global_layer_index: int) -> int:
         if not self.layer_start <= global_layer_index < self.layer_end:
@@ -87,6 +116,11 @@ class StageLocalKVCache:
                 f"expected={self.sequence_length} actual={token_position}"
             )
         self.sequence_length += query_length
+        # DynamicCache replaces each owned key/value tensor on every model
+        # invocation. Count those logical tensor allocations so the experiment
+        # can compare its allocation behaviour with the fixed static cache.
+        self.allocation_count += 2 * (self.layer_end - self.layer_start)
+        self.append_count += 1
 
     def _owned_layers(self) -> list[tuple[int, Any]]:
         layers = getattr(self.cache, "layers", None)
@@ -138,6 +172,7 @@ class StageLocalKVCache:
                 }
             )
         return {
+            "backend": "dynamic_reference",
             "request_id": self.request_id,
             "model_revision": self.model_revision,
             "stage_id": self.stage_id,
@@ -148,6 +183,12 @@ class StageLocalKVCache:
             "owned_layer_count": self.layer_end - self.layer_start,
             "initialised_layer_count": sum(1 for layer in layers if layer["initialised"]),
             "cache_bytes": self.memory_bytes(),
+            "reserved_bytes": self.memory_bytes(),
+            "allocation_count": self.allocation_count,
+            "append_count": self.append_count,
+            "fragmentation_bytes": 0,
+            "fragmentation_fraction": 0.0,
+            "allocation_count_definition": "logical key/value tensor replacements",
             "layers": layers,
         }
 
@@ -338,6 +379,7 @@ class Qwen3StageModule:
         stage: StageDefinition,
         device: Any,
         dtype: Any,
+        engine_options: Qwen3EngineOptions | None = None,
     ) -> None:
         import torch
         from transformers import Qwen3Config
@@ -353,10 +395,39 @@ class Qwen3StageModule:
             raise UnsupportedArchitectureError(
                 f"Qwen3StageModule received model_type={getattr(config, 'model_type', None)!r}"
             )
-        # Stage execution and the separate full-reference phase deliberately use the
-        # same explicit attention implementation.  A config loaded directly from
-        # config.json otherwise leaves this private Transformers selector as None.
-        config._attn_implementation = "eager"
+        self.engine_options = engine_options or Qwen3EngineOptions.from_values(
+            max_sequence_length=min(
+                4096,
+                int(getattr(config, "max_position_embeddings", 4096)),
+            )
+        )
+        self.execution_profile = self.engine_options.profile.value
+        self.attention_evidence = AttentionBackendEvidence(
+            requested=self.engine_options.attention_backend.value
+        )
+        availability = attention_backend_availability(torch)
+        # FlashInfer is a valid user-facing selection but this Transformers
+        # decoder does not expose a FlashInfer attention adapter.
+        availability[AttentionBackend.FLASHINFER.value] = False
+        self.attention_evidence.available = dict(availability)
+        validate_attention_backend(
+            self.engine_options.attention_backend,
+            availability=availability,
+        )
+        if self.engine_options.profile == Qwen3ExecutionProfile.CORRECTNESS:
+            selected_attention = AttentionBackend.EAGER
+        elif self.engine_options.attention_backend == AttentionBackend.AUTO:
+            candidates = auto_attention_candidates(availability)
+            if not candidates:
+                raise RuntimeError("no compatible Qwen3 attention backend is available")
+            # The final auto choice is benchmarked after weights load. SDPA is
+            # the safe provisional choice on installations without flash-attn.
+            selected_attention = candidates[0]
+        else:
+            selected_attention = self.engine_options.attention_backend
+        config._attn_implementation = selected_attention.value
+        self.attention_backend = selected_attention.value
+        self.attention_evidence.selected = selected_attention.value
         if getattr(config, "use_sliding_window", False) or (
             "sliding_attention" in getattr(config, "layer_types", [])
         ):
@@ -370,9 +441,22 @@ class Qwen3StageModule:
         self.required_memory_bytes = stage.required_memory_bytes
         self.device = torch.device(device)
         self.dtype = dtype
-        if self.device.type == "cuda":
+        if (
+            self.device.type == "cuda"
+            and self.engine_options.profile == Qwen3ExecutionProfile.CORRECTNESS
+        ):
             os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
             torch.use_deterministic_algorithms(True)
+            torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
+            torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
+        elif self.device.type == "cuda":
+            torch.use_deterministic_algorithms(False)
+            # Kernel scheduling remains non-deterministic in qwen3_fast, but
+            # reduced-precision accumulation can change a near-tied greedy
+            # argmax as batch shape changes (observed at output token 42 for
+            # Qwen3-0.6B, batch 4).  FP32 accumulation for BF16/FP16 GEMMs is
+            # therefore an output-identity constraint, not a performance
+            # profiling setting.
             torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
             torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = False
         self.embed_tokens = (
@@ -393,6 +477,21 @@ class Qwen3StageModule:
                 )
                 for layer_index in range(stage.layer_start, stage.layer_end)
             }
+        )
+        self._layer_modules = tuple(
+            self.layers[str(layer_index)]
+            for layer_index in range(stage.layer_start, stage.layer_end)
+        )
+        self._layer_cache_argument_styles: tuple[str, ...] = tuple(
+            self._cache_argument_style(layer) for layer in self._layer_modules
+        )
+        self._layer_calls = tuple(
+            self._bind_layer_call(layer, style)
+            for layer, style in zip(
+                self._layer_modules,
+                self._layer_cache_argument_styles,
+                strict=True,
+            )
         )
         self.norm = (
             Qwen3RMSNorm(config.hidden_size, eps=config.rms_norm_eps).to(
@@ -426,8 +525,25 @@ class Qwen3StageModule:
         # one ULP, which phase-amplifies on 512-token prompts and breaks boundary
         # validation even though short prompts and greedy tokens still agree.
         self.rotary_emb = Qwen3RotaryEmbedding(config=config).to(self.device)
+        maximum_positions = int(getattr(config, "max_position_embeddings", 4096))
+        if self.engine_options.max_sequence_length > maximum_positions:
+            raise ValueError(
+                "configured fast-cache sequence length exceeds model maximum: "
+                f"{self.engine_options.max_sequence_length} > {maximum_positions}"
+            )
+        self._position_buffer = torch.arange(
+            self.engine_options.max_sequence_length,
+            device=self.device,
+            dtype=torch.long,
+        )
+        self._causal_mask_cache: dict[tuple[int, int], Any] = {}
         self.model_revision = "unloaded"
         self._caches: dict[tuple[str, str, int, int, int], StageLocalKVCache] = {}
+        self._static_caches: dict[
+            tuple[tuple[str, ...], str, int, int, int],
+            StaticStageKVCache,
+        ] = {}
+        self._dynamic_cache_fallback_groups: set[tuple[str, ...]] = set()
         self._cache_replay_generations: dict[str, int] = {}
         self._cache_history: list[dict[str, Any]] = []
         self._boundary_records: dict[str, dict[str, Any]] = {}
@@ -444,6 +560,21 @@ class Qwen3StageModule:
         }
         self._transfer_history: list[dict[str, Any]] = []
         self._finite_output_checks = 0
+        self._fast_forward_count = 0
+        self._fast_batch_forward_count = 0
+        self._full_logit_return_count = 0
+        self._sampled_token_return_count = 0
+        self._compile_diagnostics = CompileDiagnostics(
+            requested_mode=self.engine_options.compile_mode.value
+        )
+        self._compiled_prefill: Callable[..., Any] | None = None
+        self._compiled_decode: Callable[..., Any] | None = None
+        self._attention_tuning_seconds = 0.0
+        self._sampling_state = SamplingState(torch, self.device)
+        self._graph_position: Any | None = None
+        self._graph_position_ids: Any | None = None
+        self._graph_attention_mask: Any | None = None
+        self._graph_batch_size = 0
         self.loaded_source_tensors: list[str] = []
         for layer in self.layers.values():
             layer.eval()
@@ -452,6 +583,71 @@ class Qwen3StageModule:
             if endpoint is not None:
                 endpoint.eval()
                 endpoint.requires_grad_(False)
+
+    @staticmethod
+    def _cache_argument_style(layer: Any) -> str:
+        """Resolve Transformers cache spelling exactly once during stage load."""
+
+        signature = inspect.signature(layer.forward)
+        if "past_key_values" in signature.parameters:
+            return "past_key_values"
+        if "past_key_value" in signature.parameters:
+            return "past_key_value"
+        raise UnsupportedCacheFormatError(
+            "installed Transformers Qwen3 decoder has no supported cache argument"
+        )
+
+    @staticmethod
+    def _bind_layer_call(layer: Any, cache_argument_style: str) -> Callable[..., Any]:
+        if cache_argument_style == "past_key_values":
+
+            def call(
+                hidden_states: Any,
+                attention_mask: Any,
+                position_ids: Any,
+                use_cache: bool,
+                position_embeddings: Any,
+                cache_position: Any,
+                cache: Any,
+            ) -> Any:
+                output = layer(
+                    hidden_states,
+                    attention_mask=attention_mask,
+                    position_ids=position_ids,
+                    use_cache=use_cache,
+                    position_embeddings=position_embeddings,
+                    cache_position=cache_position,
+                    past_key_values=cache,
+                )
+                return output[0] if isinstance(output, tuple) else output
+
+            return call
+        if cache_argument_style == "past_key_value":
+
+            def legacy_call(
+                hidden_states: Any,
+                attention_mask: Any,
+                position_ids: Any,
+                use_cache: bool,
+                position_embeddings: Any,
+                cache_position: Any,
+                cache: Any,
+            ) -> Any:
+                output = layer(
+                    hidden_states,
+                    attention_mask=attention_mask,
+                    position_ids=position_ids,
+                    use_cache=use_cache,
+                    position_embeddings=position_embeddings,
+                    cache_position=cache_position,
+                    past_key_value=cache,
+                )
+                return output[0] if isinstance(output, tuple) else output
+
+            return legacy_call
+        raise UnsupportedCacheFormatError(
+            f"unsupported bound Qwen3 cache argument style {cache_argument_style!r}"
+        )
 
     def _new_cache(self) -> Any:
         from transformers import DynamicCache
@@ -503,6 +699,114 @@ class Qwen3StageModule:
             "duration_seconds": duration_ns / 1_000_000_000,
         }
 
+    def _attention_probe_input(self) -> Any:
+        sequence_length = min(64, self.engine_options.max_sequence_length)
+        if self.embed_tokens is not None:
+            return self.torch.arange(
+                sequence_length,
+                device=self.device,
+                dtype=self.torch.long,
+            ).remainder(int(self.config.vocab_size))[None, :]
+        return self.torch.linspace(
+            -0.5,
+            0.5,
+            steps=sequence_length * int(self.config.hidden_size),
+            device=self.device,
+            dtype=self.dtype,
+        ).reshape(1, sequence_length, int(self.config.hidden_size))
+
+    def _probe_attention_forward(self, inputs: Any) -> Any:
+        with self.torch.inference_mode():
+            return self.forward(
+                inputs,
+                request_id=f"attention-startup-check-{self.stage_id}",
+                token_position=0,
+                cache_generation=0,
+                route_generation=0,
+                use_cache=False,
+            )
+
+    def _autotune_attention_backend(self) -> None:
+        if self.engine_options.profile != Qwen3ExecutionProfile.FAST:
+            return
+        started = time.perf_counter()
+        requested = self.engine_options.attention_backend
+        availability = self.attention_evidence.available
+        if requested == AttentionBackend.AUTO:
+            candidates = auto_attention_candidates(availability)
+        else:
+            candidates = (requested,)
+        inputs = self._attention_probe_input()
+        original_backend = self.attention_backend
+        self.config._attn_implementation = AttentionBackend.EAGER.value
+        self.attention_backend = AttentionBackend.EAGER.value
+        reference = self._probe_attention_forward(inputs)
+        reference_selection = self.torch.argmax(reference[:, -1, :], dim=-1)
+        successful: list[tuple[AttentionBackend, float]] = []
+        for candidate in candidates:
+            if not availability.get(candidate.value, False):
+                self.attention_evidence.startup_correct[candidate.value] = False
+                self.attention_evidence.diagnostics[candidate.value] = "backend unavailable"
+                continue
+            self.config._attn_implementation = candidate.value
+            self.attention_backend = candidate.value
+            try:
+                candidate_output = self._probe_attention_forward(inputs)
+                candidate_selection = self.torch.argmax(
+                    candidate_output[:, -1, :],
+                    dim=-1,
+                )
+                selection_matches = bool(self.torch.equal(candidate_selection, reference_selection))
+                finite = bool(self.torch.isfinite(candidate_output).all().item())
+                correct = selection_matches and finite
+                self.attention_evidence.startup_correct[candidate.value] = correct
+                if not correct:
+                    self.attention_evidence.diagnostics[candidate.value] = (
+                        "startup greedy token or finite-output check failed"
+                    )
+                    continue
+                timings: list[float] = []
+                if self.device.type == "cuda":
+                    for _ in range(5):
+                        start_event = self.torch.cuda.Event(  # type: ignore[no-untyped-call]
+                            enable_timing=True
+                        )
+                        end_event = self.torch.cuda.Event(  # type: ignore[no-untyped-call]
+                            enable_timing=True
+                        )
+                        start_event.record()
+                        self._probe_attention_forward(inputs)
+                        end_event.record()
+                        end_event.synchronize()
+                        timings.append(float(start_event.elapsed_time(end_event)))
+                else:
+                    for _ in range(3):
+                        timing_started = time.perf_counter()
+                        self._probe_attention_forward(inputs)
+                        timings.append((time.perf_counter() - timing_started) * 1000)
+                median_ms = statistics.median(timings)
+                self.attention_evidence.median_cuda_ms[candidate.value] = median_ms
+                successful.append((candidate, median_ms))
+            except Exception as exc:
+                self.attention_evidence.startup_correct[candidate.value] = False
+                self.attention_evidence.diagnostics[candidate.value] = (
+                    f"{type(exc).__name__}: {exc}"
+                )
+        if not successful:
+            self.config._attn_implementation = original_backend
+            self.attention_backend = original_backend
+            raise RuntimeError(
+                "no requested Qwen3 attention backend passed the startup correctness check: "
+                f"{self.attention_evidence.diagnostics}"
+            )
+        selected = min(successful, key=lambda item: item[1])[0]
+        self.config._attn_implementation = selected.value
+        self.attention_backend = selected.value
+        self.attention_evidence.selected = selected.value
+        self._attention_tuning_seconds = time.perf_counter() - started
+        del reference
+        del inputs
+
     def _causal_mask(
         self,
         hidden_states: Any,
@@ -512,25 +816,25 @@ class Qwen3StageModule:
         torch = self.torch
         batch, query_length, _ = hidden_states.shape
         key_length = token_position + query_length
-        query_positions = torch.arange(
-            token_position,
-            token_position + query_length,
-            device=hidden_states.device,
-        )[:, None]
-        key_positions = torch.arange(key_length, device=hidden_states.device)[None, :]
-        allowed = key_positions <= query_positions
-        minimum = torch.finfo(hidden_states.dtype).min
-        mask = torch.where(
-            allowed,
-            torch.zeros((), dtype=hidden_states.dtype, device=hidden_states.device),
-            torch.full(
-                (),
-                minimum,
+        key = (token_position, query_length)
+        cached = self._causal_mask_cache.get(key)
+        if cached is None:
+            query_positions = self._position_buffer[token_position : token_position + query_length][
+                :, None
+            ]
+            key_positions = self._position_buffer[:key_length][None, :]
+            allowed = key_positions <= query_positions
+            minimum = torch.finfo(hidden_states.dtype).min
+            mask = torch.empty(
+                (query_length, key_length),
                 dtype=hidden_states.dtype,
                 device=hidden_states.device,
-            ),
-        )
-        return mask[None, None, :, :].expand(batch, 1, query_length, key_length)
+            )
+            mask.fill_(minimum)
+            mask.masked_fill_(allowed, 0)
+            cached = mask[None, None, :, :]
+            self._causal_mask_cache[key] = cached
+        return cached.expand(batch, 1, query_length, key_length)
 
     def forward(
         self,
@@ -543,12 +847,17 @@ class Qwen3StageModule:
         use_cache: bool = True,
     ) -> Any:
         torch = self.torch
-        if self.embed_tokens is not None:
-            if inputs.dtype not in {torch.int32, torch.int64}:
-                raise ValueError("embedding-owning stage requires integer token IDs")
-            hidden_states = self.embed_tokens(inputs.to(self.device))
-        else:
-            hidden_states = inputs.to(device=self.device, dtype=self.dtype)
+        with nvtx_range(
+            torch,
+            "embedding",
+            enabled=self.engine_options.nvtx_enabled,
+        ):
+            if self.embed_tokens is not None:
+                if inputs.dtype not in {torch.int32, torch.int64}:
+                    raise ValueError("embedding-owning stage requires integer token IDs")
+                hidden_states = self.embed_tokens(inputs.to(self.device))
+            else:
+                hidden_states = inputs.to(device=self.device, dtype=self.dtype)
         cache_key = (
             request_id,
             self.model_revision,
@@ -575,55 +884,643 @@ class Qwen3StageModule:
             )
             self._caches[cache_key] = cache_record
         cache = cache_record.cache if cache_record is not None else None
-        query_length = hidden_states.shape[1]
+        query_length = int(hidden_states.shape[1])
         if cache_record is not None and token_position != cache_record.sequence_length:
             raise UnsupportedCacheFormatError(
                 f"stage {self.stage_id} cache length mismatch for request={request_id}: "
                 f"expected={cache_record.sequence_length} actual_position={token_position}"
             )
-        position_ids = torch.arange(
-            token_position,
-            token_position + query_length,
-            device=self.device,
-            dtype=torch.long,
-        ).unsqueeze(0)
-        cache_position = position_ids[0]
-        position_embeddings = self.rotary_emb(hidden_states, position_ids)
-        attention_mask = self._causal_mask(
+        hidden_states = self._forward_layers(
             hidden_states,
+            cache=cache,
             token_position=token_position,
+            use_cache=use_cache,
+            fixed_cache_shape=False,
         )
-        for layer_index in range(self.stage.layer_start, self.stage.layer_end):
-            layer = self.layers[str(layer_index)]
-            signature = inspect.signature(layer.forward)
-            kwargs: dict[str, Any] = {
-                "attention_mask": attention_mask,
-                "position_ids": position_ids,
-                "use_cache": use_cache,
-                "position_embeddings": position_embeddings,
-                "cache_position": cache_position,
-            }
-            if "past_key_values" in signature.parameters:
-                kwargs["past_key_values"] = cache
-            elif "past_key_value" in signature.parameters:
-                kwargs["past_key_value"] = cache
-            else:
-                raise UnsupportedCacheFormatError(
-                    "installed Transformers Qwen3 decoder has no supported cache argument"
-                )
-            output = layer(hidden_states, **kwargs)
-            hidden_states = output[0] if isinstance(output, tuple) else output
         self._last_layer_hidden = hidden_states.detach()
         if cache_record is not None:
             cache_record.advance(
                 token_position=token_position,
-                query_length=int(query_length),
+                query_length=query_length,
             )
         if self.norm is not None:
-            hidden_states = self.norm(hidden_states)
+            with nvtx_range(
+                torch,
+                "final_norm",
+                enabled=self.engine_options.nvtx_enabled,
+            ):
+                hidden_states = self.norm(hidden_states)
         if self.lm_head is not None:
-            return self.lm_head(hidden_states)
+            with nvtx_range(
+                torch,
+                "lm_head",
+                enabled=self.engine_options.nvtx_enabled,
+            ):
+                return self.lm_head(hidden_states)
         return hidden_states
+
+    def _position_views(
+        self,
+        *,
+        token_position: int,
+        query_length: int,
+        batch_size: int,
+    ) -> tuple[Any, Any]:
+        if (
+            self._graph_position is not None
+            and query_length == 1
+            and batch_size == self._graph_batch_size
+        ):
+            return self._graph_position_ids, self._graph_position
+        end = token_position + query_length
+        if end > int(self._position_buffer.shape[0]):
+            raise UnsupportedCacheFormatError(
+                f"position {end} exceeds configured engine capacity "
+                f"{int(self._position_buffer.shape[0])}"
+            )
+        cache_position = self._position_buffer[token_position:end]
+        position_ids = cache_position.unsqueeze(0)
+        if batch_size > 1:
+            position_ids = position_ids.expand(batch_size, query_length)
+        return position_ids, cache_position
+
+    def _forward_layers(
+        self,
+        hidden_states: Any,
+        *,
+        cache: Any,
+        token_position: int,
+        use_cache: bool,
+        fixed_cache_shape: bool,
+    ) -> Any:
+        torch = self.torch
+        batch_size = int(hidden_states.shape[0])
+        query_length = int(hidden_states.shape[1])
+        with nvtx_range(
+            torch,
+            "position_setup",
+            enabled=self.engine_options.nvtx_enabled,
+        ):
+            position_ids, cache_position = self._position_views(
+                token_position=token_position,
+                query_length=query_length,
+                batch_size=batch_size,
+            )
+            position_embeddings = self.rotary_emb(hidden_states, position_ids)
+        with nvtx_range(
+            torch,
+            "attention_mask_setup",
+            enabled=self.engine_options.nvtx_enabled,
+        ):
+            attention_mask = self._attention_mask_for_backend(
+                hidden_states,
+                token_position=token_position,
+                fixed_cache_shape=fixed_cache_shape,
+            )
+        compiled = self._compiled_decode if query_length == 1 else self._compiled_prefill
+        if compiled is not None:
+            compile_started = time.perf_counter()
+            static_sequence_length = (
+                cache.sequence_length if isinstance(cache, StaticStageKVCache) else None
+            )
+            try:
+                hidden_states = compiled(
+                    hidden_states,
+                    attention_mask,
+                    position_ids,
+                    use_cache,
+                    position_embeddings,
+                    cache_position,
+                    cache,
+                )
+            except Exception as exc:
+                if isinstance(cache, StaticStageKVCache) and static_sequence_length is not None:
+                    # A backend failure may occur after some layer cache writes.
+                    # The position itself has not been committed yet; clear the
+                    # attempted slot before running the eager fallback.
+                    cache.rollback(static_sequence_length)
+                    cache.prepare_append(
+                        token_position=static_sequence_length,
+                        query_length=int(hidden_states.shape[1]),
+                    )
+                self._compile_diagnostics.fallback_used = True
+                self._compile_diagnostics.fallback_reason = f"{type(exc).__name__}: {exc}"
+                self._compile_diagnostics.graph_break_count += 1
+                if query_length == 1:
+                    self._compiled_decode = None
+                else:
+                    self._compiled_prefill = None
+                return self._layer_stack(
+                    hidden_states,
+                    attention_mask,
+                    position_ids,
+                    use_cache,
+                    position_embeddings,
+                    cache_position,
+                    cache,
+                )
+            if query_length == 1:
+                first_execution = not self._compile_diagnostics.decode_compiled
+                self._compile_diagnostics.decode_compiled = True
+            else:
+                first_execution = not self._compile_diagnostics.prefill_compiled
+                self._compile_diagnostics.prefill_compiled = True
+            if first_execution:
+                if self.device.type == "cuda":
+                    # Compilation is a declared cold-readiness boundary.
+                    self.torch.cuda.current_stream(self.device).synchronize()
+                self._compile_diagnostics.compile_seconds += time.perf_counter() - compile_started
+            self._compile_diagnostics.verified_execution = True
+            return hidden_states
+        return self._layer_stack(
+            hidden_states,
+            attention_mask,
+            position_ids,
+            use_cache,
+            position_embeddings,
+            cache_position,
+            cache,
+        )
+
+    def _layer_stack(
+        self,
+        hidden_states: Any,
+        attention_mask: Any,
+        position_ids: Any,
+        use_cache: bool,
+        position_embeddings: Any,
+        cache_position: Any,
+        cache: Any,
+    ) -> Any:
+        torch = self.torch
+        for layer_call in self._layer_calls:
+            with nvtx_range(
+                torch,
+                "decoder_layer",
+                enabled=self.engine_options.nvtx_enabled,
+            ):
+                hidden_states = layer_call(
+                    hidden_states,
+                    attention_mask,
+                    position_ids,
+                    use_cache,
+                    position_embeddings,
+                    cache_position,
+                    cache,
+                )
+        return hidden_states
+
+    def _configure_compile(self) -> None:
+        if self.engine_options.profile != Qwen3ExecutionProfile.FAST:
+            return
+        mode = self.engine_options.compile_mode
+        if mode in {
+            Qwen3CompileMode.EAGER,
+            Qwen3CompileMode.MANUAL_CUDA_GRAPH,
+        }:
+            return
+        compile_mode = {
+            Qwen3CompileMode.DEFAULT: None,
+            Qwen3CompileMode.REDUCE_OVERHEAD: "reduce-overhead",
+            Qwen3CompileMode.MAX_AUTOTUNE: "max-autotune",
+        }[mode]
+        try:
+            kwargs: dict[str, Any] = {
+                "fullgraph": True,
+                "dynamic": False,
+            }
+            if compile_mode is not None:
+                kwargs["mode"] = compile_mode
+            self._compiled_prefill = self.torch.compile(self._layer_stack, **kwargs)
+            self._compiled_decode = self.torch.compile(self._layer_stack, **kwargs)
+        except Exception as exc:
+            self._compiled_prefill = None
+            self._compiled_decode = None
+            self._compile_diagnostics.fallback_used = True
+            self._compile_diagnostics.fallback_reason = f"{type(exc).__name__}: {exc}"
+
+    def _attention_mask_for_backend(
+        self,
+        hidden_states: Any,
+        *,
+        token_position: int,
+        fixed_cache_shape: bool,
+    ) -> Any:
+        if self.attention_backend == AttentionBackend.EAGER.value:
+            return self._causal_mask(
+                hidden_states,
+                token_position=token_position,
+            )
+        if fixed_cache_shape:
+            if (
+                self._graph_attention_mask is not None
+                and int(hidden_states.shape[0]) == self._graph_batch_size
+                and int(hidden_states.shape[1]) == 1
+            ):
+                return self._graph_attention_mask
+            query_length = int(hidden_states.shape[1])
+            key_length = self.engine_options.max_sequence_length
+            query_positions = self._position_buffer[token_position : token_position + query_length][
+                :, None
+            ]
+            key_positions = self._position_buffer[:key_length][None, :]
+            allowed = key_positions <= query_positions
+            return allowed[None, None, :, :].expand(
+                int(hidden_states.shape[0]),
+                1,
+                query_length,
+                key_length,
+            )
+        # SDPA and FlashAttention can infer causal prefill. A one-token decode
+        # over an occupied-prefix cache is non-causal over that prefix, which
+        # is also correct.
+        return None
+
+    def _static_cache_key(
+        self,
+        metadata: BatchExecutionMetadata,
+    ) -> tuple[tuple[str, ...], str, int, int, int]:
+        return (
+            metadata.request_ids,
+            self.model_revision,
+            self.stage_id,
+            metadata.route_generation,
+            metadata.cache_generation,
+        )
+
+    def _new_static_cache(
+        self,
+        metadata: BatchExecutionMetadata,
+    ) -> StaticStageKVCache:
+        if metadata.batch_size > self.engine_options.max_batch_size:
+            raise UnsupportedCacheFormatError(
+                f"batch size {metadata.batch_size} exceeds configured maximum "
+                f"{self.engine_options.max_batch_size}"
+            )
+        cache_dtype = resolve_cache_torch_dtype(
+            self.torch,
+            self.engine_options.cache_dtype,
+            model_dtype=self.dtype,
+            device=self.device,
+        )
+        if cache_dtype != self.dtype:
+            raise UnsupportedCacheFormatError(
+                f"cache dtype {cache_dtype} must match attention dtype {self.dtype} "
+                "until a compatible mixed-dtype attention kernel is selected"
+            )
+        return StaticStageKVCache(
+            torch_module=self.torch,
+            request_ids=metadata.request_ids,
+            model_revision=self.model_revision,
+            stage_id=self.stage_id,
+            layer_start=self.stage.layer_start,
+            layer_end=self.stage.layer_end,
+            route_generation=metadata.route_generation,
+            cache_generation=metadata.cache_generation,
+            max_sequence_length=self.engine_options.max_sequence_length,
+            key_value_head_count=int(
+                getattr(self.config, "num_key_value_heads", None) or self.config.num_attention_heads
+            ),
+            head_dimension=int(
+                getattr(self.config, "head_dim", None)
+                or self.config.hidden_size // self.config.num_attention_heads
+            ),
+            dtype=cache_dtype,
+            device=self.device,
+            fixed_shape=self.engine_options.static_cache_fixed_shape,
+        )
+
+    def _get_static_cache(
+        self,
+        metadata: BatchExecutionMetadata,
+    ) -> StaticStageKVCache:
+        key = self._static_cache_key(metadata)
+        cache = self._static_caches.get(key)
+        if cache is None:
+            if metadata.token_position != 0:
+                raise UnsupportedCacheFormatError(
+                    f"missing static cache for requests={metadata.request_ids} "
+                    f"at token_position={metadata.token_position}"
+                )
+            cache = self._new_static_cache(metadata)
+            self._static_caches[key] = cache
+        return cache
+
+    def begin_cuda_graph_decode(
+        self,
+        metadata: BatchExecutionMetadata,
+    ) -> StaticStageKVCache:
+        """Install stable position/mask buffers used by an actual CUDA graph."""
+
+        if self.engine_options.compile_mode != Qwen3CompileMode.MANUAL_CUDA_GRAPH:
+            raise RuntimeError("CUDA graph setup requires manual_cuda_graph mode")
+        if self.engine_options.cache_backend != Qwen3CacheBackend.STATIC:
+            raise RuntimeError("CUDA graph decode requires the static cache")
+        if metadata.sequence_length != 1:
+            raise ValueError("CUDA graph decode captures exactly one token")
+        cache = self._get_static_cache(metadata)
+        cache.fixed_shape = True
+        self._graph_batch_size = metadata.batch_size
+        self._graph_position = self.torch.empty((1,), dtype=self.torch.long, device=self.device)
+        self._graph_position.fill_(metadata.token_position)
+        self._graph_position_ids = self._graph_position.view(1, 1).expand(metadata.batch_size, 1)
+        self._graph_attention_mask = self.torch.empty(
+            (
+                metadata.batch_size,
+                1,
+                1,
+                self.engine_options.max_sequence_length,
+            ),
+            dtype=self.torch.bool,
+            device=self.device,
+        )
+        self.update_cuda_graph_position(metadata.token_position)
+        return cache
+
+    def update_cuda_graph_position(self, token_position: int) -> None:
+        if self._graph_position is None or self._graph_attention_mask is None:
+            raise RuntimeError("CUDA graph decode buffers are not initialised")
+        if not 0 <= token_position < self.engine_options.max_sequence_length:
+            raise ValueError("CUDA graph token position exceeds cache capacity")
+        self._graph_position.fill_(token_position)
+        self._graph_attention_mask.zero_()
+        self._graph_attention_mask[..., : token_position + 1].fill_(True)
+
+    def end_cuda_graph_decode(self) -> None:
+        self._graph_position = None
+        self._graph_position_ids = None
+        self._graph_attention_mask = None
+        self._graph_batch_size = 0
+
+    def _get_dynamic_batch_cache(
+        self,
+        metadata: BatchExecutionMetadata,
+    ) -> StageLocalKVCache:
+        group_id = "\x1f".join(metadata.request_ids)
+        key = (
+            group_id,
+            self.model_revision,
+            self.stage_id,
+            metadata.route_generation,
+            metadata.cache_generation,
+        )
+        record = self._caches.get(key)
+        if record is None:
+            if metadata.token_position != 0:
+                raise UnsupportedCacheFormatError(
+                    f"missing dynamic batch cache for requests={metadata.request_ids}"
+                )
+            record = StageLocalKVCache(
+                cache=self._new_cache(),
+                request_id=group_id,
+                model_revision=self.model_revision,
+                stage_id=self.stage_id,
+                layer_start=self.stage.layer_start,
+                layer_end=self.stage.layer_end,
+                route_generation=metadata.route_generation,
+                cache_generation=metadata.cache_generation,
+            )
+            self._caches[key] = record
+        return record
+
+    def _fast_forward_cuda(
+        self,
+        input_tensor: Any,
+        metadata: BatchExecutionMetadata,
+        *,
+        batched_call: bool,
+    ) -> Any:
+        torch = self.torch
+        # The CUDA-native tensor boundary is used by both profiles.  The fast
+        # profile selects the static cache, compact final-worker sampling and
+        # optional compilation/graphs; the correctness profile deliberately
+        # retains eager attention, deterministic CUDA settings and DynamicCache.
+        # Allowing the oracle through this boundary is important for a fair
+        # batch-shape comparison without changing the legacy NumPy execute()
+        # compatibility interface.
+        if input_tensor.device != self.device:
+            raise ValueError(
+                f"CUDA-native stage input must already be on {self.device}; "
+                f"received {input_tensor.device}"
+            )
+        if int(input_tensor.shape[0]) != metadata.batch_size:
+            raise ValueError(
+                f"input batch {int(input_tensor.shape[0])} does not match "
+                f"metadata batch {metadata.batch_size}"
+            )
+        if int(input_tensor.shape[1]) != metadata.sequence_length:
+            raise ValueError(
+                f"input sequence {int(input_tensor.shape[1])} does not match "
+                f"metadata sequence {metadata.sequence_length}"
+            )
+        with nvtx_range(
+            torch,
+            "embedding",
+            enabled=self.engine_options.nvtx_enabled,
+        ):
+            if self.embed_tokens is not None:
+                if input_tensor.dtype not in {torch.int32, torch.int64}:
+                    raise ValueError("embedding-owning fast stage requires integer token IDs")
+                hidden_states = self.embed_tokens(input_tensor)
+            else:
+                if input_tensor.dtype != self.dtype:
+                    raise ValueError(
+                        f"fast hidden-state dtype must be {self.dtype}; "
+                        f"received {input_tensor.dtype}"
+                    )
+                hidden_states = input_tensor
+        static_cache: StaticStageKVCache | None = None
+        dynamic_record: StageLocalKVCache | None = None
+        use_dynamic_memory_fallback = metadata.request_ids in self._dynamic_cache_fallback_groups
+        if (
+            self.engine_options.cache_backend == Qwen3CacheBackend.STATIC
+            and not use_dynamic_memory_fallback
+        ):
+            static_cache = self._get_static_cache(metadata)
+            with nvtx_range(
+                torch,
+                "cache_update",
+                enabled=self.engine_options.nvtx_enabled,
+            ):
+                static_cache.prepare_append(
+                    token_position=metadata.token_position,
+                    query_length=metadata.sequence_length,
+                )
+            cache: Any = static_cache
+            fixed_cache_shape = static_cache.fixed_shape
+        else:
+            dynamic_record = self._get_dynamic_batch_cache(metadata)
+            if dynamic_record.sequence_length != metadata.token_position:
+                raise UnsupportedCacheFormatError(
+                    f"dynamic batch cache expected position "
+                    f"{dynamic_record.sequence_length}, got {metadata.token_position}"
+                )
+            cache = dynamic_record.cache
+            fixed_cache_shape = False
+        hidden_states = self._forward_layers(
+            hidden_states,
+            cache=cache,
+            token_position=metadata.token_position,
+            use_cache=True,
+            fixed_cache_shape=fixed_cache_shape,
+        )
+        if static_cache is not None:
+            with nvtx_range(
+                torch,
+                "cache_update",
+                enabled=self.engine_options.nvtx_enabled,
+            ):
+                static_cache.commit_append()
+        elif dynamic_record is not None:
+            dynamic_record.advance(
+                token_position=metadata.token_position,
+                query_length=metadata.sequence_length,
+            )
+        if self.engine_options.boundary_diagnostics or any(
+            item.diagnostic for item in metadata.requests
+        ):
+            self._last_layer_hidden = hidden_states.detach()
+            if metadata.token_position == 0:
+                for request_id in metadata.request_ids:
+                    self._record_boundary(request_id, self._last_layer_hidden)
+        if self.norm is not None:
+            with nvtx_range(
+                torch,
+                "final_norm",
+                enabled=self.engine_options.nvtx_enabled,
+            ):
+                hidden_states = self.norm(hidden_states)
+        if self.lm_head is not None:
+            # Only the newest position can select the next token. This avoids
+            # projecting every prefill position over the full vocabulary.
+            hidden_states = hidden_states[:, -1:, :]
+            with nvtx_range(
+                torch,
+                "lm_head",
+                enabled=self.engine_options.nvtx_enabled,
+            ):
+                hidden_states = self.lm_head(hidden_states)
+        self._fast_forward_count += 1
+        if batched_call:
+            self._fast_batch_forward_count += 1
+        return hidden_states
+
+    def prefill_cuda(
+        self,
+        input_tensor: Any,
+        metadata: StageExecutionMetadata,
+    ) -> Any:
+        batch = BatchExecutionMetadata(requests=(metadata,))
+        with self.torch.inference_mode():
+            return self._fast_forward_cuda(input_tensor, batch, batched_call=False)
+
+    def decode_cuda(
+        self,
+        input_tensor: Any,
+        metadata: StageExecutionMetadata,
+    ) -> Any:
+        batch = BatchExecutionMetadata(requests=(metadata,))
+        with self.torch.inference_mode():
+            return self._fast_forward_cuda(input_tensor, batch, batched_call=False)
+
+    def prefill_batch_cuda(
+        self,
+        input_tensors: Any,
+        metadata: BatchExecutionMetadata,
+    ) -> Any:
+        with self.torch.inference_mode():
+            return self._fast_forward_cuda(input_tensors, metadata, batched_call=True)
+
+    def decode_batch_cuda(
+        self,
+        input_tensors: Any,
+        metadata: BatchExecutionMetadata,
+    ) -> Any:
+        with self.torch.inference_mode():
+            return self._fast_forward_cuda(input_tensors, metadata, batched_call=True)
+
+    def sample_cuda(
+        self,
+        logits: Any,
+        *,
+        request_ids: tuple[str, ...],
+        parameters: SamplingParameters | None = None,
+        token_history: Any | None = None,
+    ) -> SamplingResult:
+        if self.lm_head is None:
+            raise RuntimeError("only the final Qwen3 stage can sample")
+        if self.engine_options.profile != Qwen3ExecutionProfile.FAST:
+            raise RuntimeError("final-worker sampling requires profile qwen3_fast")
+        selected_parameters = parameters or SamplingParameters(
+            return_full_logits=self.engine_options.diagnostic_full_logits
+        )
+        if (
+            selected_parameters.return_full_logits
+            and not self.engine_options.diagnostic_full_logits
+        ):
+            raise RuntimeError(
+                "full-logit return requires diagnostic_full_logits=true in qwen3_fast"
+            )
+        with nvtx_range(
+            self.torch,
+            "sampling",
+            enabled=self.engine_options.nvtx_enabled,
+        ):
+            result = sample_final_logits(
+                self.torch,
+                logits,
+                parameters=selected_parameters,
+                request_ids=request_ids,
+                state=self._sampling_state,
+                token_history=token_history,
+            )
+        self._sampled_token_return_count += int(result.token_ids.numel())
+        if result.full_logits is not None:
+            self._full_logit_return_count += 1
+        return result
+
+    def execute_batch(
+        self,
+        activations: Any,
+        *,
+        metadata: BatchExecutionMetadata,
+        operation: Any,
+    ) -> Any:
+        """Run one real batch after an explicit remote/same-host CPU boundary."""
+
+        import numpy as np
+
+        if self.engine_options.profile != Qwen3ExecutionProfile.FAST:
+            raise RuntimeError("execute_batch is available only in qwen3_fast")
+        contiguous = np.ascontiguousarray(activations)
+        if self.embed_tokens is not None:
+            tensor = self.torch.from_numpy(contiguous.astype(np.int64, copy=False)).to(self.device)
+        elif contiguous.dtype == np.uint16 and self.dtype == self.torch.bfloat16:
+            tensor = self.torch.from_numpy(contiguous).view(self.torch.bfloat16).to(self.device)
+        else:
+            tensor = self.torch.from_numpy(contiguous).to(
+                device=self.device,
+                dtype=self.dtype,
+            )
+        operation_name = str(getattr(operation, "value", operation))
+        if operation_name == "prefill":
+            output = self.prefill_batch_cuda(tensor, metadata)
+        elif operation_name == "decode":
+            output = self.decode_batch_cuda(tensor, metadata)
+        else:
+            raise ValueError(f"unsupported batched operation {operation_name!r}")
+        if self.lm_head is not None and not self.engine_options.diagnostic_full_logits:
+            raise RuntimeError(
+                "qwen3_fast final stages return compact sampling results; "
+                "enable diagnostic_full_logits only for explicit debugging"
+            )
+        host = output.detach().cpu()
+        if host.dtype == self.torch.bfloat16:
+            if self.lm_head is None:
+                return host.contiguous().view(self.torch.uint16).numpy()
+            self._full_logit_return_count += 1
+            return host.float().numpy()
+        return host.numpy()
 
     def execute(
         self,
@@ -681,7 +1578,7 @@ class Qwen3StageModule:
             (time.perf_counter() - execution_started) * 1000 if self.device.type == "cuda" else 0.0
         )
         boundary_copy_ms = 0.0
-        if operation_name == "prefill":
+        if operation_name == "prefill" and self.engine_options.boundary_diagnostics:
             boundary_copy_started = time.perf_counter()
             self._record_boundary(request_id, self._last_layer_hidden)
             if self.device.type == "cuda":
@@ -712,6 +1609,8 @@ class Qwen3StageModule:
         else:
             result = output.numpy()
         transfer: dict[str, Any] = {
+            "execution_profile": self.execution_profile,
+            "attention_backend": self.attention_backend,
             "request_id": request_id,
             "stage_id": self.stage_id,
             "operation": operation_name,
@@ -826,19 +1725,77 @@ class Qwen3StageModule:
         self._boundary_records[request_id] = record
 
     def cancel(self, request_id: str) -> None:
-        for key in [key for key in self._caches if key[0] == request_id]:
-            record = self._caches.pop(key)
+        for dynamic_key in [
+            candidate for candidate in self._caches if request_id in candidate[0].split("\x1f")
+        ]:
+            record = self._caches.pop(dynamic_key)
             summary = record.summary()
             summary.update({"event": "deleted", "stale_after_operation": False})
             self._cache_history.append(summary)
+        for static_key in [
+            candidate
+            for candidate, cache in self._static_caches.items()
+            if request_id in cache.request_ids
+        ]:
+            cache = self._static_caches.pop(static_key)
+            summary = cache.summary()
+            released = cache.delete()
+            summary.update(
+                {
+                    "event": "deleted",
+                    "released_bytes": released,
+                    "stale_after_operation": False,
+                }
+            )
+            self._cache_history.append(summary)
+        self._sampling_state.delete(request_id)
+
+    def cancel_batch(self, request_ids: tuple[str, ...]) -> None:
+        for request_id in request_ids:
+            self.cancel(request_id)
+        self._dynamic_cache_fallback_groups.discard(request_ids)
+
+    def use_dynamic_cache_memory_fallback(
+        self,
+        request_ids: tuple[str, ...],
+    ) -> None:
+        """Use contiguous current-length KV storage for one rejected graph batch."""
+
+        if not request_ids:
+            raise ValueError("dynamic cache fallback requires request IDs")
+        self._dynamic_cache_fallback_groups.add(request_ids)
 
     def reset_cache(self, request_id: str, *, for_replay: bool = False) -> int:
         removed = sum(
-            record.memory_bytes() for key, record in self._caches.items() if key[0] == request_id
+            record.memory_bytes()
+            for key, record in self._caches.items()
+            if request_id in key[0].split("\x1f")
         )
-        for key in [key for key in self._caches if key[0] == request_id]:
-            record = self._caches.pop(key)
+        removed += sum(
+            cache.reserved_bytes
+            for cache in self._static_caches.values()
+            if request_id in cache.request_ids
+        )
+        for dynamic_key in [
+            candidate for candidate in self._caches if request_id in candidate[0].split("\x1f")
+        ]:
+            record = self._caches.pop(dynamic_key)
             summary = record.summary()
+            summary.update(
+                {
+                    "event": "reset-for-replay",
+                    "stale_after_operation": False,
+                }
+            )
+            self._cache_history.append(summary)
+        for static_key in [
+            candidate
+            for candidate, cache in self._static_caches.items()
+            if request_id in cache.request_ids
+        ]:
+            cache = self._static_caches.pop(static_key)
+            summary = cache.summary()
+            cache.delete()
             summary.update(
                 {
                     "event": "reset-for-replay",
@@ -853,17 +1810,40 @@ class Qwen3StageModule:
         return removed
 
     def inspect_cache(self, request_id: str | None = None) -> list[dict[str, Any]]:
-        return [
+        dynamic = [
             record.summary()
             for key, record in sorted(self._caches.items())
-            if request_id is None or key[0] == request_id
+            if request_id is None or request_id in key[0].split("\x1f")
         ]
+        static = [
+            cache.summary()
+            for _, cache in sorted(self._static_caches.items())
+            if request_id is None or request_id in cache.request_ids
+        ]
+        return [*dynamic, *static]
 
     def cache_bytes(self) -> int:
-        return sum(record.memory_bytes() for record in self._caches.values())
+        return sum(record.memory_bytes() for record in self._caches.values()) + sum(
+            cache.reserved_bytes for cache in self._static_caches.values()
+        )
 
     def state_summary(self) -> dict[str, Any]:
         return {
+            "execution_profile": self.execution_profile,
+            "attention_backend": self.attention_backend,
+            "attention_backend_evidence": self.attention_evidence.payload(),
+            "cache_backend": self.engine_options.cache_backend.value,
+            "dynamic_cache_memory_fallback_group_count": len(self._dynamic_cache_fallback_groups),
+            "cache_dtype": self.engine_options.cache_dtype.value,
+            "compile_mode": self.engine_options.compile_mode.value,
+            "compile_diagnostics": self._compile_diagnostics.payload(),
+            "matmul_accumulation": "fp32",
+            "allow_bf16_reduced_precision_reduction": bool(
+                self.torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction
+            ),
+            "allow_fp16_reduced_precision_reduction": bool(
+                self.torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction
+            ),
             "stage_id": self.stage_id,
             "layer_start": self.stage.layer_start,
             "layer_end": self.stage.layer_end,
@@ -871,15 +1851,24 @@ class Qwen3StageModule:
             "owns_final_norm": self.stage.owns_final_norm,
             "owns_output_head": self.stage.owns_output_head,
             "loaded_source_tensors": self.loaded_source_tensors,
-            "cache_count": len(self._caches),
+            "cache_count": len(self._caches) + len(self._static_caches),
             "cache_bytes": self.cache_bytes(),
             "caches": self.inspect_cache(),
             "cache_history": self._cache_history[-100:],
+            "causal_mask_cache_entry_count": len(self._causal_mask_cache),
+            "causal_mask_cache_bytes": sum(
+                int(mask.numel() * mask.element_size()) for mask in self._causal_mask_cache.values()
+            ),
             "boundary_records": list(self._boundary_records.values()),
             "transfer_metrics": dict(self._transfer_metrics),
             "transfer_history": self._transfer_history[-1000:],
             "finite_output_checks": self._finite_output_checks,
             "all_checked_outputs_finite": True,
+            "fast_forward_count": self._fast_forward_count,
+            "fast_batch_forward_count": self._fast_batch_forward_count,
+            "sampled_token_return_count": self._sampled_token_return_count,
+            "full_logit_return_count": self._full_logit_return_count,
+            "attention_tuning_seconds": self._attention_tuning_seconds,
         }
 
     def _target_parameter_name(
@@ -1077,4 +2066,6 @@ class Qwen3StageModule:
             )
         self.model_revision = manifest.model_revision
         self.loaded_source_tensors = sorted(loaded_sources)
+        self._autotune_attention_backend()
+        self._configure_compile()
         return self.loaded_source_tensors

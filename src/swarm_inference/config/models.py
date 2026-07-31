@@ -25,6 +25,8 @@ class ExecutionMode(StrEnum):
     SINGLE_HOST_LOOPBACK = "single-host-loopback"
     SINGLE_HOST_LOOPBACK_REAL_MODEL = "single-host-loopback-real-model"
     SINGLE_HOST_LOOPBACK_REAL_MODEL_FANOUT = "single-host-loopback-real-model-fanout"
+    SINGLE_HOST_ENGINE_BENCHMARK = "single-host-engine-benchmark"
+    LOGICAL_SINGLE_GPU_MICROSHARDING = "logical-single-gpu-microsharding"
     PHYSICAL_LAN = "physical-lan"
     PHYSICAL_WAN = "physical-wan"
 
