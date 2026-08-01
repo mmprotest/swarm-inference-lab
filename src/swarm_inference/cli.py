@@ -578,6 +578,126 @@ def engine_performance_command(
         raise typer.Exit(1)
 
 
+@experiment_app.command("heterogeneous-node-utility")
+def heterogeneous_node_utility_command(
+    config: Annotated[
+        Path,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Experiment 007 YAML configuration.",
+        ),
+    ] = Path("configs/experiments/experiment_007_heterogeneous_node_utility.yaml"),
+    experiment_004_run: Annotated[
+        Path | None,
+        typer.Option("--experiment-004-run", help="Override the validated Experiment 004 run."),
+    ] = None,
+    experiment_006_run: Annotated[
+        Path | None,
+        typer.Option("--experiment-006-run", help="Override the validated Experiment 006 run."),
+    ] = None,
+    skip_speculative: Annotated[bool, typer.Option("--skip-speculative")] = False,
+    skip_moe: Annotated[bool, typer.Option("--skip-moe")] = False,
+    skip_background: Annotated[bool, typer.Option("--skip-background")] = False,
+    skip_arm64: Annotated[bool, typer.Option("--skip-arm64")] = False,
+    smoke: Annotated[bool, typer.Option("--smoke")] = False,
+    resume: Annotated[bool, typer.Option("--resume")] = False,
+    profile: Annotated[bool, typer.Option("--profile")] = False,
+    output: Annotated[Path | None, typer.Option("--output")] = None,
+) -> None:
+    """Run Experiment 007 with real CUDA, x86 CPU, and isolated backends."""
+
+    from swarm_inference.config.heterogeneous import load_heterogeneous_config
+    from swarm_inference.experiments.heterogeneous_node_utility import (
+        HeterogeneousOptions,
+        run_heterogeneous_node_experiment,
+    )
+
+    try:
+        experiment = load_heterogeneous_config(config)
+        run = run_heterogeneous_node_experiment(
+            experiment,
+            requested_config_path=config,
+            options=HeterogeneousOptions(
+                experiment_004_run=experiment_004_run,
+                experiment_006_run=experiment_006_run,
+                skip_speculative=skip_speculative,
+                skip_moe=skip_moe,
+                skip_background=skip_background,
+                skip_arm64=skip_arm64,
+                smoke=smoke,
+                resume=resume,
+                profile=profile,
+                output=output,
+            ),
+        )
+    except (SwarmError, OSError, RuntimeError, ValueError) as exc:
+        _fail(f"heterogeneous-node-utility experiment failed: {exc}")
+    typer.echo(f"execution_mode={experiment.execution_mode}")
+    typer.echo(f"run_directory={run.run_directory}")
+    typer.echo(f"report={run.report_path}")
+    typer.echo(f"status={run.summary['overall_status']}")
+    if not run.passed:
+        raise typer.Exit(1)
+
+
+@experiment_app.command("experiment-007-corrections")
+def experiment_007_corrections_command(
+    config: Annotated[
+        Path,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Experiment 007 benchmark-correction YAML configuration.",
+        ),
+    ] = Path("configs/experiments/experiment_007_corrections.yaml"),
+    original_run: Annotated[
+        Path | None,
+        typer.Option("--original-run", help="Override the immutable original Experiment 007 run."),
+    ] = None,
+    skip_expert_fix: Annotated[bool, typer.Option("--skip-expert-fix")] = False,
+    skip_background_fix: Annotated[bool, typer.Option("--skip-background-fix")] = False,
+    smoke: Annotated[bool, typer.Option("--smoke")] = False,
+    resume: Annotated[bool, typer.Option("--resume")] = False,
+    profile: Annotated[bool, typer.Option("--profile")] = False,
+    output_root: Annotated[Path | None, typer.Option("--output-root")] = None,
+    keep_servers: Annotated[bool, typer.Option("--keep-servers")] = False,
+) -> None:
+    """Correct Experiment 007 MoE and fixed-window background measurements."""
+
+    from swarm_inference.config.experiment_007_corrections import (
+        load_experiment_007_corrections_config,
+    )
+    from swarm_inference.experiments.experiment_007_corrections import (
+        Experiment007CorrectionOptions,
+        run_experiment_007_corrections,
+    )
+
+    try:
+        experiment = load_experiment_007_corrections_config(config)
+        run = run_experiment_007_corrections(
+            experiment,
+            requested_config_path=config,
+            options=Experiment007CorrectionOptions(
+                original_run=original_run,
+                skip_expert_fix=skip_expert_fix,
+                skip_background_fix=skip_background_fix,
+                smoke=smoke,
+                resume=resume,
+                profile=profile,
+                output_root=output_root,
+                keep_servers=keep_servers,
+            ),
+        )
+    except (SwarmError, OSError, RuntimeError, ValueError) as exc:
+        _fail(f"Experiment 007 corrections failed: {exc}")
+    typer.echo(f"run_directory={run.run_directory}")
+    typer.echo(f"report={run.report_path}")
+    typer.echo(f"status={run.summary['corrected_experiment_007_status']}")
+    if not run.passed:
+        raise typer.Exit(1)
+
+
 @experiment_app.command("worker-fanout")
 def worker_fanout_command(
     config: Annotated[

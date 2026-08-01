@@ -1,0 +1,58 @@
+name: experiment-007-corrections
+
+original_run:
+  run_id: 20260801T013144Z-heterogeneous-node-utility-6a2b51ce
+
+cpu_expert:
+  model_source: experiment_006
+  routing_tokens: 10000
+  repeats: 5
+  warmup_iterations: 10
+  maximum_repeats: 30
+  maximum_variability_epochs: 3
+  maximum_coefficient_of_variation: 0.10
+  cpu_expert_counts: [1, 2, 4, 8, 16]
+  placement_policies:
+    - coldest_experts_on_cpu
+    - hottest_experts_on_cpu
+    - random_experts_on_cpu
+    - load_balanced_experts_on_cpu
+    - frequency_band_experts_on_cpu
+  minimum_cpu_dispatch_fraction: 0.01
+  formats:
+    - bfloat16
+    - int8
+    - four_bit
+  correctness:
+    atol: 0.02
+    rtol: 0.02
+    minimum_cosine_similarity: 0.999
+
+background:
+  warmup_seconds: 30
+  measurement_seconds: 120
+  drain_timeout_seconds: 60
+  repeats: 3
+  gpu_concurrency: [1, 4, 16]
+  cpu_concurrency: [1, 2, 4]
+  traffic_modes:
+    - closed_loop
+    - open_loop
+  input_token_lengths: [64, 128, 512]
+  output_token_lengths: [64, 128, 256]
+  open_loop_concurrency: 4
+  open_loop_cpu_concurrency: 1
+  open_loop_load_fractions: [0.60, 0.95]
+  workload_seed: 7007
+
+positive_contribution:
+  minimum_combined_gain_fraction: 0.10
+  maximum_gpu_p95_increase_fraction: 0.05
+  maximum_gpu_throughput_decrease_fraction: 0.05
+  minimum_expert_retained_throughput_fraction: 0.70
+
+planner:
+  held_out_evaluation: true
+  maximum_regret_fraction: 0.10
+
+output_root: artifacts/runs

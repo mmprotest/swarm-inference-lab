@@ -27,6 +27,7 @@ class ExecutionMode(StrEnum):
     SINGLE_HOST_LOOPBACK_REAL_MODEL_FANOUT = "single-host-loopback-real-model-fanout"
     SINGLE_HOST_ENGINE_BENCHMARK = "single-host-engine-benchmark"
     LOGICAL_SINGLE_GPU_MICROSHARDING = "logical-single-gpu-microsharding"
+    HETEROGENEOUS_SINGLE_HOST_REAL_MODEL = "heterogeneous-single-host-real-model"
     PHYSICAL_LAN = "physical-lan"
     PHYSICAL_WAN = "physical-wan"
 
@@ -48,6 +49,12 @@ class Backend(StrEnum):
     TORCH_CPU = "torch-cpu"
     TORCH_CUDA = "torch-cuda"
     TORCH_MPS = "torch-mps"
+    SGLANG = "sglang"
+    LLAMACPP = "llamacpp"
+    MLX = "mlx"
+    EXECUTORCH = "executorch"
+    VULKAN = "vulkan"
+    ROCM = "rocm"
 
 
 class WorkloadClass(StrEnum):

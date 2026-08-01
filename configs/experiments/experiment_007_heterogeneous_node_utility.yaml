@@ -1,0 +1,150 @@
+name: experiment-007-heterogeneous-node-utility
+execution_mode: heterogeneous-single-host-real-model
+seed: 7007
+
+references:
+  experiment_004_run: null
+  experiment_006_run: null
+
+gpu_target:
+  backend: sglang
+  model_id: Qwen/Qwen3-4B
+  revision: null
+  dtype: bfloat16
+
+cpu_draft:
+  backend: llamacpp
+  model_id: Qwen/Qwen3-0.6B
+  revision: c1899de289a04d12100db370d81485cdf75e47ca
+  formats:
+    - Q8_0
+    - Q4_K_M
+  draft_lengths:
+    - 1
+    - 2
+    - 4
+    - 8
+
+mixed_pipeline:
+  model_id: Qwen/Qwen3-0.6B
+  revision: c1899de289a04d12100db370d81485cdf75e47ca
+  pipeline_stages: 4
+  backends:
+    - torch-cuda
+    - torch-cpu
+    - torch-cuda
+    - torch-cpu
+  generated_tokens: 32
+
+moe:
+  source_experiment: 006
+  cpu_expert_counts:
+    - 1
+    - 2
+    - 4
+    - 8
+    - 16
+  placement_policies:
+    - coldest_experts_on_cpu
+    - hottest_experts_on_cpu
+    - random_experts_on_cpu
+    - load_balanced
+    - predicted_next_experts
+  weight_formats:
+    - BF16
+    - INT8
+    - Q4
+  sequence_length: 64
+
+background:
+  gpu_concurrency:
+    - 1
+    - 4
+    - 16
+  cpu_concurrency:
+    - 1
+    - 2
+    - 4
+  interactive_output_tokens: 128
+  background_output_tokens: 128
+
+planner:
+  objectives:
+    - interactive_latency
+    - aggregate_throughput
+    - balanced
+    - energy_efficiency
+  roles:
+    - critical_path_stage
+    - tensor_rank
+    - speculative_draft
+    - moe_expert
+    - stage_replica
+    - background_inference
+    - integrity_audit
+    - shard_cache
+    - idle
+  maximum_regret_fraction: 0.10
+
+non_degradation:
+  maximum_interactive_p95_increase_fraction: 0.05
+  maximum_interactive_throughput_decrease_fraction: 0.05
+
+positive_contribution:
+  minimum_speculative_speedup_fraction: 0.10
+  minimum_background_throughput_gain_fraction: 0.10
+  minimum_expert_retained_throughput_fraction: 0.70
+
+arm64:
+  cross_compile: true
+  qemu_protocol_test: true
+
+network_projection:
+  profiles:
+    - localhost
+    - home_lan
+    - residential_fast
+    - residential_slow
+    - regional_wan
+    - constrained_wan
+
+workloads:
+  short_input_tokens: 128
+  short_output_tokens: 256
+  short_concurrency:
+    - 1
+    - 4
+    - 16
+    - 64
+  long_input_tokens: 2048
+  long_output_tokens: 128
+  long_concurrency:
+    - 1
+    - 4
+    - 16
+  speculative_prompt_count: 100
+  speculative_output_tokens: 128
+  audit_rates:
+    - 0.0
+    - 0.01
+    - 0.05
+    - 0.10
+  lease_durations_seconds:
+    - 30
+    - 60
+    - 300
+    - 900
+    - 3600
+    - 14400
+    - 86400
+
+backend_environments:
+  root: artifacts/backend-environments
+  sglang_image: lmsysorg/sglang:v0.5.16
+  sglang_version: 0.5.16
+  llamacpp_repository: https://github.com/ggml-org/llama.cpp.git
+  llamacpp_commit: null
+  torch_cpu_python: null
+
+output_root: artifacts/runs
+profile: false

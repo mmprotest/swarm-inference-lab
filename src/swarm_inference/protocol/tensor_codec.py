@@ -36,6 +36,9 @@ class ActivationTensor:
     sequence_length: int
     array: np.ndarray
     logical_dtype: str | None = None
+    model_revision: str = ""
+    partition_hash: str = ""
+    route_generation: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +77,9 @@ def encode_tensor(tensor: ActivationTensor) -> bytes:
         "stage_id": tensor.stage_id,
         "token_position": tensor.token_position,
         "sequence_length": tensor.sequence_length,
+        "model_revision": tensor.model_revision,
+        "partition_hash": tensor.partition_hash,
+        "route_generation": tensor.route_generation,
         "payload_length": len(raw),
         "checksum": sha256_bytes(raw),
     }
@@ -123,6 +129,9 @@ def decode_tensor(payload: bytes, *, copy: bool = True) -> ActivationTensor:
         sequence_length=int(header["sequence_length"]),
         array=array,
         logical_dtype=("bfloat16" if str(header["dtype"]) == "bfloat16" else None),
+        model_revision=str(header.get("model_revision", "")),
+        partition_hash=str(header.get("partition_hash", "")),
+        route_generation=int(header.get("route_generation", 0)),
     )
 
 

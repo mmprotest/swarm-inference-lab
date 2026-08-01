@@ -59,6 +59,13 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
     raw = deepcopy(load_yaml(resolved))
     expanded = _load_reference(raw, base=resolved.parent)
     try:
+        if expanded.get("name") == "experiment-007-corrections":
+            from swarm_inference.config.experiment_007_corrections import (
+                Experiment007CorrectionsConfig,
+            )
+
+            corrections = Experiment007CorrectionsConfig.model_validate(expanded)
+            return cast(ExperimentConfig, corrections)
         if expanded.get("execution_mode") == "single-host-loopback-real-model":
             from swarm_inference.config.real_model import RealExperimentConfig
 
@@ -84,6 +91,11 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
 
             microsharding = MicroshardingExperimentConfig.model_validate(expanded)
             return cast(ExperimentConfig, microsharding)
+        if expanded.get("execution_mode") == "heterogeneous-single-host-real-model":
+            from swarm_inference.config.heterogeneous import HeterogeneousExperimentConfig
+
+            heterogeneous = HeterogeneousExperimentConfig.model_validate(expanded)
+            return cast(ExperimentConfig, heterogeneous)
         return ExperimentConfig.model_validate(expanded)
     except ValueError as exc:
         raise ConfigurationError(f"invalid experiment configuration {resolved}: {exc}") from exc
