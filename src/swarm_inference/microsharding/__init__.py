@@ -5,6 +5,12 @@ process placement.  The primary backend executes all ranks in one CUDA context;
 the projection backend models independently provisioned ranks.
 """
 
+from swarm_inference.microsharding.expert_abi import (
+    ExpertMicroshardDescriptor,
+    ExpertProjectionSlice,
+    executable_microshard_equivalence,
+    validate_expert_microshard_set,
+)
 from swarm_inference.microsharding.schemas import (
     AttentionPartitionPlan,
     CollectiveGroupPlan,
@@ -23,10 +29,14 @@ __all__ = [
     "CollectiveGroupPlan",
     "CollectivePlan",
     "DenseMLPPartitionPlan",
+    "ExpertMicroshardDescriptor",
+    "ExpertProjectionSlice",
     "LayerPartitionPlan",
     "MoEPartitionPlan",
     "ModelPartitionPlan",
     "ParallelCellPlan",
     "PipelineStagePlan",
     "TensorShard",
+    "executable_microshard_equivalence",
+    "validate_expert_microshard_set",
 ]

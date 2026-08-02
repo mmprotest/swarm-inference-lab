@@ -28,6 +28,8 @@ class ExecutionMode(StrEnum):
     SINGLE_HOST_ENGINE_BENCHMARK = "single-host-engine-benchmark"
     LOGICAL_SINGLE_GPU_MICROSHARDING = "logical-single-gpu-microsharding"
     HETEROGENEOUS_SINGLE_HOST_REAL_MODEL = "heterogeneous-single-host-real-model"
+    SINGLE_HOST_ADAPTIVE_MOE_SATURATION = "single-host-adaptive-moe-saturation"
+    COLIBRI_ADAPTIVE_EXPERT_RUNTIME = "colibri-adaptive-expert-runtime"
     PHYSICAL_LAN = "physical-lan"
     PHYSICAL_WAN = "physical-wan"
 
@@ -51,6 +53,7 @@ class Backend(StrEnum):
     TORCH_MPS = "torch-mps"
     SGLANG = "sglang"
     LLAMACPP = "llamacpp"
+    COLIBRI = "colibri"
     MLX = "mlx"
     EXECUTORCH = "executorch"
     VULKAN = "vulkan"

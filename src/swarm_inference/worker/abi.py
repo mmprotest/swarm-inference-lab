@@ -21,7 +21,7 @@ from swarm_inference.config.models import StrictModel
 from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tensor, encode_tensor
 
 UNIVERSAL_WORKER_ABI_MAJOR = 1
-UNIVERSAL_WORKER_ABI_MINOR = 0
+UNIVERSAL_WORKER_ABI_MINOR = 1
 
 
 class ResultClassification(StrEnum):
@@ -81,6 +81,10 @@ class WorkerCapabilities(StrictModel):
     measured_network_download_bps: float = Field(ge=0)
     coordinator_latency_ms: float = Field(ge=0)
     backend_features: list[str] = Field(default_factory=list)
+    # Backend-specific executable details are carried inside the existing
+    # capability envelope.  Peers negotiating ABI 1.0 simply ignore this
+    # additive field; no second worker protocol is introduced.
+    backend_details: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkerBenchmarkProfile(StrictModel):
@@ -110,6 +114,18 @@ class WorkerJobType(StrEnum):
     BACKGROUND_GENERATE = "background_generate"
     INTEGRITY_AUDIT = "integrity_audit"
     SHARD_CACHE = "shard_cache"
+    HEALTH_CHECK = "health_check"
+    CAPABILITY_PROBE = "capability_probe"
+    MODEL_INVENTORY = "model_inventory"
+    RESOURCE_PLAN = "resource_plan"
+    GENERATE = "generate"
+    STREAM_GENERATE = "stream_generate"
+    TEACHER_FORCED_REPLAY = "teacher_forced_replay"
+    PROFILE = "profile"
+    ROUTE_TRACE = "route_trace"
+    PLACEMENT_EVALUATION = "placement_evaluation"
+    AUTOTUNE = "autotune"
+    SHUTDOWN = "shutdown"
 
 
 class WorkerJobStatus(StrEnum):

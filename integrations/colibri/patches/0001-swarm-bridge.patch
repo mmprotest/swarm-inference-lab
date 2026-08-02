@@ -1,0 +1,505 @@
+diff --git a/c/colibri.c b/c/colibri.c
+index 1f288d9..42270f6 100644
+--- a/c/colibri.c
++++ b/c/colibri.c
+@@ -6941,8 +6941,16 @@ typedef struct {
+                                             feeds the PROF protocol line and the PROF=1 report */
+ } ServeReq;
+ 
++/* SWARM BRIDGE PATCH: protocol observations only; generation math is untouched. */
++static int swarm_bridge_enabled(void){
++    static int enabled=-1;
++    if(enabled<0){ const char *v=getenv("COLI_SWARM_BRIDGE"); enabled=v&&atoi(v)==1; }
++    return enabled;
++}
++
+ static void mux_data(Tok *T, unsigned long long id, int token){
+     char out[256]; int n=tok_decode(T,&token,1,out,sizeof(out));
++    if(swarm_bridge_enabled()) printf("TOKEN %llu %d\n",id,token);
+     printf("DATA %llu %d\n",id,n); if(n>0) fwrite(out,1,(size_t)n,stdout); putchar('\n');
+     fflush(stdout);
+ }
+@@ -7125,6 +7133,11 @@ static int mux_submit(Model *m, Tok *T, ServeCtx *ctx, ServeReq *req, GrDraft *g
+      * prefill so the gateway commits the streaming 200 only now. Every failure above returned
+      * first with an ERROR, so a request yields exactly one of ACCEPT or an early ERROR -- which
+      * lets a CONTEXT_EXCEEDED become a clean HTTP 400 instead of a broken already-200 stream. */
++    if(swarm_bridge_enabled()){
++        printf("PROMPT_TOKENS %llu %d",sub.id,nt);
++        for(int i=0;i<nt;i++) printf(" %d",tmp[i]);
++        putchar('\n');
++    }
+     printf("ACCEPT %llu %d\n",sub.id,nt); fflush(stdout);
+     int prefix=0; while(prefix<sc->len && prefix<nt && sc->hist[prefix]==tmp[prefix]) prefix++;
+     if(prefix<sc->len){ sc->len=prefix; if(m->has_mtp) m->kv_start[m->c.n_layers]=-1;
+diff --git a/c/inkling.c b/c/inkling.c
+index 965cf56..9930b57 100644
+--- a/c/inkling.c
++++ b/c/inkling.c
+@@ -1327,6 +1327,13 @@ static void generate_stream(Model *m, Tok *T, const char *prompt, int n_new) {
+  * gateway drives inkling unchanged (v1: one request at a time; the KV slot arg
+  * is accepted but every request re-prefills). */
+ 
++/* SWARM BRIDGE PATCH: protocol observations only; generation math is untouched. */
++static int swarm_bridge_enabled(void) {
++    static int enabled = -1;
++    if (enabled < 0) { const char *v = getenv("COLI_SWARM_BRIDGE"); enabled = v && atoi(v) == 1; }
++    return enabled;
++}
++
+ static uint64_t g_rng = 0x9E3779B97F4A7C15ull;
+ static double rng_next(void) {
+     g_rng ^= g_rng << 13; g_rng ^= g_rng >> 7; g_rng ^= g_rng << 17;
+@@ -1423,6 +1430,11 @@ static void serve_one(Model *m, Tok *T, SReq *q) {
+     if (np <= 0) { printf("ERROR %s empty prompt\n", q->id); fflush(stdout); free(ids); return; }
+     const char *bad = prompt_reject(np, q->max_tok);
+     if (bad) { printf("ERROR %s %s\n", q->id, bad); fflush(stdout); free(ids); return; }
++    if (swarm_bridge_enabled()) {
++        printf("PROMPT_TOKENS %s %d", q->id, np);
++        for (int i = 0; i < np; i++) printf(" %d", ids[i]);
++        printf("\nACCEPT %s %d\n", q->id, np); fflush(stdout);
++    }
+     state_reset(m);
+     kv_alloc(m, np + q->max_tok + 8);
+     double t0 = now_s();
+@@ -1441,6 +1453,7 @@ static void serve_one(Model *m, Tok *T, SReq *q) {
+         int tk = sample_logits(logit, c->unpad_vocab, q->temp, q->top_p);
+         free(logit); logit = NULL;
+         if (tk == c->eos) { limited = 0; break; }
++        if (swarm_bridge_enabled()) printf("TOKEN %s %d\n", q->id, tk);
+         if (nhist < 128) hist[nhist++] = tk;
+         else { memmove(hist, hist+1, 127*sizeof(int)); hist[127] = tk; }
+         int nb = tok_decode(T, &tk, 1, buf, sizeof(buf)-1);
+diff --git a/c/kimi_k3.c b/c/kimi_k3.c
+index 9049baf..fd18244 100644
+--- a/c/kimi_k3.c
++++ b/c/kimi_k3.c
+@@ -1458,6 +1458,13 @@ static int serve_read_req(ServeReq *q, const char *active){
+     return 2;
+ }
+ 
++/* SWARM BRIDGE PATCH: protocol observations only; generation math is untouched. */
++static int swarm_bridge_enabled(void){
++    static int enabled=-1;
++    if(enabled<0){ const char *v=getenv("COLI_SWARM_BRIDGE"); enabled=v&&atoi(v)==1; }
++    return enabled;
++}
++
+ static void serve_data(const char *id, const char *p, int n){
+     if(n<=0) return;
+     printf("DATA %s %d\n",id,n);
+@@ -1482,6 +1489,11 @@ static void serve_one(Model *m, Tok *T, ServeReq *q){
+                q->id,np,q->max_tok,max_ctx);
+         fflush(stdout); free(ids); return;
+     }
++    if(swarm_bridge_enabled()){
++        printf("PROMPT_TOKENS %s %d",q->id,np);
++        for(int i=0;i<np;i++) printf(" %d",ids[i]);
++        putchar('\n');
++    }
+     printf("ACCEPT %s %d\n",q->id,np); fflush(stdout);
+     model_state_reset(m);
+     kv_alloc(m,np+q->max_tok+8);
+@@ -1501,6 +1513,7 @@ static void serve_one(Model *m, Tok *T, ServeReq *q){
+         int tk=sample_tok(lo,m->c.vocab,q->temp,q->top_p);
+         free(lo); lo=NULL;
+         int eos=0; for(int i=0;i<m->c.n_eos;i++) if(tk==m->c.eos[i]) eos=1;
++        if(!eos&&swarm_bridge_enabled()) printf("TOKEN %s %d\n",q->id,tk);
+         int show=!eos;
+         if(chat&&sp[0]>=0){
+             if(tk==sp[0]||tk==sp[1]){
+diff --git a/c/openai_server.py b/c/openai_server.py
+index 907ea88..805675f 100644
+--- a/c/openai_server.py
++++ b/c/openai_server.py
+@@ -23,6 +23,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ from pathlib import Path
+ from urllib.parse import unquote, urlsplit
+ 
++# SWARM BRIDGE PATCH: optional observer only; disabled unless explicitly enabled.
++from swarm_bridge import SwarmBridge
++
+ 
+ HERE = Path(__file__).resolve().parent
+ 
+@@ -1202,6 +1205,7 @@ class Engine:
+     def __init__(self, executable, model, cap=None, max_tokens=1024, env=None, kv_slots=1):
+         child_env = dict(env or os.environ, SNAP=str(model), SERVE="1", SERVE_BATCH="1",
+                          NGEN=str(max_tokens), KV_SLOTS=str(kv_slots))
++        self.bridge = SwarmBridge(model, model_arch(model), child_env)
+         self.process = subprocess.Popen(
+             [str(executable), str(cap_for_arch(model_arch(model), cap))], env=child_env,
+             stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0,
+@@ -1220,7 +1224,9 @@ class Engine:
+         self.hits_seq = 0                      # latest "TIERS" snapshot from the engine
+         self.profile = collections.deque(maxlen=PROFILE_TURNS)  # per-turn phase timings
+         self.profile_seq = 0
++        self.bridge.engine_started(self.process.pid, executable)
+         read_engine_turn(self.process.stdout, READY, lambda _: None)
++        self.bridge.engine_ready()
+         self.dispatcher = threading.Thread(target=self._dispatch_stdout,
+                                            name="colibri-stdout", daemon=True)
+         self.dispatcher.start()
+@@ -1278,6 +1284,25 @@ class Engine:
+                         events = self.pending.get(request_id)
+                     if events is not None:
+                         events.put(("data", data))
++                elif kind == "TOKEN" and len(fields) == 3:
++                    request_id = fields[1]
++                    token_id = int(fields[2])
++                    with self.pending_lock:
++                        events = self.pending.get(request_id)
++                    if events is not None:
++                        self.bridge.token(request_id, token_id)
++                        events.put(("token", token_id))
++                elif kind == "PROMPT_TOKENS" and len(fields) >= 3:
++                    request_id = fields[1]
++                    count = int(fields[2])
++                    token_ids = [int(value) for value in fields[3:]]
++                    if count != len(token_ids):
++                        raise RuntimeError("invalid PROMPT_TOKENS count")
++                    with self.pending_lock:
++                        events = self.pending.get(request_id)
++                    if events is not None:
++                        self.bridge.prompt_tokens(request_id, token_ids)
++                        events.put(("prompt_tokens", token_ids))
+                 elif kind == "ACCEPT" and len(fields) >= 3:
+                     # #597: the engine validated the submission (fits context) before prefill.
+                     # Keep it pending — DATA/DONE still follow — and let generate() commit the
+@@ -1286,6 +1311,7 @@ class Engine:
+                     with self.pending_lock:
+                         events = self.pending.get(request_id)
+                     if events is not None:
++                        self.bridge.prefill_started(request_id, int(fields[2]))
+                         events.put(("accept", {"prompt_tokens": int(fields[2])}))
+                 elif kind == "DONE" and len(fields) >= 7:
+                     request_id = fields[1]
+@@ -1293,6 +1319,7 @@ class Engine:
+                     with self.pending_lock:
+                         events = self.pending.pop(request_id, None)
+                     if events is not None:
++                        self.bridge.request_completed(request_id, stats)
+                         events.put(("done", stats))
+                 elif kind == "HWINFO" and len(fields) >= 7:
+                     parts = " ".join(fields[6:]).split("|")
+@@ -1301,6 +1328,7 @@ class Engine:
+                                    "vram_total_gb": float(fields[5]),
+                                    "cpu": parts[0].strip() if len(parts)>0 else "",
+                                    "gpu": parts[1].strip() if len(parts)>1 else ""}
++                    self.bridge.emit("resource_snapshot", {"hardware": self.hwinfo})
+                 elif kind == "EMAP" and len(fields) == 4:
+                     self.emap = {"rows": int(fields[1]), "cols": int(fields[2]), "map": fields[3]}
+                 elif kind == "HITS" and len(fields) == 4:
+@@ -1320,21 +1348,25 @@ class Engine:
+                         "forwards": int(fields[9]),
+                     })
+                     self.profile_seq += 1
++                    self.bridge.emit("resource_snapshot", {"phase_timing": self.profile[-1]})
+                 elif kind == "TIERS" and len(fields) >= 6:
+                     self.tiers = {"vram": int(fields[1]), "ram": int(fields[2]),
+                                   "disk": int(fields[3]), "vram_gb": float(fields[4]),
+                                   "ram_gb": float(fields[5])}
++                    self.bridge.emit("tier_inventory", self.tiers)
+                 elif kind == "ERROR" and len(fields) >= 2:
+                     request_id = fields[1]
+                     message = " ".join(fields[2:]) or "engine request failed"
+                     with self.pending_lock:
+                         events = self.pending.pop(request_id, None)
+                     if events is not None:
++                        self.bridge.emit("error", {"message": message}, request_id)
+                         events.put(("error", _engine_error(fields[2:], message)))
+                 else:
+                     raise RuntimeError(f"invalid engine response: {' '.join(fields)}")
+         except Exception as error:
+             if not self.closed:
++                self.bridge.emit("error", {"message": str(error), "source": "gateway_dispatcher"})
+                 self.dispatcher_error = error
+                 self._fail_pending(error)
+ 
+@@ -1366,6 +1398,7 @@ class Engine:
+             request_id = str(self.next_request_id)
+             self.next_request_id += 1
+             self.pending[request_id] = events
++        self.bridge.request_started(request_id, max_tokens, cache_slot, len(payload))
+         header = (f"SUBMIT {request_id} {cache_slot} {len(payload)} {max_tokens} "
+                   f"{temperature:.8g} {top_p:.8g}"
+                   + (f" {len(gpayload)}" if gpayload else "") + "\n").encode()
+@@ -1383,6 +1416,8 @@ class Engine:
+         cancel_sent = False
+         stop_sent = False
+         accepted = False
++        input_token_ids = []
++        output_token_ids = []
+ 
+         def _accept(info):
+             # #597: commit exactly once, on the first of ACCEPT / DATA / DONE. A new engine sends
+@@ -1401,6 +1436,10 @@ class Engine:
+                 if accepted:
+                     raise RuntimeError("engine sent a duplicate ACCEPT frame")
+                 _accept(value)
++            elif kind == "prompt_tokens":
++                input_token_ids = value
++            elif kind == "token":
++                output_token_ids.append(value)
+             elif kind == "data":
+                 _accept({"prompt_tokens": None})
+                 if not cancel_sent and not stop_sent:
+@@ -1420,6 +1459,8 @@ class Engine:
+                 tail = decoder.decode(b"", final=True)
+                 if tail:
+                     on_text(tail)
++                value["input_token_ids"] = input_token_ids
++                value["token_ids"] = output_token_ids
+                 return value
+             elif cancel_sent and isinstance(value, RuntimeError) and str(value) == "CANCELLED":
+                 raise ClientCancelled()
+@@ -1441,6 +1482,7 @@ class Engine:
+                 self.process.wait(timeout=5)
+         if self.dispatcher is not threading.current_thread():
+             self.dispatcher.join(timeout=5)
++        self.bridge.close(self.process.returncode)
+ 
+ 
+ def model_object(model_id, created):
+@@ -1849,9 +1891,16 @@ class APIHandler(BaseHTTPRequestHandler):
+                     choice = ({"index": 0, "message": _msg,
+                                "logprobs": None, "finish_reason": length_finish} if chat else
+                               {"index": 0, "text": text, "logprobs": None, "finish_reason": length_finish})
+-                self.send_json(200, {"id": completion_id, "object": object_name, "created": created,
+-                    "model": self.server.model_id, "choices": [choice], "usage": self.usage(stats)},
+-                    request_id, queue_headers)
++                response = {"id": completion_id, "object": object_name, "created": created,
++                            "model": self.server.model_id, "choices": [choice],
++                            "usage": self.usage(stats)}
++                if self.server.engine.bridge.enabled:
++                    response["colibri"] = {
++                        "input_token_ids": stats.get("input_token_ids", []),
++                        "token_ids": stats.get("token_ids", []),
++                        "stop_reason": length_finish,
++                    }
++                self.send_json(200, response, request_id, queue_headers)
+                 return
+ 
+             stream_object = "chat.completion.chunk" if chat else object_name
+@@ -1874,7 +1923,7 @@ class APIHandler(BaseHTTPRequestHandler):
+             KA_GAP = 10.0
+             dbg_echo = dbg >= 1   # tee decoded tokens to stderr (COLI_DEBUG level parsed in generation())
+ 
+-            def event(choices, usage_marker=False):
++            def event(choices, usage_marker=False, colibri=None):
+                 nonlocal connected
+                 if not connected:
+                     return
+@@ -1882,6 +1931,8 @@ class APIHandler(BaseHTTPRequestHandler):
+                               "model": self.server.model_id, "choices": choices}
+                 if include_usage:
+                     event_body["usage"] = None if not usage_marker else usage_marker
++                if colibri is not None:
++                    event_body["colibri"] = colibri
+                 data = json.dumps(event_body, ensure_ascii=False, separators=(",", ":"))
+                 with ka_lock:
+                     try:
+@@ -2032,7 +2083,14 @@ class APIHandler(BaseHTTPRequestHandler):
+             final_choice = ({"index": 0, "delta": {}, "logprobs": None, "finish_reason": finish}
+                             if chat else {"index": 0, "text": "", "logprobs": None,
+                                           "finish_reason": finish})
+-            event([final_choice])
++            bridge_result = None
++            if self.server.engine.bridge.enabled:
++                bridge_result = {
++                    "input_token_ids": stats.get("input_token_ids", []),
++                    "token_ids": stats.get("token_ids", []),
++                    "stop_reason": finish,
++                }
++            event([final_choice], colibri=bridge_result)
+             if include_usage:
+                 event([], self.usage(stats))
+             if connected:
+diff --git a/c/swarm_bridge.py b/c/swarm_bridge.py
+new file mode 100644
+index 0000000..c4f08f2
+--- /dev/null
++++ b/c/swarm_bridge.py
+@@ -0,0 +1,183 @@
++"""Optional, semantics-neutral NDJSON bridge for swarm-inference-lab.
++
++SWARM BRIDGE PATCH: this file is downstream integration code. It observes the
++existing engine protocol only; it never changes model inputs, routing, sampling,
++weights, quantization, or mathematical operations.
++"""
++
++from __future__ import annotations
++
++import json
++import os
++import threading
++import time
++from pathlib import Path
++
++
++EVENT_TYPES = frozenset(
++    {
++        "engine_started",
++        "engine_ready",
++        "engine_stopped",
++        "capability_report",
++        "model_inventory",
++        "tensor_inventory",
++        "tier_inventory",
++        "placement_plan",
++        "request_started",
++        "prefill_started",
++        "prefill_completed",
++        "decode_token_started",
++        "decode_token_completed",
++        "request_completed",
++        "route_summary",
++        "route_event",
++        "expert_cache_hit",
++        "expert_cache_miss",
++        "expert_prefetch_started",
++        "expert_prefetch_completed",
++        "expert_loaded",
++        "expert_promoted",
++        "expert_demoted",
++        "expert_evicted",
++        "storage_read",
++        "host_to_device_transfer",
++        "device_to_host_transfer",
++        "cpu_compute",
++        "gpu_compute",
++        "resource_snapshot",
++        "warning",
++        "error",
++    }
++)
++LEVELS = {"off": 0, "summary": 1, "detailed": 2, "trace": 3}
++EVENT_LEVEL = {
++    "decode_token_started": 2,
++    "decode_token_completed": 2,
++    "route_event": 3,
++    "expert_cache_hit": 2,
++    "expert_cache_miss": 2,
++    "expert_prefetch_started": 2,
++    "expert_prefetch_completed": 2,
++    "expert_loaded": 2,
++    "expert_promoted": 2,
++    "expert_demoted": 2,
++    "expert_evicted": 2,
++    "storage_read": 2,
++    "host_to_device_transfer": 2,
++    "device_to_host_transfer": 2,
++    "cpu_compute": 2,
++    "gpu_compute": 2,
++}
++
++
++class SwarmBridge:
++    """Thread-safe event writer and request phase tracker."""
++
++    version = "1.0"
++
++    def __init__(self, model, engine_family, environment=None):
++        env = environment or os.environ
++        self.enabled = env.get("COLI_SWARM_BRIDGE") == "1"
++        self.level = env.get("COLI_SWARM_TELEMETRY", "summary").lower()
++        if self.level not in LEVELS:
++            raise ValueError("COLI_SWARM_TELEMETRY must be off, summary, detailed, or trace")
++        if self.level == "off":
++            self.enabled = False
++        self.model_id = env.get("COLI_MODEL_ID", Path(model).name)
++        self.model_revision = env.get("COLI_MODEL_REVISION", "")
++        self.engine_family = engine_family
++        self.engine_pid = 0
++        self.sequence = 0
++        self.lock = threading.Lock()
++        self.requests = {}
++        self.handle = None
++        self.path = None
++        if self.enabled:
++            selected = env.get("COLI_SWARM_BRIDGE_PATH")
++            self.path = Path(selected) if selected else Path(model) / ".coli_swarm_telemetry.ndjson"
++            self.path.parent.mkdir(parents=True, exist_ok=True)
++            self.handle = self.path.open("a", encoding="utf-8", buffering=1)
++
++    def emit(self, event_type, payload=None, request_id=None):
++        if event_type not in EVENT_TYPES:
++            raise ValueError(f"unknown swarm bridge event type: {event_type}")
++        if not self.enabled or LEVELS[self.level] < EVENT_LEVEL.get(event_type, 1):
++            return
++        with self.lock:
++            event = {
++                "schema_version": "1.0",
++                "event_type": event_type,
++                "timestamp_ns": time.time_ns(),
++                "engine_pid": self.engine_pid,
++                "request_id": None if request_id is None else str(request_id),
++                "model_id": self.model_id,
++                "model_revision": self.model_revision,
++                "engine_family": self.engine_family,
++                "sequence_number": self.sequence,
++                "payload": dict(payload or {}),
++            }
++            self.sequence += 1
++            self.handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
++            self.handle.flush()
++
++    def engine_started(self, pid, executable):
++        self.engine_pid = int(pid)
++        self.emit(
++            "engine_started",
++            {"bridge_version": self.version, "telemetry_level": self.level, "executable": str(executable)},
++        )
++
++    def engine_ready(self):
++        self.emit("engine_ready", {})
++
++    def request_started(self, request_id, maximum, cache_slot, prompt_bytes):
++        self.requests[str(request_id)] = {"prefill_completed": False, "tokens": 0}
++        self.emit(
++            "request_started",
++            {"max_tokens": maximum, "cache_slot": cache_slot, "prompt_bytes": prompt_bytes},
++            request_id,
++        )
++
++    def prompt_tokens(self, request_id, token_ids):
++        state = self.requests.setdefault(str(request_id), {"prefill_completed": False, "tokens": 0})
++        state["input_token_ids"] = list(token_ids)
++
++    def prefill_started(self, request_id, prompt_tokens):
++        state = self.requests.setdefault(str(request_id), {"prefill_completed": False, "tokens": 0})
++        state["prompt_tokens"] = prompt_tokens
++        payload = {"prompt_tokens": prompt_tokens}
++        if LEVELS[self.level] >= LEVELS["detailed"]:
++            payload["input_token_ids"] = state.get("input_token_ids", [])
++        self.emit("prefill_started", payload, request_id)
++
++    def token(self, request_id, token_id):
++        state = self.requests.setdefault(str(request_id), {"prefill_completed": False, "tokens": 0})
++        if not state["prefill_completed"]:
++            state["prefill_completed"] = True
++            self.emit("prefill_completed", {"prompt_tokens": state.get("prompt_tokens")}, request_id)
++        position = state["tokens"]
++        self.emit("decode_token_started", {"token_position": position}, request_id)
++        state["tokens"] += 1
++        self.emit(
++            "decode_token_completed",
++            {"token_position": position, "token_id": int(token_id)},
++            request_id,
++        )
++
++    def request_completed(self, request_id, stats):
++        state = self.requests.pop(str(request_id), {})
++        if not state.get("prefill_completed"):
++            self.emit("prefill_completed", {"prompt_tokens": state.get("prompt_tokens")}, request_id)
++        payload = dict(stats)
++        payload["observed_token_count"] = state.get("tokens", 0)
++        self.emit("request_completed", payload, request_id)
++
++    def close(self, exit_code=None):
++        if not self.enabled:
++            return
++        self.emit("engine_stopped", {"exit_code": exit_code})
++        with self.lock:
++            self.handle.close()
++            self.handle = None
++            self.enabled = False

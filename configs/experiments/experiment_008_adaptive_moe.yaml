@@ -1,0 +1,86 @@
+schema_version: experiment-008-v1
+name: experiment-008-single-host-adaptive-moe-saturation
+execution_mode: single-host-adaptive-moe-saturation
+
+models:
+  preferred:
+    model_id: Qwen/Qwen3-Next-80B-A3B-Instruct
+    artifact_repository: Qwen/Qwen3-Next-80B-A3B-Instruct-GGUF
+    filename: Qwen3-Next-80B-A3B-Instruct-Q4_K_M.gguf
+    quantization: Q4_K_M
+    revision: 4c8630cf7af926a9c5095cb4bbbbc65d36e20f77
+    architecture: qwen3next
+    minimum_tensor_bytes: 34359738368
+  fallback:
+    model_id: Qwen/Qwen3.6-35B-A3B
+    artifact_repository: ggml-org/Qwen3.6-35B-A3B-GGUF
+    filename: Qwen3.6-35B-A3B-Q8_0.gguf
+    quantization: Q8_0
+    revision: baec3ebee244827cda0f4557eafa8b28f7545fa6
+    architecture: qwen35moe
+    minimum_tensor_bytes: 34359738368
+
+backend:
+  backend: llamacpp
+  server_path: null
+  server_download: true
+  release_tag: b9637
+  windows_cuda_version: "13.3"
+  host: 127.0.0.1
+  port_start: 18080
+  startup_timeout_seconds: 900
+  request_timeout_seconds: 7200
+  keep_servers: false
+  flash_attention: true
+  memory_map: true
+  pinned_memory: true
+
+profiling:
+  warmup_iterations: 5
+  measurement_iterations: 20
+  payload_bytes: [4096, 1048576, 16777216, 134217728]
+  decode_shapes:
+    - [1, 2048, 512]
+    - [1, 2048, 1024]
+  prefill_shapes:
+    - [128, 2048, 512]
+    - [512, 2048, 512]
+  cpu_thread_counts: [4, 8, 12, 16, 20]
+  resource_sample_interval_seconds: 0.2
+  storage_sample_bytes: 536870912
+
+baseline_search:
+  gpu_layers: [auto, 24, 32, 40, 48]
+  cpu_threads: [8, 12, 16, 20]
+  batch_sizes: [512, 1024, 2048]
+  microbatch_sizes: [128, 256, 512]
+  memory_map: [true, false]
+  flash_attention: [true, false]
+  cpu_moe_layers: [0, 8, 16, 24, 32, 40, 48]
+  maximum_candidates: 12
+  repeats: 3
+  warmup_requests: 1
+
+workloads:
+  decode_prompt_count: 20
+  decode_input_tokens_min: 256
+  decode_input_tokens_max: 512
+  decode_output_tokens: 512
+  long_context_tokens: [8000, 32000]
+  long_prompt_count: 5
+  long_output_tokens: 64
+  mixed_interactive_output_tokens: 128
+  mixed_background_output_tokens: 512
+  mixed_measurement_seconds: 120
+  seed: 8008
+
+acceptance:
+  minimum_decode_gain_fraction: 0.25
+  minimum_ttft_32k_reduction_fraction: 0.25
+  minimum_mixed_gain_fraction: 0.20
+  maximum_interactive_p95_increase_fraction: 0.05
+  maximum_other_workload_regression_fraction: 0.10
+  maximum_planner_regret_fraction: 0.05
+  minimum_correctness_executions: 50
+
+output_root: artifacts/runs

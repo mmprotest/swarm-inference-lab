@@ -1,0 +1,93 @@
+diff --git a/c/colibri.c b/c/colibri.c
+index 42270f6..0d4fd76 100644
+--- a/c/colibri.c
++++ b/c/colibri.c
+@@ -7032,6 +7032,17 @@ static void mux_done(Model *m, ServeCtx *sc, ServeReq *r){
+            edisk_s()-r->pb.edisk,m->t_ewait-r->pb.ewait,m->t_emm-r->pb.emm,
+            m->t_attn-r->pb.attn,m->t_head-r->pb.head,
+            (unsigned long long)(m->n_fw-r->pb.n_fw));
++    /* SWARM BRIDGE PATCH: exact aggregate counters already maintained by the
++     * engine. Observation only; no routing, cache, or execution decision is
++     * changed. CACHESTAT <id> <pin-hit> <lru-hit> <miss> <read-bytes>
++     * <read-service-s> <felt-wait-s> <cpu-expert-s> <gpu-expert-s>. */
++    printf("CACHESTAT %llu %llu %llu %llu %lld %.9f %.9f %.9f %.9f\n",r->id,
++           (unsigned long long)(m->hit_pin-r->pb.hit_pin),
++           (unsigned long long)(m->hit_ecache-r->pb.hit_ecache),
++           (unsigned long long)(m->miss-r->pb.miss),
++           (long long)(atomic_load_explicit(&g_prof_io,memory_order_relaxed)-r->pb.io),
++           edisk_s()-r->pb.edisk,m->t_ewait-r->pb.ewait,
++           m->t_ecpu-r->pb.ecpu,m->t_egpu-r->pb.egpu);
+     printf("DONE %llu STAT %d %.2f %.1f %.2f %d %d\n",r->id,r->emitted,
+            r->emitted/dt,(dh+dm)>0?100.0*dh/(dh+dm):0.0,rss_gb(),
+            r->prompt_tokens,r->length_limited);
+diff --git a/c/openai_server.py b/c/openai_server.py
+index 805675f..a8937cc 100644
+--- a/c/openai_server.py
++++ b/c/openai_server.py
+@@ -1349,6 +1349,34 @@ class Engine:
+                     })
+                     self.profile_seq += 1
+                     self.bridge.emit("resource_snapshot", {"phase_timing": self.profile[-1]})
++                elif kind == "CACHESTAT" and len(fields) == 10:
++                    request_id = fields[1]
++                    cache = {"pin_hits": int(fields[2]), "lru_hits": int(fields[3]),
++                             "misses": int(fields[4]), "read_bytes": int(fields[5]),
++                             "read_service_seconds": float(fields[6]),
++                             "felt_wait_seconds": float(fields[7]),
++                             "cpu_expert_seconds": float(fields[8]),
++                             "gpu_expert_seconds": float(fields[9])}
++                    self.bridge.emit("expert_cache_hit",
++                                     {"count": cache["pin_hits"] + cache["lru_hits"],
++                                      "pin_count": cache["pin_hits"],
++                                      "lru_count": cache["lru_hits"], "aggregate": True}, request_id)
++                    self.bridge.emit("expert_cache_miss",
++                                     {"count": cache["misses"], "aggregate": True}, request_id)
++                    self.bridge.emit("expert_loaded",
++                                     {"count": cache["misses"], "source_tier": "nvme",
++                                      "aggregate": True}, request_id)
++                    self.bridge.emit("storage_read",
++                                     {"byte_count": cache["read_bytes"],
++                                      "duration_ns": int(cache["read_service_seconds"] * 1e9),
++                                      "demand_miss_count": cache["misses"],
++                                      "aggregate": True}, request_id)
++                    self.bridge.emit("cpu_compute",
++                                     {"duration_ns": int(cache["cpu_expert_seconds"] * 1e9),
++                                      "scope": "routed_experts", "aggregate": True}, request_id)
++                    self.bridge.emit("gpu_compute",
++                                     {"duration_ns": int(cache["gpu_expert_seconds"] * 1e9),
++                                      "scope": "routed_experts", "aggregate": True}, request_id)
+                 elif kind == "TIERS" and len(fields) >= 6:
+                     self.tiers = {"vram": int(fields[1]), "ram": int(fields[2]),
+                                   "disk": int(fields[3]), "vram_gb": float(fields[4]),
+diff --git a/c/swarm_bridge.py b/c/swarm_bridge.py
+index c4f08f2..7c34371 100644
+--- a/c/swarm_bridge.py
++++ b/c/swarm_bridge.py
+@@ -55,19 +55,21 @@ EVENT_LEVEL = {
+     "decode_token_started": 2,
+     "decode_token_completed": 2,
+     "route_event": 3,
+-    "expert_cache_hit": 2,
+-    "expert_cache_miss": 2,
++    # The gateway emits these as one aggregate snapshot per request, so they
++    # are summary-volume rather than per-expert high-volume observations.
++    "expert_cache_hit": 1,
++    "expert_cache_miss": 1,
+     "expert_prefetch_started": 2,
+     "expert_prefetch_completed": 2,
+-    "expert_loaded": 2,
++    "expert_loaded": 1,
+     "expert_promoted": 2,
+     "expert_demoted": 2,
+     "expert_evicted": 2,
+-    "storage_read": 2,
++    "storage_read": 1,
+     "host_to_device_transfer": 2,
+     "device_to_host_transfer": 2,
+-    "cpu_compute": 2,
+-    "gpu_compute": 2,
++    "cpu_compute": 1,
++    "gpu_compute": 1,
+ }
+ 
+ 

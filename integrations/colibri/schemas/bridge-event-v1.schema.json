@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swarm-inference-lab.local/schemas/colibri/bridge-event-v1.schema.json",
+  "title": "Colibri swarm bridge event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_type",
+    "timestamp_ns",
+    "engine_pid",
+    "request_id",
+    "model_id",
+    "model_revision",
+    "engine_family",
+    "sequence_number",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "event_type": {
+      "enum": [
+        "engine_started", "engine_ready", "engine_stopped", "capability_report",
+        "model_inventory", "tensor_inventory", "tier_inventory", "placement_plan",
+        "request_started", "prefill_started", "prefill_completed",
+        "decode_token_started", "decode_token_completed", "request_completed",
+        "route_summary", "route_event", "expert_cache_hit", "expert_cache_miss",
+        "expert_prefetch_started", "expert_prefetch_completed", "expert_loaded",
+        "expert_promoted", "expert_demoted", "expert_evicted", "storage_read",
+        "host_to_device_transfer", "device_to_host_transfer", "cpu_compute",
+        "gpu_compute", "resource_snapshot", "warning", "error"
+      ]
+    },
+    "timestamp_ns": {"type": "integer", "minimum": 0},
+    "engine_pid": {"type": "integer", "minimum": 0},
+    "request_id": {"type": ["string", "null"]},
+    "model_id": {"type": "string"},
+    "model_revision": {"type": "string"},
+    "engine_family": {"type": "string"},
+    "sequence_number": {"type": "integer", "minimum": 0},
+    "payload": {"type": "object"}
+  }
+}
+

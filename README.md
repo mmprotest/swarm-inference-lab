@@ -27,7 +27,9 @@ speed. Every run is labelled `simulation`, `single-host-loopback`,
 | Cross-platform worker program | Implemented | The same Python entry point supports native Windows x86-64 CPU/CUDA, Linux x86-64 CPU/CUDA, Linux ARM64 CPU, and macOS Apple Silicon CPU/MPS. Only Windows CUDA has been exercised in this workspace. |
 | Physical experiment runner | Implemented, awaiting remote hosts | Waits for remote registrations, rejects false physical labels, runs warm-up and sustained measurement, and writes the standard artifact set. |
 | Physical scaling claim | **Not demonstrated** | Requires a completed standard run with at least two actual machines. |
-| Qwen3 MoE/Kimi K3 execution | **Not supported** | Index-only feasibility analysis does not imply execution support. |
+| Over-VRAM Qwen3-Next sparse MoE execution | **PARTIAL** | Experiment 008 generated text with 45.081 GiB of Q4_K_M tensors across an RTX 5090 and system RAM. Capacity passed; correctness and adaptive-performance gates failed. |
+| Colibri local expert runtime | **PASS_STRONG** | Experiment 009 ran a real OLMoE model through the universal worker ABI with exact direct/adapter tokens and routes, measured residency/I/O telemetry, and a 5.04% reverse-confirmed routing-placement gain. The exercised native Windows engine was CPU-only. |
+| Kimi K3 execution | **Not demonstrated** | Experiment 009 preserves native MXFP4 metadata and detects the Kimi family, but did not execute a Kimi K3 checkpoint or distributed experts. |
 
 The project-wide research status is **FAIL** until every acceptance gate has
 measured evidence. An unrun criterion is never converted to `PASS`.
@@ -43,8 +45,9 @@ measured evidence. An unrun criterion is never converted to `PASS`.
 | 4 — concurrent pipeline | Partial | Bounded concurrent queues and simulated scaling work; sustained measured hardware scaling is not demonstrated. |
 | 5 — churn/integrity | Partial | Replay, signed envelopes, audits, and quarantine work; the physical churn gate is unrun. |
 | 6 — physical LAN | Ready for multiple machines | Native coordinator/worker orchestration and artifacts are implemented; a second host has not participated yet. |
-| 7 — sparse MoE proxy | Partial | Synthetic MoE-like routing exists; executable Qwen3 MoE support does not. |
-| 8 — Kimi K3 feasibility | Partial | Safe config/index analysis exists; no K3 execution support is claimed. |
+| 7 — sparse MoE proxy | Partial | Synthetic routing remains useful for controlled tests; Experiment 008 separately adds real Qwen3-Next execution without routed-expert backend hooks. |
+| 8 — single-host adaptive MoE saturation | **PARTIAL** | A completed full run passed capacity, planner, positive-CPU-utility, and architecture gates; correctness and adaptive performance failed. |
+| 9 — Colibri adaptive expert runtime | **PASS_STRONG** | Pinned Colibri v1.4.0 executes as a local worker backend with real routes, tier/cache/storage counters, fixed replay, plan translation, and held-out placement evaluation. |
 
 ## Native installation
 

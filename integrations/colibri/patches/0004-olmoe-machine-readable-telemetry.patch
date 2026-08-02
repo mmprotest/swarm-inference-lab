@@ -1,0 +1,574 @@
+diff --git a/c/Makefile b/c/Makefile
+index 9fd017a00dc37e8f9e302326100ac63b0f9d4efd..c6d892f4121bc40f1b6f05b9e5ac7cf87ec77b5b 100644
+--- a/c/Makefile
++++ b/c/Makefile
+@@ -458,7 +458,7 @@ cuda-bench: backend_cuda.cu backend_cuda.h backend_gpu_compat.h tests/bench_tens
+ 	"$(GPUCC)" $(GPUFLAGS) backend_cuda.cu tests/bench_tensor_core.cu -o backend_cuda_bench$(EXE) $(ANS_NVCC_LIBS)
+ 	./backend_cuda_bench$(EXE)
+ 
+-olmoe$(EXE): olmoe.c st.h json.h compat.h sample.h tok.h tok_unicode.h tok_unicode_o200k.h omp_tune.h route_trace.h
++olmoe$(EXE): olmoe.c st.h json.h compat.h sample.h tok.h tok_unicode.h tok_unicode_o200k.h omp_tune.h route_trace.h swarm_bridge_c.h
+ 	$(CC) $(CFLAGS) olmoe.c -o olmoe$(EXE) $(LDFLAGS)
+ 
+ inkling$(EXE): inkling.c st.h json.h compat.h $(INK_CUDA_OBJ)
+diff --git a/c/olmoe.c b/c/olmoe.c
+index b8fc258ba6a8b4588f9ee5f059c7a50a3916c138..bd64a1317a37534d3ec3b1814616f2b88dcda04b 100644
+--- a/c/olmoe.c
++++ b/c/olmoe.c
+@@ -37,6 +37,7 @@
+ #endif
+ #include "omp_tune.h"
+ #include "route_trace.h"  /* SWARM BRIDGE PATCH: semantics-neutral routing observations */
++#include "swarm_bridge_c.h"
+ 
+ #ifdef _WIN32
+ #include <windows.h>
+@@ -69,7 +70,7 @@ typedef struct {
+ /* pinned=1 means this slot is strongly preferred to keep (hot expert); it will
+  * not be evicted during normal LRU eviction, but may be displaced under extreme
+  * cache pressure when all slots are pinned or in-flight. */
+-typedef struct { int eid; int pinned; int8_t *g, *u, *d; float *gs, *us, *ds; uint64_t used; } Slot;
++typedef struct { int eid; int pinned, prefetched; int8_t *g, *u, *d; float *gs, *us, *ds; uint64_t used; } Slot;
+ typedef struct { Slot *slots; int n, cap; } LCache;
+ 
+ typedef struct {
+@@ -96,6 +97,12 @@ typedef struct {
+     uint8_t *is_queued;     /* [n_layers * n_experts], 1 if expert is currently in the prefetch queue */
+     float pilot_conf_limit; /* CONF_LIMIT env: cumulative gate probability threshold (e.g. 0.92) */
+     uint64_t *last_access;  /* [n_layers * n_experts], clock time when expert was last accessed */
++    /* SWARM BRIDGE PATCH: observation-only aggregate counters. */
++    uint64_t demand_loads, prefetch_loads, evictions;
++    uint64_t prefetch_useful_loads, prefetch_wasted_loads;
++    uint64_t storage_read_bytes, storage_read_count;
++    uint64_t prefill_tokens, decode_tokens;
++    double storage_read_s, cpu_expert_s, prefill_s, decode_s;
+ } Model;
+ 
+ static pthread_mutex_t g_pilot_mx = PTHREAD_MUTEX_INITIALIZER;
+@@ -140,6 +147,155 @@ static double rss_gb(void) { struct rusage r; getrusage(RUSAGE_SELF, &r); return
+ #endif
+ static float *falloc(int64_t n) { float *p = malloc(n*sizeof(float)); if(!p){fprintf(stderr,"OOM %ld\n",(long)n);exit(1);} return p; }
+ 
++/* SWARM BRIDGE PATCH: serialize already-measured OLMoE state only after the
++ * engine has made its routing/residency decisions. */
++static uint64_t swb_expert_bytes(const Model *m) {
++    return (uint64_t)(2ull * (uint64_t)m->c.inter * (uint64_t)m->c.hidden
++                    + (uint64_t)m->c.hidden * (uint64_t)m->c.inter)
++         + 4ull * (uint64_t)(2 * m->c.inter + m->c.hidden);
++}
++
++static uint64_t swb_resident_expert_bytes(const Model *m) {
++    uint64_t slots = 0;
++    for (int layer = 0; layer < m->c.n_layers; layer++) slots += (uint64_t)m->cache[layer].n;
++    return slots * swb_expert_bytes(m);
++}
++
++static void swb_olmoe_ready(const Model *m, int cap, int bits) {
++    char payload[1024];
++    uint64_t one = swb_expert_bytes(m);
++    uint64_t cache_capacity = one * (uint64_t)cap * (uint64_t)m->c.n_layers;
++    uint64_t backing = one * (uint64_t)m->c.n_experts * (uint64_t)m->c.n_layers;
++    snprintf(payload, sizeof(payload),
++             "{\"model_family\":\"olmoe\",\"layers\":%d,\"experts_per_layer\":%d,"
++             "\"experts_per_token\":%d,\"expert_native_format\":\"merged_int8_per_row\","
++             "\"quant_bits\":%d}",
++             m->c.n_layers, m->c.n_experts, m->c.topk, bits);
++    swb_emit(1, "model_inventory", payload, 0);
++    snprintf(payload, sizeof(payload),
++             "{\"tiers\":[{\"tier\":\"vram\",\"allocated_expert_bytes\":0},"
++             "{\"tier\":\"ram\",\"allocated_expert_bytes\":%llu,"
++             "\"expert_cache_capacity_bytes\":%llu},{\"tier\":\"nvme\","
++             "\"allocated_expert_bytes\":%llu}],\"expert_bytes\":%llu}",
++             (unsigned long long)swb_resident_expert_bytes(m),
++             (unsigned long long)cache_capacity, (unsigned long long)backing,
++             (unsigned long long)one);
++    swb_emit(1, "tier_inventory", payload, 0);
++    snprintf(payload, sizeof(payload),
++             "{\"cache_slots_per_layer\":%d,\"pilot_depth\":%d,\"pilot_width\":%d,"
++             "\"hot_experts_per_layer\":%d,\"execution_tier\":\"ram\","
++             "\"cold_tier\":\"nvme\"}",
++             cap, g_pilot, g_wide, m->hot_n);
++    swb_emit(1, "placement_plan", payload, 0);
++    snprintf(payload, sizeof(payload),
++             "{\"rss_bytes\":%llu,\"dense_load_duration_ns\":%llu}",
++             (unsigned long long)(rss_gb() * 1000000000.0),
++             (unsigned long long)(m->dense_load_s * 1000000000.0));
++    swb_emit(1, "resource_snapshot", payload, 0);
++    swb_emit(1, "engine_ready", "{}", 0);
++}
++
++static void swb_olmoe_request_started(int prompt_tokens, int completion_tokens) {
++    char payload[256];
++    snprintf(payload, sizeof(payload),
++             "{\"prompt_tokens\":%d,\"max_tokens\":%d,\"teacher_forced\":%s}",
++             prompt_tokens, completion_tokens, getenv("PPL") ? "true" : "false");
++    swb_emit(1, "request_started", payload, 1);
++    snprintf(payload, sizeof(payload), "{\"prompt_tokens\":%d}", prompt_tokens);
++    swb_emit(1, "prefill_started", payload, 1);
++}
++
++static void swb_olmoe_request_completed(Model *m, int completion_tokens,
++                                        double elapsed_s, const char *stop_reason) {
++    if (g_pilot) {
++        double deadline = now_s() + 5.0;
++        while (__atomic_load_n(&pilot_r, __ATOMIC_ACQUIRE)
++               != __atomic_load_n(&pilot_w, __ATOMIC_ACQUIRE)
++               && now_s() < deadline)
++            sleep_ms(1);
++        pthread_mutex_lock(&g_pilot_mx);
++        for (int layer = 0; layer < m->c.n_layers; layer++)
++            for (int slot = 0; slot < m->cache[layer].n; slot++)
++                if (m->cache[layer].slots[slot].prefetched) {
++                    m->prefetch_wasted_loads++;
++                    m->cache[layer].slots[slot].prefetched = 0;
++                }
++        pthread_mutex_unlock(&g_pilot_mx);
++    }
++    char payload[1024];
++    uint64_t one = swb_expert_bytes(m);
++    uint64_t hits = m->hits, misses = m->miss;
++    uint64_t selections = hits + misses;
++    snprintf(payload, sizeof(payload),
++             "{\"selection_count\":%llu,\"cache_hits\":%llu,\"cache_misses\":%llu,"
++             "\"execution_tier\":\"ram\",\"prefill_tokens\":%llu,"
++             "\"decode_tokens\":%llu}",
++             (unsigned long long)selections, (unsigned long long)hits,
++             (unsigned long long)misses, (unsigned long long)m->prefill_tokens,
++             (unsigned long long)m->decode_tokens);
++    swb_emit(1, "route_summary", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"count\":%llu,\"tier\":\"ram\",\"aggregate\":true}",
++             (unsigned long long)hits);
++    swb_emit(1, "expert_cache_hit", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"count\":%llu,\"source_tier\":\"nvme\",\"aggregate\":true}",
++             (unsigned long long)misses);
++    swb_emit(1, "expert_cache_miss", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"count\":%llu,\"demand_count\":%llu,\"prefetch_count\":%llu,"
++             "\"source_tier\":\"nvme\",\"target_tier\":\"ram\",\"aggregate\":true}",
++             (unsigned long long)(m->demand_loads + m->prefetch_loads),
++             (unsigned long long)m->demand_loads, (unsigned long long)m->prefetch_loads);
++    swb_emit(1, "expert_loaded", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"count\":%llu,\"aggregate\":true}",
++             (unsigned long long)m->prefetch_loads);
++    swb_emit(1, "expert_prefetch_started", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"count\":%llu,\"useful_count\":%llu,\"wasted_count\":%llu,"
++             "\"useful_bytes\":%llu,\"wasted_bytes\":%llu,\"aggregate\":true}",
++             (unsigned long long)m->prefetch_loads,
++             (unsigned long long)m->prefetch_useful_loads,
++             (unsigned long long)m->prefetch_wasted_loads,
++             (unsigned long long)(m->prefetch_useful_loads * one),
++             (unsigned long long)(m->prefetch_wasted_loads * one));
++    swb_emit(1, "expert_prefetch_completed", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"count\":%llu,\"tier\":\"ram\",\"aggregate\":true}",
++             (unsigned long long)m->evictions);
++    swb_emit(1, "expert_evicted", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"read_count\":%llu,\"byte_count\":%llu,\"duration_ns\":%llu,"
++             "\"source_tier\":\"nvme\",\"target_tier\":\"ram\","
++             "\"page_cache_possible\":true,\"aggregate\":true}",
++             (unsigned long long)m->storage_read_count,
++             (unsigned long long)m->storage_read_bytes,
++             (unsigned long long)(m->storage_read_s * 1000000000.0));
++    swb_emit(1, "storage_read", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"duration_ns\":%llu,\"scope\":\"routed_experts\","
++             "\"backend\":\"cpu\",\"aggregate\":true}",
++             (unsigned long long)(m->cpu_expert_s * 1000000000.0));
++    swb_emit(1, "cpu_compute", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"rss_bytes\":%llu,\"resident_expert_bytes\":%llu,"
++             "\"storage_read_bytes\":%llu}",
++             (unsigned long long)(rss_gb() * 1000000000.0),
++             (unsigned long long)swb_resident_expert_bytes(m),
++             (unsigned long long)m->storage_read_bytes);
++    swb_emit(1, "resource_snapshot", payload, 1);
++    snprintf(payload, sizeof(payload),
++             "{\"completion_tokens\":%d,\"elapsed_ns\":%llu,"
++             "\"decode_tokens_per_second\":%.9f,\"stop_reason\":\"%s\","
++             "\"prefill_duration_ns\":%llu,\"decode_duration_ns\":%llu}",
++             completion_tokens, (unsigned long long)(elapsed_s * 1000000000.0),
++             elapsed_s > 0 ? completion_tokens / elapsed_s : 0.0, stop_reason,
++             (unsigned long long)(m->prefill_s * 1000000000.0),
++             (unsigned long long)(m->decode_s * 1000000000.0));
++    swb_emit(1, "request_completed", payload, 1);
++}
++
+ /* chat mode only (main()'s CHAT=1 path): sampling temperature/top-p and the
+  * tokenizer + stop-set machinery. g_temp<=0 -> greedy (sample.h's pick_tok).
+  * Declared before #include "sample.h" — it references these by name, and
+@@ -302,7 +458,11 @@ static void model_init(Model *m, const char *snap, int cap, int bits) {
+     st_init(&m->S, snap);
+     Cfg *c = &m->c;
+     rt_init("olmoe", c->n_layers, c->n_experts);
+-    snprintf(g_usage_path, sizeof(g_usage_path), "%s/.coli_usage", snap);
++    const char *usage_override = getenv("COLI_USAGE_PATH");
++    if (usage_override && *usage_override)
++        snprintf(g_usage_path, sizeof(g_usage_path), "%s", usage_override);
++    else
++        snprintf(g_usage_path, sizeof(g_usage_path), "%s/.coli_usage", snap);
+     rt_load(g_usage_path);
+     double t0 = now_s();
+     m->embed      = load_t(m, "model.embed_tokens.weight");
+@@ -347,13 +507,20 @@ static void model_init(Model *m, const char *snap, int cap, int bits) {
+     m->dense_load_s = now_s() - t0;
+ 
+     // Persistent Hot Pinning: try to load hot_pinned.bin
+-    char pinpath[512];
+-    snprintf(pinpath, sizeof(pinpath), "%s/hot_pinned.bin", snap);
++    char pinpath[2048];
++    const char *pin_override = getenv("COLI_HOT_PIN_PATH");
++    if (pin_override && *pin_override)
++        snprintf(pinpath, sizeof(pinpath), "%s", pin_override);
++    else
++        snprintf(pinpath, sizeof(pinpath), "%s/hot_pinned.bin", snap);
+     FILE *pinf = fopen(pinpath, "rb");
+     if (pinf) {
+         size_t expected_size = (size_t)c->n_layers * c->n_experts;
+         if (fread(m->is_pinned, 1, expected_size, pinf) == expected_size) {
+             m->hot_pinned = 1;
++            size_t pinned_total = 0;
++            for (size_t i = 0; i < expected_size; i++) pinned_total += !!m->is_pinned[i];
++            m->hot_n = c->n_layers ? (int)(pinned_total / (size_t)c->n_layers) : 0;
+             printf("[HOT] Loaded persistent pinning from %s\n", pinpath);
+             
+             if (g_pilot) {
+@@ -383,8 +550,16 @@ static void model_init(Model *m, const char *snap, int cap, int bits) {
+                 }
+                 printf("[HOT] Pre-loaded in %.1fs!\n", now_s() - t_wait);
+             }
++        } else if (pin_override && *pin_override) {
++            fprintf(stderr, "[HOT] invalid bridge pin bitmap %s (expected %zu bytes)\n",
++                    pinpath, expected_size);
++            fclose(pinf);
++            exit(1);
+         }
+         fclose(pinf);
++    } else if (pin_override && *pin_override) {
++        fprintf(stderr, "[HOT] cannot open bridge pin bitmap %s\n", pinpath);
++        exit(1);
+     }
+ }
+ 
+@@ -406,9 +581,10 @@ static void slot_ensure_allocated(Model *m, Slot *s) {
+     s->us = s_block + c->inter;
+     s->ds = s_block + c->inter + c->inter;
+     s->pinned = 0;
++    s->prefetched = 0;
+ }
+ 
+-static void load_expert_merged(Model *m, int layer, int eid, Slot *s) {
++static void load_expert_merged(Model *m, int layer, int eid, Slot *s, int prefetched) {
+     char nm[256], qsnm[256];
+     snprintf(nm, sizeof(nm), "model.layers.%d.mlp.experts.%d.merged_weight", layer, eid);
+     snprintf(qsnm, sizeof(qsnm), "model.layers.%d.mlp.experts.%d.qs", layer, eid);
+@@ -431,8 +607,17 @@ static void load_expert_merged(Model *m, int layer, int eid, Slot *s) {
+     if (!ts || ts->numel != want_s) {
+         fprintf(stderr, "%s: scale array is %lld elems — expected %lld, refusing (untrusted container)\n",
+                 qsnm, (long long)(ts ? ts->numel : -1), (long long)want_s); exit(1); }
++    double read_started = now_s();
+     st_read_raw(&m->S, nm, s->g, g_expert_drop);
+     st_read_f32(&m->S, qsnm, s->gs, 0);  /* scales are F32; use typed reader for dtype safety */
++    double read_elapsed = now_s() - read_started;
++    pthread_mutex_lock(&g_pilot_mx);
++    m->storage_read_count++;
++    m->storage_read_bytes += (uint64_t)tw->nbytes + (uint64_t)ts->nbytes;
++    m->storage_read_s += read_elapsed;
++    if (prefetched) m->prefetch_loads++; else m->demand_loads++;
++    s->prefetched = prefetched;
++    pthread_mutex_unlock(&g_pilot_mx);
+ }
+ 
+ /* ---------- cache expert: ritorna i pesi quantizzati (q+scale) da cache o disco ---------- */
+@@ -441,6 +626,10 @@ static void expert_get(Model *m, int layer, int eid, Slot **out) {
+     pthread_mutex_lock(&g_pilot_mx);
+     for (int i = 0; i < lc->n; i++) if (lc->slots[i].eid == eid) {
+         m->hits++; lc->slots[i].used = ++m->clock; *out = &lc->slots[i];
++        if (lc->slots[i].prefetched) {
++            m->prefetch_useful_loads++;
++            lc->slots[i].prefetched = 0;
++        }
+         if (m->last_access) m->last_access[layer * m->c.n_experts + eid] = m->clock;
+         pthread_mutex_unlock(&g_pilot_mx);
+         return;
+@@ -468,13 +657,17 @@ static void expert_get(Model *m, int layer, int eid, Slot **out) {
+         }
+         if (lru < 0) lru = 0; /* absolute last resort: all in-flight, evict slot 0 */
+         s = &lc->slots[lru];
++        if (s->eid >= 0) {
++            m->evictions++;
++            if (s->prefetched) m->prefetch_wasted_loads++;
++        }
+         s->pinned = 0;
+     }
+     s->eid = -1;
+     s->used = ++m->clock;
+     pthread_mutex_unlock(&g_pilot_mx);
+ 
+-    load_expert_merged(m, layer, eid, s);
++    load_expert_merged(m, layer, eid, s, 0);
+ 
+     pthread_mutex_lock(&g_pilot_mx);
+     s->eid = eid;
+@@ -666,6 +859,7 @@ static void moe(Model *m, Layer *l, int layer, float *x, int S, float *out) {
+         const float *xs = x + (int64_t)s*D;
+         for (int kk = 0; kk < K; kk++) {
+             Slot *e; expert_get(m, layer, idx[kk], &e);
++            double expert_compute_started = now_s();
+             matmul_q(g, xs, e->g, e->gs, D, I);     /* gate_proj [I,D] */
+             matmul_q(u, xs, e->u, e->us, D, I);     /* up_proj   [I,D] */
+             for (int i = 0; i < I; i++) { float gv = g[i]; g[i] = (gv / (1.f + expf(-gv))) * u[i]; }
+@@ -673,6 +867,7 @@ static void moe(Model *m, Layer *l, int layer, float *x, int S, float *out) {
+             float w = val[kk];
+             float *os = out + (int64_t)s*D;
+             for (int d = 0; d < D; d++) os[d] += w * hh[d];
++            m->cpu_expert_s += now_s() - expert_compute_started;
+         }
+     }
+     rt_trace_end();
+@@ -680,6 +875,7 @@ static void moe(Model *m, Layer *l, int layer, float *x, int S, float *out) {
+ }
+ 
+ static float *step(Model *m, const int *ids, int S, int pos_base) {
++    double phase_started = now_s();
+     Cfg *c = &m->c; int D = c->hidden;
+     if (g_pilot && m->token_count > 0) {
+         /* Flush stale prefetch requests: clear is_queued so pilot_realload
+@@ -726,6 +922,19 @@ static float *step(Model *m, const int *ids, int S, int pos_base) {
+     float *logit = falloc(c->vocab);
+     matmul(logit, last, m->lm_head, 1, D, c->vocab);
+     free(x); free(nrm); free(tmp); free(last);
++    double phase_elapsed = now_s() - phase_started;
++    if (pos_base == 0) {
++        m->prefill_s += phase_elapsed;
++        m->prefill_tokens += (uint64_t)S;
++        char phase_payload[256];
++        snprintf(phase_payload, sizeof(phase_payload),
++                 "{\"prompt_tokens\":%d,\"duration_ns\":%llu}", S,
++                 (unsigned long long)(phase_elapsed * 1000000000.0));
++        swb_emit(1, "prefill_completed", phase_payload, 1);
++    } else {
++        m->decode_s += phase_elapsed;
++        m->decode_tokens += (uint64_t)S;
++    }
+     return logit;
+ }
+ 
+@@ -775,12 +984,17 @@ static void pilot_realload(Model *m, int layer, int eid) {
+             }
+         }
+         
+-        s = &lc->slots[lru]; s->pinned = 0;
++        s = &lc->slots[lru];
++        if (s->eid >= 0) {
++            m->evictions++;
++            if (s->prefetched) m->prefetch_wasted_loads++;
++        }
++        s->pinned = 0;
+     }
+     s->eid = -1; s->used = ++m->clock;
+     pthread_mutex_unlock(&g_pilot_mx);
+ 
+-    load_expert_merged(m, layer, eid, s);
++    load_expert_merged(m, layer, eid, s, 1);
+ 
+     pthread_mutex_lock(&g_pilot_mx);
+     s->eid = eid;
+@@ -1112,6 +1326,7 @@ int main(int argc, char **argv) {
+         fprintf(stderr, "quant_bits must be 2..8 (got %d)\n", bits);
+         return 1;
+     }
++    swb_init("olmoe", snap);
+ 
+     if (getenv("CHAT")) {   /* interactive mode: bypasses the ref.json harness entirely */
+         g_temp = getenv("TEMP")    ? (float)atof(getenv("TEMP"))    : g_temp;
+@@ -1123,11 +1338,13 @@ int main(int argc, char **argv) {
+         }
+         Model m; model_init(&m, snap, cap, bits);
+         printf("resident weights loaded in %.1fs | RSS after load: %.2f GB\n", m.dense_load_s, rss_gb());
++        swb_olmoe_ready(&m, cap, bits);
+         Tok T;
+         char tokpath[2048]; snprintf(tokpath, sizeof(tokpath), "%s/tokenizer.json", snap);
+         tok_load(&T, tokpath);
+         run_chat(&m, &T, ctx_cap);
+         rt_save(g_usage_path, 1);
++        swb_close(0);
+         return 0;
+     }
+ 
+@@ -1148,6 +1365,8 @@ int main(int argc, char **argv) {
+ 
+     Model m; model_init(&m, snap, cap, bits);
+     printf("resident weights loaded in %.1fs | RSS after load: %.2f GB\n", m.dense_load_s, rss_gb());
++    swb_olmoe_ready(&m, cap, bits);
++    swb_olmoe_request_started(np, n_new);
+ 
+     if (getenv("PPL") && atoi(getenv("PPL")) == 1) {   /* loss-meter mode: teacher-forced NLL */
+         double nll; double t = now_s();
+@@ -1158,7 +1377,9 @@ int main(int argc, char **argv) {
+         printf("Expert cache hit rate: %.1f%%  (hit=%llu miss=%llu)\n", tot?100.0*m.hits/tot:0.0,
+                (unsigned long long)m.hits, (unsigned long long)m.miss);
+         printf("Speed: %.2f tok/s (%.1fs for %d tokens) | PEAK RSS: %.2f GB\n", scored/dt, dt, scored, rss_gb());
++        swb_olmoe_request_completed(&m, scored, dt, "teacher_forced_replay");
+         rt_save(g_usage_path, 1);
++        swb_close(0);
+         free(buf); free(arena);
+         return 0;
+     }
+@@ -1197,7 +1418,9 @@ int main(int argc, char **argv) {
+     }
+ 
+     printf("Speed: %.2f tok/s (%.1fs for %d tokens)\n", n_new/dt, dt, n_new);
++    swb_olmoe_request_completed(&m, n_new, dt, "length");
+     rt_save(g_usage_path, 1);
++    swb_close(0);
+     free(buf); free(arena);
+     return 0;
+ }
+diff --git a/c/swarm_bridge_c.h b/c/swarm_bridge_c.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..c51d42fe27388aba35f1d23db0402aff636d22e1
+--- /dev/null
++++ b/c/swarm_bridge_c.h
+@@ -0,0 +1,137 @@
++/* Optional semantics-neutral NDJSON bridge for one-shot C engines.
++ *
++ * This header owns only a dedicated observation stream.  It never mutates
++ * model state, weights, router output, sampling, tokenization, or execution
++ * policy.  Engine-specific code supplies already-measured counters as JSON
++ * payloads after inference.
++ */
++#ifndef SWARM_BRIDGE_C_H
++#define SWARM_BRIDGE_C_H
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++#ifdef _WIN32
++#include <windows.h>
++#include <process.h>
++#define SWB_GETPID _getpid
++#else
++#include <unistd.h>
++#define SWB_GETPID getpid
++#endif
++
++typedef struct {
++    FILE *fp;
++    unsigned long long sequence;
++    int level;
++    int pid;
++    const char *model_id;
++    const char *model_revision;
++    const char *family;
++    const char *request_id;
++} SwarmBridgeC;
++
++static SwarmBridgeC g_swb;
++
++static int swb_level(const char *value) {
++    if (!value || !*value || !strcmp(value, "summary")) return 1;
++    if (!strcmp(value, "off")) return 0;
++    if (!strcmp(value, "detailed")) return 2;
++    if (!strcmp(value, "trace")) return 3;
++    return -1;
++}
++
++static unsigned long long swb_timestamp_ns(void) {
++#ifdef _WIN32
++    FILETIME ft;
++    ULARGE_INTEGER ticks;
++    GetSystemTimeAsFileTime(&ft);
++    ticks.LowPart = ft.dwLowDateTime;
++    ticks.HighPart = ft.dwHighDateTime;
++    /* FILETIME is 100 ns since 1601-01-01; Unix epoch starts in 1970. */
++    return (ticks.QuadPart - 116444736000000000ull) * 100ull;
++#else
++    struct timespec ts;
++    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) return 0;
++    return (unsigned long long)ts.tv_sec * 1000000000ull + (unsigned long long)ts.tv_nsec;
++#endif
++}
++
++static void swb_json_string(FILE *fp, const char *value) {
++    const unsigned char *p = (const unsigned char *)(value ? value : "");
++    fputc('"', fp);
++    for (; *p; p++) {
++        switch (*p) {
++            case '"': fputs("\\\"", fp); break;
++            case '\\': fputs("\\\\", fp); break;
++            case '\b': fputs("\\b", fp); break;
++            case '\f': fputs("\\f", fp); break;
++            case '\n': fputs("\\n", fp); break;
++            case '\r': fputs("\\r", fp); break;
++            case '\t': fputs("\\t", fp); break;
++            default:
++                if (*p < 0x20) fprintf(fp, "\\u%04x", (unsigned)*p);
++                else fputc(*p, fp);
++        }
++    }
++    fputc('"', fp);
++}
++
++static void swb_emit(int minimum_level, const char *event_type,
++                     const char *payload_json, int request_scoped) {
++    if (!g_swb.fp || g_swb.level < minimum_level) return;
++    fputs("{\"schema_version\":\"1.0\",\"event_type\":", g_swb.fp);
++    swb_json_string(g_swb.fp, event_type);
++    fprintf(g_swb.fp, ",\"timestamp_ns\":%llu,\"engine_pid\":%d,\"request_id\":",
++            swb_timestamp_ns(), g_swb.pid);
++    if (request_scoped && g_swb.request_id && *g_swb.request_id)
++        swb_json_string(g_swb.fp, g_swb.request_id);
++    else
++        fputs("null", g_swb.fp);
++    fputs(",\"model_id\":", g_swb.fp); swb_json_string(g_swb.fp, g_swb.model_id);
++    fputs(",\"model_revision\":", g_swb.fp); swb_json_string(g_swb.fp, g_swb.model_revision);
++    fputs(",\"engine_family\":", g_swb.fp); swb_json_string(g_swb.fp, g_swb.family);
++    fprintf(g_swb.fp, ",\"sequence_number\":%llu,\"payload\":%s}\n",
++            g_swb.sequence++, payload_json ? payload_json : "{}");
++    fflush(g_swb.fp);
++}
++
++static void swb_init(const char *family, const char *snapshot) {
++    memset(&g_swb, 0, sizeof(g_swb));
++    if (!getenv("COLI_SWARM_BRIDGE") || strcmp(getenv("COLI_SWARM_BRIDGE"), "1")) return;
++    g_swb.level = swb_level(getenv("COLI_SWARM_TELEMETRY"));
++    if (g_swb.level <= 0) return;
++    const char *path = getenv("COLI_SWARM_BRIDGE_PATH");
++    char fallback[4096];
++    if (!path || !*path) {
++        snprintf(fallback, sizeof(fallback), "%s/.coli_swarm_telemetry.ndjson", snapshot);
++        path = fallback;
++    }
++    g_swb.fp = fopen(path, "ab");
++    if (!g_swb.fp) {
++        fprintf(stderr, "[SWARM_BRIDGE] cannot open dedicated telemetry file %s\n", path);
++        return;
++    }
++    g_swb.pid = (int)SWB_GETPID();
++    g_swb.family = family ? family : "";
++    g_swb.model_id = getenv("COLI_MODEL_ID") ? getenv("COLI_MODEL_ID") : snapshot;
++    g_swb.model_revision = getenv("COLI_MODEL_REVISION") ? getenv("COLI_MODEL_REVISION") : "";
++    g_swb.request_id = getenv("COLI_REQUEST_ID");
++    char payload[256];
++    snprintf(payload, sizeof(payload),
++             "{\"bridge_version\":\"1.0\",\"telemetry_level\":\"%s\"}",
++             getenv("COLI_SWARM_TELEMETRY") ? getenv("COLI_SWARM_TELEMETRY") : "summary");
++    swb_emit(1, "engine_started", payload, 0);
++}
++
++static void swb_close(int exit_code) {
++    if (!g_swb.fp) return;
++    char payload[64];
++    snprintf(payload, sizeof(payload), "{\"exit_code\":%d}", exit_code);
++    swb_emit(1, "engine_stopped", payload, 0);
++    fclose(g_swb.fp);
++    g_swb.fp = NULL;
++}
++
++#endif

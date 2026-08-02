@@ -98,3 +98,57 @@ Question:
 The matrix uses worker counts 2, 4, and 8, with concurrency 1, 16, and 64. A single request is included as a negative control because stage replicas should not accelerate one autoregressive request. The higher concurrency points test whether the scheduler distributes independent requests across replicas.
 
 The experiment passes when every matrix point completes sustained verified work, retains valid evidence artifacts, covers every stage, and reports at least two worker counts and two concurrency levels. Positive throughput scaling is an observation, not a pilot pass condition. All workers share one physical host, so the result is not physical scaling evidence.
+
+## Experiment 008: single-host adaptive MoE saturation
+
+Configuration: `configs/experiments/experiment_008_adaptive_moe.yaml`
+
+Quick software and hardware validation:
+
+```powershell
+.\experiments\008_single_host_adaptive_moe_saturation\reproduce.ps1 -Quick
+```
+
+Official over-VRAM model run:
+
+```powershell
+.\experiments\008_single_host_adaptive_moe_saturation\reproduce.ps1 -Full
+```
+
+Experiment 008 uses a real sparse-MoE GGUF larger than physical VRAM, a bounded and
+workload-specific stock llama.cpp search, logical tensor metadata, capability-gated A-G
+ablations, deterministic token comparison, machine profiling, resource telemetry, and a
+resumable evidence bundle. Unsupported target-backend hooks remain null and cannot be replaced
+by fixture measurements. Only `-Full` is eligible for the official verdict.
+
+## Experiment 009: Colibri-backed adaptive expert runtime
+
+Configuration: `configs/experiments/experiment_009_colibri.yaml`
+
+Fast build, bridge, ABI, and fixture validation:
+
+```powershell
+.\experiments\009_colibri_adaptive_expert_runtime\reproduce.ps1 -Quick -ApplyBridgePatches
+```
+
+Official practical-model run:
+
+```powershell
+.\experiments\009_colibri_adaptive_expert_runtime\reproduce.ps1 -Full -ApplyBridgePatches
+```
+
+Experiment 009 pins `JustVugg/colibri` v1.4.0 at commit
+`b085b48888a88d9a1c00b151a9979774b72cdbfd` and makes it a first-class local
+worker backend. The swarm layer owns capability negotiation, inventory, plan
+translation, fixed replay, held-out policy evaluation, and evidence; Colibri
+retains model-family math, tokenization, routing, kernels, and expert loading.
+
+The 2026-08-02 full reference run used
+`allenai/OLMoE-1B-7B-0125-Instruct@b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e`.
+All ten gates passed: exact direct/adapter output and routing parity, 0.37%
+median decode regression, measured route/cache/storage/tier telemetry, and a
+5.04% reverse-confirmed held-out gain for the routing-aware configuration. The
+bounded scheduling tuner itself retained baseline; the gain belongs to the
+separate routing-placement evaluation. The exercised build was CPU-only, real
+microshard execution remains unsupported, and no distributed Kimi K3 claim is
+made.

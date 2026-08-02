@@ -57,6 +57,22 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
 
     resolved = Path(path).expanduser().resolve()
     raw = deepcopy(load_yaml(resolved))
+    if raw.get("execution_mode") == "single-host-adaptive-moe-saturation":
+        try:
+            from swarm_inference.config.experiment_008 import Experiment008Config
+
+            experiment_008 = Experiment008Config.model_validate(raw)
+            return cast(ExperimentConfig, experiment_008)
+        except ValueError as exc:
+            raise ConfigurationError(f"invalid experiment configuration {resolved}: {exc}") from exc
+    if raw.get("execution_mode") == "colibri-adaptive-expert-runtime":
+        try:
+            from swarm_inference.config.experiment_009 import Experiment009Config
+
+            experiment_009 = Experiment009Config.model_validate(raw)
+            return cast(ExperimentConfig, experiment_009)
+        except ValueError as exc:
+            raise ConfigurationError(f"invalid experiment configuration {resolved}: {exc}") from exc
     expanded = _load_reference(raw, base=resolved.parent)
     try:
         if expanded.get("name") == "experiment-007-corrections":
