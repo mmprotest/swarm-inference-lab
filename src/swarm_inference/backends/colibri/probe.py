@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import os
@@ -107,6 +108,7 @@ class ColibriCapabilityProbe:
         source_directory: str | Path | None = None,
         build_manifest: str | Path | None = None,
         model_path: str | Path | None = None,
+        cuda_proof: str | Path | None = None,
     ) -> None:
         self.engine_directory = Path(engine_directory).expanduser().resolve()
         self.source_directory = (
@@ -116,6 +118,24 @@ class ColibriCapabilityProbe:
             None if build_manifest is None else Path(build_manifest).expanduser().resolve()
         )
         self.model_path = None if model_path is None else Path(model_path).expanduser().resolve()
+        self.cuda_proof = None if cuda_proof is None else Path(cuda_proof).expanduser().resolve()
+
+    def _validated_cuda_proof(self, cuda_dll: Path) -> dict[str, Any] | None:
+        if self.cuda_proof is None or not self.cuda_proof.is_file() or not cuda_dll.is_file():
+            return None
+        try:
+            proof = json.loads(self.cuda_proof.read_text(encoding="utf-8-sig"))
+            digest = hashlib.sha256(cuda_dll.read_bytes()).hexdigest()
+        except (OSError, ValueError, TypeError):
+            return None
+        required = (
+            proof.get("dll_loaded"),
+            proof.get("device_detected"),
+            proof.get("kernel_executed"),
+            proof.get("correctness_passed"),
+            proof.get("cuda_dll_sha256") == digest,
+        )
+        return proof if all(required) else None
 
     def _build_flags(self) -> dict[str, str]:
         candidates = []
@@ -147,9 +167,11 @@ class ColibriCapabilityProbe:
         ]
         flags = self._build_flags()
         cuda_dll = self.engine_directory / "coli_cuda.dll"
-        supports_cuda = flags.get("CUDA") == "1" or (
+        cuda_build_present = flags.get("CUDA") == "1" or (
             flags.get("CUDA_DLL") == "1" and cuda_dll.is_file()
         )
+        cuda_proof = self._validated_cuda_proof(cuda_dll) if cuda_build_present else None
+        supports_cuda = cuda_proof is not None
         supports_vulkan = flags.get("VK") == "1"
         supports_metal = flags.get("METAL") == "1" and platform.system() == "Darwin"
         execution = ["cpu"] if built_families else []
@@ -214,6 +236,7 @@ class ColibriCapabilityProbe:
                 "available_bytes": virtual_memory.available,
             },
             storage=storage,
+            cuda_kernel_proof=cuda_proof,
         )
 
     @staticmethod

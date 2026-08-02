@@ -5,6 +5,10 @@ param(
     [string]$MakePath = 'make.exe',
     [string]$PythonPath = 'python.exe',
     [switch]$ApplyBridgePatches,
+    [switch]$BuildCuda,
+    [string]$CudaArchitecture = 'auto',
+    [string]$VcVarsPath = '',
+    [string]$MsvcToolsetVersion = '',
     [switch]$SkipBridgeTests
 )
 
@@ -81,11 +85,105 @@ $toolchainDirectory = Split-Path -Parent $make
 # related tools relative to make.exe.  Put that directory first for this build
 # process rather than requiring callers to mutate their persistent PATH.
 $previousPath = $env:PATH
-$env:PATH = "$toolchainDirectory;$previousPath"
+$gitUnixTools = 'C:\Program Files\Git\usr\bin'
+$buildPathParts = @($toolchainDirectory)
+if (Test-Path -LiteralPath (Join-Path $gitUnixTools 'sed.exe') -PathType Leaf) {
+    $buildPathParts += $gitUnixTools
+}
+$buildPathParts += $previousPath
+$env:PATH = $buildPathParts -join ';'
 $targetNames = @('colibri.exe', 'olmoe.exe', 'inkling.exe', 'kimi_k3.exe')
+$cudaBuild = $null
+if ($BuildCuda) {
+    if (-not $IsWindows -and $env:OS -ne 'Windows_NT') {
+        throw '-BuildCuda currently implements the required native Windows DLL path only'
+    }
+    $computeCapability = (& nvidia-smi -i 0 --query-gpu=compute_cap --format=csv,noheader,nounits).Trim()
+    if ($LASTEXITCODE -ne 0 -or $computeCapability -notmatch '^\d+\.\d+$') {
+        throw 'unable to detect NVIDIA GPU compute capability; refusing to assume an architecture'
+    }
+    $detectedArchitecture = 'sm_' + $computeCapability.Replace('.', '')
+    $selectedArchitecture = if ($CudaArchitecture -eq 'auto') { $detectedArchitecture } else { $CudaArchitecture }
+    if ($selectedArchitecture -notmatch '^sm_\d+$') {
+        throw "invalid CUDA architecture: $selectedArchitecture"
+    }
+    if ($selectedArchitecture -ne $detectedArchitecture) {
+        throw "requested CUDA architecture $selectedArchitecture does not match detected $detectedArchitecture"
+    }
+    $nvcc = (Get-Command nvcc.exe -ErrorAction Stop).Source
+    $selectedVcVars = $VcVarsPath
+    if (-not $selectedVcVars -and -not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
+        $vcVarsCandidates = @(
+            'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat',
+            'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat',
+            'C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Auxiliary\Build\vcvars64.bat'
+        )
+        $selectedVcVars = $vcVarsCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    }
+    if ($selectedVcVars) {
+        $selectedVcVars = (Resolve-Path -LiteralPath $selectedVcVars).Path
+    }
+    if (-not $MsvcToolsetVersion -and $selectedVcVars -like '*\18\Insiders\*') {
+        # CUDA 13.0 accepts the 19.44 compiler bundled side-by-side in VS 18,
+        # while the newer preview compiler intentionally trips nvcc's version gate.
+        $MsvcToolsetVersion = '14.44'
+    }
+    $previousCudaArchitecture = $env:CUDA_ARCH
+    $previousCudaPath = $env:CUDA_PATH
+    $env:CUDA_ARCH = $selectedArchitecture
+    if (-not $env:CUDA_PATH) {
+        $env:CUDA_PATH = Split-Path -Parent (Split-Path -Parent $nvcc)
+    }
+    $cudaStarted = Get-Date
+    try {
+        $cudaBatch = Join-Path $source 'c\build_cuda.bat'
+        if ($selectedVcVars) {
+            $toolsetArgument = if ($MsvcToolsetVersion) { " -vcvars_ver=$MsvcToolsetVersion" } else { '' }
+            $cudaCommand = "call `"$selectedVcVars`"$toolsetArgument >nul && set `"CUDA_ARCH=$selectedArchitecture`" && set `"CUDA_PATH=$env:CUDA_PATH`" && call `"$cudaBatch`""
+            & cmd.exe /d /s /c $cudaCommand
+        }
+        else {
+            & $cudaBatch
+        }
+        $cudaExit = $LASTEXITCODE
+    }
+    finally {
+        $env:CUDA_ARCH = $previousCudaArchitecture
+        $env:CUDA_PATH = $previousCudaPath
+    }
+    if ($cudaExit -ne 0) { throw "Colibri CUDA DLL build failed with exit code $cudaExit" }
+    $cudaBuild = [ordered]@{
+        schema_version = 'experiment-010-colibri-cuda-build-v1'
+        requested = $true
+        detected_compute_capability = $computeCapability
+        detected_architecture = $detectedArchitecture
+        selected_architecture = $selectedArchitecture
+        nvcc = $nvcc
+        vcvars = $selectedVcVars
+        msvc_toolset_version = if ($MsvcToolsetVersion) { $MsvcToolsetVersion } else { $null }
+        started_at = $cudaStarted.ToUniversalTime().ToString('o')
+        completed_at = (Get-Date).ToUniversalTime().ToString('o')
+        exit_code = $cudaExit
+    }
+}
 try {
-    & $make -C (Join-Path $source 'c') -j4 @targetNames 'ARCH=native'
-    $makeExit = $LASTEXITCODE
+    if ($BuildCuda) {
+        # CUDA_DLL defines COLI_CUDA for the generic GLM host. Inkling has a
+        # distinct CUDA ABI, so applying that flag to every family creates
+        # unresolved ink_cuda_* references. Build auxiliary family hosts with
+        # their truthful CPU configuration, then relink only colibri.exe with
+        # the runtime loader.
+        & $make -C (Join-Path $source 'c') -j4 @('olmoe.exe', 'inkling.exe', 'kimi_k3.exe') 'ARCH=native' 'CUDA_DLL=0'
+        $makeExit = $LASTEXITCODE
+        if ($makeExit -eq 0) {
+            & $make -C (Join-Path $source 'c') -j4 'colibri.exe' 'ARCH=native' 'CUDA_DLL=1'
+            $makeExit = $LASTEXITCODE
+        }
+    }
+    else {
+        & $make -C (Join-Path $source 'c') -j4 @targetNames 'ARCH=native'
+        $makeExit = $LASTEXITCODE
+    }
 }
 finally { $env:PATH = $previousPath }
 if ($makeExit -ne 0) { throw "Colibri build failed with exit code $makeExit" }
@@ -94,6 +192,18 @@ foreach ($name in $targetNames) {
     $built = Join-Path $source "c\$name"
     if (-not (Test-Path -LiteralPath $built -PathType Leaf)) { throw "missing built binary: $built" }
     Copy-Item -LiteralPath $built -Destination (Join-Path $binaryDirectory $name) -Force
+}
+if ($BuildCuda) {
+    $builtCudaDll = Join-Path $source 'c\coli_cuda.dll'
+    if (-not (Test-Path -LiteralPath $builtCudaDll -PathType Leaf)) {
+        throw "missing built CUDA runtime: $builtCudaDll"
+    }
+    $installedCudaDll = Join-Path $binaryDirectory 'coli_cuda.dll'
+    Copy-Item -LiteralPath $builtCudaDll -Destination $installedCudaDll -Force
+    Copy-Item -LiteralPath (Join-Path $source 'c\.build-config') -Destination (Join-Path $binaryDirectory '.build-config') -Force
+    $cudaBuild.cuda_dll = $installedCudaDll
+    $cudaBuild.cuda_dll_sha256 = (Get-FileHash -LiteralPath $installedCudaDll -Algorithm SHA256).Hash.ToLowerInvariant()
+    $cudaBuild | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $output 'colibri_cuda_build.json') -Encoding utf8
 }
 Copy-Item -LiteralPath (Join-Path $source 'c\openai_server.py') -Destination $binaryDirectory -Force
 if (Test-Path -LiteralPath (Join-Path $source 'c\swarm_bridge.py')) {
@@ -157,6 +267,18 @@ if (-not $SkipBridgeTests) {
         $env:TEMP = $previousTemp
         $env:TMP = $previousTmp
     }
+}
+
+if ($BuildCuda) {
+    $proofPath = Join-Path $output 'colibri_cuda_kernel_proof.json'
+    $previousPythonPath = $env:PYTHONPATH
+    $env:PYTHONPATH = if ($previousPythonPath) { "$(Join-Path $repositoryRoot 'src');$previousPythonPath" } else { Join-Path $repositoryRoot 'src' }
+    try {
+        & $PythonPath -m swarm_inference.backends.colibri.cuda --dll (Join-Path $binaryDirectory 'coli_cuda.dll') --output $proofPath
+        $proofExit = $LASTEXITCODE
+    }
+    finally { $env:PYTHONPATH = $previousPythonPath }
+    if ($proofExit -ne 0) { throw "Colibri CUDA kernel proof failed with exit code $proofExit" }
 }
 
 Write-Host "Colibri build complete: $output"

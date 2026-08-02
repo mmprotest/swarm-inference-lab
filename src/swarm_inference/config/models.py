@@ -30,6 +30,7 @@ class ExecutionMode(StrEnum):
     HETEROGENEOUS_SINGLE_HOST_REAL_MODEL = "heterogeneous-single-host-real-model"
     SINGLE_HOST_ADAPTIVE_MOE_SATURATION = "single-host-adaptive-moe-saturation"
     COLIBRI_ADAPTIVE_EXPERT_RUNTIME = "colibri-adaptive-expert-runtime"
+    HARDWARE_IN_LOOP_VIRTUAL_SWARM_CLOSURE = "hardware-in-loop-virtual-swarm-closure"
     PHYSICAL_LAN = "physical-lan"
     PHYSICAL_WAN = "physical-wan"
 

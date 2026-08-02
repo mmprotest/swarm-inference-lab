@@ -77,11 +77,21 @@ class ColibriCapabilityReport(StrictModel):
     cpu: dict[str, Any]
     memory: dict[str, Any]
     storage: dict[str, Any]
+    cuda_kernel_proof: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def require_executable_backend(self) -> ColibriCapabilityReport:
         if self.supports_cuda and "cuda" not in self.execution_backends:
             raise ValueError("CUDA cannot be supported unless a CUDA execution path was probed")
+        if self.supports_cuda:
+            proof = self.cuda_kernel_proof or {}
+            if not (
+                proof.get("dll_loaded")
+                and proof.get("device_detected")
+                and proof.get("kernel_executed")
+                and proof.get("correctness_passed")
+            ):
+                raise ValueError("CUDA support requires a successful bound kernel proof")
         if self.supports_vulkan and "vulkan" not in self.execution_backends:
             raise ValueError("Vulkan cannot be supported unless a Vulkan execution path was probed")
         if self.supports_metal and "metal" not in self.execution_backends:
