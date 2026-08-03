@@ -1,272 +1,225 @@
-# swarm-inference-lab
+# Swarm Inference Lab
 
-`swarm-inference-lab` is an open-source research harness for one falsifiable
-question:
+> Researching whether computers around the world can work together as one AI
+> inference system.
 
-> Can heterogeneous consumer devices collectively host a language model larger
-> than any participating node and increase aggregate verified output-token
-> throughput as useful nodes are added despite latency, uneven hardware, churn,
-> and incorrect workers?
+Swarm Inference Lab is an open-source prototype for **global distributed
+inference**. The aim is to pool heterogeneous CPUs, GPUs, memory, and storage so
+they can serve models or workloads that no participating machine could handle
+alone.
 
-The primary metric is **aggregate verified output tokens per second across
-concurrent requests**. It is never presented as single-request generation
-speed. Every run is labelled `simulation`, `single-host-loopback`,
-`physical-lan`, or `physical-wan`.
+This is a model-agnostic infrastructure project. It is **not a Kimi K3
+implementation**. Qwen, OLMoE, and Kimi-shaped workloads are test vehicles for
+different parts of the distributed system.
 
-## Current status
+## What the project is trying to prove
 
-| Capability | Status | Evidence and boundary |
-|---|---|---|
-| Deterministic event-queue simulation | Implemented and tested | Fixed seeds reproduce event fingerprints; assumed profiles remain marked as assumptions. |
-| Static, fastest, replicated, workload-tier, and adversarial scheduling | Implemented for simulation | Counterproductive workers are allowed to remain idle. |
-| Standard artifact tree and offline HTML report | Implemented and tested | Includes provenance, machine-readable metrics, acceptance results, hashes, and seven required charts. |
-| Process-isolated loopback | Implemented and tested | Real gRPC AsyncIO activation traffic, bounded queues, worker termination, and replay recovery. It is not physical scaling. |
-| Native Windows 11 CUDA execution | **PASS for correctness** | RTX 5090, PyTorch 2.13.0+cu130, three process-isolated `torch-cuda` Qwen stages, and a separate full-reference process. This remains `single-host-loopback`. |
-| Dense Qwen3 safetensors sharding | Implemented and checkpoint-validated | `Qwen/Qwen3-0.6B@e6de91484c29aa9480d55605af694f39b081c455`; three shards, exact tensor union, and verified shard hashes. |
-| Dense Qwen3 split correctness | **PASS on CPU and CUDA loopback** | Four greedy output IDs matched the separate unsplit reference and all recorded boundary errors were zero. |
-| Cross-platform worker program | Implemented | The same Python entry point supports native Windows x86-64 CPU/CUDA, Linux x86-64 CPU/CUDA, Linux ARM64 CPU, and macOS Apple Silicon CPU/MPS. Only Windows CUDA has been exercised in this workspace. |
-| Physical experiment runner | Implemented, awaiting remote hosts | Waits for remote registrations, rejects false physical labels, runs warm-up and sustained measurement, and writes the standard artifact set. |
-| Physical scaling claim | **Not demonstrated** | Requires a completed standard run with at least two actual machines. |
-| Over-VRAM Qwen3-Next sparse MoE execution | **PARTIAL** | Experiment 008 generated text with 45.081 GiB of Q4_K_M tensors across an RTX 5090 and system RAM. Capacity passed; correctness and adaptive-performance gates failed. |
-| Colibri local expert runtime | **PASS_STRONG** | Experiment 009 ran a real OLMoE model through the universal worker ABI with exact direct/adapter tokens and routes, measured residency/I/O telemetry, and a 5.04% reverse-confirmed routing-placement gain. The exercised native Windows engine was CPU-only. |
-| Kimi K3 execution | **Not demonstrated** | Experiment 009 preserves native MXFP4 metadata and detects the Kimi family, but did not execute a Kimi K3 checkpoint or distributed experts. |
+The core research question is:
 
-The project-wide research status is **FAIL** until every acceptance gate has
-measured evidence. An unrun criterion is never converted to `PASS`.
+> Can geographically distributed machines collectively host a model larger
+> than any one node and increase verified output throughput as useful nodes are
+> added, despite latency, uneven hardware, churn, failures, and incorrect
+> workers?
 
-### Milestones
+Success has three parts:
 
-| Milestone | Status | Boundary |
-|---|---|---|
-| 0 — repository/environment | Green | Native installation, CLI, backend-aware doctor, configuration, lint, typing, and tests. |
-| 1 — deterministic simulator | Green | Fixed-seed 4–128-node matrix and explicit PASS/FAIL reports. |
-| 2 — loopback services | Green | Independent workers, real gRPC activation transport, chunk streaming, and replica recovery. |
-| 3 — real-model sharding | Green | Official Qwen3-0.6B checkpoint passes distributed/reference correctness on native CPU and CUDA. |
-| 4 — concurrent pipeline | Partial | Bounded concurrent queues and simulated scaling work; sustained measured hardware scaling is not demonstrated. |
-| 5 — churn/integrity | Partial | Replay, signed envelopes, audits, and quarantine work; the physical churn gate is unrun. |
-| 6 — physical LAN | Ready for multiple machines | Native coordinator/worker orchestration and artifacts are implemented; a second host has not participated yet. |
-| 7 — sparse MoE proxy | Partial | Synthetic routing remains useful for controlled tests; Experiment 008 separately adds real Qwen3-Next execution without routed-expert backend hooks. |
-| 8 — single-host adaptive MoE saturation | **PARTIAL** | A completed full run passed capacity, planner, positive-CPU-utility, and architecture gates; correctness and adaptive performance failed. |
-| 9 — Colibri adaptive expert runtime | **PASS_STRONG** | Pinned Colibri v1.4.0 executes as a local worker backend with real routes, tier/cache/storage counters, fixed replay, plan translation, and held-out placement evaluation. |
+1. **Capacity:** model stages or experts can be split across machines.
+2. **Useful scaling:** adding suitable machines increases aggregate verified
+   throughput across concurrent requests.
+3. **Correctness and resilience:** the system detects bad results and survives
+   realistic worker failures without silently corrupting output.
 
-## Native installation
+The goal is not necessarily to make one prompt faster. A distributed network
+may increase total serving capacity while adding latency to an individual
+request.
 
-Python 3.11 is required. `uv` selects an operating-system-specific PyTorch
-source through the lock file; PyTorch is deliberately not a mandatory base
-dependency for synthetic-only nodes.
+## Current status - August 2026
+
+**The prototype works on one machine. The global scaling hypothesis is not yet
+proven.**
+
+### Working today
+
+- A deterministic simulator models heterogeneous nodes, LAN/WAN links, replica
+  placement, workload-aware scheduling, churn, and adversarial workers.
+- Independent worker processes exchange real gRPC activations and expert
+  results through bounded queues, with replay, signatures, audits, quarantine,
+  and clean shutdown.
+- Dense Qwen3-0.6B stage partitioning matches a separate full-model reference
+  on native Windows CPU and RTX 5090 CUDA.
+- Real Colibri OLMoE inference consumes whole-expert and native-microshard
+  results from separate worker processes while preserving exact tokens and
+  internal numerical boundaries.
+- The physical experiment runner and cross-platform worker entry point are
+  implemented. Windows is the exercised hardware platform; Linux x86-64,
+  Linux ARM64, and macOS paths still need full target-hardware validation.
+- Every standard run produces machine-readable provenance, metrics, acceptance
+  results, charts, an offline report, and artifact hashes.
+
+### Not yet demonstrated
+
+- a completed inference run across two or more physical machines;
+- positive scaling over a real LAN or WAN;
+- a complete current over-VRAM Level B run with all correctness and performance
+  gates passing;
+- Kimi K3 checkpoint execution; or
+- a secure production network for untrusted Internet workers.
+
+### Latest result: Experiment 010
+
+Experiment 010 exercised a hardware-in-the-loop virtual swarm on one Windows
+workstation. Separate native expert workers matched 1,600/1,600 whole-expert
+tokens and 640/640 microshard tokens. All recoverable cases in an eight-scenario
+failure matrix remained exact, and all 120 scheduled corruptions were detected
+with zero false positives across 14,484 clean controls.
+
+The distributed configurations were correct but slower than local execution on
+that workstation: local decode measured 5.26 tokens/s versus roughly 2.81-2.95
+tokens/s for the exact distributed paths. The planner correctly chose local
+execution for ordinary decode and distributed execution only for the capacity
+objective.
+
+The official result is therefore `PARTIAL` / `INCOMPLETE_FULL_RUN`: the
+single-workstation software gates pass, but the required current over-VRAM
+Level B workload was unavailable and no physical multi-machine run exists. See
+the [Experiment 010 correction report](artifacts/runs/experiment-010-correction-final/experiment_010/report.md)
+for the full evidence. The current repository suite is **507 passed, 7
+hardware/manual skips**.
+
+## How the system works
+
+The coordinator owns placement, routing, verification, and recovery. Workers
+host only their assigned model stages or experts.
+
+```mermaid
+flowchart LR
+    R[Concurrent requests] --> C[Coordinator<br/>schedule, verify, recover]
+    C <--> G[GPU workers<br/>stages or experts]
+    C <--> P[CPU workers<br/>stages or experts]
+    C <--> W[Workers at other sites]
+```
+
+For each request:
+
+1. workers register their measured capabilities, identity, endpoint, and model
+   partitions;
+2. the planner chooses a route using compute time, queue depth, network cost,
+   reliability, and workload priority;
+3. selected workers execute their stages or experts and return activations or
+   expert results;
+4. the coordinator verifies and commits output; and
+5. failed work is replayed to a compatible replica when recovery is possible.
+
+A slow or unreliable node is not forced into a route merely because it is
+available. The scheduler can leave nodes idle when they would reduce useful
+throughput.
+
+The centralized coordinator is intentional at this stage. It keeps the scaling
+experiment measurable before decentralized discovery or consensus adds more
+failure modes.
+
+## Where the model names fit
+
+- **Qwen3-0.6B** tests dense stage partitioning.
+- **OLMoE-1B-7B** tests real sparse-expert distribution.
+- **Qwen3-Next** supplied the historical over-VRAM workload. It generated text
+  with 45.081 GiB of Q4_K_M tensors across GPU and system RAM, but its
+  correctness and adaptive-performance gates failed.
+- **Kimi K3** is only a future feasibility target. The repository has a
+  compiled synthetic K3-shaped MXFP4 fixture, not Kimi K3 inference or model
+  support.
+
+Future models matter only insofar as they test the general distributed
+inference design.
+
+## Quick start
+
+Python 3.11 is required. The synthetic path needs neither PyTorch nor a model
+download.
 
 Windows PowerShell:
 
 ```powershell
-.\scripts\bootstrap.ps1 -Backend cuda       # NVIDIA
-.\scripts\bootstrap.ps1 -Backend cpu        # CPU only
+.\scripts\bootstrap.ps1 -Backend synthetic
+.\.venv\Scripts\swarm.exe simulate --config configs/experiments/smoke.yaml
 ```
 
-Linux, Linux ARM64, or macOS:
+Linux or macOS:
 
 ```bash
-bash scripts/bootstrap.sh --backend cuda    # Linux NVIDIA
-bash scripts/bootstrap.sh --backend cpu     # Linux/ARM CPU
-bash scripts/bootstrap.sh --backend mps     # Apple Silicon
+bash scripts/bootstrap.sh --backend synthetic
+.venv/bin/swarm simulate --config configs/experiments/smoke.yaml
 ```
 
-Direct `uv` equivalents:
+Use `cpu`, `cuda`, or `mps` instead of `synthetic` to install a supported real
+model backend. The smoke command writes a report and may return `FAIL` when an
+acceptance threshold is missed; that is a valid experimental result, not a
+crashed installation.
+
+Run four process-isolated workers on the local machine after activating the
+virtual environment:
 
 ```bash
-uv sync --extra dev --extra cpu
-uv sync --extra dev --extra cuda
-uv sync --extra dev --extra mps
-uv sync --extra dev                         # synthetic-only development
+swarm experiment --config configs/experiments/scaling_loopback.yaml --workers 4
 ```
 
-Pip fallback:
+That command tests the runtime, not physical scaling. For separate machines,
+follow the [physical-node procedure](docs/physical_nodes.md); the runner rejects
+same-host workers when a physical result is requested.
 
-```bash
-python3.11 -m venv .venv
-# Windows: .venv\Scripts\Activate.ps1
-# POSIX:   source .venv/bin/activate
-python -m pip install -e ".[cpu,dev]"
-pytest
-```
+## Reproducing real-model work
 
-For CUDA with pip, install the wheel selected by the current official PyTorch
-installer before `pip install -e ".[dev]"`. The `uv` CUDA extra is pinned to an
-official PyTorch wheel index in `pyproject.toml` and `uv.lock`.
+- [Dense Qwen stage correctness](docs/experiment-002-real-qwen3.md)
+- [Colibri expert runtime](experiments/009_colibri_adaptive_expert_runtime/README.md)
+- [Latest virtual-swarm closure](experiments/010_hardware_in_loop_virtual_swarm_closure/README.md)
 
-WSL2 is optional. It is detected and reported, but native Windows is a
-first-class runtime.
+Model downloads and checkpoint revisions are always explicit. A distributed
+validation run does not silently load a full reference model into a worker or
+coordinator; reference validation runs separately and is disclosed.
 
-## One-command native Windows experiment
+## Evidence rules
 
-From the repository root:
+Every result says what actually ran:
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_experiment.ps1 -Backend cuda
-```
+- `simulation` models behavior from measured or declared inputs;
+- `single-host-loopback` uses real processes and transport on one machine;
+- `physical-lan` requires separate machines on a real local network; and
+- `physical-wan` requires separate machines on a real wide-area network.
 
-The script locates or installs `uv`, synchronises the selected native backend,
-runs `swarm doctor`, launches the coordinator and process-isolated workers,
-performs clean shutdown, prints the report path, and returns non-zero when the
-experiment or its acceptance criteria fail. A reported `FAIL` is a valid
-experimental result.
+Only committed tokens from completed and verified requests count toward the
+primary throughput metric. A failed gate stays `FAIL`, and an unrun gate is
+never converted into a pass.
 
-Synthetic loopback without a PyTorch backend:
+## Next milestone
 
-```powershell
-.\scripts\run_loopback.ps1 -Backend synthetic
-```
+The next decisive experiment is the exact expert path on at least two
+independently powered hosts. It must show whether any distributed placement has
+positive utility after real NIC, storage, synchronization, thermal, and failure
+domain costs are included. If that works on a LAN, the project can move toward
+geographically separated WAN nodes.
 
-## First measured experiment
+Until then, this repository demonstrates distributed-inference mechanisms and
+single-host correctness - not a working global inference network.
 
-The first experiment is a single-host loopback scaling pilot. It compares 2, 4,
-and 8 process-isolated workers at 1, 16, and 64 concurrent requests. Each point
-uses sustained measured execution, and the default PowerShell script repeats
-every point twice.
+## Documentation
 
-Run from the repository root on Windows:
+- [Architecture](docs/architecture.md)
+- [Protocol](docs/protocol.md)
+- [Experiment design](docs/experiments.md)
+- [Known limitations](docs/limitations.md)
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_first_experiment.ps1
-```
+Source code is under [`src/swarm_inference`](src/swarm_inference), experiment
+configurations are under [`configs`](configs), and checked-in reference evidence
+is under [`artifacts`](artifacts).
 
-For a quicker harness check:
+## Security boundary
 
-```powershell
-.\scripts\run_first_experiment.ps1 -Repeats 1 -DurationS 10
-```
+Do not expose the initial insecure gRPC channel to the public Internet or send
+sensitive prompts to untrusted workers. Workers can inspect their input
+activations and cache state. Signatures and duplicate audits do not provide
+channel confidentiality, prompt privacy, activation privacy, Byzantine fault
+tolerance, collusion resistance, or cryptographic proof of neural computation.
 
-The parent report contains the median scaling curve and links to every child
-run. The pilot can validate the scheduler, process isolation, local gRPC
-transport, measurement stability, and artifact integrity. It cannot establish
-physical multi-machine scaling because every worker shares one host.
+## License
 
-## Quick experiments
-
-Deterministic simulation:
-
-```bash
-uv run --no-sync swarm simulate --config configs/experiments/smoke.yaml
-```
-
-Full 4-to-128-node simulation matrix:
-
-```bash
-uv run --no-sync swarm experiment --config configs/experiments/scaling_simulation.yaml
-```
-
-Four process-isolated local workers:
-
-```bash
-uv run --no-sync swarm experiment \
-  --config configs/experiments/scaling_loopback.yaml \
-  --workers 4
-```
-
-On PowerShell, place the command on one line or use PowerShell backticks instead
-of backslashes.
-
-## Real Qwen3 correctness
-
-Model download and sharding are always explicit:
-
-```bash
-uv run --no-sync swarm inspect-model --model Qwen/Qwen3-0.6B
-uv run --no-sync swarm shard-model \
-  --model Qwen/Qwen3-0.6B \
-  --output artifacts/models/qwen3-0.6b \
-  --target-stage-bytes 536870912 \
-  --max-stage-bytes 536870912
-```
-
-Native Windows CUDA validation:
-
-```powershell
-.\scripts\run_native_model.ps1 `
-  -Shards .\artifacts\models\qwen3-0.6b `
-  -ModelPath C:\path\to\resolved\huggingface\snapshot `
-  -Backend cuda `
-  -Workers 3
-```
-
-Portable CLI equivalent:
-
-```bash
-uv run --no-sync swarm validate-model \
-  --shards artifacts/models/qwen3-0.6b \
-  --model-path /path/to/resolved/huggingface/snapshot \
-  --output artifacts/validation/qwen3-correctness \
-  --max-new-tokens 4 \
-  --device cuda \
-  --dtype bfloat16 \
-  --distributed-loopback-workers 3 \
-  --distributed-backend torch-cuda
-```
-
-Use `cpu`, `float32`, and `torch-cpu` on CPU nodes; use `mps`, `float16`, and
-`torch-mps` on Apple Silicon. The distributed phase runs first. No worker or
-coordinator loads the full model. The unsplit reference runs later in a
-separate disclosed validation process and its memory is excluded from swarm
-capacity.
-
-The final native Windows CUDA result from this workspace is at
-[`artifacts/validation/qwen3-0.6b-native-cuda-final/correctness.json`](artifacts/validation/qwen3-0.6b-native-cuda-final/correctness.json).
-It proves split correctness on one host, not throughput scaling.
-
-## Physical machines
-
-Start the artifact-producing runner on the coordinator:
-
-```bash
-uv run --no-sync swarm experiment \
-  --config configs/experiments/physical_lan.yaml \
-  --listen 0.0.0.0:50051 \
-  --workers 3 \
-  --duration-s 300
-```
-
-Then start one worker per remote host:
-
-```bash
-uv run --no-sync swarm worker \
-  --coordinator 192.168.1.10:50051 \
-  --listen 0.0.0.0:50052 \
-  --backend synthetic \
-  --memory-limit-gb 4
-```
-
-The worker derives a coordinator-reachable advertised address. Use
-`--advertise <worker-ip>:50052` when routing is ambiguous. For real Qwen,
-provide `--model-manifest` and `--model-path` to the experiment command, then
-run workers with a `torch-*` backend and `--model-shard-root`.
-
-The runner refuses a `physical-*` result unless registration contains both a
-different hostname and a non-local advertised address. Read
-[the physical-node procedure](docs/physical_nodes.md) before making a physical
-claim.
-
-## Metrics
-
-- **Aggregate verified output tokens/s:** committed tokens from successfully
-  completed and verified requests divided by experiment elapsed time.
-- **Per-request tokens/s:** decode throughput for every request, reported
-  separately.
-- **Time to first token:** request acceptance to first committed output token.
-- **End-to-end latency:** request acceptance to terminal completion.
-- **Stage utilisation:** busy service time divided by available replica time.
-- **Network traffic:** payload bytes and measured or emulated time by directed
-  link.
-- **Scaling efficiency:** homogeneous throughput gain divided by node-count
-  gain, or observed throughput divided by the measured/configured ideal.
-- **Failure/recovery:** failures, retries, replay bytes/time, additional
-  computation, route changes, quarantine, and completion status.
-
-## Security warning
-
-Never expose the initial insecure gRPC channel to the public Internet and do
-not send sensitive prompts to untrusted workers. Workers can inspect their
-input activations and caches. The project does not provide prompt privacy,
-activation privacy, collusion resistance, Byzantine fault tolerance, or
-cryptographic proof of neural computation.
-
-See [architecture](docs/architecture.md), [protocol](docs/protocol.md),
-[experiments](docs/experiments.md), and [limitations](docs/limitations.md).
+Apache License 2.0. See [LICENSE](LICENSE).
