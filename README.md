@@ -81,10 +81,7 @@ objective.
 
 The official result is therefore `PARTIAL` / `INCOMPLETE_FULL_RUN`: the
 single-workstation software gates pass, but the required current over-VRAM
-Level B workload was unavailable and no physical multi-machine run exists. See
-the [Experiment 010 correction report](artifacts/runs/experiment-010-correction-final/experiment_010/report.md)
-for the full evidence. The current repository suite is **507 passed, 7
-hardware/manual skips**.
+Level B workload was unavailable and no physical multi-machine run exists. 
 
 ## How the system works
 
