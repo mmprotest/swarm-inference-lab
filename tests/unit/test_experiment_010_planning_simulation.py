@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from swarm_inference.experiments.experiment_010.batching import (
@@ -8,9 +9,25 @@ from swarm_inference.experiments.experiment_010.batching import (
     batching_summary,
     make_routing_batches,
 )
+from swarm_inference.experiments.experiment_010.colibri_workloads import (
+    _counter_delta,
+    prefill_context_supported,
+)
+from swarm_inference.experiments.experiment_010.memory_analysis import (
+    amdahl_gate,
+    page_fault_candidate_validity,
+    prefetch_idle_window_budget,
+    reuse_distance_curve,
+)
+from swarm_inference.experiments.experiment_010.phase10_analysis import _plan
 from swarm_inference.experiments.experiment_010.planner import PositiveUtilityPlanner
+from swarm_inference.experiments.experiment_010.runner import (
+    FULL_RUN_PREREQUISITES,
+    assess_full_run_completeness,
+)
 from swarm_inference.experiments.experiment_010.schemas import (
     ExecutionStrategy,
+    Experiment010Mode,
     PlannerCandidate,
     PlannerObjective,
     ServicePhase,
@@ -19,6 +36,8 @@ from swarm_inference.simulation.expert_model import (
     calibrate_expert_simulator,
     deterministic_calibration_split,
 )
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _candidate(
@@ -213,3 +232,139 @@ def test_simulator_regret() -> None:
     model, _ = calibrate_expert_simulator(_simulator_rows())
     assert model.validation["planner_regret"] <= 0.05
     assert model.validation["planner_regret_pass"] is True
+
+
+def test_level_b_current_run_required() -> None:
+    assert "level_b_current_workload" in FULL_RUN_PREREQUISITES
+    reproduction = (
+        REPOSITORY_ROOT
+        / "experiments"
+        / "010_hardware_in_loop_virtual_swarm_closure"
+        / "reproduce.ps1"
+    ).read_text(encoding="utf-8")
+    assert "008_single_host_adaptive_moe_saturation\\reproduce.ps1" in reproduction
+    assert "experiment-010-correction-work\\phase-14\\level-b-current" in reproduction
+    assert '"-Configuration", "A"' in reproduction
+
+
+def test_full_run_incomplete_when_level_b_missing() -> None:
+    prerequisites = {name: True for name in FULL_RUN_PREREQUISITES}
+    prerequisites["level_b_current_workload"] = False
+    result = assess_full_run_completeness(
+        mode=Experiment010Mode.FULL,
+        prerequisites=prerequisites,
+        reasons={"level_b_current_workload": "current Level B model path is unavailable"},
+    )
+    assert result["status"] == "INCOMPLETE_FULL_RUN"
+    assert result["full_complete"] is False
+    assert result["missing_prerequisites"] == [
+        {
+            "prerequisite": "level_b_current_workload",
+            "complete": False,
+            "reason": "current Level B model path is unavailable",
+        }
+    ]
+
+
+def test_full_run_completeness() -> None:
+    result = assess_full_run_completeness(
+        mode=Experiment010Mode.FULL,
+        prerequisites={name: True for name in FULL_RUN_PREREQUISITES},
+    )
+    assert result["status"] == "FULL_COMPLETE"
+    assert result["full_complete"] is True
+    assert result["missing_prerequisites"] == []
+
+
+def test_reuse_distance_candidates_follow_measured_thresholds(tmp_path) -> None:
+    trace = tmp_path / "route.trace"
+    trace.write_text(
+        "0 0 0 1:0.5 2:0.5\n"
+        "1 0 0 3:0.5 1:0.5\n"
+        "2 0 0 2:0.5 1:0.5\n",
+        encoding="utf-8",
+    )
+    rows, summary = reuse_distance_curve([trace], expert_bytes=64)
+    assert summary["threshold_slots"]["p50"] == 2
+    assert summary["candidate_slots"] == [1, 2, 3, 64]
+    assert all(row["candidate_basis"].startswith("measured_reuse") for row in rows)
+
+
+def test_page_fault_gate_rejects_nonresident_cache_hits() -> None:
+    result = page_fault_candidate_validity(
+        resident_cache_hits=4,
+        nonresident_cache_hits=9,
+        pagefile_read_bytes=None,
+        commit_pressure_fraction=0.5,
+    )
+    assert result["valid_performance_candidate"] is False
+    assert "predominantly nonresident" in result["invalidation_reasons"][0]
+
+
+def test_decode_prefetch_must_fit_idle_window() -> None:
+    result = prefetch_idle_window_budget(
+        phase="decode",
+        layer_id=3,
+        available_idle_window_ns=1_000_000,
+        effective_bandwidth_bytes_per_second=1_000_000,
+        proposed_prefetch_bytes=2_000,
+        subsequently_consumed_bytes=2_000,
+        demand_read_interference_ns=0,
+        eviction_bytes=0,
+    )
+    assert result["maximum_prefetch_bytes"] == 1_000
+    assert result["accepted"] is False
+
+
+def test_amdahl_gate_rejects_microbenchmark_only_gain() -> None:
+    result = amdahl_gate(
+        optimization="compression",
+        baseline_end_to_end_ns=1_000,
+        baseline_affected_ns=100,
+        optimized_affected_ns=50,
+        optimized_end_to_end_ns=1_000,
+    )
+    assert result["measured_kernel_gain"] == 2.0
+    assert result["measured_end_to_end_gain"] == 1.0
+    assert result["accepted"] is False
+
+
+def test_worker_counter_delta_uses_documented_zero_initial_value() -> None:
+    assert _counter_delta({"logical_cache_hits": 17}, {}, "logical_cache_hits") == 17
+    assert (
+        _counter_delta(
+            {"logical_cache_hits": 3},
+            {"logical_cache_hits": 100},
+            "logical_cache_hits",
+        )
+        == 3
+    )
+    assert _counter_delta({}, {}, "logical_cache_hits") is None
+
+
+def test_prefill_context_capability_does_not_infer_32k_from_workspace() -> None:
+    assert prefill_context_supported(context_length=8192, advertised_context_limit=4096)
+    assert not prefill_context_supported(context_length=32768, advertised_context_limit=4096)
+    assert prefill_context_supported(context_length=32768, advertised_context_limit=32768)
+
+
+def test_measured_phase_plan_rejects_faster_inexact_candidate() -> None:
+    plan = _plan(
+        phase="decode",
+        objective="max_decode_throughput",
+        candidates=[
+            {
+                "configuration": "local",
+                "decode_tokens_per_second": 5.0,
+                "eligible": True,
+            },
+            {
+                "configuration": "fast_inexact",
+                "decode_tokens_per_second": 8.0,
+                "eligible": False,
+            },
+        ],
+        metric="decode_tokens_per_second",
+        maximize=True,
+    )
+    assert plan["selected_candidate"] == "local"

@@ -77,6 +77,17 @@ if ($ApplyBridgePatches) {
         }
     }
     finally { $env:GIT_CEILING_DIRECTORIES = $previousGitCeiling }
+
+    # The canonical SWARMEX1 implementation belongs to this repository rather
+    # than the downstream Colibri patch series. Copy the exact audited adapter
+    # into the exported tree after every patch has applied and before compile.
+    foreach ($adapterName in @('swarm_expert_wire.h', 'swarm_expert_wire.c')) {
+        $adapterSource = Join-Path $PSScriptRoot "adapter\$adapterName"
+        if (-not (Test-Path -LiteralPath $adapterSource -PathType Leaf)) {
+            throw "missing canonical C wire adapter: $adapterSource"
+        }
+        Copy-Item -LiteralPath $adapterSource -Destination (Join-Path $source "c\$adapterName") -Force
+    }
 }
 
 $make = (Get-Command $MakePath -ErrorAction Stop).Source
@@ -92,7 +103,17 @@ if (Test-Path -LiteralPath (Join-Path $gitUnixTools 'sed.exe') -PathType Leaf) {
 }
 $buildPathParts += $previousPath
 $env:PATH = $buildPathParts -join ';'
-$targetNames = @('colibri.exe', 'olmoe.exe', 'inkling.exe', 'kimi_k3.exe')
+$targetNames = @('colibri.exe', 'olmoe.exe', 'olmoe_expert_worker.exe', 'inkling.exe', 'kimi_k3.exe')
+$adapterBinaryNames = @('coli_kimi_mxfp4.dll')
+$nativeTestTargets = if ($ApplyBridgePatches) {
+    @(
+        'tests/test_olmoe_expert_runtime.exe',
+          'tests/test_olmoe_external_dispatch.exe',
+          'tests/test_olmoe_memory_residency.exe',
+          'tests/test_olmoe_expert_shm.exe'
+    )
+} else { @() }
+$allBuildTargets = @($targetNames) + @($nativeTestTargets)
 $cudaBuild = $null
 if ($BuildCuda) {
     if (-not $IsWindows -and $env:OS -ne 'Windows_NT') {
@@ -168,27 +189,47 @@ if ($BuildCuda) {
 }
 try {
     if ($BuildCuda) {
-        # CUDA_DLL defines COLI_CUDA for the generic GLM host. Inkling has a
-        # distinct CUDA ABI, so applying that flag to every family creates
-        # unresolved ink_cuda_* references. Build auxiliary family hosts with
-        # their truthful CPU configuration, then relink only colibri.exe with
-        # the runtime loader.
-        & $make -C (Join-Path $source 'c') -j4 @('olmoe.exe', 'inkling.exe', 'kimi_k3.exe') 'ARCH=native' 'CUDA_DLL=0'
+        # CUDA_DLL defines COLI_CUDA for hosts using backend_loader.c. Inkling
+        # has a distinct CUDA ABI, so applying that flag to every family creates
+        # unresolved ink_cuda_* references. Build unrelated family hosts and
+        # the portable native tests with their truthful CPU configuration, then
+        # relink the generic and OLMoE hosts against the runtime loader. The
+        # latter is required for real native-int8 expert execution in both the
+        # coordinator and isolated C worker.
+        $cpuTargets = @('inkling.exe', 'kimi_k3.exe') + @($nativeTestTargets)
+        & $make -C (Join-Path $source 'c') -j4 @cpuTargets 'ARCH=native' 'CUDA_DLL=0'
         $makeExit = $LASTEXITCODE
         if ($makeExit -eq 0) {
-            & $make -C (Join-Path $source 'c') -j4 'colibri.exe' 'ARCH=native' 'CUDA_DLL=1'
+            & $make -C (Join-Path $source 'c') -j4 @('colibri.exe', 'olmoe.exe', 'olmoe_expert_worker.exe') 'ARCH=native' 'CUDA_DLL=1'
             $makeExit = $LASTEXITCODE
         }
     }
     else {
-        & $make -C (Join-Path $source 'c') -j4 @targetNames 'ARCH=native'
+        & $make -C (Join-Path $source 'c') -j4 @allBuildTargets 'ARCH=native'
+        $makeExit = $LASTEXITCODE
+    }
+    if ($makeExit -eq 0) {
+        $gcc = (Get-Command gcc.exe -ErrorAction Stop).Source
+        $kimiAdapter = Join-Path $PSScriptRoot 'adapter\kimi_mxfp4_runtime.c'
+        if (-not (Test-Path -LiteralPath $kimiAdapter -PathType Leaf)) {
+            throw "missing native Kimi MXFP4 adapter: $kimiAdapter"
+        }
+        $kimiCompileArguments = @(
+            '-D_FILE_OFFSET_BITS=64', '-O3', '-march=native', '-fopenmp',
+            '-Wall', '-Wextra', '-Wno-unused-parameter',
+            '-Wno-misleading-indentation', '-Wno-unused-function', '-shared',
+            '-static', '-I', (Join-Path $source 'c'), $kimiAdapter,
+            '-o', (Join-Path $source 'c\coli_kimi_mxfp4.dll'),
+            '-lm', '-fopenmp', '-static', '-lpsapi'
+        )
+        & $gcc @kimiCompileArguments
         $makeExit = $LASTEXITCODE
     }
 }
 finally { $env:PATH = $previousPath }
 if ($makeExit -ne 0) { throw "Colibri build failed with exit code $makeExit" }
 
-foreach ($name in $targetNames) {
+foreach ($name in @($targetNames) + @($adapterBinaryNames)) {
     $built = Join-Path $source "c\$name"
     if (-not (Test-Path -LiteralPath $built -PathType Leaf)) { throw "missing built binary: $built" }
     Copy-Item -LiteralPath $built -Destination (Join-Path $binaryDirectory $name) -Force
@@ -216,10 +257,19 @@ Copy-Item -LiteralPath (Join-Path $source 'c\autotune.py') -Destination $binaryD
 Copy-Item -LiteralPath (Join-Path $source 'LICENSE') -Destination (Join-Path $output 'LICENSE.colibri') -Force
 
 $patchManifest = [ordered]@{
-    schema_version = 'experiment-009-colibri-patches-v1'
+    schema_version = 'experiment-010-correction-colibri-patches-v1'
     upstream_commit = $actualCommit
     bridge_enabled = [bool]$ApplyBridgePatches
     patches = $patchRows
+    wire_adapter = if ($ApplyBridgePatches) {
+        @('swarm_expert_wire.h', 'swarm_expert_wire.c', 'kimi_mxfp4_runtime.c') | ForEach-Object {
+            $adapter = Join-Path $PSScriptRoot "adapter\$_"
+            [ordered]@{
+                name = $_
+                sha256 = (Get-FileHash -LiteralPath $adapter -Algorithm SHA256).Hash.ToLowerInvariant()
+            }
+        }
+    } else { @() }
 }
 $patchManifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $output 'colibri_patch_manifest.json') -Encoding utf8
 
@@ -237,7 +287,7 @@ if ($patchRows.Count) {
 $previousManifestPath = $env:PATH
 $previousCompiler = $env:CC
 $env:PATH = "$toolchainDirectory;$previousManifestPath"
-$env:CC = Join-Path $toolchainDirectory 'gcc.exe'
+$env:CC = (Get-Command gcc.exe -ErrorAction Stop).Source
 try {
     & $PythonPath @manifestArguments
     $manifestExit = $LASTEXITCODE
@@ -259,6 +309,13 @@ if (-not $SkipBridgeTests) {
     $env:TEMP = $testTemp
     $env:TMP = $testTemp
     try {
+        foreach ($target in $nativeTestTargets) {
+            $nativeTest = Join-Path (Join-Path $source 'c') $target
+            & $nativeTest
+            if ($LASTEXITCODE -ne 0) {
+                throw "native Colibri test failed: $target (exit code $LASTEXITCODE)"
+            }
+        }
         & $PythonPath -m pytest -q (Join-Path $repositoryRoot 'tests\unit\test_colibri_integration.py') --basetemp $baseTemp
         if ($LASTEXITCODE -ne 0) { throw "bridge-specific tests failed with exit code $LASTEXITCODE" }
     }

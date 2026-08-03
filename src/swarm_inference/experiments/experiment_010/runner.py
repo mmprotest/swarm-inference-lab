@@ -91,6 +91,7 @@ from swarm_inference.experiments.experiment_010.schemas import (
     PlannerCandidate,
     PlannerObjective,
     RecoveryStrategy,
+    RunCompleteness,
     ServicePhase,
     TransportCodec,
     WorkerBudget,
@@ -246,17 +247,26 @@ DEFERRED_REUSE: tuple[dict[str, str], ...] = (
 class Experiment010Options:
     mode: Experiment010Mode = Experiment010Mode.QUICK
     model_path_level_a: Path | None = None
+    model_path_level_a_source: Path | None = None
     model_path_level_b: Path | None = None
+    expert_bank_root: Path | None = None
     kimi_fixture_path: Path | None = None
     colibri_path: Path | None = None
     output_directory: Path | None = None
     resume: bool = False
+    correction_pass: bool = False
     rebuild_colibri: bool = False
+    rebuild_expert_workers: bool = False
     rebuild_cuda: bool = False
     apply_bridge_patches: bool = False
     topology: str | None = None
     network_profile: str | None = None
     configuration: str | None = None
+    response_mode: str = "per_expert_exact"
+    failure_matrix: bool = False
+    corruption_matrix: bool = False
+    require_complete_full_run: bool = False
+    allow_incomplete: bool = False
     repeats: int = 1
     telemetry_level: str = "detailed"
     skip_model_download: bool = False
@@ -271,8 +281,14 @@ class Experiment010Options:
             raise ValueError(f"unknown network profile {self.network_profile!r}")
         if self.telemetry_level not in {"off", "summary", "detailed", "trace"}:
             raise ValueError("telemetry level is invalid")
+        if self.response_mode not in {"per_expert_exact", "per_worker_fast"}:
+            raise ValueError("response mode is invalid")
+        if self.require_complete_full_run and self.allow_incomplete:
+            raise ValueError("require-complete and allow-incomplete are mutually exclusive")
         if self.mode == Experiment010Mode.FULL and self.repeats < 3:
             raise ValueError("full mode requires at least three repeats")
+        if self.mode == Experiment010Mode.FULL and not self.allow_incomplete:
+            self.require_complete_full_run = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -280,6 +296,61 @@ class Experiment010Outcome:
     bundle_path: Path
     verdict: Experiment010Verdict
     error: str | None
+
+
+FULL_RUN_PREREQUISITES: tuple[str, ...] = (
+    "level_a_merged_colibri_model",
+    "level_a_worker_expert_banks",
+    "level_b_current_workload",
+    "native_colibri_cuda_real_model_path",
+    "whole_expert_token_path",
+    "native_microshard_token_path",
+    "mandatory_real_model_workloads",
+    "real_path_failure_matrix",
+    "real_path_corruption_matrix",
+    "simulator_heldout_validation",
+    "dense_kimi_fixture",
+)
+
+
+def assess_full_run_completeness(
+    *,
+    mode: Experiment010Mode,
+    prerequisites: dict[str, bool],
+    reasons: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Classify workload completion from validated phase results, never filenames alone."""
+
+    explanations = reasons or {}
+    unknown = sorted(set(prerequisites) - set(FULL_RUN_PREREQUISITES))
+    if unknown:
+        raise ValueError(f"unknown full-run prerequisites: {unknown}")
+    rows = [
+        {
+            "prerequisite": name,
+            "complete": prerequisites.get(name) is True,
+            "reason": None if prerequisites.get(name) is True else explanations.get(name, "not completed"),
+        }
+        for name in FULL_RUN_PREREQUISITES
+    ]
+    if mode == Experiment010Mode.QUICK:
+        status = RunCompleteness.QUICK_COMPLETE
+    elif mode == Experiment010Mode.DEVELOPMENT:
+        status = RunCompleteness.DEVELOPMENT_COMPLETE
+    else:
+        status = (
+            RunCompleteness.FULL_COMPLETE
+            if all(row["complete"] for row in rows)
+            else RunCompleteness.INCOMPLETE_FULL_RUN
+        )
+    return {
+        "schema_version": "experiment-010-full-run-completeness-v1",
+        "mode": mode.value,
+        "status": status.value,
+        "full_complete": status == RunCompleteness.FULL_COMPLETE,
+        "prerequisites": rows,
+        "missing_prerequisites": [row for row in rows if not row["complete"]],
+    }
 
 
 def _git(repository: Path, *arguments: str) -> str | None:
@@ -2381,10 +2452,14 @@ def _gates(
     kimi_status = matrix.get("kimi_exact_status", {})
     kimi_pass = bool(
         kimi_status.get("exact_geometry")
+        and kimi_status.get("dense_fixture")
+        and kimi_status.get("native_arithmetic")
+        and kimi_status.get("zero_quantization_group_count") == 0
         and kimi_status.get("top16")
         and kimi_status.get("logical_layers_executed") == KIMI_LOGICAL_MOE_LAYERS
         and float(kimi_status.get("whole_equal_relative_l2_error", 1.0)) <= 1e-5
         and float(kimi_status.get("whole_asymmetric_relative_l2_error", 1.0)) <= 1e-5
+        and float(kimi_status.get("whole_coalesced_relative_l2_error", 1.0)) <= 1e-5
     )
     return [
         _gate(
@@ -2818,6 +2893,37 @@ def run_experiment_010(
 ) -> Experiment010Outcome:
     options.validate()
     repository = repository_root.expanduser().resolve()
+    if options.correction_pass:
+        from swarm_inference.experiments.experiment_010.correction_bundle import (
+            build_correction_bundle,
+        )
+
+        output = options.output_directory or (
+            repository / "artifacts" / "runs" / "experiment-010-correction-final"
+        )
+        result = build_correction_bundle(
+            repository,
+            output_directory=output,
+            mode=options.mode,
+            level_b_path=options.model_path_level_b,
+            resume=options.resume,
+        )
+        incomplete_error = None
+        if (
+            options.require_complete_full_run
+            and result["run_completeness"] != RunCompleteness.FULL_COMPLETE.value
+        ):
+            missing = ", ".join(
+                row["prerequisite"] for row in result["missing_prerequisites"]
+            )
+            incomplete_error = (
+                f"INCOMPLETE_FULL_RUN: required correction prerequisites missing: {missing}"
+            )
+        return Experiment010Outcome(
+            bundle_path=result["bundle_path"],
+            verdict=Experiment010Verdict(result["verdict"]),
+            error=incomplete_error,
+        )
     output = options.output_directory or repository / "artifacts" / "runs"
     bundle_root = create_bundle_root(
         output,
@@ -2922,7 +3028,16 @@ def run_experiment_010(
         }
         if options.mode == Experiment010Mode.FULL and not options.skip_kimi_fixture:
             try:
-                kimi_full = run_full_kimi_k3_fixture()
+                kimi_runtime_name = (
+                    "coli_kimi_mxfp4.dll"
+                    if os.name == "nt"
+                    else "libcoli_kimi_mxfp4.so"
+                )
+                kimi_full = run_full_kimi_k3_fixture(
+                    native_library=(
+                        repository / "build" / "colibri" / "bin" / kimi_runtime_name
+                    )
+                )
                 matrix["kimi_inventory"] = kimi_full["inventory"]
                 matrix["kimi_rows"] = kimi_full["rows"]
                 matrix["kimi_exact_status"] = {

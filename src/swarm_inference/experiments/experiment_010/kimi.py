@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import argparse
+import csv
+import ctypes
 import hashlib
+import json
 import time
 from dataclasses import dataclass
 from itertools import pairwise
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -94,6 +99,155 @@ class KimiExpert:
         return self.gate.byte_size + self.up.byte_size + self.down.byte_size
 
 
+class NativeMXFP4Runtime:
+    """Narrow ctypes binding to Colibri's compiled ``matmul_mxfp4`` kernel."""
+
+    ABI = "colibri-native-mxfp4-fixture-v1"
+
+    def __init__(self, library_path: Path) -> None:
+        path = Path(library_path).resolve()
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        self.path = path
+        self.sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+        self._library = ctypes.CDLL(str(path))
+        self._library.coli_kimi_mxfp4_runtime_abi.argtypes = []
+        self._library.coli_kimi_mxfp4_runtime_abi.restype = ctypes.c_char_p
+        abi = self._library.coli_kimi_mxfp4_runtime_abi().decode("ascii")
+        if abi != self.ABI:
+            raise RuntimeError(f"unexpected Colibri MXFP4 runtime ABI {abi!r}")
+        pointer = ctypes.c_void_p
+        self._library.coli_kimi_mxfp4_matmul.argtypes = [
+            pointer,
+            pointer,
+            pointer,
+            pointer,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+        ]
+        self._library.coli_kimi_mxfp4_matmul.restype = ctypes.c_int
+        self._library.coli_kimi_mxfp4_matmul_input_slice.argtypes = [
+            pointer,
+            pointer,
+            pointer,
+            pointer,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+        ]
+        self._library.coli_kimi_mxfp4_matmul_input_slice.restype = ctypes.c_int
+        self._library.coli_kimi_situ_glu.argtypes = [
+            pointer,
+            pointer,
+            ctypes.c_size_t,
+            ctypes.c_float,
+            ctypes.c_float,
+        ]
+        self._library.coli_kimi_situ_glu.restype = ctypes.c_int
+        self._library.coli_kimi_scale_add.argtypes = [
+            pointer,
+            pointer,
+            ctypes.c_size_t,
+            ctypes.c_float,
+        ]
+        self._library.coli_kimi_scale_add.restype = ctypes.c_int
+
+    @staticmethod
+    def _pointer(array: np.ndarray) -> ctypes.c_void_p:
+        return ctypes.c_void_p(int(array.ctypes.data))
+
+    def matmul(self, activation: np.ndarray, tensor: MXFP4Tensor) -> np.ndarray:
+        source = np.ascontiguousarray(activation, dtype=np.float32)
+        packed = np.ascontiguousarray(tensor.packed, dtype=np.uint8)
+        scales = np.ascontiguousarray(tensor.scales, dtype=np.uint8)
+        if source.ndim != 2 or source.shape[1] != tensor.input_dimension:
+            raise ValueError("native MXFP4 activation shape mismatch")
+        output = np.empty(
+            (source.shape[0], tensor.output_dimension), dtype=np.float32
+        )
+        status = self._library.coli_kimi_mxfp4_matmul(
+            self._pointer(output),
+            self._pointer(source),
+            self._pointer(packed),
+            self._pointer(scales),
+            source.shape[0],
+            tensor.input_dimension,
+            tensor.output_dimension,
+        )
+        if status:
+            raise RuntimeError(f"Colibri native MXFP4 matmul failed: {status}")
+        return output
+
+    def matmul_input_slice(
+        self,
+        activation: np.ndarray,
+        tensor: MXFP4Tensor,
+        input_start: int,
+        input_end: int,
+    ) -> np.ndarray:
+        source = np.ascontiguousarray(activation, dtype=np.float32)
+        packed = np.ascontiguousarray(tensor.packed, dtype=np.uint8)
+        scales = np.ascontiguousarray(tensor.scales, dtype=np.uint8)
+        if source.ndim != 2 or source.shape[1] != input_end - input_start:
+            raise ValueError("native MXFP4 sliced activation shape mismatch")
+        output = np.empty(
+            (source.shape[0], tensor.output_dimension), dtype=np.float32
+        )
+        status = self._library.coli_kimi_mxfp4_matmul_input_slice(
+            self._pointer(output),
+            self._pointer(source),
+            self._pointer(packed),
+            self._pointer(scales),
+            source.shape[0],
+            tensor.input_dimension,
+            tensor.output_dimension,
+            input_start,
+            input_end,
+        )
+        if status:
+            raise RuntimeError(f"Colibri native MXFP4 sliced matmul failed: {status}")
+        return output
+
+    def situ_glu(self, gate: np.ndarray, up: np.ndarray) -> np.ndarray:
+        result = np.ascontiguousarray(gate, dtype=np.float32)
+        up_values = np.ascontiguousarray(up, dtype=np.float32)
+        if result.shape != up_values.shape:
+            raise ValueError("native SiTU gate/up shape mismatch")
+        status = self._library.coli_kimi_situ_glu(
+            self._pointer(result),
+            self._pointer(up_values),
+            result.size,
+            ctypes.c_float(4.0),
+            ctypes.c_float(25.0),
+        )
+        if status:
+            raise RuntimeError(f"Colibri native SiTU failed: {status}")
+        return result
+
+    def scale_add(
+        self, destination: np.ndarray, source: np.ndarray, scale: float
+    ) -> None:
+        if (
+            destination.dtype != np.float32
+            or source.dtype != np.float32
+            or not destination.flags.c_contiguous
+            or not source.flags.c_contiguous
+            or destination.shape != source.shape
+        ):
+            raise ValueError("native scale-add requires matching contiguous float32 arrays")
+        status = self._library.coli_kimi_scale_add(
+            self._pointer(destination),
+            self._pointer(source),
+            destination.size,
+            ctypes.c_float(scale),
+        )
+        if status:
+            raise RuntimeError(f"Colibri native scale-add failed: {status}")
+
+
 def deterministic_mxfp4_tensor(
     *,
     output_dimension: int,
@@ -115,6 +269,11 @@ def deterministic_mxfp4_tensor(
         )
     else:
         packed = generator.integers(0, 256, shape, dtype=np.uint8)
+        # Every 32-value group starts with a +0.5 E2M1 value.  The remaining
+        # 31 values retain their seeded dense distribution.  This makes the
+        # no-all-zero-group contract structural instead of probabilistic.
+        packed[:, 0:: MXFP4_GROUP_SIZE // 2] &= np.uint8(0xF0)
+        packed[:, 0:: MXFP4_GROUP_SIZE // 2] |= np.uint8(0x01)
     # Values around exponent 119 keep K3-sized dot products numerically tame.
     scales = generator.integers(
         116,
@@ -128,6 +287,19 @@ def deterministic_mxfp4_tensor(
         output_dimension=output_dimension,
         input_dimension=input_dimension,
     )
+
+
+def mxfp4_zero_group_count(tensor: MXFP4Tensor) -> int:
+    """Count groups whose E2M1 nibbles are all either +0 or -0."""
+
+    groups = tensor.packed.reshape(
+        tensor.output_dimension,
+        tensor.input_dimension // MXFP4_GROUP_SIZE,
+        MXFP4_GROUP_SIZE // 2,
+    )
+    has_nonzero_low = np.any((groups & np.uint8(0x07)) != 0, axis=2)
+    has_nonzero_high = np.any((groups & np.uint8(0x70)) != 0, axis=2)
+    return int(np.count_nonzero(~(has_nonzero_low | has_nonzero_high)))
 
 
 def deterministic_kimi_expert(
@@ -200,12 +372,6 @@ def mxfp4_matmul(
         packed_start = start // 2
         packed_end = packed_start + MXFP4_GROUP_SIZE // 2
         packed_group = tensor.packed[:, packed_start:packed_end]
-        # Deterministic generated full-size fixtures may use structurally zero
-        # groups. Skipping those groups preserves the native packed layout and
-        # exact mathematics while keeping the 92-layer CI/operator replay
-        # bounded; no dequantized representation is retained.
-        if not np.any(packed_group):
-            continue
         weights = _decode_group(packed_group, tensor.scales[:, group_index])
         output += source[:, local : local + MXFP4_GROUP_SIZE] @ weights.T
     return output
@@ -243,6 +409,7 @@ def execute_kimi_expert(
     routing_weight: float,
     hidden_start: int = 0,
     hidden_end: int | None = None,
+    native_runtime: NativeMXFP4Runtime | None = None,
 ) -> np.ndarray:
     end = expert.intermediate_dimension if hidden_end is None else hidden_end
     if hidden_start % MXFP4_GROUP_SIZE or end % MXFP4_GROUP_SIZE:
@@ -263,16 +430,32 @@ def execute_kimi_expert(
         output_dimension=end - hidden_start,
         input_dimension=expert.latent_dimension,
     )
-    gate = mxfp4_matmul(activation, gate_tensor)
-    up = mxfp4_matmul(activation, up_tensor)
-    hidden = situ_glu(gate, up)
-    down = mxfp4_matmul(
-        hidden,
-        expert.down,
-        input_start=hidden_start,
-        input_end=end,
-    )
-    return np.float32(routing_weight) * down
+    if native_runtime is None:
+        gate = mxfp4_matmul(activation, gate_tensor)
+        up = mxfp4_matmul(activation, up_tensor)
+        hidden = situ_glu(gate, up)
+        down = mxfp4_matmul(
+            hidden,
+            expert.down,
+            input_start=hidden_start,
+            input_end=end,
+        )
+        return np.float32(routing_weight) * down
+    gate = native_runtime.matmul(activation, gate_tensor)
+    up = native_runtime.matmul(activation, up_tensor)
+    hidden = native_runtime.situ_glu(gate, up)
+    if hidden_start == 0 and end == expert.intermediate_dimension:
+        down = native_runtime.matmul(hidden, expert.down)
+    else:
+        down = native_runtime.matmul_input_slice(
+            hidden,
+            expert.down,
+            hidden_start,
+            end,
+        )
+    weighted = np.zeros_like(down)
+    native_runtime.scale_add(weighted, down, routing_weight)
+    return weighted
 
 
 def execute_kimi_topk(
@@ -282,6 +465,8 @@ def execute_kimi_topk(
     *,
     shard_ranges: list[tuple[int, int]] | None = None,
     reduction_mode: ReductionMode | str = ReductionMode.FIXED_ORDER_FP32,
+    native_runtime: NativeMXFP4Runtime | None = None,
+    coalesced_transport: bool = False,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     if len(experts) != len(routing_weights):
         raise ValueError("Kimi experts and routing weights differ in length")
@@ -295,34 +480,101 @@ def execute_kimi_topk(
         if previous[1] != following[0]:
             raise ValueError("Kimi shard ranges have a gap or overlap")
     started = time.perf_counter_ns()
+    transport_ns = 0
+    transport_bytes = 0
+    compute_ns = 0
     partials = []
+    coalesced_activation: np.ndarray | None = None
+    if coalesced_transport:
+        transport_started = time.perf_counter_ns()
+        coalesced_activation = np.array(activation, dtype=np.float32, copy=True, order="C")
+        transport_ns += time.perf_counter_ns() - transport_started
+        transport_bytes += int(coalesced_activation.nbytes)
     for shard_index, (start, end) in enumerate(ranges):
+        if coalesced_activation is None:
+            transport_started = time.perf_counter_ns()
+            shard_activation = np.array(activation, dtype=np.float32, copy=True, order="C")
+            transport_ns += time.perf_counter_ns() - transport_started
+            transport_bytes += int(shard_activation.nbytes)
+        else:
+            shard_activation = coalesced_activation
         partial = np.zeros((activation.shape[0], experts[0].latent_dimension), dtype=np.float32)
+        compute_started = time.perf_counter_ns()
         for expert, weight in zip(experts, routing_weights, strict=True):
-            partial += execute_kimi_expert(
-                activation,
+            contribution = execute_kimi_expert(
+                shard_activation,
                 expert,
                 routing_weight=weight,
                 hidden_start=start,
                 hidden_end=end,
+                native_runtime=native_runtime,
             )
-        partials.append((f"shard-{shard_index:04d}", partial))
-    output = reduce_partials(partials, mode=reduction_mode)
+            if native_runtime is None:
+                partial += contribution
+            else:
+                native_runtime.scale_add(partial, contribution, 1.0)
+        compute_ns += time.perf_counter_ns() - compute_started
+        transport_started = time.perf_counter_ns()
+        returned_partial = np.array(partial, dtype=np.float32, copy=True, order="C")
+        transport_ns += time.perf_counter_ns() - transport_started
+        transport_bytes += int(returned_partial.nbytes)
+        partials.append((f"shard-{shard_index:04d}", returned_partial))
+    reduction_started = time.perf_counter_ns()
+    if native_runtime is None:
+        output = reduce_partials(partials, mode=reduction_mode)
+    else:
+        output = np.zeros_like(partials[0][1])
+        for _shard_id, partial in partials:
+            native_runtime.scale_add(output, partial, 1.0)
+    reduction_ns = time.perf_counter_ns() - reduction_started
+    latent = experts[0].latent_dimension
+    intermediate = experts[0].intermediate_dimension
+    expert_count = len(experts)
+    groups_processed = 3 * latent * intermediate // MXFP4_GROUP_SIZE * expert_count
+    multiply_accumulate_count = 3 * latent * intermediate * expert_count
     return output, {
         "elapsed_ns": time.perf_counter_ns() - started,
+        "compute_ns": compute_ns,
+        "transport_ns": transport_ns,
+        "reduction_ns": reduction_ns,
         "expert_count": len(experts),
         "shard_count": len(ranges),
         "shard_ranges": [list(item) for item in ranges],
+        "coalesced_transport": coalesced_transport,
+        "transport_message_count": 1 if coalesced_transport else len(ranges),
+        "transport_bytes": transport_bytes,
+        "transport_kind": "measured_process_memory_copy_fixture",
         "native_weight_bytes": sum(item.byte_size for item in experts),
+        "native_weight_bytes_read": sum(item.byte_size for item in experts),
         "activation_bytes": int(np.asarray(activation).nbytes),
         "result_bytes": int(output.nbytes),
+        "multiply_accumulate_count": multiply_accumulate_count,
+        "real_operations_performed": 2 * multiply_accumulate_count,
+        "groups_processed": groups_processed,
+        "groups_with_arithmetic": groups_processed,
+        "zero_quantization_groups": 0,
         "native_format": "mxfp4_e2m1_ue8m0_g32",
+        "arithmetic_backend": (
+            NativeMXFP4Runtime.ABI if native_runtime is not None else "numpy_diagnostic"
+        ),
+        "native_runtime_sha256": (
+            native_runtime.sha256 if native_runtime is not None else None
+        ),
         "persistent_dequantized_bytes": 0,
         "category": "SYNTHETIC_FIXTURE",
     }
 
 
 def kimi_fixture_inventory(experts: list[KimiExpert]) -> dict[str, Any]:
+    tensor_zero_groups = [
+        {
+            "expert_id": expert.expert_id,
+            "gate": mxfp4_zero_group_count(expert.gate),
+            "up": mxfp4_zero_group_count(expert.up),
+            "down": mxfp4_zero_group_count(expert.down),
+        }
+        for expert in experts
+    ]
     return {
         "category": "SYNTHETIC_FIXTURE",
         "description": "deterministically generated valid MXFP4 tensors; not Kimi K3 weights",
@@ -336,6 +588,17 @@ def kimi_fixture_inventory(experts: list[KimiExpert]) -> dict[str, Any]:
         "packing": "e2m1_two_nibbles_low_even",
         "scale_format": "ue8m0",
         "scale_group_size": MXFP4_GROUP_SIZE,
+        "dense_fixture": all(
+            not (row[projection])
+            for row in tensor_zero_groups
+            for projection in ("gate", "up", "down")
+        ),
+        "zero_quantization_group_count": sum(
+            int(row[projection])
+            for row in tensor_zero_groups
+            for projection in ("gate", "up", "down")
+        ),
+        "zero_groups_by_expert": tensor_zero_groups,
         "experts": [
             {
                 "expert_id": expert.expert_id,
@@ -352,34 +615,97 @@ def kimi_fixture_inventory(experts: list[KimiExpert]) -> dict[str, Any]:
     }
 
 
-def run_full_kimi_k3_fixture(*, seed: int = 1010) -> dict[str, Any]:
-    """Execute the exact official geometry and a 92-layer routed replay.
+def run_full_kimi_k3_fixture(
+    *, native_library: Path, seed: int = 1010
+) -> dict[str, Any]:
+    """Execute dense official geometry through Colibri's compiled MXFP4 kernel.
 
-    These are deterministically generated sparse-but-valid packed tensors, not
-    checkpoint weights.  Zero-group skipping is reported explicitly.
+    The tensors are deterministic synthetic E2M1/UE8M0 bytes, never checkpoint
+    weights.  Every quantization group contains arithmetic and the official
+    path fails closed when the compiled Colibri adapter is unavailable.
     """
 
+    native_runtime = NativeMXFP4Runtime(native_library)
     experts = [
-        deterministic_kimi_expert(expert_id=index, seed=seed, sparse=True)
+        deterministic_kimi_expert(expert_id=index, seed=seed, sparse=False)
         for index in range(KIMI_ROUTED_EXPERTS)
     ]
     generator = np.random.default_rng(seed)
     activation = generator.normal(0, 0.1, (1, KIMI_LATENT_DIMENSION)).astype(np.float32)
     routing_weights = [1 / KIMI_ROUTED_EXPERTS] * KIMI_ROUTED_EXPERTS
-    whole, whole_metrics = execute_kimi_topk(activation, experts, routing_weights)
+
+    transport_started = time.perf_counter_ns()
+    single_activation = np.array(activation, dtype=np.float32, copy=True, order="C")
+    single_transport_ns = time.perf_counter_ns() - transport_started
+    single_compute_started = time.perf_counter_ns()
+    single = execute_kimi_expert(
+        single_activation,
+        experts[0],
+        routing_weight=1.0,
+        native_runtime=native_runtime,
+    )
+    single_compute_ns = time.perf_counter_ns() - single_compute_started
+    transport_started = time.perf_counter_ns()
+    single = np.array(single, dtype=np.float32, copy=True, order="C")
+    single_transport_ns += time.perf_counter_ns() - transport_started
+
+    whole, whole_metrics = execute_kimi_topk(
+        activation,
+        experts,
+        routing_weights,
+        native_runtime=native_runtime,
+    )
     equal_ranges = [(index, index + 768) for index in range(0, 3072, 768)]
     asymmetric_ranges = [(0, 384), (384, 1024), (1024, 3072)]
     equal, equal_metrics = execute_kimi_topk(
-        activation, experts, routing_weights, shard_ranges=equal_ranges
+        activation,
+        experts,
+        routing_weights,
+        shard_ranges=equal_ranges,
+        native_runtime=native_runtime,
     )
     asymmetric, asymmetric_metrics = execute_kimi_topk(
-        activation, experts, routing_weights, shard_ranges=asymmetric_ranges
+        activation,
+        experts,
+        routing_weights,
+        shard_ranges=asymmetric_ranges,
+        native_runtime=native_runtime,
     )
+    coalesced, coalesced_metrics = execute_kimi_topk(
+        activation,
+        experts,
+        routing_weights,
+        shard_ranges=equal_ranges,
+        native_runtime=native_runtime,
+        coalesced_transport=True,
+    )
+
+    replay_totals = {
+        "compute_ns": 0,
+        "transport_ns": 0,
+        "reduction_ns": 0,
+        "transport_bytes": 0,
+        "transport_message_count": 0,
+        "native_weight_bytes_read": 0,
+        "multiply_accumulate_count": 0,
+        "real_operations_performed": 0,
+        "groups_processed": 0,
+        "groups_with_arithmetic": 0,
+    }
     replay_started = time.perf_counter_ns()
     replay_state = activation
     for _layer_id in range(KIMI_LOGICAL_MOE_LAYERS):
-        replay_state, _ = execute_kimi_topk(replay_state, experts, routing_weights)
+        replay_state, layer_metrics = execute_kimi_topk(
+            replay_state,
+            experts,
+            routing_weights,
+            native_runtime=native_runtime,
+        )
+        for name in replay_totals:
+            replay_totals[name] += int(layer_metrics[name])
     replay_ns = time.perf_counter_ns() - replay_started
+    if not np.isfinite(replay_state).all():
+        raise RuntimeError("dense Kimi 92-layer replay produced a non-finite result")
 
     def comparison(candidate: np.ndarray) -> dict[str, Any]:
         difference = candidate.astype(np.float64) - whole.astype(np.float64)
@@ -398,15 +724,52 @@ def run_full_kimi_k3_fixture(*, seed: int = 1010) -> dict[str, Any]:
         "native_format": "mxfp4_e2m1_ue8m0_g32",
         "generated_weights": True,
         "checkpoint_weights": False,
-        "zero_group_skipping": True,
+        "dense_fixture": True,
+        "zero_group_skipping": False,
+        "native_arithmetic": True,
+        "native_runtime_abi": NativeMXFP4Runtime.ABI,
+        "native_runtime_path": str(native_runtime.path),
+        "native_runtime_sha256": native_runtime.sha256,
     }
     inventory = kimi_fixture_inventory(experts)
     inventory["exact_official_geometry"] = True
-    inventory["zero_group_skipping"] = True
+    inventory["zero_group_skipping"] = False
+    inventory["native_arithmetic"] = True
+    inventory["native_runtime_abi"] = NativeMXFP4Runtime.ABI
+    inventory["native_runtime_path"] = str(native_runtime.path)
+    inventory["native_runtime_sha256"] = native_runtime.sha256
+    if inventory["zero_quantization_group_count"]:
+        raise RuntimeError("dense Kimi fixture contains an all-zero quantization group")
+    one_expert_macs = 3 * KIMI_LATENT_DIMENSION * KIMI_EXPERT_INTERMEDIATE_DIMENSION
+    single_metrics = {
+        "elapsed_ns": single_compute_ns + single_transport_ns,
+        "compute_ns": single_compute_ns,
+        "transport_ns": single_transport_ns,
+        "reduction_ns": 0,
+        "transport_bytes": int(single_activation.nbytes + single.nbytes),
+        "transport_message_count": 1,
+        "native_weight_bytes": experts[0].byte_size,
+        "native_weight_bytes_read": experts[0].byte_size,
+        "multiply_accumulate_count": one_expert_macs,
+        "real_operations_performed": 2 * one_expert_macs,
+        "groups_processed": one_expert_macs // MXFP4_GROUP_SIZE,
+        "groups_with_arithmetic": one_expert_macs // MXFP4_GROUP_SIZE,
+        "zero_quantization_groups": 0,
+        "result_bytes": int(single.nbytes),
+        "result_sha256": hashlib.sha256(single.tobytes()).hexdigest(),
+        "arithmetic_backend": NativeMXFP4Runtime.ABI,
+        "persistent_dequantized_bytes": 0,
+    }
     rows = [
         {
             **common,
-            "component": "whole_expert_top16_exact_geometry",
+            "component": "whole_expert_native_dense",
+            "elapsed_ms": single_metrics["elapsed_ns"] / 1e6,
+            **single_metrics,
+        },
+        {
+            **common,
+            "component": "top16_layer_native_dense",
             "elapsed_ms": whole_metrics["elapsed_ns"] / 1e6,
             **whole_metrics,
         },
@@ -426,12 +789,23 @@ def run_full_kimi_k3_fixture(*, seed: int = 1010) -> dict[str, Any]:
         },
         {
             **common,
+            "component": "coalesced_microshards_top16_exact_geometry",
+            "elapsed_ms": coalesced_metrics["elapsed_ns"] / 1e6,
+            **coalesced_metrics,
+            **comparison(coalesced),
+        },
+        {
+            **common,
             "component": "routed_92_layer_replay_exact_geometry",
             "elapsed_ms": replay_ns / 1e6,
             "elapsed_ns": replay_ns,
             "logical_layers": KIMI_LOGICAL_MOE_LAYERS,
             "result_bytes": int(replay_state.nbytes),
             "result_sha256": hashlib.sha256(replay_state.tobytes()).hexdigest(),
+            **replay_totals,
+            "zero_quantization_groups": 0,
+            "arithmetic_backend": NativeMXFP4Runtime.ABI,
+            "persistent_dequantized_bytes": 0,
         },
     ]
     return {
@@ -439,8 +813,68 @@ def run_full_kimi_k3_fixture(*, seed: int = 1010) -> dict[str, Any]:
         "rows": rows,
         "whole_equal_relative_l2_error": comparison(equal)["relative_l2_error"],
         "whole_asymmetric_relative_l2_error": comparison(asymmetric)["relative_l2_error"],
+        "whole_coalesced_relative_l2_error": comparison(coalesced)["relative_l2_error"],
         "exact_geometry": True,
+        "dense_fixture": True,
+        "zero_quantization_group_count": 0,
+        "groups_with_arithmetic": replay_totals["groups_with_arithmetic"],
+        "native_arithmetic": True,
+        "native_runtime_sha256": native_runtime.sha256,
         "top16": True,
         "logical_layers_executed": KIMI_LOGICAL_MOE_LAYERS,
         "category": "SYNTHETIC_FIXTURE",
     }
+
+
+def write_full_kimi_k3_fixture(
+    *, native_library: Path, output_directory: Path, seed: int = 1010
+) -> dict[str, Any]:
+    result = run_full_kimi_k3_fixture(native_library=native_library, seed=seed)
+    output = Path(output_directory)
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "kimi_fixture_inventory.json").write_text(
+        json.dumps(result["inventory"], indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    status = {key: value for key, value in result.items() if key not in {"inventory", "rows"}}
+    (output / "dense_kimi_fixture_results.json").write_text(
+        json.dumps(status, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    fields = sorted({key for row in result["rows"] for key in row})
+    with (output / "kimi_operator_results.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        for row in result["rows"]:
+            writer.writerow(
+                {
+                    key: json.dumps(value, sort_keys=True)
+                    if isinstance(value, (dict, list, tuple))
+                    else value
+                    for key, value in row.items()
+                }
+            )
+    return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--full-dense-native", action="store_true")
+    parser.add_argument("--native-library", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--seed", type=int, default=1010)
+    arguments = parser.parse_args()
+    if not arguments.full_dense_native:
+        parser.error("select --full-dense-native")
+    write_full_kimi_k3_fixture(
+        native_library=arguments.native_library,
+        output_directory=arguments.output,
+        seed=arguments.seed,
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

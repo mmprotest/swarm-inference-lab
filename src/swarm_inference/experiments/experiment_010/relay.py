@@ -9,6 +9,7 @@ import socketserver
 import struct
 import subprocess
 import sys
+import threading
 import time
 from contextlib import suppress
 from dataclasses import dataclass
@@ -63,6 +64,9 @@ class RelayServer(socketserver.ThreadingTCPServer):
         self.forwarded_requests = 0
         self.forwarded_bytes = 0
         self.failures = 0
+        self.metrics_write_failures = 0
+        self.last_error: str | None = None
+        self.metrics_lock = threading.Lock()
         self.started_ns = time.time_ns()
         super().__init__(address, RelayHandler, bind_and_activate=True)
         self.request_queue_size = profile.queue_depth
@@ -75,14 +79,31 @@ class RelayServer(socketserver.ThreadingTCPServer):
             "forwarded_requests": self.forwarded_requests,
             "forwarded_bytes": self.forwarded_bytes,
             "failures": self.failures,
+            "metrics_write_failures": self.metrics_write_failures,
+            "last_error": self.last_error,
             "started_ns": self.started_ns,
             "shaper": self.shaper.snapshot(),
         }
 
     def save_metrics(self) -> None:
-        temporary = self.metrics_path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(self.snapshot(), indent=2) + "\n", encoding="utf-8")
-        temporary.replace(self.metrics_path)
+        # Metrics persistence is observational and must never break the tensor
+        # data plane (OneDrive and antivirus scanners can briefly lock a path on
+        # Windows). A per-thread temporary also makes concurrent coordinators
+        # safe.
+        with self.metrics_lock:
+            temporary = self.metrics_path.with_name(
+                f"{self.metrics_path.name}.{os.getpid()}.{threading.get_ident()}.tmp"
+            )
+            try:
+                temporary.write_text(
+                    json.dumps(self.snapshot(), indent=2) + "\n", encoding="utf-8"
+                )
+                temporary.replace(self.metrics_path)
+            except OSError as error:
+                self.metrics_write_failures += 1
+                self.last_error = f"metrics persistence: {type(error).__name__}: {error}"
+                with suppress(OSError):
+                    temporary.unlink()
 
 
 class RelayHandler(socketserver.BaseRequestHandler):
@@ -102,21 +123,38 @@ class RelayHandler(socketserver.BaseRequestHandler):
                 )
                 self.request.sendall(frame_with_length(response))
                 return
-            framed_size = len(payload) + _LENGTH.size
-            with self.server.shaper.flow(60.0):
-                self.server.shaper.enforce(framed_size, direction="relay_to_worker")
-                with socket.create_connection(self.server.target, timeout=60.0) as worker:
+            # Patched Colibri keeps one socket per destination worker. Preserve
+            # that connection shape through the relay so every frame—not merely
+            # the first MoE call—traverses the measured shaped data plane.
+            with socket.create_connection(self.server.target, timeout=60.0) as worker:
+                worker.settimeout(3600.0)
+                while True:
+                    framed_size = len(payload) + _LENGTH.size
+                    with self.server.shaper.flow(3600.0):
+                        self.server.shaper.enforce(
+                            framed_size, direction="relay_to_worker"
+                        )
                     worker.sendall(frame_with_length(payload))
                     response = _recv_frame(worker)
-                self.server.shaper.enforce(
-                    len(response) + _LENGTH.size, direction="worker_to_relay"
-                )
-            self.request.sendall(frame_with_length(response))
-            self.server.forwarded_requests += 1
-            self.server.forwarded_bytes += framed_size + len(response) + _LENGTH.size
-            self.server.save_metrics()
+                    with self.server.shaper.flow(3600.0):
+                        self.server.shaper.enforce(
+                            len(response) + _LENGTH.size,
+                            direction="worker_to_relay",
+                        )
+                    self.request.sendall(frame_with_length(response))
+                    self.server.forwarded_requests += 1
+                    self.server.forwarded_bytes += (
+                        framed_size + len(response) + _LENGTH.size
+                    )
+                    if self.server.forwarded_requests % 64 == 0:
+                        self.server.save_metrics()
+                    try:
+                        payload = _recv_frame(self.request)
+                    except (ConnectionError, OSError):
+                        break
         except Exception as error:
             self.server.failures += 1
+            self.server.last_error = f"{type(error).__name__}: {error}"
             self.server.save_metrics()
             response = encode_packet(
                 ExpertPacket(
@@ -268,8 +306,37 @@ class ExpertRelayManager:
                 process.kill()
                 process.wait(timeout=3)
 
+    @staticmethod
+    def snapshot(relay: RelayProcess, *, timeout_seconds: float = 10.0) -> dict[str, Any]:
+        host, separator, raw_port = relay.endpoint.rpartition(":")
+        if not separator:
+            raise ValueError(f"invalid relay endpoint {relay.endpoint!r}")
+        request = encode_packet(
+            ExpertPacket(
+                kind="control",
+                semantic={"command": "relay_metrics"},
+                blobs=(),
+            )
+        )
+        with socket.create_connection((host, int(raw_port)), timeout=timeout_seconds) as client:
+            client.settimeout(timeout_seconds)
+            client.sendall(frame_with_length(request))
+            response = decode_packet(_recv_frame(client))
+        if response.kind != "control" or not response.semantic.get("ok"):
+            raise RuntimeError(str(response.semantic.get("error", "relay snapshot failed")))
+        metrics = dict(response.semantic["metrics"])
+        relay.metrics_path.write_text(
+            json.dumps(metrics, indent=2) + "\n", encoding="utf-8"
+        )
+        return metrics
+
+    def snapshots(self) -> list[dict[str, Any]]:
+        return [self.snapshot(relay) for relay in self.relays]
+
     def close(self) -> None:
         for relay in self.relays:
+            with suppress(Exception):
+                self.snapshot(relay)
             self._stop(relay.process)
             lifecycle = self._lifecycle_by_pid.get(relay.process.pid)
             if lifecycle is not None:

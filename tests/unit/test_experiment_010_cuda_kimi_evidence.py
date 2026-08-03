@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from swarm_inference.backends.colibri.cuda import (
     ColibriCudaError,
     run_colibri_cuda_kernel_proof,
+    run_colibri_real_olmoe_cuda_expert,
 )
 from swarm_inference.backends.colibri.schemas import ColibriCapabilityReport
 from swarm_inference.experiments.experiment_010.bundle import (
@@ -20,9 +21,11 @@ from swarm_inference.experiments.experiment_010.bundle import (
 from swarm_inference.experiments.experiment_010.kimi import (
     KIMI_ROUTED_EXPERTS,
     MXFP4_GROUP_SIZE,
+    NativeMXFP4Runtime,
     deterministic_kimi_expert,
     execute_kimi_topk,
     kimi_fixture_inventory,
+    mxfp4_zero_group_count,
 )
 from swarm_inference.experiments.experiment_010.schemas import EvidenceCategory
 from swarm_inference.simulation.expert_model import (
@@ -116,6 +119,61 @@ def test_colibri_cuda_cpu_equivalence(live_cuda_proof: dict[str, Any]) -> None:
     assert live_cuda_proof["relative_l2_error"] <= 2e-4
 
 
+@pytest.mark.gpu
+def test_real_olmoe_cuda_expert(tmp_path: Path) -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    dll_candidates = (
+        repository_root / "build" / "colibri" / "source" / "c" / "coli_cuda.dll",
+        repository_root / "build" / "colibri" / "bin" / "coli_cuda.dll",
+    )
+    dll = next((path for path in dll_candidates if path.is_file()), None)
+    model = (
+        repository_root
+        / "artifacts"
+        / "models"
+        / "colibri"
+        / "olmoe-1b-7b-0125-instruct-merged"
+    )
+    if dll is None or not model.is_dir():
+        pytest.skip("the exact Level A model and Colibri CUDA runtime are required")
+    proof = run_colibri_real_olmoe_cuda_expert(
+        dll,
+        model,
+        layer_id=0,
+        expert_id=5,
+        output_path=tmp_path / "real-expert.json",
+    )
+    assert proof["native_tensor_bytes_used"] is True
+    assert proof["kernel_executed"] is True
+    assert proof["nonzero_vram_residency"] is True
+    assert proof["no_silent_cpu_fallback"] is True
+    assert proof["correctness_passed"] is True
+
+
+@pytest.mark.gpu
+def test_real_olmoe_cuda_generation() -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    evidence = (
+        repository_root
+        / "artifacts"
+        / "runs"
+        / "experiment-010-correction-work"
+        / "phase-9"
+        / "real_model_cuda_results.json"
+    )
+    if not evidence.is_file():
+        pytest.skip("the real CUDA token-path workload has not been reproduced")
+    document = json.loads(evidence.read_text(encoding="utf-8"))
+    row = document["result"]
+    assert document["complete"] is True
+    assert row["exact_token_identity"] is True
+    assert row["router_trace_identity"] is True
+    assert row["remote_results_consumed"] > 0
+    assert row["cuda_execution_count"] > 0
+    assert row["gpu_resident_bytes"] > 0
+    assert row["cuda_fallback_count"] == 0
+
+
 @pytest.fixture(scope="module")
 def kimi_system() -> tuple[list[Any], np.ndarray, list[float]]:
     experts = [
@@ -169,6 +227,45 @@ def test_kimi_microshard_fixture(
     )
     np.testing.assert_allclose(sharded, whole, rtol=2e-6, atol=1e-10)
     assert metrics["shard_ranges"] == [[0, 32], [32, 64]]
+
+
+def test_dense_kimi_fixture_has_no_zero_groups(
+    kimi_system: tuple[list[Any], np.ndarray, list[float]],
+) -> None:
+    experts, _, _ = kimi_system
+    assert all(
+        mxfp4_zero_group_count(tensor) == 0
+        for expert in experts
+        for tensor in (expert.gate, expert.up, expert.down)
+    )
+    assert kimi_fixture_inventory(experts)["dense_fixture"] is True
+
+
+def test_dense_kimi_fixture_executes_all_groups(
+    kimi_system: tuple[list[Any], np.ndarray, list[float]],
+) -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    library = repository_root / "build" / "colibri" / "bin" / "coli_kimi_mxfp4.dll"
+    if not library.is_file():
+        pytest.skip("the compiled Colibri MXFP4 fixture adapter is required")
+    experts, activation, routing = kimi_system
+    _, metrics = execute_kimi_topk(
+        activation,
+        experts,
+        routing,
+        native_runtime=NativeMXFP4Runtime(library),
+    )
+    expected_groups = (
+        3
+        * experts[0].latent_dimension
+        * experts[0].intermediate_dimension
+        // MXFP4_GROUP_SIZE
+        * KIMI_ROUTED_EXPERTS
+    )
+    assert metrics["groups_processed"] == expected_groups
+    assert metrics["groups_with_arithmetic"] == expected_groups
+    assert metrics["zero_quantization_groups"] == 0
+    assert metrics["arithmetic_backend"] == NativeMXFP4Runtime.ABI
 
 
 def _calibrated_model() -> tuple[Any, dict[str, Any]]:

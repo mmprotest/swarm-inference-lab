@@ -89,7 +89,11 @@ def decode_packet(payload: bytes) -> ExpertPacket:
     return ExpertPacket(kind=kind, semantic=semantic, blobs=tuple(blobs))  # type: ignore[arg-type]
 
 
-def encode_request(request: ExpertExecutionRequest, activation: np.ndarray) -> tuple[bytes, int]:
+def encode_request(
+    request: ExpertExecutionRequest,
+    activation: np.ndarray,
+    down_accumulators: np.ndarray | None = None,
+) -> tuple[bytes, int]:
     if request.compression == TransportCodec.RAW_FP32:
         started = time.perf_counter_ns()
         source = np.ascontiguousarray(activation, dtype=np.float32)
@@ -118,13 +122,49 @@ def encode_request(request: ExpertExecutionRequest, activation: np.ndarray) -> t
             encoded_bytes=len(payload),
             checksum=sha256_bytes(payload),
         )
-        semantic = request.model_copy(
-            update={"activations": metadata.model_dump(mode="json")}
-        ).model_dump(mode="json")
+        blobs = [payload]
+        update: dict[str, Any] = {"activations": metadata.model_dump(mode="json")}
+        if down_accumulators is not None:
+            accumulator = np.ascontiguousarray(down_accumulators, dtype=np.float32)
+            expected = (request.batch_rows, request.effective_top_k, request.latent_dimension)
+            if accumulator.shape != expected:
+                raise ValueError("down accumulator tensor shape does not match request geometry")
+            accumulator_payload = encode_tensor(
+                ActivationTensor(
+                    tensor_id=f"{request.request_id}:down-accumulators",
+                    request_id=request.request_id,
+                    stage_id=request.layer_id,
+                    token_position=0,
+                    sequence_length=request.batch_rows,
+                    array=accumulator,
+                    logical_dtype="float32",
+                    model_revision=request.model_revision,
+                    partition_hash=request.quantization_fingerprint,
+                    route_generation=0,
+                )
+            )
+            accumulator_metadata = TensorWireMetadata(
+                name="down_accumulators",
+                envelope="SWARMT01",
+                dtype="float32",
+                shape=list(accumulator.shape),
+                codec=TransportCodec.RAW_FP32,
+                payload_index=1,
+                raw_bytes=accumulator.nbytes,
+                encoded_bytes=len(accumulator_payload),
+                checksum=sha256_bytes(accumulator_payload),
+            )
+            update["down_accumulators"] = accumulator_metadata.model_dump(mode="json")
+            blobs.append(accumulator_payload)
+        elif request.down_accumulators is not None:
+            raise ValueError("request declares down accumulators but none were supplied")
+        semantic = request.model_copy(update=update).model_dump(mode="json")
         return (
-            encode_packet(ExpertPacket(kind="request", semantic=semantic, blobs=(payload,))),
+            encode_packet(ExpertPacket(kind="request", semantic=semantic, blobs=tuple(blobs))),
             time.perf_counter_ns() - started,
         )
+    if down_accumulators is not None or request.down_accumulators is not None:
+        raise ValueError("microshard down accumulators require raw_fp32 transport")
     encoded = encode_array(activation, name="activations", codec=request.compression)
     semantic = request.model_copy(
         update={"activations": encoded.metadata.model_dump(mode="json")}
@@ -134,10 +174,17 @@ def encode_request(request: ExpertExecutionRequest, activation: np.ndarray) -> t
     ), encoded.encode_ns
 
 
-def decode_request(payload: bytes) -> tuple[ExpertExecutionRequest, np.ndarray, int]:
+def decode_request(
+    payload: bytes,
+    *,
+    include_down_accumulators: bool = False,
+) -> (
+    tuple[ExpertExecutionRequest, np.ndarray, int]
+    | tuple[ExpertExecutionRequest, np.ndarray, np.ndarray | None, int]
+):
     packet = decode_packet(payload)
-    if packet.kind != "request" or len(packet.blobs) != 1:
-        raise ValueError("expected one-blob expert request")
+    if packet.kind != "request" or len(packet.blobs) not in {1, 2}:
+        raise ValueError("expected one- or two-blob expert request")
     metadata = TensorWireMetadata.model_validate(packet.semantic.get("activations"))
     request = ExpertExecutionRequest.model_validate(packet.semantic)
     if metadata.envelope == "SWARMT01":
@@ -161,6 +208,36 @@ def decode_request(payload: bytes) -> tuple[ExpertExecutionRequest, np.ndarray, 
         decode_ns = decoded.decode_ns
     if list(activation.shape) != [request.batch_rows, request.latent_dimension]:
         raise ValueError("activation tensor shape does not match request geometry")
+    accumulator: np.ndarray | None = None
+    accumulator_semantic = packet.semantic.get("down_accumulators")
+    if accumulator_semantic is not None:
+        accumulator_metadata = TensorWireMetadata.model_validate(accumulator_semantic)
+        if len(packet.blobs) != 2 or accumulator_metadata.payload_index != 1:
+            raise ValueError("down accumulator tensor has an invalid payload index")
+        started = time.perf_counter_ns()
+        accumulator_blob = packet.blobs[1]
+        if (
+            len(accumulator_blob) != accumulator_metadata.encoded_bytes
+            or sha256_bytes(accumulator_blob) != accumulator_metadata.checksum
+        ):
+            raise ValueError("down accumulator envelope failed outer integrity validation")
+        tensor = decode_tensor(accumulator_blob)
+        if (
+            tensor.request_id != request.request_id
+            or tensor.stage_id != request.layer_id
+            or tensor.model_revision != request.model_revision
+            or tensor.partition_hash != request.quantization_fingerprint
+        ):
+            raise ValueError("down accumulator identity does not match expert request")
+        accumulator = np.ascontiguousarray(tensor.array, dtype=np.float32)
+        expected = [request.batch_rows, request.effective_top_k, request.latent_dimension]
+        if list(accumulator.shape) != expected:
+            raise ValueError("down accumulator tensor shape does not match request geometry")
+        decode_ns += time.perf_counter_ns() - started
+    elif len(packet.blobs) != 1:
+        raise ValueError("expert request has an undeclared tensor blob")
+    if include_down_accumulators:
+        return request, activation, accumulator, decode_ns
     return request, activation, decode_ns
 
 

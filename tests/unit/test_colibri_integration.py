@@ -264,6 +264,10 @@ def test_colibri_commit_pin() -> None:
         "0002-olmoe-routing-telemetry.patch",
         "0003-aggregate-runtime-telemetry.patch",
         "0004-olmoe-machine-readable-telemetry.patch",
+        "0005-olmoe-shared-expert-runtime.patch",
+        "0006-olmoe-external-expert-dispatch.patch",
+        "0007-olmoe-native-microshards.patch",
+        "0008-olmoe-memory-residency-telemetry.patch",
     ]
     bridge_patch = (
         REPOSITORY_ROOT
@@ -274,6 +278,31 @@ def test_colibri_commit_pin() -> None:
     ).read_text(encoding="utf-8")
     assert "COLI_USAGE_PATH" in bridge_patch
     assert "COLI_HOT_PIN_PATH" in bridge_patch
+
+
+def test_colibri_memory_residency_patch_contract() -> None:
+    patch = (
+        REPOSITORY_ROOT
+        / "integrations"
+        / "colibri"
+        / "patches"
+        / "0008-olmoe-memory-residency-telemetry.patch"
+    ).read_text(encoding="utf-8")
+    for required in (
+        "QueryWorkingSetEx",
+        "GetProcessMemoryInfo",
+        "logical_cache_hits",
+        "resident_cache_hits",
+        "nonresident_cache_hits",
+        "coordinator_owned_routed_expert_bytes",
+        "capacity-isolated coordinator",
+        "test_olmoe_memory_residency",
+        "COLI_SWARM_EXPERT_CUDA_TARGET",
+        "CPU fallback is forbidden",
+        "cuda_resident_tensor_bytes",
+        "coli_cuda_expert_mlp",
+    ):
+        assert required in patch
 
 
 def test_colibri_license_present() -> None:
@@ -302,11 +331,14 @@ def test_colibri_build_fingerprint(tmp_path: Path) -> None:
         payload = load_build_manifest(built)
         assert payload["source_tree_sha256"]
         assert payload["compiler"]
-        assert {item["name"] for item in payload["binaries"]} >= {
+        required_binaries = {
             "colibri.exe",
             "olmoe.exe",
             "swarm_bridge.py",
         }
+        if "0005-olmoe-shared-expert-runtime.patch" in payload.get("patches", []):
+            required_binaries.add("olmoe_expert_worker.exe")
+        assert {item["name"] for item in payload["binaries"]} >= required_binaries
 
 
 def test_colibri_capability_handshake(tmp_path: Path) -> None:

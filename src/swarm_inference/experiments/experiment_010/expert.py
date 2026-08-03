@@ -15,6 +15,7 @@ import numpy as np
 from swarm_inference.experiments.experiment_010.schemas import (
     ExpertExecutionMode,
     ExpertExecutionRequest,
+    ExpertResponseMode,
     ReductionMode,
 )
 
@@ -267,16 +268,26 @@ class ExpertStore:
     ) -> tuple[np.ndarray, dict[str, Any]]:
         started = time.perf_counter_ns()
         before_hits, before_misses, before_read = self.hits, self.misses, self.bytes_read
-        output = np.zeros((request.batch_rows, request.latent_dimension), dtype=np.float32)
-        executed = []
-        for expert_id, routing_weight in zip(
-            request.expert_ids, request.routing_weights, strict=True
-        ):
+        exact = request.response_mode == ExpertResponseMode.PER_EXPERT_EXACT
+        exact_unweighted = exact and request.metadata.get(
+            "exact_contribution_representation"
+        ) == "unweighted_expert_output"
+        output = np.zeros(
+            (
+                (request.batch_rows, request.effective_top_k, request.latent_dimension)
+                if exact
+                else (request.batch_rows, request.latent_dimension)
+            ),
+            dtype=np.float32,
+        )
+        executed: list[int] = []
+
+        def run(selected_activation: np.ndarray, expert_id: int) -> np.ndarray:
             weights = self.get(request.layer_id, expert_id)
             if weights.latent_dimension != request.latent_dimension:
                 raise ValueError("worker expert geometry does not match request")
-            partial = execute_expert(
-                activation,
+            return execute_expert(
+                selected_activation,
                 weights,
                 hidden_start=(
                     request.hidden_start
@@ -289,8 +300,39 @@ class ExpertStore:
                     else None
                 ),
             )
-            output += np.float32(routing_weight) * partial
-            executed.append(expert_id)
+
+        if request.expert_ids_by_row is None:
+            for rank, (expert_id, routing_weight) in enumerate(
+                zip(request.expert_ids, request.routing_weights, strict=True)
+            ):
+                expert_output = run(activation, expert_id)
+                weighted = (
+                    expert_output
+                    if exact_unweighted
+                    else np.float32(routing_weight) * expert_output
+                )
+                if exact:
+                    output[:, rank, :] = weighted
+                else:
+                    output += weighted
+                executed.append(expert_id)
+        else:
+            for row in range(request.batch_rows):
+                expert_ids, routing_weights, selected_ranks = request.routing_for_row(row)
+                for expert_id, routing_weight, selected_rank in zip(
+                    expert_ids, routing_weights, selected_ranks, strict=True
+                ):
+                    expert_output = run(activation[row : row + 1], expert_id)[0]
+                    weighted = (
+                        expert_output
+                        if exact_unweighted
+                        else np.float32(routing_weight) * expert_output
+                    )
+                    if exact:
+                        output[row, selected_rank, :] = weighted
+                    else:
+                        output[row] += weighted
+                    executed.append(expert_id)
         return output, {
             "experts_executed": executed,
             "bytes_read": self.bytes_read - before_read,

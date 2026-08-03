@@ -39,6 +39,13 @@ class Experiment010Verdict(StrEnum):
     FAIL = "FAIL"
 
 
+class RunCompleteness(StrEnum):
+    FULL_COMPLETE = "FULL_COMPLETE"
+    INCOMPLETE_FULL_RUN = "INCOMPLETE_FULL_RUN"
+    DEVELOPMENT_COMPLETE = "DEVELOPMENT_COMPLETE"
+    QUICK_COMPLETE = "QUICK_COMPLETE"
+
+
 class GateStatus(StrEnum):
     PASS = "PASS"
     FAIL = "FAIL"
@@ -75,6 +82,11 @@ class DeterminismMode(StrEnum):
     QUALITY_BOUNDED = "quality_bounded"
 
 
+class ExpertResponseMode(StrEnum):
+    PER_EXPERT_EXACT = "per_expert_exact"
+    PER_WORKER_FAST = "per_worker_fast"
+
+
 class TransportCodec(StrEnum):
     RAW_FP32 = "raw_fp32"
     RAW_FP16 = "raw_fp16"
@@ -100,6 +112,7 @@ class PlannerObjective(StrEnum):
 class ServicePhase(StrEnum):
     PREFILL = "prefill"
     DECODE = "decode"
+    CONCURRENT_DECODE = "concurrent_decode"
     MIXED_SERVICE = "mixed_service"
 
 
@@ -160,8 +173,15 @@ class ExpertExecutionRequest(StrictModel):
     layer_id: int = Field(ge=0)
     batch_rows: int = Field(gt=0)
     latent_dimension: int = Field(gt=0)
-    expert_ids: list[int] = Field(min_length=1)
-    routing_weights: list[float] = Field(min_length=1)
+    # Legacy flat routing applies the same selected experts to every row.
+    # Native Colibri dispatch uses the rank-preserving per-row form below.
+    expert_ids: list[int] = Field(default_factory=list)
+    routing_weights: list[float] = Field(default_factory=list)
+    top_k: int | None = Field(default=None, gt=0)
+    expert_ids_by_row: list[list[int]] | None = None
+    routing_weights_by_row: list[list[float]] | None = None
+    selected_rank_by_row: list[list[int]] | None = None
+    response_mode: ExpertResponseMode = ExpertResponseMode.PER_WORKER_FAST
     activations: dict[str, Any]
     deadline_ns: int = Field(gt=0)
     execution_mode: ExpertExecutionMode = ExpertExecutionMode.WHOLE_EXPERT
@@ -169,6 +189,8 @@ class ExpertExecutionRequest(StrictModel):
     compression: TransportCodec = TransportCodec.RAW_FP32
     hidden_start: int | None = Field(default=None, ge=0)
     hidden_end: int | None = Field(default=None, gt=0)
+    down_accumulators: dict[str, Any] | None = None
+    microshard_final: bool = False
     reduction_mode: ReductionMode = ReductionMode.FIXED_ORDER_FP32
     challenge: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -179,6 +201,43 @@ class ExpertExecutionRequest(StrictModel):
             raise ValueError("expert IDs and routing weights must have equal lengths")
         if any(expert < 0 for expert in self.expert_ids):
             raise ValueError("expert IDs must be non-negative")
+        per_row = (
+            self.expert_ids_by_row,
+            self.routing_weights_by_row,
+            self.selected_rank_by_row,
+        )
+        if any(value is not None for value in per_row):
+            if any(value is None for value in per_row):
+                raise ValueError("per-row routing requires IDs, weights, and selected ranks")
+            assert self.expert_ids_by_row is not None
+            assert self.routing_weights_by_row is not None
+            assert self.selected_rank_by_row is not None
+            if len(self.expert_ids_by_row) != self.batch_rows:
+                raise ValueError("per-row routing row count does not match batch_rows")
+            inferred_top_k = len(self.expert_ids_by_row[0])
+            if inferred_top_k < 1 or (self.top_k is not None and self.top_k != inferred_top_k):
+                raise ValueError("top_k does not match per-row routing width")
+            for row, (experts, weights, ranks) in enumerate(
+                zip(
+                    self.expert_ids_by_row,
+                    self.routing_weights_by_row,
+                    self.selected_rank_by_row,
+                    strict=True,
+                )
+            ):
+                if len(experts) != inferred_top_k or len(weights) != inferred_top_k:
+                    raise ValueError(f"routing width differs at batch row {row}")
+                if ranks != list(range(inferred_top_k)):
+                    raise ValueError(f"selected ranks are not rank-preserving at batch row {row}")
+                if any(expert < 0 for expert in experts):
+                    raise ValueError("expert IDs must be non-negative")
+            if self.expert_ids or self.routing_weights:
+                raise ValueError("request cannot mix flat and per-row routing")
+        else:
+            if not self.expert_ids:
+                raise ValueError("request requires flat or per-row expert routing")
+            if self.top_k is not None and self.top_k != len(self.expert_ids):
+                raise ValueError("top_k does not match flat routing width")
         if self.determinism_mode == DeterminismMode.EXACT:
             if self.compression != TransportCodec.RAW_FP32:
                 raise ValueError("exact mode requires raw_fp32 transport")
@@ -189,9 +248,37 @@ class ExpertExecutionRequest(StrictModel):
                 raise ValueError("microshard execution requires a hidden range")
             if self.hidden_end <= self.hidden_start:
                 raise ValueError("microshard hidden range must be non-empty")
+            exact_chain = self.response_mode == ExpertResponseMode.PER_EXPERT_EXACT
+            if (self.hidden_start == 0 or not exact_chain) and self.down_accumulators is not None:
+                raise ValueError("this microshard request cannot carry a down accumulator")
+            if exact_chain and self.hidden_start > 0 and self.down_accumulators is None:
+                raise ValueError("non-initial exact microshard requires a down accumulator")
+            if not exact_chain and self.microshard_final:
+                raise ValueError("fast microshards do not carry exact chain state")
         elif self.hidden_start is not None or self.hidden_end is not None:
             raise ValueError("whole-expert execution cannot carry a hidden range")
+        elif self.down_accumulators is not None or self.microshard_final:
+            raise ValueError("whole-expert execution cannot carry microshard chain state")
         return self
+
+    @property
+    def effective_top_k(self) -> int:
+        if self.expert_ids_by_row is not None:
+            return len(self.expert_ids_by_row[0])
+        return len(self.expert_ids)
+
+    def routing_for_row(self, row: int) -> tuple[list[int], list[float], list[int]]:
+        if row < 0 or row >= self.batch_rows:
+            raise IndexError(row)
+        if self.expert_ids_by_row is not None:
+            assert self.routing_weights_by_row is not None
+            assert self.selected_rank_by_row is not None
+            return (
+                self.expert_ids_by_row[row],
+                self.routing_weights_by_row[row],
+                self.selected_rank_by_row[row],
+            )
+        return self.expert_ids, self.routing_weights, list(range(len(self.expert_ids)))
 
 
 class ExpertExecutionMetadata(StrictModel):

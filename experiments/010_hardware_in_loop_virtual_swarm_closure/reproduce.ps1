@@ -3,17 +3,27 @@ param(
     [ValidateSet("quick", "development", "full", "frontier")]
     [string]$Mode,
     [string]$ModelPathLevelA,
+    [string]$ModelPathLevelASource,
     [string]$ModelPathLevelB,
+    [string]$ExpertBankRoot,
     [string]$KimiFixturePath,
     [string]$ColibriPath,
     [string]$OutputDirectory,
     [switch]$Resume,
+    [switch]$CorrectionPass,
     [switch]$RebuildColibri,
+    [switch]$RebuildExpertWorkers,
     [switch]$RebuildCuda,
     [switch]$ApplyBridgePatches,
     [string]$Topology,
     [string]$NetworkProfile,
     [string]$Configuration,
+    [ValidateSet("per_expert_exact", "per_worker_fast")]
+    [string]$ResponseMode = "per_expert_exact",
+    [switch]$FailureMatrix,
+    [switch]$CorruptionMatrix,
+    [switch]$RequireCompleteFullRun,
+    [switch]$AllowIncomplete,
     [ValidateRange(1, 100)]
     [int]$Repeats = 1,
     [ValidateSet("off", "summary", "detailed", "trace")]
@@ -47,6 +57,12 @@ if ($Mode -eq "full" -and $Repeats -lt 3) {
     $Repeats = 3
     Write-Host "Full mode requires at least three repeats; using 3."
 }
+if ($RequireCompleteFullRun -and $AllowIncomplete) {
+    throw "-RequireCompleteFullRun and -AllowIncomplete are mutually exclusive."
+}
+if ($Mode -eq "full" -and -not $AllowIncomplete) {
+    $RequireCompleteFullRun = $true
+}
 
 $experimentDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $experimentDirectory "..\..")).Path
@@ -56,6 +72,26 @@ if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot "pyproject.toml") -P
 $python = Join-Path $repositoryRoot ".venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
     $python = (Get-Command python -ErrorAction Stop).Source
+}
+
+if ($CorrectionPass -and $Mode -eq "full" -and $ModelPathLevelB -and -not $SkipLevelB) {
+    $resolvedLevelB = (Resolve-Path -LiteralPath $ModelPathLevelB).Path
+    $levelBRunner = Join-Path $repositoryRoot "experiments\008_single_host_adaptive_moe_saturation\reproduce.ps1"
+    $levelBOutput = Join-Path $repositoryRoot "artifacts\runs\experiment-010-correction-work\phase-14\level-b-current"
+    $levelBArguments = @(
+        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $levelBRunner,
+        "-Full", "-ModelPath", $resolvedLevelB,
+        "-OutputDirectory", $levelBOutput,
+        "-Configuration", "A"
+    )
+    if ($Resume) { $levelBArguments += "-Resume" }
+    if ($SkipModelDownload) { $levelBArguments += "-SkipDownload" }
+    $windowsPowerShell = (Get-Command powershell.exe -ErrorAction Stop).Source
+    Write-Host "Running the current Level B over-VRAM workload through Experiment 008 configuration A."
+    & $windowsPowerShell @levelBArguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "Current Level B workload failed with exit code $LASTEXITCODE. Completed Level A evidence remains resumable."
+    }
 }
 
 $runtimeColibriPath = $ColibriPath
@@ -78,17 +114,26 @@ $arguments = @(
     "--telemetry-level", $TelemetryLevel
 )
 if ($ModelPathLevelA) { $arguments += @("--model-path-level-a", $ModelPathLevelA) }
+if ($ModelPathLevelASource) { $arguments += @("--model-path-level-a-source", $ModelPathLevelASource) }
 if ($ModelPathLevelB) { $arguments += @("--model-path-level-b", $ModelPathLevelB) }
+if ($ExpertBankRoot) { $arguments += @("--expert-bank-root", $ExpertBankRoot) }
 if ($KimiFixturePath) { $arguments += @("--kimi-fixture-path", $KimiFixturePath) }
 if ($runtimeColibriPath) { $arguments += @("--colibri-path", $runtimeColibriPath) }
 if ($OutputDirectory) { $arguments += @("--output-directory", $OutputDirectory) }
 if ($Resume) { $arguments += "--resume" }
+if ($CorrectionPass) { $arguments += "--correction-pass" }
 if ($RebuildColibri) { $arguments += "--rebuild-colibri" }
+if ($RebuildExpertWorkers) { $arguments += "--rebuild-expert-workers" }
 if ($RebuildCuda) { $arguments += "--rebuild-cuda" }
 if ($ApplyBridgePatches) { $arguments += "--apply-bridge-patches" }
 if ($Topology) { $arguments += @("--topology", $Topology) }
 if ($NetworkProfile) { $arguments += @("--network-profile", $NetworkProfile) }
 if ($Configuration) { $arguments += @("--configuration", $Configuration) }
+$arguments += @("--response-mode", $ResponseMode)
+if ($FailureMatrix) { $arguments += "--failure-matrix" }
+if ($CorruptionMatrix) { $arguments += "--corruption-matrix" }
+if ($RequireCompleteFullRun) { $arguments += "--require-complete-full-run" }
+if ($AllowIncomplete) { $arguments += "--allow-incomplete" }
 if ($SkipModelDownload) { $arguments += "--skip-model-download" }
 if ($SkipLevelB) { $arguments += "--skip-level-b" }
 if ($SkipKimiFixture) { $arguments += "--skip-kimi-fixture" }

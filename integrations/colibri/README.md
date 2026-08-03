@@ -15,18 +15,92 @@ pinned to the immutable revision below.
 The build never edits the submodule. It exports the pinned source to a build
 directory, verifies the revision, applies every patch listed in
 `patches/series`, fails on a rejected patch, builds the four model-family
-engines, runs bridge tests, and writes source and binary fingerprints.
+engines plus the native OLMoE expert worker, runs bridge tests, and writes
+source and binary fingerprints.
 
-Stock mode uses the unmodified export. Bridge mode adds only dedicated NDJSON
-event channels, token-ID observations, route/history export, and aggregate
-OLMoE cache, storage, prefetch, residency, resource, and phase counters. It does
-not change weights, tokenization, routing, sampling, expert selection,
-quantization, or model math.
+Stock mode uses the unmodified export. Bridge mode adds dedicated NDJSON event
+channels, token-ID observations, route/history export, aggregate OLMoE counters,
+and the Experiment 010 shared native expert runtime. The runtime is the single
+implementation used by both `olmoe` and `olmoe_expert_worker`; it preserves the
+merged int8 bytes and F32 row scales. Patch 0006 inserts external dispatch after
+the native router and before its contribution reaches the residual stream. The
+canonical byte-compatible `SWARMEX1` adapter is copied from `adapter/` into the
+exported source tree at build time. The downstream patches do not alter model
+weights, tokenization, routing, sampling, expert selection, or quantization.
+
+Patch 0007 adds native int8 OLMoE microshards. Gate and up rows and the matching
+down columns retain the source bytes and row scales. In exact mode, workers run
+in the plan's recorded `reduction_order`: each non-final shard returns the
+unscaled F32 down-dot accumulator, the next shard resumes that accumulator, and
+only the final shard applies the original down row scale. This preserves the
+same group and accumulation order as the local merged expert. Fast mode keeps
+independently scaled worker partials as a separately measured quality-bounded
+path.
+
+Patch 0008 makes capacity isolation physical rather than a coordinator
+allowlist convention: when the plan remotely covers every routed expert,
+`olmoe` does not open the local expert runtime and therefore accepts a
+dense-only coordinator container containing zero routed-expert tensors. It also
+adds a shared read-only memory telemetry module. On Windows this uses
+`GetProcessMemoryInfo`, `GetPerformanceInfo`, `GlobalMemoryStatusEx`, and sampled
+`QueryWorkingSetEx` queries to report working set, private/commit bytes, total
+page faults, system commit pressure, and resident versus nonresident native
+expert-cache hits. Windows does not attribute pagefile reads, hard versus soft
+faults, or compressed-store ownership through these APIs; those fields remain
+explicitly unavailable instead of being filled with zero. Both whole experts
+and native microshards use the runtime's bounded LRU cache and ownership checks.
+
+Patch 0008 also connects whole native-int8 OLMoE experts to Colibri's existing
+CUDA DLL ABI. `-BuildCuda` builds both `olmoe` and `olmoe_expert_worker` with the
+runtime loader. Setting `COLI_SWARM_EXPERT_CUDA_TARGET=all|<layer>:<expert>` and
+`COLI_SWARM_EXPERT_CUDA_DEVICE=<ordinal>` makes CUDA mandatory for the selected
+worker expert: DLL initialization, exact int8/F32-scale upload, residency, or
+kernel failure fails the request, with no CPU fallback. Telemetry records the
+target, tensor residency, upload time, PCIe/kernel timing, execution count, and
+the fallback count. The environment is opt-in and does not affect local mode.
+
+Patch 0008 additionally makes `COLI_SWARM_EXPERT_DATA_PLANE` select
+`direct_tcp`, `relayed_tcp`, or `shared_memory`. All three carry the same
+canonical `SWARMEX1` request and response bytes. Shared memory uses named
+file mappings only after a `SWARMEX1` control handshake declares the exact
+mapping names and sizes; relay mode shapes the real framed socket payload.
+The worker reports mutex wait separately from native compute time so
+concurrent decode queueing is measurable. OLMoE attention scratch is sized
+from the loaded container's `max_position_embeddings` rather than a fixed
+4096-element stack array, without changing scalar attention order.
+
+Native expert modes are selected with `COLI_SWARM_EXPERT_MODE=local|rpc|hybrid|planner`.
+Non-local modes require absolute `COLI_SWARM_EXPERT_PLAN` and
+`COLI_SWARM_EXPERT_TELEMETRY` paths. Exact mode returns an unweighted contribution
+for each selected router rank in one response per worker, then applies the
+original routing weight and accumulates ranks with the same shared scalar
+primitive as local Colibri. This avoids an extra float rounding point while
+retaining coalesced transport.
+
+For correctness audits, `COLI_SWARM_NUMERIC_TRACE=<absolute path>` enables an
+observation-only binary trace in the real OLMoE step path. Records use the
+`COLNUM1` format and capture post-MoE hidden states, exact selected routing
+weights, and pre-sampling logits as native float32 bytes. The trace does not
+execute shadow experts, change routing, or participate in sampling; it exists
+only to locate the first numerical divergence between an exact-container local
+run and a distributed run.
+
+The CUDA build also emits `coli_kimi_mxfp4.dll`. The dense Kimi K3-shaped
+fixture calls the shared native `quant.h` MXFP4 arithmetic through that DLL,
+processes every quantization group, and disables zero-group skipping. This is
+labelled `SYNTHETIC_FIXTURE` unless official checkpoint bytes are supplied; it
+is not full Kimi K3 inference.
 
 ## Build
 
 ```powershell
 .\integrations\colibri\build.ps1 -ApplyBridgePatches
+```
+
+For the native Windows CUDA DLL plus CUDA-enabled OLMoE engine and worker:
+
+```powershell
+.\integrations\colibri\build.ps1 -ApplyBridgePatches -BuildCuda
 ```
 
 On Linux/macOS:
