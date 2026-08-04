@@ -273,6 +273,7 @@ class Experiment010Options:
     skip_level_b: bool = False
     skip_kimi_fixture: bool = False
     model_path_frontier: Path | None = None
+    level_b_only: bool = False
 
     def validate(self) -> None:
         if self.repeats <= 0:
@@ -289,6 +290,12 @@ class Experiment010Options:
             raise ValueError("full mode requires at least three repeats")
         if self.mode == Experiment010Mode.FULL and not self.allow_incomplete:
             self.require_complete_full_run = True
+        if self.level_b_only and not self.correction_pass:
+            raise ValueError("Level B-only execution requires correction_pass")
+        if self.level_b_only and self.mode != Experiment010Mode.FULL:
+            raise ValueError("Level B-only execution requires full mode")
+        if self.level_b_only and self.skip_level_b:
+            raise ValueError("Level B-only execution is incompatible with skip_level_b")
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,7 +336,9 @@ def assess_full_run_completeness(
         {
             "prerequisite": name,
             "complete": prerequisites.get(name) is True,
-            "reason": None if prerequisites.get(name) is True else explanations.get(name, "not completed"),
+            "reason": None
+            if prerequisites.get(name) is True
+            else explanations.get(name, "not completed"),
         }
         for name in FULL_RUN_PREREQUISITES
     ]
@@ -2907,15 +2916,14 @@ def run_experiment_010(
             mode=options.mode,
             level_b_path=options.model_path_level_b,
             resume=options.resume,
+            level_b_only=options.level_b_only,
         )
         incomplete_error = None
         if (
             options.require_complete_full_run
             and result["run_completeness"] != RunCompleteness.FULL_COMPLETE.value
         ):
-            missing = ", ".join(
-                row["prerequisite"] for row in result["missing_prerequisites"]
-            )
+            missing = ", ".join(row["prerequisite"] for row in result["missing_prerequisites"])
             incomplete_error = (
                 f"INCOMPLETE_FULL_RUN: required correction prerequisites missing: {missing}"
             )
@@ -3029,14 +3037,10 @@ def run_experiment_010(
         if options.mode == Experiment010Mode.FULL and not options.skip_kimi_fixture:
             try:
                 kimi_runtime_name = (
-                    "coli_kimi_mxfp4.dll"
-                    if os.name == "nt"
-                    else "libcoli_kimi_mxfp4.so"
+                    "coli_kimi_mxfp4.dll" if os.name == "nt" else "libcoli_kimi_mxfp4.so"
                 )
                 kimi_full = run_full_kimi_k3_fixture(
-                    native_library=(
-                        repository / "build" / "colibri" / "bin" / kimi_runtime_name
-                    )
+                    native_library=(repository / "build" / "colibri" / "bin" / kimi_runtime_name)
                 )
                 matrix["kimi_inventory"] = kimi_full["inventory"]
                 matrix["kimi_rows"] = kimi_full["rows"]

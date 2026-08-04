@@ -32,6 +32,9 @@ REQUIRED_FILES = (
     "pcie_profile.json",
     "model_inventory_level_a.json",
     "model_inventory_level_b.json",
+    "level_b_gate_17_validation.json",
+    "level_b_model_acquisition.json",
+    "level_b_workload_summary.csv",
     "kimi_fixture_inventory.json",
     "worker_capabilities.json",
     "worker_budgets.json",
@@ -85,6 +88,7 @@ REQUIRED_FILES = (
     "telemetry.ndjson",
     "verdict.json",
     "report.md",
+    "SHA256SUMS.txt",
     "reproduce.ps1",
 )
 

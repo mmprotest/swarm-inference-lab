@@ -8,7 +8,8 @@ param(
     [switch]$SkipDownload,
     [ValidateSet("A", "B", "C", "D", "E", "F", "G")]
     [string]$Configuration,
-    [string]$ServerPath
+    [string]$ServerPath,
+    [switch]$Gate17Only
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,6 +20,12 @@ if ($Quick -and $Full) {
 if (-not $Quick -and -not $Full) {
     $Quick = $true
     Write-Host "No mode selected; running -Quick. Only -Full can produce an official verdict."
+}
+if ($Gate17Only -and -not $Full) {
+    throw "-Gate17Only requires -Full."
+}
+if ($Gate17Only -and $Configuration -ne "A") {
+    throw "-Gate17Only requires -Configuration A."
 }
 
 $experimentDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -57,6 +64,7 @@ if ($ModelPath) { $arguments += @("--model-path", (Resolve-Path $ModelPath).Path
 if ($OutputDirectory) { $arguments += @("--output-directory", $OutputDirectory) }
 if ($Configuration) { $arguments += @("--configuration", $Configuration) }
 if ($ServerPath) { $arguments += @("--server-path", (Resolve-Path $ServerPath).Path) }
+if ($Gate17Only) { $arguments += "--gate-17-only" }
 
 $existingPythonPath = $env:PYTHONPATH
 $sourceRoot = Join-Path $repositoryRoot "src"

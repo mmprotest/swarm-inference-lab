@@ -98,6 +98,13 @@ def _generation_metrics(generations: list[GenerationResult]) -> dict[str, Any]:
         "request_count": len(generations),
         "successful_request_count": len(successful),
         "failed_request_count": len(generations) - len(successful),
+        "prompt_token_count_total": sum(len(item.prompt_token_ids) for item in successful),
+        "prompt_token_count_min": min(
+            (len(item.prompt_token_ids) for item in successful), default=None
+        ),
+        "prompt_token_count_max": max(
+            (len(item.prompt_token_ids) for item in successful), default=None
+        ),
         "output_token_count": sum(len(item.output_token_ids) for item in successful),
         "decode_tokens_per_second": statistics.median(decode_rates) if decode_rates else None,
         "decode_tokens_per_second_p95": percentile(decode_rates, 95) if decode_rates else None,
@@ -170,6 +177,7 @@ def execute_mixed_service(
     background: WorkloadPrompt,
     seed: int,
     sample_interval_seconds: float,
+    minimum_measurement_seconds: float | None = None,
 ) -> WorkloadExecution:
     sampler = ResourceSampler(
         interval_seconds=sample_interval_seconds,
@@ -178,56 +186,100 @@ def execute_mixed_service(
     admitted = time.perf_counter_ns()
     sampler.start()
     try:
-        with ThreadPoolExecutor(max_workers=2, thread_name_prefix="exp008-mixed") as pool:
-            interactive_future = pool.submit(
-                client.generate,
-                interactive.token_ids,
-                output_tokens=interactive.requested_output_tokens,
-                seed=seed,
-                admitted_monotonic_ns=admitted,
-            )
-            background_future = pool.submit(
-                client.generate,
-                background.token_ids,
-                output_tokens=background.requested_output_tokens,
-                seed=seed + 1,
-                admitted_monotonic_ns=admitted,
-            )
-            interactive_result = interactive_future.result()
-            background_result = background_future.result()
+        interactive_results: list[GenerationResult] = []
+        background_results: list[GenerationResult] = []
+        cycle = 0
+        target_seconds = max(float(minimum_measurement_seconds or 0.0), 0.0)
+        while cycle == 0 or (time.perf_counter_ns() - admitted) / 1_000_000_000 < target_seconds:
+            cycle_admitted = time.perf_counter_ns()
+            with ThreadPoolExecutor(max_workers=2, thread_name_prefix="exp008-mixed") as pool:
+                interactive_future = pool.submit(
+                    client.generate,
+                    interactive.token_ids,
+                    output_tokens=interactive.requested_output_tokens,
+                    seed=seed + cycle * 2,
+                    admitted_monotonic_ns=cycle_admitted,
+                )
+                background_future = pool.submit(
+                    client.generate,
+                    background.token_ids,
+                    output_tokens=background.requested_output_tokens,
+                    seed=seed + cycle * 2 + 1,
+                    admitted_monotonic_ns=cycle_admitted,
+                )
+                interactive_results.append(interactive_future.result())
+                background_results.append(background_future.result())
+            cycle += 1
+            if not interactive_results[-1].success or not background_results[-1].success:
+                break
     finally:
         rows = sampler.stop()
-    results = [interactive_result, background_result]
+    results = [
+        item for pair in zip(interactive_results, background_results, strict=True) for item in pair
+    ]
     started = min(item.started_monotonic_ns for item in results)
     completed = max(item.completed_monotonic_ns for item in results)
     window_seconds = (completed - started) / 1_000_000_000
     generated_tokens = sum(len(item.output_token_ids) for item in results if item.success)
-    interactive_intervals = interactive_result.inter_token_latencies_ms
-    background_intervals = background_result.inter_token_latencies_ms
+    interactive_intervals = [
+        value for item in interactive_results for value in item.inter_token_latencies_ms
+    ]
+    background_intervals = [
+        value for item in background_results for value in item.inter_token_latencies_ms
+    ]
+    interactive_rates = [
+        float(value)
+        for item in interactive_results
+        if (value := item.decode_tokens_per_second) is not None
+    ]
+    background_rates = [
+        float(value)
+        for item in background_results
+        if (value := item.decode_tokens_per_second) is not None
+    ]
     metrics: dict[str, Any] = {
-        "request_count": 2,
+        "request_count": len(results),
         "successful_request_count": sum(item.success for item in results),
+        "prompt_token_count_total": sum(len(item.prompt_token_ids) for item in results),
+        "prompt_token_count_min": min(
+            (len(item.prompt_token_ids) for item in results), default=None
+        ),
+        "prompt_token_count_max": max(
+            (len(item.prompt_token_ids) for item in results), default=None
+        ),
         "output_token_count": generated_tokens,
         "measurement_window_seconds": window_seconds,
+        "measurement_target_seconds": target_seconds,
+        "measurement_cycle_count": cycle,
         "interactive_p50_latency_ms": (
             statistics.median(interactive_intervals) if interactive_intervals else None
         ),
         "interactive_p95_latency_ms": (
             percentile(interactive_intervals, 95) if interactive_intervals else None
         ),
-        "interactive_tokens_per_second": interactive_result.decode_tokens_per_second,
-        "background_tokens_per_second": background_result.decode_tokens_per_second,
+        "interactive_tokens_per_second": (
+            statistics.median(interactive_rates) if interactive_rates else None
+        ),
+        "background_tokens_per_second": (
+            statistics.median(background_rates) if background_rates else None
+        ),
         "combined_generated_tokens_per_second": (
             generated_tokens / window_seconds if window_seconds > 0 else None
         ),
         "mixed_verified_tokens_per_second": None,
         "verification_status": "PENDING_DETERMINISTIC_COMPARISON",
         "interactive_client_dispatch_delay_ms": (
-            interactive_result.started_monotonic_ns - interactive_result.admitted_monotonic_ns
+            statistics.median(
+                item.started_monotonic_ns - item.admitted_monotonic_ns
+                for item in interactive_results
+            )
         )
         / 1_000_000,
         "background_client_dispatch_delay_ms": (
-            background_result.started_monotonic_ns - background_result.admitted_monotonic_ns
+            statistics.median(
+                item.started_monotonic_ns - item.admitted_monotonic_ns
+                for item in background_results
+            )
         )
         / 1_000_000,
         "interactive_scheduling_delay_ms": None,

@@ -741,6 +741,13 @@ def adaptive_moe_saturation_command(
         Path | None,
         typer.Option("--server-path", help="Exact native llama-server executable."),
     ] = None,
+    gate_17_only: Annotated[
+        bool,
+        typer.Option(
+            "--gate-17-only",
+            help="Run only strict official preferred-model Configuration A evidence for Experiment 010 Gate 17.",
+        ),
+    ] = False,
 ) -> None:
     """Run Experiment 008 single-host adaptive sparse-MoE saturation."""
 
@@ -764,6 +771,7 @@ def adaptive_moe_saturation_command(
                 skip_download=skip_download,
                 configuration=selected,  # type: ignore[arg-type]
                 server_path=server_path,
+                gate_17_only=gate_17_only,
             )
         )
     except (OSError, RuntimeError, ValueError) as exc:
@@ -774,7 +782,10 @@ def adaptive_moe_saturation_command(
     typer.echo(f"verdict={outcome.verdict.value}")
     if outcome.error:
         typer.echo(f"terminal_error={outcome.error}", err=True)
-    if outcome.verdict.value not in {"PASS_STRONG", "PASS_CAPACITY_AND_ARCHITECTURE"}:
+    if outcome.error or (
+        not gate_17_only
+        and outcome.verdict.value not in {"PASS_STRONG", "PASS_CAPACITY_AND_ARCHITECTURE"}
+    ):
         raise typer.Exit(1)
 
 

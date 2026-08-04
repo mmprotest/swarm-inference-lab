@@ -69,6 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-level-b", action="store_true")
     parser.add_argument("--skip-kimi-fixture", action="store_true")
     parser.add_argument("--model-path-frontier")
+    parser.add_argument("--level-b-only", action="store_true")
     return parser
 
 
@@ -103,6 +104,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
         skip_level_b=namespace.skip_level_b,
         skip_kimi_fixture=namespace.skip_kimi_fixture,
         model_path_frontier=_optional_path(namespace.model_path_frontier),
+        level_b_only=namespace.level_b_only,
     )
     outcome = run_experiment_010(namespace.repository_root, options)
     print(

@@ -26,6 +26,8 @@ from swarm_inference.config.experiment_008 import (
     load_experiment_008_config,
 )
 from swarm_inference.experiments.experiment_008.acquisition import (
+    LEVEL_B_MINIMUM_FREE_BYTES,
+    ModelAcquisitionPreflightError,
     ResolvedModel,
     resolve_llama_server,
     resolve_model_candidate,
@@ -118,12 +120,17 @@ class Experiment008Options:
     skip_download: bool = False
     configuration: ConfigurationId | None = None
     server_path: Path | None = None
+    gate_17_only: bool = False
 
     def validate(self) -> None:
         if self.quick == self.full:
             raise ValueError("select exactly one of --quick or --full")
         if self.configuration is not None and self.configuration not in set("ABCDEFG"):
             raise ValueError("configuration must be one of A through G")
+        if self.gate_17_only and not self.full:
+            raise ValueError("Gate 17-only execution requires --full")
+        if self.gate_17_only and self.configuration != "A":
+            raise ValueError("Gate 17-only execution requires --configuration A")
 
 
 @dataclass(slots=True)
@@ -609,9 +616,11 @@ def _model_execution_precheck(
             "Experiment 008 backend compatibility check. Reply with one short factual sentence.",
             add_special=True,
         )
-        generation = client.generate(prompt_ids, output_tokens=2, seed=config.workloads.seed)
+        generation = client.generate(prompt_ids, output_tokens=8, seed=config.workloads.seed)
         if not generation.success:
             error = generation.error or "greedy generation did not complete"
+        elif not generation.output_token_ids or not generation.content.strip():
+            error = "greedy generation returned no verifiable text or token IDs"
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"
     finally:
@@ -635,7 +644,9 @@ def _model_execution_precheck(
         "candidate": candidate_name,
         "model_file_sha256": resolved.file_sha256,
         "reused": False,
+        "prompt_token_ids": generation.prompt_token_ids if generation is not None else None,
         "output_token_ids": generation.output_token_ids if generation is not None else None,
+        "generated_text": generation.content if generation is not None else None,
         "error": error,
         "exit_code": 0 if error is None else process_exit_code,
         "server_process_exit_code": process_exit_code,
@@ -658,7 +669,9 @@ def _resolve_and_preflight(
 
     attempts: list[dict[str, Any]] = []
     candidates: list[tuple[str, Experiment008ModelCandidate]]
-    if options.model_path is not None:
+    if options.gate_17_only:
+        candidates = [("preferred", config.models.preferred)]
+    elif options.model_path is not None:
         lowered = options.model_path.name.lower()
         selected = config.models.fallback if "3.6-35b" in lowered else config.models.preferred
         selected_name = "fallback" if selected is config.models.fallback else "preferred"
@@ -681,6 +694,10 @@ def _resolve_and_preflight(
                 model_path=options.model_path,
                 cache_dir=cache_dir,
                 skip_download=options.skip_download,
+                require_exact_filename=options.gate_17_only,
+                minimum_free_bytes=(LEVEL_B_MINIMUM_FREE_BYTES if options.gate_17_only else 0),
+                require_local_cache_volume=options.gate_17_only,
+                require_public_repository=options.gate_17_only,
             )
             inventory = inspect_gguf(Path(resolved.path))
             preflight = build_preflight(
@@ -703,6 +720,10 @@ def _resolve_and_preflight(
                     "model_file_size_bytes": resolved.file_size,
                     "model_file_sha256": resolved.file_sha256,
                     "model_source": resolved.source,
+                    "model_cache_path": resolved.cache_path,
+                    "expected_model_file_size_bytes": resolved.expected_file_size,
+                    "expected_model_file_sha256": resolved.expected_file_sha256,
+                    "model_acquisition_checks": resolved.acquisition_checks,
                     "revision_provenance_note": (
                         "repository revision was resolved by the Hugging Face API"
                         if resolved.source == "huggingface-hub"
@@ -745,6 +766,8 @@ def _resolve_and_preflight(
         except Exception as exc:
             last_error = f"{type(exc).__name__}: {exc}"
             attempt.update({"status": "FAILED", "error": last_error})
+            if isinstance(exc, ModelAcquisitionPreflightError):
+                attempt["acquisition_preflight"] = exc.receipt
             attempts.append(attempt)
             bundle.write_json("model_resolution_attempts.json", attempts)
             bundle.record_failure(stage=f"model-resolution-{candidate_name}", error=last_error)
@@ -847,6 +870,28 @@ def _run_plan_workload(
     client = LlamaCppClient(server.endpoint, timeout_seconds=config.backend.request_timeout_seconds)
     execution: WorkloadExecution | None = None
     try:
+        bundle.write_json(
+            str((log_root / "request_payloads.json").relative_to(bundle.root)),
+            {
+                "classification": "MEASURED",
+                "configuration": configuration,
+                "workload": workload,
+                "model_path": str(model_path.resolve()),
+                "requests": [
+                    {
+                        "prompt_id": prompt.fixture_id,
+                        "prompt_token_ids": prompt.token_ids,
+                        "prompt_token_count": len(prompt.token_ids),
+                        "n_predict": prompt.requested_output_tokens,
+                        "temperature": 0.0,
+                        "top_k": 1,
+                        "top_p": 1.0,
+                        "seed_base": config.workloads.seed,
+                    }
+                    for prompt in prompts
+                ],
+            },
+        )
         warmups: list[dict[str, Any]] = []
         for warmup_index in range(warmup_requests):
             prompt = prompts[warmup_index % len(prompts)]
@@ -871,6 +916,9 @@ def _run_plan_workload(
                         background=prompts[1],
                         seed=config.workloads.seed + repeat_index * 10,
                         sample_interval_seconds=config.profiling.resource_sample_interval_seconds,
+                        minimum_measurement_seconds=(
+                            None if search else config.workloads.mixed_measurement_seconds
+                        ),
                     )
                 )
             else:
@@ -928,6 +976,9 @@ def _run_plan_workload(
                 [row for item in repeated for row in item.resource_rows],
             )
         execution.observation.metrics["server_launch_seconds"] = server.launch_seconds
+        execution.observation.metrics["backend_arguments"] = arguments
+        execution.observation.metrics["backend_command"] = server.command
+        execution.observation.metrics["model_path"] = str(model_path.resolve())
         execution.observation.metrics["unsupported_requested_techniques"] = [
             decision.technique
             for decision in plan.techniques
@@ -1297,6 +1348,57 @@ def _baseline_search(
     return results, selected
 
 
+def _gate_17_configuration_a_baseline(
+    *,
+    bundle: EvidenceBundle,
+    config: Experiment008Config,
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any] | None]]:
+    """Use the established stock Configuration A without an adaptive search matrix."""
+
+    candidate = baseline_search_space(config.baseline_search, seed=config.workloads.seed)[0]
+    expected = {
+        "gpu_layers": "auto",
+        "cpu_threads": 20,
+        "batch_size": 2048,
+        "microbatch_size": 512,
+        "memory_map": True,
+        "flash_attention": True,
+        "cpu_moe_layers": 0,
+    }
+    actual = {key: getattr(candidate, key) for key in expected}
+    if actual != expected:
+        raise RuntimeError(
+            f"configured Gate 17 Configuration A baseline changed: expected {expected}, got {actual}"
+        )
+    selected_row = {
+        "classification": "CONFIGURED_BASELINE",
+        "status": "CONFIGURED",
+        "baseline_role": "gate_17_configuration_a",
+        **candidate.model_dump(mode="json"),
+    }
+    selected = {
+        workload: {**selected_row, "workload": workload}
+        for workload in ("decode", "prefill_8k", "prefill_32k", "mixed")
+    }
+    bundle.write_json(
+        "baseline_search.json",
+        {
+            "classification": "CONFIGURED_BASELINE",
+            "status": "SKIPPED_FOR_GATE_17_ONLY",
+            "reason": (
+                "Gate 17 requires only the established stock Configuration A; "
+                "the Experiment 008 adaptive placement and verdict matrix was not executed"
+            ),
+            "search_space": config.baseline_search.model_dump(mode="json"),
+            "candidates": [candidate.model_dump(mode="json")],
+            "results": [],
+            "selected_by_workload": selected,
+        },
+    )
+    bundle.complete_stage("gate-17-configuration-a-baseline")
+    return [], selected
+
+
 def _candidate_from_selected(row: dict[str, Any]) -> BaselineCandidate:
     fields = {key: row[key] for key in BaselineCandidate.model_fields if key in row}
     return BaselineCandidate.model_validate(fields)
@@ -1492,9 +1594,10 @@ def _residency_accounting(
 ) -> dict[str, Any]:
     buffers: list[dict[str, Any]] = []
     offloaded_layers: list[dict[str, Any]] = []
+    final_configuration = final_decode_plan.configuration
     for log in (
-        (bundle.root / "logs" / "ablation" / "G").rglob("server.stderr.log")
-        if (bundle.root / "logs" / "ablation" / "G").exists()
+        (bundle.root / "logs" / "ablation" / final_configuration).rglob("server.stderr.log")
+        if (bundle.root / "logs" / "ablation" / final_configuration).exists()
         else []
     ):
         text = log.read_text(encoding="utf-8", errors="replace")
@@ -2194,17 +2297,30 @@ def _full_run(
         destination_root=repository_root / "artifacts" / "backend-environments" / "experiment-008",
     )
     probe = probe_llama_server(executable)
-    bundle.write_json("backend_acquisition.json", acquisition)
-    bundle.write_json("backend_probe.json", probe.as_dict())
-    if not probe.capabilities.conventional_layer_offload:
-        raise RuntimeError("selected llama.cpp binary lacks conventional GPU layer offloading")
-    bundle.complete_stage("backend-probe")
-
     preliminary_identity = collect_hardware_identity(
         backend=config.backend.backend,
         model=config.models.preferred.model_id,
         quantization=config.models.preferred.quantization,
     )
+    acquisition.setdefault("configured_release_tag", config.backend.release_tag)
+    acquisition.setdefault("configured_cuda_version", config.backend.windows_cuda_version)
+    probe_payload = probe.as_dict()
+    probe_payload.update(
+        {
+            "configured_release_tag": config.backend.release_tag,
+            "configured_cuda_version": config.backend.windows_cuda_version,
+            "cuda_available": bool(
+                preliminary_identity.get("gpu") and preliminary_identity.get("cuda_runtime")
+            ),
+            "gpu_layer_offload_capability": probe.capabilities.conventional_layer_offload,
+        }
+    )
+    bundle.write_json("backend_acquisition.json", acquisition)
+    bundle.write_json("backend_probe.json", probe_payload)
+    if not probe.capabilities.conventional_layer_offload:
+        raise RuntimeError("selected llama.cpp binary lacks conventional GPU layer offloading")
+    bundle.complete_stage("backend-probe")
+
     cache_dir = repository_root / ".cache" / "experiment_008" / "huggingface"
     resolved, inventory, preflight = _resolve_and_preflight(
         bundle=bundle,
@@ -2263,20 +2379,40 @@ def _full_run(
         capabilities=probe.capabilities,
     )
     bundle.complete_stage("workload-tokenization")
-    baseline_rows, selected = _baseline_search(
-        bundle=bundle,
-        config=config,
-        executable=executable,
-        model_path=Path(resolved.path),
-        capabilities=probe.capabilities,
-        workloads=workloads,
-    )
+    if options.gate_17_only:
+        baseline_rows, selected = _gate_17_configuration_a_baseline(
+            bundle=bundle,
+            config=config,
+        )
+    else:
+        baseline_rows, selected = _baseline_search(
+            bundle=bundle,
+            config=config,
+            executable=executable,
+            model_path=Path(resolved.path),
+            capabilities=probe.capabilities,
+            workloads=workloads,
+        )
 
     observations: list[dict[str, Any]] = [
         row
         for row in _json_or(bundle.root / "benchmark_results.json", [])
         if isinstance(row, dict) and row.get("status") != "NOT_RUN"
     ]
+    for observation in observations:
+        observation.update(
+            {
+                "evidence_category": (
+                    "REAL_MODEL_MEASURED"
+                    if observation.get("evidence_class") == "MEASURED"
+                    else observation.get("evidence_category")
+                ),
+                "historical_row": False,
+                "model_file_sha256": resolved.file_sha256,
+                "model_filename": resolved.filename,
+                "model_revision": resolved.resolved_revision,
+            }
+        )
     resources: list[dict[str, Any]] = list(_json_or(bundle.root / "resource_timeseries.json", []))
     generation_by_config_workload: dict[tuple[str, str], list[GenerationResult]] = {}
     token_evidence: dict[str, list[dict[str, Any]]] = dict(
@@ -2389,6 +2525,15 @@ def _full_run(
                     capabilities=probe.capabilities,
                 )
                 observation = execution.observation.model_dump(mode="json")
+                observation.update(
+                    {
+                        "evidence_category": "REAL_MODEL_MEASURED",
+                        "historical_row": False,
+                        "model_file_sha256": resolved.file_sha256,
+                        "model_filename": resolved.filename,
+                        "model_revision": resolved.resolved_revision,
+                    }
+                )
                 observations.append(observation)
                 resources.extend(execution.resource_rows)
                 generation_by_config_workload[(configuration, workload)] = execution.generations
@@ -3177,6 +3322,7 @@ def run_experiment_008(options: Experiment008Options) -> Experiment008Outcome:
             "skip_download": options.skip_download,
             "resume": options.resume,
             "selected_configuration": options.configuration,
+            "gate_17_only": options.gate_17_only,
             "official_verdict_eligible": options.full and options.configuration is None,
         }
         bundle.write_json("manifest.json", manifest)
