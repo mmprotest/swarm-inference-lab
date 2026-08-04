@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import json
 from datetime import UTC, datetime
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, Literal, TypeVar
 
 from google.protobuf.any_pb2 import Any as ProtoAny
@@ -298,6 +298,44 @@ class SubmitResponse(StrictModel):
     detail: str = ""
 
 
+class StreamEventType(StrEnum):
+    REQUEST_ACCEPTED = "REQUEST_ACCEPTED"
+    TOPOLOGY_SELECTED = "TOPOLOGY_SELECTED"
+    SESSION_OPENED = "SESSION_OPENED"
+    PREFILL_STARTED = "PREFILL_STARTED"
+    TOKEN_GENERATED = "TOKEN_GENERATED"
+    SESSION_CLOSED = "SESSION_CLOSED"
+    REQUEST_COMPLETED = "REQUEST_COMPLETED"
+    REQUEST_FAILED = "REQUEST_FAILED"
+    REQUEST_CANCELLED = "REQUEST_CANCELLED"
+
+
+class SubmitStreamEvent(StrictModel):
+    """One strictly ordered publication in a coordinator submit stream."""
+
+    event_type: StreamEventType
+    request_id: str
+    sequence_number: int = Field(ge=0)
+    monotonic_timestamp_ns: int = Field(gt=0)
+    session_id: str | None = None
+    topology_id: str | None = None
+    model_revision: str | None = None
+    token_position: int | None = Field(default=None, ge=0)
+    token_id: int | None = Field(default=None, ge=0)
+    decoded_text_fragment: str = ""
+    status_detail: str = ""
+    final_token_ids: list[int] = Field(default_factory=list)
+    timing_metrics: dict[str, float] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_event_payload(self) -> SubmitStreamEvent:
+        if self.event_type == StreamEventType.TOKEN_GENERATED and (
+            self.token_position is None or self.token_id is None
+        ):
+            raise ValueError("TOKEN_GENERATED requires token position and token ID")
+        return self
+
+
 WireMessage = (
     RegistrationRequest
     | RegistrationResponse
@@ -318,6 +356,7 @@ WireMessage = (
     | WireChunk
     | SubmitRequest
     | SubmitResponse
+    | SubmitStreamEvent
 )
 MessageT = TypeVar("MessageT", bound=StrictModel)
 

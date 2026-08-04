@@ -54,7 +54,13 @@ experiment_app = typer.Typer(
     invoke_without_command=True,
     no_args_is_help=False,
 )
+model_app = typer.Typer(
+    name="model",
+    help="Inspect, plan, deploy, and unload persistent product models.",
+    no_args_is_help=True,
+)
 app.add_typer(experiment_app, name="experiment")
+app.add_typer(model_app, name="model")
 
 
 def _fail(message: str, *, code: int = 1) -> None:
@@ -972,10 +978,235 @@ def worker_fanout_command(
         raise typer.Exit(1)
 
 
+def _product_reference(
+    *,
+    model_id: str,
+    revision: str,
+    tokenizer_revision: str | None,
+    dtype: str,
+    allow_download: bool,
+) -> Any:
+    from swarm_inference.model.product import (
+        ModelResolutionPolicy,
+        ProductModelReference,
+    )
+
+    return ProductModelReference(
+        model_id=model_id,
+        model_revision=revision,
+        tokenizer_revision=tokenizer_revision or revision,
+        adapter_id="olmoe",
+        dtype=dtype,
+        resolution_policy=(
+            ModelResolutionPolicy.ALLOW_DOWNLOAD
+            if allow_download
+            else ModelResolutionPolicy.LOCAL_ONLY
+        ),
+    )
+
+
+@model_app.command("inspect")
+def product_model_inspect_command(
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    model_id: Annotated[str, typer.Option("--model-id")],
+    revision: Annotated[str, typer.Option(help="Exact immutable model revision.")],
+    tokenizer_revision: Annotated[str | None, typer.Option()] = None,
+    dtype: Annotated[str, typer.Option()] = "bfloat16",
+    allow_download: Annotated[
+        bool,
+        typer.Option(help="Request download resolution only on workers that explicitly allow it."),
+    ] = False,
+) -> None:
+    """Inspect exact OLMoE metadata across registered workers without loading weights."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+    from swarm_inference.protocol.product import ModelInspectRequest
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.inspect_model(
+                ModelInspectRequest(
+                    reference=_product_reference(
+                        model_id=model_id,
+                        revision=revision,
+                        tokenizer_revision=tokenizer_revision,
+                        dtype=dtype,
+                        allow_download=allow_download,
+                    )
+                )
+            )
+        finally:
+            await client.close()
+
+    try:
+        response = asyncio.run(run())
+    except (SwarmError, OSError, ValueError) as exc:
+        _fail(f"model inspect failed: {exc}")
+    typer.echo(response.model_dump_json(indent=2))
+
+
+@model_app.command("plan")
+def product_model_plan_command(
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    model_id: Annotated[str, typer.Option("--model-id")],
+    revision: Annotated[str, typer.Option(help="Exact immutable model revision.")],
+    tokenizer_revision: Annotated[str | None, typer.Option()] = None,
+    dtype: Annotated[str, typer.Option()] = "bfloat16",
+    stage_count: Annotated[int | None, typer.Option(min=1, max=2)] = None,
+    partition: Annotated[str, typer.Option(help="auto, equal, or balanced.")] = "auto",
+    max_sequence_tokens: Annotated[int, typer.Option(min=1)] = 2048,
+    require_distributed: Annotated[bool, typer.Option()] = False,
+    allow_download: Annotated[bool, typer.Option()] = False,
+    output: Annotated[Path | None, typer.Option(help="Plan JSON path.")] = None,
+) -> None:
+    """Build a measured, memory-aware contiguous OLMoE stage plan."""
+
+    if partition not in {"auto", "equal", "balanced"}:
+        _fail("--partition must be auto, equal, or balanced")
+    from swarm_inference.coordinator.service import CoordinatorClient
+    from swarm_inference.protocol.product import ModelPlanRequest
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.plan_model(
+                ModelPlanRequest(
+                    reference=_product_reference(
+                        model_id=model_id,
+                        revision=revision,
+                        tokenizer_revision=tokenizer_revision,
+                        dtype=dtype,
+                        allow_download=allow_download,
+                    ),
+                    stage_count=stage_count,
+                    partition_method=partition,
+                    require_distributed=require_distributed,
+                    max_sequence_tokens=max_sequence_tokens,
+                )
+            )
+        finally:
+            await client.close()
+
+    try:
+        response = asyncio.run(run())
+    except (SwarmError, OSError, ValueError) as exc:
+        _fail(f"model plan failed: {exc}")
+    plan_path = output or Path(".swarm/plans") / f"{response.plan.plan_id}.json"
+    plan_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_path.write_text(response.plan.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    typer.echo(response.plan.report.model_dump_json(indent=2))
+    typer.echo(f"plan={plan_path}")
+
+
+@model_app.command("deploy")
+def product_model_deploy_command(
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    plan: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+) -> None:
+    """Deploy a plan transactionally and keep all stages resident."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+    from swarm_inference.protocol.product import ModelDeployRequest, ProductStagePlan
+
+    try:
+        artifact = ProductStagePlan.model_validate_json(plan.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        _fail(f"invalid product plan: {exc}")
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.deploy_model(ModelDeployRequest(plan=artifact))
+        finally:
+            await client.close()
+
+    try:
+        response = asyncio.run(run())
+    except (SwarmError, OSError, ValueError) as exc:
+        _fail(f"model deploy failed: {exc}")
+    typer.echo(response.deployment.model_dump_json(indent=2))
+
+
+@model_app.command("unload")
+def product_model_unload_command(
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    topology_id: Annotated[str | None, typer.Option()] = None,
+    force: Annotated[bool, typer.Option()] = False,
+) -> None:
+    """Explicitly remove routes and unload resident product stages."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+    from swarm_inference.protocol.product import ModelUnloadRequest
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.unload_model(
+                ModelUnloadRequest(topology_id=topology_id, force=force)
+            )
+        finally:
+            await client.close()
+
+    try:
+        response = asyncio.run(run())
+    except (SwarmError, OSError, ValueError) as exc:
+        _fail(f"model unload failed: {exc}")
+    typer.echo(response.model_dump_json(indent=2))
+
+
+@app.command("topology")
+def product_topology_command(
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    topology_id: Annotated[str | None, typer.Option()] = None,
+) -> None:
+    """Show product topology deployment state."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+    from swarm_inference.protocol.product import TopologyStatusRequest
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.topology_status(TopologyStatusRequest(topology_id=topology_id))
+        finally:
+            await client.close()
+
+    typer.echo(asyncio.run(run()).model_dump_json(indent=2))
+
+
+@app.command("workers")
+def product_workers_command(
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    include_unhealthy: Annotated[bool, typer.Option()] = True,
+) -> None:
+    """Show registered workers and advertised product capabilities."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+    from swarm_inference.protocol.product import WorkersRequest
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.workers(WorkersRequest(include_unhealthy=include_unhealthy))
+        finally:
+            await client.close()
+
+    typer.echo(asyncio.run(run()).model_dump_json(indent=2))
+
+
 @app.command("coordinator")
 def coordinator_command(
     config: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     listen: Annotated[str, typer.Option(help="gRPC bind endpoint.")] = "0.0.0.0:50051",
+    advertise: Annotated[
+        str | None,
+        typer.Option(help="Worker-reachable coordinator publication endpoint."),
+    ] = None,
+    state: Annotated[
+        Path,
+        typer.Option(help="Persistent coordinator plans and deployment status directory."),
+    ] = Path(".swarm/coordinator"),
     model_manifest: Annotated[
         Path | None,
         typer.Option(
@@ -996,13 +1227,30 @@ def coordinator_command(
 ) -> None:
     """Start the central coordinator without loading full model weights."""
 
+    import yaml
+
     from swarm_inference.config.models import ModelManifest
     from swarm_inference.coordinator.service import CoordinatorCore, CoordinatorRpcServer
 
-    experiment = load_experiment_config(config)
+    raw_config = yaml.safe_load(config.read_text(encoding="utf-8"))
+    product_configuration = None
+    experiment = None
+    if isinstance(raw_config, dict) and raw_config.get("kind") == "product-stage-ring":
+        from swarm_inference.config.product import load_product_config
+
+        product_configuration = load_product_config(config)
+    else:
+        experiment = load_experiment_config(config)
     manifest = None
     architecture_config = None
     tokenizer = None
+    if product_configuration is not None and (
+        model_manifest is not None or model_path is not None or dtype is not None
+    ):
+        _fail(
+            "product coordinator metadata is discovered from workers; do not pass legacy "
+            "model-manifest, model-path, or dtype options"
+        )
     if (model_manifest is None) != (model_path is None):
         _fail("--model-manifest and --model-path must be supplied together")
     if model_manifest is not None and model_path is not None:
@@ -1018,16 +1266,32 @@ def coordinator_command(
     async def run() -> None:
         core = CoordinatorCore(
             config=experiment,
+            product_config=product_configuration,
+            state_directory=state,
             model_manifest=manifest,
             architecture_config=architecture_config,
             runtime_dtype=dtype,
             tokenizer=tokenizer,
         )
         server = CoordinatorRpcServer(core)
-        await server.start(listen)
+        publication_endpoint = advertise
+        if product_configuration is not None and publication_endpoint is None:
+            import socket
+
+            from swarm_inference.host import format_endpoint, is_wildcard_host, split_endpoint
+
+            host, port = split_endpoint(listen)
+            if is_wildcard_host(host):
+                host = socket.gethostbyname(socket.gethostname())
+            publication_endpoint = format_endpoint(host, port)
+        await server.start(listen, advertised_endpoint=publication_endpoint)
+        if product_configuration is not None:
+            mode_label = "product-stage-ring"
+        else:
+            assert experiment is not None
+            mode_label = experiment.execution_mode.value
         typer.echo(
-            f"coordinator listening on {listen}; execution_mode={experiment.execution_mode.value}; "
-            f"model={core.runtime_model_id}@{core.runtime_model_revision}"
+            f"coordinator listening on {listen}; mode={mode_label}; state={core.state_directory}"
         )
         try:
             await server.wait_for_termination()
@@ -1085,6 +1349,17 @@ def worker_command(
         Path | None,
         typer.Option(help="Local Hugging Face model cache used by stage loading."),
     ] = None,
+    model_snapshot: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            file_okay=False,
+            help=(
+                "Optional host-local exact model snapshot; the coordinator still addresses "
+                "it by canonical model ID and revision."
+            ),
+        ),
+    ] = None,
     allow_model_download: Annotated[
         bool,
         typer.Option(help="Permit explicit stage loads to download an exact model revision."),
@@ -1093,6 +1368,14 @@ def worker_command(
         int,
         typer.Option(min=1, help="Maximum concurrent KV-cache sessions for the resident stage."),
     ] = 256,
+    upload_bandwidth_mbps: Annotated[
+        float,
+        typer.Option(min=0, help="Measured worker upload bandwidth in Mbit/s; zero is unknown."),
+    ] = 0.0,
+    download_bandwidth_mbps: Annotated[
+        float,
+        typer.Option(min=0, help="Measured worker download bandwidth in Mbit/s; zero is unknown."),
+    ] = 0.0,
     stage_runtime: Annotated[
         bool,
         typer.Option(
@@ -1117,7 +1400,10 @@ def worker_command(
         _fail(f"invalid worker endpoint configuration: {exc}")
     resolved_device: str | None = None
     data_advertised_endpoint: str | None = None
-    if stage_runtime:
+    enable_stage_runtime = stage_runtime or any(
+        (device, data_advertise, model_cache_dir, model_snapshot, allow_model_download)
+    )
+    if enable_stage_runtime:
         default_devices = {
             Backend.TORCH_CPU: "cpu",
             Backend.TORCH_CUDA: "cuda",
@@ -1144,6 +1430,7 @@ def worker_command(
         data_advertise is not None
         or device is not None
         or model_cache_dir is not None
+        or model_snapshot is not None
         or allow_model_download
     ):
         _fail("stage data, device, model-cache, and download options require --stage-runtime")
@@ -1158,14 +1445,18 @@ def worker_command(
             worker_id=worker_id,
             model_shard_root=model_shard_root,
             queue_config=QueueConfig(),
-            stage_runtime_enabled=stage_runtime,
-            data_listen_endpoint=data_listen if stage_runtime else None,
+            stage_runtime_enabled=enable_stage_runtime,
+            data_listen_endpoint=data_listen if enable_stage_runtime else None,
             data_advertised_endpoint=data_advertised_endpoint,
             device=resolved_device,
             dtype=dtype,
             model_cache_dir=model_cache_dir,
+            configured_model_path=model_snapshot,
             allow_model_download=allow_model_download,
             max_stage_sessions=max_stage_sessions,
+            upload_bandwidth_bytes_s=upload_bandwidth_mbps * 1_000_000 / 8,
+            download_bandwidth_bytes_s=download_bandwidth_mbps * 1_000_000 / 8,
+            network_rates_measured=(upload_bandwidth_mbps > 0 and download_bandwidth_mbps > 0),
         )
     )
 
@@ -1182,32 +1473,99 @@ def submit_command(
         str,
         typer.Option(help="Expected immutable model revision."),
     ] = "synthetic-v1",
+    stream: Annotated[
+        bool,
+        typer.Option("--stream/--no-stream", help="Use the ordered server-streaming RPC."),
+    ] = False,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Render the response or event array as JSON."),
+    ] = False,
+    ndjson: Annotated[
+        bool,
+        typer.Option("--ndjson", help="Render one compact stream event per line."),
+    ] = False,
 ) -> None:
-    """Submit one request; output is never described as aggregate throughput."""
+    """Submit one request and optionally stream ordered generated-token events."""
 
     if temperature != 0:
         _fail("the initial transport runtime supports greedy temperature=0 only")
+    if json_output and ndjson:
+        _fail("--json and --ndjson are mutually exclusive")
     from swarm_inference.coordinator.service import CoordinatorClient
-    from swarm_inference.protocol.messages import SubmitRequest
+    from swarm_inference.protocol.messages import (
+        StreamEventType,
+        SubmitRequest,
+    )
 
-    async def run() -> Any:
+    request = SubmitRequest(
+        request_id=uuid4().hex,
+        prompt=prompt,
+        max_new_tokens=max_new_tokens,
+        random_seed=seed,
+        model_id=model_id,
+        model_revision=model_revision,
+    )
+
+    async def run_unary() -> Any:
         client = CoordinatorClient(coordinator)
         try:
-            return await client.submit(
-                SubmitRequest(
-                    request_id=uuid4().hex,
-                    prompt=prompt,
-                    max_new_tokens=max_new_tokens,
-                    random_seed=seed,
-                    model_id=model_id,
-                    model_revision=model_revision,
-                )
-            )
+            return await client.submit(request)
         finally:
             await client.close()
 
-    response = asyncio.run(run())
-    typer.echo(response.model_dump_json(indent=2))
+    async def run_stream() -> tuple[list[Any], Any | None]:
+        client = CoordinatorClient(coordinator)
+        events: list[Any] = []
+        terminal = None
+        try:
+            async for event in client.submit_stream(request):
+                events.append(event)
+                if ndjson:
+                    typer.echo(event.model_dump_json())
+                elif not json_output and event.event_type == StreamEventType.TOKEN_GENERATED:
+                    fragment = event.decoded_text_fragment
+                    typer.echo(fragment if fragment else f"<{event.token_id}>", nl=False)
+                if event.event_type in {
+                    StreamEventType.REQUEST_COMPLETED,
+                    StreamEventType.REQUEST_FAILED,
+                    StreamEventType.REQUEST_CANCELLED,
+                }:
+                    terminal = event
+        finally:
+            await client.close()
+        return events, terminal
+
+    if stream:
+        events, terminal = asyncio.run(run_stream())
+        if json_output:
+            typer.echo(
+                json.dumps(
+                    [event.model_dump(mode="json") for event in events],
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+        elif not ndjson:
+            typer.echo("")
+            if terminal is not None:
+                typer.echo(
+                    json.dumps(
+                        {
+                            "status": terminal.event_type.value,
+                            "final_token_ids": terminal.final_token_ids,
+                            "timing_metrics": terminal.timing_metrics,
+                            "detail": terminal.status_detail,
+                        },
+                        sort_keys=True,
+                    )
+                )
+        if terminal is None or terminal.event_type != StreamEventType.REQUEST_COMPLETED:
+            raise typer.Exit(1)
+        return
+
+    response = asyncio.run(run_unary())
+    typer.echo(response.model_dump_json(indent=None if ndjson else 2))
     if response.status != "completed" or not response.verified:
         raise typer.Exit(1)
 

@@ -13,9 +13,11 @@ from swarm_inference.config.models import Backend, QueueConfig
 from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
+from swarm_inference.protocol.product import ProductTokenPublication
 from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
+from swarm_inference.transport.stage_tensor import unpack_tensor
 from swarm_inference.worker.agent import WorkerAgent
 from swarm_inference.worker.capabilities import (
     measure_capabilities,
@@ -52,10 +54,14 @@ async def run_worker(
     device: str | None = None,
     dtype: str = "bfloat16",
     model_cache_dir: str | Path | None = None,
+    configured_model_path: str | Path | None = None,
     allow_model_download: bool = False,
     max_stage_sessions: int = 256,
     stage_execution_queue_capacity: int = 256,
     token_publication_queue_capacity: int = 256,
+    upload_bandwidth_bytes_s: float = 0.0,
+    download_bandwidth_bytes_s: float = 0.0,
+    network_rates_measured: bool = False,
 ) -> None:
     if stage_runtime_enabled:
         if data_listen_endpoint is None or data_advertised_endpoint is None:
@@ -88,6 +94,9 @@ async def run_worker(
         stage_runtime_enabled=stage_runtime_enabled,
         memory_limit_bytes=memory_limit_bytes,
         coordinator_latency_ms=coordinator_latency_ms,
+        upload_bandwidth_bytes_s=upload_bandwidth_bytes_s,
+        download_bandwidth_bytes_s=download_bandwidth_bytes_s,
+        network_rates_measured=network_rates_measured,
     )
     requested_dtype = {"bf16": "bfloat16", "f16": "float16", "f32": "float32"}.get(
         dtype.lower(), dtype.lower()
@@ -123,9 +132,41 @@ async def run_worker(
         reconnect_initial_backoff_ms=reconnect_initial_backoff_ms,
         reconnect_max_backoff_ms=reconnect_max_backoff_ms,
     )
+    client = CoordinatorClient(coordinator_endpoint)
     stage_runtime: PersistentStageRuntime | None = None
     if stage_runtime_enabled:
         from swarm_inference.worker.stage_runtime import PersistentStageRuntime
+
+        async def publish_token(publication: object) -> None:
+            assert stage_runtime is not None
+            from swarm_inference.worker.stage_runtime import TokenPublication
+
+            if not isinstance(publication, TokenPublication):
+                raise TypeError("stage token publisher received an invalid publication")
+            message = publication.message
+            metadata = message.attributes.get("tensor")
+            if not isinstance(metadata, dict):
+                raise ValueError("stage token publication has no tensor metadata")
+            token_tensor, _ = unpack_tensor(message.payload, dict(metadata))
+            if token_tensor.numel() != 1:
+                raise ValueError("stage token publication must contain exactly one token")
+            token_id = int(token_tensor.item())
+            response = await client.publish_token(
+                ProductTokenPublication(
+                    worker_id=capability.worker_id,
+                    request_id=message.request_id,
+                    session_id=message.session_id,
+                    topology_id=message.topology_id,
+                    route_generation=int(message.attributes["route_generation"]),
+                    model_revision=message.model_revision,
+                    token_position=message.token_position,
+                    token_id=token_id,
+                    decoded_text_fragment=stage_runtime.decode_token_id(token_id),
+                    published_monotonic_ns=time.monotonic_ns(),
+                )
+            )
+            if not response.accepted:
+                raise RuntimeError(f"coordinator rejected token publication: {response.detail}")
 
         stage_runtime = PersistentStageRuntime(
             worker_id=capability.worker_id,
@@ -136,8 +177,10 @@ async def run_worker(
             execution_queue_capacity=stage_execution_queue_capacity,
             token_queue_capacity=token_publication_queue_capacity,
             model_cache_dir=model_cache_dir,
+            configured_model_path=configured_model_path,
             allow_model_download=allow_model_download,
             capability=capability,
+            token_publisher=publish_token,
         )
     service = PersistentStageWorkerService(
         agent=agent,
@@ -145,11 +188,14 @@ async def run_worker(
         model_shard_root=str(model_shard_root) if model_shard_root else None,
         data_queue_capacity=stage_execution_queue_capacity,
     )
-    await service.start(
-        control_listen_endpoint=listen_endpoint,
-        data_listen_endpoint=data_listen_endpoint if stage_runtime_enabled else None,
-    )
-    client = CoordinatorClient(coordinator_endpoint)
+    try:
+        await service.start(
+            control_listen_endpoint=listen_endpoint,
+            data_listen_endpoint=data_listen_endpoint if stage_runtime_enabled else None,
+        )
+    except BaseException:
+        await client.close()
+        raise
     nonce = f"{capability.worker_id}:{time.monotonic_ns()}"
     registration_payload = canonical_json_bytes(
         {

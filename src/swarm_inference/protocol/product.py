@@ -1,0 +1,267 @@
+"""Typed control records for product planning, deployment, and publication."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import Literal
+
+from pydantic import Field, PositiveInt, model_validator
+
+from swarm_inference.config.models import StrictModel, WorkerCapability
+from swarm_inference.model.partition import StageAssignment
+from swarm_inference.model.product import (
+    ProductModelMetadata,
+    ProductModelReference,
+    ProductModelSpec,
+)
+
+
+class WorkerModelProbeRequest(StrictModel):
+    worker_id: str
+    request_id: str
+    reference: ProductModelReference
+    deadline_unix_ns: PositiveInt | None = None
+
+
+class WorkerModelProbeResponse(StrictModel):
+    worker_id: str
+    request_id: str
+    available: bool
+    detail: str = ""
+    spec: ProductModelSpec | None = None
+    metadata: ProductModelMetadata | None = None
+    resolved_from_local_cache: bool = True
+    worker_download_permitted: bool = False
+
+    @model_validator(mode="after")
+    def validate_result(self) -> WorkerModelProbeResponse:
+        if self.available and (self.spec is None or self.metadata is None):
+            raise ValueError("an available worker model probe requires spec and metadata")
+        if not self.available and (self.spec is not None or self.metadata is not None):
+            raise ValueError("an unavailable worker model probe cannot include resolved metadata")
+        return self
+
+
+class WorkerEligibilityReport(StrictModel):
+    worker_id: str
+    eligible: bool
+    rejection_reasons: list[str] = Field(default_factory=list)
+    effective_memory_bytes: int = Field(ge=0)
+    active_session_count: int = Field(ge=0)
+    exact_model_identity: bool = False
+    measured_profile: bool = False
+
+
+class PlanWorkerAssignment(StrictModel):
+    stage_id: int = Field(ge=0)
+    worker_id: str
+    control_endpoint: str
+    data_endpoint: str
+    device: str
+    effective_memory_bytes: int = Field(gt=0)
+    required_memory_bytes: int = Field(gt=0)
+    assignment: StageAssignment
+
+
+class PlanCandidateReport(StrictModel):
+    name: str
+    topology: str
+    stage_count: PositiveInt
+    partition_method: Literal["equal", "balanced"]
+    feasible: bool
+    selected: bool = False
+    rejection_reasons: list[str] = Field(default_factory=list)
+    worker_ids: list[str] = Field(default_factory=list)
+    memory_estimates_bytes: dict[str, int] = Field(default_factory=dict)
+    compute_estimates_ms: dict[str, float] = Field(default_factory=dict)
+    network_estimates_ms: dict[str, float] = Field(default_factory=dict)
+    expected_critical_path_waits_ms: dict[str, float] = Field(default_factory=dict)
+    expected_critical_path_ms: float | None = Field(default=None, ge=0)
+    expected_utility_tokens_s: float | None = Field(default=None, ge=0)
+
+
+class StagePlanReport(StrictModel):
+    selected_topology: str | None
+    rejected_candidates: list[str] = Field(default_factory=list)
+    worker_assignments: list[PlanWorkerAssignment] = Field(default_factory=list)
+    memory_estimates_bytes: dict[str, int] = Field(default_factory=dict)
+    compute_estimates_ms: dict[str, float] = Field(default_factory=dict)
+    network_estimates_ms: dict[str, float] = Field(default_factory=dict)
+    expected_critical_path_waits_ms: dict[str, float] = Field(default_factory=dict)
+    reason_for_selection: str
+    candidates: list[PlanCandidateReport]
+    worker_eligibility: list[WorkerEligibilityReport]
+
+
+class ProductStagePlan(StrictModel):
+    plan_id: str
+    topology_id: str
+    generation: PositiveInt = 1
+    created_monotonic_ns: PositiveInt
+    model: ProductModelSpec
+    stage_count: PositiveInt
+    partition_method: Literal["equal", "balanced"]
+    max_sequence_tokens: PositiveInt
+    assignments: list[PlanWorkerAssignment]
+    report: StagePlanReport
+
+    @model_validator(mode="after")
+    def validate_topology(self) -> ProductStagePlan:
+        ordered = sorted(self.assignments, key=lambda item: item.stage_id)
+        if self.assignments != ordered:
+            raise ValueError("product plan assignments must be ordered by stage ID")
+        if [item.stage_id for item in ordered] != list(range(self.stage_count)):
+            raise ValueError("product plan stages must be contiguous from zero")
+        if len({item.worker_id for item in ordered}) != self.stage_count:
+            raise ValueError("one product worker may own only one stage in a topology")
+        layers = [layer for item in ordered for layer in item.assignment.layer_ids]
+        if layers != list(range(self.model.layer_count)):
+            raise ValueError("product plan must own every model layer exactly once")
+        return self
+
+
+class ModelInspectRequest(StrictModel):
+    reference: ProductModelReference
+
+
+class ModelInspectResponse(StrictModel):
+    spec: ProductModelSpec
+    metadata: ProductModelMetadata
+    worker_eligibility: list[WorkerEligibilityReport]
+
+
+class ModelPlanRequest(StrictModel):
+    reference: ProductModelReference
+    stage_count: int | None = Field(default=None, ge=1, le=2)
+    partition_method: Literal["auto", "equal", "balanced"] = "auto"
+    require_distributed: bool = False
+    max_sequence_tokens: PositiveInt = 2048
+
+
+class ModelPlanResponse(StrictModel):
+    plan: ProductStagePlan
+
+
+class ModelDeployRequest(StrictModel):
+    plan: ProductStagePlan
+
+
+class DeploymentPhase(StrEnum):
+    RESERVING = "reserving"
+    LOADING = "loading"
+    VERIFYING_LOADS = "verifying-loads"
+    INSTALLING_ROUTES = "installing-routes"
+    VERIFYING_PEERS = "verifying-peers"
+    READY = "ready"
+    ROLLING_BACK = "rolling-back"
+    FAILED = "failed"
+    UNLOADING = "unloading"
+    UNLOADED = "unloaded"
+
+
+class DeploymentWorkerStatus(StrictModel):
+    worker_id: str
+    stage_id: int = Field(ge=0)
+    control_endpoint: str
+    data_endpoint: str
+    process_id: int | None = Field(default=None, gt=0)
+    reserved: bool = False
+    loaded: bool = False
+    ownership_verified: bool = False
+    route_installed: bool = False
+    peer_verified: bool = False
+    load_count: int = Field(default=0, ge=0)
+    detail: str = ""
+
+
+class DeploymentStatus(StrictModel):
+    deployment_id: str
+    plan_id: str
+    topology_id: str
+    generation: PositiveInt
+    model: ProductModelSpec
+    phase: DeploymentPhase
+    ready: bool
+    idempotent: bool = False
+    workers: list[DeploymentWorkerStatus]
+    created_monotonic_ns: PositiveInt
+    updated_monotonic_ns: PositiveInt
+    detail: str = ""
+
+
+class ModelDeployResponse(StrictModel):
+    deployment: DeploymentStatus
+
+
+class ModelUnloadRequest(StrictModel):
+    topology_id: str | None = None
+    force: bool = False
+
+
+class ModelUnloadResponse(StrictModel):
+    deployment: DeploymentStatus | None
+    detail: str
+
+
+class TopologyStatusRequest(StrictModel):
+    topology_id: str | None = None
+
+
+class TopologyStatusResponse(StrictModel):
+    deployments: list[DeploymentStatus]
+
+
+class WorkersRequest(StrictModel):
+    include_unhealthy: bool = True
+
+
+class WorkerProductStatus(StrictModel):
+    capability: WorkerCapability
+    healthy_registration: bool
+    heartbeat_age_s: float = Field(ge=0)
+    detail: str = ""
+
+
+class WorkersResponse(StrictModel):
+    workers: list[WorkerProductStatus]
+
+
+class ProductTokenPublication(StrictModel):
+    worker_id: str
+    request_id: str
+    session_id: str
+    topology_id: str
+    route_generation: PositiveInt
+    model_revision: str
+    token_position: int = Field(ge=0)
+    token_id: int = Field(ge=0)
+    decoded_text_fragment: str = ""
+    published_monotonic_ns: PositiveInt
+
+
+__all__ = [
+    "DeploymentPhase",
+    "DeploymentStatus",
+    "DeploymentWorkerStatus",
+    "ModelDeployRequest",
+    "ModelDeployResponse",
+    "ModelInspectRequest",
+    "ModelInspectResponse",
+    "ModelPlanRequest",
+    "ModelPlanResponse",
+    "ModelUnloadRequest",
+    "ModelUnloadResponse",
+    "PlanCandidateReport",
+    "PlanWorkerAssignment",
+    "ProductStagePlan",
+    "ProductTokenPublication",
+    "StagePlanReport",
+    "TopologyStatusRequest",
+    "TopologyStatusResponse",
+    "WorkerEligibilityReport",
+    "WorkerModelProbeRequest",
+    "WorkerModelProbeResponse",
+    "WorkerProductStatus",
+    "WorkersRequest",
+    "WorkersResponse",
+]

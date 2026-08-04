@@ -31,10 +31,47 @@ message ActivationTensor {
   bytes payload = 11;
 }
 
+enum SubmitStreamEventType {
+  SUBMIT_STREAM_EVENT_TYPE_UNSPECIFIED = 0;
+  REQUEST_ACCEPTED = 1;
+  TOPOLOGY_SELECTED = 2;
+  SESSION_OPENED = 3;
+  PREFILL_STARTED = 4;
+  TOKEN_GENERATED = 5;
+  SESSION_CLOSED = 6;
+  REQUEST_COMPLETED = 7;
+  REQUEST_FAILED = 8;
+  REQUEST_CANCELLED = 9;
+}
+
+message SubmitStreamEvent {
+  SubmitStreamEventType event_type = 1;
+  string request_id = 2;
+  string session_id = 3;
+  string topology_id = 4;
+  string model_revision = 5;
+  uint64 sequence_number = 6;
+  optional uint64 token_position = 7;
+  optional uint64 token_id = 8;
+  string decoded_text_fragment = 9;
+  uint64 monotonic_timestamp_ns = 10;
+  string status_detail = 11;
+  repeated uint64 final_token_ids = 12;
+  map<string, double> timing_metrics = 13;
+}
+
 service Coordinator {
   rpc Register(google.protobuf.Any) returns (google.protobuf.Any);
   rpc Heartbeat(google.protobuf.Any) returns (google.protobuf.Any);
   rpc Submit(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc SubmitStream(google.protobuf.Any) returns (stream SubmitStreamEvent);
+  rpc InspectModel(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc PlanModel(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc DeployModel(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc UnloadModel(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc TopologyStatus(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc Workers(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc PublishToken(google.protobuf.Any) returns (google.protobuf.Any);
 }
 
 service Worker {
@@ -48,13 +85,16 @@ service Worker {
   rpc CacheControl(google.protobuf.Any) returns (google.protobuf.Any);
   rpc Health(google.protobuf.Any) returns (google.protobuf.Any);
   rpc GetStageCapabilities(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc InspectStageModel(google.protobuf.Any) returns (google.protobuf.Any);
   rpc LoadStage(google.protobuf.Any) returns (google.protobuf.Any);
   rpc UnloadStage(google.protobuf.Any) returns (google.protobuf.Any);
   rpc InstallStageRoute(google.protobuf.Any) returns (google.protobuf.Any);
   rpc RemoveStageRoute(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc VerifyStageRoute(google.protobuf.Any) returns (google.protobuf.Any);
   rpc OpenStageSession(google.protobuf.Any) returns (google.protobuf.Any);
   rpc CloseStageSession(google.protobuf.Any) returns (google.protobuf.Any);
   rpc CancelStageSession(google.protobuf.Any) returns (google.protobuf.Any);
   rpc GetStageStatus(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc TokenizeStage(google.protobuf.Any) returns (google.protobuf.Any);
   rpc DrainWorker(google.protobuf.Any) returns (google.protobuf.Any);
 }

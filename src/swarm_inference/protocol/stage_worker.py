@@ -58,6 +58,7 @@ class LoadStageRequest(_StageControlModel):
     device: str
     dtype: str
     model_path: str | None = None
+    allow_download: bool = False
     lease_expiry_unix_ns: PositiveInt | None = None
     deadline_unix_ns: PositiveInt | None = None
 
@@ -112,6 +113,20 @@ class RemoveStageRouteRequest(_StageControlModel):
     deadline_unix_ns: PositiveInt | None = None
 
 
+class VerifyStageRouteRequest(_StageControlModel):
+    worker_id: str
+    request_id: str
+    model_id: str
+    model_revision: str
+    tokenizer_revision: str
+    topology_id: str
+    route_generation: PositiveInt
+    stage_id: NonNegativeInt
+    device: str
+    dtype: str
+    deadline_unix_ns: PositiveInt | None = None
+
+
 class OpenStageSessionRequest(_StageControlModel):
     worker_id: str
     request_id: str
@@ -141,6 +156,28 @@ class GetStageStatusRequest(_StageControlModel):
     request_id: str
     topology_id: str | None = None
     deadline_unix_ns: PositiveInt | None = None
+
+
+class TokenizeStageRequest(_StageControlModel):
+    worker_id: str
+    request_id: str
+    model_id: str
+    model_revision: str
+    tokenizer_revision: str
+    topology_id: str
+    route_generation: PositiveInt
+    stage_id: NonNegativeInt = 0
+    device: str
+    dtype: str
+    text: str
+    add_special_tokens: bool = True
+    deadline_unix_ns: PositiveInt | None = None
+
+
+class TokenizeStageResponse(_StageControlModel):
+    worker_id: str
+    request_id: str
+    token_ids: list[NonNegativeInt]
 
 
 class DrainWorkerRequest(_StageControlModel):
@@ -223,10 +260,12 @@ LoadStage = LoadStageRequest
 UnloadStage = UnloadStageRequest
 InstallStageRoute = InstallStageRouteRequest
 RemoveStageRoute = RemoveStageRouteRequest
+VerifyStageRoute = VerifyStageRouteRequest
 OpenStageSession = OpenStageSessionRequest
 CloseStageSession = CloseStageSessionRequest
 CancelStageSession = CancelStageSessionRequest
 GetStageStatus = GetStageStatusRequest
+TokenizeStage = TokenizeStageRequest
 DrainWorker = DrainWorkerRequest
 
 
@@ -256,6 +295,11 @@ __all__ = [
     "StageRouteEndpoint",
     "StageSessionStatus",
     "StageStatusResponse",
+    "TokenizeStage",
+    "TokenizeStageRequest",
+    "TokenizeStageResponse",
     "UnloadStage",
     "UnloadStageRequest",
+    "VerifyStageRoute",
+    "VerifyStageRouteRequest",
 ]

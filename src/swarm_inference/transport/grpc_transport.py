@@ -29,6 +29,10 @@ from swarm_inference.protocol.messages import (
     parse_message,
     serialize_message,
 )
+from swarm_inference.protocol.product import (
+    WorkerModelProbeRequest,
+    WorkerModelProbeResponse,
+)
 from swarm_inference.protocol.stage_worker import (
     CancelStageSessionRequest,
     CloseStageSessionRequest,
@@ -42,7 +46,10 @@ from swarm_inference.protocol.stage_worker import (
     RemoveStageRouteRequest,
     StageActionResponse,
     StageStatusResponse,
+    TokenizeStageRequest,
+    TokenizeStageResponse,
     UnloadStageRequest,
+    VerifyStageRouteRequest,
 )
 from swarm_inference.worker.agent import WorkerAgent
 
@@ -284,6 +291,18 @@ class GrpcTransport:
             GetStageCapabilitiesResponse,
         )
 
+    async def inspect_stage_model(
+        self,
+        endpoint: str,
+        request: WorkerModelProbeRequest,
+    ) -> WorkerModelProbeResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/InspectStageModel",
+            request,
+            WorkerModelProbeResponse,
+        )
+
     async def load_stage(self, endpoint: str, request: LoadStageRequest) -> StageActionResponse:
         return await self._unary(
             endpoint, "/swarm.v1.Worker/LoadStage", request, StageActionResponse
@@ -310,6 +329,16 @@ class GrpcTransport:
         return await self._unary(
             endpoint,
             "/swarm.v1.Worker/RemoveStageRoute",
+            request,
+            StageActionResponse,
+        )
+
+    async def verify_stage_route(
+        self, endpoint: str, request: VerifyStageRouteRequest
+    ) -> StageActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/VerifyStageRoute",
             request,
             StageActionResponse,
         )
@@ -352,6 +381,16 @@ class GrpcTransport:
             "/swarm.v1.Worker/GetStageStatus",
             request,
             StageStatusResponse,
+        )
+
+    async def tokenize_stage(
+        self, endpoint: str, request: TokenizeStageRequest
+    ) -> TokenizeStageResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/TokenizeStage",
+            request,
+            TokenizeStageResponse,
         )
 
     async def drain_worker(self, endpoint: str, request: DrainWorkerRequest) -> StageActionResponse:
@@ -441,6 +480,11 @@ class WorkerRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "InspectStageModel": grpc.unary_unary_rpc_method_handler(
+                self._inspect_stage_model,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
             "LoadStage": grpc.unary_unary_rpc_method_handler(
                 self._load_stage,
                 request_deserializer=lambda value: value,
@@ -461,6 +505,11 @@ class WorkerRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "VerifyStageRoute": grpc.unary_unary_rpc_method_handler(
+                self._verify_stage_route,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
             "OpenStageSession": grpc.unary_unary_rpc_method_handler(
                 self._open_stage_session,
                 request_deserializer=lambda value: value,
@@ -478,6 +527,11 @@ class WorkerRpcServer:
             ),
             "GetStageStatus": grpc.unary_unary_rpc_method_handler(
                 self._get_stage_status,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "TokenizeStage": grpc.unary_unary_rpc_method_handler(
+                self._tokenize_stage,
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
@@ -742,6 +796,19 @@ class WorkerRpcServer:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
             raise
 
+    async def _inspect_stage_model(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, WorkerModelProbeRequest)
+            response = await self._require_stage_runtime().inspect_model(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
     async def _load_stage(
         self,
         data: bytes,
@@ -797,6 +864,19 @@ class WorkerRpcServer:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
             raise
 
+    async def _verify_stage_route(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, VerifyStageRouteRequest)
+            response = await self._require_stage_runtime().verify_route(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
     async def _open_stage_session(
         self,
         data: bytes,
@@ -847,6 +927,19 @@ class WorkerRpcServer:
             return serialize_message(response)
         except Exception as exc:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _tokenize_stage(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, TokenizeStageRequest)
+            response = await self._require_stage_runtime().tokenize(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
             raise
 
     async def _drain_worker(

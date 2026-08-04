@@ -121,6 +121,36 @@ class WorkerRegistry:
         with self._lock:
             return [record.capability.model_copy(deep=True) for record in self._workers.values()]
 
+    def registration_health(
+        self,
+        worker_id: str,
+        *,
+        now: float | None = None,
+    ) -> tuple[bool, float]:
+        """Return authoritative heartbeat health and age for one registration."""
+
+        timestamp = time.monotonic() if now is None else now
+        with self._lock:
+            try:
+                record = self._workers[worker_id]
+            except KeyError as exc:
+                raise ConfigurationError(f"unknown worker {worker_id}") from exc
+            age = max(0.0, timestamp - record.last_heartbeat_monotonic_s)
+            return (
+                record.measured_registration and age <= self._heartbeat_timeout_s,
+                age,
+            )
+
+    def healthy_workers(self, *, now: float | None = None) -> list[WorkerCapability]:
+        timestamp = time.monotonic() if now is None else now
+        with self._lock:
+            return [
+                record.capability.model_copy(deep=True)
+                for record in self._workers.values()
+                if record.measured_registration
+                and timestamp - record.last_heartbeat_monotonic_s <= self._heartbeat_timeout_s
+            ]
+
     def capability(self, worker_id: str) -> WorkerCapability:
         with self._lock:
             try:

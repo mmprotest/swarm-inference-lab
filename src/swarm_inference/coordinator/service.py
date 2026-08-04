@@ -7,28 +7,37 @@ import hashlib
 import math
 import os
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, TypeVar
+from pathlib import Path
+from typing import Any, TypeVar, cast
 
 import grpc
 import numpy as np
 
 from swarm_inference.config.models import (
+    Backend,
     DataPlaneMode,
+    ExecutionMode,
     ExperimentConfig,
     HealthStatus,
     ModelManifest,
+    NetworkProfile,
+    NodeProfile,
     OperationKind,
     RequestState,
     RequestStatus,
     SamplingConfig,
+    SchedulerMode,
     StageDefinition,
     StageReplica,
     StrictModel,
     VerificationState,
     WorkloadClass,
 )
+from swarm_inference.config.product import ProductCoordinatorConfig
+from swarm_inference.coordinator.deployment import DeploymentManager
+from swarm_inference.coordinator.model_catalog import ProductModelCatalog
 from swarm_inference.coordinator.placement import estimate_worker_stage_rate
 from swarm_inference.coordinator.registry import WorkerRegistry
 from swarm_inference.coordinator.replay_log import ReplayEntry, ReplayLog
@@ -36,6 +45,8 @@ from swarm_inference.coordinator.reservations import (
     AtomicRouteAllocator,
     ReservationDecision,
 )
+from swarm_inference.coordinator.session_controller import ProductSessionController
+from swarm_inference.coordinator.stage_planner import ProductStagePlanner
 from swarm_inference.exceptions import (
     IntegrityError,
     NoValidRouteError,
@@ -59,10 +70,28 @@ from swarm_inference.protocol.messages import (
     RouteInstallRequest,
     RoutePlan,
     StageAssignmentMessage,
+    StreamEventType,
     SubmitRequest,
     SubmitResponse,
+    SubmitStreamEvent,
     parse_message,
     serialize_message,
+)
+from swarm_inference.protocol.product import (
+    ModelDeployRequest,
+    ModelDeployResponse,
+    ModelInspectRequest,
+    ModelInspectResponse,
+    ModelPlanRequest,
+    ModelPlanResponse,
+    ModelUnloadRequest,
+    ModelUnloadResponse,
+    ProductTokenPublication,
+    TopologyStatusRequest,
+    TopologyStatusResponse,
+    WorkerProductStatus,
+    WorkersRequest,
+    WorkersResponse,
 )
 from swarm_inference.protocol.routes import (
     encode_route_key,
@@ -101,13 +130,46 @@ class RuntimeRequestMetrics:
     token_steps: list[dict[str, Any]] = field(default_factory=list)
 
 
+def _product_compatibility_config() -> ExperimentConfig:
+    """Provide legacy control defaults without requiring an experiment YAML."""
+
+    return ExperimentConfig(
+        name="product-stage-ring",
+        execution_mode=ExecutionMode.PHYSICAL_LAN,
+        seed=1,
+        scheduler=SchedulerMode.STATIC,
+        backend="cpu",
+        data_plane=DataPlaneMode.DIRECT,
+        network=NetworkProfile(
+            name="product-control",
+            base_latency_ms=0,
+            upload_bandwidth_bytes_s=1,
+            download_bandwidth_bytes_s=1,
+            measured=False,
+        ),
+        nodes=[
+            NodeProfile(
+                name="product-worker",
+                count=1,
+                memory_bytes=1,
+                compute_rate_layers_s=1,
+                supported_backends=[Backend.TORCH_CPU],
+                network_profile="product-control",
+                measured=False,
+            )
+        ],
+    )
+
+
 class CoordinatorCore:
     """Coordinator owns metadata, routes, token commitment, and replay inputs."""
 
     def __init__(
         self,
         *,
-        config: ExperimentConfig,
+        config: ExperimentConfig | None = None,
+        product_config: ProductCoordinatorConfig | None = None,
+        state_directory: str | Path | None = None,
         registry: WorkerRegistry | None = None,
         transport: ActivationTransport | None = None,
         model_manifest: ModelManifest | None = None,
@@ -117,12 +179,21 @@ class CoordinatorCore:
         worker_stage_affinity: dict[str, int] | None = None,
         after_token_hook: (Callable[[dict[str, Any]], Awaitable[RoutePlan | None]] | None) = None,
     ) -> None:
+        if config is None and product_config is None:
+            raise ValueError("coordinator requires an experiment or product configuration")
         if (model_manifest is None) != (architecture_config is None):
             raise ValueError(
                 "real-model runtime requires both model_manifest and architecture_config"
             )
-        self.config = config
-        self.registry = registry or WorkerRegistry()
+        self.product_config = product_config
+        self.product_mode = product_config is not None
+        self.config = config or _product_compatibility_config()
+        self.state_directory = Path(state_directory or ".swarm/coordinator").resolve()
+        self.registry = registry or WorkerRegistry(
+            heartbeat_timeout_s=(
+                product_config.worker_heartbeat_timeout_s if product_config is not None else 15.0
+            )
+        )
         self.transport = transport or GrpcTransport()
         self.model_manifest = model_manifest
         self.architecture_config = architecture_config
@@ -131,9 +202,9 @@ class CoordinatorCore:
         self.worker_stage_affinity = dict(worker_stage_affinity or {})
         self.after_token_hook = after_token_hook
         if model_manifest is None:
-            self.stages = build_synthetic_stages(config.model)
-            self.runtime_model_id = config.model_id
-            self.runtime_model_revision = config.model_revision
+            self.stages = build_synthetic_stages(self.config.model)
+            self.runtime_model_id = self.config.model_id
+            self.runtime_model_revision = self.config.model_revision
         else:
             self.stages = self._runtime_stages(model_manifest, runtime_dtype)
             self.runtime_model_id = model_manifest.model_id
@@ -151,7 +222,7 @@ class CoordinatorCore:
         ] = {}
         self._committed_route_generations: dict[tuple[str, int], int] = {}
         self.runtime_transport_metrics: dict[str, int | float | str] = {
-            "data_plane_mode": config.data_plane.value,
+            "data_plane_mode": self.config.data_plane.value,
             "coordinator_control_bytes": 0,
             "coordinator_activation_bytes": 0,
             "coordinator_input_activation_bytes": 0,
@@ -167,6 +238,35 @@ class CoordinatorCore:
             "admission_time_ms": 0.0,
             "route_reservation_time_ms": 0.0,
         }
+        self.publication_endpoint: str | None = None
+        self.product_catalog: ProductModelCatalog | None = None
+        self.product_planner: ProductStagePlanner | None = None
+        self.deployment_manager: DeploymentManager | None = None
+        self.session_controller: ProductSessionController | None = None
+        if product_config is not None:
+            product_transport = cast(Any, self.transport)
+            self.product_catalog = ProductModelCatalog(
+                registry=self.registry,
+                transport=product_transport,
+                maximum_active_sessions_per_worker=(
+                    product_config.maximum_active_sessions_per_worker
+                ),
+            )
+            self.product_planner = ProductStagePlanner()
+            self.deployment_manager = DeploymentManager(
+                registry=self.registry,
+                transport=product_transport,
+                state_directory=self.state_directory,
+                lease_seconds=product_config.deployment_lease_seconds,
+                control_timeout_s=product_config.control_timeout_s,
+            )
+            self.session_controller = ProductSessionController(
+                deployments=self.deployment_manager,
+                transport=product_transport,
+                event_queue_capacity=product_config.event_queue_capacity,
+                request_timeout_s=product_config.request_timeout_s,
+                data_queue_capacity=product_config.token_ingress_capacity,
+            )
 
     @staticmethod
     def _runtime_stages(
@@ -223,6 +323,8 @@ class CoordinatorCore:
         return required_dtype in worker.supported_dtypes
 
     async def close(self) -> None:
+        if self.session_controller is not None:
+            await self.session_controller.close()
         for future in self._pending_final_results.values():
             if not future.done():
                 future.set_exception(TransportError("coordinator is shutting down"))
@@ -252,7 +354,8 @@ class CoordinatorCore:
                 "timestamp_monotonic_ns": time.monotonic_ns(),
             }
         )
-        await self.rebalance()
+        if not self.product_mode:
+            await self.rebalance()
         return RegistrationResponse(accepted=True, heartbeat_interval_s=2.0)
 
     def remove_worker(self, worker_id: str) -> None:
@@ -290,6 +393,111 @@ class CoordinatorCore:
             assignments=request.assignments,
         )
         return Ack(accepted=True, detail="heartbeat recorded")
+
+    def _require_product(
+        self,
+    ) -> tuple[
+        ProductModelCatalog,
+        ProductStagePlanner,
+        DeploymentManager,
+        ProductSessionController,
+    ]:
+        if (
+            self.product_catalog is None
+            or self.product_planner is None
+            or self.deployment_manager is None
+            or self.session_controller is None
+        ):
+            raise RuntimeError("coordinator was not started in product stage-ring mode")
+        return (
+            self.product_catalog,
+            self.product_planner,
+            self.deployment_manager,
+            self.session_controller,
+        )
+
+    async def inspect_product_model(
+        self,
+        request: ModelInspectRequest,
+    ) -> ModelInspectResponse:
+        catalog, _, _, _ = self._require_product()
+        inspected = await catalog.inspect(request.reference)
+        return ModelInspectResponse(
+            spec=inspected.spec,
+            metadata=inspected.metadata,
+            worker_eligibility=list(inspected.eligibility),
+        )
+
+    async def plan_product_model(self, request: ModelPlanRequest) -> ModelPlanResponse:
+        catalog, planner, _, _ = self._require_product()
+        inspected = await catalog.inspect(request.reference)
+        plan = planner.build_plan(request, inspected)
+        plan_directory = self.state_directory / "plans"
+        plan_directory.mkdir(parents=True, exist_ok=True)
+        (plan_directory / f"{plan.plan_id}.json").write_text(
+            plan.model_dump_json(indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return ModelPlanResponse(plan=plan)
+
+    async def deploy_product_model(
+        self,
+        request: ModelDeployRequest,
+    ) -> ModelDeployResponse:
+        _, _, deployments, _ = self._require_product()
+        if self.publication_endpoint is None:
+            raise RuntimeError("coordinator publication endpoint is not configured")
+        deployment = await deployments.deploy(
+            request.plan,
+            publication_destination=self.publication_endpoint,
+        )
+        return ModelDeployResponse(deployment=deployment)
+
+    async def unload_product_model(
+        self,
+        request: ModelUnloadRequest,
+    ) -> ModelUnloadResponse:
+        _, _, deployments, _ = self._require_product()
+        deployment = await deployments.unload(
+            topology_id=request.topology_id,
+            force=request.force,
+        )
+        return ModelUnloadResponse(
+            deployment=deployment,
+            detail=(
+                "no deployment was active"
+                if deployment is None
+                else "deployment unloaded explicitly"
+            ),
+        )
+
+    async def product_topology_status(
+        self,
+        request: TopologyStatusRequest,
+    ) -> TopologyStatusResponse:
+        _, _, deployments, _ = self._require_product()
+        return TopologyStatusResponse(deployments=deployments.statuses(request.topology_id))
+
+    async def product_workers(self, request: WorkersRequest) -> WorkersResponse:
+        self._require_product()
+        statuses: list[WorkerProductStatus] = []
+        for capability in sorted(self.registry.workers(), key=lambda item: item.worker_id):
+            healthy, age = self.registry.registration_health(capability.worker_id)
+            if not request.include_unhealthy and not healthy:
+                continue
+            statuses.append(
+                WorkerProductStatus(
+                    capability=capability,
+                    healthy_registration=healthy,
+                    heartbeat_age_s=age,
+                    detail="healthy" if healthy else "heartbeat expired",
+                )
+            )
+        return WorkersResponse(workers=statuses)
+
+    async def accept_product_token(self, publication: ProductTokenPublication) -> Ack:
+        _, _, _, sessions = self._require_product()
+        return await sessions.publish_token(publication)
 
     async def rebalance(self) -> None:
         async with self._rebalance_lock:
@@ -1121,7 +1329,113 @@ class CoordinatorCore:
             }
         )
 
+    async def submit_stream(
+        self,
+        submission: SubmitRequest,
+    ) -> AsyncIterator[SubmitStreamEvent]:
+        if self.product_mode:
+            _, _, _, sessions = self._require_product()
+            stream = sessions.start(submission)
+            try:
+                async for stream_event in stream:
+                    yield stream_event
+            finally:
+                if not stream.closed:
+                    await sessions.disconnect(submission.request_id)
+            return
+
+        result = await self._submit_legacy(submission)
+        sequence = 0
+
+        def make_event(event_type: StreamEventType, **values: Any) -> SubmitStreamEvent:
+            nonlocal sequence
+            created = SubmitStreamEvent(
+                event_type=event_type,
+                request_id=submission.request_id,
+                sequence_number=sequence,
+                monotonic_timestamp_ns=time.monotonic_ns(),
+                model_revision=submission.model_revision,
+                **values,
+            )
+            sequence += 1
+            return created
+
+        yield make_event(
+            StreamEventType.REQUEST_ACCEPTED,
+            status_detail="legacy unary runtime accepted request",
+        )
+        for position, token_id in enumerate(result.output_token_ids):
+            yield make_event(
+                StreamEventType.TOKEN_GENERATED,
+                token_position=position,
+                token_id=token_id,
+            )
+        if result.status == "completed":
+            yield make_event(
+                StreamEventType.REQUEST_COMPLETED,
+                final_token_ids=list(result.output_token_ids),
+                timing_metrics={
+                    "time_to_first_token_s": result.time_to_first_token_s or 0.0,
+                    "end_to_end_s": result.end_to_end_s,
+                },
+            )
+        else:
+            yield make_event(
+                StreamEventType.REQUEST_FAILED,
+                status_detail=result.detail,
+                final_token_ids=list(result.output_token_ids),
+                timing_metrics={"end_to_end_s": result.end_to_end_s},
+            )
+
     async def submit(self, submission: SubmitRequest) -> SubmitResponse:
+        if not self.product_mode:
+            return await self._submit_legacy(submission)
+        started = time.perf_counter()
+        output_tokens: list[int] = []
+        first_token_s: float | None = None
+        terminal: SubmitStreamEvent | None = None
+        async for event in self.submit_stream(submission):
+            if event.event_type == StreamEventType.TOKEN_GENERATED:
+                assert event.token_id is not None
+                output_tokens.append(event.token_id)
+                if first_token_s is None:
+                    first_token_s = time.perf_counter()
+            if event.event_type in {
+                StreamEventType.REQUEST_COMPLETED,
+                StreamEventType.REQUEST_FAILED,
+                StreamEventType.REQUEST_CANCELLED,
+            }:
+                terminal = event
+        elapsed = time.perf_counter() - started
+        if terminal is None:
+            return SubmitResponse(
+                request_id=submission.request_id,
+                output_token_ids=output_tokens,
+                status="failed",
+                verified=False,
+                time_to_first_token_s=(
+                    first_token_s - started if first_token_s is not None else None
+                ),
+                end_to_end_s=elapsed,
+                detail="submit stream ended without a terminal event",
+            )
+        completed = terminal.event_type == StreamEventType.REQUEST_COMPLETED
+        cancelled = terminal.event_type == StreamEventType.REQUEST_CANCELLED
+        final_tokens = terminal.final_token_ids or output_tokens
+        return SubmitResponse(
+            request_id=submission.request_id,
+            output_token_ids=final_tokens,
+            status="completed" if completed else "cancelled" if cancelled else "failed",
+            verified=completed,
+            time_to_first_token_s=terminal.timing_metrics.get(
+                "time_to_first_token_s",
+                first_token_s - started if first_token_s is not None else None,
+            ),
+            end_to_end_s=terminal.timing_metrics.get("end_to_end_s", elapsed),
+            detail=terminal.status_detail,
+        )
+
+    async def _submit_legacy(self, submission: SubmitRequest) -> SubmitResponse:
         started = time.perf_counter()
         metrics = RuntimeRequestMetrics(
             request_id=submission.request_id,
@@ -1714,6 +2028,46 @@ class CoordinatorRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "SubmitStream": grpc.unary_stream_rpc_method_handler(
+                self._submit_stream,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "InspectModel": grpc.unary_unary_rpc_method_handler(
+                self._inspect_model,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "PlanModel": grpc.unary_unary_rpc_method_handler(
+                self._plan_model,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "DeployModel": grpc.unary_unary_rpc_method_handler(
+                self._deploy_model,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "UnloadModel": grpc.unary_unary_rpc_method_handler(
+                self._unload_model,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "TopologyStatus": grpc.unary_unary_rpc_method_handler(
+                self._topology_status,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "Workers": grpc.unary_unary_rpc_method_handler(
+                self._workers,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "PublishToken": grpc.unary_unary_rpc_method_handler(
+                self._publish_token,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
             "FinalResult": grpc.unary_unary_rpc_method_handler(
                 self._final_result,
                 request_deserializer=lambda value: value,
@@ -1725,7 +2079,12 @@ class CoordinatorRpcServer:
         )
         self.bound_port: int | None = None
 
-    async def start(self, endpoint: str) -> int:
+    async def start(
+        self,
+        endpoint: str,
+        *,
+        advertised_endpoint: str | None = None,
+    ) -> int:
         self.bound_port = self.server.add_insecure_port(endpoint)
         if self.bound_port == 0:
             raise TransportError(f"could not bind coordinator endpoint {endpoint}")
@@ -1733,6 +2092,7 @@ class CoordinatorRpcServer:
         if host in {"", "0.0.0.0", "::"}:
             host = "127.0.0.1"
         self.core.final_result_endpoint = f"{host}:{self.bound_port}"
+        self.core.publication_endpoint = advertised_endpoint or self.core.final_result_endpoint
         await self.server.start()
         return self.bound_port
 
@@ -1762,6 +2122,110 @@ class CoordinatorRpcServer:
     async def _submit(self, data: bytes, context: grpc.aio.ServicerContext[Any, Any]) -> bytes:
         response = await self.core.submit(parse_message(data, SubmitRequest))
         return serialize_message(response)
+
+    async def _submit_stream(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> AsyncIterator[bytes]:
+        request = parse_message(data, SubmitRequest)
+        try:
+            async for event in self.core.submit_stream(request):
+                yield serialize_message(event)
+        except asyncio.CancelledError:
+            if self.core.session_controller is not None:
+                await self.core.session_controller.disconnect(request.request_id)
+            raise
+
+    async def _inspect_model(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.inspect_product_model(
+                parse_message(data, ModelInspectRequest)
+            )
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _plan_model(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.plan_product_model(parse_message(data, ModelPlanRequest))
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _deploy_model(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.deploy_product_model(parse_message(data, ModelDeployRequest))
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _unload_model(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.unload_product_model(parse_message(data, ModelUnloadRequest))
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _topology_status(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.product_topology_status(
+                parse_message(data, TopologyStatusRequest)
+            )
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _workers(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.product_workers(parse_message(data, WorkersRequest))
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _publish_token(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.accept_product_token(
+                parse_message(data, ProductTokenPublication)
+            )
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
 
     async def _final_result(
         self,
@@ -1828,6 +2292,75 @@ class CoordinatorClient:
             "/swarm.v1.Coordinator/Submit",
             request,
             SubmitResponse,
+        )
+
+    async def submit_stream(
+        self,
+        request: SubmitRequest,
+    ) -> AsyncIterator[SubmitStreamEvent]:
+        rpc = self.channel.unary_stream(
+            "/swarm.v1.Coordinator/SubmitStream",
+            request_serializer=lambda value: value,
+            response_deserializer=lambda value: value,
+        )
+        call = rpc(serialize_message(request), timeout=self.timeout_s)
+        try:
+            async for data in call:
+                yield parse_message(data, SubmitStreamEvent)
+        except grpc.aio.AioRpcError as exc:
+            raise TransportError(
+                f"coordinator submit stream failed ({exc.code().name}): {exc.details()}"
+            ) from exc
+        finally:
+            call.cancel()
+
+    async def inspect_model(self, request: ModelInspectRequest) -> ModelInspectResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/InspectModel",
+            request,
+            ModelInspectResponse,
+        )
+
+    async def plan_model(self, request: ModelPlanRequest) -> ModelPlanResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/PlanModel",
+            request,
+            ModelPlanResponse,
+        )
+
+    async def deploy_model(self, request: ModelDeployRequest) -> ModelDeployResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/DeployModel",
+            request,
+            ModelDeployResponse,
+        )
+
+    async def unload_model(self, request: ModelUnloadRequest) -> ModelUnloadResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/UnloadModel",
+            request,
+            ModelUnloadResponse,
+        )
+
+    async def topology_status(self, request: TopologyStatusRequest) -> TopologyStatusResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/TopologyStatus",
+            request,
+            TopologyStatusResponse,
+        )
+
+    async def workers(self, request: WorkersRequest) -> WorkersResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/Workers",
+            request,
+            WorkersResponse,
+        )
+
+    async def publish_token(self, publication: ProductTokenPublication) -> Ack:
+        return await self._call(
+            "/swarm.v1.Coordinator/PublishToken",
+            publication,
+            Ack,
         )
 
     async def close(self) -> None:

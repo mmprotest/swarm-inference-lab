@@ -66,3 +66,20 @@ def test_core_packages_do_not_gain_experiment_dependencies() -> None:
     stale = EXPERIMENT_IMPORT_ALLOWLIST - actual
     assert not unexpected, f"new core-to-experiment imports require removal: {sorted(unexpected)}"
     assert not stale, f"remove resolved imports from the temporary allowlist: {sorted(stale)}"
+
+
+def test_product_commands_do_not_import_or_name_experiment_011_controller() -> None:
+    product_sources = [
+        SOURCE_ROOT / "swarm_inference" / "cli.py",
+        *(SOURCE_ROOT / "swarm_inference" / "coordinator").glob("*.py"),
+        *(SOURCE_ROOT / "swarm_inference" / "worker").glob("*.py"),
+        SOURCE_ROOT / "swarm_inference" / "model" / "product.py",
+        SOURCE_ROOT / "swarm_inference" / "protocol" / "product.py",
+        SOURCE_ROOT / "swarm_inference" / "config" / "product.py",
+    ]
+    violations = []
+    for path in product_sources:
+        source = path.read_text(encoding="utf-8")
+        if "StageRingController" in source or "experiments.experiment_011" in source:
+            violations.append(path.relative_to(SOURCE_ROOT).as_posix())
+    assert not violations, f"product paths depend on Experiment 011: {violations}"

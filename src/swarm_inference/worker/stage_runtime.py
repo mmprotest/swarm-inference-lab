@@ -10,9 +10,9 @@ import os
 import time
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 import psutil
 import torch
@@ -27,8 +27,21 @@ from swarm_inference.exceptions import (
 from swarm_inference.execution.interfaces import StageExecutionResult, StageExecutor
 from swarm_inference.execution.olmoe_stage import ContiguousOlmoeStage
 from swarm_inference.host import is_wildcard_host, split_endpoint
-from swarm_inference.model.olmoe import validate_olmoe_stage_assignment
+from swarm_inference.model.olmoe import (
+    inspect_olmoe_partition_metadata,
+    validate_olmoe_stage_assignment,
+)
 from swarm_inference.model.partition import StageAssignment
+from swarm_inference.model.product import (
+    ModelResolutionPolicy,
+    ProductLayerCost,
+    ProductModelMetadata,
+    ProductModelSpec,
+)
+from swarm_inference.protocol.product import (
+    WorkerModelProbeRequest,
+    WorkerModelProbeResponse,
+)
 from swarm_inference.protocol.stage_ring import (
     MessageSequenceValidator,
     Operation,
@@ -50,7 +63,10 @@ from swarm_inference.protocol.stage_worker import (
     RemoveStageRouteRequest,
     StageActionResponse,
     StageStatusResponse,
+    TokenizeStageRequest,
+    TokenizeStageResponse,
     UnloadStageRequest,
+    VerifyStageRouteRequest,
 )
 from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
 from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
@@ -189,6 +205,7 @@ class PersistentStageRuntime:
         execution_queue_capacity: int = 256,
         token_queue_capacity: int = 256,
         model_cache_dir: str | Path | None = None,
+        configured_model_path: str | Path | None = None,
         allow_model_download: bool = False,
         capability: WorkerCapability | None = None,
         loader: StageLoader | None = None,
@@ -209,6 +226,11 @@ class PersistentStageRuntime:
         self.memory_limit_bytes = memory_limit_bytes
         self.model_cache_dir = (
             Path(model_cache_dir).expanduser().resolve() if model_cache_dir is not None else None
+        )
+        self.configured_model_path = (
+            Path(configured_model_path).expanduser().resolve()
+            if configured_model_path is not None
+            else None
         )
         self.allow_model_download = allow_model_download
         self.capability = capability
@@ -239,6 +261,7 @@ class PersistentStageRuntime:
         self._closed = False
         self._load_count = 0
         self._dropped_token_publications = 0
+        self._tokenizer: Any | None = None
         self._sync_capability()
 
     @property
@@ -304,14 +327,23 @@ class PersistentStageRuntime:
                 f"logical limit {self.memory_limit_bytes}"
             )
 
-    def _resolve_model_path(self, request: LoadStageRequest) -> Path:
+    def _resolve_exact_model_path(
+        self,
+        *,
+        model_id: str,
+        model_revision: str,
+        model_path: str | None,
+        allow_download: bool,
+    ) -> Path:
         candidates: list[Path] = []
-        if request.model_path is not None:
-            supplied = Path(request.model_path).expanduser()
+        if self.configured_model_path is not None:
+            candidates.append(self.configured_model_path)
+        if model_path is not None:
+            supplied = Path(model_path).expanduser()
             candidates.append(supplied)
             if self.model_cache_dir is not None and not supplied.is_absolute():
                 candidates.append(self.model_cache_dir / supplied)
-        model_id_path = Path(request.model_id).expanduser()
+        model_id_path = Path(model_id).expanduser()
         candidates.append(model_id_path)
         for candidate in candidates:
             if candidate.is_dir():
@@ -320,18 +352,25 @@ class PersistentStageRuntime:
             from huggingface_hub import snapshot_download
 
             resolved = snapshot_download(
-                repo_id=request.model_id,
-                revision=request.model_revision,
+                repo_id=model_id,
+                revision=model_revision,
                 cache_dir=str(self.model_cache_dir) if self.model_cache_dir is not None else None,
-                local_files_only=not self.allow_model_download,
+                local_files_only=not allow_download,
             )
         except Exception as exc:
-            mode = "download-enabled" if self.allow_model_download else "local-only"
+            mode = "download-enabled" if allow_download else "local-only"
             raise FileNotFoundError(
-                f"could not resolve exact model {request.model_id}@{request.model_revision} "
-                f"in {mode} mode: {exc}"
+                f"could not resolve exact model {model_id}@{model_revision} in {mode} mode: {exc}"
             ) from exc
         return Path(resolved).resolve()
+
+    def _resolve_model_path(self, request: LoadStageRequest) -> Path:
+        return self._resolve_exact_model_path(
+            model_id=request.model_id,
+            model_revision=request.model_revision,
+            model_path=request.model_path,
+            allow_download=request.allow_download and self.allow_model_download,
+        )
 
     @staticmethod
     def _metadata_revision(model_path: Path, filenames: tuple[str, ...]) -> str | None:
@@ -352,7 +391,14 @@ class PersistentStageRuntime:
             return parts[-1]
         return None
 
-    def _verify_model_identity(self, request: LoadStageRequest, model_path: Path) -> None:
+    def _verify_model_identity_values(
+        self,
+        *,
+        model_id: str,
+        requested_model_revision: str,
+        requested_tokenizer_revision: str,
+        model_path: Path,
+    ) -> None:
         config_path = model_path / "config.json"
         index_path = model_path / "model.safetensors.index.json"
         if not config_path.is_file() or not index_path.is_file():
@@ -360,48 +406,58 @@ class PersistentStageRuntime:
         config_value = json.loads(config_path.read_text(encoding="utf-8"))
         if not isinstance(config_value, dict) or config_value.get("model_type") != "olmoe":
             raise IntegrityError("resolved checkpoint is not an OLMoE model")
-        model_revision = self._metadata_revision(
+        resolved_model_revision = self._metadata_revision(
             model_path, ("config.json", "model.safetensors.index.json")
         )
         config_revision = config_value.get("_commit_hash")
-        if model_revision is None and isinstance(config_revision, str):
-            model_revision = config_revision or None
+        if resolved_model_revision is None and isinstance(config_revision, str):
+            resolved_model_revision = config_revision or None
         elif (
             isinstance(config_revision, str)
             and config_revision
-            and config_revision != model_revision
+            and config_revision != resolved_model_revision
         ):
             raise IntegrityError("checkpoint config revision conflicts with local metadata")
-        if model_revision != request.model_revision:
+        if resolved_model_revision != requested_model_revision:
             raise IntegrityError(
-                f"model revision mismatch: resolved={model_revision!r} "
-                f"requested={request.model_revision!r}"
+                f"model revision mismatch: resolved={resolved_model_revision!r} "
+                f"requested={requested_model_revision!r}"
             )
         tokenizer_files = ("tokenizer.json", "tokenizer_config.json")
         if not any((model_path / filename).is_file() for filename in tokenizer_files):
             raise IntegrityError("resolved checkpoint has no tokenizer identity files")
-        tokenizer_revision: str | None
-        if request.tokenizer_revision.startswith("sha256:"):
+        resolved_tokenizer_revision: str | None
+        if requested_tokenizer_revision.startswith("sha256:"):
             tokenizer_json = model_path / "tokenizer.json"
             if not tokenizer_json.is_file():
                 raise IntegrityError(
                     "sha256 tokenizer identity requires a local tokenizer.json file"
                 )
-            tokenizer_revision = "sha256:" + hashlib.sha256(tokenizer_json.read_bytes()).hexdigest()
+            resolved_tokenizer_revision = (
+                "sha256:" + hashlib.sha256(tokenizer_json.read_bytes()).hexdigest()
+            )
         else:
-            tokenizer_revision = self._metadata_revision(model_path, tokenizer_files)
-            if tokenizer_revision is None:
-                tokenizer_revision = model_revision
-        if tokenizer_revision != request.tokenizer_revision:
+            resolved_tokenizer_revision = self._metadata_revision(model_path, tokenizer_files)
+            if resolved_tokenizer_revision is None:
+                resolved_tokenizer_revision = resolved_model_revision
+        if resolved_tokenizer_revision != requested_tokenizer_revision:
             raise IntegrityError(
-                f"tokenizer revision mismatch: resolved={tokenizer_revision!r} "
-                f"requested={request.tokenizer_revision!r}"
+                f"tokenizer revision mismatch: resolved={resolved_tokenizer_revision!r} "
+                f"requested={requested_tokenizer_revision!r}"
             )
         identity_path = model_path / "swarm-model-identity.json"
         if identity_path.is_file():
             identity = json.loads(identity_path.read_text(encoding="utf-8"))
-            if not isinstance(identity, dict) or identity.get("model_id") != request.model_id:
+            if not isinstance(identity, dict) or identity.get("model_id") != model_id:
                 raise IntegrityError("resolved checkpoint model ID does not match the request")
+
+    def _verify_model_identity(self, request: LoadStageRequest, model_path: Path) -> None:
+        self._verify_model_identity_values(
+            model_id=request.model_id,
+            requested_model_revision=request.model_revision,
+            requested_tokenizer_revision=request.tokenizer_revision,
+            model_path=model_path,
+        )
 
     def _load_olmoe(
         self,
@@ -647,6 +703,7 @@ class PersistentStageRuntime:
         self._loaded = None
         self._route = None
         self._last_route_generation = None
+        self._tokenizer = None
         self._sequence_validator = MessageSequenceValidator()
         self._sequence_allocator = SequenceAllocator()
         self._sync_capability()
@@ -852,6 +909,134 @@ class PersistentStageRuntime:
             ),
         )
 
+    async def verify_route(self, request: VerifyStageRouteRequest) -> StageActionResponse:
+        """Prove that the installed next-stage connection is usable and persistent."""
+
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        loaded = self._validate_loaded_identity(
+            model_id=request.model_id,
+            model_revision=request.model_revision,
+            tokenizer_revision=request.tokenizer_revision,
+            topology_id=request.topology_id,
+            stage_id=request.stage_id,
+            device=request.device,
+            dtype=request.dtype,
+        )
+        route = self._route
+        if route is None or route.route_generation != request.route_generation:
+            raise ValueError("stage route verification generation mismatch")
+        self._check_lease(route.lease_expiry_unix_ns)
+        next_stage = route.next_stage
+        if next_stage is None:
+            return StageActionResponse(
+                worker_id=self.worker_id,
+                request_id=request.request_id,
+                accepted=True,
+                detail="final stage has no downstream peer",
+                idempotent=True,
+            )
+        next_assignment = next_stage.assignment
+        if next_assignment is None:
+            raise ValueError("next-stage route is missing its exact assignment")
+        probe_session = f"__route_probe__:{request.topology_id}:{request.route_generation}"
+        current_stage = loaded.request.assignment.stage_id
+        probe = StageMessage(
+            operation=Operation.HELLO,
+            model_revision=request.model_revision,
+            tokenizer_revision=request.tokenizer_revision,
+            topology_id=request.topology_id,
+            stage_id=next_stage.stage_id,
+            layer_start=next_assignment.layer_start,
+            layer_end=next_assignment.layer_end,
+            session_id=probe_session,
+            request_id=request.request_id,
+            sequence_number=self._sequence_allocator.next(
+                probe_session, current_stage, next_stage.stage_id
+            ),
+            token_position=-1,
+            source_stage=current_stage,
+            destination_stage=next_stage.stage_id,
+            attributes={
+                "model_id": request.model_id,
+                "route_generation": request.route_generation,
+                "source_worker_id": self.worker_id,
+                "destination_worker_id": next_stage.worker_id,
+            },
+        )
+        response = await self.connection_pool.send(next_stage.data_endpoint, probe)
+        if (
+            response.operation != Operation.HELLO
+            or response.status != "OK"
+            or response.source_stage != next_stage.stage_id
+            or response.destination_stage != current_stage
+        ):
+            raise TransportError("next-stage peer returned an invalid route probe response")
+        self._sequence_validator.validate(response)
+        return StageActionResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            accepted=True,
+            detail="persistent next-stage connection verified",
+        )
+
+    async def tokenize(self, request: TokenizeStageRequest) -> TokenizeStageResponse:
+        """Tokenize on stage zero from its independently resolved exact snapshot."""
+
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        async with self._executor_lock:
+            loaded = self._validate_loaded_identity(
+                model_id=request.model_id,
+                model_revision=request.model_revision,
+                tokenizer_revision=request.tokenizer_revision,
+                topology_id=request.topology_id,
+                stage_id=request.stage_id,
+                device=request.device,
+                dtype=request.dtype,
+            )
+            if request.stage_id != 0 or not loaded.request.assignment.owns_embeddings:
+                raise ValueError("prompt tokenization is owned by stage zero")
+            route = self._route
+            if route is None or route.route_generation != request.route_generation:
+                raise ValueError("tokenization route generation mismatch")
+            if self._tokenizer is None:
+                model_path = Path(loaded.status.model_path)
+                if not model_path.is_dir():
+                    raise RuntimeError("resident stage has no tokenizer-capable local snapshot")
+
+                def load_tokenizer() -> Any:
+                    from transformers import AutoTokenizer
+
+                    return AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+                        model_path,
+                        local_files_only=True,
+                    )
+
+                self._tokenizer = await asyncio.to_thread(load_tokenizer)
+            tokenizer = self._tokenizer
+        assert tokenizer is not None
+        encoded = await asyncio.to_thread(
+            tokenizer,
+            request.text,
+            add_special_tokens=request.add_special_tokens,
+            return_tensors=None,
+        )
+        token_ids = [int(value) for value in encoded["input_ids"]]
+        if not token_ids:
+            raise ValueError("prompt tokenization produced no token IDs")
+        return TokenizeStageResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            token_ids=token_ids,
+        )
+
+    def decode_token_id(self, token_id: int) -> str:
+        tokenizer = self._tokenizer
+        if tokenizer is None:
+            return ""
+        return str(tokenizer.decode([token_id], skip_special_tokens=False))
+
     def _validate_session_request(
         self,
         request: OpenStageSessionRequest,
@@ -967,6 +1152,88 @@ class PersistentStageRuntime:
             request_id=request.request_id,
             capability=self.capability.model_copy(deep=True),
         )
+
+    async def inspect_model(
+        self,
+        request: WorkerModelProbeRequest,
+    ) -> WorkerModelProbeResponse:
+        """Resolve and inspect an exact OLMoE identity without loading weights."""
+
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        reference = request.reference
+        if reference.adapter_id != "olmoe":
+            return WorkerModelProbeResponse(
+                worker_id=self.worker_id,
+                request_id=request.request_id,
+                available=False,
+                detail=f"unsupported model adapter {reference.adapter_id!r}",
+                worker_download_permitted=self.allow_model_download,
+            )
+        if _normalise_dtype(reference.dtype) != self.dtype:
+            return WorkerModelProbeResponse(
+                worker_id=self.worker_id,
+                request_id=request.request_id,
+                available=False,
+                detail=(
+                    f"requested dtype {reference.dtype!r} does not match worker runtime "
+                    f"dtype {self.dtype!r}"
+                ),
+                worker_download_permitted=self.allow_model_download,
+            )
+        download_requested = reference.resolution_policy == ModelResolutionPolicy.ALLOW_DOWNLOAD
+        allow_download = download_requested and self.allow_model_download
+        try:
+            model_path = await asyncio.to_thread(
+                self._resolve_exact_model_path,
+                model_id=reference.model_id,
+                model_revision=reference.model_revision,
+                model_path=None,
+                allow_download=allow_download,
+            )
+            await asyncio.to_thread(
+                self._verify_model_identity_values,
+                model_id=reference.model_id,
+                requested_model_revision=reference.model_revision,
+                requested_tokenizer_revision=reference.tokenizer_revision,
+                model_path=model_path,
+            )
+            partition = await asyncio.to_thread(
+                inspect_olmoe_partition_metadata,
+                model_path,
+                model_revision=reference.model_revision,
+                tokenizer_revision=reference.tokenizer_revision,
+            )
+            metadata = ProductModelMetadata(
+                layer_costs=tuple(
+                    ProductLayerCost.model_validate(asdict(cost)) for cost in partition.layer_costs
+                ),
+                embedding_weight_bytes=partition.embedding_weight_bytes,
+                final_weight_bytes=partition.final_weight_bytes,
+                dtype_bytes=partition.dtype_bytes,
+                hidden_size=partition.hidden_size,
+                metadata_hash=partition.metadata_hash,
+            )
+            spec = ProductModelSpec.resolved(reference, metadata)
+            return WorkerModelProbeResponse(
+                worker_id=self.worker_id,
+                request_id=request.request_id,
+                available=True,
+                detail="exact model and tokenizer metadata resolved",
+                spec=spec,
+                metadata=metadata,
+                resolved_from_local_cache=not allow_download,
+                worker_download_permitted=self.allow_model_download,
+            )
+        except Exception as exc:
+            return WorkerModelProbeResponse(
+                worker_id=self.worker_id,
+                request_id=request.request_id,
+                available=False,
+                detail=f"{type(exc).__name__}: {exc}",
+                resolved_from_local_cache=not allow_download,
+                worker_download_permitted=self.allow_model_download,
+            )
 
     async def status(self, request: GetStageStatusRequest) -> StageStatusResponse:
         self._check_worker(request.worker_id)
@@ -1350,9 +1617,13 @@ class PersistentStageRuntime:
                 route=route,
                 cache_sequence_length=result.cache_sequence_length,
             )
-            return self._relay_downstream(message, downstream)
+            response = self._relay_downstream(message, downstream)
+            if route.assignment.stage_id == 0:
+                self._enqueue_token_publication(route, response)
+            return response
         response = self._token_result(message, result=result, route=route, decode_ns=decode_ns)
-        self._enqueue_token_publication(route, response)
+        if route.assignment.stage_id == 0:
+            self._enqueue_token_publication(route, response)
         return response
 
     def _forward_message(
@@ -1568,16 +1839,19 @@ class PersistentStageRuntime:
         )
         try:
             self._token_queue.put_nowait(publication)
-        except asyncio.QueueFull:
+        except asyncio.QueueFull as exc:
             self._dropped_token_publications += 1
+            raise BackpressureError("stage-zero token publication queue is full") from exc
 
     async def _token_publication_loop(self) -> None:
         while True:
             publication = await self._token_queue.get()
             try:
                 if self._token_publisher is not None:
-                    with suppress(Exception):
+                    try:
                         await self._token_publisher(publication)
+                    except Exception:
+                        self._dropped_token_publications += 1
             finally:
                 self._token_queue.task_done()
 
