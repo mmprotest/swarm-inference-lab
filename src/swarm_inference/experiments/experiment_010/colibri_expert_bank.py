@@ -502,8 +502,7 @@ def build_expert_bank(
             "worker_id": worker_id,
             "model_fingerprint": fingerprint,
             "owned_experts": [
-                {"layer_id": layer_id, "expert_id": expert_id}
-                for layer_id, expert_id in ownership
+                {"layer_id": layer_id, "expert_id": expert_id} for layer_id, expert_id in ownership
             ],
             "owned_microshards": [],
         }
@@ -554,14 +553,10 @@ def build_coordinator_container(
     try:
         source_tensors = scan_safetensors(source)
         dense = {
-            name: tensor
-            for name, tensor in source_tensors.items()
-            if ".mlp.experts." not in name
+            name: tensor for name, tensor in source_tensors.items() if ".mlp.experts." not in name
         }
         routed = {
-            name: tensor
-            for name, tensor in source_tensors.items()
-            if ".mlp.experts." in name
+            name: tensor for name, tensor in source_tensors.items() if ".mlp.experts." in name
         }
         if not dense or not routed:
             raise ValueError("coordinator conversion requires dense and routed expert tensors")
@@ -581,7 +576,9 @@ def build_coordinator_container(
             shutil.copy2(source_path, stage / source_path.name)
             copied_metadata[source_path.name] = _sha256_file(source_path)
         if "config.json" not in copied_metadata or "tokenizer.json" not in copied_metadata:
-            raise FileNotFoundError("coordinator container requires exact config and tokenizer JSON")
+            raise FileNotFoundError(
+                "coordinator container requires exact config and tokenizer JSON"
+            )
         excluded = [
             {
                 "name": name,
@@ -629,9 +626,7 @@ def verify_coordinator_container(root: Path) -> dict[str, Any]:
     """Verify that a coordinator container has exact dense bytes and no routed bytes."""
 
     container = root.expanduser().resolve()
-    manifest = json.loads(
-        (container / "coordinator_manifest.json").read_text(encoding="utf-8")
-    )
+    manifest = json.loads((container / "coordinator_manifest.json").read_text(encoding="utf-8"))
     tensors = scan_safetensors(container)
     if any(".mlp.experts." in name for name in tensors):
         raise ValueError("coordinator container contains routed expert tensors")
@@ -680,7 +675,9 @@ def _microshard_ranges(
 ) -> tuple[tuple[ByteRange, ...], tuple[ByteRange, ...], dict[str, str]]:
     width = hidden_end - hidden_start
     gate_offset = weight.absolute_offset + hidden_start * hidden_size
-    up_offset = weight.absolute_offset + intermediate_size * hidden_size + hidden_start * hidden_size
+    up_offset = (
+        weight.absolute_offset + intermediate_size * hidden_size + hidden_start * hidden_size
+    )
     down_base = weight.absolute_offset + 2 * intermediate_size * hidden_size
     weight_ranges: list[ByteRange] = [
         ByteRange(weight.path, gate_offset, width * hidden_size, "gate_rows"),
@@ -799,9 +796,9 @@ def build_microshard_bank(
             )
             selected_hashes[weight_name] = _ranges_hash(weight_ranges)
             selected_hashes[scale_name] = _ranges_hash(scale_ranges)
-            shard_bytes = 3 * config["hidden_size"] * width + (
-                2 * width + config["hidden_size"]
-            ) * 4
+            shard_bytes = (
+                3 * config["hidden_size"] * width + (2 * width + config["hidden_size"]) * 4
+            )
             total_bytes += shard_bytes
             records.append(
                 {
@@ -985,13 +982,9 @@ def verify_microshard_reconstruction(
             weight_tensor = tensors[item["destination_weight_tensor"]]
             scale_tensor = tensors[item["destination_scale_tensor"]]
             with weight_tensor.path.open("rb") as handle:
-                selected_weight = _read_range(
-                    handle, _full_range(weight_tensor, "selected_weight")
-                )
+                selected_weight = _read_range(handle, _full_range(weight_tensor, "selected_weight"))
             with scale_tensor.path.open("rb") as handle:
-                selected_scales = _read_range(
-                    handle, _full_range(scale_tensor, "selected_scales")
-                )
+                selected_scales = _read_range(handle, _full_range(scale_tensor, "selected_scales"))
             width = end - start
             gate_bytes = width * hidden_size
             reconstructed_weight[start * hidden_size : end * hidden_size] = selected_weight[
@@ -1004,9 +997,9 @@ def verify_microshard_reconstruction(
             for row in range(hidden_size):
                 destination_start = 2 * matrix_bytes + row * intermediate_size + start
                 source_start = row * width
-                reconstructed_weight[destination_start : destination_start + width] = (
-                    selected_down[source_start : source_start + width]
-                )
+                reconstructed_weight[destination_start : destination_start + width] = selected_down[
+                    source_start : source_start + width
+                ]
             reconstructed_scales[start * 4 : end * 4] = selected_scales[: width * 4]
             reconstructed_scales[
                 (intermediate_size + start) * 4 : (intermediate_size + end) * 4
@@ -1079,8 +1072,7 @@ def require_bank_ownership(
             if isinstance(item, dict)
         )
         description = (
-            f"microshard layer={layer_id} expert={expert_id} "
-            f"range={hidden_start}:{hidden_end}"
+            f"microshard layer={layer_id} expert={expert_id} range={hidden_start}:{hidden_end}"
         )
     if not allowed:
         raise PermissionError(f"worker bank forbids unowned {description}")
@@ -1194,9 +1186,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         owned_microshards = list(args.owned_microshard)
         if args.all_experts_hidden_range:
             if owned_microshards:
-                raise ValueError(
-                    "use explicit microshards or --all-experts-hidden-range, not both"
-                )
+                raise ValueError("use explicit microshards or --all-experts-hidden-range, not both")
             config = _load_config(args.source_model.expanduser().resolve())
             start, end = args.all_experts_hidden_range
             owned_microshards = [

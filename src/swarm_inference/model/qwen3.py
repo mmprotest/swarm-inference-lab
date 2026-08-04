@@ -24,7 +24,6 @@ from swarm_inference.exceptions import (
     UnsupportedArchitectureError,
     UnsupportedCacheFormatError,
 )
-from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.model.adapter import (
     ComponentKind,
     ComponentRef,
@@ -57,6 +56,7 @@ from swarm_inference.model.stage_module import (
     StageExecutionMetadata,
 )
 from swarm_inference.protocol.checksums import sha256_file
+from swarm_inference.runtime.telemetry import lifecycle_observer
 
 _LAYER_PATTERN = re.compile(r"^model\.layers\.(\d+)\.")
 _DTYPE_BYTES = {
@@ -1973,7 +1973,7 @@ class Qwen3StageModule:
         }.get(manifest.weight_dtype.upper())
         if expected_source_dtype is None:
             raise IntegrityError(f"unsupported manifest source dtype {manifest.weight_dtype}")
-        recorder = lifecycle_recorder()
+        recorder = lifecycle_observer()
         read_started = time.monotonic_ns()
         if recorder is not None:
             recorder.emit(

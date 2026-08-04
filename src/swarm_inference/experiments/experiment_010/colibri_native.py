@@ -219,8 +219,13 @@ class NativeColibriExpertWorkerManager:
                         heartbeat = await client.heartbeat()
                         if identity.worker_id != worker_id or heartbeat["worker_id"] != worker_id:
                             raise ValueError("native worker handshake identity mismatch")
-                        if capabilities.backend_details.get("expert_data_endpoint") != data_endpoint:
-                            raise ValueError("native worker control plane advertised the wrong data plane")
+                        if (
+                            capabilities.backend_details.get("expert_data_endpoint")
+                            != data_endpoint
+                        ):
+                            raise ValueError(
+                                "native worker control plane advertised the wrong data plane"
+                            )
                         return (
                             negotiated.model_dump(mode="json"),
                             identity.model_dump(mode="json"),
@@ -293,9 +298,7 @@ class NativeColibriExpertWorkerManager:
             host, port = self._endpoint(worker.control_endpoint)
             with suppress(Exception):
                 graceful = bool(
-                    asyncio.run(
-                        UniversalWorkerClient(host, port, timeout_seconds=3.0).shutdown()
-                    )
+                    asyncio.run(UniversalWorkerClient(host, port, timeout_seconds=3.0).shutdown())
                 )
                 worker.process.wait(timeout=3)
         self._terminate(worker.process)
@@ -342,8 +345,7 @@ def whole_expert_ownership_from_banks(bank_paths: list[Path]) -> list[dict[str, 
     if not identities:
         raise ValueError("local hybrid ownership cannot be empty")
     return [
-        {"layer_id": layer_id, "expert_id": expert_id}
-        for layer_id, expert_id in sorted(identities)
+        {"layer_id": layer_id, "expert_id": expert_id} for layer_id, expert_id in sorted(identities)
     ]
 
 
@@ -420,9 +422,7 @@ def _last_jsonl_record(path: Path) -> dict[str, Any]:
 
 def _worker_process_accounting(worker: NativeColibriExpertWorker) -> dict[str, Any]:
     manifest = json.loads((worker.bank_path / "manifest.json").read_text(encoding="utf-8"))
-    telemetry = _last_jsonl_record(
-        worker.configuration_path.parent / "worker-telemetry.jsonl"
-    )
+    telemetry = _last_jsonl_record(worker.configuration_path.parent / "worker-telemetry.jsonl")
     try:
         process = psutil.Process(worker.process.pid)
         memory = process.memory_full_info()
@@ -466,9 +466,7 @@ def _worker_process_accounting(worker: NativeColibriExpertWorker) -> dict[str, A
             manifest.get("owned_expert_count", len(manifest.get("owned_experts", [])))
         ),
         "owned_microshard_count": int(
-            manifest.get(
-                "owned_microshard_count", len(manifest.get("owned_microshards", []))
-            )
+            manifest.get("owned_microshard_count", len(manifest.get("owned_microshards", [])))
         ),
         "resident_expert_bytes": int(telemetry.get("expert_working_set_bytes", 0)),
         "cache_bytes": int(telemetry.get("cache_bytes", 0)),
@@ -478,45 +476,31 @@ def _worker_process_accounting(worker: NativeColibriExpertWorker) -> dict[str, A
         "logical_cache_hits": int(telemetry.get("logical_cache_hits", 0)),
         "resident_cache_hits": int(telemetry.get("resident_cache_hits", 0)),
         "nonresident_cache_hits": int(telemetry.get("nonresident_cache_hits", 0)),
-        "cache_hits_with_page_fault": int(
-            telemetry.get("cache_hits_with_page_fault", 0)
-        ),
+        "cache_hits_with_page_fault": int(telemetry.get("cache_hits_with_page_fault", 0)),
         "cache_evictions": int(telemetry.get("cache_evictions", 0)),
         "cuda_requested": bool(telemetry.get("cuda_requested", False)),
         "cuda_initialized": bool(telemetry.get("cuda_initialized", False)),
         "cuda_device": int(telemetry.get("cuda_device", -1)),
         "cuda_target_layer": int(telemetry.get("cuda_target_layer", -1)),
         "cuda_target_expert": int(telemetry.get("cuda_target_expert", -1)),
-        "cuda_resident_tensor_count": int(
-            telemetry.get("cuda_resident_tensor_count", 0)
-        ),
-        "cuda_resident_tensor_bytes": int(
-            telemetry.get("cuda_resident_tensor_bytes", 0)
-        ),
+        "cuda_resident_tensor_count": int(telemetry.get("cuda_resident_tensor_count", 0)),
+        "cuda_resident_tensor_bytes": int(telemetry.get("cuda_resident_tensor_bytes", 0)),
         "cuda_weight_upload_ns": int(telemetry.get("cuda_weight_upload_ns", 0)),
         "cuda_execution_count": int(telemetry.get("cuda_execution_count", 0)),
-        "cuda_execution_wall_ns": int(
-            telemetry.get("cuda_execution_wall_ns", 0)
-        ),
+        "cuda_execution_wall_ns": int(telemetry.get("cuda_execution_wall_ns", 0)),
         "cuda_h2d_ns": int(telemetry.get("cuda_h2d_ns", 0)),
         "cuda_kernel_ns": int(telemetry.get("cuda_kernel_ns", 0)),
         "cuda_d2h_ns": int(telemetry.get("cuda_d2h_ns", 0)),
         "cuda_fallback_count": int(telemetry.get("cuda_fallback_count", 0)),
-        "resident_query_supported": bool(
-            telemetry.get("resident_query_supported", False)
-        ),
+        "resident_query_supported": bool(telemetry.get("resident_query_supported", False)),
         "pagefile_read_bytes": telemetry.get("pagefile_read_bytes"),
         "pagefile_read_bytes_available": bool(
             telemetry.get("pagefile_read_bytes_available", False)
         ),
         "memory_compression_bytes": telemetry.get("memory_compression_bytes"),
-        "memory_compression_available": bool(
-            telemetry.get("memory_compression_available", False)
-        ),
+        "memory_compression_available": bool(telemetry.get("memory_compression_available", False)),
         "memory_counter_limitation": telemetry.get("memory_counter_limitation"),
-        "worker_telemetry": str(
-            worker.configuration_path.parent / "worker-telemetry.jsonl"
-        ),
+        "worker_telemetry": str(worker.configuration_path.parent / "worker-telemetry.jsonl"),
         "bank_manifest": str(worker.bank_path / "manifest.json"),
     }
 
@@ -710,8 +694,7 @@ def run_native_rpc_replay(
         (output / "stdout.log").write_text(completed.stdout, encoding="utf-8")
         (output / "stderr.log").write_text(completed.stderr, encoding="utf-8")
         accounting = [
-            _worker_process_accounting(worker)
-            for worker in [*workers, *replicas.values()]
+            _worker_process_accounting(worker) for worker in [*workers, *replicas.values()]
         ]
         relay_metrics = relay_manager.snapshots() if relay_manager.relays else []
         reference = json.loads(reference_path.read_text(encoding="utf-8"))
@@ -719,7 +702,11 @@ def run_native_rpc_replay(
         expected_tokens = [int(value) for value in reference["full_ids"][prompt_count:]]
         actual_tokens = _generated_token_ids(completed.stdout)
         events = (
-            [json.loads(line) for line in telemetry.read_text(encoding="utf-8").splitlines() if line]
+            [
+                json.loads(line)
+                for line in telemetry.read_text(encoding="utf-8").splitlines()
+                if line
+            ]
             if telemetry.is_file()
             else []
         )
@@ -741,7 +728,8 @@ def run_native_rpc_replay(
             "expected_token_ids": expected_tokens,
             "actual_token_ids": actual_tokens,
             "matching_tokens": sum(
-                expected == actual for expected, actual in zip(expected_tokens, actual_tokens, strict=False)
+                expected == actual
+                for expected, actual in zip(expected_tokens, actual_tokens, strict=False)
             ),
             "expected_tokens": len(expected_tokens),
             "exact_token_identity": actual_tokens == expected_tokens,
@@ -756,16 +744,12 @@ def run_native_rpc_replay(
             "forbidden_local_loads": sum(
                 event.get("event") == "forbidden_local_expert_load" for event in events
             ),
-            "fallback_events": sum(
-                event.get("event") == "expert_rpc_fallback" for event in events
-            ),
+            "fallback_events": sum(event.get("event") == "expert_rpc_fallback" for event in events),
             "corruption_detections": sum(
-                event.get("event") == "expert_rpc_corruption_detected"
-                for event in events
+                event.get("event") == "expert_rpc_corruption_detected" for event in events
             ),
             "worker_quarantines": sum(
-                event.get("event") == "expert_rpc_worker_quarantined"
-                for event in events
+                event.get("event") == "expert_rpc_worker_quarantined" for event in events
             ),
             "clean_duplicate_verifications": sum(
                 event.get("event")
@@ -826,8 +810,8 @@ def run_native_hybrid_smoke(
         worker = manager.start(
             worker_id=worker_id,
             bank_path=bank_path,
-                    model_id="colibri-olmoe",
-                    model_revision=COLIBRI_MODEL_REVISION,
+            model_id="colibri-olmoe",
+            model_revision=COLIBRI_MODEL_REVISION,
             quantization_fingerprint=quantization_fingerprint,
             model_fingerprint=model_fingerprint,
             memory_budget_bytes=64 * 1024 * 1024,
@@ -873,11 +857,15 @@ def run_native_hybrid_smoke(
         (output / "stdout.log").write_text(completed.stdout, encoding="utf-8")
         (output / "stderr.log").write_text(completed.stderr, encoding="utf-8")
         token_match = re.search(r"Matching tokens:\s*(\d+)/(\d+)", completed.stdout)
-        events = [
-            json.loads(line)
-            for line in telemetry.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ] if telemetry.is_file() else []
+        events = (
+            [
+                json.loads(line)
+                for line in telemetry.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            if telemetry.is_file()
+            else []
+        )
         result = {
             "schema_version": "experiment-010-native-hybrid-smoke-v1",
             "return_code": completed.returncode,
@@ -944,10 +932,18 @@ def main() -> int:
     )
     arguments = parser.parse_args()
     if arguments.rpc_replay:
-        required = (arguments.worker, arguments.engine, arguments.model, arguments.reference,
-                    arguments.output, arguments.model_fingerprint)
+        required = (
+            arguments.worker,
+            arguments.engine,
+            arguments.model,
+            arguments.reference,
+            arguments.output,
+            arguments.model_fingerprint,
+        )
         if any(value is None for value in required) or not arguments.banks:
-            parser.error("--rpc-replay requires worker, engine, model, reference, output, fingerprint, and banks")
+            parser.error(
+                "--rpc-replay requires worker, engine, model, reference, output, fingerprint, and banks"
+            )
         result = run_native_rpc_replay(
             executable=arguments.worker,
             engine=arguments.engine,
@@ -961,9 +957,7 @@ def main() -> int:
             response_mode=arguments.response_mode,
             data_plane=arguments.data_plane,
             network_profile=arguments.network_profile,
-            cuda_targets=dict(
-                item.split("=", 1) for item in arguments.cuda_target
-            ),
+            cuda_targets=dict(item.split("=", 1) for item in arguments.cuda_target),
             cuda_device=arguments.cuda_device,
             idot=not arguments.disable_idot,
         )

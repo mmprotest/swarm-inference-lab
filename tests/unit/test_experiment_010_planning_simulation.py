@@ -279,9 +279,7 @@ def test_full_run_completeness() -> None:
 def test_reuse_distance_candidates_follow_measured_thresholds(tmp_path) -> None:
     trace = tmp_path / "route.trace"
     trace.write_text(
-        "0 0 0 1:0.5 2:0.5\n"
-        "1 0 0 3:0.5 1:0.5\n"
-        "2 0 0 2:0.5 1:0.5\n",
+        "0 0 0 1:0.5 2:0.5\n1 0 0 3:0.5 1:0.5\n2 0 0 2:0.5 1:0.5\n",
         encoding="utf-8",
     )
     rows, summary = reuse_distance_curve([trace], expert_bytes=64)

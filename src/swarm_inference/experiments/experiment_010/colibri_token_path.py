@@ -20,8 +20,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from tokenizers import Tokenizer
 import psutil
+from tokenizers import Tokenizer
 
 from swarm_inference.experiments.experiment_010.colibri_expert_bank import (
     verify_bank,
@@ -58,16 +58,32 @@ CORRECTNESS_PROMPTS: tuple[tuple[str, str, str], ...] = (
     ("code-08", "coding", "Create a JavaScript debounce function."),
     ("code-09", "coding", "Explain why immutable data can simplify concurrent programs."),
     ("code-10", "coding", "Give pseudocode for breadth-first graph traversal."),
-    ("math-01", "mathematics_reasoning", "A train travels 180 km in 2.5 hours. Find its average speed."),
+    (
+        "math-01",
+        "mathematics_reasoning",
+        "A train travels 180 km in 2.5 hours. Find its average speed.",
+    ),
     ("math-02", "mathematics_reasoning", "If x squared minus 5x plus 6 equals zero, solve for x."),
     ("math-03", "mathematics_reasoning", "What is 17 percent of 240? Show the calculation."),
     ("math-04", "mathematics_reasoning", "A rectangle is 8 by 13. Find its area and perimeter."),
     ("math-05", "mathematics_reasoning", "Simplify the fraction 84 over 126."),
-    ("math-06", "mathematics_reasoning", "A fair coin is tossed three times. What is the probability of two heads?"),
+    (
+        "math-06",
+        "mathematics_reasoning",
+        "A fair coin is tossed three times. What is the probability of two heads?",
+    ),
     ("math-07", "mathematics_reasoning", "Find the next two terms: 2, 6, 12, 20, 30."),
     ("math-08", "mathematics_reasoning", "Convert 3.75 hours into hours and minutes."),
-    ("math-09", "mathematics_reasoning", "Explain the Pythagorean theorem with a numerical example."),
-    ("math-10", "mathematics_reasoning", "A price rises from 80 to 92. What is the percentage increase?"),
+    (
+        "math-09",
+        "mathematics_reasoning",
+        "Explain the Pythagorean theorem with a numerical example.",
+    ),
+    (
+        "math-10",
+        "mathematics_reasoning",
+        "A price rises from 80 to 92. What is the percentage increase?",
+    ),
     ("multi-01", "multilingual", "Resume en francais les causes de la Revolution industrielle."),
     ("multi-02", "multilingual", "Escribe un ensayo breve sobre la conservacion del agua."),
     ("multi-03", "multilingual", "Erklaere auf Deutsch, warum regelmaessiger Schlaf wichtig ist."),
@@ -78,13 +94,25 @@ CORRECTNESS_PROMPTS: tuple[tuple[str, str, str], ...] = (
     ("multi-08", "multilingual", "Napisz po polsku krotkie podsumowanie obiegu wody."),
     ("multi-09", "multilingual", "Describe en espanol como preparar una reunion eficaz."),
     ("multi-10", "multilingual", "Redige en francais une liste de trois habitudes durables."),
-    ("reason-01", "reasoning", "Compare solar and wind power using cost, reliability, and land use."),
+    (
+        "reason-01",
+        "reasoning",
+        "Compare solar and wind power using cost, reliability, and land use.",
+    ),
     ("reason-02", "reasoning", "A library is crowded after school. Suggest a fair seating policy."),
     ("reason-03", "reasoning", "Explain two benefits and two risks of remote work."),
-    ("reason-04", "reasoning", "Design a simple experiment to test whether light affects plant growth."),
+    (
+        "reason-04",
+        "reasoning",
+        "Design a simple experiment to test whether light affects plant growth.",
+    ),
     ("reason-05", "reasoning", "Summarize the strongest argument for preserving urban trees."),
     ("reason-06", "reasoning", "List the steps for checking whether a news claim is reliable."),
-    ("reason-07", "reasoning", "Propose a weekly study plan for three subjects and explain the tradeoffs."),
+    (
+        "reason-07",
+        "reasoning",
+        "Propose a weekly study plan for three subjects and explain the tradeoffs.",
+    ),
     ("reason-08", "reasoning", "Why can an average hide important differences in a dataset?"),
     ("reason-09", "reasoning", "Explain when a queue is a better data structure than a stack."),
     ("reason-10", "reasoning", "Give a concise argument for and against congestion pricing."),
@@ -207,9 +235,7 @@ def compare_colibri_numeric_traces(
             logit_index += 1
         if not exact and first_divergent_token is None:
             first_divergent_token = int(local["token_position"])
-            first_divergent_layer = (
-                int(local["layer_id"]) if int(local["layer_id"]) >= 0 else None
-            )
+            first_divergent_layer = int(local["layer_id"]) if int(local["layer_id"]) >= 0 else None
         rows.append(
             {
                 "schema_version": "experiment-010-colibri-numeric-boundary-error-v1",
@@ -269,9 +295,7 @@ def compare_colibri_numeric_traces(
     return rows, summary
 
 
-def _base_environment(
-    model_path: Path, *, threads: int, idot: bool = True
-) -> dict[str, str]:
+def _base_environment(model_path: Path, *, threads: int, idot: bool = True) -> dict[str, str]:
     environment = os.environ.copy()
     for name in (
         "COLI_SWARM_EXPERT_PLAN",
@@ -344,9 +368,7 @@ def _sample_process(
             "thread_count": process.num_threads(),
             "cpu_affinity": ";".join(
                 str(value)
-                for value in (
-                    process.cpu_affinity() if hasattr(process, "cpu_affinity") else []
-                )
+                for value in (process.cpu_affinity() if hasattr(process, "cpu_affinity") else [])
             ),
             "storage_read_bytes": int(io.read_bytes),
             "storage_write_bytes": int(io.write_bytes),
@@ -474,8 +496,7 @@ def audit_capacity_ownership(
         if verified["bank_kind"] != "native_colibri_whole_experts":
             raise ValueError("capacity isolation requires whole-expert worker banks")
         owned = {
-            (int(item["layer_id"]), int(item["expert_id"]))
-            for item in ownership["owned_experts"]
+            (int(item["layer_id"]), int(item["expert_id"])) for item in ownership["owned_experts"]
         }
         if len(owned) != len(ownership["owned_experts"]):
             raise ValueError(f"duplicate expert inside worker bank {verified['worker_id']}")
@@ -559,15 +580,22 @@ def build_local_reference_suite(
         baseline_result_path = prompt_root / "local-result.json"
         if reference_path.is_file() and baseline_result_path.is_file():
             recorded = json.loads(baseline_result_path.read_text(encoding="utf-8"))
-            if recorded.get("exact_token_identity") and recorded.get("expected_tokens") == generated_tokens:
+            if (
+                recorded.get("exact_token_identity")
+                and recorded.get("expected_tokens") == generated_tokens
+            ):
                 results.append(recorded)
                 continue
         prompt_ids = tokenizer.encode(text).ids
         placeholder_path = prompt_root / "capture-reference.json"
         _write_json(
             placeholder_path,
-            {"prompt_id": prompt_id, "prompt": text, "prompt_ids": prompt_ids,
-             "full_ids": [*prompt_ids, *([0] * generated_tokens)]},
+            {
+                "prompt_id": prompt_id,
+                "prompt": text,
+                "prompt_ids": prompt_ids,
+                "full_ids": [*prompt_ids, *([0] * generated_tokens)],
+            },
         )
         capture_route = prompt_root / "capture-route.trace"
         capture_numeric_trace = prompt_root / "capture-numeric.trace"
@@ -595,8 +623,13 @@ def build_local_reference_suite(
             raise RuntimeError(f"local Colibri oracle capture failed for {prompt_id}")
         _write_json(
             reference_path,
-            {"prompt_id": prompt_id, "workload_group": workload_group, "prompt": text,
-             "prompt_ids": prompt_ids, "full_ids": [*prompt_ids, *token_ids]},
+            {
+                "prompt_id": prompt_id,
+                "workload_group": workload_group,
+                "prompt": text,
+                "prompt_ids": prompt_ids,
+                "full_ids": [*prompt_ids, *token_ids],
+            },
         )
         (prompt_root / "local-stdout.log").write_text(capture.stdout, encoding="utf-8")
         (prompt_root / "local-stderr.log").write_text(capture.stderr, encoding="utf-8")
@@ -759,8 +792,7 @@ def run_rpc_correctness_suite(
             local_experts=local_ownership,
         )
         local_identity_set = {
-            (int(row["layer_id"]), int(row["expert_id"]))
-            for row in local_ownership
+            (int(row["layer_id"]), int(row["expert_id"])) for row in local_ownership
         }
         for prompt_id, workload_group, _ in selected_prompts:
             reference_path = references / prompt_id / "reference.json"
@@ -816,7 +848,11 @@ def run_rpc_correctness_suite(
             (prompt_output / "stderr.log").write_text(completed.stderr, encoding="utf-8")
             actual_tokens = _generated_token_ids(completed.stdout)
             events = (
-                [json.loads(line) for line in telemetry.read_text(encoding="utf-8").splitlines() if line]
+                [
+                    json.loads(line)
+                    for line in telemetry.read_text(encoding="utf-8").splitlines()
+                    if line
+                ]
                 if telemetry.is_file()
                 else []
             )
@@ -824,9 +860,7 @@ def run_rpc_correctness_suite(
             local_route = Path(local_result["route_trace_path"])
             local_numeric_trace_value = local_result.get("numeric_trace_path")
             if not local_numeric_trace_value:
-                raise ValueError(
-                    f"local reference {prompt_id} predates required numeric tracing"
-                )
+                raise ValueError(f"local reference {prompt_id} predates required numeric tracing")
             local_numeric_trace = Path(local_numeric_trace_value)
             prompt_boundary_rows, numeric_comparison = compare_colibri_numeric_traces(
                 prompt_id=prompt_id,
@@ -850,11 +884,15 @@ def run_rpc_correctness_suite(
                 "matching_token_count": sum(
                     a == b for a, b in zip(actual_tokens, expected_tokens, strict=False)
                 ),
-                "exact_token_identity": completed.returncode == 0 and actual_tokens == expected_tokens,
-                "router_trace_identity": route_trace.is_file() and route_trace.read_bytes() == local_route.read_bytes(),
+                "exact_token_identity": completed.returncode == 0
+                and actual_tokens == expected_tokens,
+                "router_trace_identity": route_trace.is_file()
+                and route_trace.read_bytes() == local_route.read_bytes(),
                 "router_weight_identity": numeric_comparison["router_weights_exact"],
                 "local_route_sha256": local_result["route_trace_sha256"],
-                "distributed_route_sha256": _sha256_file(route_trace) if route_trace.is_file() else None,
+                "distributed_route_sha256": _sha256_file(route_trace)
+                if route_trace.is_file()
+                else None,
                 "return_code": completed.returncode,
                 "elapsed_ns": elapsed_ns,
                 "remote_rpc_request_count": sum(
@@ -874,8 +912,13 @@ def run_rpc_correctness_suite(
                 "local_selected_rank_count": local_selected_rank_count,
                 "remote_selected_rank_count": remote_selected_rank_count,
                 "first_divergent_token": next(
-                    (index for index, (actual, expected) in enumerate(zip(actual_tokens, expected_tokens, strict=False))
-                     if actual != expected),
+                    (
+                        index
+                        for index, (actual, expected) in enumerate(
+                            zip(actual_tokens, expected_tokens, strict=False)
+                        )
+                        if actual != expected
+                    ),
                     None,
                 ),
                 "first_divergent_layer": numeric_comparison["first_divergent_layer"],
@@ -890,22 +933,16 @@ def run_rpc_correctness_suite(
                 "maximum_hidden_state_absolute_error": numeric_comparison[
                     "maximum_hidden_state_absolute_error"
                 ],
-                "maximum_logit_absolute_error": numeric_comparison[
-                    "maximum_logit_absolute_error"
-                ],
+                "maximum_logit_absolute_error": numeric_comparison["maximum_logit_absolute_error"],
                 "evidence_category": "REAL_MODEL_MEASURED",
                 "telemetry_path": str(telemetry),
                 "route_trace_path": str(route_trace),
                 "numeric_trace_path": str(numeric_trace),
                 "local_numeric_trace_sha256": numeric_comparison["local_trace_sha256"],
-                "distributed_numeric_trace_sha256": numeric_comparison[
-                    "distributed_trace_sha256"
-                ],
+                "distributed_numeric_trace_sha256": numeric_comparison["distributed_trace_sha256"],
             }
             residency_events = [
-                event
-                for event in events
-                if event.get("event") == "coordinator_memory_residency"
+                event for event in events if event.get("event") == "coordinator_memory_residency"
             ]
             row.update(
                 {
@@ -934,8 +971,10 @@ def run_rpc_correctness_suite(
                     ),
                 }
             )
-            _write_json(prompt_output / "result.json", {**row, "actual_token_ids": actual_tokens,
-                                                         "expected_token_ids": expected_tokens})
+            _write_json(
+                prompt_output / "result.json",
+                {**row, "actual_token_ids": actual_tokens, "expected_token_ids": expected_tokens},
+            )
             rows.append(row)
         accounting = [_worker_process_accounting(worker) for worker in workers]
     finally:
@@ -980,7 +1019,9 @@ def run_rpc_correctness_suite(
             ),
         }
     fieldnames = list(rows[0]) if rows else []
-    with (output / "colibri_rpc_token_results.csv").open("w", newline="", encoding="utf-8") as handle:
+    with (output / "colibri_rpc_token_results.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
@@ -1011,15 +1052,11 @@ def run_rpc_correctness_suite(
         "required_prompt_count": required_prompt_count,
         "exact_prompt_count": sum(row["exact_token_identity"] for row in rows),
         "router_identity_prompt_count": sum(row["router_trace_identity"] for row in rows),
-        "router_weight_identity_prompt_count": sum(
-            row["router_weight_identity"] for row in rows
-        ),
+        "router_weight_identity_prompt_count": sum(row["router_weight_identity"] for row in rows),
         "numeric_exact_prompt_count": sum(
             row["numeric_trace_all_records_exact_fp32"] for row in rows
         ),
-        "hidden_boundary_record_count": sum(
-            row["hidden_boundary_record_count"] for row in rows
-        ),
+        "hidden_boundary_record_count": sum(row["hidden_boundary_record_count"] for row in rows),
         "logit_record_count": sum(row["logit_record_count"] for row in rows),
         "forbidden_local_expert_load_count": sum(
             row["forbidden_local_expert_load_count"] for row in rows
@@ -1131,7 +1168,12 @@ def main() -> int:
             required_prompt_count=arguments.required_prompts,
         )
     else:
-        if not arguments.worker or not arguments.bank or not arguments.reference_directory or not arguments.model_fingerprint:
+        if (
+            not arguments.worker
+            or not arguments.bank
+            or not arguments.reference_directory
+            or not arguments.model_fingerprint
+        ):
             parser.error("the RPC suite requires worker, banks, references, and model fingerprint")
         if arguments.expert_mode == "hybrid" and not arguments.local_bank:
             parser.error("hybrid correctness requires one or more --local-bank values")
@@ -1156,7 +1198,11 @@ def main() -> int:
                 else []
             ),
         )
-    print(json.dumps({key: value for key, value in result.items() if key != "results"}, sort_keys=True))
+    print(
+        json.dumps(
+            {key: value for key, value in result.items() if key != "results"}, sort_keys=True
+        )
+    )
     return 0 if result["complete"] else 1
 
 

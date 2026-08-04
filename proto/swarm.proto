@@ -41,6 +41,20 @@ service Worker {
   rpc Assign(google.protobuf.Any) returns (google.protobuf.Any);
   rpc Execute(google.protobuf.Any) returns (google.protobuf.Any);
   rpc ExecuteStream(stream Chunk) returns (stream Chunk);
+  rpc InstallRoute(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc DispatchRoute(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc PeerStream(stream google.protobuf.Any) returns (stream google.protobuf.Any);
   rpc Cancel(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc CacheControl(google.protobuf.Any) returns (google.protobuf.Any);
   rpc Health(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc GetStageCapabilities(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc LoadStage(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc UnloadStage(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc InstallStageRoute(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc RemoveStageRoute(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc OpenStageSession(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc CloseStageSession(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc CancelStageSession(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc GetStageStatus(google.protobuf.Any) returns (google.protobuf.Any);
+  rpc DrainWorker(google.protobuf.Any) returns (google.protobuf.Any);
 }

@@ -22,7 +22,10 @@ from swarm_inference.experiments.loopback import (
 from swarm_inference.experiments.loopback_matrix import run_loopback_matrix
 from swarm_inference.experiments.reporting import render_html_report
 from swarm_inference.experiments.runner import run_experiment, validate_run
-from swarm_inference.host import resolve_advertised_endpoint
+from swarm_inference.host import (
+    resolve_advertised_endpoint,
+    resolve_data_plane_advertised_endpoint,
+)
 from swarm_inference.logging import configure_logging
 from swarm_inference.model.feasibility import analyse_large_model_manifest
 from swarm_inference.model.manifest import (
@@ -1057,6 +1060,46 @@ def worker_command(
         Path | None,
         typer.Option(help="Local root containing pre-provisioned real-model stage directories."),
     ] = None,
+    data_listen: Annotated[
+        str,
+        typer.Option(help="Stage-ring TCP bind endpoint."),
+    ] = "0.0.0.0:50053",
+    data_advertise: Annotated[
+        str | None,
+        typer.Option(
+            help=(
+                "Coordinator-reachable stage-ring endpoint. Wildcard addresses are never "
+                "advertised."
+            )
+        ),
+    ] = None,
+    device: Annotated[
+        str | None,
+        typer.Option(help="Stage execution device, for example cpu, cuda, cuda:1, or mps."),
+    ] = None,
+    dtype: Annotated[
+        str,
+        typer.Option(help="Resident OLMoE stage execution dtype."),
+    ] = "bfloat16",
+    model_cache_dir: Annotated[
+        Path | None,
+        typer.Option(help="Local Hugging Face model cache used by stage loading."),
+    ] = None,
+    allow_model_download: Annotated[
+        bool,
+        typer.Option(help="Permit explicit stage loads to download an exact model revision."),
+    ] = False,
+    max_stage_sessions: Annotated[
+        int,
+        typer.Option(min=1, help="Maximum concurrent KV-cache sessions for the resident stage."),
+    ] = 256,
+    stage_runtime: Annotated[
+        bool,
+        typer.Option(
+            "--stage-runtime/--no-stage-runtime",
+            help="Enable the persistent OLMoE stage runtime and direct TCP data plane.",
+        ),
+    ] = False,
 ) -> None:
     """Start a physical or loopback worker using the same transport and agent."""
 
@@ -1072,6 +1115,38 @@ def worker_command(
         )
     except SwarmError as exc:
         _fail(f"invalid worker endpoint configuration: {exc}")
+    resolved_device: str | None = None
+    data_advertised_endpoint: str | None = None
+    if stage_runtime:
+        default_devices = {
+            Backend.TORCH_CPU: "cpu",
+            Backend.TORCH_CUDA: "cuda",
+            Backend.TORCH_MPS: "mps",
+        }
+        resolved_device = device or default_devices.get(backend)
+        if resolved_device is None:
+            _fail("--stage-runtime requires torch-cpu, torch-cuda, or torch-mps backend")
+        assert resolved_device is not None
+        expected = default_devices[backend]
+        if resolved_device.split(":", 1)[0].lower() != expected:
+            _fail(f"--device {resolved_device!r} is incompatible with backend {backend.value}")
+        if dtype.lower() not in {"bfloat16", "bf16", "float16", "f16", "float32", "f32"}:
+            _fail("--dtype must be bfloat16, float16, or float32")
+        try:
+            data_advertised_endpoint = resolve_data_plane_advertised_endpoint(
+                listen_endpoint=data_listen,
+                coordinator_endpoint=coordinator,
+                explicit_endpoint=data_advertise,
+            )
+        except SwarmError as exc:
+            _fail(f"invalid worker data endpoint configuration: {exc}")
+    elif (
+        data_advertise is not None
+        or device is not None
+        or model_cache_dir is not None
+        or allow_model_download
+    ):
+        _fail("stage data, device, model-cache, and download options require --stage-runtime")
     asyncio.run(
         run_worker(
             coordinator_endpoint=coordinator,
@@ -1083,6 +1158,14 @@ def worker_command(
             worker_id=worker_id,
             model_shard_root=model_shard_root,
             queue_config=QueueConfig(),
+            stage_runtime_enabled=stage_runtime,
+            data_listen_endpoint=data_listen if stage_runtime else None,
+            data_advertised_endpoint=data_advertised_endpoint,
+            device=resolved_device,
+            dtype=dtype,
+            model_cache_dir=model_cache_dir,
+            allow_model_download=allow_model_download,
+            max_stage_sessions=max_stage_sessions,
         )
     )
 

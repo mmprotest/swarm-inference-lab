@@ -16,7 +16,6 @@ from swarm_inference.config.models import (
     WorkerCapability,
 )
 from swarm_inference.exceptions import BackpressureError, RouteMessageError, TransportError
-from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.messages import (
     Ack,
@@ -40,6 +39,7 @@ from swarm_inference.protocol.routes import (
     verify_route_plan,
 )
 from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tensor, encode_tensor
+from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
 from swarm_inference.transport.peer import FinalResultClient, PeerConnectionPool
@@ -212,7 +212,7 @@ class WorkerAgent:
             backend=self.capability.backend,
             dtype_name=dtype,
         )
-        recorder = lifecycle_recorder()
+        recorder = lifecycle_observer()
         warmup_started = time.monotonic_ns()
         perform_warmup = os.environ.get("SWARM_STAGE_LOCAL_WARMUP", "0") == "1"
         if recorder is not None:
@@ -490,7 +490,7 @@ class WorkerAgent:
         return route, stage_index
 
     async def handle_data_plane(self, envelope: DataPlaneEnvelope) -> DataPlaneAck:
-        recorder = lifecycle_recorder()
+        recorder = lifecycle_observer()
         if recorder is not None and not envelope.replay_only:
             recorder.emit_once(
                 "first-request-received",

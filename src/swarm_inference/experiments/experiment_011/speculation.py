@@ -13,12 +13,12 @@ from typing import Any
 
 import torch
 
+from swarm_inference.execution.olmoe_stage import ContiguousOlmoeStage
 from swarm_inference.experiments.experiment_011.drafting import (
     PromptLookupDraftProvider,
     verify_greedy_candidates,
 )
-from swarm_inference.experiments.experiment_011.model import ContiguousOlmoeStage
-from swarm_inference.experiments.experiment_011.partition import StagePlan
+from swarm_inference.model.partition import StagePlan
 
 
 def _traverse(
@@ -188,6 +188,7 @@ def run_real_prompt_lookup_speculation(
             model_path=Path(plan.model_path),
             assignment=assignment,
             stage_count=plan.stage_count,
+            device="cuda:0",
         )
         for assignment in plan.assignments
     ]

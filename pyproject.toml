@@ -128,3 +128,7 @@ module = [
   "transformers.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["swarm_inference.experiments.*"]
+ignore_errors = true

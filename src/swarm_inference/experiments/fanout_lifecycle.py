@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
-import os
-import threading
-import time
 from collections.abc import Iterable, Mapping
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+
+from swarm_inference.runtime.telemetry import (
+    JsonlLifecycleObserver,
+    configure_lifecycle_observer,
+    lifecycle_observer,
+    lifecycle_observer_from_environment,
+)
 
 REQUIRED_LIFECYCLE_EVENTS = (
     "assignment_created",
@@ -65,115 +68,19 @@ _START_END_PAIRS = {
 }
 
 
-def utc_now() -> str:
-    return datetime.now(UTC).isoformat()
-
-
-class LifecycleRecorder:
-    """Append process-local JSONL events with a shared monotonic origin."""
-
-    def __init__(
-        self,
-        *,
-        path: str | Path,
-        experiment_id: str,
-        worker_id: str,
-        stage_id: int,
-        origin_monotonic_ns: int,
-        process_id: int | None = None,
-    ) -> None:
-        self.path = Path(path).expanduser().resolve()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.experiment_id = experiment_id
-        self.worker_id = worker_id
-        self.stage_id = stage_id
-        self.origin_monotonic_ns = origin_monotonic_ns
-        self.process_id = os.getpid() if process_id is None else process_id
-        self._lock = threading.Lock()
-        self._once: set[str] = set()
-
-    def emit(
-        self,
-        event_name: str,
-        *,
-        monotonic_ns: int | None = None,
-        wall_clock_utc: str | None = None,
-        duration_ns: int | None = None,
-        bytes_count: int | None = None,
-        memory_metrics: Mapping[str, int | float | None] | None = None,
-        error: str | None = None,
-        details: Mapping[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        timestamp = time.monotonic_ns() if monotonic_ns is None else int(monotonic_ns)
-        if duration_ns is not None and duration_ns < 0:
-            raise ValueError("lifecycle duration cannot be negative")
-        payload: dict[str, Any] = {
-            "experiment_id": self.experiment_id,
-            "worker_id": self.worker_id,
-            "stage_id": self.stage_id,
-            "process_id": self.process_id,
-            "monotonic_timestamp_ns": timestamp,
-            "experiment_elapsed_ns": timestamp - self.origin_monotonic_ns,
-            "wall_clock_utc": wall_clock_utc or utc_now(),
-            "event_name": event_name,
-        }
-        if duration_ns is not None:
-            payload["duration_ns"] = int(duration_ns)
-            payload["duration_seconds"] = duration_ns / 1_000_000_000
-        if bytes_count is not None:
-            payload["bytes"] = int(bytes_count)
-        if memory_metrics is not None:
-            payload["memory_metrics"] = dict(memory_metrics)
-        if error is not None:
-            payload["error"] = error
-        if details:
-            payload.update(details)
-        serialized = json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n"
-        with self._lock, self.path.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(serialized)
-            handle.flush()
-        return payload
-
-    def emit_once(
-        self,
-        key: str,
-        event_name: str,
-        **kwargs: Any,
-    ) -> dict[str, Any] | None:
-        with self._lock:
-            if key in self._once:
-                return None
-            self._once.add(key)
-        return self.emit(event_name, **kwargs)
-
-
-_RECORDER: LifecycleRecorder | None = None
+LifecycleRecorder = JsonlLifecycleObserver
 
 
 def configure_lifecycle_recorder(recorder: LifecycleRecorder | None) -> None:
-    global _RECORDER
-    _RECORDER = recorder
+    configure_lifecycle_observer(recorder)
 
 
 def lifecycle_recorder() -> LifecycleRecorder | None:
-    return _RECORDER
+    return cast(LifecycleRecorder | None, lifecycle_observer())
 
 
 def recorder_from_environment() -> LifecycleRecorder | None:
-    path = os.environ.get("SWARM_LIFECYCLE_FILE")
-    experiment_id = os.environ.get("SWARM_EXPERIMENT_ID")
-    worker_id = os.environ.get("SWARM_WORKER_ID")
-    stage_id = os.environ.get("SWARM_STAGE_ID")
-    origin = os.environ.get("SWARM_EXPERIMENT_ORIGIN_NS")
-    if not all((path, experiment_id, worker_id, stage_id is not None, origin)):
-        return None
-    return LifecycleRecorder(
-        path=Path(str(path)),
-        experiment_id=str(experiment_id),
-        worker_id=str(worker_id),
-        stage_id=int(str(stage_id)),
-        origin_monotonic_ns=int(str(origin)),
-    )
+    return lifecycle_observer_from_environment()
 
 
 def read_lifecycle_events(paths: Iterable[str | Path]) -> list[dict[str, Any]]:

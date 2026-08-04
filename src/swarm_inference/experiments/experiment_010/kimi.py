@@ -165,9 +165,7 @@ class NativeMXFP4Runtime:
         scales = np.ascontiguousarray(tensor.scales, dtype=np.uint8)
         if source.ndim != 2 or source.shape[1] != tensor.input_dimension:
             raise ValueError("native MXFP4 activation shape mismatch")
-        output = np.empty(
-            (source.shape[0], tensor.output_dimension), dtype=np.float32
-        )
+        output = np.empty((source.shape[0], tensor.output_dimension), dtype=np.float32)
         status = self._library.coli_kimi_mxfp4_matmul(
             self._pointer(output),
             self._pointer(source),
@@ -193,9 +191,7 @@ class NativeMXFP4Runtime:
         scales = np.ascontiguousarray(tensor.scales, dtype=np.uint8)
         if source.ndim != 2 or source.shape[1] != input_end - input_start:
             raise ValueError("native MXFP4 sliced activation shape mismatch")
-        output = np.empty(
-            (source.shape[0], tensor.output_dimension), dtype=np.float32
-        )
+        output = np.empty((source.shape[0], tensor.output_dimension), dtype=np.float32)
         status = self._library.coli_kimi_mxfp4_matmul_input_slice(
             self._pointer(output),
             self._pointer(source),
@@ -227,9 +223,7 @@ class NativeMXFP4Runtime:
             raise RuntimeError(f"Colibri native SiTU failed: {status}")
         return result
 
-    def scale_add(
-        self, destination: np.ndarray, source: np.ndarray, scale: float
-    ) -> None:
+    def scale_add(self, destination: np.ndarray, source: np.ndarray, scale: float) -> None:
         if (
             destination.dtype != np.float32
             or source.dtype != np.float32
@@ -272,8 +266,8 @@ def deterministic_mxfp4_tensor(
         # Every 32-value group starts with a +0.5 E2M1 value.  The remaining
         # 31 values retain their seeded dense distribution.  This makes the
         # no-all-zero-group contract structural instead of probabilistic.
-        packed[:, 0:: MXFP4_GROUP_SIZE // 2] &= np.uint8(0xF0)
-        packed[:, 0:: MXFP4_GROUP_SIZE // 2] |= np.uint8(0x01)
+        packed[:, 0 :: MXFP4_GROUP_SIZE // 2] &= np.uint8(0xF0)
+        packed[:, 0 :: MXFP4_GROUP_SIZE // 2] |= np.uint8(0x01)
     # Values around exponent 119 keep K3-sized dot products numerically tame.
     scales = generator.integers(
         116,
@@ -557,9 +551,7 @@ def execute_kimi_topk(
         "arithmetic_backend": (
             NativeMXFP4Runtime.ABI if native_runtime is not None else "numpy_diagnostic"
         ),
-        "native_runtime_sha256": (
-            native_runtime.sha256 if native_runtime is not None else None
-        ),
+        "native_runtime_sha256": (native_runtime.sha256 if native_runtime is not None else None),
         "persistent_dequantized_bytes": 0,
         "category": "SYNTHETIC_FIXTURE",
     }
@@ -615,9 +607,7 @@ def kimi_fixture_inventory(experts: list[KimiExpert]) -> dict[str, Any]:
     }
 
 
-def run_full_kimi_k3_fixture(
-    *, native_library: Path, seed: int = 1010
-) -> dict[str, Any]:
+def run_full_kimi_k3_fixture(*, native_library: Path, seed: int = 1010) -> dict[str, Any]:
     """Execute dense official geometry through Colibri's compiled MXFP4 kernel.
 
     The tensors are deterministic synthetic E2M1/UE8M0 bytes, never checkpoint
@@ -842,9 +832,7 @@ def write_full_kimi_k3_fixture(
         encoding="utf-8",
     )
     fields = sorted({key for row in result["rows"] for key in row})
-    with (output / "kimi_operator_results.csv").open(
-        "w", newline="", encoding="utf-8"
-    ) as handle:
+    with (output / "kimi_operator_results.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         for row in result["rows"]:

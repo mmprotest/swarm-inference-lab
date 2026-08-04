@@ -128,11 +128,7 @@ def test_real_olmoe_cuda_expert(tmp_path: Path) -> None:
     )
     dll = next((path for path in dll_candidates if path.is_file()), None)
     model = (
-        repository_root
-        / "artifacts"
-        / "models"
-        / "colibri"
-        / "olmoe-1b-7b-0125-instruct-merged"
+        repository_root / "artifacts" / "models" / "colibri" / "olmoe-1b-7b-0125-instruct-merged"
     )
     if dll is None or not model.is_dir():
         pytest.skip("the exact Level A model and Colibri CUDA runtime are required")

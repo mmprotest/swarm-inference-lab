@@ -21,14 +21,14 @@ from typing import Any, Literal
 
 import torch
 
-from swarm_inference.experiments.experiment_010.schemas import NetworkShapeProfile
-from swarm_inference.experiments.experiment_010.transport import NetworkShaper
-from swarm_inference.experiments.experiment_011.model import (
+from swarm_inference.execution.olmoe_stage import (
     ContiguousOlmoeStage,
     StageExecutionResult,
 )
-from swarm_inference.experiments.experiment_011.partition import StageAssignment, StagePlan
-from swarm_inference.experiments.experiment_011.protocol import (
+from swarm_inference.experiments.experiment_010.schemas import NetworkShapeProfile
+from swarm_inference.experiments.experiment_010.transport import NetworkShaper
+from swarm_inference.model.partition import StageAssignment, StagePlan
+from swarm_inference.protocol.stage_ring import (
     BufferPool,
     MessageSequenceValidator,
     Operation,
@@ -38,15 +38,15 @@ from swarm_inference.experiments.experiment_011.protocol import (
     encode_message,
     message_wire_identity,
     recv_message,
-    send_message,
+    send_encoded_frame,
 )
-from swarm_inference.experiments.experiment_011.telemetry import (
+from swarm_inference.runtime.telemetry import (
     TraceContext,
     TraceWriter,
     merge_traces,
     reconstruct_critical_path,
 )
-from swarm_inference.experiments.experiment_011.tensor_transport import (
+from swarm_inference.transport.stage_tensor import (
     AdaptiveTransportInputs,
     PackedTensor,
     pack_tensor,
@@ -235,22 +235,22 @@ def _send_with_trace(
     fields = _trace_fields(message)
     trace.emit("serialization_start", data_plane=data_plane, **fields)
     trace.emit("socket_send_start", data_plane=data_plane, **fields)
-    captured: dict[str, Any] = {}
-
-    def callback(_: str, values: dict[str, Any]) -> None:
-        captured.update(values)
-
-    encoded = send_message(
-        connection,
-        message,
-        shaper=shaper,
-        timeout_s=timeout_s,
-        telemetry=callback,
-    )
+    serialisation_started = time.perf_counter_ns()
+    encoded = encode_message(message)
+    serialisation_ns = time.perf_counter_ns() - serialisation_started
+    shaping_ns = 0
+    if shaper is not None:
+        shaping_started = time.perf_counter_ns()
+        with shaper.flow(timeout_s):
+            shaper.enforce(encoded.wire_bytes, direction="stage_send")
+        shaping_ns = time.perf_counter_ns() - shaping_started
+    socket_started = time.perf_counter_ns()
+    send_encoded_frame(connection, encoded)
+    socket_ns = time.perf_counter_ns() - socket_started
     trace.emit(
         "serialization_end",
         data_plane=data_plane,
-        duration_ns=int(captured.get("serialisation_ns", 0)),
+        duration_ns=serialisation_ns,
         wire_bytes=encoded.wire_bytes,
         checksum=encoded.checksum,
         **fields,
@@ -258,8 +258,8 @@ def _send_with_trace(
     trace.emit(
         "socket_send_end",
         data_plane=data_plane,
-        duration_ns=int(captured.get("socket_ns", 0)),
-        shaping_ns=int(captured.get("shaping_ns", 0)),
+        duration_ns=socket_ns,
+        shaping_ns=shaping_ns,
         wire_bytes=encoded.wire_bytes,
         checksum=encoded.checksum,
         **fields,
@@ -1030,6 +1030,7 @@ class _StageWorker:
             model_path=Path(self.config.model_path),
             assignment=self.assignment,
             stage_count=len(self.config.assignments),
+            device="cuda:0",
         )
         self._connect_ring()
         self._send_control(

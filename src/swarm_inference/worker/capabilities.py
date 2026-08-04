@@ -5,6 +5,7 @@ from __future__ import annotations
 import platform
 import socket
 import time
+from typing import Any
 from uuid import uuid4
 
 import numpy as np
@@ -18,10 +19,37 @@ from swarm_inference.config.models import (
 )
 from swarm_inference.exceptions import BackendIncompatibleError
 from swarm_inference.host import detect_host_runtime, split_endpoint
+from swarm_inference.protocol.stage_ring import STAGE_RING_PROTOCOL_VERSION
 from swarm_inference.security.identity import WorkerIdentity
 
 
-def _gpu_details(backend: Backend) -> tuple[str | None, int, int, list[str]]:
+def _measured_torch_dtypes(torch: Any, device: Any) -> list[str]:
+    """Report only dtypes that complete a real device matrix operation."""
+
+    supported: list[str] = []
+    for name, dtype in (
+        ("float32", torch.float32),
+        ("float16", torch.float16),
+        ("bfloat16", torch.bfloat16),
+    ):
+        try:
+            values = torch.ones((2, 2), device=device, dtype=dtype)
+            result = values @ values
+            if device.type == "cuda":
+                torch.cuda.synchronize(device)
+            if result.float().sum().item() != 8.0:
+                continue
+        except (RuntimeError, OSError, TypeError):
+            continue
+        supported.append(name)
+    return supported
+
+
+def _gpu_details(
+    backend: Backend,
+    *,
+    device_identifier: str | None = None,
+) -> tuple[str | None, int, int, list[str]]:
     if backend == Backend.SYNTHETIC:
         return None, 0, 0, ["float32", "float16", "bfloat16"]
     try:
@@ -31,40 +59,44 @@ def _gpu_details(backend: Backend) -> tuple[str | None, int, int, list[str]]:
             f"{backend.value} requested but PyTorch could not be imported: {exc}"
         ) from exc
     if backend == Backend.TORCH_CPU:
+        device = torch.device("cpu")
         try:
-            probe = torch.ones(1, device="cpu")
+            probe = torch.ones(1, device=device)
             if probe.item() != 1:
                 raise RuntimeError("unexpected CPU probe value")
         except (RuntimeError, OSError) as exc:
             raise BackendIncompatibleError(
                 f"torch-cpu requested but a CPU tensor operation failed: {exc}"
             ) from exc
-        return None, 0, 0, ["float32", "float16", "bfloat16"]
+        return None, 0, 0, _measured_torch_dtypes(torch, device)
     if backend == Backend.TORCH_CUDA:
         if not torch.cuda.is_available():
             raise BackendIncompatibleError(
                 "torch-cuda requested but CUDA is not visible to PyTorch"
             )
         try:
-            probe = torch.ones(1, device="cuda")
-            torch.cuda.synchronize()
+            device = torch.device(device_identifier or "cuda")
+            probe = torch.ones(1, device=device)
+            torch.cuda.synchronize(device)
             if probe.item() != 1:
                 raise RuntimeError("unexpected CUDA probe value")
         except (RuntimeError, OSError) as exc:
             raise BackendIncompatibleError(
                 f"torch-cuda requested but a CUDA tensor operation failed: {exc}"
             ) from exc
-        free, total = torch.cuda.mem_get_info(0)
+        index = device.index if device.index is not None else torch.cuda.current_device()
+        free, total = torch.cuda.mem_get_info(index)
         return (
-            torch.cuda.get_device_name(0),
+            torch.cuda.get_device_name(index),
             int(total),
             int(free),
-            ["float32", "float16", "bfloat16"],
+            _measured_torch_dtypes(torch, device),
         )
     if not getattr(torch.backends, "mps", None) or not torch.backends.mps.is_available():
         raise BackendIncompatibleError("torch-mps requested but MPS is not visible to PyTorch")
     try:
-        probe = torch.ones(1, device="mps")
+        device = torch.device("mps")
+        probe = torch.ones(1, device=device)
         if probe.cpu().item() != 1:
             raise RuntimeError("unexpected MPS probe value")
     except (RuntimeError, OSError) as exc:
@@ -76,10 +108,7 @@ def _gpu_details(backend: Backend) -> tuple[str | None, int, int, list[str]]:
         "Apple Metal Performance Shaders",
         memory.total,
         memory.available,
-        [
-            "float32",
-            "float16",
-        ],
+        _measured_torch_dtypes(torch, device),
     )
 
 
@@ -145,15 +174,22 @@ def measure_capabilities(
     identity: WorkerIdentity,
     worker_id: str | None = None,
     endpoint: str | None = None,
+    control_endpoint: str | None = None,
+    data_plane_endpoint: str | None = None,
+    device_identifier: str | None = None,
+    stage_runtime_enabled: bool = False,
     memory_limit_bytes: int | None = None,
-    upload_bandwidth_bytes_s: float = 125_000_000,
-    download_bandwidth_bytes_s: float = 125_000_000,
+    upload_bandwidth_bytes_s: float = 0.0,
+    download_bandwidth_bytes_s: float = 0.0,
     coordinator_latency_ms: float | None = None,
     network_rates_measured: bool = False,
 ) -> WorkerCapability:
     memory = psutil.virtual_memory()
     host = detect_host_runtime()
-    gpu_model, total_vram, available_vram, dtypes = _gpu_details(backend)
+    gpu_model, total_vram, available_vram, dtypes = _gpu_details(
+        backend,
+        device_identifier=device_identifier,
+    )
     hostname = socket.gethostname()
     logical = psutil.cpu_count(logical=True) or 1
     physical = psutil.cpu_count(logical=False)
@@ -186,4 +222,17 @@ def measure_capabilities(
         memory_limit_bytes=memory_limit_bytes,
         endpoint=endpoint,
         profile_source="measured" if network_rates_measured else "mixed",
+        control_endpoint=control_endpoint or endpoint,
+        data_plane_endpoint=data_plane_endpoint,
+        device_identifier=device_identifier,
+        stage_ring_protocol_version=(
+            STAGE_RING_PROTOCOL_VERSION if stage_runtime_enabled else None
+        ),
+        supported_model_adapters=["olmoe"] if stage_runtime_enabled else [],
+        supported_stage_execution_backends=(
+            ["canonical-contiguous-olmoe"] if stage_runtime_enabled else []
+        ),
+        supported_activation_dtypes=(list(dtypes) if stage_runtime_enabled else []),
+        configured_memory_limit_bytes=memory_limit_bytes,
+        stage_runtime_enabled=stage_runtime_enabled,
     )

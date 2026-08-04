@@ -269,9 +269,11 @@ class ExpertStore:
         started = time.perf_counter_ns()
         before_hits, before_misses, before_read = self.hits, self.misses, self.bytes_read
         exact = request.response_mode == ExpertResponseMode.PER_EXPERT_EXACT
-        exact_unweighted = exact and request.metadata.get(
-            "exact_contribution_representation"
-        ) == "unweighted_expert_output"
+        exact_unweighted = (
+            exact
+            and request.metadata.get("exact_contribution_representation")
+            == "unweighted_expert_output"
+        )
         output = np.zeros(
             (
                 (request.batch_rows, request.effective_top_k, request.latent_dimension)

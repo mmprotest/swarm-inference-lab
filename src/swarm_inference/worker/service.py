@@ -7,19 +7,24 @@ import os
 import time
 from contextlib import suppress
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from swarm_inference.config.models import Backend, QueueConfig
 from swarm_inference.coordinator.service import CoordinatorClient
-from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
+from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
+from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
-from swarm_inference.transport.grpc_transport import WorkerRpcServer
 from swarm_inference.worker.agent import WorkerAgent
 from swarm_inference.worker.capabilities import (
     measure_capabilities,
     measure_coordinator_latency_ms,
 )
+from swarm_inference.worker.stage_service import PersistentStageWorkerService
+
+if TYPE_CHECKING:
+    from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 
 async def run_worker(
@@ -41,7 +46,35 @@ async def run_worker(
     reconnect_attempts: int = 5,
     reconnect_initial_backoff_ms: float = 25.0,
     reconnect_max_backoff_ms: float = 1000.0,
+    stage_runtime_enabled: bool = False,
+    data_listen_endpoint: str | None = None,
+    data_advertised_endpoint: str | None = None,
+    device: str | None = None,
+    dtype: str = "bfloat16",
+    model_cache_dir: str | Path | None = None,
+    allow_model_download: bool = False,
+    max_stage_sessions: int = 256,
+    stage_execution_queue_capacity: int = 256,
+    token_publication_queue_capacity: int = 256,
 ) -> None:
+    if stage_runtime_enabled:
+        if data_listen_endpoint is None or data_advertised_endpoint is None:
+            raise ValueError("stage runtime requires both data listen and advertised endpoints")
+        advertised_host, advertised_port = split_endpoint(data_advertised_endpoint)
+        if is_wildcard_host(advertised_host) or advertised_port == 0:
+            raise ValueError("stage data endpoint cannot advertise a wildcard or zero port")
+        if device is None:
+            raise ValueError("stage runtime requires an explicit device")
+        device_type = device.split(":", 1)[0].lower()
+        expected_device = {
+            Backend.TORCH_CPU: "cpu",
+            Backend.TORCH_CUDA: "cuda",
+            Backend.TORCH_MPS: "mps",
+        }.get(backend)
+        if expected_device is None or device_type != expected_device:
+            raise ValueError(
+                f"backend {backend.value} is incompatible with stage device {device!r}"
+            )
     identity = WorkerIdentity.load_or_create(identity_path)
     coordinator_latency_ms = measure_coordinator_latency_ms(coordinator_endpoint)
     capability = measure_capabilities(
@@ -49,9 +82,20 @@ async def run_worker(
         identity=identity,
         worker_id=worker_id,
         endpoint=advertised_endpoint,
+        control_endpoint=advertised_endpoint,
+        data_plane_endpoint=data_advertised_endpoint if stage_runtime_enabled else None,
+        device_identifier=device,
+        stage_runtime_enabled=stage_runtime_enabled,
         memory_limit_bytes=memory_limit_bytes,
         coordinator_latency_ms=coordinator_latency_ms,
     )
+    requested_dtype = {"bf16": "bfloat16", "f16": "float16", "f32": "float32"}.get(
+        dtype.lower(), dtype.lower()
+    )
+    if stage_runtime_enabled and requested_dtype not in capability.supported_activation_dtypes:
+        raise ValueError(
+            f"stage dtype {dtype!r} did not pass execution probing on device {device!r}"
+        )
     try:
         import psutil
 
@@ -79,11 +123,32 @@ async def run_worker(
         reconnect_initial_backoff_ms=reconnect_initial_backoff_ms,
         reconnect_max_backoff_ms=reconnect_max_backoff_ms,
     )
-    server = WorkerRpcServer(
+    stage_runtime: PersistentStageRuntime | None = None
+    if stage_runtime_enabled:
+        from swarm_inference.worker.stage_runtime import PersistentStageRuntime
+
+        stage_runtime = PersistentStageRuntime(
+            worker_id=capability.worker_id,
+            device=device or "cpu",
+            dtype=dtype,
+            memory_limit_bytes=memory_limit_bytes,
+            maximum_sessions=max_stage_sessions,
+            execution_queue_capacity=stage_execution_queue_capacity,
+            token_queue_capacity=token_publication_queue_capacity,
+            model_cache_dir=model_cache_dir,
+            allow_model_download=allow_model_download,
+            capability=capability,
+        )
+    service = PersistentStageWorkerService(
         agent=agent,
+        stage_runtime=stage_runtime,
         model_shard_root=str(model_shard_root) if model_shard_root else None,
+        data_queue_capacity=stage_execution_queue_capacity,
     )
-    await server.start(listen_endpoint)
+    await service.start(
+        control_listen_endpoint=listen_endpoint,
+        data_listen_endpoint=data_listen_endpoint if stage_runtime_enabled else None,
+    )
     client = CoordinatorClient(coordinator_endpoint)
     nonce = f"{capability.worker_id}:{time.monotonic_ns()}"
     registration_payload = canonical_json_bytes(
@@ -92,17 +157,22 @@ async def run_worker(
             "benchmark_nonce": nonce,
         }
     )
-    recorder = lifecycle_recorder()
+    recorder = lifecycle_observer()
     registration_started = time.monotonic_ns()
     if recorder is not None:
         recorder.emit("worker_registration_started", monotonic_ns=registration_started)
-    response = await client.register(
-        RegistrationRequest(
-            capability=capability,
-            benchmark_nonce=nonce,
-            signature=identity.sign(registration_payload),
+    try:
+        response = await client.register(
+            RegistrationRequest(
+                capability=capability,
+                benchmark_nonce=nonce,
+                signature=identity.sign(registration_payload),
+            )
         )
-    )
+    except BaseException:
+        await client.close()
+        await service.stop()
+        raise
     registration_completed = time.monotonic_ns()
     if recorder is not None:
         recorder.emit(
@@ -115,16 +185,28 @@ async def run_worker(
             },
         )
     if not response.accepted:
-        await server.stop()
+        await service.stop()
         await client.close()
         raise RuntimeError(f"coordinator rejected worker: {response.reason}")
 
     async def heartbeat_loop() -> None:
         while True:
+            if stage_runtime is not None:
+                stage_runtime.refresh_capability()
             payload = {
                 "worker_id": capability.worker_id,
                 "queue_depth": agent.execution.queue_depth,
-                "assignments": sorted(agent.shards.modules),
+                "assignments": sorted(
+                    {
+                        *agent.shards.modules,
+                        *(
+                            [stage_runtime.loaded_executor.ownership.stage_id]
+                            if stage_runtime is not None
+                            and stage_runtime.loaded_executor is not None
+                            else []
+                        ),
+                    }
+                ),
                 "monotonic_ns": time.monotonic_ns(),
             }
             from datetime import UTC, datetime
@@ -151,7 +233,7 @@ async def run_worker(
     heartbeat_task = asyncio.create_task(heartbeat_loop(), name=f"heartbeat:{capability.worker_id}")
     try:
         if stop_event is None:
-            await server.wait_for_termination()
+            await service.wait_for_termination()
         else:
             await stop_event.wait()
     finally:
@@ -161,4 +243,4 @@ async def run_worker(
         with suppress(asyncio.CancelledError):
             await heartbeat_task
         await client.close()
-        await server.stop()
+        await service.stop()

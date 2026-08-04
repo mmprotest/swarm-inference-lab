@@ -59,10 +59,10 @@ from swarm_inference.config.models import (  # noqa: E402
     BackpressurePolicy,
     QueueConfig,
 )
-from swarm_inference.experiments.fanout_lifecycle import (  # noqa: E402
-    configure_lifecycle_recorder,
-    lifecycle_recorder,
-    recorder_from_environment,
+from swarm_inference.runtime.telemetry import (  # noqa: E402
+    configure_lifecycle_observer,
+    lifecycle_observer,
+    lifecycle_observer_from_environment,
 )
 from swarm_inference.worker.service import run_worker  # noqa: E402
 
@@ -91,9 +91,31 @@ def main() -> None:
     parser.add_argument("--reconnect-max-backoff-ms", type=float, default=1000.0)
     parser.add_argument("--stage-local-warmup", action="store_true")
     parser.add_argument("--warmup-sequence-length", type=int, default=128)
+    parser.add_argument("--stage-runtime", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--data-listen")
+    parser.add_argument("--data-advertise")
+    parser.add_argument("--device")
+    parser.add_argument("--dtype", default="bfloat16")
+    parser.add_argument("--model-cache-dir")
+    parser.add_argument("--allow-model-download", action="store_true")
+    parser.add_argument("--max-stage-sessions", type=int, default=256)
     arguments = parser.parse_args()
-    configure_lifecycle_recorder(recorder_from_environment())
-    recorder = lifecycle_recorder()
+    if arguments.stage_runtime and (
+        not arguments.data_listen or not arguments.data_advertise or not arguments.device
+    ):
+        parser.error("--stage-runtime requires --data-listen, --data-advertise, and --device")
+    if not arguments.stage_runtime and any(
+        (
+            arguments.data_listen,
+            arguments.data_advertise,
+            arguments.device,
+            arguments.model_cache_dir,
+            arguments.allow_model_download,
+        )
+    ):
+        parser.error("stage data, device, and download options require --stage-runtime")
+    configure_lifecycle_observer(lifecycle_observer_from_environment())
+    recorder = lifecycle_observer()
     if arguments.stage_local_warmup:
         os.environ["SWARM_STAGE_LOCAL_WARMUP"] = "1"
     else:
@@ -126,13 +148,14 @@ def main() -> None:
         recorder.emit("cuda_initialisation_started", monotonic_ns=cuda_started)
         try:
             assert torch_module is not None
+            cuda_device = torch_module.device(arguments.device or "cuda")
             torch_module.cuda.init()
-            marker = torch_module.zeros(1, dtype=torch_module.float32, device="cuda")
+            marker = torch_module.zeros(1, dtype=torch_module.float32, device=cuda_device)
             marker.add_(1)
-            torch_module.cuda.synchronize(0)
+            torch_module.cuda.synchronize(cuda_device)
             memory = {
-                "torch_cuda_allocated_bytes": int(torch_module.cuda.memory_allocated(0)),
-                "torch_cuda_reserved_bytes": int(torch_module.cuda.memory_reserved(0)),
+                "torch_cuda_allocated_bytes": int(torch_module.cuda.memory_allocated(cuda_device)),
+                "torch_cuda_reserved_bytes": int(torch_module.cuda.memory_reserved(cuda_device)),
             }
             completed = time.monotonic_ns()
             recorder.emit(
@@ -204,6 +227,14 @@ def main() -> None:
                 reconnect_attempts=arguments.reconnect_attempts,
                 reconnect_initial_backoff_ms=arguments.reconnect_initial_backoff_ms,
                 reconnect_max_backoff_ms=arguments.reconnect_max_backoff_ms,
+                stage_runtime_enabled=arguments.stage_runtime,
+                data_listen_endpoint=arguments.data_listen,
+                data_advertised_endpoint=arguments.data_advertise,
+                device=arguments.device,
+                dtype=arguments.dtype,
+                model_cache_dir=arguments.model_cache_dir,
+                allow_model_download=arguments.allow_model_download,
+                max_stage_sessions=arguments.max_stage_sessions,
             )
         finally:
             if shutdown_watcher is not None:

@@ -18,12 +18,12 @@ from swarm_inference.config.models import (
     SyntheticModelConfig,
 )
 from swarm_inference.exceptions import IntegrityError, MemoryLimitExceededError
-from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.model.manifest import hash_shard_directory
 from swarm_inference.model.qwen3 import Qwen3Adapter
 from swarm_inference.model.stage_module import StageModule
 from swarm_inference.model.synthetic import SyntheticStageModule
 from swarm_inference.protocol.checksums import sha256_bytes, sha256_file
+from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.signatures import canonical_json_bytes
 
 _LOAD_RECORD_ENRICHMENT_FIELDS = {
@@ -151,7 +151,7 @@ class ShardManager:
         root = Path(shard_path).expanduser().resolve()
         if not root.is_dir():
             raise IntegrityError(f"Qwen3 stage shard directory does not exist: {root}")
-        recorder = lifecycle_recorder()
+        recorder = lifecycle_observer()
         verification_started = time.monotonic_ns()
         if recorder is not None:
             recorder.emit(

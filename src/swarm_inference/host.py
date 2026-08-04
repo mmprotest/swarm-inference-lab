@@ -205,6 +205,7 @@ def resolve_advertised_endpoint(
     listen_endpoint: str,
     coordinator_endpoint: str,
     explicit_endpoint: str | None,
+    option_name: str = "worker --advertise",
 ) -> str:
     """Resolve a coordinator-reachable worker endpoint.
 
@@ -222,10 +223,10 @@ def resolve_advertised_endpoint(
         advertised_host, advertised_port = split_endpoint(explicit_endpoint)
         if is_wildcard_host(advertised_host):
             raise ConfigurationError(
-                "worker --advertise must be coordinator-reachable, not a wildcard address"
+                f"{option_name} must be coordinator-reachable, not a wildcard address"
             )
         if advertised_port == 0:
-            raise ConfigurationError("worker --advertise must use a non-zero port")
+            raise ConfigurationError(f"{option_name} must use a non-zero port")
         return format_endpoint(advertised_host, advertised_port)
     advertised_host = (
         discover_source_address(coordinator_endpoint)
@@ -235,6 +236,22 @@ def resolve_advertised_endpoint(
     if is_wildcard_host(advertised_host):
         raise ConfigurationError("could not derive a coordinator-reachable worker endpoint")
     return format_endpoint(advertised_host, listen_port)
+
+
+def resolve_data_plane_advertised_endpoint(
+    *,
+    listen_endpoint: str,
+    coordinator_endpoint: str,
+    explicit_endpoint: str | None,
+) -> str:
+    """Resolve a separately advertised, coordinator-reachable data endpoint."""
+
+    return resolve_advertised_endpoint(
+        listen_endpoint=listen_endpoint,
+        coordinator_endpoint=coordinator_endpoint,
+        explicit_endpoint=explicit_endpoint,
+        option_name="worker --data-advertise",
+    )
 
 
 def stop_process(

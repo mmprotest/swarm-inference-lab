@@ -44,9 +44,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
     return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
 
 
@@ -82,9 +80,7 @@ def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
             )
 
 
-def _event_latency_ns(
-    source: dict[str, Any], destinations: list[dict[str, Any]]
-) -> int | None:
+def _event_latency_ns(source: dict[str, Any], destinations: list[dict[str, Any]]) -> int | None:
     source_time = source.get("wall_time_ns")
     if not isinstance(source_time, int):
         return None
@@ -119,8 +115,7 @@ def _rpc_measurements(run_root: Path) -> dict[str, int | float | None]:
         "network_bytes": sum(
             int(event.get("byte_count", 0))
             for event in coordinator
-            if event.get("event")
-            in {"expert_rpc_bytes_sent", "expert_rpc_bytes_received"}
+            if event.get("event") in {"expert_rpc_bytes_sent", "expert_rpc_bytes_received"}
         ),
         # The native worker's request duration includes expert execution and
         # response encoding.  It is an intentionally named wall-time proxy,
@@ -195,9 +190,7 @@ def _summarize_failure(
         if row.get("event") in {"expert_rpc_timeout", "expert_rpc_invalid_response"}
     ]
     fallbacks = [row for row in coordinator if row.get("event") == "expert_rpc_fallback"]
-    recoveries = [
-        row for row in coordinator if row.get("event") == "expert_rpc_recovery_completed"
-    ]
+    recoveries = [row for row in coordinator if row.get("event") == "expert_rpc_recovery_completed"]
     detection_latencies = [
         value
         for source in injections
@@ -216,9 +209,7 @@ def _summarize_failure(
     measurements = _rpc_measurements(run_root)
     baseline_p95 = scenario.get("baseline_rpc_p95_ns")
     baseline_network = int(scenario.get("baseline_network_bytes", 0))
-    baseline_worker_execution = int(
-        scenario.get("baseline_worker_execution_wall_ns_proxy", 0)
-    )
+    baseline_worker_execution = int(scenario.get("baseline_worker_execution_wall_ns_proxy", 0))
     fail_explicit = bool(
         scenario["expected"] == "fail_explicit"
         and result["return_code"] != 0
@@ -252,26 +243,15 @@ def _summarize_failure(
         "timeout_or_detection_count": len(detections),
         "fallback_count": len(fallbacks),
         "recovery_count": len(recoveries),
-        "failure_detection_latency_ns": min(detection_latencies)
-        if detection_latencies
-        else None,
-        "planner_reaction_time_ns": min(reaction_latencies)
-        if reaction_latencies
-        else None,
-        "recovery_latency_ns": min(recovery_latencies)
-        if recovery_latencies
-        else None,
+        "failure_detection_latency_ns": min(detection_latencies) if detection_latencies else None,
+        "planner_reaction_time_ns": min(reaction_latencies) if reaction_latencies else None,
+        "recovery_latency_ns": min(recovery_latencies) if recovery_latencies else None,
         "network_bytes": int(measurements["network_bytes"] or 0),
-        "extra_network_bytes": max(
-            0, int(measurements["network_bytes"] or 0) - baseline_network
-        ),
-        "worker_execution_wall_ns_proxy": int(
-            measurements["worker_execution_wall_ns_proxy"] or 0
-        ),
+        "extra_network_bytes": max(0, int(measurements["network_bytes"] or 0) - baseline_network),
+        "worker_execution_wall_ns_proxy": int(measurements["worker_execution_wall_ns_proxy"] or 0),
         "extra_compute_ns_proxy": max(
             0,
-            int(measurements["worker_execution_wall_ns_proxy"] or 0)
-            - baseline_worker_execution,
+            int(measurements["worker_execution_wall_ns_proxy"] or 0) - baseline_worker_execution,
         ),
         "recomputed_experts": sum(len(row.get("expert_ids") or []) for row in fallbacks),
         "tokens_delayed": len(
@@ -292,10 +272,7 @@ def _summarize_failure(
         "raw_coordinator_telemetry": str(run_root / "coordinator-telemetry.jsonl"),
         "evidence_category": "REAL_MODEL_MEASURED",
     }
-    raw = [
-        {"scenario": scenario["name"], "source": "worker", **event}
-        for event in injections
-    ] + [
+    raw = [{"scenario": scenario["name"], "source": "worker", **event} for event in injections] + [
         {"scenario": scenario["name"], "source": "coordinator", **event}
         for event in coordinator
         if event.get("event")
@@ -479,9 +456,7 @@ def run_failure_matrix(
                     {row["failure_kind"] for row in summaries}
                 ),
                 "all_recoverable_exact": all(
-                    row["passed"]
-                    for row in summaries
-                    if row["expected_behavior"] == "recover"
+                    row["passed"] for row in summaries if row["expected_behavior"] == "recover"
                 ),
                 "fail_explicit_passed": all(
                     row["passed"]
@@ -509,15 +484,11 @@ def _summarize_corruption(
     worker_events = _worker_events(run_root)
     coordinator = _coordinator_events(run_root)
     injections = [
-        row
-        for row in worker_events
-        if row.get("event") == "native_expert_corruption_injected"
+        row for row in worker_events if row.get("event") == "native_expert_corruption_injected"
     ]
     injected_ids = {str(row.get("request_id")) for row in injections}
     detections = [
-        row
-        for row in coordinator
-        if row.get("event") == "expert_rpc_corruption_detected"
+        row for row in coordinator if row.get("event") == "expert_rpc_corruption_detected"
     ]
     detected_ids = {str(row.get("request_id")) for row in detections}
     clean_controls = [
@@ -559,9 +530,7 @@ def _summarize_corruption(
             int(event.get("byte_count", 0)) for event in clean_controls
         ),
         "decode_throughput_impact_fraction": (
-            result["elapsed_ns"] / baseline_elapsed_ns - 1
-            if baseline_elapsed_ns
-            else None
+            result["elapsed_ns"] / baseline_elapsed_ns - 1 if baseline_elapsed_ns else None
         ),
         "rpc_p95_ns": measurements["rpc_p95_ns"],
         "baseline_rpc_p95_ns": baseline_p95,
@@ -580,8 +549,7 @@ def _summarize_corruption(
         "evidence_category": "REAL_MODEL_MEASURED",
     }
     raw = [
-        {"corruption_type": corruption_kind, "source": "worker", **event}
-        for event in injections
+        {"corruption_type": corruption_kind, "source": "worker", **event} for event in injections
     ] + [
         {"corruption_type": corruption_kind, "source": "coordinator", **event}
         for event in coordinator
@@ -718,10 +686,7 @@ def run_corruption_matrix(
     gate_pass = (
         total_injected >= 100
         and total_controls >= 100
-        and all(
-            summary_by_type[name]["detection_rate"] == 1.0
-            for name in required_exact_types
-        )
+        and all(summary_by_type[name]["detection_rate"] == 1.0 for name in required_exact_types)
         and all(int(row["false_positive_count"]) == 0 for row in summaries)
         and all(bool(row["exact_token_identity"]) for row in summaries)
     )
@@ -779,10 +744,8 @@ def refresh_existing_metrics(output: Path) -> None:
         row["rpc_p95_ns"] = measurements["rpc_p95_ns"]
         row["baseline_rpc_p95_ns"] = failure_baseline["rpc_p95_ns"]
         row["p95_impact_ns"] = (
-            float(measurements["rpc_p95_ns"])
-            - float(failure_baseline["rpc_p95_ns"])
-            if measurements["rpc_p95_ns"] is not None
-            and failure_baseline["rpc_p95_ns"] is not None
+            float(measurements["rpc_p95_ns"]) - float(failure_baseline["rpc_p95_ns"])
+            if measurements["rpc_p95_ns"] is not None and failure_baseline["rpc_p95_ns"] is not None
             else None
         )
     _write_csv(failure_root / "real_model_failure_results.csv", failure_summary["rows"])
@@ -793,9 +756,7 @@ def refresh_existing_metrics(output: Path) -> None:
 
     corruption_root = output / "corruption-matrix"
     corruption_summary_path = corruption_root / "corruption_matrix_summary.json"
-    corruption_summary = json.loads(
-        corruption_summary_path.read_text(encoding="utf-8")
-    )
+    corruption_summary = json.loads(corruption_summary_path.read_text(encoding="utf-8"))
     corruption_baseline = _rpc_measurements(corruption_root / "clean-baseline")
     for row in corruption_summary["rows"]:
         name = str(row["corruption_type"])
@@ -808,8 +769,7 @@ def refresh_existing_metrics(output: Path) -> None:
         row["rpc_p95_ns"] = measurements["rpc_p95_ns"]
         row["baseline_rpc_p95_ns"] = corruption_baseline["rpc_p95_ns"]
         row["p95_impact_ns"] = (
-            float(measurements["rpc_p95_ns"])
-            - float(corruption_baseline["rpc_p95_ns"])
+            float(measurements["rpc_p95_ns"]) - float(corruption_baseline["rpc_p95_ns"])
             if measurements["rpc_p95_ns"] is not None
             and corruption_baseline["rpc_p95_ns"] is not None
             else None

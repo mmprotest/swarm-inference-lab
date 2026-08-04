@@ -14,7 +14,6 @@ from swarm_inference.experiments.experiment_010.colibri_token_path import (
     compare_colibri_numeric_traces,
 )
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 PATCH_ROOT = REPOSITORY_ROOT / "integrations" / "colibri" / "patches"
 NUMERIC_HEADER = struct.Struct("<8sIiiiiQ")
@@ -69,8 +68,7 @@ def _paired_trace(tmp_path: Path, *, change_hidden: bool = False):
         (2, 0, -1, np.array([[0.5, 3.0, 1.0]], dtype=np.float32)),
     ]
     remote_records = [
-        (kind, token, layer, values.copy())
-        for kind, token, layer, values in local_records
+        (kind, token, layer, values.copy()) for kind, token, layer, values in local_records
     ]
     if change_hidden:
         remote_records[1][3][0, 1] += np.float32(0.25)

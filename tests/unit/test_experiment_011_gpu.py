@@ -9,11 +9,11 @@ import torch
 
 from swarm_inference.experiments.experiment_010.transport import NETWORK_PROFILES
 from swarm_inference.experiments.experiment_011 import MODEL_REVISION, TOKENIZER_REVISION
-from swarm_inference.experiments.experiment_011.partition import (
-    build_stage_plan,
-    inspect_model_partition_metadata,
-)
 from swarm_inference.experiments.experiment_011.runtime import StageRingController
+from swarm_inference.model.olmoe import (
+    inspect_olmoe_partition_metadata as inspect_model_partition_metadata,
+)
+from swarm_inference.model.partition import build_stage_plan
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = REPOSITORY_ROOT / "artifacts" / "models" / "colibri" / "source-b89a7c4bc24f"
@@ -55,6 +55,7 @@ def test_exact_real_stage_decode_and_kv_ownership(tmp_path: Path, stage_count: i
         stage_count=stage_count,
         method="equal",
         memory_limit_bytes=20_000_000_000,
+        device="cuda:0",
     )
     controller = StageRingController(
         run_id=f"gpu-test-{stage_count}",
@@ -93,6 +94,7 @@ def test_exact_compressed_real_stage_decode(tmp_path: Path) -> None:
         stage_count=2,
         method="equal",
         memory_limit_bytes=20_000_000_000,
+        device="cuda:0",
     )
     result = StageRingController(
         run_id="gpu-test-compression",

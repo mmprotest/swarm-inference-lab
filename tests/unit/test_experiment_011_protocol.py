@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import socket
 import threading
 from dataclasses import replace
 
 import pytest
 
-from swarm_inference.experiments.experiment_011.protocol import (
+from swarm_inference.protocol.stage_ring import (
     HEADER,
     MAGIC,
+    STAGE_RING_PROTOCOL_VERSION,
     BufferPool,
     MessageSequenceValidator,
     Operation,
@@ -42,6 +45,13 @@ def _message(*, operation: Operation = Operation.DECODE, sequence: int = 0) -> S
         payload=b"0123456789abcdef",
         attributes={"cache_position_start": 9},
     )
+
+
+def test_product_protocol_identity() -> None:
+    assert MAGIC == b"SWRING01"
+    assert STAGE_RING_PROTOCOL_VERSION == 1
+    encoded = encode_message(_message())
+    assert HEADER.unpack_from(encoded.frame)[1] == STAGE_RING_PROTOCOL_VERSION
 
 
 @pytest.mark.parametrize("operation", list(Operation))
@@ -94,6 +104,36 @@ def test_checksum_validation_rejects_corruption() -> None:
         decode_message(frame)
 
 
+def test_header_and_semantic_identity_mismatches_are_rejected() -> None:
+    encoded = encode_message(_message())
+    fields = list(HEADER.unpack_from(encoded.frame))
+    fields[2] = 999
+    with pytest.raises(ValueError, match="operation"):
+        decode_message(HEADER.pack(*fields) + encoded.frame[HEADER.size :])
+
+    metadata_end = HEADER.size + encoded.metadata_bytes
+    metadata = json.loads(encoded.frame[HEADER.size : metadata_end])
+    metadata["source_stage"] = 7
+    metadata_bytes = json.dumps(
+        metadata, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode()
+    payload = encoded.frame[metadata_end:]
+    fields = list(HEADER.unpack_from(encoded.frame))
+    fields[4] = len(metadata_bytes)
+    fields[-1] = hashlib.sha256(metadata_bytes + payload).digest()
+    with pytest.raises(ValueError, match="source disagrees"):
+        decode_message(HEADER.pack(*fields) + metadata_bytes + payload)
+
+
+def test_message_field_and_frame_length_validation() -> None:
+    with pytest.raises(ValueError, match="dimensions"):
+        encode_message(replace(_message(), tensor_shape=(1, -1)))
+    with pytest.raises(ValueError, match="layer range"):
+        encode_message(replace(_message(), layer_end=4))
+    with pytest.raises(ValueError, match="frame length"):
+        decode_message(encode_message(_message()).frame[:-1])
+
+
 def test_sequence_validation_rejects_duplicate_stale_and_gap() -> None:
     validator = MessageSequenceValidator()
     validator.validate(_message(sequence=4))
@@ -115,6 +155,24 @@ def test_session_and_model_validation() -> None:
     validator.close("session")
     with pytest.raises(ValueError, match="closed session"):
         validator.validate(_message())
+
+
+def test_session_validator_can_pin_complete_destination_identity() -> None:
+    validator = SessionValidator(
+        model_revision="revision",
+        tokenizer_revision="tokenizer",
+        topology_id="topology",
+        stage_id=1,
+        layer_range=(4, 8),
+    )
+    validator.open("session")
+    validator.validate(_message())
+    with pytest.raises(ValueError, match="tokenizer"):
+        validator.validate(replace(_message(), tokenizer_revision="wrong"))
+    with pytest.raises(ValueError, match="destination stage"):
+        validator.validate(replace(_message(), destination_stage=2))
+    with pytest.raises(ValueError, match="layer ownership"):
+        validator.validate(replace(_message(), layer_end=9))
 
 
 def test_buffer_pool_reuses_bounded_buffers() -> None:

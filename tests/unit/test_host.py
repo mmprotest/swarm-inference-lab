@@ -9,6 +9,7 @@ from swarm_inference.host import (
     is_loopback_host,
     qualifies_as_remote_physical_worker,
     resolve_advertised_endpoint,
+    resolve_data_plane_advertised_endpoint,
     split_endpoint,
 )
 
@@ -40,6 +41,23 @@ def test_wildcard_advertisement_is_rejected() -> None:
             coordinator_endpoint="coordinator.local:50051",
             explicit_endpoint="0.0.0.0:50052",
         )
+    with pytest.raises(ConfigurationError, match=r"data-advertise.*wildcard"):
+        resolve_data_plane_advertised_endpoint(
+            listen_endpoint="0.0.0.0:50053",
+            coordinator_endpoint="coordinator.local:50051",
+            explicit_endpoint="0.0.0.0:50053",
+        )
+
+
+def test_control_and_data_endpoints_resolve_independently() -> None:
+    assert (
+        resolve_data_plane_advertised_endpoint(
+            listen_endpoint="0.0.0.0:50053",
+            coordinator_endpoint="127.0.0.1:50051",
+            explicit_endpoint=None,
+        )
+        == "127.0.0.1:50053"
+    )
 
 
 def test_physical_worker_requires_remote_hostname_and_address() -> None:

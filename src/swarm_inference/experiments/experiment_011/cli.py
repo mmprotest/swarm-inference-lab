@@ -9,10 +9,6 @@ from pathlib import Path
 
 from swarm_inference.experiments.experiment_010.transport import NETWORK_PROFILES
 from swarm_inference.experiments.experiment_011 import MODEL_REVISION, TOKENIZER_REVISION
-from swarm_inference.experiments.experiment_011.partition import (
-    build_stage_plan,
-    inspect_model_partition_metadata,
-)
 from swarm_inference.experiments.experiment_011.reference import (
     compare_capture_trees,
     run_local_reference,
@@ -22,6 +18,10 @@ from swarm_inference.experiments.experiment_011.runner import (
     run_experiment,
 )
 from swarm_inference.experiments.experiment_011.runtime import StageRingController
+from swarm_inference.model.olmoe import (
+    inspect_olmoe_partition_metadata as inspect_model_partition_metadata,
+)
+from swarm_inference.model.partition import build_stage_plan
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_MODEL_PATH = REPOSITORY_ROOT / "artifacts" / "models" / "colibri" / "source-b89a7c4bc24f"
@@ -53,6 +53,7 @@ def _stage_smoke(arguments: argparse.Namespace) -> int:
         stage_count=arguments.stage_count,
         method=arguments.partition_method,
         memory_limit_bytes=arguments.memory_limit_bytes,
+        device="cuda:0",
     )
     output = Path(arguments.output).resolve()
     plan.write(output / "stage_plan.json")
@@ -94,6 +95,7 @@ def _exactness_smoke(arguments: argparse.Namespace) -> int:
         stage_count=arguments.stage_count,
         method=arguments.partition_method,
         memory_limit_bytes=arguments.memory_limit_bytes,
+        device="cuda:0",
     )
     plan.write(output / "stage_plan.json")
     reference = run_local_reference(
@@ -219,7 +221,12 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--model-path")
     run.add_argument("--draft-model-path")
     run.add_argument("--stage-counts", type=int, nargs="+", choices=(2, 4, 8), default=[2, 4, 8])
-    run.add_argument("--profile-names", nargs="+", choices=tuple(NETWORK_PROFILES), default=list(NETWORK_PROFILES))
+    run.add_argument(
+        "--profile-names",
+        nargs="+",
+        choices=tuple(NETWORK_PROFILES),
+        default=list(NETWORK_PROFILES),
+    )
     run.add_argument("--skip-speculation", action="store_true")
     run.add_argument("--network-only", action="store_true")
     run.add_argument("--exactness-only", action="store_true")

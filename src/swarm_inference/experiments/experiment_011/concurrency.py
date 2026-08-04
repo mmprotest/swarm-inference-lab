@@ -17,7 +17,6 @@ from typing import Any
 import numpy as np
 import torch
 
-from swarm_inference.experiments.experiment_011.protocol import BufferPool, Operation
 from swarm_inference.experiments.experiment_011.runtime import (
     StageRingController,
     StageWorkerConfiguration,
@@ -25,8 +24,9 @@ from swarm_inference.experiments.experiment_011.runtime import (
     _make_listener,
     _stage_worker_entry,
 )
-from swarm_inference.experiments.experiment_011.telemetry import merge_traces
-from swarm_inference.experiments.experiment_011.tensor_transport import pack_tensor, unpack_tensor
+from swarm_inference.protocol.stage_ring import BufferPool, Operation
+from swarm_inference.runtime.telemetry import merge_traces
+from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
 
 
 def _quantile(values: Sequence[float], probability: float) -> float:

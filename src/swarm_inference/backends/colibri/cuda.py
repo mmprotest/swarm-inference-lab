@@ -128,7 +128,7 @@ def _configure_library(library: Any) -> None:
 def _read_tensor_payload(location: Any) -> bytes:
     with location.path.open("rb") as handle:
         handle.seek(location.absolute_offset)
-        payload = handle.read(location.nbytes)
+        payload = bytes(handle.read(location.nbytes))
     if len(payload) != location.nbytes:
         raise ColibriCudaError(f"short native tensor read for {location.name}")
     return payload
@@ -317,7 +317,9 @@ def run_colibri_cuda_kernel_proof(
                 "cuda_output_sha256": hashlib.sha256(output.tobytes()).hexdigest(),
                 "input_bytes": int(activation.nbytes),
                 "output_bytes": int(output.nbytes),
-                "host_to_device_bytes": int(activation.nbytes + gate.nbytes + up.nbytes + down.nbytes),
+                "host_to_device_bytes": int(
+                    activation.nbytes + gate.nbytes + up.nbytes + down.nbytes
+                ),
                 "device_to_host_bytes": int(output.nbytes),
                 "group_statistics": {
                     "calls": calls.value,
@@ -467,9 +469,12 @@ def run_colibri_real_olmoe_cuda_expert(
         library, handles = _load_cuda_library(dll, device)
         initialized = True
         free_before, total_before = ctypes.c_size_t(), ctypes.c_size_t()
-        if library.coli_cuda_mem_info(
-            device, ctypes.byref(free_before), ctypes.byref(total_before)
-        ) != 1:
+        if (
+            library.coli_cuda_mem_info(
+                device, ctypes.byref(free_before), ctypes.byref(total_before)
+            )
+            != 1
+        ):
             raise ColibriCudaError("CUDA memory query failed before native upload")
         definitions = (
             (cuda_tensors[0], gate_q, gate_scale, hidden, intermediate),
@@ -478,25 +483,24 @@ def run_colibri_real_olmoe_cuda_expert(
         )
         upload_started = time.perf_counter_ns()
         for tensor, weights, row_scales, inputs, outputs in definitions:
-            if library.coli_cuda_tensor_upload(
-                ctypes.byref(tensor),
-                weights.ctypes.data_as(ctypes.c_void_p),
-                row_scales.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                1,
-                inputs,
-                outputs,
-                device,
-            ) != 1:
+            if (
+                library.coli_cuda_tensor_upload(
+                    ctypes.byref(tensor),
+                    weights.ctypes.data_as(ctypes.c_void_p),
+                    row_scales.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                    1,
+                    inputs,
+                    outputs,
+                    device,
+                )
+                != 1
+            ):
                 raise ColibriCudaError("native int8 Colibri expert upload failed")
         proof["weight_upload_ns"] = time.perf_counter_ns() - upload_started
         resident_count, resident_bytes = ctypes.c_size_t(), ctypes.c_size_t()
-        library.coli_cuda_stats(
-            device, ctypes.byref(resident_count), ctypes.byref(resident_bytes)
-        )
+        library.coli_cuda_stats(device, ctypes.byref(resident_count), ctypes.byref(resident_bytes))
         free_after, total_after = ctypes.c_size_t(), ctypes.c_size_t()
-        library.coli_cuda_mem_info(
-            device, ctypes.byref(free_after), ctypes.byref(total_after)
-        )
+        library.coli_cuda_mem_info(device, ctypes.byref(free_after), ctypes.byref(total_after))
         proof.update(
             {
                 "resident_tensor_count": resident_count.value,
@@ -641,10 +645,9 @@ def consolidate_real_model_cuda_results(
     if len(cuda_workers) != 1:
         raise ColibriCudaError("real CUDA generation must identify exactly one CUDA worker")
     worker = cuda_workers[0]
-    if (
-        int(expert.get("layer_id", -1)) != int(worker.get("cuda_target_layer", -2))
-        or int(expert.get("expert_id", -1)) != int(worker.get("cuda_target_expert", -2))
-    ):
+    if int(expert.get("layer_id", -1)) != int(worker.get("cuda_target_layer", -2)) or int(
+        expert.get("expert_id", -1)
+    ) != int(worker.get("cuda_target_expert", -2)):
         raise ColibriCudaError("operator proof expert identity differs from generation target")
 
     def timing(path: Path) -> dict[str, float]:
@@ -713,9 +716,7 @@ def consolidate_real_model_cuda_results(
         "distributed_ttft_seconds": distributed_timing["ttft_seconds"],
         "local_prefill_seconds": local_timing["prefill_seconds"],
         "distributed_prefill_seconds": distributed_timing["prefill_seconds"],
-        "local_decode_after_first_token_seconds": local_timing[
-            "decode_after_first_token_seconds"
-        ],
+        "local_decode_after_first_token_seconds": local_timing["decode_after_first_token_seconds"],
         "distributed_decode_after_first_token_seconds": distributed_timing[
             "decode_after_first_token_seconds"
         ],

@@ -89,11 +89,7 @@ def evaluate_gates(
         if int(row.get("stage_count", 0)) == 4
     ]
     wait_gate = bool(two_waits and four_waits) and max(two_waits) <= 2 and max(four_waits) <= 4
-    selected_rows = [
-        row
-        for row in summary_rows
-        if float(row.get("stage_exact_median_tps", 0)) > 0
-    ]
+    selected_rows = [row for row in summary_rows if float(row.get("stage_exact_median_tps", 0)) > 0]
     message_gate = bool(selected_rows) and all(
         float(row["message_reduction"]) >= 0.90 for row in selected_rows
     )
@@ -116,8 +112,7 @@ def evaluate_gates(
     )
     curve = analysis["whole_curve"]
     wan_rows = [
-        summary_by_profile.get(profile, {})
-        for profile in ("wifi", "regional_wan", "global_wan")
+        summary_by_profile.get(profile, {}) for profile in ("wifi", "regional_wan", "global_wan")
     ]
     curve_gate = (
         float(curve["global_wan_to_loopback_ratio"]) >= 0.20
@@ -149,8 +144,7 @@ def evaluate_gates(
         (
             row
             for row in concurrency_results
-            if int(row.get("concurrency_active", 0)) == 1
-            and not row.get("cancelled_session")
+            if int(row.get("concurrency_active", 0)) == 1 and not row.get("cancelled_session")
         ),
         None,
     )
@@ -512,9 +506,7 @@ def write_reports(
         ),
     )
     critical_rows: list[dict[str, str]] = []
-    with (run_root / "critical_path_summary.csv").open(
-        "r", encoding="utf-8", newline=""
-    ) as handle:
+    with (run_root / "critical_path_summary.csv").open("r", encoding="utf-8", newline="") as handle:
         critical_rows = list(csv.DictReader(handle))
     critical_table_rows = []
     for strategy, label in (
@@ -534,7 +526,15 @@ def write_reports(
             )
         )
     critical_table = _markdown_table(
-        ("Path", "Serial waits/token", "Messages/token", "Payload B/token", "Serialize ms/token", "Socket ms/token", "Compute ms/token"),
+        (
+            "Path",
+            "Serial waits/token",
+            "Messages/token",
+            "Payload B/token",
+            "Serialize ms/token",
+            "Socket ms/token",
+            "Compute ms/token",
+        ),
         critical_table_rows,
     )
     old_wait = statistics_median(
@@ -552,28 +552,28 @@ def write_reports(
 
 **{verdict}**
 
-Exact contiguous-stage generation worked: **{'yes' if all(row.get('token_match') and row.get('capture_exact') for row in exactness_results) else 'no'}**. The coordinator was removed from steady-state decode dependencies: **{'yes' if gate_status.get('coordinator_removal') == 'PASS' else gate_status.get('coordinator_removal', 'pending').lower()}**.
+Exact contiguous-stage generation worked: **{"yes" if all(row.get("token_match") and row.get("capture_exact") for row in exactness_results) else "no"}**. The coordinator was removed from steady-state decode dependencies: **{"yes" if gate_status.get("coordinator_removal") == "PASS" else gate_status.get("coordinator_removal", "pending").lower()}**.
 
 The selected path used a median of **{statistics_median(waits):.2f} serial waits**, **{statistics_median(messages):.2f} messages**, and **{statistics_median(payloads):,.0f} payload bytes** per token, versus **{old_wait:.2f}**, **{old_messages:.2f}**, and **{old_payload:,.0f}** on the fresh old path.
 
-The Global-WAN/loopback throughput ratio changed from the archived 3.1% reference to **{float(curve['global_wan_to_loopback_ratio']) * 100:.1f}%**. The point estimates improved strongly, but classifications remain governed by the frozen one-repetition workload; the report does not turn a descriptive one-sample bootstrap into inferential evidence.
+The Global-WAN/loopback throughput ratio changed from the archived 3.1% reference to **{float(curve["global_wan_to_loopback_ratio"]) * 100:.1f}%**. The point estimates improved strongly, but classifications remain governed by the frozen one-repetition workload; the report does not turn a descriptive one-sample bootstrap into inferential evidence.
 
 ## Direct answers
 
-1. Exact contiguous-stage generation: **{'worked' if all(row.get('token_match') for row in exactness_results) else 'failed'}**.
-2. Coordinator removed from the decode critical path: **{gate_status.get('coordinator_removal', 'PENDING')}**.
+1. Exact contiguous-stage generation: **{"worked" if all(row.get("token_match") for row in exactness_results) else "failed"}**.
+2. Coordinator removed from the decode critical path: **{gate_status.get("coordinator_removal", "PENDING")}**.
 3. Serial waits per token: **{statistics_median(waits):.2f}** selected; two-stage and four-stage limits are evidenced separately.
 4. Messages per token: **{statistics_median(messages):.2f}** selected.
 5. Bytes transferred per token: **{statistics_median(payloads):,.0f} payload bytes** selected.
-6. Loopback: fresh old path **{float(summary_rows[0]['same_run_baseline_median_tps']):.2f}**, stage path **{float(summary_rows[0]['stage_exact_median_tps']):.2f} tok/s**.
-7. Wi-Fi: **{float(summary_rows[5]['throughput_multiple']):.2f}x**, classification **{summary_rows[5]['classification']}**.
-8. Regional WAN: **{float(summary_rows[6]['throughput_multiple']):.2f}x**, **{float(summary_rows[6]['stage_exact_median_tps']):.2f} tok/s**, classification **{summary_rows[6]['classification']}**.
-9. Global WAN: **{float(summary_rows[7]['throughput_multiple']):.2f}x**, **{float(summary_rows[7]['stage_exact_median_tps']):.2f} tok/s**, classification **{summary_rows[7]['classification']}**.
-10. Curve flattening: Global-WAN/loopback is **{float(curve['global_wan_to_loopback_ratio']) * 100:.1f}%**.
+6. Loopback: fresh old path **{float(summary_rows[0]["same_run_baseline_median_tps"]):.2f}**, stage path **{float(summary_rows[0]["stage_exact_median_tps"]):.2f} tok/s**.
+7. Wi-Fi: **{float(summary_rows[5]["throughput_multiple"]):.2f}x**, classification **{summary_rows[5]["classification"]}**.
+8. Regional WAN: **{float(summary_rows[6]["throughput_multiple"]):.2f}x**, **{float(summary_rows[6]["stage_exact_median_tps"]):.2f} tok/s**, classification **{summary_rows[6]["classification"]}**.
+9. Global WAN: **{float(summary_rows[7]["throughput_multiple"]):.2f}x**, **{float(summary_rows[7]["stage_exact_median_tps"]):.2f} tok/s**, classification **{summary_rows[7]["classification"]}**.
+10. Curve flattening: Global-WAN/loopback is **{float(curve["global_wan_to_loopback_ratio"]) * 100:.1f}%**.
 11. Winning topology per profile is recorded in the table below and each `planner_decision.json`.
-12. Lossless compression: **{'selected in at least one profile' if any(row.get('planner_selected') for row in compression_results) else 'proved lossless but was disabled by the measured planner'}**.
-13. Exact speculation: **{'exact' if all(row.get('exact_token_identity') for row in speculation_results) else 'not exact'}**; **{'selected' if any(row.get('planner_enabled') for row in speculation_results) else 'disabled because valid socket-path expected value was not positive'}**.
-14. Concurrent goodput: **{'increased at a higher concurrency' if gate_status.get('concurrent_goodput') == 'PASS' else 'did not close the full gate' if gate_status else 'pending'}**.
+12. Lossless compression: **{"selected in at least one profile" if any(row.get("planner_selected") for row in compression_results) else "proved lossless but was disabled by the measured planner"}**.
+13. Exact speculation: **{"exact" if all(row.get("exact_token_identity") for row in speculation_results) else "not exact"}**; **{"selected" if any(row.get("planner_enabled") for row in speculation_results) else "disabled because valid socket-path expected value was not positive"}**.
+14. Concurrent goodput: **{"increased at a higher concurrency" if gate_status.get("concurrent_goodput") == "PASS" else "did not close the full gate" if gate_status else "pending"}**.
 15. Multiple-machine proof: physical NIC, switch, host-clock, cross-host GPU scheduling, packet-loss recovery, and failure-domain behaviour remain unproven on this one-machine shaped-loopback setup.
 
 ## Gates
@@ -600,15 +600,15 @@ The 95% intervals above follow the predeclared bootstrap rule. With the frozen s
 
 ## Exactness evidence
 
-- Canonical comparisons: {sum(int(row.get('comparison_count', 0)) for row in exactness_results):,} tensor comparisons.
-- Token mismatches: {sum(not bool(row.get('token_match')) for row in exactness_results)}.
-- Boundary byte mismatches: {sum(int(row.get('capture_mismatch_count', 0)) for row in exactness_results)}.
-- Maximum absolute FP32 error: {max((float(row.get('maximum_absolute_difference_fp32', 0)) for row in exactness_results), default=0.0)}.
-- Maximum relative L2 FP32 error: {max((float(row.get('maximum_relative_l2_error_fp32', 0)) for row in exactness_results), default=0.0)}.
+- Canonical comparisons: {sum(int(row.get("comparison_count", 0)) for row in exactness_results):,} tensor comparisons.
+- Token mismatches: {sum(not bool(row.get("token_match")) for row in exactness_results)}.
+- Boundary byte mismatches: {sum(int(row.get("capture_mismatch_count", 0)) for row in exactness_results)}.
+- Maximum absolute FP32 error: {max((float(row.get("maximum_absolute_difference_fp32", 0)) for row in exactness_results), default=0.0)}.
+- Maximum relative L2 FP32 error: {max((float(row.get("maximum_relative_l2_error_fp32", 0)) for row in exactness_results), default=0.0)}.
 
 ## Failure and recovery
 
-{_markdown_table(('Test', 'Detected', 'Recovered', 'Exact'), [(row.get('test'), row.get('failure_detected'), row.get('recovered'), row.get('exact_continuation')) for row in failure_results])}
+{_markdown_table(("Test", "Detected", "Recovered", "Exact"), [(row.get("test"), row.get("failure_detected"), row.get("recovered"), row.get("exact_continuation")) for row in failure_results])}
 
 ## Artifacts
 
@@ -631,11 +631,11 @@ Each stage creates a stage-local `DynamicCache` whose layer indices cover only t
 
 ## Protocol
 
-Frames use a fixed little-endian header (`SWRING11`), canonical JSON metadata, contiguous raw tensor bytes, and SHA-256 over metadata plus payload. Operations are `HELLO`, `CAPABILITIES`, `LOAD_STAGE`, `OPEN_SESSION`, `PREFILL`, `DECODE`, `VERIFY_CANDIDATES`, `TOKEN_RESULT`, `SESSION_CHECKPOINT`, `CLOSE_SESSION`, `CANCEL_SESSION`, `HEALTH`, and `ERROR`. Bounded reusable receive buffers, partial read/write loops, per-edge sequence validation, session/topology/model validation, explicit checksums, backpressure, and connection reuse are tested. Pickle is prohibited.
+Frames use a fixed little-endian header (`SWRING01`), canonical JSON metadata, contiguous raw tensor bytes, and SHA-256 over metadata plus payload. Operations are `HELLO`, `CAPABILITIES`, `LOAD_STAGE`, `OPEN_SESSION`, `PREFILL`, `DECODE`, `VERIFY_CANDIDATES`, `TOKEN_RESULT`, `SESSION_CHECKPOINT`, `CLOSE_SESSION`, `CANCEL_SESSION`, `HEALTH`, and `ERROR`. Bounded reusable receive buffers, partial read/write loops, per-edge sequence validation, session/topology/model validation, explicit checksums, backpressure, and connection reuse are tested. Pickle is prohibited.
 
 ## Partition planner
 
-Equal planning divides the {plan_records[0]['layer_count'] if plan_records else 0} layers contiguously with at most one layer difference. Balanced planning profiles every layer with CUDA events and solves an exact contiguous minimax dynamic program under stage memory limits. Its objective includes measured execution, weight bytes, KV growth, temporary memory, and activation size. Profile decisions additionally penalise serial boundaries, transferred bytes, imbalance, queueing, rejected draft work, reliability risk, and infeasible memory. Decisions do not branch on profile names.
+Equal planning divides the {plan_records[0]["layer_count"] if plan_records else 0} layers contiguously with at most one layer difference. Balanced planning profiles every layer with CUDA events and solves an exact contiguous minimax dynamic program under stage memory limits. Its objective includes measured execution, weight bytes, KV growth, temporary memory, and activation size. Profile decisions additionally penalise serial boundaries, transferred bytes, imbalance, queueing, rejected draft work, reliability risk, and infeasible memory. Decisions do not branch on profile names.
 
 ## Exactness
 
@@ -655,7 +655,7 @@ Principal values are medians, matching Experiment 010. Mean, standard deviation,
 
 ## Limitations
 
-{chr(10).join(f'- {item}' for item in limitations)}
+{chr(10).join(f"- {item}" for item in limitations)}
 
 ## Reproduction
 
@@ -665,9 +665,7 @@ Principal values are medians, matching Experiment 010. Mean, standard deviation,
 
 The canonical run is `-Full`. `-Quick` is diagnostic only and cannot emit a closure verdict.
 """
-    (run_root / "EXPERIMENT_011_TECHNICAL_REPORT.md").write_text(
-        technical, encoding="utf-8"
-    )
+    (run_root / "EXPERIMENT_011_TECHNICAL_REPORT.md").write_text(technical, encoding="utf-8")
 
 
 def statistics_median(values: Sequence[float]) -> float:

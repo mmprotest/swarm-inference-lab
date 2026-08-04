@@ -202,9 +202,7 @@ def _expected_slice(
 ) -> tuple[np.ndarray, np.ndarray]:
     matrix_values = HIDDEN_SIZE * INTERMEDIATE_SIZE
     gate = weights[:matrix_values].reshape(INTERMEDIATE_SIZE, HIDDEN_SIZE)
-    up = weights[matrix_values : 2 * matrix_values].reshape(
-        INTERMEDIATE_SIZE, HIDDEN_SIZE
-    )
+    up = weights[matrix_values : 2 * matrix_values].reshape(INTERMEDIATE_SIZE, HIDDEN_SIZE)
     down = weights[2 * matrix_values :].reshape(HIDDEN_SIZE, INTERMEDIATE_SIZE)
     selected_weights = np.concatenate(
         (gate[start:end].ravel(), up[start:end].ravel(), down[:, start:end].ravel())
@@ -239,13 +237,9 @@ def test_native_microshard_bank_byte_identity(
     expected_weights, expected_scales = _expected_slice(*values[1], 1, 3)
     assert tensors[f"{prefix}.merged_weight"].tobytes() == expected_weights.tobytes()
     assert tensors[f"{prefix}.qs"].tobytes() == expected_scales.tobytes()
-    require_bank_ownership(
-        bank, layer_id=0, expert_id=1, hidden_start=1, hidden_end=3
-    )
+    require_bank_ownership(bank, layer_id=0, expert_id=1, hidden_start=1, hidden_end=3)
     with pytest.raises(PermissionError, match="forbids unowned"):
-        require_bank_ownership(
-            bank, layer_id=0, expert_id=1, hidden_start=0, hidden_end=1
-        )
+        require_bank_ownership(bank, layer_id=0, expert_id=1, hidden_start=0, hidden_end=1)
 
 
 def test_native_microshard_reconstruction(
@@ -281,9 +275,7 @@ def test_native_microshard_reconstruction(
         reconstructed_up[start:end] = weights[gate_count : 2 * gate_count].reshape(
             width, HIDDEN_SIZE
         )
-        reconstructed_down[:, start:end] = weights[2 * gate_count :].reshape(
-            HIDDEN_SIZE, width
-        )
+        reconstructed_down[:, start:end] = weights[2 * gate_count :].reshape(HIDDEN_SIZE, width)
         reconstructed_gate_scales[start:end] = scales[:width]
         reconstructed_up_scales[start:end] = scales[width : 2 * width]
         observed_down_scales.append(scales[2 * width :])
@@ -291,18 +283,15 @@ def test_native_microshard_reconstruction(
     source_weights, source_scales = values[1]
     matrix_values = HIDDEN_SIZE * INTERMEDIATE_SIZE
     assert reconstructed_gate.tobytes() == source_weights[:matrix_values].tobytes()
-    assert reconstructed_up.tobytes() == source_weights[
-        matrix_values : 2 * matrix_values
-    ].tobytes()
+    assert reconstructed_up.tobytes() == source_weights[matrix_values : 2 * matrix_values].tobytes()
     assert reconstructed_down.tobytes() == source_weights[2 * matrix_values :].tobytes()
     assert reconstructed_gate_scales.tobytes() == source_scales[:INTERMEDIATE_SIZE].tobytes()
-    assert reconstructed_up_scales.tobytes() == source_scales[
-        INTERMEDIATE_SIZE : 2 * INTERMEDIATE_SIZE
-    ].tobytes()
+    assert (
+        reconstructed_up_scales.tobytes()
+        == source_scales[INTERMEDIATE_SIZE : 2 * INTERMEDIATE_SIZE].tobytes()
+    )
     for down_scales in observed_down_scales:
         assert down_scales.tobytes() == source_scales[2 * INTERMEDIATE_SIZE :].tobytes()
-    verification = verify_microshard_reconstruction(
-        source, banks, layer_id=0, expert_id=1
-    )
+    verification = verify_microshard_reconstruction(source, banks, layer_id=0, expert_id=1)
     assert verification["valid"] is True
     assert verification["ranges"] == [[0, 1], [1, 3]]

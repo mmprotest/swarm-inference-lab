@@ -16,10 +16,15 @@ def _context_rows() -> list[dict[str, Any]]:
         local = spec.candidate_id == "local_monolithic"
         capacity = spec.candidate_id == "capacity_isolated"
         idle = spec.candidate_id == "idle"
-        measured = local or capacity or spec.candidate_id in {
-            "whole_expert_direct_tcp",
-            "whole_expert_fast_response",
-        }
+        measured = (
+            local
+            or capacity
+            or spec.candidate_id
+            in {
+                "whole_expert_direct_tcp",
+                "whole_expert_fast_response",
+            }
+        )
         exact = spec.candidate_id != "whole_expert_fast_response"
         rows.append(
             {
@@ -68,9 +73,7 @@ def test_real_path_planner_candidate_complete() -> None:
 
 
 def test_real_path_planner_regret() -> None:
-    plan, evaluated = _select_context(
-        _context_rows(), PlannerObjective.MAX_DECODE_THROUGHPUT
-    )
+    plan, evaluated = _select_context(_context_rows(), PlannerObjective.MAX_DECODE_THROUGHPUT)
     assert plan["selected_candidate_id"] == "local_monolithic"
     assert plan["measured_regret"]["regret_fraction"] == 0.0
     assert plan["measured_regret"]["passes"] is True
@@ -79,8 +82,6 @@ def test_real_path_planner_regret() -> None:
 
 
 def test_real_path_planner_selects_capacity_when_required() -> None:
-    plan, _ = _select_context(
-        _context_rows(), PlannerObjective.MAX_CAPACITY_SUBJECT_TO_LATENCY
-    )
+    plan, _ = _select_context(_context_rows(), PlannerObjective.MAX_CAPACITY_SUBJECT_TO_LATENCY)
     assert plan["selected_candidate_id"] == "capacity_isolated"
     assert plan["capacity_exception"] is True

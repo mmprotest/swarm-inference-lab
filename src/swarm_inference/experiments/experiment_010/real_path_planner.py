@@ -117,9 +117,7 @@ class Measurement:
 WORKERS = tuple(f"level-a-worker-{index}" for index in range(4))
 
 CANDIDATE_SPECS = (
-    CandidateSpec(
-        "local_monolithic", ExecutionStrategy.LOCAL_WHOLE_EXPERT, (), "token_critical"
-    ),
+    CandidateSpec("local_monolithic", ExecutionStrategy.LOCAL_WHOLE_EXPERT, (), "token_critical"),
     CandidateSpec(
         "whole_expert_shared_memory",
         ExecutionStrategy.REMOTE_WHOLE_EXPERT,
@@ -165,9 +163,7 @@ CANDIDATE_SPECS = (
         WORKERS[:2],
         "token_critical",
     ),
-    CandidateSpec(
-        "local_fallback", ExecutionStrategy.LOCAL_WHOLE_EXPERT, (), "failure_recovery"
-    ),
+    CandidateSpec("local_fallback", ExecutionStrategy.LOCAL_WHOLE_EXPERT, (), "failure_recovery"),
     CandidateSpec(
         "alternate_worker_recovery",
         ExecutionStrategy.REMOTE_WHOLE_EXPERT,
@@ -607,9 +603,7 @@ def load_measurements(
                 reliability_gate=_truth(row["passed"]),
                 measurement_status="MEASURED_FAILURE_PATH",
                 evidence_category="REAL_MODEL_MEASURED",
-                source_paths=(
-                    str(phase11 / "failure-matrix" / "real_model_failure_results.csv"),
-                ),
+                source_paths=(str(phase11 / "failure-matrix" / "real_model_failure_results.csv"),),
                 explanation=(f"deterministic real-token recovery scenario {scenario}",),
             )
         )
@@ -617,9 +611,7 @@ def load_measurements(
     corruption_summary = _read_json(
         phase11 / "corruption-matrix" / "corruption_matrix_summary.json"
     )
-    clean_control = _read_json(
-        phase11 / "corruption-matrix" / "clean-baseline" / "result.json"
-    )
+    clean_control = _read_json(phase11 / "corruption-matrix" / "clean-baseline" / "result.json")
     all_detected = all(
         float(row["detection_rate"]) == 1.0
         for row in corruption_summary["rows"]
@@ -795,9 +787,7 @@ def _select_context(
             predicted = -1.0
             lower = -1.0
         elif objective == PlannerObjective.MAX_CAPACITY_SUBJECT_TO_LATENCY:
-            maximum_capacity = max(
-                float(item.get("capacity_bytes") or 0) for item in rows
-            )
+            maximum_capacity = max(float(item.get("capacity_bytes") or 0) for item in rows)
             predicted = float(measured_score) / max(maximum_capacity, 1.0)
             lower = predicted
         elif spec.candidate_id == "local_monolithic":
@@ -810,14 +800,14 @@ def _select_context(
         else:
             predicted = float(measured_score) / max(local_metric, 1e-9) - 1.0
             lower = (
-                float(interval[0]) / max(local_metric, 1e-9) - 1.0
-                if interval is not None
-                else None
+                float(interval[0]) / max(local_metric, 1e-9) - 1.0 if interval is not None else None
             )
         p95 = row.get("p95_latency_ms")
         local_p95 = local.get("p95_latency_ms")
-        latency_limit = 75_000.0 if objective == PlannerObjective.MAX_CAPACITY_SUBJECT_TO_LATENCY else (
-            2.0 * float(local_p95) if local_p95 is not None else math.inf
+        latency_limit = (
+            75_000.0
+            if objective == PlannerObjective.MAX_CAPACITY_SUBJECT_TO_LATENCY
+            else (2.0 * float(local_p95) if local_p95 is not None else math.inf)
         )
         slo_gate = bool(p95 is None or float(p95) <= latency_limit)
         correctness_gate = bool(row.get("correctness_gate", spec.candidate_id == "idle"))
@@ -890,7 +880,7 @@ def _select_context(
 
 
 def _conditional_roles(
-    measurements: dict[tuple[ServicePhase, str, str, str], Measurement]
+    measurements: dict[tuple[ServicePhase, str, str, str], Measurement],
 ) -> list[dict[str, Any]]:
     failure = [
         measurements[(ServicePhase.DECODE, "failure_recovery", "loopback_unshaped", name)]
@@ -980,9 +970,7 @@ def build_real_path_planner(
         }
         for plan in plans
     ]
-    candidate_source_ids = {
-        item.candidate_id for item in measurements.values()
-    } | {"idle"}
+    candidate_source_ids = {item.candidate_id for item in measurements.values()} | {"idle"}
     candidate_catalog_complete = set(REQUIRED_CANDIDATES).issubset(candidate_source_ids)
     maximum_regret = max(float(row["regret_fraction"]) for row in plan_rows)
     default_decode = next(
@@ -1056,7 +1044,10 @@ def build_real_path_planner(
     _write_csv(output / "planner_candidate_evaluations.csv", evaluated_rows)
     _write_csv(output / "planner_results.csv", plan_rows)
     _write_json(output / "planner_summary.json", summary)
-    _write_json(output / "planner_explanations.json", {"plans": plans, "conditional_roles": conditional_roles})
+    _write_json(
+        output / "planner_explanations.json",
+        {"plans": plans, "conditional_roles": conditional_roles},
+    )
     for phase in PHASE_VARIANTS:
         _write_json(
             output / f"{phase.value}_plan.json",

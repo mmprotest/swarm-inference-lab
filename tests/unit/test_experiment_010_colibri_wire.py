@@ -252,7 +252,10 @@ def test_colibri_c_wire_decodes_python_request(c_wire: ctypes.CDLL) -> None:
         assert list(decoded.selected_rank_by_row[:4]) == [0, 1, 0, 1]
         assert decoded.response_mode == 1
         assert list(decoded.activation.shape[: decoded.activation.ndim]) == [2, 4]
-        assert ctypes.string_at(decoded.activation.raw, decoded.activation.raw_length) == activation.tobytes()
+        assert (
+            ctypes.string_at(decoded.activation.raw, decoded.activation.raw_length)
+            == activation.tobytes()
+        )
         assert source  # Owns the backing frame for the C tensor view until this point.
     finally:
         c_wire.swarm_expert_wire_free_route_request(ctypes.byref(decoded))
@@ -342,9 +345,7 @@ def test_colibri_c_wire_decodes_python_microshard_accumulator(
             4,
         ]
         assert (
-            ctypes.string_at(
-                decoded.down_accumulators.raw, decoded.down_accumulators.raw_length
-            )
+            ctypes.string_at(decoded.down_accumulators.raw, decoded.down_accumulators.raw_length)
             == accumulator.tobytes()
         )
         assert source
@@ -380,9 +381,7 @@ def test_python_wire_decodes_colibri_c_microshard_accumulator(
     request.activation.token_position = 11
     request.activation.values = activation.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
     request.activation.value_count = activation.size
-    request.down_accumulators.values = accumulator.ctypes.data_as(
-        ctypes.POINTER(ctypes.c_float)
-    )
+    request.down_accumulators.values = accumulator.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
     request.down_accumulators.value_count = accumulator.size
     packet = OwnedBytes()
     error = ctypes.create_string_buffer(512)
@@ -541,9 +540,7 @@ def test_colibri_c_wire_decodes_full_python_response(c_wire: ctypes.CDLL) -> Non
 
 
 @pytest.mark.parametrize("mutation", ["header_length", "trailing", "checksum"])
-def test_colibri_c_wire_rejects_malformed_frames(
-    c_wire: ctypes.CDLL, mutation: str
-) -> None:
+def test_colibri_c_wire_rejects_malformed_frames(c_wire: ctypes.CDLL, mutation: str) -> None:
     request, activation = _per_row_request()
     payload = bytearray(encode_request(request, activation)[0])
     if mutation == "header_length":

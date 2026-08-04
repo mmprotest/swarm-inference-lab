@@ -1,0 +1,1611 @@
+"""Persistent stage ownership, routing, execution, and session lifecycle."""
+
+from __future__ import annotations
+
+import asyncio
+import gc
+import hashlib
+import json
+import os
+import time
+from collections.abc import Awaitable, Callable
+from contextlib import suppress
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Protocol, TypeVar
+
+import psutil
+import torch
+
+from swarm_inference.config.models import WorkerCapability
+from swarm_inference.exceptions import (
+    BackpressureError,
+    IntegrityError,
+    MemoryLimitExceededError,
+    TransportError,
+)
+from swarm_inference.execution.interfaces import StageExecutionResult, StageExecutor
+from swarm_inference.execution.olmoe_stage import ContiguousOlmoeStage
+from swarm_inference.host import is_wildcard_host, split_endpoint
+from swarm_inference.model.olmoe import validate_olmoe_stage_assignment
+from swarm_inference.model.partition import StageAssignment
+from swarm_inference.protocol.stage_ring import (
+    MessageSequenceValidator,
+    Operation,
+    SequenceAllocator,
+    StageMessage,
+)
+from swarm_inference.protocol.stage_worker import (
+    CancelStageSessionRequest,
+    CloseStageSessionRequest,
+    DrainWorkerRequest,
+    GetStageCapabilitiesRequest,
+    GetStageCapabilitiesResponse,
+    GetStageStatusRequest,
+    InstalledStageRouteStatus,
+    InstallStageRouteRequest,
+    LoadedStageStatus,
+    LoadStageRequest,
+    OpenStageSessionRequest,
+    RemoveStageRouteRequest,
+    StageActionResponse,
+    StageStatusResponse,
+    UnloadStageRequest,
+)
+from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
+from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
+from swarm_inference.worker.stage_sessions import StageSessionRegistry
+
+TokenPublisher = Callable[["TokenPublication"], Awaitable[None]]
+AttributeT = TypeVar("AttributeT")
+
+
+class StageLoader(Protocol):
+    def __call__(
+        self,
+        request: LoadStageRequest,
+        resolved_model_path: Path | None,
+    ) -> StageExecutor: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ProcessMemorySnapshot:
+    rss_bytes: int
+    cuda_allocated_bytes: int
+    cuda_reserved_bytes: int
+
+
+@dataclass(frozen=True, slots=True)
+class TokenPublication:
+    destination: str | None
+    message: StageMessage
+    enqueued_monotonic_ns: int
+
+
+@dataclass(slots=True)
+class _LoadedStage:
+    request: LoadStageRequest
+    executor: StageExecutor
+    status: LoadedStageStatus
+
+
+@dataclass(slots=True)
+class _QueuedStageExecution:
+    message: StageMessage
+    future: asyncio.Future[StageMessage]
+
+
+_DTYPES: dict[str, torch.dtype] = {
+    "bfloat16": torch.bfloat16,
+    "bf16": torch.bfloat16,
+    "float16": torch.float16,
+    "f16": torch.float16,
+    "float32": torch.float32,
+    "f32": torch.float32,
+}
+
+
+def _normalise_dtype(value: str) -> str:
+    key = value.strip().lower()
+    aliases = {
+        "bf16": "bfloat16",
+        "f16": "float16",
+        "f32": "float32",
+    }
+    key = aliases.get(key, key)
+    if key not in {"bfloat16", "float16", "float32"}:
+        raise ValueError(f"unsupported stage execution dtype {value!r}")
+    return key
+
+
+def _normalise_device(value: str) -> str:
+    device = torch.device(value)
+    if device.type == "cuda" and device.index is None:
+        if not torch.cuda.is_available():
+            raise ValueError("CUDA stage device requested but CUDA is unavailable")
+        return f"cuda:{torch.cuda.current_device()}"
+    return str(device)
+
+
+def _validate_endpoint(endpoint: str, *, name: str) -> None:
+    host, port = split_endpoint(endpoint)
+    if is_wildcard_host(host):
+        raise ValueError(f"{name} cannot advertise a wildcard address")
+    if port == 0:
+        raise ValueError(f"{name} must use a non-zero port")
+
+
+def _validate_stage_assignment_values(
+    owned: StageAssignment,
+    *,
+    stage_count: int,
+) -> None:
+    if isinstance(owned.stage_id, bool) or not 0 <= owned.stage_id < stage_count:
+        raise ValueError("stage assignment ID is outside the topology")
+    if (
+        isinstance(owned.layer_start, bool)
+        or isinstance(owned.layer_end, bool)
+        or owned.layer_start < 0
+        or owned.layer_end <= owned.layer_start
+    ):
+        raise ValueError("stage assignment has an invalid layer interval")
+    if owned.layer_ids != tuple(range(owned.layer_start, owned.layer_end)):
+        raise ValueError("stage assignment is not a complete contiguous layer interval")
+    nonnegative = (
+        owned.weight_bytes,
+        owned.estimated_compute_ns,
+        owned.kv_cache_bytes_per_token,
+        owned.peak_temporary_bytes,
+        owned.activation_bytes,
+    )
+    if any(isinstance(value, bool) or value < 0 for value in nonnegative):
+        raise ValueError("stage assignment resource measurements cannot be negative")
+    if owned.weight_bytes == 0:
+        raise ValueError("stage assignment must own a positive weight byte count")
+    if owned.measured_compute_ns is not None and (
+        isinstance(owned.measured_compute_ns, bool) or owned.measured_compute_ns < 0
+    ):
+        raise ValueError("stage measured compute time cannot be negative")
+    if not isinstance(owned.device, str) or not owned.device.strip():
+        raise ValueError("stage assignment device cannot be empty")
+    if owned.owns_embeddings != (owned.stage_id == 0):
+        raise ValueError("only stage zero may own model embeddings")
+    final = owned.stage_id == stage_count - 1
+    if owned.owns_final_norm != final or owned.owns_output_projection != final:
+        raise ValueError("only the final stage may own final normalization and projection")
+
+
+class PersistentStageRuntime:
+    """Keep one canonical stage loaded across independently scoped sessions."""
+
+    def __init__(
+        self,
+        *,
+        worker_id: str,
+        device: str,
+        dtype: str,
+        memory_limit_bytes: int,
+        maximum_sessions: int,
+        execution_queue_capacity: int = 256,
+        token_queue_capacity: int = 256,
+        model_cache_dir: str | Path | None = None,
+        allow_model_download: bool = False,
+        capability: WorkerCapability | None = None,
+        loader: StageLoader | None = None,
+        token_publisher: TokenPublisher | None = None,
+        connection_pool: StageRingConnectionPool | None = None,
+    ) -> None:
+        if not worker_id:
+            raise ValueError("stage runtime worker ID cannot be empty")
+        if not device:
+            raise ValueError("stage runtime device cannot be empty")
+        if memory_limit_bytes <= 0:
+            raise ValueError("stage runtime memory limit must be positive")
+        if execution_queue_capacity <= 0 or token_queue_capacity <= 0:
+            raise ValueError("stage runtime queues must be bounded by positive capacities")
+        self.worker_id = worker_id
+        self.device = _normalise_device(device)
+        self.dtype = _normalise_dtype(dtype)
+        self.memory_limit_bytes = memory_limit_bytes
+        self.model_cache_dir = (
+            Path(model_cache_dir).expanduser().resolve() if model_cache_dir is not None else None
+        )
+        self.allow_model_download = allow_model_download
+        self.capability = capability
+        self.sessions = StageSessionRegistry(maximum_sessions=maximum_sessions)
+        self.execution_queue_capacity = execution_queue_capacity
+        self.token_queue_capacity = token_queue_capacity
+        self._execution_queue: asyncio.Queue[_QueuedStageExecution] = asyncio.Queue(
+            maxsize=execution_queue_capacity
+        )
+        self._token_queue: asyncio.Queue[TokenPublication] = asyncio.Queue(
+            maxsize=token_queue_capacity
+        )
+        self._loader = loader or self._load_olmoe
+        self._custom_loader = loader is not None
+        self._token_publisher = token_publisher
+        self.connection_pool = connection_pool or StageRingConnectionPool(
+            queue_capacity=execution_queue_capacity
+        )
+        self._loaded: _LoadedStage | None = None
+        self._route: InstallStageRouteRequest | None = None
+        self._last_route_generation: int | None = None
+        self._execution_runner: asyncio.Task[None] | None = None
+        self._token_runner: asyncio.Task[None] | None = None
+        self._executor_lock = asyncio.Lock()
+        self._sequence_validator = MessageSequenceValidator()
+        self._sequence_allocator = SequenceAllocator()
+        self._draining = False
+        self._closed = False
+        self._load_count = 0
+        self._dropped_token_publications = 0
+        self._sync_capability()
+
+    @property
+    def loaded_executor(self) -> StageExecutor | None:
+        return self._loaded.executor if self._loaded is not None else None
+
+    @property
+    def load_count(self) -> int:
+        return self._load_count
+
+    @property
+    def installed_route(self) -> InstallStageRouteRequest | None:
+        return self._route
+
+    @property
+    def draining(self) -> bool:
+        return self._draining
+
+    async def start(self) -> None:
+        if self._closed:
+            raise RuntimeError("stage runtime is closed")
+        if self._execution_runner is None:
+            self._execution_runner = asyncio.create_task(
+                self._execution_loop(), name=f"stage-execution:{self.device}"
+            )
+        if self._token_runner is None:
+            self._token_runner = asyncio.create_task(
+                self._token_publication_loop(), name="stage-token-publication"
+            )
+
+    def _check_worker(self, worker_id: str) -> None:
+        if worker_id != self.worker_id:
+            raise ValueError(
+                f"stage control request addressed to {worker_id!r}, worker is {self.worker_id!r}"
+            )
+
+    @staticmethod
+    def _check_deadline(deadline_unix_ns: int | None) -> None:
+        if deadline_unix_ns is not None and deadline_unix_ns <= time.time_ns():
+            raise TimeoutError("stage control request deadline has expired")
+
+    @staticmethod
+    def _check_lease(lease_expiry_unix_ns: int | None) -> None:
+        if lease_expiry_unix_ns is not None and lease_expiry_unix_ns <= time.time_ns():
+            raise ValueError("stage lease has expired")
+
+    def _validate_assignment(self, request: LoadStageRequest) -> None:
+        assignment = request.assignment
+        _validate_stage_assignment_values(assignment, stage_count=request.stage_count)
+        if assignment.device != request.device:
+            raise ValueError("stage assignment device does not match load request")
+        if _normalise_device(request.device) != self.device:
+            raise ValueError(
+                f"stage request device {request.device!r} does not match configured "
+                f"device {self.device!r}"
+            )
+        if _normalise_dtype(request.dtype) != self.dtype:
+            raise ValueError("stage request dtype does not match the configured runtime dtype")
+        estimated_peak = assignment.weight_bytes + assignment.peak_temporary_bytes
+        if estimated_peak > self.memory_limit_bytes:
+            raise MemoryLimitExceededError(
+                f"stage estimated resident peak {estimated_peak} bytes exceeds configured "
+                f"logical limit {self.memory_limit_bytes}"
+            )
+
+    def _resolve_model_path(self, request: LoadStageRequest) -> Path:
+        candidates: list[Path] = []
+        if request.model_path is not None:
+            supplied = Path(request.model_path).expanduser()
+            candidates.append(supplied)
+            if self.model_cache_dir is not None and not supplied.is_absolute():
+                candidates.append(self.model_cache_dir / supplied)
+        model_id_path = Path(request.model_id).expanduser()
+        candidates.append(model_id_path)
+        for candidate in candidates:
+            if candidate.is_dir():
+                return candidate.resolve()
+        try:
+            from huggingface_hub import snapshot_download
+
+            resolved = snapshot_download(
+                repo_id=request.model_id,
+                revision=request.model_revision,
+                cache_dir=str(self.model_cache_dir) if self.model_cache_dir is not None else None,
+                local_files_only=not self.allow_model_download,
+            )
+        except Exception as exc:
+            mode = "download-enabled" if self.allow_model_download else "local-only"
+            raise FileNotFoundError(
+                f"could not resolve exact model {request.model_id}@{request.model_revision} "
+                f"in {mode} mode: {exc}"
+            ) from exc
+        return Path(resolved).resolve()
+
+    @staticmethod
+    def _metadata_revision(model_path: Path, filenames: tuple[str, ...]) -> str | None:
+        download = model_path / ".cache" / "huggingface" / "download"
+        revisions: set[str] = set()
+        for filename in filenames:
+            metadata = download / f"{filename}.metadata"
+            if metadata.is_file():
+                first = metadata.read_text(encoding="utf-8").splitlines()
+                if first and first[0].strip():
+                    revisions.add(first[0].strip())
+        if len(revisions) > 1:
+            raise IntegrityError("checkpoint files report conflicting source revisions")
+        if revisions:
+            return next(iter(revisions))
+        parts = model_path.parts
+        if len(parts) >= 2 and parts[-2] == "snapshots" and parts[-1]:
+            return parts[-1]
+        return None
+
+    def _verify_model_identity(self, request: LoadStageRequest, model_path: Path) -> None:
+        config_path = model_path / "config.json"
+        index_path = model_path / "model.safetensors.index.json"
+        if not config_path.is_file() or not index_path.is_file():
+            raise IntegrityError("resolved OLMoE checkpoint is missing config or tensor index")
+        config_value = json.loads(config_path.read_text(encoding="utf-8"))
+        if not isinstance(config_value, dict) or config_value.get("model_type") != "olmoe":
+            raise IntegrityError("resolved checkpoint is not an OLMoE model")
+        model_revision = self._metadata_revision(
+            model_path, ("config.json", "model.safetensors.index.json")
+        )
+        config_revision = config_value.get("_commit_hash")
+        if model_revision is None and isinstance(config_revision, str):
+            model_revision = config_revision or None
+        elif (
+            isinstance(config_revision, str)
+            and config_revision
+            and config_revision != model_revision
+        ):
+            raise IntegrityError("checkpoint config revision conflicts with local metadata")
+        if model_revision != request.model_revision:
+            raise IntegrityError(
+                f"model revision mismatch: resolved={model_revision!r} "
+                f"requested={request.model_revision!r}"
+            )
+        tokenizer_files = ("tokenizer.json", "tokenizer_config.json")
+        if not any((model_path / filename).is_file() for filename in tokenizer_files):
+            raise IntegrityError("resolved checkpoint has no tokenizer identity files")
+        tokenizer_revision: str | None
+        if request.tokenizer_revision.startswith("sha256:"):
+            tokenizer_json = model_path / "tokenizer.json"
+            if not tokenizer_json.is_file():
+                raise IntegrityError(
+                    "sha256 tokenizer identity requires a local tokenizer.json file"
+                )
+            tokenizer_revision = "sha256:" + hashlib.sha256(tokenizer_json.read_bytes()).hexdigest()
+        else:
+            tokenizer_revision = self._metadata_revision(model_path, tokenizer_files)
+            if tokenizer_revision is None:
+                tokenizer_revision = model_revision
+        if tokenizer_revision != request.tokenizer_revision:
+            raise IntegrityError(
+                f"tokenizer revision mismatch: resolved={tokenizer_revision!r} "
+                f"requested={request.tokenizer_revision!r}"
+            )
+        identity_path = model_path / "swarm-model-identity.json"
+        if identity_path.is_file():
+            identity = json.loads(identity_path.read_text(encoding="utf-8"))
+            if not isinstance(identity, dict) or identity.get("model_id") != request.model_id:
+                raise IntegrityError("resolved checkpoint model ID does not match the request")
+
+    def _load_olmoe(
+        self,
+        request: LoadStageRequest,
+        resolved_model_path: Path | None,
+    ) -> StageExecutor:
+        if resolved_model_path is None:
+            raise FileNotFoundError("OLMoE stage loading requires a resolved local checkpoint")
+        dtype = _DTYPES[_normalise_dtype(request.dtype)]
+        return ContiguousOlmoeStage(
+            model_path=resolved_model_path,
+            assignment=request.assignment,
+            stage_count=request.stage_count,
+            device=request.device,
+            dtype=dtype,
+        )
+
+    def _memory_snapshot(self) -> ProcessMemorySnapshot:
+        rss = int(psutil.Process().memory_info().rss)
+        allocated = 0
+        reserved = 0
+        device = torch.device(self.device)
+        if (
+            device.type == "cuda" and torch.cuda.is_available() and torch.cuda.is_initialized()  # type: ignore[no-untyped-call]
+        ):
+            allocated = int(torch.cuda.memory_allocated(device))
+            reserved = int(torch.cuda.memory_reserved(device))
+        return ProcessMemorySnapshot(
+            rss_bytes=rss,
+            cuda_allocated_bytes=allocated,
+            cuda_reserved_bytes=reserved,
+        )
+
+    @staticmethod
+    def _same_load(left: LoadStageRequest, right: LoadStageRequest) -> bool:
+        excluded = {"request_id", "deadline_unix_ns", "lease_expiry_unix_ns", "route_generation"}
+        return left.model_dump(mode="json", exclude=excluded) == right.model_dump(
+            mode="json", exclude=excluded
+        )
+
+    async def load_stage(self, request: LoadStageRequest) -> StageActionResponse:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        self._check_lease(request.lease_expiry_unix_ns)
+        if self._draining:
+            raise RuntimeError("worker is draining and cannot load a stage")
+        self._validate_assignment(request)
+        async with self._executor_lock:
+            if self._draining:
+                raise RuntimeError("worker is draining and cannot load a stage")
+            if self._loaded is not None:
+                if self._same_load(self._loaded.request, request):
+                    return StageActionResponse(
+                        worker_id=self.worker_id,
+                        request_id=request.request_id,
+                        accepted=True,
+                        detail="identical stage is already resident",
+                        idempotent=True,
+                    )
+                raise RuntimeError(
+                    f"device {self.device} already owns an incompatible resident stage"
+                )
+            resolved_path: Path | None
+            if self._custom_loader:
+                candidate = Path(request.model_path).expanduser() if request.model_path else None
+                resolved_path = (
+                    candidate.resolve() if candidate is not None and candidate.is_dir() else None
+                )
+            else:
+                resolved_path = self._resolve_model_path(request)
+                self._verify_model_identity(request, resolved_path)
+                validate_olmoe_stage_assignment(
+                    resolved_path,
+                    assignment=request.assignment,
+                    stage_count=request.stage_count,
+                    model_revision=request.model_revision,
+                    tokenizer_revision=request.tokenizer_revision,
+                )
+            before = self._memory_snapshot()
+            executor: StageExecutor | None = None
+            try:
+                executor = await asyncio.to_thread(self._loader, request, resolved_path)
+                ownership = executor.ownership
+                assignment = request.assignment
+                if (
+                    ownership.stage_id != assignment.stage_id
+                    or ownership.layer_start != assignment.layer_start
+                    or ownership.layer_end != assignment.layer_end
+                    or ownership.owns_embeddings != assignment.owns_embeddings
+                    or ownership.owns_final_norm != assignment.owns_final_norm
+                    or ownership.owns_output_projection != assignment.owns_output_projection
+                ):
+                    raise IntegrityError("loaded executor ownership does not match its assignment")
+                if ownership.parameter_bytes > assignment.weight_bytes:
+                    raise IntegrityError(
+                        "loaded executor owns more parameter bytes than its exact assignment"
+                    )
+                after = self._memory_snapshot()
+                rss_delta = max(0, after.rss_bytes - before.rss_bytes)
+                cuda_delta = max(0, after.cuda_allocated_bytes - before.cuda_allocated_bytes)
+                # A custom loader is the deterministic test/integration seam; process RSS
+                # can move when its worker thread is created and is not attributable to
+                # fake weights. Product loaders enforce both measured deltas.
+                actual_resident = max(
+                    ownership.parameter_bytes,
+                    cuda_delta,
+                    0 if self._custom_loader else rss_delta,
+                )
+                if actual_resident > self.memory_limit_bytes:
+                    raise MemoryLimitExceededError(
+                        f"loaded stage resident delta {actual_resident} bytes exceeds configured "
+                        f"logical limit {self.memory_limit_bytes}"
+                    )
+            except BaseException:
+                if executor is not None:
+                    with suppress(Exception):
+                        await asyncio.to_thread(executor.close)
+                self._release_device_memory()
+                raise
+            self._load_count += 1
+            path_text = (
+                str(resolved_path)
+                if resolved_path is not None
+                else (request.model_path or "<custom-loader>")
+            )
+            status = LoadedStageStatus(
+                model_id=request.model_id,
+                model_revision=request.model_revision,
+                tokenizer_revision=request.tokenizer_revision,
+                topology_id=request.topology_id,
+                assignment=request.assignment,
+                device=self.device,
+                dtype=self.dtype,
+                model_path=path_text,
+                ownership=executor.ownership.to_dict(),
+                loaded_monotonic_ns=time.monotonic_ns(),
+                load_count=self._load_count,
+                process_rss_before_bytes=before.rss_bytes,
+                process_rss_after_bytes=after.rss_bytes,
+                cuda_allocated_before_bytes=before.cuda_allocated_bytes,
+                cuda_allocated_after_bytes=after.cuda_allocated_bytes,
+                cuda_reserved_before_bytes=before.cuda_reserved_bytes,
+                cuda_reserved_after_bytes=after.cuda_reserved_bytes,
+            )
+            self._loaded = _LoadedStage(
+                request=request.model_copy(deep=True), executor=executor, status=status
+            )
+            self._sync_capability()
+        await self.start()
+        return StageActionResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            accepted=True,
+            detail="stage loaded and resident",
+        )
+
+    def _require_loaded(self) -> _LoadedStage:
+        if self._loaded is None:
+            raise RuntimeError("worker has no resident stage")
+        return self._loaded
+
+    def _validate_loaded_identity(
+        self,
+        *,
+        model_id: str,
+        model_revision: str,
+        tokenizer_revision: str,
+        topology_id: str,
+        stage_id: int,
+        device: str,
+        dtype: str,
+    ) -> _LoadedStage:
+        loaded = self._require_loaded()
+        request = loaded.request
+        if (
+            request.model_id != model_id
+            or request.model_revision != model_revision
+            or request.tokenizer_revision != tokenizer_revision
+            or request.topology_id != topology_id
+            or request.assignment.stage_id != stage_id
+        ):
+            raise ValueError("stage control identity does not match the resident stage")
+        if _normalise_device(device) != self.device or _normalise_dtype(dtype) != self.dtype:
+            raise ValueError("stage control device or dtype does not match the resident stage")
+        return loaded
+
+    async def unload_stage(self, request: UnloadStageRequest) -> StageActionResponse:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        async with self._executor_lock:
+            if self._loaded is None:
+                return StageActionResponse(
+                    worker_id=self.worker_id,
+                    request_id=request.request_id,
+                    accepted=True,
+                    detail="stage is already unloaded",
+                    idempotent=True,
+                )
+            loaded = self._validate_loaded_identity(
+                model_id=request.model_id,
+                model_revision=request.model_revision,
+                tokenizer_revision=request.tokenizer_revision,
+                topology_id=request.topology_id,
+                stage_id=request.assignment.stage_id,
+                device=request.device,
+                dtype=request.dtype,
+            )
+            if request.assignment != loaded.request.assignment:
+                raise ValueError("unload assignment does not match the resident stage")
+            if request.stage_count != loaded.request.stage_count:
+                raise ValueError("unload stage count does not match the resident topology")
+            expected_generation = (
+                self._route.route_generation
+                if self._route is not None
+                else (
+                    self._last_route_generation
+                    if self._last_route_generation is not None
+                    else loaded.request.route_generation
+                )
+            )
+            if request.route_generation != expected_generation:
+                raise ValueError("unload route generation does not match the resident stage")
+            if self.sessions.active_count and not request.force:
+                raise RuntimeError("cannot unload a stage with active sessions")
+            released = await self._unload_locked(force=request.force)
+        return StageActionResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            accepted=True,
+            detail="resident stage unloaded",
+            released_kv_bytes=released,
+        )
+
+    async def _unload_locked(self, *, force: bool) -> int:
+        loaded = self._require_loaded()
+        if self.sessions.active_count and not force:
+            raise RuntimeError("resident stage still has active sessions")
+        old_endpoint = (
+            self._route.next_stage.data_endpoint if self._route and self._route.next_stage else None
+        )
+        released = await asyncio.to_thread(self.sessions.cancel_all, loaded.executor)
+        await asyncio.to_thread(loaded.executor.close)
+        self._loaded = None
+        self._route = None
+        self._last_route_generation = None
+        self._sequence_validator = MessageSequenceValidator()
+        self._sequence_allocator = SequenceAllocator()
+        self._sync_capability()
+        if old_endpoint is not None:
+            await self.connection_pool.remove(old_endpoint)
+        self._release_device_memory()
+        return released
+
+    def _release_device_memory(self) -> None:
+        gc.collect()
+        device = torch.device(self.device)
+        if (
+            device.type == "cuda" and torch.cuda.is_available() and torch.cuda.is_initialized()  # type: ignore[no-untyped-call]
+        ):
+            with suppress(RuntimeError):
+                torch.cuda.empty_cache()
+
+    async def install_route(self, request: InstallStageRouteRequest) -> StageActionResponse:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        self._check_lease(request.lease_expiry_unix_ns)
+        if self._draining:
+            raise RuntimeError("worker is draining and cannot install a route")
+        async with self._executor_lock:
+            if self._draining:
+                raise RuntimeError("worker is draining and cannot install a route")
+            endpoint_to_remove, response = self._install_route_locked(request)
+        if endpoint_to_remove is not None:
+            await self.connection_pool.remove(endpoint_to_remove)
+        return response
+
+    def _install_route_locked(
+        self,
+        request: InstallStageRouteRequest,
+    ) -> tuple[str | None, StageActionResponse]:
+        loaded = self._validate_loaded_identity(
+            model_id=request.model_id,
+            model_revision=request.model_revision,
+            tokenizer_revision=request.tokenizer_revision,
+            topology_id=request.topology_id,
+            stage_id=request.assignment.stage_id,
+            device=request.device,
+            dtype=request.dtype,
+        )
+        if request.assignment != loaded.request.assignment:
+            raise ValueError("route assignment does not match the resident stage")
+        if request.stage_count != loaded.request.stage_count:
+            raise ValueError("route stage count does not match the loaded topology")
+        stage_id = request.assignment.stage_id
+        if not stage_id < request.stage_count:
+            raise ValueError("route stage ID is outside the declared stage count")
+        if stage_id == 0:
+            if request.previous_stage is not None:
+                raise ValueError("stage zero cannot declare a previous stage")
+        elif request.previous_stage is None or request.previous_stage.stage_id != stage_id - 1:
+            raise ValueError("route previous stage is not contiguous")
+        if stage_id == request.stage_count - 1:
+            if request.next_stage is not None:
+                raise ValueError("final stage cannot declare a next stage")
+        elif request.next_stage is None or request.next_stage.stage_id != stage_id + 1:
+            raise ValueError("route next stage is not contiguous")
+        for name, peer in (
+            ("previous stage", request.previous_stage),
+            ("next stage", request.next_stage),
+        ):
+            if peer is not None:
+                _validate_endpoint(peer.data_endpoint, name=name)
+                if peer.worker_id == self.worker_id:
+                    raise ValueError(f"{name} cannot refer to this worker")
+                if peer.assignment is not None:
+                    _validate_stage_assignment_values(
+                        peer.assignment,
+                        stage_count=request.stage_count,
+                    )
+                    if peer.assignment.stage_id != peer.stage_id:
+                        raise ValueError(f"{name} assignment identity is inconsistent")
+        if (
+            request.previous_stage is not None
+            and request.previous_stage.assignment is not None
+            and request.previous_stage.assignment.layer_end != request.assignment.layer_start
+        ):
+            raise ValueError("previous-stage assignment is not layer-contiguous")
+        if (
+            request.next_stage is not None
+            and request.next_stage.assignment is not None
+            and request.next_stage.assignment.layer_start != request.assignment.layer_end
+        ):
+            raise ValueError("next-stage assignment is not layer-contiguous")
+        if request.stage_zero_publication_destination is not None:
+            _validate_endpoint(
+                request.stage_zero_publication_destination,
+                name="stage-zero publication destination",
+            )
+        previous_route = self._route
+        if request.route_generation < loaded.request.route_generation:
+            raise ValueError("stale route generation")
+        if (
+            previous_route is None
+            and self._last_route_generation is not None
+            and request.route_generation <= self._last_route_generation
+        ):
+            raise ValueError("stale route generation")
+        if previous_route is not None:
+            if request.route_generation < previous_route.route_generation:
+                raise ValueError("stale route generation")
+            if request.route_generation == previous_route.route_generation:
+                excluded = {"request_id", "deadline_unix_ns", "replace"}
+                if request.model_dump(mode="json", exclude=excluded) == previous_route.model_dump(
+                    mode="json", exclude=excluded
+                ):
+                    return (
+                        None,
+                        StageActionResponse(
+                            worker_id=self.worker_id,
+                            request_id=request.request_id,
+                            accepted=True,
+                            detail="identical route is already installed",
+                            idempotent=True,
+                        ),
+                    )
+                raise ValueError("route generation is already installed with different contents")
+            if not request.replace:
+                raise ValueError("route replacement must be explicit")
+            if self.sessions.active_count:
+                raise RuntimeError("cannot replace a route while sessions are active")
+        old_endpoint = (
+            previous_route.next_stage.data_endpoint
+            if previous_route is not None and previous_route.next_stage is not None
+            else None
+        )
+        self._route = request.model_copy(deep=True)
+        self._last_route_generation = request.route_generation
+        self._sync_capability()
+        endpoint_to_remove = (
+            old_endpoint
+            if old_endpoint is not None
+            and (request.next_stage is None or request.next_stage.data_endpoint != old_endpoint)
+            else None
+        )
+        return (
+            endpoint_to_remove,
+            StageActionResponse(
+                worker_id=self.worker_id,
+                request_id=request.request_id,
+                accepted=True,
+                detail="stage route installed",
+            ),
+        )
+
+    async def remove_route(self, request: RemoveStageRouteRequest) -> StageActionResponse:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        async with self._executor_lock:
+            endpoint_to_remove, response = self._remove_route_locked(request)
+        if endpoint_to_remove is not None:
+            await self.connection_pool.remove(endpoint_to_remove)
+        return response
+
+    def _remove_route_locked(
+        self,
+        request: RemoveStageRouteRequest,
+    ) -> tuple[str | None, StageActionResponse]:
+        self._validate_loaded_identity(
+            model_id=request.model_id,
+            model_revision=request.model_revision,
+            tokenizer_revision=request.tokenizer_revision,
+            topology_id=request.topology_id,
+            stage_id=request.stage_id,
+            device=request.device,
+            dtype=request.dtype,
+        )
+        route = self._route
+        if route is None:
+            if (
+                self._last_route_generation is not None
+                and request.route_generation != self._last_route_generation
+            ):
+                raise ValueError("stale route generation")
+            return (
+                None,
+                StageActionResponse(
+                    worker_id=self.worker_id,
+                    request_id=request.request_id,
+                    accepted=True,
+                    detail="stage route is already absent",
+                    idempotent=True,
+                ),
+            )
+        if request.route_generation != route.route_generation:
+            raise ValueError("route removal generation does not match the installed route")
+        if self.sessions.active_count:
+            raise RuntimeError("cannot remove a route while sessions are active")
+        endpoint = route.next_stage.data_endpoint if route.next_stage is not None else None
+        self._route = None
+        self._sync_capability()
+        return (
+            endpoint,
+            StageActionResponse(
+                worker_id=self.worker_id,
+                request_id=request.request_id,
+                accepted=True,
+                detail="stage route removed",
+            ),
+        )
+
+    def _validate_session_request(
+        self,
+        request: OpenStageSessionRequest,
+        *,
+        require_live_lease: bool = True,
+    ) -> tuple[_LoadedStage, InstallStageRouteRequest]:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        if require_live_lease:
+            self._check_lease(request.lease_expiry_unix_ns)
+        loaded = self._validate_loaded_identity(
+            model_id=request.model_id,
+            model_revision=request.model_revision,
+            tokenizer_revision=request.tokenizer_revision,
+            topology_id=request.topology_id,
+            stage_id=request.stage_id,
+            device=request.device,
+            dtype=request.dtype,
+        )
+        route = self._route
+        if route is None or route.topology_id != request.topology_id:
+            raise ValueError("unknown stage topology route")
+        if route.route_generation != request.route_generation:
+            raise ValueError("stale stage route generation")
+        if require_live_lease:
+            self._check_lease(route.lease_expiry_unix_ns)
+        return loaded, route
+
+    async def open_session(self, request: OpenStageSessionRequest) -> StageActionResponse:
+        async with self._executor_lock:
+            if self._draining:
+                raise RuntimeError("worker is draining and cannot open a session")
+            loaded, _ = self._validate_session_request(request)
+            await asyncio.to_thread(
+                self.sessions.open,
+                loaded.executor,
+                topology_id=request.topology_id,
+                session_id=request.session_id,
+                model_revision=request.model_revision,
+                route_generation=request.route_generation,
+                stage_id=request.stage_id,
+            )
+            self._sync_capability()
+        return StageActionResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            accepted=True,
+            detail="stage session opened",
+        )
+
+    async def close_session(
+        self,
+        request: CloseStageSessionRequest,
+        *,
+        reset_sequences: bool = True,
+    ) -> StageActionResponse:
+        async with self._executor_lock:
+            loaded, _ = self._validate_session_request(request, require_live_lease=False)
+            released = await asyncio.to_thread(
+                self.sessions.close,
+                loaded.executor,
+                topology_id=request.topology_id,
+                session_id=request.session_id,
+            )
+            if reset_sequences:
+                self._sequence_validator.reset_session(request.session_id)
+                self._sequence_allocator.reset_session(request.session_id)
+            self._sync_capability()
+        return StageActionResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            accepted=True,
+            detail="stage session closed",
+            released_kv_bytes=released,
+        )
+
+    async def cancel_session(
+        self,
+        request: CancelStageSessionRequest,
+        *,
+        reset_sequences: bool = True,
+    ) -> StageActionResponse:
+        async with self._executor_lock:
+            loaded, _ = self._validate_session_request(request, require_live_lease=False)
+            released = await asyncio.to_thread(
+                self.sessions.cancel,
+                loaded.executor,
+                topology_id=request.topology_id,
+                session_id=request.session_id,
+            )
+            if reset_sequences:
+                self._sequence_validator.reset_session(request.session_id)
+                self._sequence_allocator.reset_session(request.session_id)
+            self._sync_capability()
+        return StageActionResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            accepted=True,
+            detail="stage session cancelled",
+            released_kv_bytes=released,
+        )
+
+    async def get_capabilities(
+        self, request: GetStageCapabilitiesRequest
+    ) -> GetStageCapabilitiesResponse:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        if self.capability is None:
+            raise RuntimeError("stage runtime has no attached worker capability record")
+        self._sync_capability()
+        return GetStageCapabilitiesResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            capability=self.capability.model_copy(deep=True),
+        )
+
+    async def status(self, request: GetStageStatusRequest) -> StageStatusResponse:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        async with self._executor_lock:
+            loaded = self._loaded
+            if request.topology_id is not None and (
+                loaded is None or loaded.request.topology_id != request.topology_id
+            ):
+                raise ValueError("unknown stage topology")
+            sessions = []
+            if loaded is not None:
+                sessions = await asyncio.to_thread(self.sessions.statuses, loaded.executor)
+        route_status = None
+        if self._route is not None:
+            route_status = InstalledStageRouteStatus(
+                topology_id=self._route.topology_id,
+                route_generation=self._route.route_generation,
+                previous_stage=self._route.previous_stage,
+                next_stage=self._route.next_stage,
+                stage_count=self._route.stage_count,
+                stage_zero_publication_destination=(self._route.stage_zero_publication_destination),
+                lease_expiry_unix_ns=self._route.lease_expiry_unix_ns,
+            )
+        return StageStatusResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            process_id=os.getpid(),
+            draining=self._draining,
+            loaded_stage=loaded.status if loaded is not None else None,
+            installed_route=route_status,
+            sessions=sessions,
+            execution_queue_depth=self._execution_queue.qsize(),
+            execution_queue_capacity=self.execution_queue_capacity,
+            token_queue_depth=self._token_queue.qsize(),
+            token_queue_capacity=self.token_queue_capacity,
+            dropped_token_publications=self._dropped_token_publications,
+        )
+
+    async def drain(self, request: DrainWorkerRequest) -> StageActionResponse:
+        self._check_worker(request.worker_id)
+        self._check_deadline(request.deadline_unix_ns)
+        already = self._draining
+        self._draining = True
+        released = 0
+        if request.cancel_active_sessions:
+            async with self._executor_lock:
+                if self._loaded is not None:
+                    released = await asyncio.to_thread(
+                        self.sessions.cancel_all, self._loaded.executor
+                    )
+                    self._sync_capability()
+        return StageActionResponse(
+            worker_id=self.worker_id,
+            request_id=request.request_id,
+            accepted=True,
+            detail="worker is draining",
+            idempotent=already,
+            released_kv_bytes=released,
+        )
+
+    def _sync_capability(self) -> None:
+        capability = self.capability
+        if capability is None:
+            return
+        capability.device_identifier = self.device
+        capability.active_session_count = self.sessions.active_count
+        capability.currently_loaded_model_revisions = (
+            [self._loaded.request.model_revision] if self._loaded is not None else []
+        )
+        capability.currently_loaded_topology_ids = (
+            [self._loaded.request.topology_id] if self._loaded is not None else []
+        )
+
+    def refresh_capability(self) -> None:
+        """Synchronise dynamic stage fields before heartbeat serialization."""
+
+        self._sync_capability()
+
+    def _route_and_loaded(
+        self,
+        *,
+        require_live_lease: bool = True,
+    ) -> tuple[InstallStageRouteRequest, _LoadedStage]:
+        loaded = self._require_loaded()
+        route = self._route
+        if route is None:
+            raise ValueError("worker has no installed stage route")
+        if require_live_lease:
+            self._check_lease(route.lease_expiry_unix_ns)
+        return route, loaded
+
+    def _message_attribute(
+        self,
+        message: StageMessage,
+        key: str,
+        expected: type[AttributeT],
+    ) -> AttributeT:
+        value = message.attributes.get(key)
+        if not isinstance(value, expected):
+            raise ValueError(f"stage message attribute {key!r} is missing or malformed")
+        return value
+
+    def _validate_message_base(
+        self,
+        message: StageMessage,
+        *,
+        require_live_lease: bool = True,
+    ) -> tuple[InstallStageRouteRequest, _LoadedStage, int]:
+        route, loaded = self._route_and_loaded(require_live_lease=require_live_lease)
+        assignment = loaded.request.assignment
+        if message.model_revision != loaded.request.model_revision:
+            raise ValueError("wrong model revision")
+        if message.tokenizer_revision != loaded.request.tokenizer_revision:
+            raise ValueError("wrong tokenizer revision")
+        if message.topology_id != loaded.request.topology_id:
+            raise ValueError("unknown stage topology")
+        if (
+            message.stage_id != assignment.stage_id
+            or message.destination_stage != assignment.stage_id
+            or (message.layer_start, message.layer_end)
+            != (assignment.layer_start, assignment.layer_end)
+        ):
+            raise ValueError("stage message destination ownership mismatch")
+        route_generation = self._message_attribute(message, "route_generation", int)
+        if isinstance(route_generation, bool) or route_generation != route.route_generation:
+            raise ValueError("stale route generation")
+        model_id = self._message_attribute(message, "model_id", str)
+        if model_id != loaded.request.model_id:
+            raise ValueError("wrong model identity")
+        source_worker = self._message_attribute(message, "source_worker_id", str)
+        destination_worker = self._message_attribute(message, "destination_worker_id", str)
+        expected_source_stage = route.previous_stage.stage_id if route.previous_stage else -1
+        expected_source_worker = (
+            route.previous_stage.worker_id if route.previous_stage else "coordinator"
+        )
+        if (
+            message.source_stage != expected_source_stage
+            or source_worker != expected_source_worker
+            or destination_worker != self.worker_id
+        ):
+            raise ValueError("stage message peer identity does not match the installed route")
+        return route, loaded, int(route_generation)
+
+    def _control_message_response(
+        self,
+        message: StageMessage,
+        *,
+        operation: Operation,
+        attributes: dict[str, object] | None = None,
+    ) -> StageMessage:
+        loaded = self._require_loaded()
+        sequence = self._sequence_allocator.next(
+            message.session_id, loaded.request.assignment.stage_id, message.source_stage
+        )
+        return StageMessage(
+            operation=operation,
+            model_revision=message.model_revision,
+            tokenizer_revision=message.tokenizer_revision,
+            topology_id=message.topology_id,
+            stage_id=loaded.request.assignment.stage_id,
+            layer_start=loaded.request.assignment.layer_start,
+            layer_end=loaded.request.assignment.layer_end,
+            session_id=message.session_id,
+            request_id=message.request_id,
+            sequence_number=sequence,
+            token_position=message.token_position,
+            source_stage=loaded.request.assignment.stage_id,
+            destination_stage=message.source_stage,
+            status="OK",
+            attributes=attributes or {},
+        )
+
+    async def handle_message(self, message: StageMessage) -> StageMessage:
+        """Validate and execute one authorized direct data-plane operation."""
+
+        await self.start()
+        route, loaded, route_generation = self._validate_message_base(
+            message,
+            require_live_lease=message.operation
+            not in {Operation.CLOSE_SESSION, Operation.CANCEL_SESSION},
+        )
+        if message.operation == Operation.OPEN_SESSION:
+            self._sequence_validator.validate(message)
+            await self.open_session(
+                OpenStageSessionRequest(
+                    worker_id=self.worker_id,
+                    request_id=message.request_id,
+                    model_id=loaded.request.model_id,
+                    model_revision=message.model_revision,
+                    tokenizer_revision=message.tokenizer_revision,
+                    topology_id=message.topology_id,
+                    route_generation=route_generation,
+                    stage_id=message.stage_id,
+                    device=self.device,
+                    dtype=self.dtype,
+                    session_id=message.session_id,
+                    lease_expiry_unix_ns=route.lease_expiry_unix_ns,
+                )
+            )
+            return self._control_message_response(message, operation=Operation.OPEN_SESSION)
+        if message.operation in {Operation.HELLO, Operation.HEALTH}:
+            self._sequence_validator.validate(message)
+            return self._control_message_response(
+                message,
+                operation=message.operation,
+                attributes={
+                    "worker_id": self.worker_id,
+                    "route_generation": route.route_generation,
+                    "active_session_count": self.sessions.active_count,
+                    "execution_queue_depth": self._execution_queue.qsize(),
+                },
+            )
+        if message.operation in {Operation.CLOSE_SESSION, Operation.CANCEL_SESSION}:
+            self.sessions.require(
+                topology_id=message.topology_id,
+                session_id=message.session_id,
+                model_revision=message.model_revision,
+                route_generation=route_generation,
+                stage_id=message.stage_id,
+            )
+            self._sequence_validator.validate(message)
+            if message.operation == Operation.CLOSE_SESSION:
+                result = await self.close_session(
+                    CloseStageSessionRequest(
+                        worker_id=self.worker_id,
+                        request_id=message.request_id,
+                        model_id=loaded.request.model_id,
+                        model_revision=message.model_revision,
+                        tokenizer_revision=message.tokenizer_revision,
+                        topology_id=message.topology_id,
+                        route_generation=route_generation,
+                        stage_id=message.stage_id,
+                        device=self.device,
+                        dtype=self.dtype,
+                        session_id=message.session_id,
+                        lease_expiry_unix_ns=route.lease_expiry_unix_ns,
+                    ),
+                    reset_sequences=False,
+                )
+            else:
+                result = await self.cancel_session(
+                    CancelStageSessionRequest(
+                        worker_id=self.worker_id,
+                        request_id=message.request_id,
+                        model_id=loaded.request.model_id,
+                        model_revision=message.model_revision,
+                        tokenizer_revision=message.tokenizer_revision,
+                        topology_id=message.topology_id,
+                        route_generation=route_generation,
+                        stage_id=message.stage_id,
+                        device=self.device,
+                        dtype=self.dtype,
+                        session_id=message.session_id,
+                        lease_expiry_unix_ns=route.lease_expiry_unix_ns,
+                    ),
+                    reset_sequences=False,
+                )
+            response = self._control_message_response(
+                message,
+                operation=message.operation,
+                attributes={"released_kv_bytes": result.released_kv_bytes},
+            )
+            self._sequence_validator.reset_session(message.session_id)
+            self._sequence_allocator.reset_session(message.session_id)
+            return response
+        if message.operation not in {Operation.PREFILL, Operation.DECODE}:
+            raise ValueError(f"unsupported product stage data operation {message.operation.name}")
+        cache_position = self._message_attribute(message, "cache_position_start", int)
+        if isinstance(cache_position, bool) or cache_position < 0:
+            raise ValueError("stage cache position is malformed")
+        if message.operation == Operation.PREFILL and cache_position != 0:
+            raise ValueError("stage prefill must begin at cache position zero")
+        if message.operation == Operation.DECODE and cache_position == 0:
+            raise ValueError("stage decode requires an existing prefilled cache")
+        tensor_metadata = self._message_attribute(message, "tensor", dict)
+        tensor, _ = unpack_tensor(message.payload, dict(tensor_metadata))
+        if (
+            tuple(tensor.shape) != message.tensor_shape
+            or str(tensor_metadata["dtype"]) != message.tensor_dtype
+        ):
+            raise ValueError("stage tensor metadata does not match message metadata")
+        if str(tensor_metadata["compression_mode"]) != message.compression_mode:
+            raise ValueError("stage tensor compression metadata mismatch")
+        if loaded.request.assignment.owns_embeddings:
+            if tensor.dtype != torch.int64 or tensor.ndim != 2:
+                raise ValueError("stage zero requires a rank-two int64 token tensor")
+        elif tensor.dtype != _DTYPES[self.dtype] or tensor.ndim != 3:
+            raise ValueError(
+                "nonzero stages require a rank-three hidden-state tensor in the "
+                "configured activation dtype"
+            )
+        self._sequence_validator.validate(message)
+        self.sessions.require(
+            topology_id=message.topology_id,
+            session_id=message.session_id,
+            model_revision=message.model_revision,
+            route_generation=route_generation,
+            stage_id=message.stage_id,
+            cache_position_start=int(cache_position),
+        )
+        loop = asyncio.get_running_loop()
+        future: asyncio.Future[StageMessage] = loop.create_future()
+        try:
+            self._execution_queue.put_nowait(_QueuedStageExecution(message=message, future=future))
+        except asyncio.QueueFull as exc:
+            raise BackpressureError("stage execution queue is full") from exc
+        return await future
+
+    async def _execution_loop(self) -> None:
+        while True:
+            item = await self._execution_queue.get()
+            try:
+                try:
+                    response = await self._execute_message(item.message)
+                except Exception as exc:
+                    if not item.future.done():
+                        item.future.set_exception(exc)
+                else:
+                    if not item.future.done():
+                        item.future.set_result(response)
+            finally:
+                self._execution_queue.task_done()
+
+    async def _execute_message(self, message: StageMessage) -> StageMessage:
+        tensor_metadata = dict(message.attributes["tensor"])
+        tensor, decode_ns = unpack_tensor(message.payload, tensor_metadata)
+        cache_position = int(message.attributes["cache_position_start"])
+        async with self._executor_lock:
+            route, loaded, route_generation = self._validate_message_base(message)
+            self.sessions.require(
+                topology_id=message.topology_id,
+                session_id=message.session_id,
+                model_revision=message.model_revision,
+                route_generation=route_generation,
+                stage_id=message.stage_id,
+                cache_position_start=cache_position,
+            )
+            if loaded.request.assignment.owns_embeddings:
+                result = await asyncio.to_thread(
+                    loaded.executor.execute_prefill,
+                    session_id=message.session_id,
+                    token_ids=tensor,
+                    cache_position_start=cache_position,
+                )
+            else:
+                result = await asyncio.to_thread(
+                    loaded.executor.execute_decode,
+                    session_id=message.session_id,
+                    hidden_states=tensor,
+                    cache_position_start=cache_position,
+                )
+            self.sessions.update_cache_position(
+                topology_id=message.topology_id,
+                session_id=message.session_id,
+                new_position=result.cache_sequence_length,
+            )
+        if route.next_stage is not None:
+            forwarded = self._forward_message(
+                message,
+                result=result,
+                route=route,
+                decode_ns=decode_ns,
+            )
+            downstream = await self.connection_pool.send(
+                route.next_stage.data_endpoint,
+                forwarded,
+            )
+            self.sessions.require(
+                topology_id=message.topology_id,
+                session_id=message.session_id,
+                model_revision=message.model_revision,
+                route_generation=route_generation,
+                stage_id=message.stage_id,
+                cache_position_start=result.cache_sequence_length,
+            )
+            self._validate_downstream_response(
+                incoming=message,
+                forwarded=forwarded,
+                downstream=downstream,
+                route=route,
+                cache_sequence_length=result.cache_sequence_length,
+            )
+            return self._relay_downstream(message, downstream)
+        response = self._token_result(message, result=result, route=route, decode_ns=decode_ns)
+        self._enqueue_token_publication(route, response)
+        return response
+
+    def _forward_message(
+        self,
+        incoming: StageMessage,
+        *,
+        result: StageExecutionResult,
+        route: InstallStageRouteRequest,
+        decode_ns: int,
+    ) -> StageMessage:
+        assert route.next_stage is not None
+        next_assignment = route.next_stage.assignment
+        if next_assignment is None:
+            raise ValueError("next-stage route identity is missing its exact assignment")
+        packed = pack_tensor(result.stage_boundary_hidden_states, requested_mode="none")
+        current_stage = self._require_loaded().request.assignment.stage_id
+        sequence = self._sequence_allocator.next(
+            incoming.session_id, current_stage, route.next_stage.stage_id
+        )
+        return StageMessage(
+            operation=incoming.operation,
+            model_revision=incoming.model_revision,
+            tokenizer_revision=incoming.tokenizer_revision,
+            topology_id=incoming.topology_id,
+            stage_id=route.next_stage.stage_id,
+            layer_start=next_assignment.layer_start,
+            layer_end=next_assignment.layer_end,
+            session_id=incoming.session_id,
+            request_id=incoming.request_id,
+            sequence_number=sequence,
+            token_position=incoming.token_position,
+            source_stage=current_stage,
+            destination_stage=route.next_stage.stage_id,
+            tensor_shape=packed.shape,
+            tensor_dtype=packed.dtype,
+            compression_mode=packed.compression_mode,
+            payload=packed.payload,
+            attributes={
+                "model_id": route.model_id,
+                "route_generation": route.route_generation,
+                "source_worker_id": self.worker_id,
+                "destination_worker_id": route.next_stage.worker_id,
+                "cache_position_start": int(incoming.attributes["cache_position_start"]),
+                "cache_sequence_length": result.cache_sequence_length,
+                "compute_ns": result.compute_ns,
+                "decode_ns": decode_ns,
+                "tensor": packed.attributes(),
+            },
+        )
+
+    def _token_result(
+        self,
+        incoming: StageMessage,
+        *,
+        result: StageExecutionResult,
+        route: InstallStageRouteRequest,
+        decode_ns: int,
+    ) -> StageMessage:
+        token_ids = result.sampled_token_ids
+        if token_ids is None:
+            raise ValueError("final stage did not produce greedy token IDs")
+        packed = pack_tensor(token_ids, requested_mode="none")
+        current_stage = self._require_loaded().request.assignment.stage_id
+        sequence = self._sequence_allocator.next(
+            incoming.session_id, current_stage, incoming.source_stage
+        )
+        return StageMessage(
+            operation=Operation.TOKEN_RESULT,
+            model_revision=incoming.model_revision,
+            tokenizer_revision=incoming.tokenizer_revision,
+            topology_id=incoming.topology_id,
+            stage_id=current_stage,
+            layer_start=incoming.layer_start,
+            layer_end=incoming.layer_end,
+            session_id=incoming.session_id,
+            request_id=incoming.request_id,
+            sequence_number=sequence,
+            token_position=incoming.token_position,
+            source_stage=current_stage,
+            destination_stage=incoming.source_stage,
+            tensor_shape=packed.shape,
+            tensor_dtype=packed.dtype,
+            compression_mode=packed.compression_mode,
+            payload=packed.payload,
+            attributes={
+                "model_id": route.model_id,
+                "route_generation": route.route_generation,
+                "source_worker_id": self.worker_id,
+                "destination_worker_id": (
+                    route.previous_stage.worker_id if route.previous_stage else "coordinator"
+                ),
+                "cache_sequence_length": result.cache_sequence_length,
+                "compute_ns": result.compute_ns,
+                "decode_ns": decode_ns,
+                "tensor": packed.attributes(),
+            },
+        )
+
+    def _validate_downstream_response(
+        self,
+        *,
+        incoming: StageMessage,
+        forwarded: StageMessage,
+        downstream: StageMessage,
+        route: InstallStageRouteRequest,
+        cache_sequence_length: int,
+    ) -> None:
+        next_stage = route.next_stage
+        if next_stage is None:
+            raise RuntimeError("downstream response arrived without an installed next stage")
+        current_stage = route.assignment.stage_id
+        if (
+            downstream.model_revision != incoming.model_revision
+            or downstream.tokenizer_revision != incoming.tokenizer_revision
+            or downstream.topology_id != incoming.topology_id
+            or downstream.session_id != incoming.session_id
+            or downstream.request_id != incoming.request_id
+            or downstream.token_position != incoming.token_position
+        ):
+            raise ValueError("downstream response request identity mismatch")
+        if (
+            downstream.stage_id != next_stage.stage_id
+            or downstream.source_stage != next_stage.stage_id
+            or downstream.destination_stage != current_stage
+            or (downstream.layer_start, downstream.layer_end)
+            != (forwarded.layer_start, forwarded.layer_end)
+        ):
+            raise ValueError("downstream response stage identity mismatch")
+        if downstream.operation == Operation.ERROR:
+            self._sequence_validator.validate(downstream)
+            detail = downstream.attributes.get("error", "downstream stage rejected the frame")
+            raise TransportError(str(detail))
+        if downstream.operation != Operation.TOKEN_RESULT or downstream.status != "OK":
+            raise ValueError("downstream response is not a successful token result")
+        if self._message_attribute(downstream, "model_id", str) != route.model_id:
+            raise ValueError("downstream response model identity mismatch")
+        generation = self._message_attribute(downstream, "route_generation", int)
+        if isinstance(generation, bool) or generation != route.route_generation:
+            raise ValueError("downstream response route generation mismatch")
+        if (
+            self._message_attribute(downstream, "source_worker_id", str) != next_stage.worker_id
+            or self._message_attribute(downstream, "destination_worker_id", str) != self.worker_id
+        ):
+            raise ValueError("downstream response worker identity mismatch")
+        downstream_cache_position = self._message_attribute(
+            downstream, "cache_sequence_length", int
+        )
+        if (
+            isinstance(downstream_cache_position, bool)
+            or downstream_cache_position != cache_sequence_length
+        ):
+            raise ValueError("downstream response cache position mismatch")
+        tensor_metadata = self._message_attribute(downstream, "tensor", dict)
+        token_ids, _ = unpack_tensor(downstream.payload, dict(tensor_metadata))
+        if (
+            tuple(token_ids.shape) != downstream.tensor_shape
+            or str(tensor_metadata["dtype"]) != downstream.tensor_dtype
+            or str(tensor_metadata["compression_mode"]) != downstream.compression_mode
+            or token_ids.dtype != torch.int64
+        ):
+            raise ValueError("downstream token tensor metadata mismatch")
+        self._sequence_validator.validate(downstream)
+
+    def _relay_downstream(
+        self,
+        incoming: StageMessage,
+        downstream: StageMessage,
+    ) -> StageMessage:
+        current = self._require_loaded().request.assignment
+        sequence = self._sequence_allocator.next(
+            incoming.session_id, current.stage_id, incoming.source_stage
+        )
+        attributes = dict(downstream.attributes)
+        attributes["relay_stage_id"] = current.stage_id
+        attributes["source_worker_id"] = self.worker_id
+        route = self._route
+        attributes["destination_worker_id"] = (
+            route.previous_stage.worker_id
+            if route is not None and route.previous_stage is not None
+            else "coordinator"
+        )
+        return StageMessage(
+            operation=downstream.operation,
+            model_revision=downstream.model_revision,
+            tokenizer_revision=downstream.tokenizer_revision,
+            topology_id=downstream.topology_id,
+            stage_id=current.stage_id,
+            layer_start=current.layer_start,
+            layer_end=current.layer_end,
+            session_id=downstream.session_id,
+            request_id=downstream.request_id,
+            sequence_number=sequence,
+            token_position=downstream.token_position,
+            source_stage=current.stage_id,
+            destination_stage=incoming.source_stage,
+            tensor_shape=downstream.tensor_shape,
+            tensor_dtype=downstream.tensor_dtype,
+            compression_mode=downstream.compression_mode,
+            payload=downstream.payload,
+            status=downstream.status,
+            attributes=attributes,
+        )
+
+    def _enqueue_token_publication(
+        self,
+        route: InstallStageRouteRequest,
+        message: StageMessage,
+    ) -> None:
+        publication = TokenPublication(
+            destination=route.stage_zero_publication_destination,
+            message=message,
+            enqueued_monotonic_ns=time.monotonic_ns(),
+        )
+        try:
+            self._token_queue.put_nowait(publication)
+        except asyncio.QueueFull:
+            self._dropped_token_publications += 1
+
+    async def _token_publication_loop(self) -> None:
+        while True:
+            publication = await self._token_queue.get()
+            try:
+                if self._token_publisher is not None:
+                    with suppress(Exception):
+                        await self._token_publisher(publication)
+            finally:
+                self._token_queue.task_done()
+
+    async def close(self) -> None:
+        if self._closed:
+            return
+        self._draining = True
+        with suppress(TimeoutError):
+            await asyncio.wait_for(self._execution_queue.join(), timeout=30.0)
+        if self._execution_runner is not None:
+            self._execution_runner.cancel()
+            await asyncio.gather(self._execution_runner, return_exceptions=True)
+            self._execution_runner = None
+        async with self._executor_lock:
+            if self._loaded is not None:
+                await self._unload_locked(force=True)
+        if self._token_runner is not None:
+            self._token_runner.cancel()
+            await asyncio.gather(self._token_runner, return_exceptions=True)
+            self._token_runner = None
+        await self.connection_pool.close()
+        self._closed = True
+
+
+__all__ = [
+    "PersistentStageRuntime",
+    "ProcessMemorySnapshot",
+    "StageLoader",
+    "TokenPublication",
+    "TokenPublisher",
+]

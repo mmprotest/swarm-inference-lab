@@ -62,12 +62,6 @@ from swarm_inference.experiments.experiment_011.evidence import (
 from swarm_inference.experiments.experiment_011.failures import (
     run_real_failure_and_recovery_smokes,
 )
-from swarm_inference.experiments.experiment_011.partition import (
-    ModelPartitionMetadata,
-    StagePlan,
-    build_stage_plan,
-    inspect_model_partition_metadata,
-)
 from swarm_inference.experiments.experiment_011.planner import (
     MeasuredStrategyPlanner,
     PlannerCandidate,
@@ -89,7 +83,15 @@ from swarm_inference.experiments.experiment_011.runtime import (
 from swarm_inference.experiments.experiment_011.speculation import (
     run_real_prompt_lookup_speculation,
 )
-from swarm_inference.experiments.experiment_011.telemetry import merge_traces
+from swarm_inference.model.olmoe import (
+    inspect_olmoe_partition_metadata as inspect_model_partition_metadata,
+)
+from swarm_inference.model.partition import (
+    ModelPartitionMetadata,
+    StagePlan,
+    build_stage_plan,
+)
+from swarm_inference.runtime.telemetry import merge_traces
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
 EXTRA_RESULT_COLUMNS = (
@@ -314,6 +316,7 @@ def _build_plans(
                     stage_count=stage_count,
                     method=method,
                     memory_limit_bytes=memory_limit,
+                    device="cuda:0",
                 )
             except (MemoryError, ValueError) as exc:
                 _write_json(
@@ -473,9 +476,7 @@ def _reconstruct_expert_rpc_dependencies(
             if match is None:
                 continue
             native_position = int(match.group(1))
-            token_position = (
-                0 if native_position == 0 else native_position - prompt_tokens + 1
-            )
+            token_position = 0 if native_position == 0 else native_position - prompt_tokens + 1
             if not 0 <= token_position < generated_tokens:
                 continue
             counts[token_position] += 1
@@ -491,8 +492,7 @@ def _reconstruct_expert_rpc_dependencies(
                     "execution_sequence": int(event["execution_sequence"]),
                     "completion_wall_time_ns": int(event["wall_time_ns"]),
                     "duration_ns": int(event["duration_ns"]),
-                    "payload_bytes": int(event["bytes_received"])
-                    + int(event["bytes_sent"]),
+                    "payload_bytes": int(event["bytes_received"]) + int(event["bytes_sent"]),
                     "critical_dependency": True,
                     "unblocks": "coordinator layer reduction or next required model computation",
                     "model_fingerprint": event["model_fingerprint"],
@@ -832,7 +832,9 @@ def _ownership_validation(
                 if ownership_record
                 else [],
                 "stage_weight_bytes": [stage.get("parameter_bytes", 0) for stage in ownership],
-                "layer_owners": {str(layer): sorted(owners) for layer, owners in layer_owners.items()},
+                "layer_owners": {
+                    str(layer): sorted(owners) for layer, owners in layer_owners.items()
+                },
                 "parameter_overlaps": overlaps,
                 "coordinator_weight_bytes": 0,
                 "coordinator_executed_stage_layers": False,
@@ -841,9 +843,7 @@ def _ownership_validation(
     return {"valid": all_valid and bool(rows), "plans": rows}
 
 
-def _planner_candidate_from_stage(
-    row: dict[str, Any], plan: StagePlan
-) -> PlannerCandidate:
+def _planner_candidate_from_stage(row: dict[str, Any], plan: StagePlan) -> PlannerCandidate:
     result = row["_result"]
     stage_compute = result["critical_path"].get("stage_compute_ns", {})
     tokens = max(int(row["generated_tokens"]), 1)
@@ -862,8 +862,7 @@ def _planner_candidate_from_stage(
         stage_compute_ns=compute_tuple,
         stage_weight_bytes=tuple(assignment.weight_bytes for assignment in plan.assignments),
         kv_cache_bytes=tuple(
-            assignment.kv_cache_bytes_per_token
-            * (int(row["generated_tokens"]) + 11)
+            assignment.kv_cache_bytes_per_token * (int(row["generated_tokens"]) + 11)
             for assignment in plan.assignments
         ),
         serial_boundaries=float(row["serial_waits_per_token"]),
@@ -884,7 +883,9 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
     run_id = options.run_id or _now_run_id()
     run_root = REPOSITORY_ROOT / "artifacts" / "runs" / run_id
     if run_root.exists() and not options.resume:
-        raise FileExistsError(f"run directory already exists; use -Resume or another -RunId: {run_root}")
+        raise FileExistsError(
+            f"run directory already exists; use -Resume or another -RunId: {run_root}"
+        )
     for directory in (
         "stage_plans",
         "baseline",
@@ -983,6 +984,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
         stage_count=2,
         method="equal",
         memory_limit_bytes=int(torch.cuda.get_device_properties(0).total_memory * 0.80),
+        device="cuda:0",
     )
     profile_reference = run_local_reference(
         model_path=model_path,
@@ -1032,7 +1034,9 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
 
     exactness_records: list[dict[str, Any]] = []
     if not options.network_only:
-        exact_plan_keys = [key for key in ("2_equal", "2_balanced", "4_equal", "4_balanced") if key in plans]
+        exact_plan_keys = [
+            key for key in ("2_equal", "2_balanced", "4_equal", "4_balanced") if key in plans
+        ]
         for key in exact_plan_keys:
             plan = plans[key]
             reference_root, reference_result = reference_by_ranges[_plan_ranges(plan)]
@@ -1073,12 +1077,8 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
                 "capture_exact": comparison["exact"],
                 "comparison_count": comparison["comparison_count"],
                 "capture_mismatch_count": comparison["mismatch_count"],
-                "maximum_absolute_difference_fp32": comparison[
-                    "maximum_absolute_difference_fp32"
-                ],
-                "maximum_relative_l2_error_fp32": comparison[
-                    "maximum_relative_l2_error_fp32"
-                ],
+                "maximum_absolute_difference_fp32": comparison["maximum_absolute_difference_fp32"],
+                "maximum_relative_l2_error_fp32": comparison["maximum_relative_l2_error_fp32"],
                 "serial_waits_per_token": result.critical_path["serial_waits_per_token"],
                 "messages_per_token": result.critical_path["messages_per_token"],
                 "fallback_used": result.fallback_used,
@@ -1139,9 +1139,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
             "maximum_relative_l2_error_fp32": compression_comparison[
                 "maximum_relative_l2_error_fp32"
             ],
-            "serial_waits_per_token": compression_result.critical_path[
-                "serial_waits_per_token"
-            ],
+            "serial_waits_per_token": compression_result.critical_path["serial_waits_per_token"],
             "messages_per_token": compression_result.critical_path["messages_per_token"],
             "fallback_used": compression_result.fallback_used,
             "stage_process_ids": list(compression_result.stage_process_ids),
@@ -1200,9 +1198,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
                 "errors": list(eight_result.errors),
                 "throughput_tps": eight_result.throughput_tps,
                 "messages_per_token": eight_result.critical_path["messages_per_token"],
-                "serial_waits_per_token": eight_result.critical_path[
-                    "serial_waits_per_token"
-                ],
+                "serial_waits_per_token": eight_result.critical_path["serial_waits_per_token"],
             }
             _write_json(run_root / "exactness" / "eight_stage_status.json", eight_status)
     _write_json(run_root / "exactness" / "exactness_summary.json", exactness_records)
@@ -1257,7 +1253,9 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
         network_rows.append(
             _archived_row(profile, profile_index, network_manifest["profiles"][profile])
         )
-    base_plan_keys = [key for key in ("2_equal", "2_balanced", "4_equal", "4_balanced") if key in plans]
+    base_plan_keys = [
+        key for key in ("2_equal", "2_balanced", "4_equal", "4_balanced") if key in plans
+    ]
     strategy_order_records = []
     base_stage_rows: list[dict[str, Any]] = []
     for profile_index, profile in enumerate(profiles, start=1):
@@ -1392,9 +1390,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
     for key in base_plan_keys:
         strategy = f"stage_ring_exact_{key}"
         values = [
-            float(row["throughput_tps"])
-            for row in base_stage_rows
-            if row["strategy"] == strategy
+            float(row["throughput_tps"]) for row in base_stage_rows if row["strategy"] == strategy
         ]
         strategy_geomeans[key] = _geometric_mean(values)
     best_base_key = max(strategy_geomeans, key=strategy_geomeans.get)
@@ -1429,16 +1425,12 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
     planner_decisions: dict[str, Any] = {}
     final_stage_rows: list[dict[str, Any]] = []
     selected_candidate_by_profile: dict[str, str] = {}
-    plan_by_strategy = {
-        f"stage_ring_exact_{key}": plan for key, plan in plans.items()
-    }
+    plan_by_strategy = {f"stage_ring_exact_{key}": plan for key, plan in plans.items()}
     plan_by_strategy[f"stage_ring_exact_{best_base_key}_adaptive"] = best_base_plan
     for profile_index, profile in enumerate(profiles, start=1):
         baseline_row = next(row for row in baseline_gate_rows if row["profile_name"] == profile)
         stage_rows = [
-            row
-            for row in [*base_stage_rows, *adaptive_rows]
-            if row["profile_name"] == profile
+            row for row in [*base_stage_rows, *adaptive_rows] if row["profile_name"] == profile
         ]
         stage_candidates = [
             _planner_candidate_from_stage(row, plan_by_strategy[str(row["strategy"])])
@@ -1460,8 +1452,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
             ),
             stage_weight_bytes=tuple(
                 int(json.loads((Path(path) / "manifest.json").read_text())["total_bytes"])
-                if "total_bytes"
-                in json.loads((Path(path) / "manifest.json").read_text())
+                if "total_bytes" in json.loads((Path(path) / "manifest.json").read_text())
                 else 0
                 for path in assets.worker_bank_paths
             ),
@@ -1483,7 +1474,9 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
             stage_compute_ns=(
                 int(float(native_local["model_elapsed_seconds"]) / token_count * 1e9),
             ),
-            stage_weight_bytes=(sum(path.stat().st_size for path in model_path.glob("model-*.safetensors")),),
+            stage_weight_bytes=(
+                sum(path.stat().st_size for path in model_path.glob("model-*.safetensors")),
+            ),
             kv_cache_bytes=(0,),
             serial_boundaries=0,
             payload_bytes_per_token=0,
@@ -1606,7 +1599,9 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
                 "exact_token_identity": True,
                 "oracle_proposals_used": False,
                 "planner_enabled": False,
-                "planner_reason": "explicitly skipped" if options.skip_speculation else "network-only run",
+                "planner_reason": "explicitly skipped"
+                if options.skip_speculation
+                else "network-only run",
                 "evidence_category": "OPTIONAL_DIAGNOSTIC_SKIPPED",
                 "throughput_multiple_vs_non_speculative": 0.0,
             }
@@ -1687,7 +1682,9 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
             output_directory=run_root / "failures",
             generated_token_count=min(token_count, 4),
         )
-        shutil.copy2(run_root / "failures" / "failure_summary.csv", run_root / "failure_summary.csv")
+        shutil.copy2(
+            run_root / "failures" / "failure_summary.csv", run_root / "failure_summary.csv"
+        )
     else:
         failure_results = [
             {
@@ -1697,9 +1694,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
                 "exact_continuation": False,
             }
         ]
-        write_csv(
-            run_root / "failure_summary.csv", failure_results, tuple(failure_results[0])
-        )
+        write_csv(run_root / "failure_summary.csv", failure_results, tuple(failure_results[0]))
 
     # Flatten the final public evidence table only after all raw records exist.
     network_public = [_public_row(row) for row in network_rows]
@@ -1742,12 +1737,8 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
                 "socket_ns_per_token": critical["socket_ns_per_token"],
                 "queue_ns_per_token": critical["queue_ns_per_token"],
                 "model_compute_ns_per_token": critical["model_compute_ns_per_token"],
-                "coordinator_blocked_ns_per_token": critical[
-                    "coordinator_blocked_ns_per_token"
-                ],
-                "communication_compute_overlap_ns": critical[
-                    "communication_compute_overlap_ns"
-                ],
+                "coordinator_blocked_ns_per_token": critical["coordinator_blocked_ns_per_token"],
+                "communication_compute_overlap_ns": critical["communication_compute_overlap_ns"],
                 "gpu_idle_ns": critical["gpu_idle_ns"],
                 "ttft_seconds": row["ttft_seconds"],
                 "mean_itl_seconds": row["mean_itl_seconds"],
@@ -1775,8 +1766,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
                 "socket_ns_per_token": int(source.get("rpc_transport_ns", 0)) / tokens,
                 "queue_ns_per_token": int(source.get("rpc_queue_ns", 0)) / tokens,
                 "model_compute_ns_per_token": int(source.get("rpc_compute_ns", 0)) / tokens,
-                "coordinator_blocked_ns_per_token": int(source.get("rpc_transport_ns", 0))
-                / tokens,
+                "coordinator_blocked_ns_per_token": int(source.get("rpc_transport_ns", 0)) / tokens,
                 "communication_compute_overlap_ns": 0,
                 "gpu_idle_ns": 0,
                 "ttft_seconds": row["ttft_seconds"],
@@ -1804,8 +1794,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
         for row in final_stage_rows
         for edge in row["_result"]["critical_path"]["dependency_edges"]
     ) and all(
-        not row["_result"]["critical_path"]["invalid_dependency_links"]
-        for row in final_stage_rows
+        not row["_result"]["critical_path"]["invalid_dependency_links"] for row in final_stage_rows
     )
     _write_json(
         run_root / "traces" / "index.json",
@@ -1903,7 +1892,9 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
         speculation_results=speculation_results,
         concurrency_results=concurrency_results,
         regression_tests_passed=bool(final_tests["passed"]),
-        evidence_complete=bool(validation["valid"] and chart_inspection["all_minimum_dimensions_met"]),
+        evidence_complete=bool(
+            validation["valid"] and chart_inspection["all_minimum_dimensions_met"]
+        ),
     )
     if not options.canonical:
         verdict = "QUICK_DIAGNOSTIC_NO_CLOSURE"
@@ -1916,9 +1907,7 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
             "verdict": verdict,
             "canonical": options.canonical,
             "quick_cannot_close": not options.canonical,
-            "core_gates_passed": [
-                row["gate"] for row in gates if row["status"] == "PASS"
-            ],
+            "core_gates_passed": [row["gate"] for row in gates if row["status"] == "PASS"],
             "gates_failed": [row["gate"] for row in gates if row["status"] == "FAIL"],
             "thresholds_changed_after_results": False,
         },
@@ -1985,11 +1974,15 @@ def run_experiment(options: ExperimentOptions) -> tuple[Path, Path, str]:
 
     summary_by_profile = {row["profile_name"]: row for row in summary_rows}
     selected_raw = final_stage_rows
-    old_waits = statistics.median(float(row["serial_waits_per_token"]) for row in baseline_gate_rows)
+    old_waits = statistics.median(
+        float(row["serial_waits_per_token"]) for row in baseline_gate_rows
+    )
     new_waits = statistics.median(float(row["serial_waits_per_token"]) for row in selected_raw)
     old_messages = statistics.median(float(row["messages_per_token"]) for row in baseline_gate_rows)
     new_messages = statistics.median(float(row["messages_per_token"]) for row in selected_raw)
-    old_bytes = statistics.median(float(row["payload_bytes_per_token"]) for row in baseline_gate_rows)
+    old_bytes = statistics.median(
+        float(row["payload_bytes_per_token"]) for row in baseline_gate_rows
+    )
     new_bytes = statistics.median(float(row["payload_bytes_per_token"]) for row in selected_raw)
     best_topology = statistics.mode(int(row["stage_count"]) for row in final_stage_rows)
     print(f"Experiment verdict: {verdict}")

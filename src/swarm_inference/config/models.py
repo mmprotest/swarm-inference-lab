@@ -212,6 +212,20 @@ class WorkerCapability(StrictModel):
     profile_source: Literal["measured", "assumed", "mixed"] = "measured"
     cpu_affinity: list[NonNegativeInt] = Field(default_factory=list)
     single_thread_environment: dict[str, str] = Field(default_factory=dict)
+    # Optional stage-runtime fields preserve compatibility with capability
+    # documents emitted before the direct product data plane existed.
+    control_endpoint: str | None = None
+    data_plane_endpoint: str | None = None
+    device_identifier: str | None = None
+    stage_ring_protocol_version: PositiveInt | None = None
+    supported_model_adapters: list[str] = Field(default_factory=list)
+    supported_stage_execution_backends: list[str] = Field(default_factory=list)
+    supported_activation_dtypes: list[str] = Field(default_factory=list)
+    configured_memory_limit_bytes: PositiveInt | None = None
+    currently_loaded_model_revisions: list[str] = Field(default_factory=list)
+    currently_loaded_topology_ids: list[str] = Field(default_factory=list)
+    active_session_count: NonNegativeInt = 0
+    stage_runtime_enabled: bool = False
 
     @property
     def effective_memory_bytes(self) -> int:

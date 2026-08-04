@@ -15,8 +15,8 @@ from typing import Any
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from swarm_inference.experiments.experiment_011.partition import StagePlan
-from swarm_inference.experiments.experiment_011.tensor_transport import tensor_raw_bytes
+from swarm_inference.model.partition import StagePlan
+from swarm_inference.transport.stage_tensor import tensor_raw_bytes
 
 
 @dataclass(frozen=True, slots=True)

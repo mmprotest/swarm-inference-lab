@@ -27,9 +27,7 @@ class CacheState:
     misses: int = 0
     evictions: int = 0
 
-    def access(
-        self, key: tuple[int, int, int | None, int | None], entry_bytes: int
-    ) -> None:
+    def access(self, key: tuple[int, int, int | None, int | None], entry_bytes: int) -> None:
         if key in self.entries:
             self.hits += 1
             self.entries.move_to_end(key)
@@ -65,9 +63,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         raise FileNotFoundError(path)
     return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
 
 
@@ -132,8 +128,7 @@ def _request_directories(run_directory: Path) -> list[Path]:
     if (run_directory / "coordinator-telemetry.jsonl").is_file():
         return [run_directory]
     requests = sorted(
-        path.parent
-        for path in run_directory.glob("request-*/coordinator-telemetry.jsonl")
+        path.parent for path in run_directory.glob("request-*/coordinator-telemetry.jsonl")
     )
     if not requests:
         raise FileNotFoundError(f"no coordinator telemetry below {run_directory}")
@@ -200,7 +195,11 @@ def _select_cache_plateau(
             return None
         signature = signatures[position]
         seen_transitions: set[
-            tuple[tuple[int, ...], tuple[int, int, int], tuple[tuple[int, int, int | None, int | None], ...]]
+            tuple[
+                tuple[int, ...],
+                tuple[int, int, int],
+                tuple[tuple[int, int, int | None, int | None], ...],
+            ]
         ] = set()
         for choice in candidates[signature]:
             identity = id(choice)
@@ -208,11 +207,7 @@ def _select_cache_plateau(
                 continue
             trial = _copy_cache(state)
             _apply_cache_event(trial, choice, entry_sizes, slices)
-            if (
-                trial.hits > target[0]
-                or trial.misses > target[1]
-                or trial.evictions > target[2]
-            ):
+            if trial.hits > target[0] or trial.misses > target[1] or trial.evictions > target[2]:
                 continue
             transition = (
                 tuple(int(value) for value in choice.get("expert_ids") or []),
@@ -256,9 +251,7 @@ def _commit_cache_plateau(
     selected_ids = set(selected)
     for signature in set(signatures):
         candidates[signature] = [
-            choice
-            for choice in candidates[signature]
-            if id(choice) not in selected_ids
+            choice for choice in candidates[signature] if id(choice) not in selected_ids
         ]
     return next_cache
 
@@ -295,9 +288,7 @@ def _select_cache_window(
         ] = set()
         for record_position in available:
             record_index, signature = records[record_position]
-            remaining_positions = tuple(
-                value for value in available if value != record_position
-            )
+            remaining_positions = tuple(value for value in available if value != record_position)
             for choice in candidates[signature]:
                 identity = id(choice)
                 if identity in used_events:
@@ -322,9 +313,7 @@ def _select_cache_window(
                 if transition in seen:
                     continue
                 seen.add(transition)
-                result = visit(
-                    trial, remaining_positions, used_events | {identity}
-                )
+                result = visit(trial, remaining_positions, used_events | {identity})
                 if result is not None:
                     final_state, selected_events, selected_records = result
                     return (
@@ -357,9 +346,7 @@ def _replay_worker_cache(
     trace_offsets: dict[Path, int],
     trace_cache: dict[Path, list[dict[str, Any]]],
     caches: dict[str, CacheState],
-    entry_sizes: dict[
-        str, dict[tuple[int, int, int | None, int | None], int]
-    ],
+    entry_sizes: dict[str, dict[tuple[int, int, int | None, int | None], int]],
     slices: dict[tuple[str, int, int], tuple[int | None, int | None]],
 ) -> None:
     """Replay native serialized cache transitions and reject any mismatch."""
@@ -370,9 +357,7 @@ def _replay_worker_cache(
     for item in accounting:
         worker_id = str(item["worker_id"])
         worker_events = by_worker[worker_id]
-        candidates: dict[tuple[str, int, int, int], list[dict[str, Any]]] = defaultdict(
-            list
-        )
+        candidates: dict[tuple[str, int, int, int], list[dict[str, Any]]] = defaultdict(list)
         for event in worker_events:
             candidates[
                 (
@@ -386,8 +371,7 @@ def _replay_worker_cache(
         if telemetry_path not in trace_cache:
             loaded_trace = _read_jsonl(telemetry_path)
             if loaded_trace and all(
-                isinstance(event.get("execution_sequence"), int)
-                for event in loaded_trace
+                isinstance(event.get("execution_sequence"), int) for event in loaded_trace
             ):
                 loaded_trace.sort(key=lambda event: int(event["execution_sequence"]))
             elif loaded_trace and all(
@@ -417,13 +401,9 @@ def _replay_worker_cache(
                 continue
             choice = min(
                 choices,
-                key=lambda event: abs(
-                    int(event["_worker_rpc_ns"]) - int(native["duration_ns"])
-                ),
+                key=lambda event: abs(int(event["_worker_rpc_ns"]) - int(native["duration_ns"])),
             )
-            _apply_cache_event(
-                caches[worker_id], choice, entry_sizes[worker_id], slices
-            )
+            _apply_cache_event(caches[worker_id], choice, entry_sizes[worker_id], slices)
             choices.remove(choice)
             matched += 1
             last_index = index + 1
@@ -503,9 +483,7 @@ def _route_groups(
         raise ValueError("route trace has no initial prefill rows")
     return [
         (
-            0
-            if call_id < routed_layer_count
-            else prefill_rows + call_id // routed_layer_count - 1,
+            0 if call_id < routed_layer_count else prefill_rows + call_id // routed_layer_count - 1,
             layer,
             dict(destinations),
         )
@@ -537,9 +515,9 @@ def _bank_entries(path: Path) -> dict[tuple[int, int, int | None, int | None], i
         "native_colibri_whole_experts",
     }:
         for expert in manifest["experts"]:
-            entries[
-                (int(expert["layer_id"]), int(expert["expert_id"]), None, None)
-            ] = int(expert["expert_bytes"])
+            entries[(int(expert["layer_id"]), int(expert["expert_id"]), None, None)] = int(
+                expert["expert_bytes"]
+            )
     elif manifest["bank_kind"] in {"microshard", "native_colibri_microshards"}:
         for shard in manifest["shards"]:
             entries[
@@ -636,9 +614,7 @@ def replay_behavioral_parity(
             expected_events: list[dict[str, Any]] = []
             coordinator: list[dict[str, Any]] = []
             for request_directory in request_directories:
-                groups, request_selections = _route_groups(
-                    request_directory / "route.trace", plan
-                )
+                groups, request_selections = _route_groups(request_directory / "route.trace", plan)
                 source_selection_count += request_selections
                 for token_position, layer_id, destinations in groups:
                     for worker_id in plan["reduction_order"]:
@@ -661,9 +637,7 @@ def replay_behavioral_parity(
                         **event,
                         "_scope": request_directory.name,
                     }
-                    for event in _read_jsonl(
-                        request_directory / "coordinator-telemetry.jsonl"
-                    )
+                    for event in _read_jsonl(request_directory / "coordinator-telemetry.jsonl")
                 )
             wire_bytes: dict[tuple[str, str, str], dict[str, int]] = defaultdict(dict)
             worker_timings: dict[tuple[str, str, str], dict[str, int]] = defaultdict(dict)
@@ -762,8 +736,7 @@ def replay_behavioral_parity(
             actual_payload_bytes = sum(
                 int(event.get("byte_count", 0))
                 for event in coordinator
-                if event.get("event")
-                in {"expert_rpc_bytes_sent", "expert_rpc_bytes_received"}
+                if event.get("event") in {"expert_rpc_bytes_sent", "expert_rpc_bytes_received"}
             )
             expected_payload_bytes = int(float(row["rpc_raw_payload_bytes"]))
             expected_messages = int(float(row["rpc_message_count"]))
@@ -791,11 +764,13 @@ def replay_behavioral_parity(
             )
             actual_fallbacks = event_names["expert_rpc_fallback"]
             actual_duplicates = sum(
-                count for name, count in event_names.items() if "duplicate" in name and "started" in name
+                count
+                for name, count in event_names.items()
+                if "duplicate" in name and "started" in name
             )
-            actual_failures = event_names["expert_rpc_timeout"] + event_names[
-                "expert_rpc_invalid_response"
-            ]
+            actual_failures = (
+                event_names["expert_rpc_timeout"] + event_names["expert_rpc_invalid_response"]
+            )
             checks = {
                 "route_event_identity": expected_signatures == actual_signatures,
                 "expert_selection_count": (
@@ -847,8 +822,7 @@ def replay_behavioral_parity(
                         str(path / "route.trace") for path in request_directories
                     ],
                     "coordinator_telemetry_paths": [
-                        str(path / "coordinator-telemetry.jsonl")
-                        for path in request_directories
+                        str(path / "coordinator-telemetry.jsonl") for path in request_directories
                     ],
                     "worker_telemetry_paths": sorted(
                         {str(item["worker_telemetry"]) for item in accounting}
@@ -899,9 +873,7 @@ def _first_token_transport_ns(run_directory: Path) -> int:
     for request_directory in _request_directories(run_directory):
         total = 0
         saw_token_zero = False
-        with (request_directory / "coordinator-telemetry.jsonl").open(
-            encoding="utf-8"
-        ) as handle:
+        with (request_directory / "coordinator-telemetry.jsonl").open(encoding="utf-8") as handle:
             for line in handle:
                 if "expert_rpc_transport_ns" not in line:
                     continue
@@ -915,9 +887,7 @@ def _first_token_transport_ns(run_directory: Path) -> int:
                 elif saw_token_zero:
                     break
         if not saw_token_zero:
-            raise ValueError(
-                f"no token-zero RPC transport events in {request_directory}"
-            )
+            raise ValueError(f"no token-zero RPC transport events in {request_directory}")
         request_totals.append(total)
     return max(request_totals)
 
@@ -928,16 +898,12 @@ def _worker_subset(row: dict[str, Any]) -> tuple[str, ...]:
         accounting = row.get("worker_process_accounting")
         if accounting in (None, ""):
             return ()
-        return tuple(
-            sorted(str(item["worker_id"]) for item in json.loads(str(accounting)))
-        )
+        return tuple(sorted(str(item["worker_id"]) for item in json.loads(str(accounting))))
     values = json.loads(str(raw)) if isinstance(raw, str) else raw
     return tuple(sorted(str(value) for value in values))
 
 
-def _timing_sample(
-    row: dict[str, str], *, table_kind: str
-) -> dict[str, Any] | None:
+def _timing_sample(row: dict[str, str], *, table_kind: str) -> dict[str, Any] | None:
     if row.get("configuration") == "local":
         return None
     if row.get("measurement_status") not in (None, "", "MEASURED"):
@@ -963,33 +929,25 @@ def _timing_sample(
     requests = json.loads(row["requests"]) if row.get("requests") else []
     concurrency = int(_number(row, "concurrency", 1.0))
     if requests:
-        critical_transport_ns = max(
-            _number(item, "rpc_transport_ns") for item in requests
-        )
+        critical_transport_ns = max(_number(item, "rpc_transport_ns") for item in requests)
         prompt_tokens = float(
             statistics.median(_number(item, "prompt_tokens") for item in requests)
         )
         output_tokens = float(
             statistics.median(_number(item, "generated_tokens") for item in requests)
         )
-        measured_ttft_ns = max(
-            _number(item, "ttft_seconds") for item in requests
-        ) * 1e9
+        measured_ttft_ns = max(_number(item, "ttft_seconds") for item in requests) * 1e9
     else:
         critical_transport_ns = _number(row, "rpc_transport_ns")
         prompt_tokens = _number(row, "prompt_tokens")
         output_tokens = _number(row, "generated_tokens")
         measured_ttft_ns = _number(row, "ttft_seconds") * 1e9
 
-    measured_total_ns = _number(row, "group_elapsed_ns") or _number(
-        row, "wall_elapsed_ns"
+    measured_total_ns = _number(row, "group_elapsed_ns") or _number(row, "wall_elapsed_ns")
+    measured_p95_ns = _number(row, "p95_latency_seconds") * 1e9 or measured_total_ns
+    measured_throughput = _number(row, "aggregate_verified_tokens_per_second") or _number(
+        row, "decode_tokens_per_second"
     )
-    measured_p95_ns = (
-        _number(row, "p95_latency_seconds") * 1e9 or measured_total_ns
-    )
-    measured_throughput = _number(
-        row, "aggregate_verified_tokens_per_second"
-    ) or _number(row, "decode_tokens_per_second")
     verified_tokens = _number(row, "verified_tokens") or output_tokens
     worker_count = int(_number(row, "worker_count"))
     if not all(
@@ -1158,26 +1116,16 @@ def _configuration_split(
     # select the same requested number of held-out complete configurations
     # from phases with an independently measured calibration peer.
     forced_calibration = {
-        str(row["configuration_id"])
-        for row in rows
-        if phase_counts[str(row["phase"])] == 1
+        str(row["configuration_id"]) for row in rows if phase_counts[str(row["phase"])] == 1
     }
     ordered = sorted(
         [row for row in rows if row["configuration_id"] not in forced_calibration],
-        key=lambda row: hashlib.sha256(
-            f"{seed}|{row['configuration_id']}".encode()
-        ).digest(),
+        key=lambda row: hashlib.sha256(f"{seed}|{row['configuration_id']}".encode()).digest(),
     )
     validation_count = max(1, round(len(ordered) * validation_fraction))
-    validation_ids = {
-        str(row["configuration_id"]) for row in ordered[:validation_count]
-    }
-    calibration = [
-        row for row in rows if str(row["configuration_id"]) not in validation_ids
-    ]
-    validation = [
-        row for row in rows if str(row["configuration_id"]) in validation_ids
-    ]
+    validation_ids = {str(row["configuration_id"]) for row in ordered[:validation_count]}
+    calibration = [row for row in rows if str(row["configuration_id"]) not in validation_ids]
+    validation = [row for row in rows if str(row["configuration_id"]) in validation_ids]
     return calibration, validation
 
 
@@ -1216,10 +1164,7 @@ def _fit_linear(
 
 def _predict_linear(model: dict[str, Any], row: dict[str, Any]) -> float:
     values = np.asarray(
-        [
-            1.0 if name == "intercept" else float(row[name])
-            for name in model["feature_names"]
-        ],
+        [1.0 if name == "intercept" else float(row[name]) for name in model["feature_names"]],
         dtype=np.float64,
     )
     scales = np.asarray(model["feature_scales"], dtype=np.float64)
@@ -1313,14 +1258,10 @@ def _recovery_validation(path: Path) -> tuple[dict[str, Any], list[dict[str, Any
         raise ValueError("recovery calibration needs four measured recoverable scenarios")
     ordered = sorted(
         rows,
-        key=lambda row: hashlib.sha256(
-            f"1010|recovery|{row['scenario']}".encode()
-        ).digest(),
+        key=lambda row: hashlib.sha256(f"1010|recovery|{row['scenario']}".encode()).digest(),
     )
     validation_count = max(1, round(len(rows) * 0.30))
-    validation_ids = {
-        str(row["configuration_id"]) for row in ordered[:validation_count]
-    }
+    validation_ids = {str(row["configuration_id"]) for row in ordered[:validation_count]}
     calibration = [row for row in rows if row["configuration_id"] not in validation_ids]
     validation = [row for row in rows if row["configuration_id"] in validation_ids]
     model = _fit_linear(
@@ -1337,9 +1278,7 @@ def _recovery_validation(path: Path) -> tuple[dict[str, Any], list[dict[str, Any
                 "row_type": "failure_recovery",
                 "partition": "held_out_validation",
                 "predicted_recovery_ns": prediction,
-                "recovery_error_fraction": _fraction_error(
-                    prediction, row["measured_recovery_ns"]
-                ),
+                "recovery_error_fraction": _fraction_error(prediction, row["measured_recovery_ns"]),
             }
         )
     payload = {
@@ -1368,13 +1307,9 @@ def calibrate_real_path_timing(
 
     rows = _load_timing_rows(analysis)
     calibration, validation = _configuration_split(rows)
-    single_calibration = [
-        row for row in calibration if row["phase"] in {"decode", "prefill"}
-    ]
+    single_calibration = [row for row in calibration if row["phase"] in {"decode", "prefill"}]
     parallel_calibration = [
-        row
-        for row in calibration
-        if row["phase"] in {"concurrent_decode", "mixed_service"}
+        row for row in calibration if row["phase"] in {"concurrent_decode", "mixed_service"}
     ]
     base_single_model = _fit_linear(
         single_calibration,
@@ -1394,9 +1329,7 @@ def calibrate_real_path_timing(
     p95_ratios, p95_default = _median_ratios(
         calibration,
         lambda row: (
-            "parallel"
-            if row["phase"] in {"concurrent_decode", "mixed_service"}
-            else "serial"
+            "parallel" if row["phase"] in {"concurrent_decode", "mixed_service"} else "serial"
         ),
         lambda row: row["measured_p95_ns"],
         lambda row: row["measured_total_ns"],
@@ -1423,16 +1356,12 @@ def calibrate_real_path_timing(
             * throughput_ratios.get(throughput_class, throughput_default)
         )
         p95_class = "parallel" if parallel else "serial"
-        predicted_p95_ns = predicted_total_ns * p95_ratios.get(
-            p95_class, p95_default
-        )
+        predicted_p95_ns = predicted_total_ns * p95_ratios.get(p95_class, p95_default)
         predicted_ttft_ns = max(
             row["first_token_transport_ns"] + _predict_linear(ttft_model, row),
             1.0,
         )
-        predicted_utilization = row["rpc_compute_ns"] / (
-            row["worker_count"] * predicted_total_ns
-        )
+        predicted_utilization = row["rpc_compute_ns"] / (row["worker_count"] * predicted_total_ns)
         scored.append(
             {
                 **row,
@@ -1450,12 +1379,8 @@ def calibrate_real_path_timing(
                 "throughput_error_fraction": _fraction_error(
                     predicted_throughput, row["measured_throughput"]
                 ),
-                "p95_error_fraction": _fraction_error(
-                    predicted_p95_ns, row["measured_p95_ns"]
-                ),
-                "ttft_error_fraction": _fraction_error(
-                    predicted_ttft_ns, row["measured_ttft_ns"]
-                ),
+                "p95_error_fraction": _fraction_error(predicted_p95_ns, row["measured_p95_ns"]),
+                "ttft_error_fraction": _fraction_error(predicted_ttft_ns, row["measured_ttft_ns"]),
                 "network_bytes_error_fraction": _fraction_error(
                     row["rpc_raw_payload_bytes"], row["measured_network_bytes"]
                 ),
@@ -1469,15 +1394,9 @@ def calibrate_real_path_timing(
         )
 
     ranking, regret, ranking_pairs = _ranking_and_regret(scored)
-    throughput_error = float(
-        statistics.median(row["throughput_error_fraction"] for row in scored)
-    )
-    p95_error = float(
-        np.percentile([row["p95_error_fraction"] for row in scored], 95)
-    )
-    ttft_error = float(
-        statistics.median(row["ttft_error_fraction"] for row in scored)
-    )
+    throughput_error = float(statistics.median(row["throughput_error_fraction"] for row in scored))
+    p95_error = float(np.percentile([row["p95_error_fraction"] for row in scored], 95))
+    ttft_error = float(statistics.median(row["ttft_error_fraction"] for row in scored))
     recovery, recovery_rows = _recovery_validation(failure_results)
     gates = {
         "behavioral_parity_pass": bool(behavioral["all_exact"]),
@@ -1496,9 +1415,7 @@ def calibrate_real_path_timing(
         bool(value) for name, value in gates.items() if name.endswith("_pass")
     )
     prediction_category = (
-        "SIMULATED_CALIBRATED"
-        if gates["all_gates_pass"]
-        else "SIMULATED_UNCALIBRATED"
+        "SIMULATED_CALIBRATED" if gates["all_gates_pass"] else "SIMULATED_UNCALIBRATED"
     )
     for row in (*scored, *recovery_rows):
         row["prediction_category"] = prediction_category
@@ -1552,17 +1469,11 @@ def calibrate_real_path_timing(
             "maximum_network_bytes_error_fraction": max(
                 row["network_bytes_error_fraction"] for row in scored
             ),
-            "maximum_queue_error_fraction": max(
-                row["queue_error_fraction"] for row in scored
-            ),
+            "maximum_queue_error_fraction": max(row["queue_error_fraction"] for row in scored),
             "p95_worker_utilization_error_fraction": float(
-                np.percentile(
-                    [row["worker_utilization_error_fraction"] for row in scored], 95
-                )
+                np.percentile([row["worker_utilization_error_fraction"] for row in scored], 95)
             ),
-            "held_out_recovery_error_fraction": recovery[
-                "held_out_error_fraction"
-            ],
+            "held_out_recovery_error_fraction": recovery["held_out_error_fraction"],
         },
         "acceptance_thresholds": {
             "median_throughput_error_fraction": 0.10,

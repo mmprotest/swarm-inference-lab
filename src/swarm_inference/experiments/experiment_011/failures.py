@@ -11,18 +11,18 @@ from pathlib import Path
 from typing import Any
 
 from swarm_inference.experiments.experiment_010.schemas import NetworkShapeProfile
-from swarm_inference.experiments.experiment_011.partition import StagePlan
-from swarm_inference.experiments.experiment_011.protocol import (
+from swarm_inference.experiments.experiment_011.runtime import (
+    FailureInjection,
+    StageRingController,
+)
+from swarm_inference.model.partition import StagePlan
+from swarm_inference.protocol.stage_ring import (
     MessageSequenceValidator,
     Operation,
     SessionValidator,
     StageMessage,
     encode_message,
     recv_message,
-)
-from swarm_inference.experiments.experiment_011.runtime import (
-    FailureInjection,
-    StageRingController,
 )
 
 

@@ -101,8 +101,7 @@ def _measured_timing_rows() -> list[dict[str, Any]]:
                 "measured_ttft_ns": 1e9 + index * 1e7 + 0.2e9 + 2e7 * prompt_tokens,
                 "measured_network_bytes": 1_000_000.0 + index,
                 "measured_queue_ns": index * 1000.0,
-                "measured_worker_utilization": compute_ns
-                / ((2 if micro else 4) * total_ns),
+                "measured_worker_utilization": compute_ns / ((2 if micro else 4) * total_ns),
                 "sample_count": 3,
                 "run_ids": [f"run-{index}"],
                 "source_paths": [f"measurement-{index}.json"],
@@ -138,9 +137,7 @@ def _measured_timing_rows() -> list[dict[str, Any]]:
 
 
 @pytest.fixture
-def calibrated_simulator(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> dict[str, Any]:
+def calibrated_simulator(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     output = tmp_path / "simulator"
     output.mkdir()
     (output / "simulator_behavioral_parity.json").write_text(

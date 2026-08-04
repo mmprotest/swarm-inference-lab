@@ -74,10 +74,12 @@ class Experiment008ProfilingConfig(StrictModel):
         return self
 
 
+def _default_gpu_layers() -> list[int | Literal["auto", "all"]]:
+    return ["auto", 24, 32, 40, 48]
+
+
 class Experiment008BaselineSearchConfig(StrictModel):
-    gpu_layers: list[int | Literal["auto", "all"]] = Field(
-        default_factory=lambda: ["auto", 24, 32, 40, 48]
-    )
+    gpu_layers: list[int | Literal["auto", "all"]] = Field(default_factory=_default_gpu_layers)
     cpu_threads: list[int] = Field(default_factory=lambda: [8, 12, 16, 20])
     batch_sizes: list[int] = Field(default_factory=lambda: [512, 1024, 2048])
     microbatch_sizes: list[int] = Field(default_factory=lambda: [128, 256, 512])

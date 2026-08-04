@@ -12,7 +12,6 @@ import numpy as np
 
 from swarm_inference.config.models import BackpressurePolicy, QueueConfig
 from swarm_inference.exceptions import BackpressureError
-from swarm_inference.experiments.fanout_lifecycle import lifecycle_recorder
 from swarm_inference.model.stage_module import (
     BatchExecutionMetadata,
     BatchStageModule,
@@ -21,6 +20,7 @@ from swarm_inference.model.stage_module import (
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.messages import ActivationRequest, ActivationResult
 from swarm_inference.protocol.tensor_codec import decode_tensor, encode_tensor
+from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
 from swarm_inference.worker.metrics import WorkerMetrics
@@ -214,7 +214,7 @@ class ExecutionEngine:
             raise BackpressureError(
                 f"batched stage returned batch {int(output_batch.shape[0])}, expected {len(items)}"
             )
-        recorder = lifecycle_recorder()
+        recorder = lifecycle_observer()
         if recorder is not None:
             recorder.emit(
                 "real_batch_forward_completed",
@@ -249,7 +249,7 @@ class ExecutionEngine:
         if activation.stage_id != request.metadata.stage_id:
             raise BackpressureError("activation stage ID does not match metadata")
         module = self.shards.module(request.metadata.stage_id)
-        recorder = lifecycle_recorder()
+        recorder = lifecycle_observer()
         operation_started_ns = time.monotonic_ns()
         if recorder is not None:
             operation_details = {

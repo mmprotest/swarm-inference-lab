@@ -95,9 +95,7 @@ class RelayServer(socketserver.ThreadingTCPServer):
                 f"{self.metrics_path.name}.{os.getpid()}.{threading.get_ident()}.tmp"
             )
             try:
-                temporary.write_text(
-                    json.dumps(self.snapshot(), indent=2) + "\n", encoding="utf-8"
-                )
+                temporary.write_text(json.dumps(self.snapshot(), indent=2) + "\n", encoding="utf-8")
                 temporary.replace(self.metrics_path)
             except OSError as error:
                 self.metrics_write_failures += 1
@@ -131,9 +129,7 @@ class RelayHandler(socketserver.BaseRequestHandler):
                 while True:
                     framed_size = len(payload) + _LENGTH.size
                     with self.server.shaper.flow(3600.0):
-                        self.server.shaper.enforce(
-                            framed_size, direction="relay_to_worker"
-                        )
+                        self.server.shaper.enforce(framed_size, direction="relay_to_worker")
                     worker.sendall(frame_with_length(payload))
                     response = _recv_frame(worker)
                     with self.server.shaper.flow(3600.0):
@@ -143,9 +139,7 @@ class RelayHandler(socketserver.BaseRequestHandler):
                         )
                     self.request.sendall(frame_with_length(response))
                     self.server.forwarded_requests += 1
-                    self.server.forwarded_bytes += (
-                        framed_size + len(response) + _LENGTH.size
-                    )
+                    self.server.forwarded_bytes += framed_size + len(response) + _LENGTH.size
                     if self.server.forwarded_requests % 64 == 0:
                         self.server.save_metrics()
                     try:
@@ -325,9 +319,7 @@ class ExpertRelayManager:
         if response.kind != "control" or not response.semantic.get("ok"):
             raise RuntimeError(str(response.semantic.get("error", "relay snapshot failed")))
         metrics = dict(response.semantic["metrics"])
-        relay.metrics_path.write_text(
-            json.dumps(metrics, indent=2) + "\n", encoding="utf-8"
-        )
+        relay.metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
         return metrics
 
     def snapshots(self) -> list[dict[str, Any]]:

@@ -6,12 +6,12 @@ import asyncio
 import time
 from collections.abc import AsyncIterator
 from dataclasses import asdict, dataclass
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import grpc
 
 from swarm_inference.config.models import StrictModel, SyntheticModelConfig
-from swarm_inference.exceptions import TransportError
+from swarm_inference.exceptions import MemoryLimitExceededError, TransportError
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.messages import (
     Ack,
@@ -29,7 +29,25 @@ from swarm_inference.protocol.messages import (
     parse_message,
     serialize_message,
 )
+from swarm_inference.protocol.stage_worker import (
+    CancelStageSessionRequest,
+    CloseStageSessionRequest,
+    DrainWorkerRequest,
+    GetStageCapabilitiesRequest,
+    GetStageCapabilitiesResponse,
+    GetStageStatusRequest,
+    InstallStageRouteRequest,
+    LoadStageRequest,
+    OpenStageSessionRequest,
+    RemoveStageRouteRequest,
+    StageActionResponse,
+    StageStatusResponse,
+    UnloadStageRequest,
+)
 from swarm_inference.worker.agent import WorkerAgent
+
+if TYPE_CHECKING:
+    from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
 
@@ -254,6 +272,93 @@ class GrpcTransport:
             HealthResponse,
         )
 
+    async def get_stage_capabilities(
+        self,
+        endpoint: str,
+        request: GetStageCapabilitiesRequest,
+    ) -> GetStageCapabilitiesResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/GetStageCapabilities",
+            request,
+            GetStageCapabilitiesResponse,
+        )
+
+    async def load_stage(self, endpoint: str, request: LoadStageRequest) -> StageActionResponse:
+        return await self._unary(
+            endpoint, "/swarm.v1.Worker/LoadStage", request, StageActionResponse
+        )
+
+    async def unload_stage(self, endpoint: str, request: UnloadStageRequest) -> StageActionResponse:
+        return await self._unary(
+            endpoint, "/swarm.v1.Worker/UnloadStage", request, StageActionResponse
+        )
+
+    async def install_stage_route(
+        self, endpoint: str, request: InstallStageRouteRequest
+    ) -> StageActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/InstallStageRoute",
+            request,
+            StageActionResponse,
+        )
+
+    async def remove_stage_route(
+        self, endpoint: str, request: RemoveStageRouteRequest
+    ) -> StageActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/RemoveStageRoute",
+            request,
+            StageActionResponse,
+        )
+
+    async def open_stage_session(
+        self, endpoint: str, request: OpenStageSessionRequest
+    ) -> StageActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/OpenStageSession",
+            request,
+            StageActionResponse,
+        )
+
+    async def close_stage_session(
+        self, endpoint: str, request: CloseStageSessionRequest
+    ) -> StageActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/CloseStageSession",
+            request,
+            StageActionResponse,
+        )
+
+    async def cancel_stage_session(
+        self, endpoint: str, request: CancelStageSessionRequest
+    ) -> StageActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/CancelStageSession",
+            request,
+            StageActionResponse,
+        )
+
+    async def get_stage_status(
+        self, endpoint: str, request: GetStageStatusRequest
+    ) -> StageStatusResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/GetStageStatus",
+            request,
+            StageStatusResponse,
+        )
+
+    async def drain_worker(self, endpoint: str, request: DrainWorkerRequest) -> StageActionResponse:
+        return await self._unary(
+            endpoint, "/swarm.v1.Worker/DrainWorker", request, StageActionResponse
+        )
+
     async def close(self) -> None:
         await asyncio.gather(
             *(channel.close() for channel in self._channels.values()),
@@ -272,11 +377,13 @@ class WorkerRpcServer:
         synthetic_config: SyntheticModelConfig | None = None,
         model_shard_root: str | None = None,
         maximum_message_bytes: int = 4 * 1024 * 1024,
+        stage_runtime: PersistentStageRuntime | None = None,
     ) -> None:
         self.agent = agent
         self.synthetic_config = synthetic_config
         self.model_shard_root = model_shard_root
         self.maximum_message_bytes = maximum_message_bytes
+        self.stage_runtime = stage_runtime
         self.server = grpc.aio.server(
             options=[
                 ("grpc.max_send_message_length", maximum_message_bytes),
@@ -329,6 +436,56 @@ class WorkerRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "GetStageCapabilities": grpc.unary_unary_rpc_method_handler(
+                self._get_stage_capabilities,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "LoadStage": grpc.unary_unary_rpc_method_handler(
+                self._load_stage,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "UnloadStage": grpc.unary_unary_rpc_method_handler(
+                self._unload_stage,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "InstallStageRoute": grpc.unary_unary_rpc_method_handler(
+                self._install_stage_route,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "RemoveStageRoute": grpc.unary_unary_rpc_method_handler(
+                self._remove_stage_route,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "OpenStageSession": grpc.unary_unary_rpc_method_handler(
+                self._open_stage_session,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "CloseStageSession": grpc.unary_unary_rpc_method_handler(
+                self._close_stage_session,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "CancelStageSession": grpc.unary_unary_rpc_method_handler(
+                self._cancel_stage_session,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "GetStageStatus": grpc.unary_unary_rpc_method_handler(
+                self._get_stage_status,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "DrainWorker": grpc.unary_unary_rpc_method_handler(
+                self._drain_worker,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
         }
         self.server.add_generic_rpc_handlers(
             (grpc.method_handlers_generic_handler("swarm.v1.Worker", handlers),)
@@ -337,6 +494,8 @@ class WorkerRpcServer:
 
     async def start(self, endpoint: str) -> int:
         await self.agent.start()
+        if self.stage_runtime is not None:
+            await self.stage_runtime.start()
         self.bound_port = self.server.add_insecure_port(endpoint)
         if self.bound_port == 0:
             raise TransportError(f"could not bind worker gRPC endpoint {endpoint}")
@@ -344,8 +503,14 @@ class WorkerRpcServer:
         return self.bound_port
 
     async def stop(self, grace_s: float = 2.0) -> None:
-        await self.server.stop(grace_s)
-        await self.agent.stop()
+        try:
+            await self.server.stop(grace_s)
+        finally:
+            try:
+                await self.agent.stop()
+            finally:
+                if self.stage_runtime is not None:
+                    await self.stage_runtime.close()
 
     async def wait_for_termination(self) -> None:
         await self.server.wait_for_termination()
@@ -538,4 +703,161 @@ class WorkerRpcServer:
 
     async def _health(self, data: bytes, context: grpc.aio.ServicerContext[Any, Any]) -> bytes:
         parse_message(data, Ack)
-        return serialize_message(self.agent.health())
+        health = self.agent.health()
+        if self.stage_runtime is not None:
+            status = await self.stage_runtime.status(
+                GetStageStatusRequest(
+                    worker_id=self.agent.capability.worker_id,
+                    request_id="health",
+                )
+            )
+            proof = dict(health.proof)
+            proof["stage_runtime"] = status.model_dump(mode="json")
+            loaded_stages = set(health.loaded_stages)
+            if status.loaded_stage is not None:
+                loaded_stages.add(status.loaded_stage.assignment.stage_id)
+            health = health.model_copy(
+                update={
+                    "loaded_stages": sorted(loaded_stages),
+                    "proof": proof,
+                }
+            )
+        return serialize_message(health)
+
+    def _require_stage_runtime(self) -> PersistentStageRuntime:
+        if self.stage_runtime is None:
+            raise RuntimeError("persistent stage runtime is disabled on this worker")
+        return self.stage_runtime
+
+    async def _get_stage_capabilities(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, GetStageCapabilitiesRequest)
+            response = await self._require_stage_runtime().get_capabilities(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _load_stage(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, LoadStageRequest)
+            response = await self._require_stage_runtime().load_stage(request)
+            return serialize_message(response)
+        except (MemoryError, MemoryLimitExceededError) as exc:
+            await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _unload_stage(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, UnloadStageRequest)
+            response = await self._require_stage_runtime().unload_stage(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _install_stage_route(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, InstallStageRouteRequest)
+            response = await self._require_stage_runtime().install_route(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _remove_stage_route(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, RemoveStageRouteRequest)
+            response = await self._require_stage_runtime().remove_route(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _open_stage_session(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, OpenStageSessionRequest)
+            response = await self._require_stage_runtime().open_session(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, str(exc))
+            raise
+
+    async def _close_stage_session(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, CloseStageSessionRequest)
+            response = await self._require_stage_runtime().close_session(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _cancel_stage_session(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, CancelStageSessionRequest)
+            response = await self._require_stage_runtime().cancel_session(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _get_stage_status(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, GetStageStatusRequest)
+            response = await self._require_stage_runtime().status(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    async def _drain_worker(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, DrainWorkerRequest)
+            response = await self._require_stage_runtime().drain(request)
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise

@@ -272,9 +272,7 @@ def build_network_summary(
             "difference_ci_high": difference_ci[1],
             "archived_difference_tps": stage_median - ARCHIVED_010_TPS[profile],
             "archived_percentage_difference": (
-                (stage_median - ARCHIVED_010_TPS[profile])
-                / ARCHIVED_010_TPS[profile]
-                * 100.0
+                (stage_median - ARCHIVED_010_TPS[profile]) / ARCHIVED_010_TPS[profile] * 100.0
             ),
             "percentage_improvement": (
                 difference / baseline_median * 100.0 if baseline_median else 0.0

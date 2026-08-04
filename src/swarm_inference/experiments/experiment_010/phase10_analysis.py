@@ -154,8 +154,12 @@ def consolidate_short_decode(
                 "median_decode_tokens_per_second": statistics.median(speeds),
                 "p50_wall_seconds": _percentile(walls, 0.50),
                 "p95_wall_seconds": _percentile(walls, 0.95),
-                "total_rpc_message_count": sum(int(row.get("rpc_message_count") or 0) for row in rows),
-                "total_raw_payload_bytes": sum(int(row.get("rpc_raw_payload_bytes") or 0) for row in rows),
+                "total_rpc_message_count": sum(
+                    int(row.get("rpc_message_count") or 0) for row in rows
+                ),
+                "total_raw_payload_bytes": sum(
+                    int(row.get("rpc_raw_payload_bytes") or 0) for row in rows
+                ),
                 "source_directory": str(directory.resolve()),
             }
         )
@@ -165,8 +169,12 @@ def consolidate_short_decode(
 
 
 def consolidate_prefill(phase_root: Path, output: Path) -> list[dict[str, Any]]:
-    local_path = phase_root / "final-binary" / "prefill-references-t16" / "local-prefill-results.csv"
-    remote_path = phase_root / "final-binary" / "prefill" / "whole-direct-tcp-exact" / "measurements.csv"
+    local_path = (
+        phase_root / "final-binary" / "prefill-references-t16" / "local-prefill-results.csv"
+    )
+    remote_path = (
+        phase_root / "final-binary" / "prefill" / "whole-direct-tcp-exact" / "measurements.csv"
+    )
     rows: list[dict[str, Any]] = []
     for configuration, path in (
         ("local", local_path),
@@ -335,8 +343,7 @@ def consolidate_cache_sizes(phase_root: Path, output: Path) -> list[dict[str, An
             continue
         measurement = _read_json(next(candidate.rglob("measurement.json")))
         samples = [
-            _last_worker_sessions(path)[-1]
-            for path in candidate.rglob("worker-telemetry.jsonl")
+            _last_worker_sessions(path)[-1] for path in candidate.rglob("worker-telemetry.jsonl")
         ]
         rows.append(
             {
@@ -347,7 +354,9 @@ def consolidate_cache_sizes(phase_root: Path, output: Path) -> list[dict[str, An
                 "logical_cache_hits": sum(int(row["logical_cache_hits"]) for row in samples),
                 "logical_cache_misses": sum(int(row["logical_cache_misses"]) for row in samples),
                 "resident_cache_hits": sum(int(row["resident_cache_hits"]) for row in samples),
-                "nonresident_cache_hits": sum(int(row["nonresident_cache_hits"]) for row in samples),
+                "nonresident_cache_hits": sum(
+                    int(row["nonresident_cache_hits"]) for row in samples
+                ),
                 "cache_hits_with_page_fault": sum(
                     int(row["cache_hits_with_page_fault"]) for row in samples
                 ),
@@ -562,10 +571,25 @@ def write_prefetch_and_amdahl(
 
     amdahl_rows: list[dict[str, Any]] = []
     comparisons = (
-        ("shared_memory", "whole_expert_direct_tcp", "whole_expert_shared_memory", "rpc_transport_ns"),
+        (
+            "shared_memory",
+            "whole_expert_direct_tcp",
+            "whole_expert_shared_memory",
+            "rpc_transport_ns",
+        ),
         ("microsharding", "whole_expert_direct_tcp", "equal_microshards", "rpc_compute_ns"),
-        ("asymmetric_microsharding", "equal_microshards", "asymmetric_microshards", "rpc_compute_ns"),
-        ("reduction_strategy", "whole_expert_direct_tcp", "whole_expert_fast_aggregation", "rpc_transport_ns"),
+        (
+            "asymmetric_microsharding",
+            "equal_microshards",
+            "asymmetric_microshards",
+            "rpc_compute_ns",
+        ),
+        (
+            "reduction_strategy",
+            "whole_expert_direct_tcp",
+            "whole_expert_fast_aggregation",
+            "rpc_transport_ns",
+        ),
     )
     for optimization, baseline, optimized, affected in comparisons:
         result = amdahl_gate(
@@ -618,9 +642,7 @@ def write_prefetch_and_amdahl(
                 "status": "REJECTED_NO_ELIGIBLE_REAL_PATH_COUNTERFACTUAL",
             }
         )
-    cuda = _read_json(
-        phase_root.parent / "phase-9" / "real_model_cuda_results.json"
-    )["result"]
+    cuda = _read_json(phase_root.parent / "phase-9" / "real_model_cuda_results.json")["result"]
     local_wall_ns = int(cuda["token_count"] / cuda["local_throughput_tokens_per_second"] * 1e9)
     distributed_wall_ns = int(
         cuda["token_count"] / cuda["distributed_throughput_tokens_per_second"] * 1e9

@@ -150,9 +150,7 @@ def prefetch_idle_window_budget(
         raise ValueError("prefetch phase must be prefill or decode")
     if min(available_idle_window_ns, proposed_prefetch_bytes, subsequently_consumed_bytes) < 0:
         raise ValueError("prefetch measurements must be non-negative")
-    maximum = math.floor(
-        available_idle_window_ns / 1e9 * effective_bandwidth_bytes_per_second
-    )
+    maximum = math.floor(available_idle_window_ns / 1e9 * effective_bandwidth_bytes_per_second)
     extra = max(0, proposed_prefetch_bytes - subsequently_consumed_bytes)
     useful = (
         proposed_prefetch_bytes <= maximum
@@ -184,12 +182,15 @@ def amdahl_gate(
     optimized_affected_ns: int,
     optimized_end_to_end_ns: int,
 ) -> dict[str, Any]:
-    if min(
-        baseline_end_to_end_ns,
-        baseline_affected_ns,
-        optimized_affected_ns,
-        optimized_end_to_end_ns,
-    ) <= 0:
+    if (
+        min(
+            baseline_end_to_end_ns,
+            baseline_affected_ns,
+            optimized_affected_ns,
+            optimized_end_to_end_ns,
+        )
+        <= 0
+    ):
         raise ValueError("Amdahl measurements must be positive")
     if baseline_affected_ns > baseline_end_to_end_ns:
         raise ValueError("affected time cannot exceed end-to-end time")
@@ -216,14 +217,10 @@ def main() -> int:
     parser.add_argument("--expert-bytes", type=int, required=True)
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
-    rows, summary = reuse_distance_curve(
-        arguments.trace, expert_bytes=arguments.expert_bytes
-    )
+    rows, summary = reuse_distance_curve(arguments.trace, expert_bytes=arguments.expert_bytes)
     output = arguments.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    with (output / "reuse_distance_curves.csv").open(
-        "w", encoding="utf-8", newline=""
-    ) as handle:
+    with (output / "reuse_distance_curves.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)

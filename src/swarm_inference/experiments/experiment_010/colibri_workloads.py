@@ -169,7 +169,9 @@ def _telemetry_metrics(events: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "rpc_queue_ns": sum(int(row.get("duration_ns", 0)) for row in queues),
         "rpc_compute_ns": sum(int(row.get("duration_ns", 0)) for row in computes),
         "rpc_transport_ns": sum(int(row.get("duration_ns", 0)) for row in transports),
-        "remote_results_consumed": sum(row.get("remote_result_consumed") is True for row in completed),
+        "remote_results_consumed": sum(
+            row.get("remote_result_consumed") is True for row in completed
+        ),
         "forbidden_local_expert_loads": sum(
             row.get("event") == "forbidden_local_expert_load" for row in events
         ),
@@ -215,7 +217,10 @@ class NativeLevelASession:
             raise ValueError("a native worker session requires a distributed candidate")
         if candidate.network_profile not in NETWORK_PROFILES:
             raise ValueError(f"unknown network profile {candidate.network_profile}")
-        if candidate.network_profile != "loopback_unshaped" and candidate.data_plane != "relayed_tcp":
+        if (
+            candidate.network_profile != "loopback_unshaped"
+            and candidate.data_plane != "relayed_tcp"
+        ):
             raise ValueError("network shaping must act through the real relay payload path")
         if candidate.worker_memory_budget_bytes < 64 * 1024 * 1024:
             raise ValueError("native worker memory budget must be at least 64 MiB")
@@ -375,7 +380,11 @@ def _run_process(
     (run_root / "stdout.log").write_text(stdout, encoding="utf-8")
     (run_root / "stderr.log").write_text(stderr, encoding="utf-8")
     _write_samples(run_root / "memory.ndjson", samples, run_id)
-    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr), elapsed, samples
+    return (
+        subprocess.CompletedProcess(command, process.returncode, stdout, stderr),
+        elapsed,
+        samples,
+    )
 
 
 def measure_reference(
@@ -436,19 +445,23 @@ def measure_reference(
     actual = _generated_token_ids(completed.stdout)
     parsed = parse_engine_metrics(completed.stdout)
     events = _read_jsonl(run_root / "coordinator-telemetry.jsonl")
-    rpc = _telemetry_metrics(events) if not candidate.local else {
-        "rpc_message_count": 0,
-        "rpc_request_bytes": 0,
-        "rpc_response_bytes": 0,
-        "rpc_raw_payload_bytes": 0,
-        "rpc_queue_ns": 0,
-        "rpc_compute_ns": 0,
-        "rpc_transport_ns": 0,
-        "remote_results_consumed": 0,
-        "forbidden_local_expert_loads": 0,
-        "expert_union_size": None,
-        "worker_ids": [],
-    }
+    rpc = (
+        _telemetry_metrics(events)
+        if not candidate.local
+        else {
+            "rpc_message_count": 0,
+            "rpc_request_bytes": 0,
+            "rpc_response_bytes": 0,
+            "rpc_raw_payload_bytes": 0,
+            "rpc_queue_ns": 0,
+            "rpc_compute_ns": 0,
+            "rpc_transport_ns": 0,
+            "remote_results_consumed": 0,
+            "forbidden_local_expert_loads": 0,
+            "expert_union_size": None,
+            "worker_ids": [],
+        }
+    )
     cache_delta: dict[str, dict[str, int | None]] = {}
     accounting: list[dict[str, Any]] = []
     relay_metrics: list[dict[str, Any]] = []
@@ -474,9 +487,7 @@ def measure_reference(
     exact = actual == expected
     numerical_contract_ok = exact if candidate.exact_contract else completed.returncode == 0
     measurement_status = (
-        "MEASURED"
-        if completed.returncode == 0 and len(actual) == len(expected)
-        else "RUN_FAILED"
+        "MEASURED" if completed.returncode == 0 and len(actual) == len(expected) else "RUN_FAILED"
     )
     row = {
         "schema_version": "experiment-010-real-colibri-workload-v1",
@@ -522,8 +533,8 @@ def measure_reference(
         and exact
         and rpc.get("forbidden_local_expert_loads", 0) == 0
         and all(
-            (metrics.get("nonresident_cache_hits") or 0) <=
-            (metrics.get("resident_cache_hits") or 0)
+            (metrics.get("nonresident_cache_hits") or 0)
+            <= (metrics.get("resident_cache_hits") or 0)
             for metrics in cache_delta.values()
         )
     )
@@ -575,7 +586,9 @@ def summarize_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
             for row in members
             if row.get("decode_tokens_per_second") is not None
         ]
-        ttft = [float(row["ttft_seconds"]) for row in members if row.get("ttft_seconds") is not None]
+        ttft = [
+            float(row["ttft_seconds"]) for row in members if row.get("ttft_seconds") is not None
+        ]
         wall = [float(row["wall_elapsed_ns"]) / 1e9 for row in members]
         summaries.append(
             {
@@ -585,11 +598,15 @@ def summarize_rows(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
                 "measured_rows": len(members),
                 "valid_rows": sum(bool(row.get("valid_performance_candidate")) for row in members),
                 "exact_token_rows": sum(bool(row.get("exact_token_identity")) for row in members),
-                "median_decode_tokens_per_second": statistics.median(throughput) if throughput else None,
+                "median_decode_tokens_per_second": statistics.median(throughput)
+                if throughput
+                else None,
                 "median_ttft_seconds": statistics.median(ttft) if ttft else None,
                 "p50_wall_seconds": percentile(wall, 0.50),
                 "p95_wall_seconds": percentile(wall, 0.95),
-                "rpc_raw_payload_bytes": sum(int(row.get("rpc_raw_payload_bytes", 0)) for row in members),
+                "rpc_raw_payload_bytes": sum(
+                    int(row.get("rpc_raw_payload_bytes", 0)) for row in members
+                ),
                 "rpc_message_count": sum(int(row.get("rpc_message_count", 0)) for row in members),
             }
         )
@@ -797,8 +814,7 @@ def prepare_prefill_references(
         if not any(row["context_length"] == length for row in unsupported)
     ]
     complete = len(rows) == len(supported_context_lengths) * prompt_count and all(
-        row["measurement_status"] == "MEASURED" and row["exact_token_identity"]
-        for row in rows
+        row["measurement_status"] == "MEASURED" and row["exact_token_identity"] for row in rows
     )
     summary = {
         "schema_version": "experiment-010-real-colibri-prefill-reference-suite-v1",
@@ -949,8 +965,7 @@ def run_network_profile_matrix(
         write_measurement_csv(output / "network_profile_results.csv", all_rows)
     required = len(profiles) * len(reference_paths) * repeats
     complete = len(all_rows) == required and all(
-        row["measurement_status"] == "MEASURED" and row["exact_token_identity"]
-        for row in all_rows
+        row["measurement_status"] == "MEASURED" and row["exact_token_identity"] for row in all_rows
     )
     _write_json(
         output / "completion.json",
@@ -998,9 +1013,7 @@ def measure_concurrent_group(
         request_root = run_root / f"request-{index:02d}-{role}"
         request_root.mkdir(parents=True, exist_ok=True)
         if candidate.local:
-            environment = _base_environment(
-                model_path.resolve(), threads=coordinator_threads
-            )
+            environment = _base_environment(model_path.resolve(), threads=coordinator_threads)
             environment.update(
                 {
                     "COLI_SWARM_EXPERT_MODE": "local",
@@ -1011,9 +1024,7 @@ def measure_concurrent_group(
         else:
             if session is None:
                 raise ValueError("distributed concurrent group requires a session")
-            environment = session.environment(
-                request_root, coordinator_threads=coordinator_threads
-            )
+            environment = session.environment(request_root, coordinator_threads=coordinator_threads)
         command = [str(engine.resolve()), "16", "8", str(reference_path.resolve())]
         started = time.perf_counter_ns()
         process = subprocess.Popen(
@@ -1085,19 +1096,23 @@ def measure_concurrent_group(
         expected = [int(value) for value in reference["full_ids"][prompt_count:]]
         actual = _generated_token_ids(stdout)
         events = _read_jsonl(request_root / "coordinator-telemetry.jsonl")
-        rpc = _telemetry_metrics(events) if not candidate.local else {
-            "rpc_message_count": 0,
-            "rpc_request_bytes": 0,
-            "rpc_response_bytes": 0,
-            "rpc_raw_payload_bytes": 0,
-            "rpc_queue_ns": 0,
-            "rpc_compute_ns": 0,
-            "rpc_transport_ns": 0,
-            "remote_results_consumed": 0,
-            "forbidden_local_expert_loads": 0,
-            "expert_union_size": None,
-            "worker_ids": [],
-        }
+        rpc = (
+            _telemetry_metrics(events)
+            if not candidate.local
+            else {
+                "rpc_message_count": 0,
+                "rpc_request_bytes": 0,
+                "rpc_response_bytes": 0,
+                "rpc_raw_payload_bytes": 0,
+                "rpc_queue_ns": 0,
+                "rpc_compute_ns": 0,
+                "rpc_transport_ns": 0,
+                "remote_results_consumed": 0,
+                "forbidden_local_expert_loads": 0,
+                "expert_union_size": None,
+                "worker_ids": [],
+            }
+        )
         selected = {
             (int(event.get("layer_id", -1)), int(expert))
             for event in events
@@ -1150,14 +1165,11 @@ def measure_concurrent_group(
     successful = all(row["return_code"] == 0 for row in request_rows)
     group_seconds = (group_ended - group_started) / 1e9
     verified_tokens = sum(
-        row["generated_tokens"] if row["exact_token_identity"] else 0
-        for row in request_rows
+        row["generated_tokens"] if row["exact_token_identity"] else 0 for row in request_rows
     )
     latency = [row["wall_elapsed_ns"] / 1e9 for row in request_rows]
     interactive = [
-        row["wall_elapsed_ns"] / 1e9
-        for row in request_rows
-        if row["service_role"] == "interactive"
+        row["wall_elapsed_ns"] / 1e9 for row in request_rows if row["service_role"] == "interactive"
     ]
     background_tokens = sum(
         row["generated_tokens"]
@@ -1169,14 +1181,10 @@ def measure_concurrent_group(
     rpc_queue_ns = sum(row["rpc_queue_ns"] for row in request_rows)
     worker_time_capacity_ns = (group_ended - group_started) * worker_count
     worker_compute_utilization = (
-        min(1.0, rpc_compute_ns / worker_time_capacity_ns)
-        if worker_time_capacity_ns
-        else None
+        min(1.0, rpc_compute_ns / worker_time_capacity_ns) if worker_time_capacity_ns else None
     )
     worker_queue_fraction = (
-        rpc_queue_ns / (rpc_queue_ns + rpc_compute_ns)
-        if rpc_queue_ns + rpc_compute_ns
-        else None
+        rpc_queue_ns / (rpc_queue_ns + rpc_compute_ns) if rpc_queue_ns + rpc_compute_ns else None
     )
     result = {
         "schema_version": "experiment-010-real-colibri-concurrent-workload-v1",
@@ -1217,9 +1225,8 @@ def measure_concurrent_group(
         "worker_saturated": (
             worker_compute_utilization is not None and worker_compute_utilization >= 0.90
         ),
-        "starvation_detected": background_tokens == 0 and any(
-            row["service_role"] == "background" for row in request_rows
-        ),
+        "starvation_detected": background_tokens == 0
+        and any(row["service_role"] == "background" for row in request_rows),
         "rpc_message_count": sum(row["rpc_message_count"] for row in request_rows),
         "rpc_raw_payload_bytes": sum(row["rpc_raw_payload_bytes"] for row in request_rows),
         "rpc_queue_ns": rpc_queue_ns,
@@ -1227,9 +1234,7 @@ def measure_concurrent_group(
         "mean_expert_overlap_jaccard": statistics.mean(overlaps) if overlaps else None,
         "worker_counter_deltas": worker_deltas,
         "worker_process_accounting": (
-            [_worker_process_accounting(worker) for worker in session.workers]
-            if session
-            else []
+            [_worker_process_accounting(worker) for worker in session.workers] if session else []
         ),
         "relay_metrics": session.relays.snapshots() if session and session.relays.relays else [],
         "requests": request_rows,
@@ -1354,7 +1359,10 @@ def run_mixed_service_matrix(
                         candidate=candidate,
                         engine=engine,
                         model_path=model_path,
-                        references=[interactive_reference, *background_references[:background_count]],
+                        references=[
+                            interactive_reference,
+                            *background_references[:background_count],
+                        ],
                         roles=["interactive", *(["background"] * background_count)],
                         run_root=output / "runs" / run_id,
                         repeat=repeat_index,
@@ -1432,7 +1440,9 @@ def main() -> int:
         choices=("direct_tcp", "relayed_tcp", "shared_memory"),
         default="direct_tcp",
     )
-    parser.add_argument("--network-profile", choices=tuple(NETWORK_PROFILES), default="loopback_unshaped")
+    parser.add_argument(
+        "--network-profile", choices=tuple(NETWORK_PROFILES), default="loopback_unshaped"
+    )
     parser.add_argument("--shard-layout", default="whole")
     parser.add_argument("--quality-bounded", action="store_true")
     parser.add_argument("--coordinator-model", type=Path)
@@ -1472,7 +1482,12 @@ def main() -> int:
             thread_count=arguments.coordinator_threads,
             timeout_seconds=arguments.timeout_seconds,
         )
-        print(json.dumps({"measured_rows": summary["measured_rows"], "complete": summary["complete"]}, sort_keys=True))
+        print(
+            json.dumps(
+                {"measured_rows": summary["measured_rows"], "complete": summary["complete"]},
+                sort_keys=True,
+            )
+        )
         return 0 if summary["complete"] else 2
     if arguments.run_network_matrix:
         if not arguments.reference_root or not arguments.worker or not arguments.model_fingerprint:
@@ -1497,8 +1512,7 @@ def main() -> int:
             timeout_seconds=arguments.timeout_seconds,
         )
         complete = all(
-            row.get("measurement_status") == "MEASURED"
-            and row.get("exact_token_identity") is True
+            row.get("measurement_status") == "MEASURED" and row.get("exact_token_identity") is True
             for row in rows
         )
         print(json.dumps({"measured_rows": len(rows), "complete": complete}, sort_keys=True))
@@ -1506,7 +1520,9 @@ def main() -> int:
     if arguments.run_candidate:
         if not arguments.reference_root or not arguments.worker or not arguments.model_fingerprint:
             parser.error("--run-candidate requires reference-root, worker, and model-fingerprint")
-        references = sorted(arguments.reference_root.glob("*/reference.json"))[: arguments.prompt_count]
+        references = sorted(arguments.reference_root.glob("*/reference.json"))[
+            : arguments.prompt_count
+        ]
         if len(references) != arguments.prompt_count:
             parser.error("reference root does not contain the requested prompt count")
         rows = run_candidate_repeats(
@@ -1525,14 +1541,19 @@ def main() -> int:
         )
         complete = all(
             row.get("measurement_status") == "MEASURED"
-            and (not _candidate_from_arguments(arguments).exact_contract or row.get("exact_token_identity") is True)
+            and (
+                not _candidate_from_arguments(arguments).exact_contract
+                or row.get("exact_token_identity") is True
+            )
             for row in rows
         )
         print(json.dumps({"measured_rows": len(rows), "complete": complete}, sort_keys=True))
         return 0 if complete else 2
     if arguments.run_concurrent or arguments.run_mixed:
         if not arguments.reference_root or not arguments.worker or not arguments.model_fingerprint:
-            parser.error("concurrent workloads require reference-root, worker, and model-fingerprint")
+            parser.error(
+                "concurrent workloads require reference-root, worker, and model-fingerprint"
+            )
         references = sorted(arguments.reference_root.glob("*/reference.json"))
         candidate = _candidate_from_arguments(arguments)
         if arguments.run_concurrent:
@@ -1577,9 +1598,7 @@ def main() -> int:
         )
         print(json.dumps({"measured_groups": len(rows), "complete": complete}, sort_keys=True))
         return 0 if complete else 2
-    parser.error(
-        "select a reference-preparation or workload-run mode"
-    )
+    parser.error("select a reference-preparation or workload-run mode")
 
 
 if __name__ == "__main__":

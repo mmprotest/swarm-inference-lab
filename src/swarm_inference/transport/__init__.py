@@ -6,8 +6,16 @@ from .base import ActivationTransport
 
 if TYPE_CHECKING:
     from .grpc_transport import GrpcTransport, WorkerRpcServer
+    from .stage_ring_connection import StageRingConnectionPool
+    from .stage_ring_server import StageRingServer
 
-__all__ = ["ActivationTransport", "GrpcTransport", "WorkerRpcServer"]
+__all__ = [
+    "ActivationTransport",
+    "GrpcTransport",
+    "StageRingConnectionPool",
+    "StageRingServer",
+    "WorkerRpcServer",
+]
 
 
 def __getattr__(name: str) -> Any:
@@ -18,4 +26,12 @@ def __getattr__(name: str) -> Any:
             "GrpcTransport": GrpcTransport,
             "WorkerRpcServer": WorkerRpcServer,
         }[name]
+    if name == "StageRingConnectionPool":
+        from .stage_ring_connection import StageRingConnectionPool
+
+        return StageRingConnectionPool
+    if name == "StageRingServer":
+        from .stage_ring_server import StageRingServer
+
+        return StageRingServer
     raise AttributeError(name)

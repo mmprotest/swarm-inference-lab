@@ -22,10 +22,14 @@ from swarm_inference.worker.abi import (
 
 if TYPE_CHECKING:
     from swarm_inference.worker.agent import WorkerAgent
+    from swarm_inference.worker.stage_runtime import PersistentStageRuntime
+    from swarm_inference.worker.stage_service import PersistentStageWorkerService
 
 __all__ = [
     "BackendAdapter",
     "BackendArtifactMapping",
+    "PersistentStageRuntime",
+    "PersistentStageWorkerService",
     "WorkerAgent",
     "WorkerCapabilities",
     "WorkerIdentity",
@@ -47,4 +51,12 @@ def __getattr__(name: str) -> Any:
         from swarm_inference.worker.capabilities import measure_capabilities
 
         return measure_capabilities
+    if name == "PersistentStageRuntime":
+        from swarm_inference.worker.stage_runtime import PersistentStageRuntime
+
+        return PersistentStageRuntime
+    if name == "PersistentStageWorkerService":
+        from swarm_inference.worker.stage_service import PersistentStageWorkerService
+
+        return PersistentStageWorkerService
     raise AttributeError(name)

@@ -17,29 +17,29 @@ from swarm_inference.experiments.experiment_011.analysis import (
     write_csv,
 )
 from swarm_inference.experiments.experiment_011.charts import generate_network_charts
-from swarm_inference.experiments.experiment_011.compression import (
-    AdaptiveCompressionController,
-    byte_shuffle,
-    byte_unshuffle,
-    compress_lossless,
-    decompress_lossless,
-)
 from swarm_inference.experiments.experiment_011.drafting import (
     PromptLookupDraftProvider,
     verify_greedy_candidates,
 )
-from swarm_inference.experiments.experiment_011.partition import (
+from swarm_inference.experiments.experiment_011.runner import (
+    _reconstruct_expert_rpc_dependencies,
+)
+from swarm_inference.model.partition import (
     LayerCost,
     StageAssignment,
     StagePlan,
     balanced_ranges,
     equal_ranges,
 )
-from swarm_inference.experiments.experiment_011.runner import (
-    _reconstruct_expert_rpc_dependencies,
+from swarm_inference.runtime.telemetry import reconstruct_critical_path
+from swarm_inference.transport.compression import (
+    AdaptiveCompressionController,
+    byte_shuffle,
+    byte_unshuffle,
+    compress_lossless,
+    decompress_lossless,
 )
-from swarm_inference.experiments.experiment_011.telemetry import reconstruct_critical_path
-from swarm_inference.experiments.experiment_011.tensor_transport import (
+from swarm_inference.transport.stage_tensor import (
     pack_tensor,
     tensor_raw_bytes,
     unpack_tensor,
@@ -69,7 +69,8 @@ def test_equal_partition_is_complete_nonoverlapping_and_contiguous() -> None:
 
 def test_balanced_partition_minimises_contiguous_peak() -> None:
     costs = tuple(
-        _cost(index, value) for index, value in enumerate([9_000, 1_000, 1_000, 1_000, 1_000, 1_000])
+        _cost(index, value)
+        for index, value in enumerate([9_000, 1_000, 1_000, 1_000, 1_000, 1_000])
     )
     ranges = balanced_ranges(costs, 2, memory_limit_bytes=10_000)
     assert ranges == ((0, 1), (1, 6))
@@ -137,9 +138,7 @@ def test_expert_rpc_serial_waits_are_reconstructed_from_request_events(
         }
         for sequence, position in ((1, 0), (2, 11))
     ]
-    telemetry.write_text(
-        "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8"
-    )
+    telemetry.write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
     result = _reconstruct_expert_rpc_dependencies(
         output_directory=tmp_path,
         generated_tokens=2,
