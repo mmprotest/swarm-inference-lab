@@ -426,7 +426,7 @@ def main(argv: list[str] | None = None) -> int:
         "document_type": "swarm-process-repeatability",
         "schema_version": REPEATABILITY_SCHEMA_VERSION,
         "test_command_version": TEST_COMMAND_VERSION,
-        "acceptance_schema_version": 2,
+        "acceptance_schema_version": 3,
         "git_commit": _git_value(repository_root, "rev-parse", "HEAD"),
         "git_dirty": start_git_status is None or bool(start_git_status),
         "git_status": start_git_status,

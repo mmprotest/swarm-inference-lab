@@ -1,113 +1,104 @@
 # Product runtime operations
 
-The first OLMoE product slice uses coordinator-managed persistent model stages,
-direct worker-to-worker activations, bounded streaming, and restart-and-replay
-request recovery. It does not implement transparent KV migration or
-coordinator high availability.
+The OLMoE product uses coordinator-managed persistent stages, direct worker-to-worker
+activations, bounded streaming, transactional deployment, and restart-and-replay recovery. The
+cluster product configures and owns those canonical components; it does not wrap or duplicate a
+second inference runtime.
 
-## Durable coordinator state
+## Normal lifecycle
 
-Start the product coordinator with an explicit local state directory:
-
-```powershell
-swarm coordinator --config configs/product/olmoe-stage-ring.yaml `
-  --state .swarm/coordinator
+```text
+swarm cluster create --name <name>
+swarm node join <pairing-uri>
+swarm cluster status
+swarm run <olmoe-model> --revision <immutable-commit> \
+  --tokenizer-revision <immutable-identity> --mode speed --prompt <text>
 ```
 
-`.swarm/coordinator` is the documented default. It contains the persistent
-coordinator Ed25519 key, coordinator metadata, known worker identity records,
-plans, deployment status and latest topology generation, per-request recovery
-records, accepted-token replay logs, canonical product events, and durable
-audit events. Writes that determine recovery state use temporary files plus an
-atomic replace; accepted-token and audit logs are flushed to disk.
+The node agent calls `CoordinatorRuntime` and `WorkerRuntime`, which own the existing coordinator
+core, RPC server, registration, stage execution, deployment, transport, and recovery paths.
+Starts/stops are idempotent, partial startup rolls back, and shutdown has a hard bound.
 
-On restart, the coordinator validates request records against their replay
-logs. It preserves deployment evidence for inspection but does not treat old
-connections or routes as live. Workers must re-register. A request with a
-verified prompt and greedy accepted-token prefix is marked `recoverable`;
-inconsistent evidence fails closed. No token is emitted automatically from
-restart evidence.
+`swarm run` performs immutable source validation, capability/memory refresh, stale directed-link
+collection, common dtype selection, bounded N-stage planning, stage-artifact preparation and
+transfer, canonical transactional deployment, route/peer verification, and streaming submission.
 
-Back up this directory as one unit and restrict access to it: the coordinator
-private key establishes route authority.
+## State layout and versions
 
-## Identity bootstrap
+Cluster persistent documents use schema version 1 and document version 1. Cluster RPC messages
+use schema version 1; the product protocol is major 1, minor 0; stage artifact format version is
+1. Unknown fields are rejected.
 
-Create identities and establish both trust directions before startup:
+The state root separates `security/`, mutable `runtime/`, `logs/`, content-addressed `artifacts/`,
+and partial `downloads/`. Security/recovery-critical documents use temporary files and atomic
+replacement. Private identity permissions are restricted where supported. A valid legacy
+`.swarm/coordinator` identity is adopted and never rotated automatically.
 
-```powershell
-swarm identity create --path .swarm/coordinator/coordinator-identity.json `
-  --kind coordinator
-swarm identity create --path .swarm/identities/worker-1.json --kind worker
-$CoordinatorFingerprint = (swarm identity fingerprint `
-  --path .swarm/coordinator/coordinator-identity.json).Trim()
-swarm identity trust --coordinator-state .swarm/coordinator `
-  --identity .swarm/identities/worker-1.json --label worker-1
+Default roots are `%LOCALAPPDATA%\SwarmInference\` on Windows,
+`${XDG_STATE_HOME:-~/.local/state}/swarm-inference/` on Linux, and
+`~/Library/Application Support/SwarmInference/` on macOS. Explicit roots support tests and
+repository-local development.
+
+## Planning
+
+Automatic planning includes local monolithic execution and stage counts up to:
+
+```text
+min(model layers, healthy eligible workers, configured maximum_stage_count)
 ```
 
-The recommended configuration requires worker trust and loads the versioned,
-atomically written trust store from `.swarm/coordinator/trusted-workers.json`.
-Its entries are combined with the static configuration allowlist. Every stage
-worker pins `$CoordinatorFingerprint` with
-`--trusted-coordinator-fingerprint`; it must receive that value over an
-authenticated administrative channel.
+The deterministic beam search is bounded by candidate-worker, stage-count, and beam-width
+configuration. A state tracks next layer, selected workers, previous worker, compute/network
+cost, memory feasibility, queue/load, reliability, and objective score. Only measured, fresh
+directed links are used for automatic distributed paths. Stable lexicographic worker/stage
+tie-breaks make repeated inputs deterministic.
 
-A known worker ID cannot silently change its persisted public key. Removing
-trust allows already admitted sessions to finish but blocks new registration,
-admission, deployment, and replacement routes. See
-[Security boundary](security-boundary.md) for rotation and revocation details.
+Speed mode compares with the fastest local baseline and prefers fewer equivalent boundaries.
+Capacity mode requires collective fit and then headroom/replacement capacity. Balanced mode
+reports explicit throughput, headroom, reliability, and participation components. Every healthy
+node receives a utility/inclusion or exclusion record; pairing does not require participation.
 
-## Live inspection and cancellation
+## Deployment and recovery
 
-The live product does not require experiment evidence bundles for inspection:
+Artifact preparation is a phase of the existing deployment manager. It reserves, prepares,
+transfers, verifies, loads, verifies ownership, installs routes, verifies peers, and only then
+publishes ready. Failure uses the existing rollback path.
 
-```powershell
-swarm status --coordinator 127.0.0.1:50051
-swarm workers --coordinator 127.0.0.1:50051
-swarm topology --coordinator 127.0.0.1:50051
-swarm sessions --coordinator 127.0.0.1:50051
-swarm cancel --coordinator 127.0.0.1:50051 --request-id <id>
+For runtime failure, the coordinator disables the failed generation, selects trusted compatible
+replacements, installs a higher signed generation, opens new sessions, and replays the prompt
+plus accepted deterministic tokens. It rejects the first divergence and suppresses replay
+publications. There is no KV checkpoint transfer, transparent migration, or seamless coordinator
+failover.
+
+## Advanced diagnostics
+
+Low-level commands remain supported:
+
+```text
+swarm coordinator
+swarm worker
+swarm identity create|show|fingerprint|trust|untrust|list-trusted
+swarm model inspect|plan|deploy|unload
+swarm submit
+swarm status
+swarm workers
+swarm topology
+swarm sessions
+swarm cancel
 ```
 
-Each command supports `--json`. Status covers coordinator identity and uptime,
-worker health/endpoints/loaded stages, deployment and route generations,
-sessions and token positions, KV memory, queues, throughput and latency,
-recoveries, errors, and reservations.
+Manual trust continues to work. Low-level planning keeps exact-snapshot eligibility by default;
+the high-level run path explicitly permits cluster-owned stage-artifact provisioning.
+Cancellation remains idempotent and releases only the affected session KV state.
 
-Cancellation is idempotent. It stops token acceptance, sends bounded cancel
-requests to every stage in the active generation, releases only that session's
-KV state, and leaves shared model stages resident. A client stream disconnect
-uses the same cleanup path. Client cancellation is not recorded as a worker
-reliability failure.
+## Observability and security
 
-## Restart-and-replay recovery
+Strict status includes cluster/node identity, OS/architecture/backend validation, versions,
+service state, endpoints/reachability, dtype/memory, directed-link freshness, artifact
+cache/transfers, loaded stages/role, inclusion reason, and last categorized error. Structured
+events cover all cluster, network, artifact, plan, deployment, and update transitions. Secrets
+and prompts are omitted.
 
-For a heartbeat expiry, control-RPC failure, stage-ring closure, execution
-error, route-generation mismatch, token-publication timeout, or worker process
-termination, the coordinator:
-
-1. disables output acceptance from the failed generation;
-2. marks the request recovering and emits a recovery event;
-3. selects exact eligible replacement workers and loads missing stages;
-4. installs and peer-verifies a higher signed route generation;
-5. opens a fresh session on all stages;
-6. replays the original prompt and full accepted greedy token history;
-7. compares every ring result and stage-zero publication with durable history;
-8. suppresses all replay token events; and
-9. resumes at the first unaccepted token only after the prefix verifies.
-
-The first divergence fails safely. The runtime does not silently restart from
-scratch, emit duplicate token events, transfer distributed KV checkpoints, or
-route intermediate activations through the coordinator.
-
-See [Restart-and-replay recovery](recovery.md) for failure classification,
-accepted-prefix semantics, cancellation, and limitations.
-
-## Network security boundary
-
-Coordinator route leases and direct peer handshakes are authenticated with
-Ed25519. Stage-ring frames retain strict sequence and checksum validation.
-Payload confidentiality is not provided: stage-ring TCP traffic is not
-encrypted, and an unkeyed SHA-256 frame checksum is not malicious tamper
-resistance. Deploy only on a trusted LAN or private network. Untrusted Internet
-operation remains unsupported.
+Signed membership requests, route leases, artifact transfer leases, and peer handshakes
+authenticate authority. Stage-ring activation/token payloads are plaintext TCP. Deploy only on a
+trusted LAN or private network. See [security boundary](security-boundary.md).

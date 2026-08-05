@@ -29,11 +29,19 @@
   throughput experiment with the complete standard report matrix.
 - CUDA compatibility depends on the installed driver, PyTorch build, and GPU
   architecture.
-- Windows is the exercised native development platform. Linux x86-64,
-  Linux ARM64, and macOS code paths are implemented and tested where they can
-  be tested without those kernels, but still require execution on each target.
+- Windows x86-64 CPU is the exercised native development platform. Windows CUDA,
+  Linux x86-64 CPU, Linux ARM64 CPU, and macOS ARM64 MPS product paths are
+  implemented-unvalidated until their distinct platform/physical evidence is retained.
 - Physical LAN/WAN artifacts require another actual machine and have not yet
   been produced in this repository build.
+- Pairing protects onboarding, not inference payload confidentiality. It does
+  not add NAT traversal or public-Internet participation.
+- User-scoped firewall automation cannot silently elevate. A node remains
+  blocked until the exact remediation is reviewed and reachability passes.
+- Stage-artifact source resolution may download one complete immutable snapshot
+  on the source node; participating stage nodes receive only owned artifacts.
+- Stale or unmeasured links are excluded from automatic distributed plans and
+  are never labeled measured throughput.
 - Qwen3 MoE execution is not yet implemented. Synthetic MoE-like routing is a
   scheduler/fan-out proxy only.
 - Kimi K3 support is absent until independently validated. Index analysis is

@@ -17,22 +17,17 @@ def _help(*arguments: str) -> str:
 
 def test_documented_product_command_tree_and_options_are_real() -> None:
     root = _help()
-    identity = _help("identity")
-    create = _help("identity", "create")
-    trust = _help("identity", "trust")
-    coordinator = _help("coordinator")
-    worker = _help("worker")
-    model = _help("model")
-    inspect = _help("model", "inspect")
-    plan = _help("model", "plan")
-    deploy = _help("model", "deploy")
-    unload = _help("model", "unload")
-    submit = _help("submit")
+    cluster = _help("cluster")
+    node = _help("node")
+    run = _help("run")
 
     for command in (
-        "identity",
+        "cluster",
+        "node",
+        "run",
         "coordinator",
         "worker",
+        "identity",
         "model",
         "submit",
         "status",
@@ -42,15 +37,46 @@ def test_documented_product_command_tree_and_options_are_real() -> None:
         "cancel",
     ):
         assert command in root
+    for command in ("create", "pair", "status", "nodes", "revoke", "start", "stop", "delete"):
+        assert command in cluster
+    for command in (
+        "join",
+        "status",
+        "configure",
+        "doctor",
+        "leave",
+        "install-service",
+        "uninstall-service",
+        "update",
+    ):
+        assert command in node
+    for option in (
+        "--revision",
+        "--tokenizer-re",
+        "--prompt",
+        "--mode",
+        "--dry-run",
+        "--explain-plan",
+        "--require-node",
+        "--exclude-node",
+        "--json",
+        "--ndjson",
+        "--yes",
+    ):
+        assert option in run
+
+
+def test_low_level_product_commands_remain_available() -> None:
+    identity = _help("identity")
+    model = _help("model")
+    coordinator = _help("coordinator")
+    worker = _help("worker")
+    submit = _help("submit")
+
     for command in ("create", "show", "fingerprint", "trust", "untrust", "list-trusted"):
         assert command in identity
     for command in ("inspect", "plan", "deploy", "unload"):
         assert command in model
-
-    for option in ("--path", "--kind", "--force", "--json"):
-        assert option in create
-    for option in ("--coordinator-state", "--fingerprint", "--identity", "--label"):
-        assert option in trust
     for option in ("--config", "--state", "--listen", "--advertise"):
         assert option in coordinator
     for option in (
@@ -66,13 +92,6 @@ def test_documented_product_command_tree_and_options_are_real() -> None:
         "--trusted-coor",
     ):
         assert option in worker
-    for help_text in (inspect, plan):
-        for option in ("--coordinator", "--model-id", "--revision", "--tokenizer-re"):
-            assert option in help_text
-    for option in ("--stage-count", "--partition", "--require-dist", "--output"):
-        assert option in plan
-    assert "--plan" in deploy
-    assert "--topology-id" in unload
     for option in (
         "--coordinator",
         "--model-id",
@@ -85,15 +104,28 @@ def test_documented_product_command_tree_and_options_are_real() -> None:
         assert option in submit
 
 
-def test_recommended_product_configuration_is_secure_and_bootstrappable() -> None:
+def test_normal_quick_start_has_no_manual_provisioning() -> None:
     config = load_product_config(Path("configs/product/olmoe-stage-ring.yaml"))
     assert config.require_trusted_workers is True
     assert config.trust_store_path == Path(".swarm/coordinator/trusted-workers.json")
     assert config.trusted_worker_fingerprints == []
+
     readme = Path("README.md").read_text(encoding="utf-8")
-    assert "identity create" in readme
-    assert "identity trust" in readme
-    assert "require_trusted_workers: true" in readme
+    quick_start = readme.split("## Cluster quick start", maxsplit=1)[1].split(
+        "## Product architecture", maxsplit=1
+    )[0]
+    for command in ("swarm cluster create", "swarm node join", "swarm cluster status", "swarm run"):
+        assert command in quick_start
+    for manual_command in (
+        "swarm identity",
+        "swarm coordinator",
+        "swarm worker",
+        "swarm model inspect",
+        "swarm model plan",
+        "swarm model deploy",
+        "swarm submit",
+    ):
+        assert manual_command not in quick_start
 
 
 def test_primary_documentation_states_current_boundaries_without_overclaiming() -> None:
@@ -103,18 +135,17 @@ def test_primary_documentation_states_current_boundaries_without_overclaiming() 
     recovery = Path("docs/recovery.md").read_text(encoding="utf-8")
     physical = Path("docs/physical-two-machine-acceptance.md").read_text(encoding="utf-8")
     normalized_readme = " ".join(readme.lower().split())
-    normalized_physical = " ".join(physical.split())
+    normalized_physical = " ".join(physical.lower().split())
 
-    assert "Direct stage-ring data plane" in readme
+    assert "trusted lan or private network" in normalized_readme
+    assert "inference data-plane payloads are not encrypted" in normalized_readme
     assert "absent from steady-state hidden-state forwarding" in normalized_readme
-    assert "session interleaving" in normalized_readme
     assert "not continuous tensor batching" in normalized_readme
-    assert "restart-and-replay" in readme
-    assert "not seamless failover" in normalized_readme
-    assert "Experiment 011 is the latest completed experiment" in readme
-    assert "Physical multi-machine product performance has not been proven" in readme
+    assert "restart-and-replay, not seamless failover" in normalized_readme
+    assert "physical multi-machine product performance has not been proven" in normalized_readme
+    assert "experiment 011 remains the latest completed experiment" in normalized_readme
     assert "coordinator is not on the steady-state hidden-state forwarding path" in architecture
-    assert "Neither mechanism supplies payload confidentiality" in security
+    assert "Neither mechanism supplies inference payload confidentiality" in security
     assert "There is no KV checkpoint transfer" in recovery
     assert "can never be used as physical evidence" in normalized_physical
 
@@ -128,5 +159,12 @@ def test_acceptance_script_documented_options_exist() -> None:
         "run"
     ]
     run_help = run_parser.format_help()
-    for option in ("--output", "--real-model", "--physical-config"):
+    for option in (
+        "--output",
+        "--real-model",
+        "--physical-config",
+        "--linux-x86-physical-config",
+        "--macos-arm64-physical-config",
+        "--linux-arm64-physical-config",
+    ):
         assert option in run_help

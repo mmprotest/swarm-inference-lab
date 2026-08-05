@@ -1,4 +1,4 @@
-"""Typer command-line interface for all research workflows."""
+"""Typer command-line interface for cluster products and research workflows."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from uuid import uuid4
 
 import typer
 
+from swarm_inference.commands import cluster_app, node_app, run_command
 from swarm_inference.config.loader import load_experiment_config
 from swarm_inference.config.models import Backend, ExecutionMode, QueueConfig, WorkerRole
 from swarm_inference.doctor import DoctorBackend, inspect_environment, render_doctor_report
@@ -39,8 +40,8 @@ from swarm_inference.runtime.shutdown import (
 app = typer.Typer(
     name="swarm",
     help=(
-        "Falsifiable heterogeneous consumer-device inference experiments. "
-        "Aggregate throughput is never presented as single-request speed."
+        "Self-configuring heterogeneous inference clusters and reproducible research. "
+        "Use cluster create, node join, and run for normal product operation."
     ),
     no_args_is_help=True,
     pretty_exceptions_show_locals=False,
@@ -64,6 +65,9 @@ identity_app = typer.Typer(
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(model_app, name="model")
 app.add_typer(identity_app, name="identity")
+app.add_typer(cluster_app, name="cluster")
+app.add_typer(node_app, name="node")
+app.command("run")(run_command)
 
 
 def _fail(message: str, *, code: int = 1) -> None:
@@ -1292,8 +1296,11 @@ def product_model_plan_command(
     revision: Annotated[str, typer.Option(help="Exact immutable model revision.")],
     tokenizer_revision: Annotated[str | None, typer.Option()] = None,
     dtype: Annotated[str, typer.Option()] = "bfloat16",
-    stage_count: Annotated[int | None, typer.Option(min=1, max=2)] = None,
+    stage_count: Annotated[int | None, typer.Option(min=1, max=128)] = None,
     partition: Annotated[str, typer.Option(help="auto, equal, or balanced.")] = "auto",
+    mode: Annotated[str, typer.Option(help="speed, capacity, or balanced.")] = "speed",
+    require_node: Annotated[list[str] | None, typer.Option("--require-node")] = None,
+    exclude_node: Annotated[list[str] | None, typer.Option("--exclude-node")] = None,
     max_sequence_tokens: Annotated[int, typer.Option(min=1)] = 2048,
     require_distributed: Annotated[bool, typer.Option()] = False,
     expert_policy: Annotated[
@@ -1317,6 +1324,8 @@ def product_model_plan_command(
 
     if partition not in {"auto", "equal", "balanced"}:
         _fail("--partition must be auto, equal, or balanced")
+    if mode not in {"speed", "capacity", "balanced"}:
+        _fail("--mode must be speed, capacity, or balanced")
     if expert_policy not in {
         "auto",
         "local",
@@ -1346,7 +1355,10 @@ def product_model_plan_command(
                     ),
                     stage_count=stage_count,
                     partition_method=partition,
+                    mode=mode,
                     require_distributed=require_distributed,
+                    required_node_ids=require_node or [],
+                    excluded_node_ids=exclude_node or [],
                     max_sequence_tokens=max_sequence_tokens,
                     expert_policy=expert_policy,
                     require_remote_experts=require_remote_experts,
@@ -1656,88 +1668,45 @@ def coordinator_command(
 ) -> None:
     """Start the central coordinator without loading full model weights."""
 
-    import yaml
+    from swarm_inference.coordinator.runtime import CoordinatorRuntime
 
-    from swarm_inference.config.models import ModelManifest
-    from swarm_inference.coordinator.service import CoordinatorCore, CoordinatorRpcServer
-
-    raw_config = yaml.safe_load(config.read_text(encoding="utf-8"))
-    product_configuration = None
-    experiment = None
-    if isinstance(raw_config, dict) and raw_config.get("kind") == "product-stage-ring":
-        from swarm_inference.config.product import load_product_config
-
-        product_configuration = load_product_config(config)
-    else:
-        experiment = load_experiment_config(config)
-    manifest = None
-    architecture_config = None
-    tokenizer = None
-    if product_configuration is not None and (
-        model_manifest is not None or model_path is not None or dtype is not None
-    ):
-        _fail(
-            "product coordinator metadata is discovered from workers; do not pass legacy "
-            "model-manifest, model-path, or dtype options"
+    try:
+        runtime = CoordinatorRuntime.from_config_path(
+            config_path=config,
+            listen_endpoint=listen,
+            advertised_endpoint=advertise,
+            state_directory=state,
+            model_manifest_path=model_manifest,
+            model_path=model_path,
+            dtype=dtype,
         )
-    if (model_manifest is None) != (model_path is None):
-        _fail("--model-manifest and --model-path must be supplied together")
-    if model_manifest is not None and model_path is not None:
-        manifest = ModelManifest.model_validate_json(model_manifest.read_text(encoding="utf-8"))
-        architecture_config = json.loads((model_path / "config.json").read_text(encoding="utf-8"))
-        from transformers import AutoTokenizer
-
-        tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
-            model_path,
-            local_files_only=True,
-        )
+    except (OSError, ValueError, SwarmError) as exc:
+        _fail(str(exc))
+        return
 
     async def run() -> None:
-        core = CoordinatorCore(
-            config=experiment,
-            product_config=product_configuration,
-            state_directory=state,
-            model_manifest=manifest,
-            architecture_config=architecture_config,
-            runtime_dtype=dtype,
-            tokenizer=tokenizer,
-        )
-        server = CoordinatorRpcServer(core)
-        publication_endpoint = advertise
-        if product_configuration is not None and publication_endpoint is None:
-            import socket
-
-            from swarm_inference.host import format_endpoint, is_wildcard_host, split_endpoint
-
-            host, port = split_endpoint(listen)
-            if is_wildcard_host(host):
-                host = socket.gethostbyname(socket.gethostname())
-            publication_endpoint = format_endpoint(host, port)
-        await server.start(listen, advertised_endpoint=publication_endpoint)
-        if product_configuration is not None:
+        status = await runtime.start()
+        if runtime.core.product_config is not None:
             mode_label = "product-stage-ring"
         else:
-            assert experiment is not None
-            mode_label = experiment.execution_mode.value
+            mode_label = runtime.core.config.execution_mode.value
         typer.echo(
-            f"coordinator listening on {listen}; mode={mode_label}; state={core.state_directory}"
+            f"coordinator listening on {status.listen_endpoint}; mode={mode_label}; "
+            f"state={runtime.core.state_directory}"
         )
-        if core.coordinator_identity is not None:
-            typer.echo(
-                "coordinator_identity_fingerprint="
-                f"{core.coordinator_identity.public_key_fingerprint}"
-            )
+        if status.identity_fingerprint is not None:
+            typer.echo(f"coordinator_identity_fingerprint={status.identity_fingerprint}")
         shutdown_event = asyncio.Event()
         restore_signal_handlers = install_shutdown_signal_handlers(shutdown_event)
         try:
             await wait_for_service_shutdown(
-                server.wait_for_termination(),
+                runtime.wait(),
                 shutdown_event,
-                shutdown=server.stop,
+                shutdown=runtime.stop,
             )
         finally:
             restore_signal_handlers()
-            await server.stop()
+            await runtime.stop()
 
     asyncio.run(run())
 
@@ -1868,7 +1837,7 @@ def worker_command(
 ) -> None:
     """Start a physical or loopback worker using the same transport and agent."""
 
-    from swarm_inference.worker.service import run_worker
+    from swarm_inference.worker.runtime import WorkerRuntime, WorkerRuntimeConfig
 
     if memory_limit_gb <= 0 or memory_limit_gb > 32:
         _fail("memory-limit-gb must be in (0, 32]")
@@ -1956,8 +1925,8 @@ def worker_command(
         or expert_cache_budget_gb > 0
     ):
         _fail("expert manifest, endpoint, and budgets require an expert worker role")
-    asyncio.run(
-        run_worker(
+    runtime = WorkerRuntime(
+        config=WorkerRuntimeConfig(
             coordinator_endpoint=coordinator,
             listen_endpoint=listen,
             advertised_endpoint=advertised_endpoint,
@@ -1989,6 +1958,22 @@ def worker_command(
             expert_queue_capacity=expert_queue_capacity,
         )
     )
+
+    async def run() -> None:
+        await runtime.start()
+        shutdown_event = asyncio.Event()
+        restore_signal_handlers = install_shutdown_signal_handlers(shutdown_event)
+        try:
+            await wait_for_service_shutdown(
+                runtime.wait(),
+                shutdown_event,
+                shutdown=runtime.stop,
+            )
+        finally:
+            restore_signal_handlers()
+            await runtime.stop()
+
+    asyncio.run(run())
 
 
 @app.command("submit")

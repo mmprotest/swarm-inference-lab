@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import time
+from collections import OrderedDict
 from collections.abc import AsyncIterator
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -34,8 +36,11 @@ from swarm_inference.protocol.product import (
     WorkerModelProbeResponse,
 )
 from swarm_inference.protocol.stage_worker import (
+    ArtifactTransferLease,
+    ArtifactTransferResponse,
     CancelStageSessionRequest,
     CloseStageSessionRequest,
+    CompleteArtifactRequest,
     DrainWorkerRequest,
     GetStageCapabilitiesRequest,
     GetStageCapabilitiesResponse,
@@ -43,17 +48,23 @@ from swarm_inference.protocol.stage_worker import (
     InstallStageRouteRequest,
     LoadStageRequest,
     OpenStageSessionRequest,
+    PrepareArtifactRequest,
     RemoveStageRouteRequest,
     StageActionResponse,
     StageStatusResponse,
     TokenizeStageRequest,
     TokenizeStageResponse,
     UnloadStageRequest,
+    VerifyArtifactRequest,
     VerifyStageRouteRequest,
+    WriteArtifactChunkRequest,
+    verify_artifact_transfer_lease,
 )
+from swarm_inference.security.identity import public_key_fingerprint
 from swarm_inference.worker.agent import WorkerAgent
 
 if TYPE_CHECKING:
+    from swarm_inference.cluster.artifacts import ArtifactManager
     from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
@@ -306,6 +317,54 @@ class GrpcTransport:
             WorkerModelProbeResponse,
         )
 
+    async def prepare_artifact(
+        self,
+        endpoint: str,
+        request: PrepareArtifactRequest,
+    ) -> ArtifactTransferResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/PrepareArtifact",
+            request,
+            ArtifactTransferResponse,
+        )
+
+    async def write_artifact_chunk(
+        self,
+        endpoint: str,
+        request: WriteArtifactChunkRequest,
+    ) -> ArtifactTransferResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/WriteArtifactChunk",
+            request,
+            ArtifactTransferResponse,
+        )
+
+    async def complete_artifact(
+        self,
+        endpoint: str,
+        request: CompleteArtifactRequest,
+    ) -> ArtifactTransferResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/CompleteArtifact",
+            request,
+            ArtifactTransferResponse,
+        )
+
+    async def verify_artifact(
+        self,
+        endpoint: str,
+        request: VerifyArtifactRequest,
+    ) -> ArtifactTransferResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/VerifyArtifact",
+            request,
+            ArtifactTransferResponse,
+        )
+
     async def load_stage(self, endpoint: str, request: LoadStageRequest) -> StageActionResponse:
         return await self._unary(
             endpoint, "/swarm.v1.Worker/LoadStage", request, StageActionResponse
@@ -423,15 +482,25 @@ class WorkerRpcServer:
         model_shard_root: str | None = None,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         stage_runtime: PersistentStageRuntime | None = None,
+        artifact_manager: ArtifactManager | None = None,
+        trusted_coordinator_fingerprint: str | None = None,
+        maximum_active_artifact_transfers: int = 128,
         shutdown_timeout_s: float = 10.0,
     ) -> None:
         if shutdown_timeout_s <= 0:
             raise ValueError("worker gRPC shutdown timeout must be positive")
+        if maximum_active_artifact_transfers <= 0:
+            raise ValueError("active artifact transfer bound must be positive")
         self.agent = agent
         self.synthetic_config = synthetic_config
         self.model_shard_root = model_shard_root
         self.maximum_message_bytes = maximum_message_bytes
         self.stage_runtime = stage_runtime
+        self.artifact_manager = artifact_manager
+        self.trusted_coordinator_fingerprint = trusted_coordinator_fingerprint
+        self._artifact_coordinator_public_key: str | None = None
+        self._artifact_authorizations: OrderedDict[str, ArtifactTransferLease] = OrderedDict()
+        self._maximum_active_artifact_transfers = maximum_active_artifact_transfers
         self.shutdown_timeout_s = shutdown_timeout_s
         self.server = grpc.aio.server(
             options=[
@@ -492,6 +561,26 @@ class WorkerRpcServer:
             ),
             "InspectStageModel": grpc.unary_unary_rpc_method_handler(
                 self._inspect_stage_model,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "PrepareArtifact": grpc.unary_unary_rpc_method_handler(
+                self._prepare_artifact,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "WriteArtifactChunk": grpc.unary_unary_rpc_method_handler(
+                self._write_artifact_chunk,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "CompleteArtifact": grpc.unary_unary_rpc_method_handler(
+                self._complete_artifact,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "VerifyArtifact": grpc.unary_unary_rpc_method_handler(
+                self._verify_artifact,
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
@@ -820,6 +909,51 @@ class WorkerRpcServer:
             )
         return serialize_message(health)
 
+    def configure_artifact_trust(
+        self,
+        *,
+        coordinator_public_key: str,
+        coordinator_fingerprint: str,
+    ) -> None:
+        """Pin the authenticated coordinator after worker registration."""
+
+        actual = public_key_fingerprint(coordinator_public_key)
+        if not hmac.compare_digest(actual, coordinator_fingerprint):
+            raise TransportError("coordinator artifact public-key fingerprint mismatch")
+        expected = self.trusted_coordinator_fingerprint
+        if expected is not None and not hmac.compare_digest(expected, coordinator_fingerprint):
+            raise TransportError("coordinator artifact identity differs from the membership pin")
+        existing = self._artifact_coordinator_public_key
+        if existing is not None and existing != coordinator_public_key:
+            raise TransportError("coordinator artifact identity cannot change while running")
+        self._artifact_coordinator_public_key = coordinator_public_key
+
+    def _require_artifact_manager(self) -> ArtifactManager:
+        if self.artifact_manager is None:
+            raise RuntimeError("artifact management is disabled on this worker")
+        return self.artifact_manager
+
+    def _authorize_artifact(
+        self,
+        lease: ArtifactTransferLease,
+        *,
+        worker_id: str,
+        artifact_id: str,
+    ) -> None:
+        if worker_id != self.agent.capability.worker_id:
+            raise PermissionError("artifact operation is addressed to another worker")
+        public_key = self._artifact_coordinator_public_key
+        fingerprint = self.trusted_coordinator_fingerprint
+        if public_key is None or fingerprint is None:
+            raise PermissionError("artifact coordinator trust is not configured")
+        verify_artifact_transfer_lease(
+            lease,
+            trusted_coordinator_public_key=public_key,
+            trusted_coordinator_fingerprint=fingerprint,
+            destination_worker_id=worker_id,
+            artifact_id=artifact_id,
+        )
+
     def _require_stage_runtime(self) -> PersistentStageRuntime:
         if self.stage_runtime is None:
             raise RuntimeError("persistent stage runtime is disabled on this worker")
@@ -847,6 +981,170 @@ class WorkerRpcServer:
             request = parse_message(data, WorkerModelProbeRequest)
             response = await self._require_stage_runtime().inspect_model(request)
             return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _prepare_artifact(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, PrepareArtifactRequest)
+            self._authorize_artifact(
+                request.lease,
+                worker_id=request.worker_id,
+                artifact_id=request.manifest.artifact_id,
+            )
+            status = self._require_artifact_manager().prepare_incoming(
+                manifest=request.manifest,
+                source=request.lease.source_node_id,
+                chunks_total=request.chunks_total,
+            )
+            if status.state != "complete":
+                existing = self._artifact_authorizations.get(status.transfer_id)
+                if existing is None:
+                    if (
+                        len(self._artifact_authorizations)
+                        >= self._maximum_active_artifact_transfers
+                    ):
+                        raise RuntimeError("active artifact transfer authorization bound reached")
+                    self._artifact_authorizations[status.transfer_id] = request.lease
+                elif existing.nonce != request.lease.nonce:
+                    raise PermissionError("artifact transfer authorization changed during resume")
+            return serialize_message(
+                ArtifactTransferResponse(
+                    worker_id=request.worker_id,
+                    request_id=request.request_id,
+                    artifact_id=request.manifest.artifact_id,
+                    accepted=True,
+                    transfer_id=status.transfer_id,
+                    bytes_completed=status.bytes_completed,
+                    chunks_completed=status.chunks_completed,
+                    complete=status.state == "complete",
+                    verified=status.state == "complete",
+                    detail=("artifact already verified" if status.state == "complete" else "ready"),
+                )
+            )
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _write_artifact_chunk(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, WriteArtifactChunkRequest)
+            self._authorize_artifact(
+                request.lease,
+                worker_id=request.worker_id,
+                artifact_id=request.chunk.artifact_id,
+            )
+            active = self._artifact_authorizations.get(request.transfer_id)
+            if active is None or active.nonce != request.lease.nonce:
+                raise PermissionError("artifact transfer is not authorized")
+            manager = self._require_artifact_manager()
+            manager.write_chunk(
+                transfer_id=request.transfer_id,
+                chunk=request.chunk,
+                payload=request.payload,
+            )
+            status = next(
+                item for item in manager.transfers() if item.transfer_id == request.transfer_id
+            )
+            return serialize_message(
+                ArtifactTransferResponse(
+                    worker_id=request.worker_id,
+                    request_id=request.request_id,
+                    artifact_id=request.chunk.artifact_id,
+                    accepted=True,
+                    transfer_id=request.transfer_id,
+                    bytes_completed=status.bytes_completed,
+                    chunks_completed=status.chunks_completed,
+                    detail="chunk verified",
+                )
+            )
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.DATA_LOSS, str(exc))
+            raise
+
+    async def _complete_artifact(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, CompleteArtifactRequest)
+            self._authorize_artifact(
+                request.lease,
+                worker_id=request.worker_id,
+                artifact_id=request.manifest.artifact_id,
+            )
+            active = self._artifact_authorizations.get(request.transfer_id)
+            if active is None or active.nonce != request.lease.nonce:
+                raise PermissionError("artifact transfer is not authorized")
+            status = self._require_artifact_manager().complete_incoming(
+                transfer_id=request.transfer_id,
+                manifest=request.manifest,
+            )
+            self._artifact_authorizations.pop(request.transfer_id, None)
+            return serialize_message(
+                ArtifactTransferResponse(
+                    worker_id=request.worker_id,
+                    request_id=request.request_id,
+                    artifact_id=request.manifest.artifact_id,
+                    accepted=True,
+                    transfer_id=request.transfer_id,
+                    bytes_completed=status.bytes_completed,
+                    chunks_completed=status.chunks_completed,
+                    complete=True,
+                    verified=True,
+                    detail="artifact fully verified and published",
+                )
+            )
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.DATA_LOSS, str(exc))
+            raise
+
+    async def _verify_artifact(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, VerifyArtifactRequest)
+            self._authorize_artifact(
+                request.lease,
+                worker_id=request.worker_id,
+                artifact_id=request.artifact_id,
+            )
+            directory = self._require_artifact_manager().resolve(request.artifact_id)
+            return serialize_message(
+                ArtifactTransferResponse(
+                    worker_id=request.worker_id,
+                    request_id=request.request_id,
+                    artifact_id=request.artifact_id,
+                    accepted=True,
+                    complete=True,
+                    verified=True,
+                    detail=f"verified cached artifact {directory.name[:12]}",
+                )
+            )
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
         except Exception as exc:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
             raise

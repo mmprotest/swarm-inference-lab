@@ -5,6 +5,14 @@ from swarm_inference.doctor import DoctorBackend, TorchProbe
 from swarm_inference.host import HostRuntime
 
 
+def test_declared_python_compatibility_range() -> None:
+    assert doctor.python_version_supported(3, 11)
+    assert doctor.python_version_supported(3, 12)
+    assert doctor.python_version_supported(3, 13)
+    assert not doctor.python_version_supported(3, 10)
+    assert not doctor.python_version_supported(3, 14)
+
+
 def test_windows_cuda_recommendation_is_native_not_wsl(monkeypatch) -> None:
     monkeypatch.setattr(
         doctor,

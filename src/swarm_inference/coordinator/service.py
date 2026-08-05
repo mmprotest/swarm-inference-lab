@@ -9,10 +9,11 @@ import math
 import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from uuid import uuid4
 
 import grpc
@@ -59,6 +60,28 @@ from swarm_inference.exceptions import (
 )
 from swarm_inference.model.synthetic import synthetic_activation
 from swarm_inference.protocol.checksums import sha256_bytes
+from swarm_inference.protocol.cluster import (
+    ArtifactOperationRequest,
+    ArtifactOperationResponse,
+    ClusterRevokeRequest,
+    ClusterRevokeResponse,
+    ClusterStatusRequest,
+    ClusterStatusResponse,
+    NetworkProbeControlRequest,
+    NetworkProbeControlResponse,
+    NodeLeaveRequest,
+    NodeLeaveResponse,
+    NodeUpdateRequest,
+    NodeUpdateResponse,
+    PairingChallenge,
+    PairingCompleteRequest,
+    PairingCompleteResponse,
+    PairingCreateRequest,
+    PairingCreateResponse,
+    PairingHello,
+    ReachabilityCheckRequest,
+    ReachabilityCheckResponse,
+)
 from swarm_inference.protocol.messages import (
     Ack,
     ActivationMetadata,
@@ -124,6 +147,9 @@ from swarm_inference.transport.grpc_transport import GrpcTransport
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
 LOGGER = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from swarm_inference.cluster.pairing import PairingManager
 
 
 @dataclass(slots=True)
@@ -196,6 +222,7 @@ class CoordinatorCore:
         tokenizer: Any | None = None,
         worker_stage_affinity: dict[str, int] | None = None,
         after_token_hook: (Callable[[dict[str, Any]], Awaitable[RoutePlan | None]] | None) = None,
+        coordinator_identity_path: str | Path | None = None,
     ) -> None:
         if config is None and product_config is None:
             raise ValueError("coordinator requires an experiment or product configuration")
@@ -275,6 +302,13 @@ class CoordinatorCore:
         self.product_planner: ProductStagePlanner | None = None
         self.deployment_manager: DeploymentManager | None = None
         self.session_controller: ProductSessionController | None = None
+        self.cluster_control: PairingManager | None = None
+        self.network_probe_handler: (
+            Callable[[NetworkProbeControlRequest], Awaitable[NetworkProbeControlResponse]] | None
+        ) = None
+        self.artifact_operation_handler: (
+            Callable[[ArtifactOperationRequest], Awaitable[ArtifactOperationResponse]] | None
+        ) = None
         if product_config is not None:
             self.durable_state = DurableCoordinatorState(self.state_directory)
             configured_trust_store = product_config.trust_store_path
@@ -284,9 +318,12 @@ class CoordinatorCore:
                 else self.state_directory / "trusted-workers.json"
             )
             self.worker_trust_store = WorkerTrustStore(trust_store_path)
-            self.coordinator_identity = CoordinatorIdentity.load_or_create(
-                self.durable_state.identity_path
+            identity_path = (
+                Path(coordinator_identity_path).expanduser().resolve()
+                if coordinator_identity_path is not None
+                else self.durable_state.identity_path
             )
+            self.coordinator_identity = CoordinatorIdentity.load_or_create(identity_path)
             persisted_metadata = self.durable_state.load_metadata()
             if persisted_metadata:
                 expected_metadata = {
@@ -329,7 +366,24 @@ class CoordinatorCore:
                     product_config.maximum_active_sessions_per_worker
                 ),
             )
-            self.product_planner = ProductStagePlanner()
+            self.product_planner = ProductStagePlanner(
+                maximum_candidate_workers=product_config.maximum_candidate_workers,
+                maximum_stage_count=product_config.maximum_stage_count,
+                beam_width=product_config.planning_beam_width,
+                network_measurement_ttl_seconds=(product_config.network_measurement_ttl_seconds),
+                allow_unmeasured_links_for_explicit_plans=(
+                    product_config.allow_unmeasured_links_for_explicit_plans
+                ),
+                balanced_throughput_weight=product_config.balanced_throughput_weight,
+                balanced_memory_headroom_weight=(product_config.balanced_memory_headroom_weight),
+                balanced_reliability_weight=product_config.balanced_reliability_weight,
+                balanced_participation_weight=(product_config.balanced_participation_weight),
+                network_measurement_provider=lambda: (
+                    self.cluster_control.state.load_network_measurements().measurements
+                    if self.cluster_control is not None
+                    else []
+                ),
+            )
             self.deployment_manager = DeploymentManager(
                 registry=self.registry,
                 transport=product_transport,
@@ -441,7 +495,25 @@ class CoordinatorCore:
         dynamic = set(
             self.worker_trust_store.fingerprints() if self.worker_trust_store is not None else ()
         )
-        return tuple(sorted(static | dynamic))
+        values = static | dynamic
+        if self.cluster_control is not None:
+            values = {
+                fingerprint
+                for fingerprint in values
+                if not self.cluster_control.state.is_revoked_fingerprint(fingerprint)
+            }
+        return tuple(sorted(values))
+
+    def attach_cluster_control(self, control: PairingManager) -> None:
+        """Attach versioned cluster membership without replacing the product core."""
+
+        if self.product_config is None or self.coordinator_identity is None:
+            raise ValueError("cluster control requires a product coordinator identity")
+        if control.coordinator_identity.public_key_fingerprint != (
+            self.coordinator_identity.public_key_fingerprint
+        ):
+            raise IntegrityError("cluster control coordinator identity does not match the core")
+        self.cluster_control = control
 
     def is_worker_trusted(self, worker_id: str) -> bool:
         """Check current trust without mutating registration or active sessions."""
@@ -629,7 +701,10 @@ class CoordinatorCore:
 
     async def plan_product_model(self, request: ModelPlanRequest) -> ModelPlanResponse:
         catalog, planner, _, _ = self._require_product()
-        inspected = await catalog.inspect(request.reference)
+        inspected = await catalog.inspect(
+            request.reference,
+            allow_artifact_provisioning=request.allow_artifact_provisioning,
+        )
         plan = planner.build_plan(request, inspected)
         plan_directory = self.state_directory / "plans"
         plan_directory.mkdir(parents=True, exist_ok=True)
@@ -2534,6 +2609,56 @@ class CoordinatorRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "PairingHello": grpc.unary_unary_rpc_method_handler(
+                self._pairing_hello,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "PairingCreate": grpc.unary_unary_rpc_method_handler(
+                self._pairing_create,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "PairingComplete": grpc.unary_unary_rpc_method_handler(
+                self._pairing_complete,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "ClusterStatus": grpc.unary_unary_rpc_method_handler(
+                self._cluster_status,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "ClusterRevoke": grpc.unary_unary_rpc_method_handler(
+                self._cluster_revoke,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "NodeLeave": grpc.unary_unary_rpc_method_handler(
+                self._node_leave,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "NodeUpdate": grpc.unary_unary_rpc_method_handler(
+                self._node_update,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "ReachabilityCheck": grpc.unary_unary_rpc_method_handler(
+                self._reachability_check,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "NetworkProbeControl": grpc.unary_unary_rpc_method_handler(
+                self._network_probe_control,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "ArtifactOperation": grpc.unary_unary_rpc_method_handler(
+                self._artifact_operation,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
         }
         self.server.add_generic_rpc_handlers(
             (grpc.method_handlers_generic_handler("swarm.v1.Coordinator", handlers),)
@@ -2591,6 +2716,292 @@ class CoordinatorRpcServer:
 
     async def wait_for_termination(self) -> None:
         await self.server.wait_for_termination()
+
+    async def _pairing_hello(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, "pairing is not active")
+            raise RuntimeError("unreachable")
+        try:
+            response = await control.begin(
+                parse_message(data, PairingHello),
+                source_address=context.peer(),
+            )
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _pairing_create(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, "pairing is not active")
+            raise RuntimeError("unreachable")
+        try:
+            response = await control.create_authenticated_session(
+                parse_message(data, PairingCreateRequest)
+            )
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _pairing_complete(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, "pairing is not active")
+            raise RuntimeError("unreachable")
+        try:
+            response = await control.complete(
+                parse_message(data, PairingCompleteRequest),
+                source_address=context.peer(),
+            )
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _cluster_status(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "cluster control is not configured",
+            )
+            raise RuntimeError("unreachable")
+        try:
+            return serialize_message(
+                await control.status(parse_message(data, ClusterStatusRequest))
+            )
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _cluster_revoke(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "cluster control is not configured",
+            )
+            raise RuntimeError("unreachable")
+        try:
+            return serialize_message(
+                await control.revoke(parse_message(data, ClusterRevokeRequest))
+            )
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _node_leave(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "cluster control is not configured",
+            )
+            raise RuntimeError("unreachable")
+        try:
+            return serialize_message(await control.leave(parse_message(data, NodeLeaveRequest)))
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _node_update(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "cluster control is not configured",
+            )
+            raise RuntimeError("unreachable")
+        try:
+            return serialize_message(
+                await control.update_node(parse_message(data, NodeUpdateRequest))
+            )
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _reachability_check(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        if control is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "cluster control is not configured",
+            )
+            raise RuntimeError("unreachable")
+        request = parse_message(data, ReachabilityCheckRequest)
+        body = {"node_id": request.node_id, "timeout_ms": request.timeout_ms}
+        try:
+            membership = control.verify_authentication(
+                request.authentication,
+                action="reachability-check",
+                body=body,
+            )
+            if membership.node_id != request.node_id:
+                raise IntegrityError("a node may only request reachability for itself")
+            node = control.state.node(request.node_id)
+            if node is None or node.control_endpoint is None or node.data_endpoint is None:
+                raise IntegrityError("node has not published control and data endpoints")
+            from swarm_inference.host import is_wildcard_host, split_endpoint
+
+            endpoints = [node.control_endpoint, node.data_endpoint]
+            if node.probe_endpoint is not None:
+                endpoints.append(node.probe_endpoint)
+            for endpoint in endpoints:
+                host, port = split_endpoint(endpoint)
+                if is_wildcard_host(host) or port == 0:
+                    raise IntegrityError("node published an unreachable wildcard or zero port")
+
+            async def probe(endpoint: str) -> tuple[bool, str | None, str | None]:
+                host, port = split_endpoint(endpoint)
+                writer: asyncio.StreamWriter | None = None
+                try:
+                    _, opened_writer = await asyncio.wait_for(
+                        asyncio.open_connection(host, port),
+                        timeout=min(request.timeout_ms, 10_000) / 1000,
+                    )
+                    writer = opened_writer
+                    socket_name = opened_writer.get_extra_info("sockname")
+                    source = str(socket_name[0]) if socket_name else None
+                    return True, source, None
+                except (OSError, TimeoutError) as exc:
+                    return False, None, str(exc)
+                finally:
+                    if writer is not None:
+                        writer.close()
+                        with suppress(OSError, TimeoutError):
+                            await asyncio.wait_for(writer.wait_closed(), timeout=1.0)
+
+            results = await asyncio.gather(*(probe(endpoint) for endpoint in endpoints))
+            control_result, data_result = results[:2]
+            probe_result = results[2] if len(results) == 3 else None
+            reachable = (
+                control_result[0] and data_result[0] and (probe_result is None or probe_result[0])
+            )
+            detail = (
+                "coordinator reached all advertised node endpoints"
+                if reachable
+                else "coordinator reachability failed: "
+                f"control={control_result[2] or control_result[0]}, "
+                f"data={data_result[2] or data_result[0]}, "
+                f"probe={probe_result[2] or probe_result[0] if probe_result else 'not-advertised'}"
+            )
+            control._audit(
+                "reachability_passed" if reachable else "reachability_failed",
+                node_id=request.node_id,
+                category=None if reachable else "connectivity",
+                detail=detail,
+            )
+            return serialize_message(
+                ReachabilityCheckResponse(
+                    node_id=request.node_id,
+                    control_endpoint=node.control_endpoint,
+                    data_endpoint=node.data_endpoint,
+                    control_reachable=control_result[0],
+                    data_reachable=data_result[0],
+                    probe_endpoint=node.probe_endpoint,
+                    probe_reachable=probe_result[0] if probe_result else None,
+                    coordinator_source_address=control_result[1] or data_result[1],
+                    detail=detail,
+                )
+            )
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _network_probe_control(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        handler = self.core.network_probe_handler
+        if control is None or handler is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "network measurement service is not configured",
+            )
+            raise RuntimeError("unreachable")
+        request = parse_message(data, NetworkProbeControlRequest)
+        body = request.model_dump(
+            mode="json",
+            exclude={"authentication", "schema_version"},
+        )
+        try:
+            control.verify_authentication(
+                request.authentication,
+                action="network-probe-control",
+                body=body,
+            )
+            return serialize_message(await handler(request))
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _artifact_operation(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        handler = self.core.artifact_operation_handler
+        if control is None or handler is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "artifact service is not configured",
+            )
+            raise RuntimeError("unreachable")
+        request = parse_message(data, ArtifactOperationRequest)
+        body = request.model_dump(
+            mode="json",
+            exclude={"authentication", "schema_version"},
+        )
+        try:
+            actor = control.verify_authentication(
+                request.authentication,
+                action="artifact-operation",
+                body=body,
+            )
+            if request.source_node_id is not None and request.source_node_id != actor.node_id:
+                raise IntegrityError("artifact source node must match the authenticated member")
+            return serialize_message(await handler(request))
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
 
     async def _register(self, data: bytes, context: grpc.aio.ServicerContext[Any, Any]) -> bytes:
         try:
@@ -2914,6 +3325,88 @@ class CoordinatorClient:
             "/swarm.v1.Coordinator/PublishToken",
             publication,
             Ack,
+        )
+
+    async def pairing_hello(self, hello: PairingHello) -> PairingChallenge:
+        return await self._call(
+            "/swarm.v1.Coordinator/PairingHello",
+            hello,
+            PairingChallenge,
+        )
+
+    async def pairing_create(self, request: PairingCreateRequest) -> PairingCreateResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/PairingCreate",
+            request,
+            PairingCreateResponse,
+        )
+
+    async def pairing_complete(
+        self,
+        request: PairingCompleteRequest,
+    ) -> PairingCompleteResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/PairingComplete",
+            request,
+            PairingCompleteResponse,
+        )
+
+    async def cluster_status(self, request: ClusterStatusRequest) -> ClusterStatusResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/ClusterStatus",
+            request,
+            ClusterStatusResponse,
+        )
+
+    async def cluster_revoke(self, request: ClusterRevokeRequest) -> ClusterRevokeResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/ClusterRevoke",
+            request,
+            ClusterRevokeResponse,
+        )
+
+    async def node_leave(self, request: NodeLeaveRequest) -> NodeLeaveResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/NodeLeave",
+            request,
+            NodeLeaveResponse,
+        )
+
+    async def node_update(self, request: NodeUpdateRequest) -> NodeUpdateResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/NodeUpdate",
+            request,
+            NodeUpdateResponse,
+        )
+
+    async def reachability_check(
+        self,
+        request: ReachabilityCheckRequest,
+    ) -> ReachabilityCheckResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/ReachabilityCheck",
+            request,
+            ReachabilityCheckResponse,
+        )
+
+    async def network_probe_control(
+        self,
+        request: NetworkProbeControlRequest,
+    ) -> NetworkProbeControlResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/NetworkProbeControl",
+            request,
+            NetworkProbeControlResponse,
+        )
+
+    async def artifact_operation(
+        self,
+        request: ArtifactOperationRequest,
+    ) -> ArtifactOperationResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/ArtifactOperation",
+            request,
+            ArtifactOperationResponse,
         )
 
     async def close(self) -> None:

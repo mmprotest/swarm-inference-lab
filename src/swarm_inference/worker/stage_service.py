@@ -11,6 +11,7 @@ from swarm_inference.transport.stage_ring_server import StageRingServer
 from swarm_inference.worker.agent import WorkerAgent
 
 if TYPE_CHECKING:
+    from swarm_inference.cluster.artifacts import ArtifactManager
     from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 
@@ -22,6 +23,8 @@ class PersistentStageWorkerService:
         *,
         agent: WorkerAgent,
         stage_runtime: PersistentStageRuntime | None,
+        artifact_manager: ArtifactManager | None = None,
+        trusted_coordinator_fingerprint: str | None = None,
         model_shard_root: str | None = None,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         data_queue_capacity: int = 256,
@@ -37,6 +40,8 @@ class PersistentStageWorkerService:
             model_shard_root=model_shard_root,
             maximum_message_bytes=maximum_message_bytes,
             stage_runtime=stage_runtime,
+            artifact_manager=artifact_manager,
+            trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
         )
         self.data_server = (
             StageRingServer(
@@ -54,6 +59,17 @@ class PersistentStageWorkerService:
         self._lifecycle_lock = asyncio.Lock()
         self._started = False
         self._stopping = False
+
+    def configure_artifact_trust(
+        self,
+        *,
+        coordinator_public_key: str,
+        coordinator_fingerprint: str,
+    ) -> None:
+        self.control_server.configure_artifact_trust(
+            coordinator_public_key=coordinator_public_key,
+            coordinator_fingerprint=coordinator_fingerprint,
+        )
 
     async def start(
         self,

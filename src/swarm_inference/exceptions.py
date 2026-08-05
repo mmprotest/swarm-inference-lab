@@ -66,3 +66,19 @@ class RouteMessageError(IntegrityError):
 
 class EnvironmentIncompatibleError(SwarmError):
     """The requested execution backend cannot run in the current environment."""
+
+
+class CompatibilityError(SwarmError):
+    """Cluster protocol, artifact, model, or runtime versions are incompatible."""
+
+
+class PairingError(IntegrityError):
+    """A pairing invitation or authenticated transcript was rejected."""
+
+
+class PairingExpiredError(PairingError):
+    """A pairing session expired or was invalidated across coordinator restart."""
+
+
+class PairingRateLimitError(PairingError):
+    """A bounded pairing attempt or source-address limit was exceeded."""

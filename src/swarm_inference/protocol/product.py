@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from pydantic import Field, PositiveInt, model_validator
 
+from swarm_inference.cluster.models import ArtifactManifest
 from swarm_inference.config.models import StrictModel, WorkerCapability
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.model.product import (
@@ -50,6 +51,7 @@ class WorkerEligibilityReport(StrictModel):
     effective_memory_bytes: int = Field(ge=0)
     active_session_count: int = Field(ge=0)
     exact_model_identity: bool = False
+    artifact_provisionable: bool = False
     measured_profile: bool = False
 
 
@@ -62,6 +64,49 @@ class PlanWorkerAssignment(StrictModel):
     effective_memory_bytes: int = Field(gt=0)
     required_memory_bytes: int = Field(gt=0)
     assignment: StageAssignment
+    artifact_id: str | None = None
+    artifact_manifest: ArtifactManifest | None = None
+
+    @model_validator(mode="after")
+    def validate_artifact_identity(self) -> PlanWorkerAssignment:
+        manifest = self.artifact_manifest
+        if manifest is None:
+            return self
+        if self.artifact_id != manifest.artifact_id:
+            raise ValueError("assignment artifact ID does not match its manifest")
+        if (
+            manifest.layer_start != self.assignment.layer_start
+            or manifest.layer_end != self.assignment.layer_end
+            or manifest.owns_embeddings != self.assignment.owns_embeddings
+            or manifest.owns_final_norm != self.assignment.owns_final_norm
+            or manifest.owns_output_projection != self.assignment.owns_output_projection
+        ):
+            raise ValueError("assignment artifact ownership does not match its stage")
+        return self
+
+
+class DirectedLinkSelection(StrictModel):
+    source_worker_id: str
+    destination_worker_id: str
+    measured_at_unix_ns: PositiveInt | None = None
+    latency_ms: float = Field(ge=0)
+    transfer_ms: float = Field(ge=0)
+    upload_bytes_per_s: float | None = Field(default=None, gt=0)
+    fresh: bool
+    measured: bool
+    source_endpoint: str | None = None
+    destination_endpoint: str | None = None
+    assumption: str | None = None
+
+
+class NodeUtilityReport(StrictModel):
+    node_id: str
+    worker_id: str
+    included: bool
+    reason: str
+    expected_throughput_delta_tokens_s: float | None = None
+    memory_headroom_bytes: int | None = Field(default=None, ge=0)
+    reliability_score: float = Field(ge=0, le=1)
 
 
 class PlanCandidateReport(StrictModel):
@@ -79,6 +124,20 @@ class PlanCandidateReport(StrictModel):
     expected_critical_path_waits_ms: dict[str, float] = Field(default_factory=dict)
     expected_critical_path_ms: float | None = Field(default=None, ge=0)
     expected_utility_tokens_s: float | None = Field(default=None, ge=0)
+    objective_mode: Literal["speed", "capacity", "balanced"] = "speed"
+    objective_score: float | None = None
+    local_baseline_throughput_tokens_s: float | None = Field(default=None, ge=0)
+    distributed_expected_throughput_tokens_s: float | None = Field(default=None, ge=0)
+    throughput_delta_tokens_s: float | None = None
+    directed_links_selected: list[DirectedLinkSelection] = Field(default_factory=list)
+    excluded_workers: dict[str, str] = Field(default_factory=dict)
+    per_stage_headroom_bytes: dict[str, int] = Field(default_factory=dict)
+    search_method: str = "bounded-deterministic-beam-search"
+    beam_width: PositiveInt = 1
+    measurement_freshness: dict[str, str] = Field(default_factory=dict)
+    unmeasured_assumptions: list[str] = Field(default_factory=list)
+    confidence: Literal["measured", "mixed", "unmeasured"] = "unmeasured"
+    objective_components: dict[str, float] = Field(default_factory=dict)
 
 
 class StagePlanReport(StrictModel):
@@ -92,6 +151,20 @@ class StagePlanReport(StrictModel):
     reason_for_selection: str
     candidates: list[PlanCandidateReport]
     worker_eligibility: list[WorkerEligibilityReport]
+    objective_mode: Literal["speed", "capacity", "balanced"] = "speed"
+    local_baseline_throughput_tokens_s: float | None = Field(default=None, ge=0)
+    distributed_expected_throughput_tokens_s: float | None = Field(default=None, ge=0)
+    throughput_delta_tokens_s: float | None = None
+    directed_links_selected: list[DirectedLinkSelection] = Field(default_factory=list)
+    excluded_workers: dict[str, str] = Field(default_factory=dict)
+    per_stage_headroom_bytes: dict[str, int] = Field(default_factory=dict)
+    search_method: str = "bounded-deterministic-beam-search"
+    beam_width: PositiveInt = 1
+    measurement_freshness: dict[str, str] = Field(default_factory=dict)
+    unmeasured_assumptions: list[str] = Field(default_factory=list)
+    confidence: Literal["measured", "mixed", "unmeasured"] = "unmeasured"
+    objective_components: dict[str, float] = Field(default_factory=dict)
+    node_utility: list[NodeUtilityReport] = Field(default_factory=list)
 
 
 class ProductExpertPlacement(StrictModel):
@@ -258,13 +331,30 @@ class ModelInspectResponse(StrictModel):
 
 class ModelPlanRequest(StrictModel):
     reference: ProductModelReference
-    stage_count: int | None = Field(default=None, ge=1, le=2)
+    stage_count: int | None = Field(default=None, ge=1, le=128)
     partition_method: Literal["auto", "equal", "balanced"] = "auto"
+    mode: Literal["speed", "capacity", "balanced"] = "speed"
     require_distributed: bool = False
+    required_node_ids: list[str] = Field(default_factory=list)
+    excluded_node_ids: list[str] = Field(default_factory=list)
+    allow_artifact_provisioning: bool = False
     max_sequence_tokens: PositiveInt = 2048
     expert_policy: Literal["auto", "local", "whole-remote", "microshard-remote", "hybrid"] = "auto"
     require_remote_experts: bool = False
     allow_expert_local_fallback: bool = False
+
+    @model_validator(mode="after")
+    def validate_node_constraints(self) -> ModelPlanRequest:
+        if len(self.required_node_ids) != len(set(self.required_node_ids)):
+            raise ValueError("required node IDs must be unique")
+        if len(self.excluded_node_ids) != len(set(self.excluded_node_ids)):
+            raise ValueError("excluded node IDs must be unique")
+        overlap = set(self.required_node_ids) & set(self.excluded_node_ids)
+        if overlap:
+            raise ValueError(
+                "nodes cannot be both required and excluded: " + ", ".join(sorted(overlap))
+            )
+        return self
 
 
 class ModelPlanResponse(StrictModel):
@@ -277,6 +367,9 @@ class ModelDeployRequest(StrictModel):
 
 class DeploymentPhase(StrEnum):
     RESERVING = "reserving"
+    PREPARING_ARTIFACTS = "preparing-artifacts"
+    TRANSFERRING_ARTIFACTS = "transferring-artifacts"
+    VERIFYING_ARTIFACTS = "verifying-artifacts"
     LOADING = "loading"
     VERIFYING_LOADS = "verifying-loads"
     INSTALLING_ROUTES = "installing-routes"

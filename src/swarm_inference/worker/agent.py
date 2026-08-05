@@ -714,7 +714,15 @@ class WorkerAgent:
 
     def proof(self) -> dict[str, object]:
         proof: dict[str, object] = {
-            "capability": self.capability.model_dump(mode="json"),
+            # Health proofs cross deliberately small control-message limits in
+            # chunking tests. Defaults are part of the strict capability schema,
+            # so omitting them retains meaning while bounding wire overhead as
+            # compatibility evidence grows.
+            "capability": self.capability.model_dump(
+                mode="json",
+                exclude_defaults=True,
+                exclude_none=True,
+            ),
             "shards": self.shards.proof(),
             "metrics": self.metrics.snapshot(),
             "data_plane_mode": self._data_plane_mode.value,

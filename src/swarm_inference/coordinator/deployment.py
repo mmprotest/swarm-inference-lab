@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import os
 import time
 from collections.abc import Callable
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
+from swarm_inference.cluster.artifacts import ArtifactManager, artifact_chunks
 from swarm_inference.config.models import WorkerRole
 from swarm_inference.coordinator.registry import WorkerRegistry
 from swarm_inference.exceptions import IntegrityError
@@ -33,15 +35,22 @@ from swarm_inference.protocol.routes import (
     sign_route_lease,
 )
 from swarm_inference.protocol.stage_worker import (
+    ArtifactTransferLease,
+    ArtifactTransferResponse,
+    CompleteArtifactRequest,
     GetStageStatusRequest,
     InstallStageRouteRequest,
     LoadStageRequest,
+    PrepareArtifactRequest,
     RemoveStageRouteRequest,
     StageActionResponse,
     StageRouteEndpoint,
     StageStatusResponse,
     UnloadStageRequest,
+    VerifyArtifactRequest,
     VerifyStageRouteRequest,
+    WriteArtifactChunkRequest,
+    sign_artifact_transfer_lease,
 )
 from swarm_inference.runtime.telemetry import ProductTelemetry
 from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
@@ -63,6 +72,22 @@ def _atomic_write_text(path: Path, payload: str) -> None:
 
 
 class DeploymentTransport(Protocol):
+    async def prepare_artifact(
+        self, endpoint: str, request: PrepareArtifactRequest
+    ) -> ArtifactTransferResponse: ...
+
+    async def write_artifact_chunk(
+        self, endpoint: str, request: WriteArtifactChunkRequest
+    ) -> ArtifactTransferResponse: ...
+
+    async def complete_artifact(
+        self, endpoint: str, request: CompleteArtifactRequest
+    ) -> ArtifactTransferResponse: ...
+
+    async def verify_artifact(
+        self, endpoint: str, request: VerifyArtifactRequest
+    ) -> ArtifactTransferResponse: ...
+
     async def load_stage(self, endpoint: str, request: LoadStageRequest) -> StageActionResponse: ...
 
     async def unload_stage(
@@ -86,6 +111,183 @@ class DeploymentTransport(Protocol):
     ) -> StageStatusResponse: ...
 
 
+class DeploymentArtifactCoordinator(Protocol):
+    """Artifact phases invoked inside the canonical deployment transaction."""
+
+    async def prepare(self, plan: ProductStagePlan) -> None: ...
+
+    async def transfer(self, plan: ProductStagePlan) -> None: ...
+
+    async def verify(self, plan: ProductStagePlan) -> None: ...
+
+    async def release(self, plan: ProductStagePlan) -> None: ...
+
+
+class TransportArtifactCoordinator:
+    """Place coordinator-built artifacts over authenticated worker control RPCs."""
+
+    def __init__(
+        self,
+        *,
+        transport: DeploymentTransport,
+        manager: ArtifactManager,
+        identity: CoordinatorIdentity,
+        coordinator_id: str,
+        lease_seconds: float,
+        chunk_size_bytes: int = 1024 * 1024,
+    ) -> None:
+        if lease_seconds <= 0:
+            raise ValueError("artifact lease duration must be positive")
+        if not 0 < chunk_size_bytes <= 2 * 1024 * 1024:
+            raise ValueError("artifact RPC chunks must be in (0, 2 MiB]")
+        self.transport = transport
+        self.manager = manager
+        self.identity = identity
+        self.coordinator_id = coordinator_id
+        self.lease_seconds = lease_seconds
+        self.chunk_size_bytes = chunk_size_bytes
+        self._leases: dict[tuple[str, str], ArtifactTransferLease] = {}
+
+    def _lease(
+        self,
+        plan: ProductStagePlan,
+        assignment: PlanWorkerAssignment,
+    ) -> ArtifactTransferLease:
+        if assignment.artifact_id is None:
+            raise IntegrityError("stage assignment has no artifact identity")
+        key = (plan.plan_id, assignment.worker_id)
+        existing = self._leases.get(key)
+        if existing is not None:
+            return existing
+        issued = time.time_ns()
+        unsigned = ArtifactTransferLease(
+            artifact_id=assignment.artifact_id,
+            destination_worker_id=assignment.worker_id,
+            source_node_id=self.coordinator_id,
+            issued_at_unix_ns=issued,
+            expires_at_unix_ns=issued + int(self.lease_seconds * 1_000_000_000),
+            nonce=uuid4().hex,
+            coordinator_identity=self.coordinator_id,
+            coordinator_public_key=self.identity.public_key_b64,
+            coordinator_fingerprint=self.identity.public_key_fingerprint,
+        )
+        lease = sign_artifact_transfer_lease(unsigned, self.identity)
+        self._leases[key] = lease
+        return lease
+
+    @staticmethod
+    def _artifact_assignments(plan: ProductStagePlan) -> list[PlanWorkerAssignment]:
+        values = [item for item in plan.assignments if item.artifact_id is not None]
+        if values and len(values) != len(plan.assignments):
+            raise IntegrityError(
+                "every stage must use an artifact when artifact deployment is used"
+            )
+        return values
+
+    async def prepare(self, plan: ProductStagePlan) -> None:
+        for item in self._artifact_assignments(plan):
+            manifest = item.artifact_manifest
+            if manifest is None:
+                raise IntegrityError(f"stage {item.stage_id} has no artifact manifest")
+            if (
+                manifest.model_id != plan.model.model_id
+                or manifest.model_revision != plan.model.model_revision
+                or manifest.tokenizer_revision != plan.model.tokenizer_revision
+                or manifest.dtype != plan.model.dtype
+            ):
+                raise IntegrityError(f"stage {item.stage_id} artifact identity differs from plan")
+            self.manager.resolve(manifest.artifact_id)
+            self._lease(plan, item)
+
+    async def transfer(self, plan: ProductStagePlan) -> None:
+        for item in self._artifact_assignments(plan):
+            manifest = item.artifact_manifest
+            assert manifest is not None
+            source = self.manager.resolve(manifest.artifact_id)
+            chunks_total = sum(
+                math.ceil(file.size_bytes / self.chunk_size_bytes) for file in manifest.files
+            )
+            lease = self._lease(plan, item)
+            prepared = await self.transport.prepare_artifact(
+                item.control_endpoint,
+                PrepareArtifactRequest(
+                    worker_id=item.worker_id,
+                    request_id=f"{plan.plan_id}:artifact:prepare:{item.stage_id}",
+                    manifest=manifest,
+                    chunks_total=chunks_total,
+                    lease=lease,
+                ),
+            )
+            if not prepared.accepted or prepared.transfer_id is None:
+                raise RuntimeError(
+                    f"worker {item.worker_id} rejected artifact preparation: {prepared.detail}"
+                )
+            if prepared.complete and prepared.verified:
+                continue
+            transfer_id = prepared.transfer_id
+            sent = 0
+            for chunk, payload in artifact_chunks(
+                source,
+                chunk_size_bytes=self.chunk_size_bytes,
+            ):
+                response = await self.transport.write_artifact_chunk(
+                    item.control_endpoint,
+                    WriteArtifactChunkRequest(
+                        worker_id=item.worker_id,
+                        request_id=(
+                            f"{plan.plan_id}:artifact:chunk:{item.stage_id}:{chunk.chunk_index}"
+                        ),
+                        transfer_id=transfer_id,
+                        chunk=chunk,
+                        payload=payload,
+                        lease=lease,
+                    ),
+                )
+                if not response.accepted:
+                    raise RuntimeError(
+                        f"worker {item.worker_id} rejected artifact chunk "
+                        f"{chunk.chunk_index}: {response.detail}"
+                    )
+                sent += 1
+            if sent != chunks_total:
+                raise IntegrityError("artifact transport emitted an unexpected chunk count")
+            completed = await self.transport.complete_artifact(
+                item.control_endpoint,
+                CompleteArtifactRequest(
+                    worker_id=item.worker_id,
+                    request_id=f"{plan.plan_id}:artifact:complete:{item.stage_id}",
+                    transfer_id=transfer_id,
+                    manifest=manifest,
+                    lease=lease,
+                ),
+            )
+            if not completed.accepted or not completed.complete or not completed.verified:
+                raise RuntimeError(
+                    f"worker {item.worker_id} did not verify artifact: {completed.detail}"
+                )
+
+    async def verify(self, plan: ProductStagePlan) -> None:
+        for item in self._artifact_assignments(plan):
+            assert item.artifact_id is not None
+            response = await self.transport.verify_artifact(
+                item.control_endpoint,
+                VerifyArtifactRequest(
+                    worker_id=item.worker_id,
+                    request_id=f"{plan.plan_id}:artifact:verify:{item.stage_id}",
+                    artifact_id=item.artifact_id,
+                    lease=self._lease(plan, item),
+                ),
+            )
+            if not response.accepted or not response.verified:
+                raise RuntimeError(
+                    f"worker {item.worker_id} artifact verification failed: {response.detail}"
+                )
+
+    async def release(self, plan: ProductStagePlan) -> None:
+        for item in plan.assignments:
+            self._leases.pop((plan.plan_id, item.worker_id), None)
+
+
 class DeploymentManager:
     """Reserve, load, connect, verify, and explicitly unload one product topology."""
 
@@ -101,6 +303,7 @@ class DeploymentManager:
         coordinator_id: str = "coordinator",
         telemetry: ProductTelemetry | None = None,
         worker_trust_checker: Callable[[str], bool] | None = None,
+        artifact_coordinator: DeploymentArtifactCoordinator | None = None,
     ) -> None:
         self.registry = registry
         self.transport = transport
@@ -111,6 +314,7 @@ class DeploymentManager:
         self.coordinator_id = coordinator_id
         self.telemetry = telemetry
         self.worker_trust_checker = worker_trust_checker
+        self.artifact_coordinator = artifact_coordinator
         self._lock = asyncio.Lock()
         self._reserved_workers: set[str] = set()
         self._deployments: dict[str, DeploymentStatus] = {}
@@ -412,6 +616,14 @@ class DeploymentManager:
         )
         self._deployments[updated.topology_id] = updated
         self._save(updated)
+        if self.telemetry is not None:
+            self.telemetry.emit(
+                "deployment_progress",
+                deployment_id=updated.deployment_id,
+                topology_id=updated.topology_id,
+                phase=phase.value,
+                detail=detail,
+            )
         return updated
 
     async def deploy(
@@ -491,6 +703,31 @@ class DeploymentManager:
                     self._reserved_workers.add(worker_id)
                 for item in plan.assignments:
                     status.workers[item.stage_id].reserved = True
+                status = self._transition(
+                    status,
+                    DeploymentPhase.PREPARING_ARTIFACTS,
+                    detail="preparing exact stage artifact identities",
+                )
+                if self.artifact_coordinator is not None:
+                    await self.artifact_coordinator.prepare(plan)
+                elif any(item.artifact_id is not None for item in plan.assignments):
+                    raise RuntimeError(
+                        "stage artifacts were requested but no artifact manager exists"
+                    )
+                status = self._transition(
+                    status,
+                    DeploymentPhase.TRANSFERRING_ARTIFACTS,
+                    detail="placing stage artifacts on their assigned workers",
+                )
+                if self.artifact_coordinator is not None:
+                    await self.artifact_coordinator.transfer(plan)
+                status = self._transition(
+                    status,
+                    DeploymentPhase.VERIFYING_ARTIFACTS,
+                    detail="verifying complete artifact and ownership hashes",
+                )
+                if self.artifact_coordinator is not None:
+                    await self.artifact_coordinator.verify(plan)
                 status = self._transition(status, DeploymentPhase.LOADING)
                 lease_expiry = time.time_ns() + int(self.lease_seconds * 1_000_000_000)
                 load_requests = [
@@ -506,6 +743,7 @@ class DeploymentManager:
                         assignment=item.assignment,
                         device=item.device,
                         dtype=plan.model.dtype,
+                        artifact_id=item.artifact_id,
                         model_path=None,
                         allow_download=(
                             plan.model.resolution_policy == ModelResolutionPolicy.ALLOW_DOWNLOAD
@@ -572,6 +810,7 @@ class DeploymentManager:
                         or loaded.tokenizer_revision != plan.model.tokenizer_revision
                         or loaded.topology_id != plan.topology_id
                         or loaded.assignment != item.assignment
+                        or loaded.artifact_id != item.artifact_id
                         or int(loaded.ownership.get("stage_id", -1)) != item.stage_id
                         or int(loaded.ownership.get("layer_start", -1))
                         != item.assignment.layer_start
@@ -1236,6 +1475,11 @@ class DeploymentManager:
                 worker.route_installed = False
                 worker.peer_verified = False
         errors.extend(await self._remove_expert_routes(plan))
+        if self.artifact_coordinator is not None:
+            try:
+                await self.artifact_coordinator.release(plan)
+            except Exception as exc:
+                errors.append(f"artifact lease release failed: {type(exc).__name__}: {exc}")
         for worker_id in self._expert_worker_ids(plan):
             self._reserved_workers.discard(worker_id)
         return errors
@@ -1324,4 +1568,9 @@ class DeploymentManager:
         return status.model_copy(deep=True)
 
 
-__all__ = ["DeploymentManager", "DeploymentTransport"]
+__all__ = [
+    "DeploymentArtifactCoordinator",
+    "DeploymentManager",
+    "DeploymentTransport",
+    "TransportArtifactCoordinator",
+]

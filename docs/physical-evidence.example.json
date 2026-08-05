@@ -1,27 +1,130 @@
 {
+  "automatic_configuration": {
+    "backend_selected": true,
+    "control_endpoint_selected": true,
+    "data_endpoint_selected": true,
+    "memory_selected": true,
+    "ports_selected": true
+  },
   "commands": [
-    "uv run swarm coordinator --config configs/product/olmoe-stage-ring.yaml ...",
-    "uv run swarm worker --worker-id worker-a ...",
-    "uv run swarm worker --worker-id worker-b ...",
-    "uv run swarm model deploy --plan stage-plan.json ...",
-    "uv run swarm submit --request-id physical-normal ...",
-    "uv run swarm submit --request-id physical-recovery ..."
+    "swarm cluster create --name physical-gate-a",
+    "swarm node join <redacted-pairing-uri>",
+    "swarm cluster status --json",
+    "swarm run allenai/OLMoE-1B-7B-0125-Instruct --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea --mode speed --ndjson",
+    "swarm run allenai/OLMoE-1B-7B-0125-Instruct --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea --mode capacity --require-node node-laptop --ndjson"
   ],
   "document_type": "swarm-physical-two-machine-evidence",
-  "format_version": 1,
+  "format_version": 2,
   "machine_identities": {
     "worker_a": {
-      "machine_identity": "sha256:<machine-a>",
       "host_identity": "sha256:<host-a>",
+      "machine_identity": "sha256:<machine-a>",
       "process_namespace_identity": "sha256:<namespace-a>"
     },
     "worker_b": {
-      "machine_identity": "sha256:<machine-b>",
       "host_identity": "sha256:<host-b>",
+      "machine_identity": "sha256:<machine-b>",
       "process_namespace_identity": "sha256:<namespace-b>"
     }
   },
   "model_revision": "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e",
+  "tokenizer_revision": "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea",
+  "installations": [
+    {
+      "node_id": "node-rtx",
+      "repository_cloned": false,
+      "source": "source-wheel",
+      "status": "PASS",
+      "wheel_sha256": "sha256:<64-lowercase-hex>"
+    },
+    {
+      "node_id": "node-laptop",
+      "repository_cloned": false,
+      "source": "source-wheel",
+      "status": "PASS",
+      "wheel_sha256": "sha256:<64-lowercase-hex>"
+    }
+  ],
+  "pairing": {
+    "fingerprint_copied_manually": false,
+    "session_id": "<public-session-id>",
+    "single_use": true,
+    "status": "consumed"
+  },
+  "services": [
+    {
+      "node_id": "node-rtx",
+      "reconnected_after_restart": true,
+      "running_after_terminal_close": true
+    },
+    {
+      "node_id": "node-laptop",
+      "reconnected_after_restart": true,
+      "running_after_terminal_close": true
+    }
+  ],
+  "workers": [
+    {
+      "control_endpoint": "192.0.2.10:50052",
+      "data_plane_endpoint": "192.0.2.10:50053",
+      "machine_identity": "sha256:<machine-a>",
+      "public_key_fingerprint": "<worker-a-fingerprint>",
+      "worker_id": "node-rtx/cuda-0"
+    },
+    {
+      "control_endpoint": "192.0.2.20:50052",
+      "data_plane_endpoint": "192.0.2.20:50053",
+      "machine_identity": "sha256:<machine-b>",
+      "public_key_fingerprint": "<worker-b-fingerprint>",
+      "worker_id": "node-laptop/cpu-0"
+    }
+  ],
+  "worker_identities": {
+    "worker_a": {
+      "fingerprint": "<worker-a-fingerprint>",
+      "worker_id": "node-rtx/cuda-0"
+    },
+    "worker_b": {
+      "fingerprint": "<worker-b-fingerprint>",
+      "worker_id": "node-laptop/cpu-0"
+    }
+  },
+  "directed_network_links": [
+    {
+      "authentication_verified": true,
+      "destination_endpoint": "192.0.2.20:50054",
+      "destination_worker_id": "node-laptop/cpu-0",
+      "measured": true,
+      "source_worker_id": "node-rtx/cuda-0"
+    },
+    {
+      "authentication_verified": true,
+      "destination_endpoint": "192.0.2.10:50054",
+      "destination_worker_id": "node-rtx/cuda-0",
+      "measured": true,
+      "source_worker_id": "node-laptop/cpu-0"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "stage_id": 0,
+      "verified": true
+    },
+    {
+      "artifact_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "stage_id": 1,
+      "verified": true
+    }
+  ],
+  "topology": {
+    "assignments": [
+      {"stage_id": 0, "worker_id": "node-rtx/cuda-0"},
+      {"stage_id": 1, "worker_id": "node-laptop/cpu-0"}
+    ],
+    "route_generation": 2,
+    "topology_id": "<topology-id>"
+  },
   "normal_run": {
     "expected_token_ids": [123, 456],
     "status": "completed",
@@ -30,11 +133,7 @@
   "recovery_run": {
     "expected_token_ids": [123, 456],
     "recovery_events": [
-      {
-        "event": "RECOVERY_COMPLETED",
-        "old_route_generation": 1,
-        "new_route_generation": 2
-      }
+      {"event": "RECOVERY_COMPLETED", "new_route_generation": 2, "old_route_generation": 1}
     ],
     "route_generations": [1, 2],
     "status": "completed",
@@ -43,40 +142,24 @@
       {"token_id": 456, "token_position": 1}
     ]
   },
+  "speed_run": {
+    "excluded_slow_node_id": "node-laptop",
+    "expected_token_ids": [123, 456],
+    "status": "completed",
+    "token_ids": [123, 456]
+  },
+  "capacity_run": {
+    "expected_token_ids": [123, 456],
+    "included_slow_node_id": "node-laptop",
+    "status": "completed",
+    "token_ids": [123, 456]
+  },
   "source_files": {
-    "coordinator.log": "sha256:<lowercase-hex>",
-    "recovery-tokens.ndjson": "sha256:<lowercase-hex>",
-    "topology-after.json": "sha256:<lowercase-hex>",
-    "worker-a.log": "sha256:<lowercase-hex>",
-    "worker-b.log": "sha256:<lowercase-hex>"
-  },
-  "tokenizer_revision": "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea",
-  "topology": {
-    "assignments": [
-      {"stage_id": 0, "worker_id": "worker-a"},
-      {"stage_id": 1, "worker_id": "worker-b"}
-    ],
-    "route_generation": 2,
-    "topology_id": "<topology-id>"
-  },
-  "worker_identities": {
-    "worker_a": {"fingerprint": "<worker-a-fingerprint>", "worker_id": "worker-a"},
-    "worker_b": {"fingerprint": "<worker-b-fingerprint>", "worker_id": "worker-b"}
-  },
-  "workers": [
-    {
-      "control_endpoint": "192.0.2.10:50052",
-      "data_plane_endpoint": "192.0.2.10:50053",
-      "machine_identity": "sha256:<machine-a>",
-      "public_key_fingerprint": "<worker-a-fingerprint>",
-      "worker_id": "worker-a"
-    },
-    {
-      "control_endpoint": "192.0.2.20:50052",
-      "data_plane_endpoint": "192.0.2.20:50053",
-      "machine_identity": "sha256:<machine-b>",
-      "public_key_fingerprint": "<worker-b-fingerprint>",
-      "worker_id": "worker-b"
-    }
-  ]
+    "capacity.ndjson": "sha256:<64-lowercase-hex>",
+    "cluster-status-after-restart.json": "sha256:<64-lowercase-hex>",
+    "coordinator.log": "sha256:<64-lowercase-hex>",
+    "speed.ndjson": "sha256:<64-lowercase-hex>",
+    "worker-laptop.log": "sha256:<64-lowercase-hex>",
+    "worker-rtx.log": "sha256:<64-lowercase-hex>"
+  }
 }

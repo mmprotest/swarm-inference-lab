@@ -17,6 +17,21 @@
 
 ## Unreleased
 
+- Productize the canonical OLMoE runtime as a self-configuring cross-platform cluster with
+  `swarm cluster`, `swarm node`, and one-shot `swarm run` commands.
+- Add reusable idempotent coordinator/worker lifecycle classes and a persistent bounded node
+  agent using Task Scheduler, `systemd --user`, or LaunchAgent service adapters.
+- Add strict versioned cluster state, single-use transcript-bound X25519/Ed25519/AES-GCM pairing,
+  authenticated membership status, leave/revocation, and backwards-compatible manual trust.
+- Add operational backend/dtype benchmarks, automatic memory/endpoints/ports/firewall selection,
+  and authenticated directed peer-network measurements with TTL evidence.
+- Replace factorial two-stage planning with deterministic bounded N-stage beam search and speed,
+  capacity, and balanced node-utility reports.
+- Add stage-owned content-addressed OLMoE artifacts, resumable verified transfers, leases/LRU,
+  and canonical transactional deployment phases.
+- Add wheel-first Windows/POSIX installers, explicit update/rollback, multi-platform CI, expanded
+  software/physical acceptance gates, and trusted-LAN documentation.
+
 - Added a sustained single-host loopback scaling matrix with repeated 2, 4, and 8 worker measurements.
 - Added a parent scaling report that aggregates child evidence bundles without claiming physical scaling.
 - Added `scripts/run_first_experiment.ps1` and `configs/experiments/first_loopback_scaling.yaml`.

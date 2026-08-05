@@ -232,6 +232,9 @@ class PersistentStageRuntime:
         require_authenticated_routes: bool = False,
         route_future_tolerance_s: float = 30.0,
         nonce_cache_capacity: int = 4096,
+        artifact_resolver: Callable[[str], Path] | None = None,
+        artifact_lease_acquirer: Callable[[str, str], str] | None = None,
+        artifact_lease_releaser: Callable[[str], bool] | None = None,
     ) -> None:
         if not worker_id:
             raise ValueError("stage runtime worker ID cannot be empty")
@@ -254,6 +257,10 @@ class PersistentStageRuntime:
             else None
         )
         self.allow_model_download = allow_model_download
+        self._artifact_resolver = artifact_resolver
+        self._artifact_lease_acquirer = artifact_lease_acquirer
+        self._artifact_lease_releaser = artifact_lease_releaser
+        self._loaded_artifact_lease_id: str | None = None
         self.capability = capability
         self.identity = identity
         self._trusted_coordinators = dict(trusted_coordinators or {})
@@ -406,6 +413,14 @@ class PersistentStageRuntime:
         return Path(resolved).resolve()
 
     def _resolve_model_path(self, request: LoadStageRequest) -> Path:
+        if request.artifact_id is not None:
+            if self._artifact_resolver is not None:
+                return self._artifact_resolver(request.artifact_id).resolve()
+            if self.model_cache_dir is None:
+                raise FileNotFoundError("artifact loading requires a configured artifact cache")
+            from swarm_inference.cluster.artifacts import resolve_verified_artifact
+
+            return resolve_verified_artifact(self.model_cache_dir, request.artifact_id)
         return self._resolve_exact_model_path(
             model_id=request.model_id,
             model_revision=request.model_revision,
@@ -439,6 +454,7 @@ class PersistentStageRuntime:
         requested_model_revision: str,
         requested_tokenizer_revision: str,
         model_path: Path,
+        artifact_tokenizer_revision: str | None = None,
     ) -> None:
         config_path = model_path / "config.json"
         index_path = model_path / "model.safetensors.index.json"
@@ -465,10 +481,14 @@ class PersistentStageRuntime:
                 f"requested={requested_model_revision!r}"
             )
         tokenizer_files = ("tokenizer.json", "tokenizer_config.json")
-        if not any((model_path / filename).is_file() for filename in tokenizer_files):
+        if artifact_tokenizer_revision is None and not any(
+            (model_path / filename).is_file() for filename in tokenizer_files
+        ):
             raise IntegrityError("resolved checkpoint has no tokenizer identity files")
         resolved_tokenizer_revision: str | None
-        if requested_tokenizer_revision.startswith("sha256:"):
+        if artifact_tokenizer_revision is not None:
+            resolved_tokenizer_revision = artifact_tokenizer_revision
+        elif requested_tokenizer_revision.startswith("sha256:"):
             tokenizer_json = model_path / "tokenizer.json"
             if not tokenizer_json.is_file():
                 raise IntegrityError(
@@ -493,11 +513,33 @@ class PersistentStageRuntime:
                 raise IntegrityError("resolved checkpoint model ID does not match the request")
 
     def _verify_model_identity(self, request: LoadStageRequest, model_path: Path) -> None:
+        artifact_tokenizer_revision: str | None = None
+        if request.artifact_id is not None:
+            from swarm_inference.cluster.artifacts import verify_artifact_directory
+
+            manifest = verify_artifact_directory(
+                model_path, expected_artifact_id=request.artifact_id
+            )
+            assignment = request.assignment
+            if (
+                manifest.model_id != request.model_id
+                or manifest.model_revision != request.model_revision
+                or manifest.tokenizer_revision != request.tokenizer_revision
+                or manifest.dtype != request.dtype
+                or manifest.layer_start != assignment.layer_start
+                or manifest.layer_end != assignment.layer_end
+                or manifest.owns_embeddings != assignment.owns_embeddings
+                or manifest.owns_final_norm != assignment.owns_final_norm
+                or manifest.owns_output_projection != assignment.owns_output_projection
+            ):
+                raise IntegrityError("artifact identity or ownership differs from the load request")
+            artifact_tokenizer_revision = manifest.tokenizer_revision
         self._verify_model_identity_values(
             model_id=request.model_id,
             requested_model_revision=request.model_revision,
             requested_tokenizer_revision=request.tokenizer_revision,
             model_path=model_path,
+            artifact_tokenizer_revision=artifact_tokenizer_revision,
         )
 
     def _load_olmoe(
@@ -684,13 +726,18 @@ class PersistentStageRuntime:
                     f"device {self.device} already owns an incompatible resident stage"
                 )
             resolved_path: Path | None
-            if self._custom_loader:
+            if request.artifact_id is not None:
+                resolved_path = self._resolve_model_path(request)
+            elif self._custom_loader:
                 candidate = Path(request.model_path).expanduser() if request.model_path else None
                 resolved_path = (
                     candidate.resolve() if candidate is not None and candidate.is_dir() else None
                 )
             else:
                 resolved_path = self._resolve_model_path(request)
+            if not self._custom_loader:
+                if resolved_path is None:
+                    raise FileNotFoundError("product stage has no resolved model source")
                 self._verify_model_identity(request, resolved_path)
                 expert_plan = (
                     ProductStageExpertPlan.model_validate(request.expert_plan)
@@ -712,6 +759,11 @@ class PersistentStageRuntime:
                         if expert_plan is not None
                         else None
                     ),
+                )
+            artifact_lease_id: str | None = None
+            if request.artifact_id is not None and self._artifact_lease_acquirer is not None:
+                artifact_lease_id = self._artifact_lease_acquirer(
+                    request.artifact_id, request.topology_id
                 )
             before = self._memory_snapshot()
             executor: StageExecutor | None = None
@@ -753,6 +805,8 @@ class PersistentStageRuntime:
                     with suppress(Exception):
                         await asyncio.to_thread(executor.close)
                 self._release_device_memory()
+                if artifact_lease_id is not None and self._artifact_lease_releaser is not None:
+                    self._artifact_lease_releaser(artifact_lease_id)
                 raise
             self._load_count += 1
             path_text = (
@@ -769,6 +823,7 @@ class PersistentStageRuntime:
                 device=self.device,
                 dtype=self.dtype,
                 model_path=path_text,
+                artifact_id=request.artifact_id,
                 ownership=executor.ownership.to_dict(),
                 loaded_monotonic_ns=time.monotonic_ns(),
                 load_count=self._load_count,
@@ -782,6 +837,7 @@ class PersistentStageRuntime:
             self._loaded = _LoadedStage(
                 request=request.model_copy(deep=True), executor=executor, status=status
             )
+            self._loaded_artifact_lease_id = artifact_lease_id
             self._sync_capability()
         await self.start()
         return StageActionResponse(
@@ -877,7 +933,9 @@ class PersistentStageRuntime:
         )
         released = await asyncio.to_thread(self.sessions.cancel_all, loaded.executor)
         await asyncio.to_thread(loaded.executor.close)
+        artifact_lease_id = self._loaded_artifact_lease_id
         self._loaded = None
+        self._loaded_artifact_lease_id = None
         self._route = None
         self._verified_route_lease = None
         self._verified_expert_route_lease = None
@@ -889,6 +947,8 @@ class PersistentStageRuntime:
         if old_endpoint is not None:
             await self.connection_pool.remove(old_endpoint)
         self._release_device_memory()
+        if artifact_lease_id is not None and self._artifact_lease_releaser is not None:
+            self._artifact_lease_releaser(artifact_lease_id)
         return released
 
     def _release_device_memory(self) -> None:

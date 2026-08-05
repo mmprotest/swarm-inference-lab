@@ -1,169 +1,58 @@
-# Physical node procedure
+# Physical-node runbooks
 
-A physical result exists only when the standard artifacts come from actual
-networked machines. Never relabel loopback or emulated WAN measurements.
+Physical validation is distinct from CI, process isolation, simulation, and loopback. Every gate
+uses wheel installation without a repository clone, high-level pairing, persistent services,
+non-loopback direct traffic, exact token IDs, artifact hashes, and checksummed evidence schema 2.
 
-## Supported native targets
+## Gate A - Windows RTX 5090 plus Windows CPU laptop
 
-The coordinator and worker entry points are operating-system neutral. Initial
-backend targets are:
+Use [the complete two-machine procedure](physical-two-machine-acceptance.md). The RTX PC is the
+coordinator/local CUDA worker; the laptop is the joined CPU node. It must demonstrate speed-mode
+exclusion and capacity-mode participation in separate runs.
 
-| Host | Backend | Provision command |
-|---|---|---|
-| Windows 11 x86-64 + NVIDIA | `torch-cuda` | `.\scripts\bootstrap.ps1 -Backend cuda` |
-| Windows 11 x86-64 CPU | `torch-cpu` | `.\scripts\bootstrap.ps1 -Backend cpu` |
-| Linux x86-64 + NVIDIA | `torch-cuda` | `bash scripts/bootstrap.sh --backend cuda` |
-| Linux x86-64 CPU | `torch-cpu` | `bash scripts/bootstrap.sh --backend cpu` |
-| Linux ARM64 / Raspberry Pi | `torch-cpu` | `bash scripts/bootstrap.sh --backend cpu` |
-| macOS Apple Silicon | `torch-mps` or `torch-cpu` | `bash scripts/bootstrap.sh --backend mps` |
+Acceptance option: `--physical-config <configuration.json>`.
 
-Python 3.11, 3.12, and 3.13 are supported. Use the same supported Python minor
-version on all participating machines. Docker, WSL, and a shared filesystem are not required.
-Use the same Git commit and lock file on all machines.
+## Linux x86-64 CPU
 
-Run the backend-specific doctor on every host:
+Use two distinct Linux x86-64 machines on a trusted LAN.
 
-```bash
-uv run --no-sync swarm doctor --backend cpu
-uv run --no-sync swarm doctor --backend cuda
-uv run --no-sync swarm doctor --backend mps
-```
+1. Build the wheel elsewhere; copy the wheel and `install.sh`, not the repository.
+2. Install with `sh install.sh --source-wheel <wheel> --json`.
+3. Create on one host and join the second using the URI.
+4. Verify both `systemd --user` services persist after terminal closure and reconnect.
+5. Capture CPU backend/dtype/memory, private endpoints, both directed measurements, artifact
+   transfer, exact tokens, and speed/capacity decisions.
+6. Produce evidence schema 2 and validate with
+   `--linux-x86-physical-config <configuration.json>`.
 
-The report records the OS, architecture, Python, CPU, GPU, driver, PyTorch,
-runtime version, memory, disk, interfaces, ports, Git state, and package-lock
-hash. A CUDA or MPS doctor exits non-zero if a tiny operation cannot execute.
+If two Linux x86-64 machines are unavailable, status is `NOT_RUN`.
 
-## Network preparation
+## macOS ARM64 MPS
 
-Use a trusted LAN. Permit the coordinator port (default TCP 50051) and each
-worker port (default TCP 50052) in the host firewall for the private network
-only. Do not expose the initial insecure gRPC transport to the Internet.
+Use an Apple Silicon Mac and a distinct trusted-LAN peer. The Mac must pass an operational MPS
+tensor and benchmark probe; hardware/OS identity alone is insufficient. Install with the POSIX
+wheel installer, verify LaunchAgent persistence, capture MPS memory budgeting and direct link
+evidence, then validate with `--macos-arm64-physical-config <configuration.json>`.
 
-Measure round-trip latency and bidirectional bandwidth with OS-appropriate
-tools, retain their raw output, and mark copied network-profile values
-`measured: true`. Worker registration measures coordinator connect latency;
-bandwidth remains an assumption until separately measured.
+Hosted macOS CI can provide build/software status, but only real MPS execution produces physical
+validation. If unavailable, status is `NOT_RUN`.
 
-The worker automatically discovers the source address used to reach the
-coordinator. Supply `--advertise <reachable-ip>:<port>` explicitly on machines
-with VPNs, multiple NICs, containers, or unusual routing. Wildcard addresses
-such as `0.0.0.0` are valid bind addresses but are rejected as advertised
-addresses.
+## Linux ARM64 CPU
 
-## Synthetic physical transport run
+Use two distinct ARM64 Linux machines (or one ARM64 coordinator and a distinct compatible peer).
+An x86 emulator/build is not physical ARM64 validation. Install the wheel without Git, verify
+`systemd --user`, CPU benchmark/memory selection, direct links, artifacts, and exact tokens. Use
+`--linux-arm64-physical-config <configuration.json>`.
 
-On the coordinator:
+If real ARM64 hardware is unavailable, a build/emulation check may be reported only as
+implemented-unvalidated and the physical gate remains `NOT_RUN`.
 
-```bash
-uv run --no-sync swarm experiment \
-  --config configs/experiments/physical_lan.yaml \
-  --listen 0.0.0.0:50051 \
-  --workers 3 \
-  --startup-timeout-s 300 \
-  --duration-s 300
-```
+## Configuration contract
 
-The runner prints its run directory and waits for remote workers. On three
-other machines:
+Each configuration names coordinator/worker hosts, non-loopback endpoint, identity evidence,
+immutable model revision, and evidence directory. The validator resolves hosts, rejects shared
+addresses/process namespaces, validates exact token and route evidence, rejects manual low-level
+bootstrap commands, and verifies every source-file SHA-256.
 
-```bash
-uv run --no-sync swarm worker \
-  --coordinator 192.168.1.10:50051 \
-  --listen 0.0.0.0:50052 \
-  --backend synthetic \
-  --memory-limit-gb 4 \
-  --identity .swarm/worker.pem
-```
-
-This measures the physical transport and deterministic synthetic stage work.
-It is not evidence of real-model kernel performance.
-
-## Real Qwen3 physical run
-
-Shard once and copy the verified shard directory to worker-local storage. A
-worker may store every shard on disk, but it loads only its explicitly assigned
-stage and emits a tensor load proof.
-
-Coordinator:
-
-```bash
-uv run --no-sync swarm experiment \
-  --config configs/experiments/physical_lan.yaml \
-  --listen 0.0.0.0:50051 \
-  --workers 3 \
-  --duration-s 300 \
-  --model-manifest artifacts/models/qwen3-0.6b/manifest.json \
-  --model-path /local/model-metadata-and-tokenizer \
-  --dtype bfloat16 \
-  --prompt "Explain why distributed inference is difficult."
-```
-
-CUDA worker:
-
-```bash
-uv run --no-sync swarm worker \
-  --coordinator 192.168.1.10:50051 \
-  --listen 0.0.0.0:50052 \
-  --backend torch-cuda \
-  --memory-limit-gb 0.75 \
-  --model-shard-root /local/qwen3-0.6b \
-  --identity .swarm/cuda-worker.pem
-```
-
-CPU or ARM64 worker:
-
-```bash
-uv run --no-sync swarm worker \
-  --coordinator 192.168.1.10:50051 \
-  --listen 0.0.0.0:50052 \
-  --backend torch-cpu \
-  --memory-limit-gb 0.75 \
-  --model-shard-root /local/qwen3-0.6b \
-  --identity .swarm/cpu-worker.pem
-```
-
-Apple Silicon uses `--backend torch-mps`. On Windows, use ordinary Windows
-paths such as `D:\swarm\qwen3-0.6b`; no source changes or WSL translation are
-needed.
-
-The coordinator needs configuration, tokenizer/model metadata, and the
-manifest. It does not load a full model during the distributed phase.
-
-## Label enforcement
-
-The physical runner refuses to emit a successful `physical-lan` or
-`physical-wan` result unless registered workers include:
-
-1. a hostname different from the coordinator hostname; and
-2. a coordinator-reachable advertised address that is not local to the
-   coordinator.
-
-This deliberately rejects several logical workers on one computer as physical
-evidence. The execution-mode label comes from the resolved experiment config
-and is written into the report and environment manifest.
-
-## Failure test
-
-During a sustained run, terminate a worker that owns a replicated stage. Retain
-all coordinator and worker logs. A valid recovery artifact records the failed
-endpoint, replacement shard hash, ordered replay bytes, replay duration,
-additional computation, route change, and terminal correctness.
-
-After the run:
-
-```bash
-SWARM_RUN_PHYSICAL=1 \
-SWARM_PHYSICAL_RUN=artifacts/runs/<physical-run> \
-uv run --no-sync pytest -m physical
-```
-
-In PowerShell:
-
-```powershell
-$env:SWARM_RUN_PHYSICAL = "1"
-$env:SWARM_PHYSICAL_RUN = "artifacts\runs\<physical-run>"
-uv run --no-sync pytest -m physical
-```
-
-Before claiming capacity, verify that model weight bytes exceed every worker's
-enforced logical cap and that every load proof contains only assigned tensors.
+Never include pairing secrets, private keys, raw proofs, session/AES keys, or prompt contents in
+evidence. Redact the URI and retain only its public session ID and consumed result.

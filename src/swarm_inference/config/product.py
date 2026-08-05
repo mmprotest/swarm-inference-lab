@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import yaml
-from pydantic import Field, PositiveInt, field_validator
+from pydantic import Field, PositiveInt, field_validator, model_validator
 
 from swarm_inference.config.models import StrictModel
 
@@ -24,6 +24,21 @@ class ProductCoordinatorConfig(StrictModel):
     event_queue_capacity: PositiveInt = 256
     token_ingress_capacity: PositiveInt = 256
     planning_max_sequence_tokens: PositiveInt = 2048
+    maximum_candidate_workers: PositiveInt = Field(default=64, le=256)
+    maximum_stage_count: PositiveInt = Field(default=32, le=128)
+    planning_beam_width: PositiveInt = Field(default=512, le=8192)
+    network_measurement_ttl_seconds: PositiveInt = Field(default=900, le=86_400)
+    network_probe_max_bytes: PositiveInt = Field(
+        default=16 * 1024 * 1024,
+        ge=1024,
+        le=256 * 1024 * 1024,
+    )
+    network_probe_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    allow_unmeasured_links_for_explicit_plans: bool = True
+    balanced_throughput_weight: float = Field(default=0.45, ge=0)
+    balanced_memory_headroom_weight: float = Field(default=0.25, ge=0)
+    balanced_reliability_weight: float = Field(default=0.20, ge=0)
+    balanced_participation_weight: float = Field(default=0.10, ge=0)
     maximum_active_sessions_per_worker: PositiveInt = 256
     coordinator_id: str = "coordinator"
     route_future_tolerance_s: float = Field(default=30.0, ge=0)
@@ -41,6 +56,18 @@ class ProductCoordinatorConfig(StrictModel):
         from swarm_inference.security.trust_store import normalize_fingerprint
 
         return sorted({normalize_fingerprint(value) for value in values})
+
+    @model_validator(mode="after")
+    def validate_balanced_weights(self) -> Self:
+        total = (
+            self.balanced_throughput_weight
+            + self.balanced_memory_headroom_weight
+            + self.balanced_reliability_weight
+            + self.balanced_participation_weight
+        )
+        if total <= 0:
+            raise ValueError("at least one balanced-planning objective weight must be positive")
+        return self
 
 
 def load_product_config(path: Path) -> ProductCoordinatorConfig:

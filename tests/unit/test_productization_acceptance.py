@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from swarm_inference.acceptance import productization
 from swarm_inference.acceptance.productization import (
     REAL_MODEL_GATES,
     SOFTWARE_GATES,
@@ -24,6 +25,26 @@ from swarm_inference.acceptance.productization import (
     validate_physical_evidence,
     validate_repeatability_evidence,
 )
+
+
+def test_acceptance_parser_supports_required_repeatability_command() -> None:
+    arguments = productization._parser().parse_args(
+        [
+            "run",
+            "--require-repeatability",
+            "--repeatability-runs",
+            "3",
+            "--ring-repeatability-runs",
+            "5",
+            "--repeatability-timeout-seconds",
+            "600",
+        ]
+    )
+
+    assert arguments.run_repeatability is True
+    assert arguments.repeatability_runs == 3
+    assert arguments.ring_repeatability_runs == 5
+    assert arguments.repeatability_timeout_seconds == 600
 
 
 def result(
@@ -238,7 +259,7 @@ def _write_repeatability_bundle(tmp_path: Path) -> tuple[Path, dict[str, object]
         "document_type": "swarm-process-repeatability",
         "schema_version": 2,
         "test_command_version": 2,
-        "acceptance_schema_version": 2,
+        "acceptance_schema_version": 3,
         "git_commit": _git_output("rev-parse", "HEAD"),
         "git_dirty": bool(git_status),
         "git_status": git_status,
@@ -398,7 +419,7 @@ def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
     assert isinstance(worker_b_identity, dict)
     evidence = {
         "document_type": "swarm-physical-two-machine-evidence",
-        "format_version": 1,
+        "format_version": 2,
         "model_revision": "commit",
         "machine_identities": {
             "worker_a": worker_a_identity,
@@ -445,13 +466,84 @@ def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
             "recovery_events": [{"event": "recovery_completed"}],
             "route_generations": [1, 2],
         },
+        "installations": [
+            {
+                "node_id": "worker-a",
+                "status": "PASS",
+                "source": "source-wheel",
+                "repository_cloned": False,
+                "wheel_sha256": "sha256:" + "c" * 64,
+            },
+            {
+                "node_id": "worker-b",
+                "status": "PASS",
+                "source": "source-wheel",
+                "repository_cloned": False,
+                "wheel_sha256": "sha256:" + "c" * 64,
+            },
+        ],
+        "pairing": {
+            "status": "consumed",
+            "single_use": True,
+            "fingerprint_copied_manually": False,
+        },
+        "automatic_configuration": {
+            "backend_selected": True,
+            "memory_selected": True,
+            "control_endpoint_selected": True,
+            "data_endpoint_selected": True,
+            "ports_selected": True,
+        },
+        "services": [
+            {
+                "node_id": "worker-a",
+                "running_after_terminal_close": True,
+                "reconnected_after_restart": True,
+            },
+            {
+                "node_id": "worker-b",
+                "running_after_terminal_close": True,
+                "reconnected_after_restart": True,
+            },
+        ],
+        "artifacts": [
+            {"artifact_id": "a" * 64, "verified": True},
+            {"artifact_id": "b" * 64, "verified": True},
+        ],
+        "directed_network_links": [
+            {
+                "source_worker_id": "worker-a",
+                "destination_worker_id": "worker-b",
+                "destination_endpoint": "192.0.2.12:51052",
+                "measured": True,
+                "authentication_verified": True,
+            },
+            {
+                "source_worker_id": "worker-b",
+                "destination_worker_id": "worker-a",
+                "destination_endpoint": "192.0.2.11:51052",
+                "measured": True,
+                "authentication_verified": True,
+            },
+        ],
+        "speed_run": {
+            "status": "completed",
+            "expected_token_ids": [7, 8],
+            "token_ids": [7, 8],
+            "excluded_slow_node_id": "worker-b",
+        },
+        "capacity_run": {
+            "status": "completed",
+            "expected_token_ids": [7, 8],
+            "token_ids": [7, 8],
+            "included_slow_node_id": "worker-b",
+        },
         "commands": [
-            "swarm coordinator --config product.yaml",
-            "swarm worker --worker-id worker-a",
-            "swarm worker --worker-id worker-b",
-            "swarm model deploy --plan plan.json",
-            "swarm submit --request-id normal",
-            "swarm submit --request-id recovery",
+            "swarm cluster create --name physical-gate",
+            "swarm node join <redacted-pairing-uri>",
+            "swarm cluster status --json",
+            "swarm run model --mode speed --revision commit",
+            "swarm run model --mode capacity --revision commit",
         ],
         "source_files": {source.name: "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest()},
     }

@@ -7,14 +7,20 @@ remain on the direct binary stage-ring data plane.
 
 from __future__ import annotations
 
+import hmac
+import time
 from typing import Any
 
 from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
 
+from swarm_inference.cluster.models import ArtifactChunk, ArtifactManifest
 from swarm_inference.config.models import StrictModel, WorkerCapability
+from swarm_inference.exceptions import IntegrityError
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.protocol.expert import SignedExpertRouteLease
 from swarm_inference.protocol.routes import SignedRouteLease
+from swarm_inference.security.identity import WorkerIdentity, public_key_fingerprint
+from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
 
 
 class _StageControlModel(StrictModel):
@@ -47,6 +53,123 @@ class GetStageCapabilitiesResponse(_StageControlModel):
     capability: WorkerCapability
 
 
+class ArtifactTransferLease(_StageControlModel):
+    """Finite coordinator authorization for one exact worker artifact."""
+
+    artifact_id: str
+    destination_worker_id: str
+    source_node_id: str
+    issued_at_unix_ns: PositiveInt
+    expires_at_unix_ns: PositiveInt
+    nonce: str
+    coordinator_identity: str
+    coordinator_public_key: str
+    coordinator_fingerprint: str
+    signature: str = ""
+
+    @model_validator(mode="after")
+    def validate_lease(self) -> ArtifactTransferLease:
+        if self.expires_at_unix_ns <= self.issued_at_unix_ns:
+            raise ValueError("artifact transfer lease expiry must follow issue time")
+        actual = public_key_fingerprint(self.coordinator_public_key)
+        if not hmac.compare_digest(actual, self.coordinator_fingerprint):
+            raise ValueError("artifact transfer coordinator fingerprint mismatch")
+        return self
+
+
+def _artifact_lease_payload(lease: ArtifactTransferLease) -> bytes:
+    return canonical_json_bytes(lease.model_dump(mode="json", exclude={"signature"}))
+
+
+def sign_artifact_transfer_lease(
+    lease: ArtifactTransferLease,
+    identity: WorkerIdentity,
+) -> ArtifactTransferLease:
+    if lease.coordinator_public_key != identity.public_key_b64 or not hmac.compare_digest(
+        lease.coordinator_fingerprint,
+        identity.public_key_fingerprint,
+    ):
+        raise IntegrityError("artifact transfer signer does not match its coordinator identity")
+    return lease.model_copy(update={"signature": identity.sign(_artifact_lease_payload(lease))})
+
+
+def verify_artifact_transfer_lease(
+    lease: ArtifactTransferLease,
+    *,
+    trusted_coordinator_public_key: str,
+    trusted_coordinator_fingerprint: str,
+    destination_worker_id: str,
+    artifact_id: str,
+    now_unix_ns: int | None = None,
+) -> None:
+    if not lease.signature:
+        raise IntegrityError("artifact transfer lease signature is missing")
+    if lease.destination_worker_id != destination_worker_id:
+        raise IntegrityError("artifact transfer lease targets another worker")
+    if lease.artifact_id != artifact_id:
+        raise IntegrityError("artifact transfer lease targets another artifact")
+    if lease.coordinator_public_key != trusted_coordinator_public_key or not hmac.compare_digest(
+        lease.coordinator_fingerprint,
+        trusted_coordinator_fingerprint,
+    ):
+        raise IntegrityError("artifact transfer lease coordinator is not pinned")
+    now = time.time_ns() if now_unix_ns is None else now_unix_ns
+    if lease.expires_at_unix_ns <= now:
+        raise IntegrityError("artifact transfer lease has expired")
+    if lease.issued_at_unix_ns > now + 30_000_000_000:
+        raise IntegrityError("artifact transfer lease is future-dated")
+    verify_signature(
+        trusted_coordinator_public_key,
+        _artifact_lease_payload(lease),
+        lease.signature,
+    )
+
+
+class PrepareArtifactRequest(_StageControlModel):
+    worker_id: str
+    request_id: str
+    manifest: ArtifactManifest
+    chunks_total: NonNegativeInt
+    lease: ArtifactTransferLease
+
+
+class WriteArtifactChunkRequest(_StageControlModel):
+    worker_id: str
+    request_id: str
+    transfer_id: str
+    chunk: ArtifactChunk
+    payload: bytes
+    lease: ArtifactTransferLease
+
+
+class CompleteArtifactRequest(_StageControlModel):
+    worker_id: str
+    request_id: str
+    transfer_id: str
+    manifest: ArtifactManifest
+    lease: ArtifactTransferLease
+
+
+class VerifyArtifactRequest(_StageControlModel):
+    worker_id: str
+    request_id: str
+    artifact_id: str
+    lease: ArtifactTransferLease
+
+
+class ArtifactTransferResponse(_StageControlModel):
+    worker_id: str
+    request_id: str
+    artifact_id: str
+    accepted: bool
+    transfer_id: str | None = None
+    bytes_completed: NonNegativeInt = 0
+    chunks_completed: NonNegativeInt = 0
+    complete: bool = False
+    verified: bool = False
+    detail: str = ""
+
+
 class LoadStageRequest(_StageControlModel):
     worker_id: str
     request_id: str
@@ -59,13 +182,20 @@ class LoadStageRequest(_StageControlModel):
     assignment: StageAssignment
     device: str
     dtype: str
-    model_path: str | None = None
+    artifact_id: str | None = None
+    model_path: str | None = Field(default=None, json_schema_extra={"deprecated": True})
     allow_download: bool = False
     lease_expiry_unix_ns: PositiveInt | None = None
     deadline_unix_ns: PositiveInt | None = None
     expert_plan: dict[str, Any] | None = None
     expert_model_fingerprint: str | None = None
     expert_quantization_fingerprint: str | None = None
+
+    @model_validator(mode="after")
+    def validate_model_source(self) -> LoadStageRequest:
+        if self.artifact_id is not None and self.model_path is not None:
+            raise ValueError("artifact_id and the deprecated model_path override are exclusive")
+        return self
 
 
 class UnloadStageRequest(_StageControlModel):
@@ -227,6 +357,7 @@ class LoadedStageStatus(_StageControlModel):
     device: str
     dtype: str
     model_path: str
+    artifact_id: str | None = None
     ownership: dict[str, Any]
     loaded_monotonic_ns: PositiveInt
     load_count: PositiveInt
@@ -282,10 +413,13 @@ DrainWorker = DrainWorkerRequest
 
 
 __all__ = [
+    "ArtifactTransferLease",
+    "ArtifactTransferResponse",
     "CancelStageSession",
     "CancelStageSessionRequest",
     "CloseStageSession",
     "CloseStageSessionRequest",
+    "CompleteArtifactRequest",
     "DrainWorker",
     "DrainWorkerRequest",
     "GetStageCapabilities",
@@ -301,6 +435,7 @@ __all__ = [
     "LoadedStageStatus",
     "OpenStageSession",
     "OpenStageSessionRequest",
+    "PrepareArtifactRequest",
     "RemoveStageRoute",
     "RemoveStageRouteRequest",
     "StageActionResponse",
@@ -312,6 +447,10 @@ __all__ = [
     "TokenizeStageResponse",
     "UnloadStage",
     "UnloadStageRequest",
+    "VerifyArtifactRequest",
     "VerifyStageRoute",
     "VerifyStageRouteRequest",
+    "WriteArtifactChunkRequest",
+    "sign_artifact_transfer_lease",
+    "verify_artifact_transfer_lease",
 ]

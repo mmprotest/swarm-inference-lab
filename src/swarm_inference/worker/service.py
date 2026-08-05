@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from swarm_inference.config.models import Backend, QueueConfig, WorkerRole
+from swarm_inference.config.models import Backend, QueueConfig, WorkerCapability, WorkerRole
 from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
@@ -30,6 +30,7 @@ from swarm_inference.worker.capabilities import (
 from swarm_inference.worker.stage_service import PersistentStageWorkerService
 
 if TYPE_CHECKING:
+    from swarm_inference.cluster.artifacts import ArtifactManager
     from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 
@@ -58,6 +59,8 @@ async def run_worker(
     device: str | None = None,
     dtype: str = "bfloat16",
     model_cache_dir: str | Path | None = None,
+    artifact_storage_limit_bytes: int | None = None,
+    artifact_manager: ArtifactManager | None = None,
     configured_model_path: str | Path | None = None,
     allow_model_download: bool = False,
     max_stage_sessions: int = 256,
@@ -75,6 +78,9 @@ async def run_worker(
     expert_cache_budget_bytes: int = 0,
     expert_queue_capacity: int = 64,
     expert_max_concurrent_requests: int = 1,
+    startup_future: asyncio.Future[WorkerCapability] | None = None,
+    service_mode: str = "foreground",
+    platform_support_status: str = "unknown",
 ) -> None:
     roles = set(worker_roles or ({WorkerRole.CONTIGUOUS_STAGE} if stage_runtime_enabled else set()))
     expert_roles = roles & {
@@ -139,6 +145,9 @@ async def run_worker(
         upload_bandwidth_bytes_s=upload_bandwidth_bytes_s,
         download_bandwidth_bytes_s=download_bandwidth_bytes_s,
         network_rates_measured=network_rates_measured,
+        benchmark_dtype=dtype,
+        service_mode=service_mode,
+        platform_support_status=platform_support_status,
     )
     capability.roles = sorted(roles, key=lambda item: item.value)
     if stage_runtime_enabled and expert_roles:
@@ -282,6 +291,20 @@ async def run_worker(
         }
     stage_runtime: PersistentStageRuntime | None = None
     if stage_runtime_enabled:
+        if (
+            artifact_manager is None
+            and model_cache_dir is not None
+            and artifact_storage_limit_bytes is not None
+        ):
+            from swarm_inference.cluster.artifacts import ArtifactManager
+            from swarm_inference.cluster.state import ClusterStateStore
+
+            artifact_cache_root = Path(model_cache_dir).expanduser().resolve()
+            artifact_manager = ArtifactManager(
+                state=ClusterStateStore(artifact_cache_root.parent),
+                node_id=capability.node_id or capability.worker_id.split("/", 1)[0],
+                storage_limit_bytes=artifact_storage_limit_bytes,
+            )
         from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
         async def publish_token(publication: object) -> None:
@@ -341,10 +364,29 @@ async def run_worker(
             capability=capability,
             token_publisher=publish_token,
             identity=identity,
+            artifact_resolver=(artifact_manager.resolve if artifact_manager is not None else None),
+            artifact_lease_acquirer=(
+                lambda artifact_id, owner: (
+                    artifact_manager.lease(
+                        artifact_id,
+                        owner=owner,
+                        purpose="loaded-stage",
+                    ).lease_id
+                    if artifact_manager is not None
+                    else ""
+                )
+            )
+            if artifact_manager is not None
+            else None,
+            artifact_lease_releaser=(
+                artifact_manager.release if artifact_manager is not None else None
+            ),
         )
     service = PersistentStageWorkerService(
         agent=agent,
         stage_runtime=stage_runtime,
+        artifact_manager=artifact_manager,
+        trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
         model_shard_root=str(model_shard_root) if model_shard_root else None,
         data_queue_capacity=stage_execution_queue_capacity,
     )
@@ -416,6 +458,10 @@ async def run_worker(
             coordinator_public_key=response.coordinator_public_key,
             expected_fingerprint=trusted_coordinator_fingerprint,
         )
+        service.configure_artifact_trust(
+            coordinator_public_key=response.coordinator_public_key,
+            coordinator_fingerprint=response.coordinator_public_key_fingerprint,
+        )
     if expert_runtime is not None:
         if (
             response.coordinator_identity is None
@@ -432,6 +478,13 @@ async def run_worker(
             coordinator_public_key=response.coordinator_public_key,
             expected_fingerprint=trusted_coordinator_fingerprint,
         )
+
+    # The reusable WorkerRuntime waits for this exact point: the control/data
+    # services are live, registration has succeeded, and route trust is pinned.
+    # Direct callers that predate the lifecycle class need no synchronization
+    # object and retain their existing behavior.
+    if startup_future is not None and not startup_future.done():
+        startup_future.set_result(capability.model_copy(deep=True))
 
     async def heartbeat_loop() -> None:
         while True:

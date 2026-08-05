@@ -25,11 +25,11 @@ from typing import Any, Literal
 
 import psutil
 
-ACCEPTANCE_BUNDLE_VERSION = 2
+ACCEPTANCE_BUNDLE_VERSION = 3
 REPEATABILITY_SCHEMA_VERSION = 2
 REPEATABILITY_TEST_COMMAND_VERSION = 2
 MACHINE_IDENTITY_VERSION = 1
-PHYSICAL_EVIDENCE_VERSION = 1
+PHYSICAL_EVIDENCE_VERSION = 2
 REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
 REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 MANAGED_RESOURCE_WARNINGS = (
@@ -99,6 +99,74 @@ SOFTWARE_GATES = (
             "tests/unit/test_documented_product_commands.py",
         ),
         120,
+    ),
+    GateSpec(
+        "cluster_lifecycle_reuse",
+        (
+            "tests/unit/test_coordinator_runtime.py",
+            "tests/unit/test_worker_runtime.py",
+        ),
+        120,
+    ),
+    GateSpec(
+        "cluster_pairing_and_replay_resistance",
+        (
+            "tests/unit/test_pairing_protocol.py",
+            "tests/integration/test_cluster_pair_and_join.py",
+            "tests/integration/test_cluster_revocation.py",
+        ),
+        180,
+    ),
+    GateSpec(
+        "node_agent_process_restart",
+        ("tests/integration/test_cluster_agent_restart.py",),
+        180,
+    ),
+    GateSpec(
+        "n_stage_planning_and_ring",
+        (
+            "tests/unit/test_n_stage_planner.py",
+            "tests/integration/test_cluster_n_stage_ring.py",
+        ),
+        240,
+    ),
+    GateSpec(
+        "directed_network_evidence",
+        ("tests/unit/test_network_measurements.py",),
+        120,
+    ),
+    GateSpec(
+        "cluster_artifact_integrity",
+        (
+            "tests/unit/test_artifact_manager.py",
+            "tests/unit/test_stage_artifact_builder.py",
+            "tests/integration/test_cluster_artifact_transfer.py",
+        ),
+        240,
+    ),
+    GateSpec(
+        "high_level_cluster_orchestration",
+        (
+            "tests/unit/test_cluster_cli.py",
+            "tests/unit/test_node_cli.py",
+            "tests/unit/test_run_cli.py",
+            "tests/integration/test_cluster_auto_run.py",
+        ),
+        240,
+    ),
+    GateSpec(
+        "wheel_installation",
+        ("tests/integration/test_wheel_install.py",),
+        1800,
+    ),
+    GateSpec(
+        "cross_platform_status_evidence",
+        (
+            "tests/unit/test_platform_adapters.py",
+            "tests/unit/test_service_manager.py",
+            "tests/unit/test_ci_platform_matrix.py",
+        ),
+        180,
     ),
     GateSpec(
         "identity_and_trust_store",
@@ -208,6 +276,13 @@ REAL_MODEL_EVIDENCE_IDS = {
     "restart_and_replay_olmoe": "two-stage-restart-and-replay",
     "whole_expert_olmoe": "whole-remote",
     "native_microshard_olmoe": "microshard-remote",
+}
+
+PHYSICAL_GATES = {
+    "physical_two_machine": "Windows RTX 5090 coordinator/CUDA worker plus Windows CPU node",
+    "physical_linux_x86_64_cpu": "Linux x86-64 CPU cluster",
+    "physical_macos_arm64_mps": "macOS ARM64 MPS cluster",
+    "physical_linux_arm64_cpu": "Linux ARM64 CPU cluster",
 }
 
 
@@ -521,17 +596,134 @@ def validate_physical_evidence(
         ):
             errors.append("physical recovery must prove an increasing route generation")
 
+    installations = evidence.get("installations")
+    if not isinstance(installations, list) or len(installations) < 2:
+        errors.append("physical evidence must contain wheel installation evidence for both nodes")
+        installations = []
+    for installation in installations:
+        if not isinstance(installation, dict):
+            errors.append("physical installation records must be objects")
+            continue
+        if installation.get("status") != "PASS":
+            errors.append("each physical node must pass wheel installation")
+        if installation.get("source") != "source-wheel":
+            errors.append("physical nodes must install from the supplied wheel")
+        if installation.get("repository_cloned") is not False:
+            errors.append("physical installation must prove that no repository clone was used")
+        wheel_hash = str(installation.get("wheel_sha256", ""))
+        if not wheel_hash.startswith("sha256:") or len(wheel_hash) != 71:
+            errors.append("physical installation must record the source wheel SHA-256")
+
+    pairing = evidence.get("pairing")
+    if not isinstance(pairing, dict):
+        errors.append("physical evidence must contain pairing evidence")
+    elif (
+        pairing.get("status") != "consumed"
+        or pairing.get("single_use") is not True
+        or pairing.get("fingerprint_copied_manually") is not False
+    ):
+        errors.append(
+            "physical pairing must be consumed, single-use, and require no fingerprint copy"
+        )
+
+    automation = evidence.get("automatic_configuration")
+    required_automation = {
+        "backend_selected",
+        "memory_selected",
+        "control_endpoint_selected",
+        "data_endpoint_selected",
+        "ports_selected",
+    }
+    if not isinstance(automation, dict) or any(
+        automation.get(name) is not True for name in required_automation
+    ):
+        errors.append(
+            "physical evidence must prove automatic backend, memory, endpoint, and port selection"
+        )
+
+    services = evidence.get("services")
+    if not isinstance(services, list) or len(services) < 2:
+        errors.append("physical evidence must contain persistent service state for both nodes")
+    elif any(
+        not isinstance(item, dict)
+        or item.get("running_after_terminal_close") is not True
+        or item.get("reconnected_after_restart") is not True
+        for item in services
+    ):
+        errors.append("both physical node services must persist and reconnect after restart")
+
+    artifacts = evidence.get("artifacts")
+    if not isinstance(artifacts, list) or not artifacts:
+        errors.append("physical evidence must contain automatically provisioned stage artifacts")
+    elif any(
+        not isinstance(item, dict)
+        or item.get("verified") is not True
+        or len(str(item.get("artifact_id", "")).removeprefix("sha256:")) != 64
+        for item in artifacts
+    ):
+        errors.append("every physical stage artifact must have a verified content identity")
+
+    links = evidence.get("directed_network_links")
+    if not isinstance(links, list) or len(links) < 2:
+        errors.append("physical evidence must contain both directed node-to-node measurements")
+        links = []
+    directions = set()
+    for link in links:
+        if not isinstance(link, dict):
+            errors.append("directed network evidence records must be objects")
+            continue
+        source = str(link.get("source_worker_id", ""))
+        destination = str(link.get("destination_worker_id", ""))
+        directions.add((source, destination))
+        endpoint = str(link.get("destination_endpoint", ""))
+        host = endpoint.rsplit(":", 1)[0].strip("[]") if ":" in endpoint else endpoint
+        if (
+            link.get("measured") is not True
+            or link.get("authentication_verified") is not True
+            or not host
+            or _is_loopback_host(host)
+        ):
+            errors.append(
+                "directed physical links must be authenticated, measured, and non-loopback"
+            )
+    if directions and not all(
+        (destination, source) in directions for source, destination in directions
+    ):
+        errors.append("physical network evidence must contain both link directions")
+
+    for name, participation_key in (
+        ("speed_run", "excluded_slow_node_id"),
+        ("capacity_run", "included_slow_node_id"),
+    ):
+        run = evidence.get(name)
+        if not isinstance(run, dict):
+            errors.append(f"physical evidence must contain {name}")
+            continue
+        if (
+            run.get("status") != "completed"
+            or run.get("token_ids") != run.get("expected_token_ids")
+            or not run.get(participation_key)
+        ):
+            errors.append(
+                f"{name} must complete with exact tokens and prove the slow-node participation decision"
+            )
+
     commands = [_command_text(item) for item in evidence.get("commands", [])]
     required_commands = {
-        "coordinator": 1,
-        "worker": 2,
-        "model deploy": 1,
-        "submit": 2,
+        "cluster create": 1,
+        "node join": 1,
+        "cluster status": 1,
+        "run": 2,
+        "--mode speed": 1,
+        "--mode capacity": 1,
     }
     for fragment, minimum in required_commands.items():
-        count = sum(f"swarm {fragment}" in command for command in commands)
+        count = sum(fragment in command for command in commands)
         if count < minimum:
-            errors.append(f"physical evidence is missing {minimum} 'swarm {fragment}' command(s)")
+            errors.append(f"physical evidence is missing {minimum} '{fragment}' command(s)")
+    forbidden_manual = ("swarm identity", "swarm coordinator", "swarm worker", "swarm model deploy")
+    if any(fragment in command for fragment in forbidden_manual for command in commands):
+        errors.append("physical product acceptance used a manual low-level provisioning command")
 
     source_files = evidence.get("source_files")
     if not isinstance(source_files, dict) or not source_files:
@@ -1101,18 +1293,26 @@ class ProductizationAcceptanceRunner:
         self.results.append(result)
         return result
 
-    def run_repeatability(self, *, timeout_s: float) -> GateResult:
+    def run_repeatability(
+        self,
+        *,
+        timeout_s: float,
+        full_runs: int = 3,
+        stage_runs: int = 5,
+    ) -> GateResult:
         if timeout_s <= 0:
             raise ValueError("repeatability timeout must be positive")
+        if full_runs <= 0 or stage_runs <= 0:
+            raise ValueError("repeatability run counts must be positive")
         output_root = self.bundle / "repeatability-runs"
         output_root.mkdir()
         command = [
             sys.executable,
             str(self.repository_root / "scripts/run_productization_process_suite.py"),
             "--full-runs",
-            "3",
+            str(full_runs),
             "--stage-runs",
-            "5",
+            str(stage_runs),
             "--timeout-seconds",
             str(timeout_s),
             "--output",
@@ -1208,10 +1408,17 @@ class ProductizationAcceptanceRunner:
         for spec in REAL_MODEL_GATES:
             self._run_pytest(spec, category="real_model")
 
-    def record_physical_not_run(self, reason: str) -> None:
+    def record_physical_not_run(
+        self,
+        reason: str,
+        *,
+        gate_name: str = "physical_two_machine",
+    ) -> None:
+        if gate_name not in PHYSICAL_GATES:
+            raise ValueError(f"unknown physical gate {gate_name!r}")
         self.results.append(
             GateResult(
-                name="physical_two_machine",
+                name=gate_name,
                 category="physical",
                 status=AcceptanceStatus.NOT_RUN,
                 command=[],
@@ -1219,7 +1426,14 @@ class ProductizationAcceptanceRunner:
             )
         )
 
-    def validate_physical(self, configuration_path: Path) -> None:
+    def validate_physical(
+        self,
+        configuration_path: Path,
+        *,
+        gate_name: str = "physical_two_machine",
+    ) -> None:
+        if gate_name not in PHYSICAL_GATES:
+            raise ValueError(f"unknown physical gate {gate_name!r}")
         try:
             configuration = json.loads(configuration_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
@@ -1250,7 +1464,7 @@ class ProductizationAcceptanceRunner:
                 self.physical_evidence = json.loads(summary_path.read_text(encoding="utf-8"))
         self.results.append(
             GateResult(
-                name="physical_two_machine",
+                name=gate_name,
                 category="physical",
                 status=status,
                 command=[],
@@ -1434,11 +1648,21 @@ def _parser() -> argparse.ArgumentParser:
     run = subparsers.add_parser("run")
     run.add_argument("--output", type=Path, default=Path("artifacts/acceptance"))
     repeatability = run.add_mutually_exclusive_group()
-    repeatability.add_argument("--run-repeatability", action="store_true")
+    repeatability.add_argument(
+        "--run-repeatability",
+        "--require-repeatability",
+        dest="run_repeatability",
+        action="store_true",
+    )
     repeatability.add_argument("--repeatability-evidence", type=Path)
+    run.add_argument("--repeatability-runs", type=int, default=3)
+    run.add_argument("--ring-repeatability-runs", type=int, default=5)
     run.add_argument("--repeatability-timeout-seconds", type=float, default=600)
     run.add_argument("--real-model", action="store_true")
     run.add_argument("--physical-config", type=Path)
+    run.add_argument("--linux-x86-physical-config", type=Path)
+    run.add_argument("--macos-arm64-physical-config", type=Path)
+    run.add_argument("--linux-arm64-physical-config", type=Path)
     return parser
 
 
@@ -1454,6 +1678,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command != "run":
         _parser().print_help()
         return 2
+    if args.repeatability_runs <= 0 or args.ring_repeatability_runs <= 0:
+        _parser().error("repeatability run counts must be positive")
     repository_root = Path(__file__).resolve().parents[3]
     runner = ProductizationAcceptanceRunner(
         repository_root=repository_root,
@@ -1461,7 +1687,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     runner.run_software()
     if args.run_repeatability:
-        runner.run_repeatability(timeout_s=args.repeatability_timeout_seconds)
+        runner.run_repeatability(
+            timeout_s=args.repeatability_timeout_seconds,
+            full_runs=args.repeatability_runs,
+            stage_runs=args.ring_repeatability_runs,
+        )
     elif args.repeatability_evidence is not None:
         runner.consume_repeatability(args.repeatability_evidence)
     else:
@@ -1473,10 +1703,35 @@ def main(argv: list[str] | None = None) -> int:
         runner.run_real_model()
     else:
         runner.record_real_not_run("--real-model was not requested")
-    if args.physical_config is not None:
-        runner.validate_physical(args.physical_config.expanduser().resolve())
-    else:
-        runner.record_physical_not_run("--physical-config was not provided")
+    physical_arguments = (
+        ("physical_two_machine", "--physical-config", args.physical_config),
+        (
+            "physical_linux_x86_64_cpu",
+            "--linux-x86-physical-config",
+            args.linux_x86_physical_config,
+        ),
+        (
+            "physical_macos_arm64_mps",
+            "--macos-arm64-physical-config",
+            args.macos_arm64_physical_config,
+        ),
+        (
+            "physical_linux_arm64_cpu",
+            "--linux-arm64-physical-config",
+            args.linux_arm64_physical_config,
+        ),
+    )
+    for gate_name, option, configuration in physical_arguments:
+        if configuration is not None:
+            runner.validate_physical(
+                configuration.expanduser().resolve(),
+                gate_name=gate_name,
+            )
+        else:
+            runner.record_physical_not_run(
+                f"{option} was not provided; {PHYSICAL_GATES[gate_name]} was not run",
+                gate_name=gate_name,
+            )
     bundle, overall = runner.write_bundle()
     print(f"acceptance_bundle={bundle}")
     print(f"overall_status={overall.value}")

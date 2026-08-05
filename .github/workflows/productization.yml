@@ -6,41 +6,98 @@ on:
     branches: [main]
 
 jobs:
-  python-matrix:
+  quality:
     runs-on: windows-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: actions/setup-python@v5
+      - run: uv sync --python 3.11 --extra cpu --extra dev
+      - run: uv run --python 3.11 ruff format --check src tests scripts
+      - run: uv run --python 3.11 ruff check src tests scripts
+      - run: uv run --python 3.11 mypy
+
+  platform-product:
+    needs: quality
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: windows-x86_64-cpu
+            extra: cpu
+          - runner: ubuntu-24.04
+            platform: linux-x86_64-cpu
+            extra: cpu
+          - runner: macos-14
+            platform: macos-arm64-mps
+            extra: mps
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64-cpu
+            extra: cpu
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - run: uv sync --python 3.11 --extra ${{ matrix.extra }} --extra dev
+      - run: uv build --wheel
+      - name: Fresh wheel install (no checkout imports)
+        run: >-
+          uv run --python 3.11 python scripts/test_wheel_install.py
+          --uv uv --python 3.11 --extra ${{ matrix.extra }}
+          --output artifacts/wheel-install-${{ matrix.platform }}.json
+      - name: Installer smoke (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $wheel = (Get-ChildItem dist -Filter *.whl | Select-Object -First 1).FullName
+          $env:UV_TOOL_DIR = "$env:RUNNER_TEMP\swarm-tools"
+          $env:UV_TOOL_BIN_DIR = "$env:RUNNER_TEMP\swarm-bin"
+          & ./scripts/install.ps1 -SourceWheel $wheel -UvPath (Get-Command uv).Source -Json
+      - name: Installer smoke (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          wheel=$(find dist -maxdepth 1 -name '*.whl' -print -quit)
+          export UV_TOOL_DIR="$RUNNER_TEMP/swarm-tools"
+          export UV_TOOL_BIN_DIR="$RUNNER_TEMP/swarm-bin"
+          sh scripts/install.sh --source-wheel "$wheel" --uv-path "$(command -v uv)" --json
+      - run: uv run --python 3.11 pytest tests/unit -q
+      - name: Non-GPU integration and failure suite
+        run: uv run --python 3.11 pytest tests/integration tests/failure -m "not gpu" -q
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.platform }}-product-evidence
+          path: artifacts
+          if-no-files-found: warn
+
+  python-compatibility:
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
       - run: uv sync --python ${{ matrix.python-version }} --extra cpu --extra dev
-      - if: matrix.python-version == '3.11'
-        run: uv run --python ${{ matrix.python-version }} ruff format --check src tests scripts
-      - if: matrix.python-version == '3.11'
-        run: uv run --python ${{ matrix.python-version }} ruff check src tests scripts
-      - if: matrix.python-version == '3.11'
-        run: uv run --python ${{ matrix.python-version }} mypy
       - run: uv run --python ${{ matrix.python-version }} pytest tests/unit -q
-      - name: Stage-ring lifecycle contract
-        run: >-
-          uv run --python ${{ matrix.python-version }} pytest
-          tests/unit/test_stage_ring_service_transport.py
-          tests/unit/test_process_harness.py -q
-      - name: Non-GPU process integration
-        run: >-
+      - run: >-
           uv run --python ${{ matrix.python-version }} pytest
           tests/integration tests/failure -m "not gpu" -q
 
   software-acceptance:
-    needs: python-matrix
+    needs: platform-product
     runs-on: windows-latest
     timeout-minutes: 120
     steps:
@@ -48,10 +105,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
       - run: uv sync --python 3.11 --extra cpu --extra dev
+      - run: uv build --wheel
       - name: Authoritative software acceptance with repeatability
         run: >-
           uv run --python 3.11 python scripts/run_productization_acceptance.py run

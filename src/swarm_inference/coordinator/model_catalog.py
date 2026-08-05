@@ -11,6 +11,7 @@ from swarm_inference.config.models import Backend, WorkerCapability, WorkerRole
 from swarm_inference.coordinator.registry import WorkerRegistry
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.model.product import (
+    ModelResolutionPolicy,
     ProductModelMetadata,
     ProductModelReference,
     ProductModelSpec,
@@ -133,7 +134,12 @@ class ProductModelCatalog:
             reasons.append("worker has no measured positive stage benchmark")
         return reasons
 
-    async def inspect(self, reference: ProductModelReference) -> InspectedProductModel:
+    async def inspect(
+        self,
+        reference: ProductModelReference,
+        *,
+        allow_artifact_provisioning: bool = False,
+    ) -> InspectedProductModel:
         registered = sorted(self.registry.workers(), key=lambda item: item.worker_id)
         if not registered:
             raise RuntimeError("no workers are registered")
@@ -148,9 +154,9 @@ class ProductModelCatalog:
             for capability in registered
         )
 
-        async def inspect_worker(
+        async def inspect_capability(
             registered_capability: WorkerCapability,
-        ) -> tuple[WorkerCapability, list[str], WorkerModelProbeResponse | None]:
+        ) -> tuple[WorkerCapability, list[str]]:
             healthy, _ = self.registry.registration_health(registered_capability.worker_id)
             reasons = self._base_rejections(
                 registered_capability,
@@ -160,7 +166,7 @@ class ProductModelCatalog:
             endpoint = registered_capability.control_endpoint or registered_capability.endpoint
             capability = registered_capability
             if endpoint is None or reasons:
-                return capability, reasons, None
+                return capability, reasons
             request_id = f"catalog-{uuid4().hex}"
             try:
                 advertised = await self.transport.get_stage_capabilities(
@@ -173,7 +179,7 @@ class ProductModelCatalog:
                 capability = advertised.capability
             except Exception as exc:
                 reasons.append(f"stage capability probe failed: {type(exc).__name__}: {exc}")
-                return capability, reasons, None
+                return capability, reasons
             reasons.extend(
                 self._base_rejections(
                     capability,
@@ -181,53 +187,76 @@ class ProductModelCatalog:
                     healthy_registration=healthy,
                 )
             )
-            if reasons:
-                return capability, reasons, None
+            return capability, reasons
+
+        capabilities_checked = await asyncio.gather(
+            *(inspect_capability(worker) for worker in registered)
+        )
+        probe_results: dict[str, WorkerModelProbeResponse] = {}
+        probe_diagnostics: dict[str, str] = {}
+
+        async def probe_worker(
+            capability: WorkerCapability,
+            selected_reference: ProductModelReference,
+        ) -> WorkerModelProbeResponse | None:
+            endpoint = capability.control_endpoint or capability.endpoint
+            assert endpoint is not None
+            request_id = f"catalog-{uuid4().hex}"
             try:
-                probe = await self.transport.inspect_stage_model(
+                return await self.transport.inspect_stage_model(
                     endpoint,
                     WorkerModelProbeRequest(
                         worker_id=capability.worker_id,
                         request_id=request_id,
-                        reference=reference,
+                        reference=selected_reference,
                     ),
                 )
             except Exception as exc:
-                reasons.append(f"exact model probe failed: {type(exc).__name__}: {exc}")
-                return capability, reasons, None
-            if not probe.available:
-                reasons.append(f"exact model identity unavailable: {probe.detail}")
-            elif probe.metadata is not None:
-                minimum_stage_bytes = min(
-                    cost.weight_bytes
-                    - (cost.expert_weight_bytes if expert_capacity_registered else 0)
-                    + cost.peak_temporary_bytes
-                    + cost.kv_bytes_per_token
-                    + (probe.metadata.embedding_weight_bytes if cost.layer_id == 0 else 0)
-                    + (
-                        probe.metadata.final_weight_bytes
-                        if cost.layer_id == len(probe.metadata.layer_costs) - 1
-                        else 0
-                    )
-                    for cost in probe.metadata.layer_costs
+                probe_diagnostics[capability.worker_id] = (
+                    f"exact model probe failed: {type(exc).__name__}: {exc}"
                 )
-                if capability.effective_memory_bytes < minimum_stage_bytes:
-                    reasons.append(
-                        f"effective memory {capability.effective_memory_bytes} bytes cannot host "
-                        f"even the smallest valid stage ({minimum_stage_bytes} bytes)"
-                    )
-            return capability, reasons, probe
+                return None
 
-        inspected = await asyncio.gather(*(inspect_worker(worker) for worker in registered))
+        # Local-only probes are safe to run on every worker. They never copy the
+        # complete snapshot onto artifact-only participants.
+        local_reference = reference.model_copy(
+            update={"resolution_policy": ModelResolutionPolicy.LOCAL_ONLY}
+        )
+        base_candidates = [
+            capability for capability, reasons in capabilities_checked if not reasons
+        ]
+        local_probes = await asyncio.gather(
+            *(probe_worker(capability, local_reference) for capability in base_candidates)
+        )
+        for capability, probe in zip(base_candidates, local_probes, strict=True):
+            if probe is not None:
+                probe_results[capability.worker_id] = probe
+                if not probe.available:
+                    probe_diagnostics[capability.worker_id] = probe.detail
+
         available = [
             (capability, probe)
-            for capability, reasons, probe in inspected
-            if not reasons and probe is not None and probe.available
+            for capability in base_candidates
+            if (probe := probe_results.get(capability.worker_id)) is not None and probe.available
         ]
+        # If no exact source exists locally, permit exactly one deterministic
+        # worker to acquire the immutable upstream snapshot. All other nodes
+        # receive stage-owned artifacts only.
+        if not available and reference.resolution_policy == ModelResolutionPolicy.ALLOW_DOWNLOAD:
+            source = base_candidates[0] if base_candidates else None
+            if source is not None:
+                downloaded = await probe_worker(source, reference)
+                if downloaded is not None:
+                    probe_results[source.worker_id] = downloaded
+                    if downloaded.available:
+                        available = [(source, downloaded)]
+                    else:
+                        probe_diagnostics[source.worker_id] = downloaded.detail
         if not available:
             details = "; ".join(
-                f"{capability.worker_id}: {', '.join(reasons) or 'unavailable'}"
-                for capability, reasons, _ in inspected
+                f"{capability.worker_id}: "
+                f"{', '.join(reasons) or probe_diagnostics.get(capability.worker_id, 'unavailable')}"
+                for capability, reasons in capabilities_checked
             )
             raise RuntimeError(f"no worker resolved the exact model identity; {details}")
 
@@ -252,20 +281,44 @@ class ProductModelCatalog:
         )
         assert selected_probe.spec is not None and selected_probe.metadata is not None
 
+        minimum_stage_bytes = min(
+            cost.weight_bytes
+            - (cost.expert_weight_bytes if expert_capacity_registered else 0)
+            + cost.peak_temporary_bytes
+            + cost.kv_bytes_per_token
+            + (selected_probe.metadata.embedding_weight_bytes if cost.layer_id == 0 else 0)
+            + (
+                selected_probe.metadata.final_weight_bytes
+                if cost.layer_id == len(selected_probe.metadata.layer_costs) - 1
+                else 0
+            )
+            for cost in selected_probe.metadata.layer_costs
+        )
+
         capabilities: dict[str, WorkerCapability] = {}
         reports: list[WorkerEligibilityReport] = []
-        for capability, reasons, inspected_probe in inspected:
+        for capability, initial_reasons in capabilities_checked:
+            reasons = list(initial_reasons)
+            inspected_probe = probe_results.get(capability.worker_id)
             exact = (
-                not reasons
-                and inspected_probe is not None
+                inspected_probe is not None
                 and inspected_probe.available
                 and inspected_probe.spec is not None
                 and inspected_probe.spec.metadata_hash == selected_probe.spec.metadata_hash
                 and capability.worker_id in consensus_workers
             )
-            if not reasons and not exact:
-                reasons.append("model or tokenizer metadata differs from worker consensus")
-            eligible = not reasons and exact
+            if not reasons and not exact and not allow_artifact_provisioning:
+                diagnostic = probe_diagnostics.get(capability.worker_id)
+                if diagnostic:
+                    reasons.append(diagnostic)
+                else:
+                    reasons.append("worker model identity differs from the selected exact identity")
+            if not reasons and capability.effective_memory_bytes < minimum_stage_bytes:
+                reasons.append(
+                    f"effective memory {capability.effective_memory_bytes} bytes cannot host "
+                    f"even the smallest valid stage ({minimum_stage_bytes} bytes)"
+                )
+            eligible = not reasons
             if eligible:
                 capabilities[capability.worker_id] = capability
             reports.append(
@@ -276,6 +329,7 @@ class ProductModelCatalog:
                     effective_memory_bytes=capability.effective_memory_bytes,
                     active_session_count=capability.active_session_count,
                     exact_model_identity=exact,
+                    artifact_provisionable=(eligible and not exact and allow_artifact_provisioning),
                     measured_profile=any(
                         item.measured and item.mean_ms > 0 for item in capability.stage_benchmarks
                     ),
@@ -286,7 +340,7 @@ class ProductModelCatalog:
             metadata=selected_probe.metadata,
             capabilities=capabilities,
             eligibility=tuple(reports),
-            all_capabilities={item.worker_id: item for item, _, _ in inspected},
+            all_capabilities={item.worker_id: item for item, _ in capabilities_checked},
         )
 
 

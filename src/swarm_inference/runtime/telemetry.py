@@ -20,6 +20,7 @@ PRODUCT_EVENT_NAMES = frozenset(
         "worker_registered",
         "worker_unhealthy",
         "deployment_started",
+        "deployment_progress",
         "deployment_ready",
         "session_opened",
         "token_accepted",

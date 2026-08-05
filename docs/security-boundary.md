@@ -4,9 +4,22 @@ The current product is intended for a trusted LAN or private network. Identity a
 authenticate control decisions and peers; they do not make plaintext model traffic safe for the
 public Internet.
 
+## Pairing and identity generation
+
+The normal bootstrap path is `swarm cluster create` followed by `swarm node join`. Pairing uses a
+random single-use secret, ephemeral X25519, HKDF-SHA256 transcript binding, reciprocal Ed25519
+possession proofs, and AES-GCM encrypted completion documents. Invitations expire after ten
+minutes by default and have bounded attempts/source rate limits. Consumed, expired, rejected, or
+restart-invalidated sessions cannot be revived.
+
+Only public keys and fingerprints cross the network. Successful completion atomically writes
+membership/trust on the coordinator and pins cluster/coordinator metadata on the node. Pairing
+secrets, raw proofs, ephemeral/session/AES keys, and private keys are excluded from logs, machine
+status, and audit documents. See [pairing](pairing.md).
+
 ## Identity generation and storage
 
-`swarm identity create` generates an Ed25519 keypair using the canonical security module and
+Cluster creation/join automatically generates an Ed25519 keypair using the canonical security module and
 writes a versioned JSON identity document. The document records its role (`coordinator` or
 `worker`), public key, SHA-256 public-key fingerprint, UTC creation time, and format version. The
 private key is stored in the same identity document with owner-only permissions where the host
@@ -16,8 +29,8 @@ The CLI refuses to overwrite an identity unless `--force` is explicit. `identity
 `identity fingerprint` validate the complete document but expose only public metadata. Private
 key bytes must never be copied into logs, tickets, trust stores, or acceptance summaries.
 
-Legacy unencrypted PEM identities remain readable for compatibility. New product bootstrap uses
-the versioned JSON format.
+Legacy unencrypted PEM identities and manual `swarm identity` commands remain readable for
+advanced compatibility. New product bootstrap uses strict versioned JSON state automatically.
 
 ## Worker trust
 
@@ -50,11 +63,9 @@ immediate operational removal is required.
 
 ## Coordinator trust
 
-Workers pin the coordinator public-key fingerprint with
-`--trusted-coordinator-fingerprint`. Create and inspect the coordinator identity before startup,
-then provision the fingerprint to each worker over an authenticated administrative channel. A
-worker must not learn this fingerprint from the unauthenticated coordinator connection it is
-about to trust.
+Secure pairing pins the coordinator public-key fingerprint after the coordinator proves its
+Ed25519 key and pairing secret over the complete transcript. The low-level
+`--trusted-coordinator-fingerprint` option remains available for manually provisioned workers.
 
 ## Signed route leases
 
@@ -91,18 +102,17 @@ Ed25519 signatures authenticate possession of a provisioned identity key and bin
 metadata. They do not prove that a neural computation was performed correctly, that the host is
 uncompromised, or that multiple identities are independent physical operators.
 
-Neither mechanism supplies payload confidentiality. Stage-ring activation, token, expert, and
-control traffic is not protected by validated TLS in the current product. Network observers and
+Neither mechanism supplies inference payload confidentiality. Stage-ring activation, token, and
+expert traffic is not protected by validated TLS in the current product. Pairing completion
+encryption must not be generalized into a data-plane encryption claim. Network observers and
 participating workers may inspect data available to them. Sensitive prompts and proprietary
 weights require an independently secured network boundary.
 
 ## Rotation and revocation
 
-There is no live key-rotation protocol. Rotate a worker safely by draining/cancelling its active
-sessions, creating a new identity at a new path, adding the new fingerprint, restarting the
-worker with that identity, verifying registration, and then removing the old fingerprint. A
-persisted worker ID cannot silently switch keys; use an explicit new worker identity/ID or the
-documented administrative migration.
+There is no live key-rotation protocol. Revoke or leave, drain/cancel active sessions, preserve
+the historical identity record, and pair the replacement identity explicitly. A persisted worker
+ID cannot silently switch keys.
 
 Coordinator rotation requires unloading routes and stopping workers, creating a new coordinator
 identity, distributing its fingerprint through an authenticated channel, and restarting every

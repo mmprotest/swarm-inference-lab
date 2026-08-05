@@ -185,10 +185,31 @@ class StageBenchmark(StrictModel):
     p95_ms: NonNegativeFloat
     samples: PositiveInt
     measured: bool = True
+    # Versioned selected-device benchmark evidence.  Defaults retain strict
+    # compatibility with capability documents produced before cluster productization.
+    median_ms: NonNegativeFloat | None = None
+    sample_ms: list[NonNegativeFloat] = Field(default_factory=list)
+    device: str | None = None
+    dtype: str | None = None
+    dimensions: dict[str, PositiveInt] = Field(default_factory=dict)
+    benchmark_version: str = "legacy-stage-v1"
+    measured_at_unix_ns: PositiveInt | None = None
+    correctness_passed: bool = True
+    memory_copy_bandwidth_bytes_s: NonNegativeFloat | None = None
+    warmup_iterations: NonNegativeInt = 0
+    sustained_ratio: NonNegativeFloat | None = None
+    throttling_detected: bool | None = None
+    measurement_source: Literal[
+        "legacy-stage",
+        "legacy-cpu-numpy-synthetic",
+        "selected-device-torch",
+        "assumed",
+    ] = "legacy-stage"
 
 
 class WorkerCapability(StrictModel):
     worker_id: str
+    node_id: str | None = None
     public_key: str
     hostname: str
     operating_system: str
@@ -252,6 +273,22 @@ class WorkerCapability(StrictModel):
     remote_microshard_calls: NonNegativeInt = 0
     expert_bytes_transferred: NonNegativeInt = 0
     expert_critical_path_ns: NonNegativeInt = 0
+    # Cluster/runtime compatibility evidence is optional for manually trusted
+    # workers created before the node-agent product path.
+    agent_version: str | None = None
+    runtime_version: str | None = None
+    build_id: str | None = None
+    package_lock_hash: str | None = None
+    product_protocol_major: PositiveInt | None = None
+    product_protocol_minor: NonNegativeInt | None = None
+    artifact_format_versions: list[PositiveInt] = Field(default_factory=list)
+    service_mode: str = "foreground"
+    platform_support_status: Literal[
+        "validated",
+        "implemented-unvalidated",
+        "unsupported",
+        "unknown",
+    ] = "unknown"
 
     @property
     def effective_memory_bytes(self) -> int:

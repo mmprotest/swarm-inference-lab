@@ -26,6 +26,12 @@ class DoctorBackend(StrEnum):
     MPS = "mps"
 
 
+def python_version_supported(major: int, minor: int) -> bool:
+    """Return whether the runtime is inside the declared product range."""
+
+    return (3, 11) <= (major, minor) <= (3, 13)
+
+
 @dataclass(slots=True)
 class DoctorCheck:
     name: str
@@ -271,7 +277,7 @@ def inspect_environment(
         )
     )
 
-    python_ok = sys.version_info[:2] == (3, 11)
+    python_ok = python_version_supported(sys.version_info.major, sys.version_info.minor)
     checks.append(
         DoctorCheck(
             "python",

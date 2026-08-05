@@ -10,6 +10,17 @@ request_timeout_s: 300
 event_queue_capacity: 256
 token_ingress_capacity: 256
 planning_max_sequence_tokens: 2048
+maximum_candidate_workers: 64
+maximum_stage_count: 32
+planning_beam_width: 512
+network_measurement_ttl_seconds: 900
+network_probe_max_bytes: 16777216
+network_probe_timeout_seconds: 10
+allow_unmeasured_links_for_explicit_plans: true
+balanced_throughput_weight: 0.45
+balanced_memory_headroom_weight: 0.25
+balanced_reliability_weight: 0.20
+balanced_participation_weight: 0.10
 maximum_active_sessions_per_worker: 256
 coordinator_id: coordinator
 route_future_tolerance_s: 30

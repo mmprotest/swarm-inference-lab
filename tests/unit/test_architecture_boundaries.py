@@ -6,6 +6,9 @@ from pathlib import Path
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOT = REPOSITORY_ROOT / "src"
 PROTECTED_PACKAGES = (
+    "acceptance",
+    "cluster",
+    "commands",
     "protocol",
     "transport",
     "model",
@@ -15,6 +18,7 @@ PROTECTED_PACKAGES = (
     "worker",
     "backends",
     "microsharding",
+    "platforms",
 )
 
 # Pull Request 5 closes the product-to-experiment boundary. This remains an
