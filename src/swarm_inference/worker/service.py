@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import time
 from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from swarm_inference.config.models import Backend, QueueConfig
+from swarm_inference.config.models import Backend, QueueConfig, WorkerRole
 from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
@@ -63,7 +64,38 @@ async def run_worker(
     download_bandwidth_bytes_s: float = 0.0,
     network_rates_measured: bool = False,
     trusted_coordinator_fingerprint: str | None = None,
+    worker_roles: set[WorkerRole] | None = None,
+    expert_manifest_path: str | Path | None = None,
+    expert_data_listen_endpoint: str | None = None,
+    expert_data_advertised_endpoint: str | None = None,
+    expert_residency_budget_bytes: int = 0,
+    expert_cache_budget_bytes: int = 0,
+    expert_queue_capacity: int = 64,
+    expert_max_concurrent_requests: int = 1,
 ) -> None:
+    roles = set(worker_roles or ({WorkerRole.CONTIGUOUS_STAGE} if stage_runtime_enabled else set()))
+    expert_roles = roles & {
+        WorkerRole.WHOLE_EXPERT,
+        WorkerRole.EXPERT_MICROSHARD,
+        WorkerRole.REDUCER,
+    }
+    if WorkerRole.CONTIGUOUS_STAGE in roles:
+        stage_runtime_enabled = True
+    stage_memory_limit_bytes = memory_limit_bytes
+    if expert_roles:
+        if trusted_coordinator_fingerprint is None:
+            raise ValueError("expert roles require an explicitly pinned coordinator fingerprint")
+        if expert_manifest_path is None:
+            raise ValueError("expert roles require an expert ownership manifest")
+        if expert_data_listen_endpoint is None or expert_data_advertised_endpoint is None:
+            raise ValueError("expert roles require expert data listen and advertised endpoints")
+        if expert_residency_budget_bytes <= 0 or expert_cache_budget_bytes < 0:
+            raise ValueError("expert residency/cache budgets are invalid")
+        if expert_residency_budget_bytes > memory_limit_bytes:
+            raise ValueError("expert residency budget exceeds the worker memory limit")
+        expert_host, expert_port = split_endpoint(expert_data_advertised_endpoint)
+        if is_wildcard_host(expert_host) or expert_port == 0:
+            raise ValueError("expert data endpoint cannot advertise a wildcard or zero port")
     if stage_runtime_enabled:
         if trusted_coordinator_fingerprint is None:
             raise ValueError("stage runtime requires an explicitly pinned coordinator fingerprint")
@@ -84,6 +116,10 @@ async def run_worker(
             raise ValueError(
                 f"backend {backend.value} is incompatible with stage device {device!r}"
             )
+        if expert_roles:
+            stage_memory_limit_bytes -= expert_residency_budget_bytes
+            if stage_memory_limit_bytes <= 0:
+                raise ValueError("combined stage and expert roles leave no stage memory budget")
     identity = WorkerIdentity.load_or_create(identity_path)
     coordinator_latency_ms = measure_coordinator_latency_ms(coordinator_endpoint)
     capability = measure_capabilities(
@@ -101,6 +137,12 @@ async def run_worker(
         download_bandwidth_bytes_s=download_bandwidth_bytes_s,
         network_rates_measured=network_rates_measured,
     )
+    capability.roles = sorted(roles, key=lambda item: item.value)
+    if stage_runtime_enabled and expert_roles:
+        # ``configured_memory_limit_bytes`` retains the process-wide limit;
+        # stage planning sees only the capacity left after the explicit expert
+        # residency reservation.
+        capability.memory_limit_bytes = stage_memory_limit_bytes
     requested_dtype = {"bf16": "bfloat16", "f16": "float16", "f32": "float32"}.get(
         dtype.lower(), dtype.lower()
     )
@@ -136,6 +178,105 @@ async def run_worker(
         reconnect_max_backoff_ms=reconnect_max_backoff_ms,
     )
     client = CoordinatorClient(coordinator_endpoint)
+    expert_runtime = None
+    expert_server = None
+    if expert_roles:
+        from swarm_inference.execution.expert import (
+            ExpertStore,
+            npz_expert_loader,
+            safetensors_expert_loader,
+        )
+        from swarm_inference.worker.expert_service import (
+            ExpertWorkerRuntime,
+            ExpertWorkerServer,
+        )
+
+        assert expert_manifest_path is not None
+        assert expert_data_listen_endpoint is not None
+        assert expert_data_advertised_endpoint is not None
+        manifest_path = Path(expert_manifest_path).expanduser().resolve()
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        required = {
+            "model_id",
+            "model_revision",
+            "model_fingerprint",
+            "quantization_fingerprint",
+            "owned_experts",
+        }
+        missing = sorted(required - set(manifest))
+        if missing:
+            raise ValueError(f"expert ownership manifest is missing fields: {missing}")
+        owned_entries = list(manifest["owned_experts"])
+        owned = {(int(item["layer_id"]), int(item["expert_id"])) for item in owned_entries}
+        owned_microshards = list(manifest.get("owned_microshards", []))
+        microshard_keys = {
+            (int(item["layer_id"]), int(item["expert_id"])) for item in owned_microshards
+        }
+        loader_type = str(manifest.get("loader_type", "npz"))
+        if loader_type == "npz":
+            files = {}
+            for item in owned_entries:
+                source = Path(str(item["path"])).expanduser()
+                if not source.is_absolute():
+                    source = manifest_path.parent / source
+                files[(int(item["layer_id"]), int(item["expert_id"]))] = source
+            loader = npz_expert_loader(files)
+        elif loader_type == "safetensors":
+            if WorkerRole.EXPERT_MICROSHARD in expert_roles:
+                raise ValueError(
+                    "native microshard roles require physically sliced npz ownership files"
+                )
+            model_path = Path(str(manifest["model_path"])).expanduser()
+            if not model_path.is_absolute():
+                model_path = manifest_path.parent / model_path
+            loader = safetensors_expert_loader(model_path)
+        else:
+            raise ValueError(f"unsupported canonical expert loader {loader_type!r}")
+        store = ExpertStore(
+            owned=owned,
+            loader=loader,
+            residency_budget_bytes=expert_residency_budget_bytes,
+            cache_budget_bytes=expert_cache_budget_bytes,
+        )
+        expert_runtime = ExpertWorkerRuntime(
+            worker_id=capability.worker_id,
+            identity=identity,
+            model_id=str(manifest["model_id"]),
+            model_revision=str(manifest["model_revision"]),
+            model_fingerprint=str(manifest["model_fingerprint"]),
+            quantization_fingerprint=str(manifest["quantization_fingerprint"]),
+            store=store,
+            roles={item.value for item in expert_roles},
+            owned_microshards=owned_microshards,
+            maximum_queue_depth=expert_queue_capacity,
+            maximum_concurrent_requests=expert_max_concurrent_requests,
+        )
+        expert_listen_host, expert_listen_port = split_endpoint(expert_data_listen_endpoint)
+        expert_server = ExpertWorkerServer(
+            expert_runtime, host=expert_listen_host, port=expert_listen_port
+        )
+        await expert_server.start()
+        capability.expert_data_plane_endpoint = expert_data_advertised_endpoint
+        by_layer: dict[str, list[int]] = {}
+        if WorkerRole.WHOLE_EXPERT in expert_roles:
+            for layer_id, expert_id in sorted(owned - microshard_keys):
+                by_layer.setdefault(str(layer_id), []).append(expert_id)
+        capability.owned_experts = by_layer
+        capability.owned_microshards = owned_microshards
+        capability.expert_content_hashes = {
+            f"{int(item['layer_id'])}:{int(item['expert_id'])}": str(item.get("content_hash", ""))
+            for item in owned_entries
+        }
+        capability.expert_memory_budget_bytes = expert_residency_budget_bytes
+        capability.expert_cache_budget_bytes = expert_cache_budget_bytes
+        capability.model_fingerprint = str(manifest["model_fingerprint"])
+        capability.quantisation_fingerprint = str(manifest["quantization_fingerprint"])
+        capability.supported_expert_codecs = ["raw_fp32"]
+        capability.supported_reduction_modes = ["fixed_order_fp32"]
+        capability.measured_expert_service_rates = {
+            str(key): float(value)
+            for key, value in dict(manifest.get("measured_service_rates", {})).items()
+        }
     stage_runtime: PersistentStageRuntime | None = None
     if stage_runtime_enabled:
         from swarm_inference.worker.stage_runtime import PersistentStageRuntime
@@ -167,6 +308,8 @@ async def run_worker(
                 published_monotonic_ns=time.monotonic_ns(),
                 request_generation=int(message.attributes["request_generation"]),
                 replay_only=bool(message.attributes["replay_only"]),
+                expert_trace=list(message.attributes.get("expert_trace", [])),
+                expert_metrics=dict(message.attributes.get("expert_metrics", {})),
             )
             publication = publication.model_copy(
                 update={
@@ -185,7 +328,7 @@ async def run_worker(
             worker_id=capability.worker_id,
             device=device or "cpu",
             dtype=dtype,
-            memory_limit_bytes=memory_limit_bytes,
+            memory_limit_bytes=stage_memory_limit_bytes,
             maximum_sessions=max_stage_sessions,
             execution_queue_capacity=stage_execution_queue_capacity,
             token_queue_capacity=token_publication_queue_capacity,
@@ -208,6 +351,8 @@ async def run_worker(
             data_listen_endpoint=data_listen_endpoint if stage_runtime_enabled else None,
         )
     except BaseException:
+        if expert_server is not None:
+            await expert_server.close()
         await client.close()
         raise
     nonce = f"{capability.worker_id}:{time.monotonic_ns()}"
@@ -232,6 +377,8 @@ async def run_worker(
     except BaseException:
         await client.close()
         await service.stop()
+        if expert_server is not None:
+            await expert_server.close()
         raise
     registration_completed = time.monotonic_ns()
     if recorder is not None:
@@ -247,6 +394,8 @@ async def run_worker(
     if not response.accepted:
         await service.stop()
         await client.close()
+        if expert_server is not None:
+            await expert_server.close()
         raise RuntimeError(f"coordinator rejected worker: {response.reason}")
     if stage_runtime is not None:
         if (
@@ -256,8 +405,26 @@ async def run_worker(
         ):
             await service.stop()
             await client.close()
+            if expert_server is not None:
+                await expert_server.close()
             raise RuntimeError("coordinator did not provide an authenticated product identity")
         stage_runtime.configure_route_trust(
+            coordinator_identity=response.coordinator_identity,
+            coordinator_public_key=response.coordinator_public_key,
+            expected_fingerprint=trusted_coordinator_fingerprint,
+        )
+    if expert_runtime is not None:
+        if (
+            response.coordinator_identity is None
+            or response.coordinator_public_key is None
+            or response.coordinator_public_key_fingerprint is None
+        ):
+            await service.stop()
+            await client.close()
+            if expert_server is not None:
+                await expert_server.close()
+            raise RuntimeError("coordinator did not provide an authenticated product identity")
+        expert_runtime.configure_route_trust(
             coordinator_identity=response.coordinator_identity,
             coordinator_public_key=response.coordinator_public_key,
             expected_fingerprint=trusted_coordinator_fingerprint,
@@ -265,11 +432,34 @@ async def run_worker(
 
     async def heartbeat_loop() -> None:
         while True:
+            expert_queue_depth = 0
             if stage_runtime is not None:
                 stage_runtime.refresh_capability()
+            if expert_runtime is not None:
+                expert_status = expert_runtime.status()
+                expert_queue_depth = int(expert_status["queue_depth"])
+                capability.expert_cache_resident_bytes = int(expert_status["cache_resident_bytes"])
+                capability.expert_cache_hits = int(expert_status["cache_hits"])
+                capability.expert_cache_misses = int(expert_status["cache_misses"])
+                capability.remote_expert_calls = int(expert_status["remote_whole_expert_calls"])
+                capability.remote_microshard_calls = int(expert_status["remote_microshard_calls"])
+                capability.expert_bytes_transferred = int(expert_status["bytes_received"]) + int(
+                    expert_status["bytes_sent"]
+                )
+                capability.expert_critical_path_ns = int(expert_status["compute_ns"])
+                whole_calls = int(expert_status["remote_whole_expert_calls"])
+                if whole_calls:
+                    capability.measured_expert_service_rates["whole_expert_ms"] = (
+                        int(expert_status["whole_expert_compute_ns"]) / whole_calls / 1e6
+                    )
+                microshard_calls = int(expert_status["remote_microshard_calls"])
+                if microshard_calls:
+                    capability.measured_expert_service_rates["microshard_ms"] = (
+                        int(expert_status["microshard_compute_ns"]) / microshard_calls / 1e6
+                    )
             payload = {
                 "worker_id": capability.worker_id,
-                "queue_depth": agent.execution.queue_depth,
+                "queue_depth": agent.execution.queue_depth + expert_queue_depth,
                 "assignments": sorted(
                     {
                         *agent.shards.modules,
@@ -318,3 +508,5 @@ async def run_worker(
             await heartbeat_task
         await client.close()
         await service.stop()
+        if expert_server is not None:
+            await expert_server.close()

@@ -43,6 +43,8 @@ class ProductLayerCost(StrictModel):
     peak_temporary_bytes: int = Field(ge=0)
     activation_bytes: int = Field(ge=0)
     measured: bool
+    expert_weight_bytes: int = Field(default=0, ge=0)
+    expert_execution_ns: int = Field(default=0, ge=0)
 
     def to_partition_cost(self) -> LayerCost:
         return LayerCost(**self.model_dump())
@@ -59,6 +61,11 @@ class ProductModelMetadata(StrictModel):
     dtype_bytes: PositiveInt
     hidden_size: PositiveInt
     metadata_hash: str = Field(min_length=1)
+    expert_count: int = Field(default=0, ge=0)
+    experts_per_token: int = Field(default=0, ge=0)
+    expert_intermediate_size: int = Field(default=0, ge=0)
+    model_fingerprint: str = ""
+    quantization_fingerprint: str = ""
 
     @model_validator(mode="after")
     def validate_layers(self) -> ProductModelMetadata:
@@ -83,6 +90,11 @@ class ProductModelMetadata(StrictModel):
             model_revision=model_revision,
             tokenizer_revision=tokenizer_revision,
             metadata_hash=self.metadata_hash,
+            expert_count=self.expert_count,
+            experts_per_token=self.experts_per_token,
+            expert_intermediate_size=self.expert_intermediate_size,
+            model_fingerprint=self.model_fingerprint,
+            quantization_fingerprint=self.quantization_fingerprint,
         )
 
 

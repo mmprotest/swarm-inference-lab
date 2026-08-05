@@ -13,6 +13,7 @@ from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
 
 from swarm_inference.config.models import StrictModel, WorkerCapability
 from swarm_inference.model.partition import StageAssignment
+from swarm_inference.protocol.expert import SignedExpertRouteLease
 from swarm_inference.protocol.routes import SignedRouteLease
 
 
@@ -62,6 +63,9 @@ class LoadStageRequest(_StageControlModel):
     allow_download: bool = False
     lease_expiry_unix_ns: PositiveInt | None = None
     deadline_unix_ns: PositiveInt | None = None
+    expert_plan: dict[str, Any] | None = None
+    expert_model_fingerprint: str | None = None
+    expert_quantization_fingerprint: str | None = None
 
 
 class UnloadStageRequest(_StageControlModel):
@@ -99,6 +103,7 @@ class InstallStageRouteRequest(_StageControlModel):
     deadline_unix_ns: PositiveInt | None = None
     replace: bool = False
     route_lease: SignedRouteLease | None = None
+    expert_route_lease: SignedExpertRouteLease | None = None
 
 
 class RemoveStageRouteRequest(_StageControlModel):
@@ -258,6 +263,7 @@ class StageStatusResponse(_StageControlModel):
     token_queue_depth: NonNegativeInt
     token_queue_capacity: PositiveInt
     dropped_token_publications: NonNegativeInt
+    expert_status: dict[str, Any] = Field(default_factory=dict)
 
 
 # Concise aliases mirror the operation names used by the documented RPC API.

@@ -333,6 +333,8 @@ class SubmitStreamEvent(StrictModel):
     status_detail: str = ""
     final_token_ids: list[int] = Field(default_factory=list)
     timing_metrics: dict[str, float] = Field(default_factory=dict)
+    expert_trace: list[dict[str, Any]] = Field(default_factory=list)
+    expert_metrics: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_event_payload(self) -> SubmitStreamEvent:

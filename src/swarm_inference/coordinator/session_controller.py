@@ -523,6 +523,9 @@ class ProductSessionController:
                 "source_worker_id": "coordinator",
                 "destination_worker_id": stage_zero.worker_id,
                 "cache_position_start": cache_position,
+                "deadline_ns": time.time_ns() + int(self.request_timeout_s * 1_000_000_000),
+                "expert_trace": [],
+                "expert_metrics": {},
                 "tensor": packed.attributes(),
             },
         )
@@ -619,6 +622,10 @@ class ProductSessionController:
             )
         if publication.replay_only != state.replaying:
             return Ack(accepted=False, detail="token publication replay marker is invalid")
+        try:
+            self._validate_expert_trace(publication, plan)
+        except (IntegrityError, ValueError) as exc:
+            return Ack(accepted=False, detail=f"expert contribution trace is invalid: {exc}")
         position = publication.token_position
         if not publication.replay_only and position < len(state.output_token_ids):
             if state.output_token_ids[position] == publication.token_id:
@@ -645,6 +652,101 @@ class ProductSessionController:
         target[position] = publication.model_copy(deep=True)
         state.publication_event.set()
         return Ack(accepted=True, detail="token publication staged for coordinator verification")
+
+    @staticmethod
+    def _validate_expert_trace(
+        publication: ProductTokenPublication,
+        plan: ProductStagePlan,
+    ) -> None:
+        placements = {
+            (item.layer_id, item.expert_id): item
+            for stage in plan.expert_plans
+            for item in stage.placements
+        }
+        remote_events = 0
+        remote_whole_events = 0
+        remote_microshard_events = 0
+        fallback_events = 0
+        traced_bytes = 0
+        for event in publication.expert_trace:
+            event_name = str(event.get("event", ""))
+            if event.get("session_id") != publication.session_id:
+                raise IntegrityError("expert trace session identity mismatch")
+            if int(event.get("token_position", -1)) != publication.token_position:
+                raise IntegrityError("expert trace token identity mismatch")
+            request_id = str(event.get("request_id", ""))
+            if request_id != publication.request_id and not request_id.startswith(
+                f"{publication.request_id}:"
+            ):
+                raise IntegrityError("expert trace request identity mismatch")
+            layer_id = int(event.get("layer_id", -1))
+            expert_id = int(event.get("expert_id", -1))
+            placement = placements.get((layer_id, expert_id))
+            if event_name == "local_expert_result_consumed":
+                if placement is None or placement.strategy != "local":
+                    raise IntegrityError("local expert contribution is not present in the plan")
+                if any(stage.require_remote_experts for stage in plan.expert_plans):
+                    raise IntegrityError("forced-remote execution consumed a local expert result")
+                if not str(event.get("result_hash", "")).startswith("sha256:"):
+                    raise IntegrityError("local expert contribution has no result hash")
+                continue
+            if event_name == "expert_local_fallback":
+                if placement is None or not placement.local_fallback_permitted:
+                    raise IntegrityError("unplanned expert fallback was reported")
+                if any(stage.require_remote_experts for stage in plan.expert_plans):
+                    raise IntegrityError("forced-remote execution reported a fallback")
+                if not event.get("fallback_reason"):
+                    raise IntegrityError("expert fallback has no visible reason")
+                if not str(event.get("result_hash", "")).startswith("sha256:"):
+                    raise IntegrityError("expert fallback has no result hash")
+                fallback_events += 1
+                continue
+            if event_name not in {
+                "remote_whole_expert_result_consumed",
+                "remote_microshard_result_consumed",
+            }:
+                raise IntegrityError(f"unknown expert contribution event {event_name!r}")
+            remote_events += 1
+            if event_name == "remote_whole_expert_result_consumed":
+                remote_whole_events += 1
+            else:
+                remote_microshard_events += 1
+            expected_strategy = (
+                "whole-remote"
+                if event_name == "remote_whole_expert_result_consumed"
+                else "microshard-remote"
+            )
+            if placement is None or placement.strategy != expected_strategy:
+                raise IntegrityError("remote contribution does not match the installed plan")
+            workers = {str(item) for item in event.get("worker_ids", [])}
+            if not workers or workers != set(placement.worker_ids):
+                raise IntegrityError(
+                    "remote contribution worker identities do not exactly match the plan"
+                )
+            if int(event.get("request_bytes", 0)) <= 0 or int(event.get("response_bytes", 0)) <= 0:
+                raise IntegrityError("remote contribution has no data-plane byte proof")
+            traced_bytes += int(event["request_bytes"]) + int(event["response_bytes"])
+            if not str(event.get("result_hash", "")).startswith("sha256:"):
+                raise IntegrityError("remote contribution has no result hash")
+        if any(stage.require_remote_experts for stage in plan.expert_plans) and remote_events == 0:
+            raise IntegrityError("forced-remote execution produced no remote contribution")
+        metrics = publication.expert_metrics
+        expected_metrics = {
+            "remote_expert_calls": remote_events,
+            "remote_whole_expert_calls": remote_whole_events,
+            "remote_microshard_calls": remote_microshard_events,
+            "fallbacks": fallback_events,
+            "bytes_transferred": traced_bytes,
+        }
+        for name, expected in expected_metrics.items():
+            if name in metrics and int(metrics[name]) != expected:
+                raise IntegrityError(
+                    f"expert metric {name}={metrics[name]!r} does not match trace value {expected}"
+                )
+        if remote_events and int(metrics.get("remote_expert_calls", -1)) != remote_events:
+            raise IntegrityError("remote expert call metric is missing from contribution proof")
+        if remote_events and int(metrics.get("bytes_transferred", -1)) != traced_bytes:
+            raise IntegrityError("remote expert byte metric is missing from contribution proof")
 
     def _update_durable(
         self,
@@ -712,6 +814,8 @@ class ProductSessionController:
                 token_id=publication.token_id,
                 decoded_text_fragment=publication.decoded_text_fragment,
                 status_detail="greedy token accepted after route and publication verification",
+                expert_trace=publication.expert_trace,
+                expert_metrics=publication.expert_metrics,
             )
         except BackpressureError:
             state.cancellation_requested = True
@@ -740,6 +844,15 @@ class ProductSessionController:
             route_generation=plan.generation,
             token_position=position,
             token_id=publication.token_id,
+            remote_expert_contributions=sum(
+                item.get("event")
+                in {
+                    "remote_whole_expert_result_consumed",
+                    "remote_microshard_result_consumed",
+                }
+                for item in publication.expert_trace
+            ),
+            expert_bytes=int(publication.expert_metrics.get("bytes_transferred", 0)),
         )
 
     async def _detect_route_failures(

@@ -61,6 +61,13 @@ class Backend(StrEnum):
     ROCM = "rocm"
 
 
+class WorkerRole(StrEnum):
+    CONTIGUOUS_STAGE = "contiguous-stage"
+    WHOLE_EXPERT = "whole-expert"
+    EXPERT_MICROSHARD = "expert-microshard"
+    REDUCER = "reducer"
+
+
 class WorkloadClass(StrEnum):
     INTERACTIVE = "interactive"
     STANDARD = "standard"
@@ -226,6 +233,25 @@ class WorkerCapability(StrictModel):
     currently_loaded_topology_ids: list[str] = Field(default_factory=list)
     active_session_count: NonNegativeInt = 0
     stage_runtime_enabled: bool = False
+    roles: list[WorkerRole] = Field(default_factory=list)
+    expert_data_plane_endpoint: str | None = None
+    owned_experts: dict[str, list[NonNegativeInt]] = Field(default_factory=dict)
+    owned_microshards: list[dict[str, Any]] = Field(default_factory=list)
+    expert_content_hashes: dict[str, str] = Field(default_factory=dict)
+    expert_memory_budget_bytes: PositiveInt | None = None
+    expert_cache_budget_bytes: NonNegativeInt = 0
+    model_fingerprint: str | None = None
+    quantisation_fingerprint: str | None = None
+    supported_expert_codecs: list[str] = Field(default_factory=list)
+    supported_reduction_modes: list[str] = Field(default_factory=list)
+    measured_expert_service_rates: dict[str, NonNegativeFloat] = Field(default_factory=dict)
+    expert_cache_resident_bytes: NonNegativeInt = 0
+    expert_cache_hits: NonNegativeInt = 0
+    expert_cache_misses: NonNegativeInt = 0
+    remote_expert_calls: NonNegativeInt = 0
+    remote_microshard_calls: NonNegativeInt = 0
+    expert_bytes_transferred: NonNegativeInt = 0
+    expert_critical_path_ns: NonNegativeInt = 0
 
     @property
     def effective_memory_bytes(self) -> int:

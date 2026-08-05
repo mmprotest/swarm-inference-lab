@@ -94,6 +94,112 @@ class StagePlanReport(StrictModel):
     worker_eligibility: list[WorkerEligibilityReport]
 
 
+class ProductExpertPlacement(StrictModel):
+    layer_id: int = Field(ge=0)
+    expert_id: int = Field(ge=0)
+    strategy: Literal["local", "whole-remote", "microshard-remote"]
+    worker_ids: list[str] = Field(default_factory=list)
+    worker_endpoints: dict[str, str] = Field(default_factory=dict)
+    expert_hashes: dict[str, str] = Field(default_factory=dict)
+    microshards: list[dict[str, Any]] = Field(default_factory=list)
+    measured_utility_ms: float = 0.0
+    capacity_required: bool = False
+    local_fallback_permitted: bool = False
+    forced_remote: bool = False
+    explanation: list[str] = Field(default_factory=list)
+    rejected: list[dict[str, Any]] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_placement(self) -> ProductExpertPlacement:
+        if len(self.worker_ids) != len(set(self.worker_ids)) or any(
+            not worker_id for worker_id in self.worker_ids
+        ):
+            raise ValueError("expert placement worker identities must be unique and non-empty")
+        if self.forced_remote and self.local_fallback_permitted:
+            raise ValueError("forced-remote expert placement cannot permit local fallback")
+        if self.strategy == "local":
+            if self.worker_ids or self.worker_endpoints or self.expert_hashes or self.microshards:
+                raise ValueError("local expert placement cannot contain remote ownership")
+            if self.forced_remote or self.local_fallback_permitted:
+                raise ValueError("local expert placement cannot be forced or a fallback target")
+            return self
+        workers = set(self.worker_ids)
+        if set(self.worker_endpoints) != workers or any(
+            not endpoint for endpoint in self.worker_endpoints.values()
+        ):
+            raise ValueError("remote expert endpoints must exactly match placement workers")
+        if self.strategy == "whole-remote":
+            if len(self.worker_ids) != 1 or self.microshards:
+                raise ValueError("whole-expert placement requires one unsliced remote owner")
+            worker_id = self.worker_ids[0]
+            if not self.expert_hashes.get(worker_id, "").startswith("sha256:"):
+                raise ValueError("whole-expert placement requires a content hash")
+            return self
+        if len(workers) < 2 or not self.microshards:
+            raise ValueError("native microsharding requires at least two physical workers")
+        ordered = sorted(
+            self.microshards,
+            key=lambda item: (
+                int(item.get("hidden_start", -1)),
+                int(item.get("hidden_end", -1)),
+                str(item.get("worker_id", "")),
+            ),
+        )
+        cursor = 0
+        logical_width: int | None = None
+        shard_workers: set[str] = set()
+        for shard in ordered:
+            try:
+                worker_id = str(shard["worker_id"])
+                layer_id = int(shard["layer_id"])
+                expert_id = int(shard["expert_id"])
+                start = int(shard["hidden_start"])
+                end = int(shard["hidden_end"])
+                logical = int(shard["logical_intermediate_dimension"])
+                content_hash = str(shard["content_hash"])
+                raw_group = shard.get("quantization_group_size")
+                group = int(raw_group) if raw_group is not None else None
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError("microshard placement descriptor is incomplete") from exc
+            if worker_id not in workers or layer_id != self.layer_id or expert_id != self.expert_id:
+                raise ValueError("microshard identity does not match its placement")
+            if logical_width is None:
+                logical_width = logical
+            if logical != logical_width or start != cursor or end <= start or end > logical:
+                raise ValueError("microshard placement is not a gap-free matched union")
+            if start == 0 and end == logical:
+                raise ValueError("a microshard worker cannot own the full expert")
+            if not content_hash.startswith("sha256:"):
+                raise ValueError("microshard placement requires content hashes")
+            if group is not None and (
+                group <= 0 or start % group or (end != logical and end % group)
+            ):
+                raise ValueError("microshard placement splits a quantisation group")
+            cursor = end
+            shard_workers.add(worker_id)
+        if logical_width is None or cursor != logical_width or shard_workers != workers:
+            raise ValueError("microshard ownership does not exactly cover the planned workers")
+        return self
+
+
+class ProductStageExpertPlan(StrictModel):
+    stage_id: int = Field(ge=0)
+    policy: Literal["auto", "local", "whole-remote", "microshard-remote", "hybrid"]
+    require_remote_experts: bool = False
+    placements: list[ProductExpertPlacement] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_stage_experts(self) -> ProductStageExpertPlan:
+        identities = [(item.layer_id, item.expert_id) for item in self.placements]
+        if len(identities) != len(set(identities)):
+            raise ValueError("a stage expert may have only one placement")
+        if self.require_remote_experts and any(
+            item.strategy == "local" or item.local_fallback_permitted for item in self.placements
+        ):
+            raise ValueError("forced-remote stage plans cannot use or fall back to local experts")
+        return self
+
+
 class ProductStagePlan(StrictModel):
     plan_id: str
     topology_id: str
@@ -104,6 +210,9 @@ class ProductStagePlan(StrictModel):
     partition_method: Literal["equal", "balanced"]
     max_sequence_tokens: PositiveInt
     assignments: list[PlanWorkerAssignment]
+    expert_plans: list[ProductStageExpertPlan] = Field(default_factory=list)
+    expert_model_fingerprint: str = ""
+    expert_quantization_fingerprint: str = ""
     report: StagePlanReport
 
     @model_validator(mode="after")
@@ -118,6 +227,22 @@ class ProductStagePlan(StrictModel):
         layers = [layer for item in ordered for layer in item.assignment.layer_ids]
         if layers != list(range(self.model.layer_count)):
             raise ValueError("product plan must own every model layer exactly once")
+        if self.expert_plans:
+            expert_stage_ids = [item.stage_id for item in self.expert_plans]
+            if expert_stage_ids != list(range(self.stage_count)):
+                raise ValueError("product expert plans must follow the contiguous stage topology")
+            for expert_plan, stage in zip(self.expert_plans, ordered, strict=True):
+                allowed_layers = set(stage.assignment.layer_ids)
+                if any(item.layer_id not in allowed_layers for item in expert_plan.placements):
+                    raise ValueError("expert placement lies outside its owning contiguous stage")
+            if any(
+                placement.strategy != "local"
+                for expert_plan in self.expert_plans
+                for placement in expert_plan.placements
+            ) and (not self.expert_model_fingerprint or not self.expert_quantization_fingerprint):
+                raise ValueError(
+                    "remote expert plans require exact model and quantisation identity"
+                )
         return self
 
 
@@ -137,6 +262,9 @@ class ModelPlanRequest(StrictModel):
     partition_method: Literal["auto", "equal", "balanced"] = "auto"
     require_distributed: bool = False
     max_sequence_tokens: PositiveInt = 2048
+    expert_policy: Literal["auto", "local", "whole-remote", "microshard-remote", "hybrid"] = "auto"
+    require_remote_experts: bool = False
+    allow_expert_local_fallback: bool = False
 
 
 class ModelPlanResponse(StrictModel):
@@ -228,6 +356,7 @@ class WorkerProductStatus(StrictModel):
     active_sessions: int = Field(default=0, ge=0)
     queue_depths: dict[str, int] = Field(default_factory=dict)
     memory_bytes: dict[str, int] = Field(default_factory=dict)
+    expert_status: dict[str, Any] = Field(default_factory=dict)
     last_error: str | None = None
     detail: str = ""
 
@@ -249,6 +378,8 @@ class ProductTokenPublication(StrictModel):
     published_monotonic_ns: PositiveInt
     request_generation: PositiveInt = 1
     replay_only: bool = False
+    expert_trace: list[dict[str, Any]] = Field(default_factory=list)
+    expert_metrics: dict[str, Any] = Field(default_factory=dict)
     signature: str = ""
 
 
@@ -321,6 +452,18 @@ class CoordinatorStatusResponse(StrictModel):
     queue_depths: dict[str, int] = Field(default_factory=dict)
     memory_bytes: dict[str, int] = Field(default_factory=dict)
     reservations: dict[str, Any] = Field(default_factory=dict)
+    expert_worker_count: int = Field(default=0, ge=0)
+    owned_experts: int = Field(default=0, ge=0)
+    owned_microshards: int = Field(default=0, ge=0)
+    expert_cache_resident_bytes: int = Field(default=0, ge=0)
+    expert_cache_hits: int = Field(default=0, ge=0)
+    expert_cache_misses: int = Field(default=0, ge=0)
+    remote_expert_calls: int = Field(default=0, ge=0)
+    remote_microshard_calls: int = Field(default=0, ge=0)
+    expert_fallbacks: int = Field(default=0, ge=0)
+    expert_bytes_transferred: int = Field(default=0, ge=0)
+    expert_critical_path_ns: int = Field(default=0, ge=0)
+    expert_reduction_modes: list[str] = Field(default_factory=list)
     last_error: str | None = None
 
 
@@ -385,9 +528,11 @@ __all__ = [
     "ModelUnloadResponse",
     "PlanCandidateReport",
     "PlanWorkerAssignment",
+    "ProductExpertPlacement",
     "ProductRequestPhase",
     "ProductRequestRecoveryState",
     "ProductSessionStatus",
+    "ProductStageExpertPlan",
     "ProductStagePlan",
     "ProductTokenPublication",
     "SessionsRequest",

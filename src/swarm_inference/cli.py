@@ -12,16 +12,9 @@ from uuid import uuid4
 import typer
 
 from swarm_inference.config.loader import load_experiment_config
-from swarm_inference.config.models import Backend, ExecutionMode, QueueConfig
+from swarm_inference.config.models import Backend, ExecutionMode, QueueConfig, WorkerRole
 from swarm_inference.doctor import DoctorBackend, inspect_environment, render_doctor_report
 from swarm_inference.exceptions import SwarmError
-from swarm_inference.experiments.loopback import (
-    run_loopback_experiment,
-    run_physical_experiment,
-)
-from swarm_inference.experiments.loopback_matrix import run_loopback_matrix
-from swarm_inference.experiments.reporting import render_html_report
-from swarm_inference.experiments.runner import run_experiment, validate_run
 from swarm_inference.host import (
     resolve_advertised_endpoint,
     resolve_data_plane_advertised_endpoint,
@@ -276,6 +269,8 @@ def simulate_command(
 ) -> None:
     """Run a deterministic event-queue simulation and write a complete report."""
 
+    from swarm_inference.experiments.runner import run_experiment
+
     experiment = load_experiment_config(config)
     if experiment.execution_mode != ExecutionMode.SIMULATION:
         _fail("simulate requires execution_mode: simulation")
@@ -355,6 +350,13 @@ def experiment_command(
 
     if ctx.invoked_subcommand is not None:
         return
+    from swarm_inference.experiments.loopback import (
+        run_loopback_experiment,
+        run_physical_experiment,
+    )
+    from swarm_inference.experiments.loopback_matrix import run_loopback_matrix
+    from swarm_inference.experiments.runner import run_experiment
+
     if config is None:
         _fail("experiment requires --config, or use a named subcommand")
     assert config is not None
@@ -1057,6 +1059,20 @@ def product_model_plan_command(
     partition: Annotated[str, typer.Option(help="auto, equal, or balanced.")] = "auto",
     max_sequence_tokens: Annotated[int, typer.Option(min=1)] = 2048,
     require_distributed: Annotated[bool, typer.Option()] = False,
+    expert_policy: Annotated[
+        str,
+        typer.Option(
+            help="Expert policy: auto, local, whole-remote, microshard-remote, or hybrid."
+        ),
+    ] = "auto",
+    require_remote_experts: Annotated[
+        bool,
+        typer.Option(help="Fail planning or execution instead of silently using local experts."),
+    ] = False,
+    allow_expert_local_fallback: Annotated[
+        bool,
+        typer.Option(help="Permit and visibly record planned local expert fallback."),
+    ] = False,
     allow_download: Annotated[bool, typer.Option()] = False,
     output: Annotated[Path | None, typer.Option(help="Plan JSON path.")] = None,
 ) -> None:
@@ -1064,6 +1080,18 @@ def product_model_plan_command(
 
     if partition not in {"auto", "equal", "balanced"}:
         _fail("--partition must be auto, equal, or balanced")
+    if expert_policy not in {
+        "auto",
+        "local",
+        "whole-remote",
+        "microshard-remote",
+        "hybrid",
+    }:
+        _fail("--expert-policy must be auto, local, whole-remote, microshard-remote, or hybrid")
+    if require_remote_experts and expert_policy == "local":
+        _fail("--require-remote-experts conflicts with --expert-policy local")
+    if require_remote_experts and allow_expert_local_fallback:
+        _fail("forced-remote validation cannot permit local expert fallback")
     from swarm_inference.coordinator.service import CoordinatorClient
     from swarm_inference.protocol.product import ModelPlanRequest
 
@@ -1083,6 +1111,9 @@ def product_model_plan_command(
                     partition_method=partition,
                     require_distributed=require_distributed,
                     max_sequence_tokens=max_sequence_tokens,
+                    expert_policy=expert_policy,
+                    require_remote_experts=require_remote_experts,
+                    allow_expert_local_fallback=allow_expert_local_fallback,
                 )
             )
         finally:
@@ -1264,6 +1295,21 @@ def product_status_command(
         f"tokens={response.generated_tokens} throughput_tokens_s="
         f"{response.throughput_tokens_s:.3f} recoveries={response.recovery_count} "
         f"recovering={response.recovering_requests}"
+    )
+    typer.echo(
+        f"expert_workers={response.expert_worker_count} "
+        f"owned_experts={response.owned_experts} "
+        f"owned_microshards={response.owned_microshards} "
+        f"cache_residency_bytes={response.expert_cache_resident_bytes} "
+        f"cache_hits={response.expert_cache_hits} cache_misses={response.expert_cache_misses}"
+    )
+    typer.echo(
+        f"remote_expert_calls={response.remote_expert_calls} "
+        f"remote_microshard_calls={response.remote_microshard_calls} "
+        f"reduction_modes={','.join(response.expert_reduction_modes) or '-'} "
+        f"fallbacks={response.expert_fallbacks} "
+        f"expert_bytes_transferred={response.expert_bytes_transferred} "
+        f"expert_critical_path_ns={response.expert_critical_path_ns}"
     )
     if response.last_error:
         typer.echo(f"last_error={response.last_error}")
@@ -1538,6 +1584,43 @@ def worker_command(
             help="Enable the persistent OLMoE stage runtime and direct TCP data plane.",
         ),
     ] = False,
+    roles: Annotated[
+        str,
+        typer.Option(
+            help=(
+                "Comma-separated worker roles: contiguous-stage, whole-expert, "
+                "expert-microshard, reducer."
+            )
+        ),
+    ] = "",
+    expert_manifest: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Canonical expert ownership manifest for expert worker roles.",
+        ),
+    ] = None,
+    expert_data_listen: Annotated[
+        str,
+        typer.Option(help="SWARMEX1 expert TCP bind endpoint."),
+    ] = "0.0.0.0:50054",
+    expert_data_advertise: Annotated[
+        str | None,
+        typer.Option(help="Coordinator-reachable SWARMEX1 expert endpoint."),
+    ] = None,
+    expert_residency_budget_gb: Annotated[
+        float,
+        typer.Option(min=0, help="Logical expert residency budget in GiB."),
+    ] = 0.0,
+    expert_cache_budget_gb: Annotated[
+        float,
+        typer.Option(min=0, help="Independent expert LRU cache budget in GiB."),
+    ] = 0.0,
+    expert_queue_capacity: Annotated[
+        int,
+        typer.Option(min=1, help="Bounded expert request queue capacity."),
+    ] = 64,
 ) -> None:
     """Start a physical or loopback worker using the same transport and agent."""
 
@@ -1553,11 +1636,25 @@ def worker_command(
         )
     except SwarmError as exc:
         _fail(f"invalid worker endpoint configuration: {exc}")
+    try:
+        parsed_roles = {WorkerRole(item.strip()) for item in roles.split(",") if item.strip()}
+    except ValueError as exc:
+        _fail(f"invalid worker role: {exc}")
+    if stage_runtime:
+        parsed_roles.add(WorkerRole.CONTIGUOUS_STAGE)
+    expert_roles = parsed_roles & {
+        WorkerRole.WHOLE_EXPERT,
+        WorkerRole.EXPERT_MICROSHARD,
+        WorkerRole.REDUCER,
+    }
     resolved_device: str | None = None
     data_advertised_endpoint: str | None = None
-    enable_stage_runtime = stage_runtime or any(
+    expert_data_advertised_endpoint: str | None = None
+    enable_stage_runtime = WorkerRole.CONTIGUOUS_STAGE in parsed_roles or any(
         (device, data_advertise, model_cache_dir, model_snapshot, allow_model_download)
     )
+    if enable_stage_runtime:
+        parsed_roles.add(WorkerRole.CONTIGUOUS_STAGE)
     if enable_stage_runtime:
         if trusted_coordinator_fingerprint is None:
             _fail("--trusted-coordinator-fingerprint is required with --stage-runtime")
@@ -1591,6 +1688,30 @@ def worker_command(
         or allow_model_download
     ):
         _fail("stage data, device, model-cache, and download options require --stage-runtime")
+    if expert_roles:
+        if trusted_coordinator_fingerprint is None:
+            _fail("--trusted-coordinator-fingerprint is required with expert roles")
+        if expert_manifest is None:
+            _fail("--expert-manifest is required with expert roles")
+        if expert_residency_budget_gb <= 0:
+            _fail("--expert-residency-budget-gb must be positive with expert roles")
+        if expert_cache_budget_gb > expert_residency_budget_gb:
+            _fail("expert cache budget cannot exceed expert residency budget")
+        try:
+            expert_data_advertised_endpoint = resolve_data_plane_advertised_endpoint(
+                listen_endpoint=expert_data_listen,
+                coordinator_endpoint=coordinator,
+                explicit_endpoint=expert_data_advertise,
+            )
+        except SwarmError as exc:
+            _fail(f"invalid expert data endpoint configuration: {exc}")
+    elif (
+        expert_manifest is not None
+        or expert_data_advertise is not None
+        or expert_residency_budget_gb > 0
+        or expert_cache_budget_gb > 0
+    ):
+        _fail("expert manifest, endpoint, and budgets require an expert worker role")
     asyncio.run(
         run_worker(
             coordinator_endpoint=coordinator,
@@ -1615,6 +1736,13 @@ def worker_command(
             download_bandwidth_bytes_s=download_bandwidth_mbps * 1_000_000 / 8,
             network_rates_measured=(upload_bandwidth_mbps > 0 and download_bandwidth_mbps > 0),
             trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
+            worker_roles=parsed_roles,
+            expert_manifest_path=expert_manifest,
+            expert_data_listen_endpoint=(expert_data_listen if expert_roles else None),
+            expert_data_advertised_endpoint=expert_data_advertised_endpoint,
+            expert_residency_budget_bytes=int(expert_residency_budget_gb * 1024**3),
+            expert_cache_budget_bytes=int(expert_cache_budget_gb * 1024**3),
+            expert_queue_capacity=expert_queue_capacity,
         )
     )
 
@@ -1936,6 +2064,8 @@ def report_command(
 ) -> None:
     """Regenerate the self-contained HTML report from a run directory."""
 
+    from swarm_inference.experiments.reporting import render_html_report
+
     summary = json.loads((run / "summary.json").read_text(encoding="utf-8"))
     requests = [
         json.loads(line)
@@ -1958,6 +2088,8 @@ def validate_run_command(
     run: Annotated[Path, typer.Option(exists=True, file_okay=False)],
 ) -> None:
     """Verify the required artifact set and recorded SHA-256 hashes."""
+
+    from swarm_inference.experiments.runner import validate_run
 
     errors = validate_run(run)
     if errors:

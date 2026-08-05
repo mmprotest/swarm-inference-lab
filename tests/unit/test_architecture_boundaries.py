@@ -14,17 +14,12 @@ PROTECTED_PACKAGES = (
     "coordinator",
     "worker",
     "backends",
+    "microsharding",
 )
 
-# Temporary productization allowlist. Every entry is a known pre-existing
-# dependency and must be removed here in the same change that removes the import.
-# The productization program requires this set to be empty by Pull Request 5.
-EXPERIMENT_IMPORT_ALLOWLIST = {
-    (
-        "swarm_inference/backends/colibri/cuda.py",
-        "swarm_inference.experiments.experiment_010.colibri_expert_bank",
-    ),
-}
+# Pull Request 5 closes the product-to-experiment boundary. This remains an
+# explicit empty set so a future exception cannot be introduced invisibly.
+EXPERIMENT_IMPORT_ALLOWLIST: set[tuple[str, str]] = set()
 
 
 def _resolve_from_import(path: Path, node: ast.ImportFrom) -> str:
@@ -110,3 +105,26 @@ def test_product_telemetry_and_worker_lifecycle_have_no_experiment_imports() -> 
     assert not violations, (
         f"product telemetry or worker lifecycle imports experiments: {violations}"
     )
+
+
+def test_experiment_010_runtime_compatibility_names_are_canonical() -> None:
+    from swarm_inference.backends.colibri import expert_bank as canonical_bank
+    from swarm_inference.execution import expert as canonical_expert
+    from swarm_inference.experiments.experiment_010 import codecs as legacy_codecs
+    from swarm_inference.experiments.experiment_010 import (
+        colibri_expert_bank as legacy_bank,
+    )
+    from swarm_inference.experiments.experiment_010 import expert as legacy_expert
+    from swarm_inference.experiments.experiment_010 import schemas as legacy_schemas
+    from swarm_inference.experiments.experiment_010 import wire as legacy_wire
+    from swarm_inference.protocol import expert as canonical_protocol
+    from swarm_inference.transport import expert as canonical_transport
+
+    assert legacy_expert.ExpertStore is canonical_expert.ExpertStore
+    assert legacy_expert.execute_expert is canonical_expert.execute_expert
+    assert legacy_schemas.ExpertExecutionRequest is canonical_protocol.ExpertExecutionRequest
+    assert legacy_schemas.ExpertExecutionResponse is canonical_protocol.ExpertExecutionResponse
+    assert legacy_codecs.encode_array is canonical_transport.encode_array
+    assert legacy_wire.encode_request is canonical_transport.encode_request
+    assert legacy_wire.decode_response is canonical_transport.decode_response
+    assert legacy_bank.scan_safetensors is canonical_bank.scan_safetensors

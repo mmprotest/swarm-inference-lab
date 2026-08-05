@@ -39,7 +39,12 @@ from swarm_inference.model.product import (
     ProductModelMetadata,
     ProductModelSpec,
 )
+from swarm_inference.protocol.expert import (
+    SignedExpertRouteLease,
+    verify_expert_route_lease,
+)
 from swarm_inference.protocol.product import (
+    ProductStageExpertPlan,
     WorkerModelProbeRequest,
     WorkerModelProbeResponse,
 )
@@ -258,8 +263,10 @@ class PersistentStageRuntime:
         if self.route_future_tolerance_ns < 0:
             raise ValueError("route future tolerance cannot be negative")
         self._route_nonce_cache = BoundedNonceCache(capacity=nonce_cache_capacity)
+        self._expert_route_nonce_cache = BoundedNonceCache(capacity=nonce_cache_capacity)
         self._peer_nonce_cache = BoundedNonceCache(capacity=nonce_cache_capacity)
         self._verified_route_lease: SignedRouteLease | None = None
+        self._verified_expert_route_lease: SignedExpertRouteLease | None = None
         self.sessions = StageSessionRegistry(maximum_sessions=maximum_sessions)
         self.execution_queue_capacity = execution_queue_capacity
         self.token_queue_capacity = token_queue_capacity
@@ -495,12 +502,134 @@ class PersistentStageRuntime:
         if resolved_model_path is None:
             raise FileNotFoundError("OLMoE stage loading requires a resolved local checkpoint")
         dtype = _DTYPES[_normalise_dtype(request.dtype)]
+        expert_plan = (
+            ProductStageExpertPlan.model_validate(request.expert_plan)
+            if request.expert_plan is not None
+            else None
+        )
+        remote_placements = (
+            [item for item in expert_plan.placements if item.strategy != "local"]
+            if expert_plan is not None
+            else []
+        )
+        remote_experts = {
+            (item.layer_id, item.expert_id)
+            for item in remote_placements
+            if not item.local_fallback_permitted
+        }
+        backend_factory = None
+        if remote_placements:
+            assert expert_plan is not None
+            from swarm_inference.execution.microshard import MicroshardRange
+            from swarm_inference.execution.moe import (
+                HybridMoeBackend,
+                LocalMoeBackend,
+                MicroshardRemoteBackend,
+                MicroshardTarget,
+                WholeExpertRemoteBackend,
+                WholeExpertTarget,
+            )
+            from swarm_inference.transport.expert import ExpertTransportClient
+
+            clients: dict[str, ExpertTransportClient] = {}
+            whole_targets: dict[tuple[int, int], WholeExpertTarget] = {}
+            micro_targets: dict[tuple[int, int], list[MicroshardTarget]] = {}
+            placement: dict[tuple[int, int], str] = {}
+            for item in expert_plan.placements:
+                key = (item.layer_id, item.expert_id)
+                placement[key] = item.strategy
+                for worker_id, endpoint in item.worker_endpoints.items():
+                    if not endpoint:
+                        raise ValueError("remote expert placement has no reachable endpoint")
+                    clients.setdefault(worker_id, ExpertTransportClient(endpoint))
+                if item.strategy == "whole-remote":
+                    if len(item.worker_ids) != 1:
+                        raise ValueError("whole-expert placement requires exactly one owner")
+                    worker_id = item.worker_ids[0]
+                    whole_targets[key] = WholeExpertTarget(
+                        worker_id=worker_id,
+                        client=clients[worker_id],
+                        expert_hash=item.expert_hashes.get(worker_id, ""),
+                    )
+                elif item.strategy == "microshard-remote":
+                    targets: list[MicroshardTarget] = []
+                    for shard in item.microshards:
+                        worker_id = str(shard["worker_id"])
+                        targets.append(
+                            MicroshardTarget(
+                                ownership=MicroshardRange(
+                                    worker_id=worker_id,
+                                    layer_id=item.layer_id,
+                                    expert_id=item.expert_id,
+                                    hidden_start=int(shard["hidden_start"]),
+                                    hidden_end=int(shard["hidden_end"]),
+                                    logical_intermediate_dimension=int(
+                                        shard["logical_intermediate_dimension"]
+                                    ),
+                                    content_hash=str(shard["content_hash"]),
+                                    quantization_group_size=(
+                                        int(shard["quantization_group_size"])
+                                        if shard.get("quantization_group_size") is not None
+                                        else None
+                                    ),
+                                ),
+                                client=clients[worker_id],
+                            )
+                        )
+                    micro_targets[key] = targets
+
+            def make_backend(
+                local_modules: dict[tuple[int, int], torch.nn.Module],
+            ) -> HybridMoeBackend:
+                local = LocalMoeBackend(local_modules)
+                whole = (
+                    WholeExpertRemoteBackend(
+                        targets=whole_targets,
+                        model_id=request.model_id,
+                        model_revision=request.model_revision,
+                        model_fingerprint=request.expert_model_fingerprint or "",
+                        quantization_fingerprint=request.expert_quantization_fingerprint or "",
+                        topology_id=request.topology_id,
+                        route_generation=request.route_generation,
+                    )
+                    if whole_targets
+                    else None
+                )
+                micro = (
+                    MicroshardRemoteBackend(
+                        targets=micro_targets,
+                        model_id=request.model_id,
+                        model_revision=request.model_revision,
+                        model_fingerprint=request.expert_model_fingerprint or "",
+                        quantization_fingerprint=request.expert_quantization_fingerprint or "",
+                        topology_id=request.topology_id,
+                        route_generation=request.route_generation,
+                    )
+                    if micro_targets
+                    else None
+                )
+                return HybridMoeBackend(
+                    local=local,
+                    whole_remote=whole,
+                    microshard_remote=micro,
+                    placement=placement,
+                    fallback_placements={
+                        (item.layer_id, item.expert_id)
+                        for item in remote_placements
+                        if item.local_fallback_permitted
+                    },
+                    require_remote=expert_plan.require_remote_experts,
+                )
+
+            backend_factory = make_backend
         return ContiguousOlmoeStage(
             model_path=resolved_model_path,
             assignment=request.assignment,
             stage_count=request.stage_count,
             device=request.device,
             dtype=dtype,
+            moe_backend_factory=backend_factory,
+            remote_experts=remote_experts,
         )
 
     def _memory_snapshot(self) -> ProcessMemorySnapshot:
@@ -557,12 +686,26 @@ class PersistentStageRuntime:
             else:
                 resolved_path = self._resolve_model_path(request)
                 self._verify_model_identity(request, resolved_path)
+                expert_plan = (
+                    ProductStageExpertPlan.model_validate(request.expert_plan)
+                    if request.expert_plan is not None
+                    else None
+                )
                 validate_olmoe_stage_assignment(
                     resolved_path,
                     assignment=request.assignment,
                     stage_count=request.stage_count,
                     model_revision=request.model_revision,
                     tokenizer_revision=request.tokenizer_revision,
+                    remote_experts=(
+                        {
+                            (item.layer_id, item.expert_id)
+                            for item in expert_plan.placements
+                            if item.strategy != "local" and not item.local_fallback_permitted
+                        }
+                        if expert_plan is not None
+                        else None
+                    ),
                 )
             before = self._memory_snapshot()
             executor: StageExecutor | None = None
@@ -731,6 +874,7 @@ class PersistentStageRuntime:
         self._loaded = None
         self._route = None
         self._verified_route_lease = None
+        self._verified_expert_route_lease = None
         self._last_route_generation = None
         self._tokenizer = None
         self._sequence_validator = MessageSequenceValidator()
@@ -785,6 +929,63 @@ class PersistentStageRuntime:
                 future_tolerance_ns=self.route_future_tolerance_ns,
                 nonce_cache=self._route_nonce_cache,
             )
+        expert_lease = request.expert_route_lease
+        loaded = self._validate_loaded_identity(
+            model_id=request.model_id,
+            model_revision=request.model_revision,
+            tokenizer_revision=request.tokenizer_revision,
+            topology_id=request.topology_id,
+            stage_id=request.assignment.stage_id,
+            device=request.device,
+            dtype=request.dtype,
+        )
+        expert_plan = (
+            ProductStageExpertPlan.model_validate(loaded.request.expert_plan)
+            if loaded.request.expert_plan is not None
+            else None
+        )
+        has_remote_experts = expert_plan is not None and any(
+            item.strategy != "local" for item in expert_plan.placements
+        )
+        if has_remote_experts and expert_lease is None:
+            raise IntegrityError("remote expert execution requires a signed expert route lease")
+        if expert_lease is not None:
+            if self.identity is None or self.capability is None:
+                raise IntegrityError("stage identity is unavailable for expert route installation")
+            verify_expert_route_lease(
+                expert_lease,
+                self._trusted_coordinators,
+                last_route_generation=self._last_route_generation,
+                nonce_cache=self._expert_route_nonce_cache,
+            )
+            participant = next(
+                (item for item in expert_lease.participants if item.worker_id == self.worker_id),
+                None,
+            )
+            if (
+                participant is None
+                or "contiguous-stage" not in participant.roles
+                or participant.worker_public_key != self.identity.public_key_b64
+                or participant.worker_public_key_fingerprint != self.identity.public_key_fingerprint
+            ):
+                raise IntegrityError("stage identity is absent from the expert route lease")
+            if (
+                expert_lease.topology_id != request.topology_id
+                or expert_lease.route_generation != request.route_generation
+                or expert_lease.model_id != request.model_id
+                or expert_lease.model_revision != request.model_revision
+                or expert_lease.model_fingerprint != (loaded.request.expert_model_fingerprint or "")
+                or expert_lease.quantization_fingerprint
+                != (loaded.request.expert_quantization_fingerprint or "")
+            ):
+                raise IntegrityError("expert route lease model or topology identity mismatch")
+            if not isinstance(loaded.executor, ContiguousOlmoeStage):
+                raise IntegrityError("remote expert routes require the canonical OLMoE executor")
+            loaded.executor.install_expert_route(
+                expert_lease,
+                identity=self.identity,
+                worker_id=self.worker_id,
+            )
         if self._draining:
             raise RuntimeError("worker is draining and cannot install a route")
         async with self._executor_lock:
@@ -792,6 +993,7 @@ class PersistentStageRuntime:
                 raise RuntimeError("worker is draining and cannot install a route")
             endpoint_to_remove, response = self._install_route_locked(request)
             self._verified_route_lease = lease
+            self._verified_expert_route_lease = expert_lease
         if endpoint_to_remove is not None:
             await self.connection_pool.remove(endpoint_to_remove)
         return response
@@ -964,6 +1166,7 @@ class PersistentStageRuntime:
         endpoint = route.next_stage.data_endpoint if route.next_stage is not None else None
         self._route = None
         self._verified_route_lease = None
+        self._verified_expert_route_lease = None
         self._sync_capability()
         return (
             endpoint,
@@ -1304,6 +1507,11 @@ class PersistentStageRuntime:
                 dtype_bytes=partition.dtype_bytes,
                 hidden_size=partition.hidden_size,
                 metadata_hash=partition.metadata_hash,
+                expert_count=partition.expert_count,
+                experts_per_token=partition.experts_per_token,
+                expert_intermediate_size=partition.expert_intermediate_size,
+                model_fingerprint=partition.model_fingerprint,
+                quantization_fingerprint=partition.quantization_fingerprint,
             )
             spec = ProductModelSpec.resolved(reference, metadata)
             return WorkerModelProbeResponse(
@@ -1368,6 +1576,11 @@ class PersistentStageRuntime:
             token_queue_depth=self._token_queue.qsize(),
             token_queue_capacity=self.token_queue_capacity,
             dropped_token_publications=self._dropped_token_publications,
+            expert_status=(
+                loaded.executor.expert_status()
+                if loaded is not None and isinstance(loaded.executor, ContiguousOlmoeStage)
+                else {}
+            ),
         )
 
     async def drain(self, request: DrainWorkerRequest) -> StageActionResponse:
@@ -1863,6 +2076,7 @@ class PersistentStageRuntime:
         tensor_metadata = dict(message.attributes["tensor"])
         tensor, decode_ns = unpack_tensor(message.payload, tensor_metadata)
         cache_position = int(message.attributes["cache_position_start"])
+        deadline_ns = int(message.attributes.get("deadline_ns", time.time_ns() + 30_000_000_000))
         async with self._executor_lock:
             route, loaded, route_generation = self._validate_message_base(message)
             request_generation = self._request_generation(message)
@@ -1875,12 +2089,20 @@ class PersistentStageRuntime:
                 stage_id=message.stage_id,
                 cache_position_start=cache_position,
             )
+            expert_context: dict[str, Any] = {}
+            if isinstance(loaded.executor, ContiguousOlmoeStage):
+                expert_context = {
+                    "request_id": message.request_id,
+                    "token_position": message.token_position,
+                    "deadline_ns": deadline_ns,
+                }
             if loaded.request.assignment.owns_embeddings:
                 result = await asyncio.to_thread(
                     loaded.executor.execute_prefill,
                     session_id=message.session_id,
                     token_ids=tensor,
                     cache_position_start=cache_position,
+                    **expert_context,
                 )
             else:
                 result = await asyncio.to_thread(
@@ -1888,6 +2110,7 @@ class PersistentStageRuntime:
                     session_id=message.session_id,
                     hidden_states=tensor,
                     cache_position_start=cache_position,
+                    **expert_context,
                 )
             self.sessions.update_cache_position(
                 topology_id=message.topology_id,
@@ -1974,8 +2197,13 @@ class PersistentStageRuntime:
                 "destination_worker_id": route.next_stage.worker_id,
                 "cache_position_start": int(incoming.attributes["cache_position_start"]),
                 "cache_sequence_length": result.cache_sequence_length,
+                "deadline_ns": int(
+                    incoming.attributes.get("deadline_ns", time.time_ns() + 30_000_000_000)
+                ),
                 "compute_ns": result.compute_ns,
                 "decode_ns": decode_ns,
+                "expert_trace": self._combined_expert_trace(incoming, result),
+                "expert_metrics": self._combined_expert_metrics(incoming, result),
                 "tensor": packed.attributes(),
             },
         )
@@ -2026,9 +2254,38 @@ class PersistentStageRuntime:
                 "cache_sequence_length": result.cache_sequence_length,
                 "compute_ns": result.compute_ns,
                 "decode_ns": decode_ns,
+                "expert_trace": self._combined_expert_trace(incoming, result),
+                "expert_metrics": self._combined_expert_metrics(incoming, result),
                 "tensor": packed.attributes(),
             },
         )
+
+    @staticmethod
+    def _combined_expert_trace(
+        incoming: StageMessage,
+        result: StageExecutionResult,
+    ) -> list[dict[str, Any]]:
+        previous = incoming.attributes.get("expert_trace", [])
+        if not isinstance(previous, list) or any(not isinstance(item, dict) for item in previous):
+            raise ValueError("incoming expert trace is malformed")
+        return [*(dict(item) for item in previous), *(dict(item) for item in result.expert_events)]
+
+    @staticmethod
+    def _combined_expert_metrics(
+        incoming: StageMessage,
+        result: StageExecutionResult,
+    ) -> dict[str, Any]:
+        previous = incoming.attributes.get("expert_metrics", {})
+        if not isinstance(previous, dict):
+            raise ValueError("incoming expert metrics are malformed")
+        combined: dict[str, Any] = dict(previous)
+        for key, value in result.expert_metrics.items():
+            prior = combined.get(key)
+            if isinstance(value, (int, float)) and isinstance(prior, (int, float)):
+                combined[key] = prior + value
+            else:
+                combined[key] = value
+        return combined
 
     def _validate_downstream_response(
         self,

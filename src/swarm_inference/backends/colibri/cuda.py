@@ -17,9 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from swarm_inference.experiments.experiment_010.colibri_expert_bank import (
-    scan_safetensors,
-)
+from swarm_inference.backends.colibri.expert_bank import scan_safetensors
 
 
 class ColibriCudaError(RuntimeError):

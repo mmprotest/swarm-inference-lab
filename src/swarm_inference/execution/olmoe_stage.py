@@ -7,6 +7,7 @@ import gc
 import hashlib
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
@@ -14,6 +15,7 @@ from typing import cast
 import torch
 from safetensors import safe_open
 from torch import nn
+from torch.nn import functional as F
 from transformers import AutoConfig
 from transformers.cache_utils import DynamicCache
 from transformers.models.olmoe.modeling_olmoe import (
@@ -24,7 +26,10 @@ from transformers.models.olmoe.modeling_olmoe import (
 )
 
 from swarm_inference.execution.interfaces import StageExecutionResult, WeightOwnership
+from swarm_inference.execution.moe import MoeExecutionBackend
 from swarm_inference.model.partition import StageAssignment
+from swarm_inference.protocol.expert import SignedExpertRouteLease
+from swarm_inference.security.identity import WorkerIdentity
 
 
 @dataclass(slots=True)
@@ -32,6 +37,13 @@ class StageSessionState:
     cache: DynamicCache
     sequence_length: int = 0
     closed: bool = False
+
+
+class RemoteExpertPlaceholder(nn.Module):
+    """Parameter-free marker installed before selectively loading a stage."""
+
+    def forward(self, _hidden_states: torch.Tensor) -> torch.Tensor:
+        raise RuntimeError("a remotely placed expert cannot execute inside the stage")
 
 
 class SafeTensorRepository:
@@ -76,6 +88,11 @@ class ContiguousOlmoeStage(nn.Module):
         stage_count: int,
         device: str | torch.device,
         dtype: torch.dtype = torch.bfloat16,
+        moe_backend: MoeExecutionBackend | None = None,
+        moe_backend_factory: (
+            Callable[[dict[tuple[int, int], nn.Module]], MoeExecutionBackend] | None
+        ) = None,
+        remote_experts: set[tuple[int, int]] | None = None,
     ) -> None:
         super().__init__()
         if stage_count < 1 or not 0 <= assignment.stage_id < stage_count:
@@ -94,6 +111,13 @@ class ContiguousOlmoeStage(nn.Module):
         repository = SafeTensorRepository(self.model_path)
         owned_names: list[str] = []
         owned_bytes = 0
+        remote = set(remote_experts or set())
+        if moe_backend is not None and moe_backend_factory is not None:
+            raise ValueError("provide either a MoE backend or a backend factory, not both")
+        assignment_layers = set(assignment.layer_ids)
+        outside = [item for item in remote if item[0] not in assignment_layers]
+        if outside:
+            raise ValueError(f"remote expert placement lies outside this stage: {outside[:3]}")
 
         self.embed_tokens: nn.Embedding | None = None
         if assignment.owns_embeddings:
@@ -109,19 +133,35 @@ class ContiguousOlmoeStage(nn.Module):
             owned_bytes += size
 
         layers = []
+        local_experts: dict[tuple[int, int], nn.Module] = {}
         for local_layer_id, global_layer_id in enumerate(assignment.layer_ids):
             with torch.device("meta"):
                 layer = OlmoeDecoderLayer(self.local_config, local_layer_id)
+            expert_modules = getattr(layer.mlp, "experts", None)
+            if expert_modules is None:
+                raise ValueError("the selected OLMoE layer has no expert module list")
+            for expert_id in range(len(expert_modules)):
+                if (global_layer_id, expert_id) in remote:
+                    expert_modules[expert_id] = RemoteExpertPlaceholder()
             names, size = repository.load_module(
                 layer, global_prefix=f"model.layers.{global_layer_id}."
             )
             layer = layer.to(device=self.device, dtype=dtype)
             layer.eval()
             layers.append(layer)
+            for expert_id, expert in enumerate(layer.mlp.experts):
+                if (global_layer_id, expert_id) not in remote:
+                    local_experts[(global_layer_id, expert_id)] = expert
             owned_names.extend(names)
             owned_bytes += size
             gc.collect()
         self.layers = nn.ModuleList(layers)
+        self.moe_backend = (
+            moe_backend_factory(local_experts) if moe_backend_factory is not None else moe_backend
+        )
+        if remote and self.moe_backend is None:
+            raise ValueError("remote expert placement requires a configured MoE backend")
+        self.remote_experts = frozenset(remote)
         self.rotary_emb = OlmoeRotaryEmbedding(self.local_config, device=self.device)
 
         self.norm: OlmoeRMSNorm | None = None
@@ -172,16 +212,32 @@ class ContiguousOlmoeStage(nn.Module):
         if session_id in self.sessions and not self.sessions[session_id].closed:
             raise ValueError("stage session is already open")
         self.sessions[session_id] = StageSessionState(cache=DynamicCache(config=self.local_config))
+        if self.moe_backend is not None:
+            try:
+                self.moe_backend.open_session(session_id)
+            except Exception:
+                del self.sessions[session_id]
+                raise
 
     def close_session(self, session_id: str) -> int:
         state = self._session(session_id)
         bytes_before = self.kv_cache_bytes(session_id)
         state.closed = True
         del self.sessions[session_id]
+        backend = getattr(self, "moe_backend", None)
+        if backend is not None:
+            backend.close_session(session_id)
         return bytes_before
 
     def cancel_session(self, session_id: str) -> int:
-        return self.close_session(session_id)
+        state = self._session(session_id)
+        bytes_before = self.kv_cache_bytes(session_id)
+        state.closed = True
+        del self.sessions[session_id]
+        backend = getattr(self, "moe_backend", None)
+        if backend is not None:
+            backend.cancel_session(session_id)
+        return bytes_before
 
     def crop_session(self, session_id: str, sequence_length: int) -> None:
         state = self._session(session_id)
@@ -234,6 +290,9 @@ class ContiguousOlmoeStage(nn.Module):
         input_ids: torch.Tensor | None = None,
         hidden_states: torch.Tensor | None = None,
         capture_router_logits: bool = False,
+        request_id: str | None = None,
+        token_position: int | None = None,
+        deadline_ns: int | None = None,
     ) -> StageExecutionResult:
         """Execute either token IDs or stage-boundary hidden states."""
 
@@ -267,21 +326,74 @@ class ContiguousOlmoeStage(nn.Module):
             torch.cuda.synchronize(self.device)
         started = time.perf_counter_ns()
         routers: list[torch.Tensor] = []
-        for layer in self.layers:
-            outputs = layer(
-                hidden_states,
+        expert_events: list[dict[str, object]] = []
+        expert_metrics: dict[str, int | float | str] = {}
+        for local_layer_id, layer_module in enumerate(self.layers):
+            layer = cast(OlmoeDecoderLayer, layer_module)
+            if self.moe_backend is None:
+                outputs = layer(
+                    hidden_states,
+                    attention_mask=causal_mask,
+                    position_ids=position_ids,
+                    past_key_values=state.cache,
+                    output_attentions=False,
+                    output_router_logits=capture_router_logits,
+                    use_cache=True,
+                    cache_position=cache_position,
+                    position_embeddings=position_embeddings,
+                )
+                hidden_states = outputs[0]
+                if capture_router_logits:
+                    routers.append(outputs[-1].detach())
+                continue
+            global_layer_id = self.assignment.layer_ids[local_layer_id]
+            residual = hidden_states
+            attention_input = layer.input_layernorm(hidden_states)
+            attention_output, _ = layer.self_attn(
+                hidden_states=attention_input,
                 attention_mask=causal_mask,
                 position_ids=position_ids,
                 past_key_values=state.cache,
                 output_attentions=False,
-                output_router_logits=capture_router_logits,
                 use_cache=True,
                 cache_position=cache_position,
                 position_embeddings=position_embeddings,
             )
-            hidden_states = outputs[0]
+            hidden_states = residual + attention_output
+            residual = hidden_states
+            expert_input = layer.post_attention_layernorm(hidden_states)
+            batch_size, layer_sequence, hidden_dimension = expert_input.shape
+            flat = expert_input.view(-1, hidden_dimension)
+            router_logits = layer.mlp.gate(flat)
+            routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
+            routing_weights, selected_experts = torch.topk(routing_weights, layer.mlp.top_k, dim=-1)
+            if layer.mlp.norm_topk_prob:
+                routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
+            routing_weights = routing_weights.to(flat.dtype)
+            backend_result = self.moe_backend.execute_layer(
+                session_id=session_id,
+                request_id=request_id or session_id,
+                token_position=(cache_position_start if token_position is None else token_position),
+                layer_id=global_layer_id,
+                hidden_states=expert_input,
+                router_logits=router_logits,
+                selected_experts=selected_experts,
+                routing_weights=routing_weights,
+                deadline_ns=deadline_ns or (time.time_ns() + 120_000_000_000),
+            )
+            if backend_result.output.shape != (batch_size, layer_sequence, hidden_dimension):
+                raise ValueError("MoE backend returned the wrong stage-local tensor geometry")
+            hidden_states = residual + backend_result.output
             if capture_router_logits:
-                routers.append(outputs[-1].detach())
+                routers.append(router_logits.detach())
+            expert_events.extend(event.to_dict() for event in backend_result.events)
+            for key, value in backend_result.metrics.items():
+                if isinstance(value, (int, float)) and isinstance(
+                    expert_metrics.get(key, 0), (int, float)
+                ):
+                    expert_metrics[key] = expert_metrics.get(key, 0) + value  # type: ignore[operator]
+                else:
+                    expert_metrics[key] = value
         stage_boundary_hidden_states = hidden_states
         final_hidden = None
         logits = None
@@ -308,6 +420,8 @@ class ContiguousOlmoeStage(nn.Module):
             all_sampled_token_ids=all_token_ids,
             cache_sequence_length=state.sequence_length,
             compute_ns=compute_ns,
+            expert_events=tuple(expert_events),
+            expert_metrics=expert_metrics,
         )
 
     def execute_prefill(
@@ -316,11 +430,17 @@ class ContiguousOlmoeStage(nn.Module):
         session_id: str,
         token_ids: torch.Tensor,
         cache_position_start: int,
+        request_id: str | None = None,
+        token_position: int | None = None,
+        deadline_ns: int | None = None,
     ) -> StageExecutionResult:
         return self.execute(
             session_id=session_id,
             input_ids=token_ids,
             cache_position_start=cache_position_start,
+            request_id=request_id,
+            token_position=token_position,
+            deadline_ns=deadline_ns,
         )
 
     def execute_decode(
@@ -329,21 +449,65 @@ class ContiguousOlmoeStage(nn.Module):
         session_id: str,
         hidden_states: torch.Tensor,
         cache_position_start: int,
+        request_id: str | None = None,
+        token_position: int | None = None,
+        deadline_ns: int | None = None,
     ) -> StageExecutionResult:
         return self.execute(
             session_id=session_id,
             hidden_states=hidden_states,
             cache_position_start=cache_position_start,
+            request_id=request_id,
+            token_position=token_position,
+            deadline_ns=deadline_ns,
         )
+
+    def expert_status(self) -> dict[str, object]:
+        if self.moe_backend is None:
+            return {
+                "backend": "local-inline",
+                "remote_experts": [],
+                "remote_expert_calls": 0,
+                "remote_microshard_calls": 0,
+                "fallbacks": 0,
+                "bytes_transferred": 0,
+            }
+        status: dict[str, object] = getattr(self.moe_backend, "status", lambda: {})()
+        return {
+            "backend": self.moe_backend.capabilities().backend,
+            "remote_experts": [list(item) for item in sorted(self.remote_experts)],
+            **status,
+        }
+
+    def install_expert_route(
+        self,
+        lease: SignedExpertRouteLease,
+        *,
+        identity: WorkerIdentity,
+        worker_id: str,
+    ) -> None:
+        if self.moe_backend is None:
+            if self.remote_experts:
+                raise RuntimeError("remote expert placement has no execution backend")
+            return
+        configure = getattr(self.moe_backend, "configure_route", None)
+        if self.remote_experts and configure is None:
+            raise RuntimeError("remote expert backend cannot install authenticated routes")
+        if configure is not None:
+            configure(lease, identity=identity, worker_id=worker_id)
 
     def close(self) -> None:
         for session_id in list(self.sessions):
             self.cancel_session(session_id)
         self._closed = True
+        backend = getattr(self, "moe_backend", None)
+        if backend is not None:
+            backend.close()
 
 
 __all__ = [
     "ContiguousOlmoeStage",
+    "RemoteExpertPlaceholder",
     "SafeTensorRepository",
     "StageExecutionResult",
     "StageSessionState",

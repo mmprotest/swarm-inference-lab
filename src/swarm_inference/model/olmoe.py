@@ -76,6 +76,7 @@ def inspect_olmoe_partition_metadata(
                 sizes[key] = _tensor_nbytes(handle, key)
     layer_count = int(config.num_hidden_layers)
     weight_bytes = [0] * layer_count
+    expert_weight_bytes = [0] * layer_count
     embedding_weight_bytes = 0
     final_weight_bytes = 0
     for key, size in sizes.items():
@@ -84,6 +85,8 @@ def inspect_olmoe_partition_metadata(
             if not 0 <= layer_id < layer_count:
                 raise ValueError(f"OLMoE tensor references out-of-range layer {layer_id}")
             weight_bytes[layer_id] += size
+            if ".mlp.experts." in key:
+                expert_weight_bytes[layer_id] += size
         elif key.startswith("model.embed_tokens."):
             embedding_weight_bytes += size
         elif key.startswith("model.norm.") or key.startswith("lm_head."):
@@ -110,8 +113,23 @@ def inspect_olmoe_partition_metadata(
                 peak_temporary_bytes=max(activation_bytes * 16, weight_bytes[layer_id] // 32),
                 activation_bytes=activation_bytes,
                 measured=measured,
+                expert_weight_bytes=expert_weight_bytes[layer_id],
+                expert_execution_ns=(
+                    int(execution_ns * expert_weight_bytes[layer_id] / weight_bytes[layer_id])
+                    if weight_bytes[layer_id]
+                    else 0
+                ),
             )
         )
+    quantization_payload = json.dumps(
+        {
+            "quantization_config": getattr(config, "quantization_config", None),
+            "dtype": str(getattr(config, "dtype", "unknown")),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).encode("utf-8")
     identity_payload = json.dumps(
         {
             "model_revision": model_revision,
@@ -131,6 +149,11 @@ def inspect_olmoe_partition_metadata(
         model_revision=model_revision,
         tokenizer_revision=tokenizer_revision,
         metadata_hash=hashlib.sha256(identity_payload).hexdigest(),
+        expert_count=int(getattr(config, "num_experts", 0)),
+        experts_per_token=int(getattr(config, "num_experts_per_tok", 0)),
+        expert_intermediate_size=int(getattr(config, "intermediate_size", 0)),
+        model_fingerprint="sha256:" + hashlib.sha256(identity_payload).hexdigest(),
+        quantization_fingerprint="sha256:" + hashlib.sha256(quantization_payload).hexdigest(),
     )
 
 
@@ -141,6 +164,7 @@ def validate_olmoe_stage_assignment(
     stage_count: int,
     model_revision: str,
     tokenizer_revision: str,
+    remote_experts: set[tuple[int, int]] | None = None,
 ) -> ModelPartitionMetadata:
     """Verify checkpoint-derived ownership costs without constructing a full model."""
 
@@ -155,6 +179,13 @@ def validate_olmoe_stage_assignment(
         raise ValueError("stage assignment extends beyond the OLMoE decoder layer count")
     selected = metadata.layer_costs[assignment.layer_start : assignment.layer_end]
     expected_weight_bytes = sum(cost.weight_bytes for cost in selected)
+    for layer_id, expert_id in remote_experts or set():
+        if layer_id not in assignment.layer_ids:
+            raise ValueError("remote expert placement lies outside the stage assignment")
+        if not 0 <= expert_id < metadata.expert_count:
+            raise ValueError("remote expert placement has an out-of-range expert ID")
+        layer = metadata.layer_costs[layer_id]
+        expected_weight_bytes -= layer.expert_weight_bytes // metadata.expert_count
     if assignment.stage_id == 0:
         expected_weight_bytes += metadata.embedding_weight_bytes
     if assignment.stage_id == stage_count - 1:

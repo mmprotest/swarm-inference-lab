@@ -22,6 +22,8 @@ class LayerCost:
     peak_temporary_bytes: int
     activation_bytes: int
     measured: bool
+    expert_weight_bytes: int = 0
+    expert_execution_ns: int = 0
 
     @property
     def objective_cost(self) -> float:
@@ -262,6 +264,11 @@ class ModelPartitionMetadata:
     model_revision: str
     tokenizer_revision: str
     metadata_hash: str
+    expert_count: int = 0
+    experts_per_token: int = 0
+    expert_intermediate_size: int = 0
+    model_fingerprint: str = ""
+    quantization_fingerprint: str = ""
 
 
 def equal_ranges(layer_count: int, stage_count: int) -> tuple[tuple[int, int], ...]:

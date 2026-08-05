@@ -624,6 +624,20 @@ class CoordinatorCore:
                 "available_ram": capability.available_ram_bytes,
                 "available_vram": capability.available_vram_bytes,
             }
+            expert_status: dict[str, Any] = {
+                "roles": [item.value for item in capability.roles],
+                "expert_data_plane_endpoint": capability.expert_data_plane_endpoint,
+                "owned_experts": capability.owned_experts,
+                "owned_microshards": capability.owned_microshards,
+                "cache_resident_bytes": capability.expert_cache_resident_bytes,
+                "cache_hits": capability.expert_cache_hits,
+                "cache_misses": capability.expert_cache_misses,
+                "remote_whole_expert_calls": capability.remote_expert_calls,
+                "remote_microshard_calls": capability.remote_microshard_calls,
+                "bytes_transferred": capability.expert_bytes_transferred,
+                "expert_critical_path_ns": capability.expert_critical_path_ns,
+                "supported_reduction_modes": capability.supported_reduction_modes,
+            }
             last_error = None
             control_endpoint = capability.control_endpoint or capability.endpoint
             if capability.stage_runtime_enabled and control_endpoint is not None:
@@ -653,8 +667,28 @@ class CoordinatorCore:
                                 "cuda_reserved": loaded.cuda_reserved_after_bytes,
                             }
                         )
+                    if worker_status.expert_status:
+                        expert_status["stage_backend"] = dict(worker_status.expert_status)
                 except Exception as exc:
                     last_error = f"{type(exc).__name__}: {exc}"
+            if capability.expert_data_plane_endpoint is not None:
+                try:
+                    from swarm_inference.transport.expert import ExpertTransportClient
+
+                    expert_client = ExpertTransportClient(
+                        capability.expert_data_plane_endpoint, timeout_s=2.0
+                    )
+                    expert_response = await asyncio.to_thread(expert_client.control, "status")
+                    live_status = expert_response.get("status")
+                    if isinstance(live_status, dict):
+                        expert_status.update(live_status)
+                except Exception as exc:
+                    expert_error = f"{type(exc).__name__}: {exc}"
+                    last_error = (
+                        f"{last_error}; expert status: {expert_error}"
+                        if last_error is not None
+                        else expert_error
+                    )
             return WorkerProductStatus(
                 capability=capability,
                 healthy_registration=healthy,
@@ -666,6 +700,7 @@ class CoordinatorCore:
                 active_sessions=active_sessions,
                 queue_depths=queue_depths,
                 memory_bytes=memory_bytes,
+                expert_status=expert_status,
                 last_error=last_error,
                 detail=(
                     "healthy"
@@ -735,6 +770,32 @@ class CoordinatorCore:
             for name, value in worker.memory_bytes.items():
                 memory_bytes[f"{worker.capability.worker_id}:{name}"] = value
         deployment_values = deployments.statuses()
+        expert_workers = [
+            item
+            for item in worker_response.workers
+            if item.capability.expert_data_plane_endpoint is not None
+        ]
+
+        def expert_total(name: str) -> int:
+            return sum(int(item.expert_status.get(name, 0)) for item in expert_workers)
+
+        def stage_expert_total(name: str) -> int:
+            return sum(
+                int(stage_status.get(name, 0))
+                for item in worker_response.workers
+                if isinstance(stage_status := item.expert_status.get("stage_backend"), dict)
+            )
+
+        owned_expert_count = sum(
+            sum(len(experts) for experts in item.capability.owned_experts.values())
+            for item in expert_workers
+        )
+        owned_microshard_count = sum(
+            len(item.capability.owned_microshards) for item in expert_workers
+        )
+        reduction_modes = sorted(
+            {mode for item in expert_workers for mode in item.capability.supported_reduction_modes}
+        )
         last_error = next(
             (item.last_error for item in reversed(session_values) if item.last_error is not None),
             next(
@@ -773,6 +834,37 @@ class CoordinatorCore:
                 "deployment_worker_ids": list(deployments.reserved_worker_ids),
                 "active_sessions": len(active),
             },
+            expert_worker_count=len(expert_workers),
+            owned_experts=owned_expert_count,
+            owned_microshards=owned_microshard_count,
+            expert_cache_resident_bytes=expert_total("cache_resident_bytes"),
+            expert_cache_hits=expert_total("cache_hits"),
+            expert_cache_misses=expert_total("cache_misses"),
+            remote_expert_calls=expert_total("remote_whole_expert_calls"),
+            remote_microshard_calls=expert_total("remote_microshard_calls"),
+            expert_fallbacks=stage_expert_total("fallbacks"),
+            expert_bytes_transferred=sum(
+                int(item.expert_status.get("bytes_received", 0))
+                + int(item.expert_status.get("bytes_sent", 0))
+                for item in expert_workers
+            ),
+            expert_critical_path_ns=(
+                stage_expert_total("expert_critical_path_ns") or expert_total("compute_ns")
+            ),
+            expert_reduction_modes=sorted(
+                {
+                    *reduction_modes,
+                    *(
+                        str(stage_status["reduction_mode"])
+                        for item in worker_response.workers
+                        if isinstance(
+                            stage_status := item.expert_status.get("stage_backend"),
+                            dict,
+                        )
+                        and stage_status.get("reduction_mode") not in {None, "none"}
+                    ),
+                }
+            ),
             last_error=last_error,
         )
 

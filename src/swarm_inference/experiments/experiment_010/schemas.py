@@ -1,17 +1,33 @@
-"""Strict semantic contracts for Experiment 010.
+"""Experiment 010 evidence contracts over the canonical expert protocol.
 
-The wire encoding is deliberately separate from these models. All transports
-must preserve this schema even when tensor bytes travel outside the JSON frame.
+Product wire, tensor, worker-manifest, and execution schemas are owned by
+``swarm_inference.protocol.expert``.  This module retains only experiment
+workloads, fault profiles, planning evidence, gates, and historical verdicts.
 """
 
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 
 from swarm_inference.config.models import StrictModel
+from swarm_inference.protocol.expert import (
+    DataPlane,
+    DeterminismMode,
+    ExpertExecutionMetadata,
+    ExpertExecutionMode,
+    ExpertExecutionRequest,
+    ExpertExecutionResponse,
+    ExpertResponseMode,
+    ReductionMode,
+    ResultIntegrity,
+    TensorWireMetadata,
+    TransportCodec,
+    WorkerBudget,
+    WorkerManifest,
+)
 
 
 class EvidenceCategory(StrEnum):
@@ -65,41 +81,6 @@ class ExecutionStrategy(StrEnum):
     IDLE = "idle"
 
 
-class DataPlane(StrEnum):
-    IN_PROCESS = "in_process"
-    SHARED_MEMORY = "shared_memory"
-    DIRECT_TCP = "direct_tcp"
-    RELAYED_TCP = "relayed_tcp"
-
-
-class ExpertExecutionMode(StrEnum):
-    WHOLE_EXPERT = "whole_expert"
-    MICROSHARD = "microshard"
-
-
-class DeterminismMode(StrEnum):
-    EXACT = "exact"
-    QUALITY_BOUNDED = "quality_bounded"
-
-
-class ExpertResponseMode(StrEnum):
-    PER_EXPERT_EXACT = "per_expert_exact"
-    PER_WORKER_FAST = "per_worker_fast"
-
-
-class TransportCodec(StrEnum):
-    RAW_FP32 = "raw_fp32"
-    RAW_FP16 = "raw_fp16"
-    INT8_PER_VECTOR = "int8_per_vector"
-    LOSSLESS_GENERAL = "lossless_general"
-
-
-class ReductionMode(StrEnum):
-    FIXED_ORDER_FP32 = "fixed_order_fp32"
-    TREE_FP32 = "tree_fp32"
-    FAST_BACKEND_NATIVE = "fast_backend_native"
-
-
 class PlannerObjective(StrEnum):
     MAX_DECODE_THROUGHPUT = "max_decode_throughput"
     MIN_TTFT = "min_ttft"
@@ -142,224 +123,6 @@ class RecoveryStrategy(StrEnum):
     HEDGED_DUPLICATE = "hedged_duplicate"
     SAMPLED_REPLICATION = "sampled_replication"
     SMALL_TILE_WORK_STEALING = "small_tile_work_stealing"
-
-
-class TensorWireMetadata(StrictModel):
-    name: str
-    envelope: Literal["raw", "SWARMT01"] = "raw"
-    dtype: Literal["float32", "float16", "int8", "uint8"]
-    shape: list[int] = Field(min_length=1)
-    codec: TransportCodec = TransportCodec.RAW_FP32
-    payload_index: int = Field(ge=0)
-    raw_bytes: int = Field(ge=0)
-    encoded_bytes: int = Field(ge=0)
-    scale: float | list[float] | None = None
-    checksum: str
-
-    @field_validator("shape")
-    @classmethod
-    def positive_shape(cls, value: list[int]) -> list[int]:
-        if any(item <= 0 for item in value):
-            raise ValueError("tensor dimensions must be positive")
-        return value
-
-
-class ExpertExecutionRequest(StrictModel):
-    schema_version: Literal["1.0"] = "1.0"
-    request_id: str
-    model_id: str
-    model_revision: str
-    quantization_fingerprint: str
-    layer_id: int = Field(ge=0)
-    batch_rows: int = Field(gt=0)
-    latent_dimension: int = Field(gt=0)
-    # Legacy flat routing applies the same selected experts to every row.
-    # Native Colibri dispatch uses the rank-preserving per-row form below.
-    expert_ids: list[int] = Field(default_factory=list)
-    routing_weights: list[float] = Field(default_factory=list)
-    top_k: int | None = Field(default=None, gt=0)
-    expert_ids_by_row: list[list[int]] | None = None
-    routing_weights_by_row: list[list[float]] | None = None
-    selected_rank_by_row: list[list[int]] | None = None
-    response_mode: ExpertResponseMode = ExpertResponseMode.PER_WORKER_FAST
-    activations: dict[str, Any]
-    deadline_ns: int = Field(gt=0)
-    execution_mode: ExpertExecutionMode = ExpertExecutionMode.WHOLE_EXPERT
-    determinism_mode: DeterminismMode = DeterminismMode.EXACT
-    compression: TransportCodec = TransportCodec.RAW_FP32
-    hidden_start: int | None = Field(default=None, ge=0)
-    hidden_end: int | None = Field(default=None, gt=0)
-    down_accumulators: dict[str, Any] | None = None
-    microshard_final: bool = False
-    reduction_mode: ReductionMode = ReductionMode.FIXED_ORDER_FP32
-    challenge: bool = False
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-    @model_validator(mode="after")
-    def validate_request(self) -> ExpertExecutionRequest:
-        if len(self.routing_weights) != len(self.expert_ids):
-            raise ValueError("expert IDs and routing weights must have equal lengths")
-        if any(expert < 0 for expert in self.expert_ids):
-            raise ValueError("expert IDs must be non-negative")
-        per_row = (
-            self.expert_ids_by_row,
-            self.routing_weights_by_row,
-            self.selected_rank_by_row,
-        )
-        if any(value is not None for value in per_row):
-            if any(value is None for value in per_row):
-                raise ValueError("per-row routing requires IDs, weights, and selected ranks")
-            assert self.expert_ids_by_row is not None
-            assert self.routing_weights_by_row is not None
-            assert self.selected_rank_by_row is not None
-            if len(self.expert_ids_by_row) != self.batch_rows:
-                raise ValueError("per-row routing row count does not match batch_rows")
-            inferred_top_k = len(self.expert_ids_by_row[0])
-            if inferred_top_k < 1 or (self.top_k is not None and self.top_k != inferred_top_k):
-                raise ValueError("top_k does not match per-row routing width")
-            for row, (experts, weights, ranks) in enumerate(
-                zip(
-                    self.expert_ids_by_row,
-                    self.routing_weights_by_row,
-                    self.selected_rank_by_row,
-                    strict=True,
-                )
-            ):
-                if len(experts) != inferred_top_k or len(weights) != inferred_top_k:
-                    raise ValueError(f"routing width differs at batch row {row}")
-                if ranks != list(range(inferred_top_k)):
-                    raise ValueError(f"selected ranks are not rank-preserving at batch row {row}")
-                if any(expert < 0 for expert in experts):
-                    raise ValueError("expert IDs must be non-negative")
-            if self.expert_ids or self.routing_weights:
-                raise ValueError("request cannot mix flat and per-row routing")
-        else:
-            if not self.expert_ids:
-                raise ValueError("request requires flat or per-row expert routing")
-            if self.top_k is not None and self.top_k != len(self.expert_ids):
-                raise ValueError("top_k does not match flat routing width")
-        if self.determinism_mode == DeterminismMode.EXACT:
-            if self.compression != TransportCodec.RAW_FP32:
-                raise ValueError("exact mode requires raw_fp32 transport")
-            if self.reduction_mode != ReductionMode.FIXED_ORDER_FP32:
-                raise ValueError("exact mode requires fixed_order_fp32 reduction")
-        if self.execution_mode == ExpertExecutionMode.MICROSHARD:
-            if self.hidden_start is None or self.hidden_end is None:
-                raise ValueError("microshard execution requires a hidden range")
-            if self.hidden_end <= self.hidden_start:
-                raise ValueError("microshard hidden range must be non-empty")
-            exact_chain = self.response_mode == ExpertResponseMode.PER_EXPERT_EXACT
-            if (self.hidden_start == 0 or not exact_chain) and self.down_accumulators is not None:
-                raise ValueError("this microshard request cannot carry a down accumulator")
-            if exact_chain and self.hidden_start > 0 and self.down_accumulators is None:
-                raise ValueError("non-initial exact microshard requires a down accumulator")
-            if not exact_chain and self.microshard_final:
-                raise ValueError("fast microshards do not carry exact chain state")
-        elif self.hidden_start is not None or self.hidden_end is not None:
-            raise ValueError("whole-expert execution cannot carry a hidden range")
-        elif self.down_accumulators is not None or self.microshard_final:
-            raise ValueError("whole-expert execution cannot carry microshard chain state")
-        return self
-
-    @property
-    def effective_top_k(self) -> int:
-        if self.expert_ids_by_row is not None:
-            return len(self.expert_ids_by_row[0])
-        return len(self.expert_ids)
-
-    def routing_for_row(self, row: int) -> tuple[list[int], list[float], list[int]]:
-        if row < 0 or row >= self.batch_rows:
-            raise IndexError(row)
-        if self.expert_ids_by_row is not None:
-            assert self.routing_weights_by_row is not None
-            assert self.selected_rank_by_row is not None
-            return (
-                self.expert_ids_by_row[row],
-                self.routing_weights_by_row[row],
-                self.selected_rank_by_row[row],
-            )
-        return self.expert_ids, self.routing_weights, list(range(len(self.expert_ids)))
-
-
-class ExpertExecutionMetadata(StrictModel):
-    experts_executed: list[int]
-    bytes_read: int = Field(ge=0)
-    bytes_received: int = Field(ge=0)
-    bytes_sent: int = Field(ge=0)
-    cache_hits: int = Field(ge=0)
-    cache_misses: int = Field(ge=0)
-    compute_ns: int = Field(ge=0)
-    queue_ns: int = Field(ge=0)
-    transfer_ns: int = Field(ge=0)
-    serialisation_ns: int = Field(default=0, ge=0)
-    copy_ns: int = Field(default=0, ge=0)
-    kernel_transition_ns: int = Field(default=0, ge=0)
-    backend: str = "cpu"
-    device: str = "cpu"
-    resident_tensor_bytes: int = Field(default=0, ge=0)
-    expert_resident_bytes: int = Field(default=0, ge=0)
-    fallback_events: list[dict[str, Any]] = Field(default_factory=list)
-
-
-class ResultIntegrity(StrictModel):
-    result_hash: str
-    model_fingerprint: str
-    worker_signature: str
-
-
-class ExpertExecutionResponse(StrictModel):
-    schema_version: Literal["1.0"] = "1.0"
-    request_id: str
-    worker_id: str
-    model_revision: str
-    layer_id: int = Field(ge=0)
-    result: dict[str, Any]
-    execution_metadata: ExpertExecutionMetadata
-    integrity: ResultIntegrity
-    status: Literal["ok", "error"] = "ok"
-    error: str | None = None
-
-    @model_validator(mode="after")
-    def error_contract(self) -> ExpertExecutionResponse:
-        if self.status == "error" and not self.error:
-            raise ValueError("error responses require a reason")
-        if self.status == "ok" and self.error is not None:
-            raise ValueError("successful responses cannot carry an error")
-        return self
-
-
-class WorkerBudget(StrictModel):
-    worker_id: str
-    memory_budget_bytes: int = Field(gt=0)
-    expert_residency_budget_bytes: int = Field(gt=0)
-    cache_budget_bytes: int = Field(ge=0)
-    thread_count: int = Field(gt=0)
-    cpu_affinity: list[int] = Field(min_length=1)
-    storage_directory: str
-    device: str
-    backend: str
-    physical_memory_limit: bool = False
-
-
-class WorkerManifest(StrictModel):
-    worker_id: str
-    process_id: int = Field(gt=0)
-    endpoint: str
-    control_endpoint: str | None = None
-    universal_worker_abi: dict[str, Any] = Field(default_factory=dict)
-    model_id: str
-    model_revision: str
-    quantization_fingerprint: str
-    model_fingerprint: str
-    bridge_version: str
-    owned_experts: dict[str, list[int]] = Field(default_factory=dict)
-    owned_microshards: list[dict[str, Any]] = Field(default_factory=list)
-    tensor_hashes: dict[str, str] = Field(default_factory=dict)
-    resident_tensor_bytes: int = Field(ge=0)
-    expert_bytes: int = Field(ge=0)
-    cache_bytes: int = Field(ge=0)
-    peak_rss_bytes: int = Field(ge=0)
-    roles: list[str] = Field(default_factory=list)
 
 
 class NetworkShapeProfile(StrictModel):
@@ -447,3 +210,35 @@ def classify_verdict(
     if genuine_capacity_result and capacity_gates <= passed:
         return Experiment010Verdict.PASS_CAPACITY
     return Experiment010Verdict.PARTIAL
+
+
+__all__ = [
+    "DataPlane",
+    "DeterminismMode",
+    "EvidenceCategory",
+    "ExecutionStrategy",
+    "Experiment010Mode",
+    "Experiment010Verdict",
+    "ExpertExecutionMetadata",
+    "ExpertExecutionMode",
+    "ExpertExecutionRequest",
+    "ExpertExecutionResponse",
+    "ExpertResponseMode",
+    "FailureType",
+    "GateResult",
+    "GateStatus",
+    "NetworkShapeProfile",
+    "PhasePlan",
+    "PlannerCandidate",
+    "PlannerObjective",
+    "RecoveryStrategy",
+    "ReductionMode",
+    "ResultIntegrity",
+    "RunCompleteness",
+    "ServicePhase",
+    "TensorWireMetadata",
+    "TransportCodec",
+    "WorkerBudget",
+    "WorkerManifest",
+    "classify_verdict",
+]

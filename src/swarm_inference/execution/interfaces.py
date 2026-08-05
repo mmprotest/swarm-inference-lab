@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 import torch
@@ -47,6 +47,8 @@ class StageExecutionResult:
     all_sampled_token_ids: torch.Tensor | None
     cache_sequence_length: int
     compute_ns: int
+    expert_events: tuple[dict[str, Any], ...] = ()
+    expert_metrics: dict[str, int | float | str] = field(default_factory=dict)
 
 
 @runtime_checkable

@@ -9,8 +9,14 @@ from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
+from swarm_inference.config.models import WorkerRole
 from swarm_inference.coordinator.registry import WorkerRegistry
 from swarm_inference.model.product import ModelResolutionPolicy
+from swarm_inference.protocol.expert import (
+    ExpertRouteParticipant,
+    SignedExpertRouteLease,
+    sign_expert_route_lease,
+)
 from swarm_inference.protocol.product import (
     DeploymentPhase,
     DeploymentStatus,
@@ -36,6 +42,7 @@ from swarm_inference.protocol.stage_worker import (
 )
 from swarm_inference.runtime.telemetry import ProductTelemetry
 from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
+from swarm_inference.transport.expert import ExpertTransportClient
 
 
 def _atomic_write_text(path: Path, payload: str) -> None:
@@ -231,6 +238,140 @@ class DeploymentManager:
         )
         return sign_route_lease(unsigned, identity)
 
+    @staticmethod
+    def _expert_worker_ids(plan: ProductStagePlan) -> set[str]:
+        return {
+            worker_id
+            for stage in plan.expert_plans
+            for placement in stage.placements
+            if placement.strategy != "local"
+            for worker_id in placement.worker_ids
+        }
+
+    def _signed_expert_route_lease(
+        self,
+        plan: ProductStagePlan,
+        *,
+        lease_expiry_unix_ns: int,
+    ) -> SignedExpertRouteLease | None:
+        expert_worker_ids = self._expert_worker_ids(plan)
+        if not expert_worker_ids:
+            return None
+        identity = self.coordinator_identity
+        if identity is None:
+            raise RuntimeError("remote expert deployment requires a coordinator identity")
+        if not plan.expert_model_fingerprint or not plan.expert_quantization_fingerprint:
+            raise RuntimeError("remote expert deployment requires exact model identities")
+        stage_assignments = {item.worker_id: item for item in plan.assignments}
+        participant_ids = set(stage_assignments) | expert_worker_ids
+        participants: list[ExpertRouteParticipant] = []
+        for worker_id in sorted(participant_ids):
+            capability = self.registry.capability(worker_id)
+            roles: list[str] = []
+            if worker_id in stage_assignments:
+                roles.append(WorkerRole.CONTIGUOUS_STAGE.value)
+            roles.extend(
+                role.value
+                for role in capability.roles
+                if role
+                in {
+                    WorkerRole.WHOLE_EXPERT,
+                    WorkerRole.EXPERT_MICROSHARD,
+                    WorkerRole.REDUCER,
+                }
+            )
+            assignment = stage_assignments.get(worker_id)
+            endpoint = capability.expert_data_plane_endpoint or (
+                assignment.data_endpoint if assignment is not None else ""
+            )
+            if not endpoint:
+                raise RuntimeError(f"expert route participant {worker_id} has no endpoint")
+            participants.append(
+                ExpertRouteParticipant(
+                    worker_id=worker_id,
+                    worker_public_key=capability.public_key,
+                    worker_public_key_fingerprint=public_key_fingerprint(capability.public_key),
+                    endpoint=endpoint,
+                    roles=roles,
+                    owned_experts={
+                        int(layer_id): [int(expert_id) for expert_id in expert_ids]
+                        for layer_id, expert_ids in capability.owned_experts.items()
+                    },
+                    owned_microshards=list(capability.owned_microshards),
+                    model_fingerprint=plan.expert_model_fingerprint,
+                    quantization_fingerprint=plan.expert_quantization_fingerprint,
+                )
+            )
+        issued = time.time_ns()
+        unsigned = SignedExpertRouteLease(
+            topology_id=plan.topology_id,
+            route_generation=plan.generation,
+            model_id=plan.model.model_id,
+            model_revision=plan.model.model_revision,
+            model_fingerprint=plan.expert_model_fingerprint,
+            quantization_fingerprint=plan.expert_quantization_fingerprint,
+            participants=participants,
+            lease_issued_unix_ns=issued,
+            lease_expiry_unix_ns=lease_expiry_unix_ns,
+            nonce=uuid4().hex,
+            coordinator_identity=self.coordinator_id,
+            coordinator_public_key=identity.public_key_b64,
+            coordinator_public_key_fingerprint=identity.public_key_fingerprint,
+        )
+        return sign_expert_route_lease(unsigned, identity)
+
+    async def _install_expert_routes(
+        self,
+        plan: ProductStagePlan,
+        lease: SignedExpertRouteLease | None,
+    ) -> None:
+        if lease is None:
+            return
+
+        async def install(worker_id: str) -> None:
+            capability = self.registry.capability(worker_id)
+            endpoint = capability.expert_data_plane_endpoint
+            if endpoint is None:
+                raise RuntimeError(f"expert worker {worker_id} has no data endpoint")
+            client = ExpertTransportClient(endpoint, timeout_s=self.control_timeout_s)
+            await asyncio.to_thread(
+                client.control,
+                "install_route",
+                route_lease=lease.model_dump(mode="json"),
+            )
+
+        results = await asyncio.gather(
+            *(install(worker_id) for worker_id in sorted(self._expert_worker_ids(plan))),
+            return_exceptions=True,
+        )
+        errors = [str(item) for item in results if isinstance(item, BaseException)]
+        if errors:
+            raise RuntimeError("expert route installation failed: " + "; ".join(errors))
+
+    async def _remove_expert_routes(self, plan: ProductStagePlan) -> list[str]:
+        async def remove(worker_id: str) -> None:
+            capability = self.registry.capability(worker_id)
+            endpoint = capability.expert_data_plane_endpoint
+            if endpoint is None:
+                return
+            client = ExpertTransportClient(endpoint, timeout_s=self.control_timeout_s)
+            await asyncio.to_thread(
+                client.control,
+                "remove_route",
+                topology_id=plan.topology_id,
+                route_generation=plan.generation,
+            )
+
+        results = await asyncio.gather(
+            *(remove(worker_id) for worker_id in sorted(self._expert_worker_ids(plan))),
+            return_exceptions=True,
+        )
+        return [
+            f"expert route removal failed: {type(item).__name__}: {item}"
+            for item in results
+            if isinstance(item, BaseException)
+        ]
+
     def _transition(
         self,
         status: DeploymentStatus,
@@ -271,6 +412,7 @@ class DeploymentManager:
                 and existing_plan is not None
                 and existing_plan.model == plan.model
                 and existing_plan.assignments == plan.assignments
+                and existing_plan.expert_plans == plan.expert_plans
             ):
                 return existing.model_copy(update={"idempotent": True}, deep=True)
             if self._current_topology_id is not None:
@@ -314,13 +456,18 @@ class DeploymentManager:
             loaded_stage_ids: set[int] = set()
             installed_stage_ids: set[int] = set()
             try:
-                for item in plan.assignments:
-                    healthy, _ = self.registry.registration_health(item.worker_id)
+                all_worker_ids = {
+                    *(item.worker_id for item in plan.assignments),
+                    *self._expert_worker_ids(plan),
+                }
+                for worker_id in sorted(all_worker_ids):
+                    healthy, _ = self.registry.registration_health(worker_id)
                     if not healthy:
-                        raise RuntimeError(f"worker {item.worker_id} registration became unhealthy")
-                    if item.worker_id in self._reserved_workers:
-                        raise RuntimeError(f"worker {item.worker_id} is already reserved")
-                    self._reserved_workers.add(item.worker_id)
+                        raise RuntimeError(f"worker {worker_id} registration became unhealthy")
+                    if worker_id in self._reserved_workers:
+                        raise RuntimeError(f"worker {worker_id} is already reserved")
+                    self._reserved_workers.add(worker_id)
+                for item in plan.assignments:
                     status.workers[item.stage_id].reserved = True
                 status = self._transition(status, DeploymentPhase.LOADING)
                 lease_expiry = time.time_ns() + int(self.lease_seconds * 1_000_000_000)
@@ -344,6 +491,17 @@ class DeploymentManager:
                         lease_expiry_unix_ns=lease_expiry,
                         deadline_unix_ns=(
                             time.time_ns() + int(self.control_timeout_s * 1_000_000_000)
+                        ),
+                        expert_plan=(
+                            plan.expert_plans[item.stage_id].model_dump(mode="json")
+                            if plan.expert_plans
+                            else None
+                        ),
+                        expert_model_fingerprint=(
+                            plan.expert_model_fingerprint if plan.expert_plans else None
+                        ),
+                        expert_quantization_fingerprint=(
+                            plan.expert_quantization_fingerprint if plan.expert_plans else None
                         ),
                     )
                     for item in plan.assignments
@@ -410,6 +568,11 @@ class DeploymentManager:
                     plan,
                     lease_expiry_unix_ns=lease_expiry,
                 )
+                signed_expert_lease = self._signed_expert_route_lease(
+                    plan,
+                    lease_expiry_unix_ns=lease_expiry,
+                )
+                await self._install_expert_routes(plan, signed_expert_lease)
                 route_requests: list[InstallStageRouteRequest] = []
                 for index, item in enumerate(plan.assignments):
                     previous = plan.assignments[index - 1] if index > 0 else None
@@ -457,6 +620,7 @@ class DeploymentManager:
                                 time.time_ns() + int(self.control_timeout_s * 1_000_000_000)
                             ),
                             route_lease=signed_lease,
+                            expert_route_lease=signed_expert_lease,
                         )
                     )
                 route_results = await asyncio.gather(
@@ -708,6 +872,21 @@ class DeploymentManager:
                                     ),
                                     lease_expiry_unix_ns=lease_expiry,
                                     deadline_unix_ns=deadline,
+                                    expert_plan=(
+                                        new_plan.expert_plans[item.stage_id].model_dump(mode="json")
+                                        if new_plan.expert_plans
+                                        else None
+                                    ),
+                                    expert_model_fingerprint=(
+                                        new_plan.expert_model_fingerprint
+                                        if new_plan.expert_plans
+                                        else None
+                                    ),
+                                    expert_quantization_fingerprint=(
+                                        new_plan.expert_quantization_fingerprint
+                                        if new_plan.expert_plans
+                                        else None
+                                    ),
                                 ),
                             )
                             for item in replacement_items
@@ -758,6 +937,11 @@ class DeploymentManager:
                     new_plan,
                     lease_expiry_unix_ns=lease_expiry,
                 )
+                signed_expert_lease = self._signed_expert_route_lease(
+                    new_plan,
+                    lease_expiry_unix_ns=lease_expiry,
+                )
+                await self._install_expert_routes(new_plan, signed_expert_lease)
                 route_requests: list[InstallStageRouteRequest] = []
                 for index, item in enumerate(new_plan.assignments):
                     previous = new_plan.assignments[index - 1] if index > 0 else None
@@ -808,6 +992,7 @@ class DeploymentManager:
                             deadline_unix_ns=deadline,
                             replace=True,
                             route_lease=signed_lease,
+                            expert_route_lease=signed_expert_lease,
                         )
                     )
                 route_results = await asyncio.wait_for(
@@ -1023,6 +1208,9 @@ class DeploymentManager:
             ):
                 worker.route_installed = False
                 worker.peer_verified = False
+        errors.extend(await self._remove_expert_routes(plan))
+        for worker_id in self._expert_worker_ids(plan):
+            self._reserved_workers.discard(worker_id)
         return errors
 
     async def unload(

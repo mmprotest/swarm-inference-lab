@@ -5,12 +5,14 @@ from typing import TYPE_CHECKING, Any
 from .base import ActivationTransport
 
 if TYPE_CHECKING:
+    from .expert import ExpertTransportClient
     from .grpc_transport import GrpcTransport, WorkerRpcServer
     from .stage_ring_connection import StageRingConnectionPool
     from .stage_ring_server import StageRingServer
 
 __all__ = [
     "ActivationTransport",
+    "ExpertTransportClient",
     "GrpcTransport",
     "StageRingConnectionPool",
     "StageRingServer",
@@ -19,6 +21,10 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    if name == "ExpertTransportClient":
+        from .expert import ExpertTransportClient
+
+        return ExpertTransportClient
     if name in {"GrpcTransport", "WorkerRpcServer"}:
         from .grpc_transport import GrpcTransport, WorkerRpcServer
 

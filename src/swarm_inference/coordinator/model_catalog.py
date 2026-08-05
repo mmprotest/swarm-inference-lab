@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import uuid4
 
-from swarm_inference.config.models import Backend, WorkerCapability
+from swarm_inference.config.models import Backend, WorkerCapability, WorkerRole
 from swarm_inference.coordinator.registry import WorkerRegistry
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.model.product import (
@@ -47,6 +47,7 @@ class InspectedProductModel:
     metadata: ProductModelMetadata
     capabilities: dict[str, WorkerCapability]
     eligibility: tuple[WorkerEligibilityReport, ...]
+    all_capabilities: dict[str, WorkerCapability] = field(default_factory=dict)
 
 
 def _endpoint_rejection(endpoint: str | None, *, name: str) -> str | None:
@@ -136,6 +137,16 @@ class ProductModelCatalog:
         registered = sorted(self.registry.workers(), key=lambda item: item.worker_id)
         if not registered:
             raise RuntimeError("no workers are registered")
+        expert_capacity_registered = any(
+            set(capability.roles)
+            & {
+                WorkerRole.WHOLE_EXPERT,
+                WorkerRole.EXPERT_MICROSHARD,
+                WorkerRole.REDUCER,
+            }
+            and capability.expert_data_plane_endpoint is not None
+            for capability in registered
+        )
 
         async def inspect_worker(
             registered_capability: WorkerCapability,
@@ -189,6 +200,7 @@ class ProductModelCatalog:
             elif probe.metadata is not None:
                 minimum_stage_bytes = min(
                     cost.weight_bytes
+                    - (cost.expert_weight_bytes if expert_capacity_registered else 0)
                     + cost.peak_temporary_bytes
                     + cost.kv_bytes_per_token
                     + (probe.metadata.embedding_weight_bytes if cost.layer_id == 0 else 0)
@@ -274,6 +286,7 @@ class ProductModelCatalog:
             metadata=selected_probe.metadata,
             capabilities=capabilities,
             eligibility=tuple(reports),
+            all_capabilities={item.worker_id: item for item, _, _ in inspected},
         )
 
 
