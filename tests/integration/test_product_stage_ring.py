@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
+import platform
 import queue
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -90,6 +94,49 @@ def _write_real_gate_evidence(name: str, payload: dict[str, Any]) -> None:
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def _real_evidence_provenance(reference: dict[str, Any]) -> dict[str, Any]:
+    metadata_hasher = hashlib.sha256()
+    metadata_files = (
+        "config.json",
+        "model.safetensors.index.json",
+        "tokenizer_config.json",
+    )
+    for relative in metadata_files:
+        path = REAL_MODEL_PATH / relative
+        if path.is_file():
+            metadata_hasher.update(relative.encode())
+            metadata_hasher.update(path.read_bytes())
+    git_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    git_status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return {
+        "model_metadata_hash": f"sha256:{metadata_hasher.hexdigest()}",
+        "prompt": str(reference.get("prompt", reference.get("text", ""))),
+        "git_commit": git_commit,
+        "git_dirty": bool(git_status),
+        "git_status": git_status,
+        "environment": {
+            "python_version": platform.python_version(),
+            "python_executable": sys.executable,
+            "os": platform.platform(),
+            "torch_version": torch.__version__,
+            "cuda_version": torch.version.cuda,
+            "cuda_device": torch.cuda.get_device_name(0),
+        },
+    }
 
 
 def _assignment(stage_id: int) -> StageAssignment:
@@ -601,9 +648,9 @@ async def test_product_route_lease_and_direct_peer_handshake_are_authenticated(
         assert response.status == "completed"
         assert response.output_token_ids == [21, 22]
     finally:
-        await cluster.close()
         await inspector.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -755,9 +802,9 @@ async def test_secure_identity_bootstrap_registration_route_and_revocation(
         assert blocked.status == "failed"
         assert "worker trust was removed or is absent" in blocked.detail
     finally:
-        await cluster.close()
         await inspector.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -938,9 +985,9 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
         assert unloaded.deployment is not None
         assert unloaded.deployment.phase.value == "unloaded"
     finally:
-        await cluster.close()
         await inspector.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -1019,8 +1066,12 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
             events.append(event)
             if event.event_type == StreamEventType.TOKEN_GENERATED and not failed_worker_terminated:
                 failed_worker_terminated = True
-                processes["worker-1"].terminate()
-                await asyncio.to_thread(processes["worker-1"].join, 5)
+                await asyncio.to_thread(
+                    cluster.crash_process,
+                    "worker-1",
+                    reason="deterministic worker-process recovery injection",
+                    timeout=5,
+                )
 
         assert failed_worker_terminated
         token_events = [
@@ -1050,8 +1101,8 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
         assert event_types.count("replay_token_verified") >= 1
         assert event_types.count("recovery_completed") == 1
     finally:
-        await cluster.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -1176,9 +1227,9 @@ async def test_deterministic_active_socket_closure_recovers_without_duplicate_to
         assert event_types.count("replay_token_verified") == 1
         assert event_types.count("recovery_completed") == 1
     finally:
-        await cluster.close()
         await inspector.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -1250,8 +1301,12 @@ async def test_restart_and_replay_divergence_fails_before_any_duplicate_token_ev
             events.append(event)
             if event.event_type == StreamEventType.TOKEN_GENERATED and not terminated:
                 terminated = True
-                processes["worker-1"].terminate()
-                await asyncio.to_thread(processes["worker-1"].join, 5)
+                await asyncio.to_thread(
+                    cluster.crash_process,
+                    "worker-1",
+                    reason="replay-divergence worker failure injection",
+                    timeout=5,
+                )
 
         assert terminated
         token_events = [
@@ -1276,8 +1331,8 @@ async def test_restart_and_replay_divergence_fails_before_any_duplicate_token_ev
         assert durable.status == "failed"
         assert durable.accepted_generated_token_ids == [21]
     finally:
-        await cluster.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -1409,9 +1464,9 @@ async def test_product_cancel_during_prefill_and_decode_releases_kv_but_keeps_st
             "cancel-decode",
         ]
     finally:
-        await cluster.close()
         await inspector.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -1484,8 +1539,12 @@ async def test_product_cancel_during_recovery_uses_the_same_bounded_cleanup_path
             events.append(event)
             if event.event_type == StreamEventType.TOKEN_GENERATED and not failed_worker_terminated:
                 failed_worker_terminated = True
-                processes["worker-1"].terminate()
-                await asyncio.to_thread(processes["worker-1"].join, 5)
+                await asyncio.to_thread(
+                    cluster.crash_process,
+                    "worker-1",
+                    reason="cancellation-during-recovery injection",
+                    timeout=5,
+                )
             if event.event_type == StreamEventType.RECOVERY_STARTED and cancellation is None:
                 cancellation = await client.cancel_request("cancel-recovery")
 
@@ -1511,9 +1570,9 @@ async def test_product_cancel_during_recovery_uses_the_same_bounded_cleanup_path
         assert event_types.count("recovery_started") == 1
         assert event_types.count("session_cancelled") == 1
     finally:
-        await cluster.close()
         await inspector.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)
 
 
@@ -1673,6 +1732,198 @@ def _real_worker_process(
     ),
 )
 @pytest.mark.asyncio
+async def test_exact_two_stage_olmoe_cuda_baseline(tmp_path: Path) -> None:
+    """Prove the unfaulted two-worker product path independently of recovery."""
+
+    reference = json.loads(REAL_REFERENCE_PATH.read_text(encoding="utf-8"))
+    prompt_ids = [int(value) for value in reference["prompt_ids"]]
+    expected = [int(value) for value in reference["full_ids"][len(prompt_ids) :]][:2]
+    transport = _NoActivationRelayTransport()
+    core = CoordinatorCore(
+        product_config=ProductCoordinatorConfig(
+            event_queue_capacity=16,
+            token_ingress_capacity=16,
+            request_timeout_s=180,
+            control_timeout_s=180,
+            require_trusted_workers=False,
+        ),
+        state_directory=tmp_path,
+        transport=transport,
+    )
+    server = CoordinatorRpcServer(core)
+    coordinator_port = await server.start("127.0.0.1:0")
+    coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
+    processes = {
+        f"cuda-worker-{stage_id}": cluster.process(
+            f"cuda-worker-{stage_id}",
+            target=_real_worker_process,
+            args=(
+                f"cuda-worker-{stage_id}",
+                coordinator_endpoint,
+                str(REAL_MODEL_PATH),
+                ready_queue,
+                stop_event,
+            ),
+            shutdown=stop_event.set,
+        )
+        for stage_id in range(2)
+    }
+    client = CoordinatorClient(coordinator_endpoint, timeout_s=240)
+    inspector = GrpcTransport(timeout_s=180)
+    try:
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=2, timeout=60)
+        assert not [item for item in startup if "error" in item], startup
+        capabilities = [WorkerCapability.model_validate(item["capability"]) for item in startup]
+        startup_pids = {str(item["worker_id"]): int(item["process_id"]) for item in startup}
+        assert set(startup_pids.values()) == {process.pid for process in processes.values()}
+        for capability in capabilities:
+            core.registry.register(capability, benchmark_verified=True)
+
+        planned = await client.plan_model(
+            ModelPlanRequest(
+                reference=ProductModelReference(
+                    model_id=REAL_MODEL_ID,
+                    model_revision=REAL_MODEL_REVISION,
+                    tokenizer_revision=REAL_TOKENIZER_REVISION,
+                    adapter_id="olmoe",
+                    dtype="bfloat16",
+                    resolution_policy=ModelResolutionPolicy.LOCAL_ONLY,
+                ),
+                stage_count=2,
+                partition_method="equal",
+                require_distributed=True,
+                max_sequence_tokens=len(prompt_ids) + 2,
+            )
+        )
+        assert planned.plan.stage_count == 2
+        deployed = await client.deploy_model(ModelDeployRequest(plan=planned.plan))
+        assert deployed.deployment.ready
+        assert len(deployed.deployment.workers) == 2
+        assert {item.process_id for item in deployed.deployment.workers} == set(
+            startup_pids.values()
+        )
+
+        events = [
+            event
+            async for event in client.submit_stream(
+                SubmitRequest(
+                    request_id="exact-olmoe-baseline",
+                    prompt_token_ids=prompt_ids,
+                    max_new_tokens=2,
+                    random_seed=1,
+                    model_id=REAL_MODEL_ID,
+                    model_revision=REAL_MODEL_REVISION,
+                )
+            )
+        ]
+        generated = [
+            event.token_id
+            for event in events
+            if event.event_type == StreamEventType.TOKEN_GENERATED
+        ]
+        assert generated == expected
+        assert events[-1].event_type == StreamEventType.REQUEST_COMPLETED
+        assert events[-1].final_token_ids == expected
+        assert not [
+            event
+            for event in events
+            if event.event_type
+            in {StreamEventType.RECOVERY_STARTED, StreamEventType.RECOVERY_COMPLETED}
+        ]
+
+        statuses = []
+        for assignment in planned.plan.assignments:
+            statuses.append(
+                await inspector.get_stage_status(
+                    assignment.control_endpoint,
+                    GetStageStatusRequest(
+                        worker_id=assignment.worker_id,
+                        request_id=f"baseline-status-{assignment.stage_id}",
+                        topology_id=planned.plan.topology_id,
+                    ),
+                )
+            )
+        assert all(status.loaded_stage is not None for status in statuses)
+        assert all(
+            status.loaded_stage.load_count == 1 for status in statuses if status.loaded_stage
+        )
+        assert {status.process_id for status in statuses} == set(startup_pids.values())
+        assert all(not status.sessions for status in statuses)
+        assert transport.activation_relay_calls == 0
+        assert core.runtime_transport_metrics["coordinator_activation_bytes"] == 0
+
+        _write_real_gate_evidence(
+            "real-two-stage-baseline.json",
+            {
+                "document_type": "swarm-real-model-gate-evidence",
+                "format_version": 2,
+                "gate": "two-stage-baseline",
+                "status": "PASS",
+                "model_id": REAL_MODEL_ID,
+                "model_revision": REAL_MODEL_REVISION,
+                "tokenizer_revision": REAL_TOKENIZER_REVISION,
+                **_real_evidence_provenance(reference),
+                "prompt_token_ids": prompt_ids,
+                "generated_token_ids": generated,
+                "expected_token_ids": expected,
+                "topology": {
+                    "topology_id": planned.plan.topology_id,
+                    "route_generation": planned.plan.generation,
+                    "stage_count": planned.plan.stage_count,
+                },
+                "stage_assignments": [
+                    assignment.model_dump(mode="json") for assignment in planned.plan.assignments
+                ],
+                "worker_identities": [
+                    {
+                        "worker_id": capability.worker_id,
+                        "fingerprint": public_key_fingerprint(capability.public_key),
+                    }
+                    for capability in capabilities
+                ],
+                "worker_pids": startup_pids,
+                "stage_load_counts": {
+                    status.worker_id: status.loaded_stage.load_count
+                    for status in statuses
+                    if status.loaded_stage is not None
+                },
+                "route_generations": [planned.plan.generation],
+                "bytes_transferred": dict(core.runtime_transport_metrics),
+                "critical_path_timings": events[-1].timing_metrics,
+                "fallback_count": 0,
+                "recovery_events": [],
+                "failure_injected": False,
+            },
+        )
+
+        unloaded = await client.unload_model(
+            ModelUnloadRequest(topology_id=planned.plan.topology_id)
+        )
+        assert unloaded.deployment is not None
+        assert unloaded.deployment.phase.value == "unloaded"
+    finally:
+        await inspector.close()
+        await client.close()
+        await cluster.close()
+        await server.stop(grace_s=0)
+
+
+@pytest.mark.gpu
+@pytest.mark.skipif(
+    os.environ.get("SWARM_RUN_PRODUCT_OLMOE_CUDA") != "1"
+    or not torch.cuda.is_available()
+    or not REAL_MODEL_PATH.is_dir()
+    or not REAL_REFERENCE_PATH.is_file(),
+    reason=(
+        "set SWARM_RUN_PRODUCT_OLMOE_CUDA=1 with the pinned local OLMoE snapshot "
+        "for the exact product-path test"
+    ),
+)
+@pytest.mark.asyncio
 async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
     tmp_path: Path,
 ) -> None:
@@ -1719,6 +1970,7 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
         startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=60)
         assert not [item for item in startup if "error" in item], startup
         capabilities = [WorkerCapability.model_validate(item["capability"]) for item in startup]
+        startup_pids = {str(item["worker_id"]): int(item["process_id"]) for item in startup}
         for capability in capabilities:
             core.registry.register(capability, benchmark_verified=True)
 
@@ -1761,8 +2013,12 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
             events.append(event)
             if event.event_type == StreamEventType.TOKEN_GENERATED and not terminated:
                 terminated = True
-                processes[failed_worker_id].terminate()
-                await asyncio.to_thread(processes[failed_worker_id].join, 15)
+                await asyncio.to_thread(
+                    cluster.crash_process,
+                    failed_worker_id,
+                    reason="real restart-and-replay dependency interruption",
+                    timeout=15,
+                )
         token_ids = [
             event.token_id
             for event in events
@@ -1808,11 +2064,14 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
             "real-two-stage-recovery.json",
             {
                 "document_type": "swarm-real-model-gate-evidence",
-                "format_version": 1,
+                "format_version": 2,
                 "gate": "two-stage-restart-and-replay",
+                "status": "PASS",
                 "model_id": REAL_MODEL_ID,
                 "model_revision": REAL_MODEL_REVISION,
                 "tokenizer_revision": REAL_TOKENIZER_REVISION,
+                **_real_evidence_provenance(reference),
+                "prompt_token_ids": prompt_ids,
                 "topology": {
                     "topology_id": current_plan.topology_id,
                     "route_generation": current_plan.generation,
@@ -1828,8 +2087,14 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
                     }
                     for capability in capabilities
                 ],
-                "token_ids": expected,
+                "worker_pids": startup_pids,
+                "generated_token_ids": token_ids,
+                "expected_token_ids": expected,
+                "token_ids": token_ids,
+                "bytes_transferred": dict(core.runtime_transport_metrics),
+                "critical_path_timings": events[-1].timing_metrics,
                 "timings": events[-1].timing_metrics,
+                "fallback_count": 0,
                 "recovery_events": [
                     event.model_dump(mode="json")
                     for event in events
@@ -1841,6 +2106,7 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
                 ],
                 "route_generations": [planned.plan.generation, current_plan.generation],
                 "failed_worker_id": failed_worker_id,
+                "failure_injected": True,
             },
         )
 
@@ -1850,7 +2116,7 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
         assert unloaded.deployment is not None
         assert unloaded.deployment.phase.value == "unloaded"
     finally:
-        await cluster.close()
         await inspector.close()
         await client.close()
+        await cluster.close()
         await server.stop(grace_s=0)

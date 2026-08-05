@@ -253,7 +253,6 @@ async def test_listener_closure_is_not_counted_as_active_connection_injection() 
     try:
         assert (await pool.send(endpoint, message(0))).request_id == "request-0"
         listener.close()
-        await listener.wait_closed()
         # Closing only the listener does not interrupt this established socket.
         assert (await pool.send(endpoint, message(1))).request_id == "request-1"
         assert not injector.triggered
@@ -347,4 +346,184 @@ async def test_server_shutdown_cancels_inflight_connection_and_dispatch_tasks() 
         await pending
     assert server.metrics.active_connections == 0
     assert not server._connection_tasks
+    assert not server._dispatch_tasks
+    assert not server._connections
     await pool.close()
+
+
+@pytest.mark.asyncio
+async def test_server_stop_before_start_and_repeated_stop_are_safe() -> None:
+    server = StageRingServer(handler=echo)
+
+    await server.stop()
+    await server.stop()
+
+    assert server._stopped
+    assert not server._connection_tasks
+    assert not server._dispatch_tasks
+    assert not server._connections
+
+
+@pytest.mark.asyncio
+async def test_concurrent_server_stop_calls_share_one_shutdown() -> None:
+    server = StageRingServer(handler=echo)
+    await server.start("127.0.0.1:0")
+
+    await asyncio.gather(*(server.stop() for _ in range(8)))
+
+    assert server._stopped
+    assert server._server is None
+    assert not server._connection_tasks
+    assert not server._dispatch_tasks
+
+
+@pytest.mark.asyncio
+async def test_server_stop_closes_an_idle_accepted_connection() -> None:
+    server = StageRingServer(handler=echo, shutdown_timeout_s=0.5)
+    port = await server.start("127.0.0.1:0")
+    reader, writer = await asyncio.open_connection("127.0.0.1", port)
+    deadline = asyncio.get_running_loop().time() + 1
+    while server.metrics.active_connections != 1:
+        if asyncio.get_running_loop().time() >= deadline:
+            raise AssertionError("server did not register the accepted connection")
+        await asyncio.sleep(0)
+
+    await server.stop()
+
+    assert await asyncio.wait_for(reader.read(), timeout=1) == b""
+    assert not server._connections
+    assert not server._connection_tasks
+    writer.close()
+    await writer.wait_closed()
+
+
+@pytest.mark.asyncio
+async def test_partial_startup_failure_cleans_dispatch_tasks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fail_start(*_args: object, **_kwargs: object) -> None:
+        raise OSError("injected bind failure")
+
+    monkeypatch.setattr(asyncio, "start_server", fail_start)
+    server = StageRingServer(handler=echo)
+
+    with pytest.raises(OSError, match="injected bind failure"):
+        await server.start("127.0.0.1:0")
+    await server.stop()
+
+    assert server._stopped
+    assert server._server is None
+    assert not server._dispatch_tasks
+    assert not server._connection_tasks
+
+
+@pytest.mark.asyncio
+async def test_connection_task_exception_remains_visible_during_stop(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    import swarm_inference.transport.stage_ring_server as server_module
+
+    release = asyncio.Event()
+
+    async def fail_read(*_args: object, **_kwargs: object) -> StageMessage:
+        await release.wait()
+        raise RuntimeError("injected connection task failure")
+
+    monkeypatch.setattr(server_module, "read_stage_message", fail_read)
+    server = StageRingServer(handler=echo, shutdown_timeout_s=0.5)
+    port = await server.start("127.0.0.1:0")
+    _reader, writer = await asyncio.open_connection("127.0.0.1", port)
+    deadline = asyncio.get_running_loop().time() + 1
+    while not server._connection_tasks:
+        if asyncio.get_running_loop().time() >= deadline:
+            raise AssertionError("server did not track the accepted connection task")
+        await asyncio.sleep(0)
+
+    release.set()
+    await server.stop()
+
+    assert server.metrics.connection_errors == 1
+    assert "unexpected stage-ring connection failure" in caplog.text
+    assert not server._connections
+    assert not server._connection_tasks
+    writer.close()
+
+
+@pytest.mark.asyncio
+async def test_writer_wait_closed_timeout_is_bounded_and_registry_is_cleared() -> None:
+    import swarm_inference.transport.stage_ring_server as server_module
+
+    class NeverClosingWriter:
+        def __init__(self) -> None:
+            self.closing = False
+            self.close_count = 0
+
+        def is_closing(self) -> bool:
+            return self.closing
+
+        def close(self) -> None:
+            self.closing = True
+            self.close_count += 1
+
+        async def wait_closed(self) -> None:
+            await asyncio.Event().wait()
+
+    server = StageRingServer(handler=echo, shutdown_timeout_s=0.02)
+    await server.start("127.0.0.1:0")
+    writer = NeverClosingWriter()
+    connection = server_module._ActiveConnection(
+        identity=1,
+        reader=asyncio.StreamReader(),
+        writer=writer,
+        task=None,
+    )
+    server._connections[writer] = connection  # type: ignore[index]
+    server.metrics.active_connections = 1
+
+    await asyncio.wait_for(server._close_connection(connection), timeout=1)
+    await asyncio.wait_for(server.stop(), timeout=1)
+
+    assert server.metrics.shutdown_timeouts >= 1
+    assert writer.close_count == 1
+    assert not server._connections
+    assert not server._connection_tasks
+    assert not server._dispatch_tasks
+
+
+@pytest.mark.asyncio
+async def test_stop_after_injected_reset_leaves_no_connection_or_managed_task() -> None:
+    server = StageRingServer(handler=echo, maximum_payload_bytes=1024)
+    port = await server.start("127.0.0.1:0")
+    endpoint = f"127.0.0.1:{port}"
+    injector = CloseConnectionBeforeSendInjector(token_position=4)
+    pool = StageRingConnectionPool(
+        read_timeout_s=1,
+        write_timeout_s=1,
+        reconnect_attempts=1,
+        fault_injector=injector,
+    )
+    injected = replace(
+        message(4, operation=Operation.DECODE, token_position=4),
+        source_stage=0,
+        destination_stage=1,
+    )
+    try:
+        with pytest.raises(TransportError):
+            await pool.send(endpoint, injected)
+    finally:
+        await pool.close()
+        await server.stop()
+
+    await asyncio.sleep(0)
+    managed = {
+        task.get_name()
+        for task in asyncio.all_tasks()
+        if task is not asyncio.current_task()
+        and not task.done()
+        and task.get_name().startswith("stage-ring")
+    }
+    assert managed == set()
+    assert not server._connections
+    assert not server._connection_tasks
+    assert not server._dispatch_tasks

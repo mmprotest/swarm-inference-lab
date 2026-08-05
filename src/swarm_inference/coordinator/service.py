@@ -243,6 +243,8 @@ class CoordinatorCore:
         self.events: list[dict[str, Any]] = []
         self.request_metrics: list[dict[str, Any]] = []
         self._rebalance_lock = asyncio.Lock()
+        self._close_lock = asyncio.Lock()
+        self._closed = False
         self._assigned: set[tuple[int, str]] = set()
         self.route_allocator = AtomicRouteAllocator()
         self.route_signing_key = os.urandom(32)
@@ -407,14 +409,28 @@ class CoordinatorCore:
         return required_dtype in worker.supported_dtypes
 
     async def close(self) -> None:
-        if self.session_controller is not None:
-            await self.session_controller.close()
-        for future in self._pending_final_results.values():
-            if not future.done():
-                future.set_exception(TransportError("coordinator is shutting down"))
-        self._pending_final_results.clear()
-        self.route_allocator.release_all(reason="coordinator-shutdown")
-        await self.transport.close()
+        async with self._close_lock:
+            if self._closed:
+                return
+            error: BaseException | None = None
+            try:
+                if self.session_controller is not None:
+                    await self.session_controller.close()
+            except BaseException as exc:
+                error = exc
+            for future in self._pending_final_results.values():
+                if not future.done():
+                    future.set_exception(TransportError("coordinator is shutting down"))
+            self._pending_final_results.clear()
+            self.route_allocator.release_all(reason="coordinator-shutdown")
+            try:
+                await self.transport.close()
+            except BaseException as exc:
+                if error is None:
+                    error = exc
+            self._closed = True
+            if error is not None:
+                raise error
 
     def trusted_worker_fingerprints(self) -> tuple[str, ...]:
         """Return the deterministic union of static and reloadable trust."""
@@ -2430,8 +2446,12 @@ class CoordinatorRpcServer:
         core: CoordinatorCore,
         *,
         maximum_message_bytes: int = 4 * 1024 * 1024,
+        shutdown_timeout_s: float = 10.0,
     ) -> None:
+        if shutdown_timeout_s <= 0:
+            raise ValueError("coordinator gRPC shutdown timeout must be positive")
         self.core = core
+        self.shutdown_timeout_s = shutdown_timeout_s
         self.server = grpc.aio.server(
             options=[
                 ("grpc.max_send_message_length", maximum_message_bytes),
@@ -2519,6 +2539,10 @@ class CoordinatorRpcServer:
             (grpc.method_handlers_generic_handler("swarm.v1.Coordinator", handlers),)
         )
         self.bound_port: int | None = None
+        self._lifecycle_lock = asyncio.Lock()
+        self._started = False
+        self._stopping = False
+        self._closed = False
 
     async def start(
         self,
@@ -2526,20 +2550,44 @@ class CoordinatorRpcServer:
         *,
         advertised_endpoint: str | None = None,
     ) -> int:
-        self.bound_port = self.server.add_insecure_port(endpoint)
-        if self.bound_port == 0:
-            raise TransportError(f"could not bind coordinator endpoint {endpoint}")
-        host = endpoint.rsplit(":", 1)[0].strip("[]")
-        if host in {"", "0.0.0.0", "::"}:
-            host = "127.0.0.1"
-        self.core.final_result_endpoint = f"{host}:{self.bound_port}"
-        self.core.publication_endpoint = advertised_endpoint or self.core.final_result_endpoint
-        await self.server.start()
-        return self.bound_port
+        async with self._lifecycle_lock:
+            if self._started:
+                raise RuntimeError("coordinator gRPC server is already started")
+            if self._closed:
+                raise RuntimeError("coordinator gRPC server cannot restart after shutdown")
+            self._stopping = False
+            self.bound_port = self.server.add_insecure_port(endpoint)
+            if self.bound_port == 0:
+                raise TransportError(f"could not bind coordinator endpoint {endpoint}")
+            host = endpoint.rsplit(":", 1)[0].strip("[]")
+            if host in {"", "0.0.0.0", "::"}:
+                host = "127.0.0.1"
+            self.core.final_result_endpoint = f"{host}:{self.bound_port}"
+            self.core.publication_endpoint = advertised_endpoint or self.core.final_result_endpoint
+            try:
+                await self.server.start()
+            except BaseException:
+                self.bound_port = None
+                raise
+            self._started = True
+            return self.bound_port
 
     async def stop(self, grace_s: float = 2.0) -> None:
-        await self.server.stop(grace_s)
-        await self.core.close()
+        async with self._lifecycle_lock:
+            if self._closed:
+                return
+            self._stopping = True
+            try:
+                if self._started:
+                    await asyncio.wait_for(
+                        self.server.stop(grace_s),
+                        timeout=max(self.shutdown_timeout_s, grace_s + 1.0),
+                    )
+            finally:
+                await self.core.close()
+            self.bound_port = None
+            self._started = False
+            self._closed = True
 
     async def wait_for_termination(self) -> None:
         await self.server.wait_for_termination()
@@ -2736,6 +2784,7 @@ class CoordinatorClient:
                 ("grpc.max_receive_message_length", maximum_message_bytes),
             ],
         )
+        self._closed = False
 
     async def _call(
         self,
@@ -2743,6 +2792,8 @@ class CoordinatorClient:
         request: StrictModel,
         response_type: type[ResponseT],
     ) -> ResponseT:
+        if self._closed:
+            raise TransportError("coordinator client is closed")
         call = self.channel.unary_unary(
             path,
             request_serializer=lambda value: value,
@@ -2777,6 +2828,8 @@ class CoordinatorClient:
         self,
         request: SubmitRequest,
     ) -> AsyncIterator[SubmitStreamEvent]:
+        if self._closed:
+            raise TransportError("coordinator client is closed")
         rpc = self.channel.unary_stream(
             "/swarm.v1.Coordinator/SubmitStream",
             request_serializer=lambda value: value,
@@ -2864,4 +2917,7 @@ class CoordinatorClient:
         )
 
     async def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         await self.channel.close()

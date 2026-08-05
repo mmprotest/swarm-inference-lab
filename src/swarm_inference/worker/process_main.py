@@ -7,8 +7,30 @@ import os
 import time
 from datetime import UTC, datetime
 from typing import Any
+from uuid import uuid4
 
 _PYTHON_ENTRY_NS = time.monotonic_ns()
+
+
+def _write_managed_process_lifecycle_record(
+    lifecycle_path: str | Path,
+    payload: dict[str, Any],
+) -> Path:
+    """Write one process-owned record without sharing an append target.
+
+    Multiple independently launched workers can finish at the same instant.
+    A unique sidecar makes each write single-owner and lets the parent aggregate
+    the records after every child has exited.
+    """
+
+    base = Path(lifecycle_path).expanduser().resolve()
+    base.parent.mkdir(parents=True, exist_ok=True)
+    record_path = base.with_name(f"{base.name}.worker-{os.getpid()}-{uuid4().hex}.json")
+    record_path.write_text(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+    return record_path
 
 
 def _early_lifecycle_event(event_name: str, timestamp_ns: int | None = None) -> None:
@@ -246,8 +268,10 @@ def main() -> None:
                 with suppress(asyncio.CancelledError):
                     await shutdown_watcher
 
+    clean_shutdown = False
     try:
         asyncio.run(run_until_shutdown())
+        clean_shutdown = True
     finally:
         if recorder is not None:
             recorder.emit("worker_shutdown_completed")
@@ -262,6 +286,32 @@ def main() -> None:
             ),
             flush=True,
         )
+        lifecycle_path = os.environ.get("SWARM_PROCESS_LIFECYCLE_LOG")
+        if lifecycle_path:
+            lifecycle_payload = {
+                "schema_version": 1,
+                "cluster_id": f"worker-entry:{os.getpid()}",
+                "processes": [
+                    {
+                        "role": arguments.worker_id,
+                        "pid": os.getpid(),
+                        "exit_code": 0 if clean_shutdown else 1,
+                        "expected_exit_reason": None,
+                        "graceful_shutdown_count": int(clean_shutdown),
+                        "unexpected_terminate_count": 0,
+                        "unexpected_kill_count": 0,
+                        "expected_terminate_count": 0,
+                        "expected_kill_count": 0,
+                    }
+                ],
+                "graceful_shutdown_count": int(clean_shutdown),
+                "unexpected_terminate_count": 0,
+                "unexpected_kill_count": 0,
+                "expected_terminate_count": 0,
+                "expected_kill_count": 0,
+                "leaked_process_count": 0,
+            }
+            _write_managed_process_lifecycle_record(lifecycle_path, lifecycle_payload)
 
 
 if __name__ == "__main__":

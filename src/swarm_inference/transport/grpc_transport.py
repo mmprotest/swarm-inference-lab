@@ -135,9 +135,12 @@ class GrpcTransport:
         self.maximum_message_bytes = maximum_message_bytes
         self.timeout_s = timeout_s
         self._channels: dict[str, grpc.aio.Channel] = {}
+        self._closed = False
         self.metrics = GrpcTransportMetrics()
 
     def _channel(self, endpoint: str) -> grpc.aio.Channel:
+        if self._closed:
+            raise TransportError("gRPC transport is closed")
         channel = self._channels.get(endpoint)
         if channel is None:
             options = [
@@ -399,6 +402,9 @@ class GrpcTransport:
         )
 
     async def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         await asyncio.gather(
             *(channel.close() for channel in self._channels.values()),
             return_exceptions=True,
@@ -417,12 +423,16 @@ class WorkerRpcServer:
         model_shard_root: str | None = None,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         stage_runtime: PersistentStageRuntime | None = None,
+        shutdown_timeout_s: float = 10.0,
     ) -> None:
+        if shutdown_timeout_s <= 0:
+            raise ValueError("worker gRPC shutdown timeout must be positive")
         self.agent = agent
         self.synthetic_config = synthetic_config
         self.model_shard_root = model_shard_root
         self.maximum_message_bytes = maximum_message_bytes
         self.stage_runtime = stage_runtime
+        self.shutdown_timeout_s = shutdown_timeout_s
         self.server = grpc.aio.server(
             options=[
                 ("grpc.max_send_message_length", maximum_message_bytes),
@@ -545,26 +555,56 @@ class WorkerRpcServer:
             (grpc.method_handlers_generic_handler("swarm.v1.Worker", handlers),)
         )
         self.bound_port: int | None = None
+        self._lifecycle_lock = asyncio.Lock()
+        self._started = False
+        self._stopping = False
+        self._closed = False
 
     async def start(self, endpoint: str) -> int:
-        await self.agent.start()
-        if self.stage_runtime is not None:
-            await self.stage_runtime.start()
-        self.bound_port = self.server.add_insecure_port(endpoint)
-        if self.bound_port == 0:
-            raise TransportError(f"could not bind worker gRPC endpoint {endpoint}")
-        await self.server.start()
-        return self.bound_port
-
-    async def stop(self, grace_s: float = 2.0) -> None:
-        try:
-            await self.server.stop(grace_s)
-        finally:
+        async with self._lifecycle_lock:
+            if self._started:
+                raise RuntimeError("worker gRPC server is already started")
+            if self._closed:
+                raise RuntimeError("worker gRPC server cannot restart after shutdown")
+            self._stopping = False
             try:
-                await self.agent.stop()
-            finally:
+                await self.agent.start()
+                if self.stage_runtime is not None:
+                    await self.stage_runtime.start()
+                self.bound_port = self.server.add_insecure_port(endpoint)
+                if self.bound_port == 0:
+                    raise TransportError(f"could not bind worker gRPC endpoint {endpoint}")
+                await self.server.start()
+            except BaseException:
                 if self.stage_runtime is not None:
                     await self.stage_runtime.close()
+                await self.agent.stop()
+                self.bound_port = None
+                self._closed = True
+                raise
+            self._started = True
+            return self.bound_port
+
+    async def stop(self, grace_s: float = 2.0) -> None:
+        async with self._lifecycle_lock:
+            if self._closed:
+                return
+            self._stopping = True
+            try:
+                if self._started:
+                    await asyncio.wait_for(
+                        self.server.stop(grace_s),
+                        timeout=max(self.shutdown_timeout_s, grace_s + 1.0),
+                    )
+            finally:
+                try:
+                    await self.agent.stop()
+                finally:
+                    if self.stage_runtime is not None:
+                        await self.stage_runtime.close()
+            self.bound_port = None
+            self._started = False
+            self._closed = True
 
     async def wait_for_termination(self) -> None:
         await self.server.wait_for_termination()
@@ -697,6 +737,8 @@ class WorkerRpcServer:
                 finally:
                     responses.task_done()
         except asyncio.CancelledError:
+            if self._stopping:
+                return
             raise
         except Exception as exc:
             await context.abort(grpc.StatusCode.UNAVAILABLE, str(exc))

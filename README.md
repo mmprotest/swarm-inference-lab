@@ -78,7 +78,8 @@ See [Architecture](docs/architecture.md), [security boundaries](docs/security-bo
 
 ## Secure product quick start
 
-Python 3.11 is required. Install the appropriate backend first:
+Python 3.11, 3.12, and 3.13 are supported (`.python-version` selects 3.11 as the
+repository development default). Install the appropriate backend first:
 
 ```powershell
 uv sync --extra cpu
@@ -217,15 +218,18 @@ acceptance is required; physical acceptance is preferable when a second machine 
 
 ## Acceptance and evidence
 
-Run the software productization acceptance bundle with:
+Run the authoritative software productization acceptance bundle with:
 
 ```powershell
 uv run python scripts/run_productization_acceptance.py run `
+  --run-repeatability --repeatability-timeout-seconds 600 `
   --output artifacts/acceptance
 ```
 
-The process repeatability target uses a hard timeout per invocation and records all three full
-suite runs plus all five stage-ring-module runs:
+This command runs and consumes the mandatory three full process-suite passes and five
+stage-ring-module passes. Missing, stale, incomplete, warning-bearing, or force-terminated
+repeatability evidence makes software acceptance incomplete or failed. The lower-level process
+runner remains available for producing a reusable evidence bundle:
 
 ```powershell
 uv run python scripts/run_productization_process_suite.py `
@@ -252,7 +256,9 @@ Then explicitly enable and request all four real-model gates:
 ```powershell
 $env:SWARM_RUN_PRODUCT_OLMOE_CUDA = "1"
 uv run python scripts/run_productization_acceptance.py run `
-  --real-model --output artifacts/acceptance
+  --real-model `
+  --repeatability-evidence artifacts/acceptance/process-repeatability-<timestamp> `
+  --output artifacts/acceptance
 ```
 
 The runner records `PASS`, `FAIL`, `SKIP`, and `NOT_RUN` per gate. A skipped GPU or physical gate

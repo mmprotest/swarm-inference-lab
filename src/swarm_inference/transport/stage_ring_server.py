@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import socket
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 from swarm_inference.exceptions import TransportError
 from swarm_inference.host import format_endpoint, split_endpoint
@@ -23,6 +24,8 @@ from swarm_inference.transport.stage_ring_connection import (
 
 StageMessageHandler = Callable[[StageMessage], Awaitable[StageMessage]]
 
+LOGGER = logging.getLogger(__name__)
+
 
 @dataclass(slots=True)
 class StageRingServerMetrics:
@@ -34,6 +37,8 @@ class StageRingServerMetrics:
     malformed_frames: int = 0
     oversized_frames: int = 0
     backpressure_events: int = 0
+    connection_errors: int = 0
+    shutdown_timeouts: int = 0
 
     def snapshot(self) -> dict[str, int]:
         return asdict(self)
@@ -43,6 +48,22 @@ class StageRingServerMetrics:
 class _InboundFrame:
     message: StageMessage
     future: asyncio.Future[StageMessage]
+
+
+@dataclass(slots=True, eq=False)
+class _ActiveConnection:
+    """Lifecycle record for one accepted stage-ring socket."""
+
+    identity: int
+    reader: asyncio.StreamReader
+    writer: asyncio.StreamWriter
+    task: asyncio.Task[None] | None
+    topology_ids: set[str] = field(default_factory=set)
+    route_generations: set[int] = field(default_factory=set)
+    peer_identity: str | None = None
+    session_ids: set[str] = field(default_factory=set)
+    state: str = "accepted"
+    close_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 def _error_response(message: StageMessage, detail: str) -> StageMessage:
@@ -80,11 +101,12 @@ class StageRingServer:
         read_timeout_s: float = 30.0,
         write_timeout_s: float = 30.0,
         idle_timeout_s: float = 120.0,
+        shutdown_timeout_s: float = 5.0,
         require_peer_authentication: bool | Callable[[], bool] = False,
     ) -> None:
         if min(queue_capacity, dispatch_workers, maximum_connections) <= 0:
             raise ValueError("stage-ring server bounds must be positive")
-        if min(read_timeout_s, write_timeout_s, idle_timeout_s) <= 0:
+        if min(read_timeout_s, write_timeout_s, idle_timeout_s, shutdown_timeout_s) <= 0:
             raise ValueError("stage-ring server timeouts must be positive")
         if not 0 < maximum_metadata_bytes <= MAX_METADATA_BYTES:
             raise ValueError("invalid stage-ring server metadata limit")
@@ -99,36 +121,58 @@ class StageRingServer:
         self.read_timeout_s = read_timeout_s
         self.write_timeout_s = write_timeout_s
         self.idle_timeout_s = idle_timeout_s
+        self.shutdown_timeout_s = shutdown_timeout_s
         self.require_peer_authentication = require_peer_authentication
         self.metrics = StageRingServerMetrics()
         self._queue: asyncio.Queue[_InboundFrame] = asyncio.Queue(maxsize=queue_capacity)
-        self._workers: list[asyncio.Task[None]] = []
-        self._connections: set[asyncio.StreamWriter] = set()
+        self._dispatch_tasks: set[asyncio.Task[None]] = set()
+        self._connections: dict[asyncio.StreamWriter, _ActiveConnection] = {}
         self._connection_tasks: set[asyncio.Task[None]] = set()
         self._server: asyncio.AbstractServer | None = None
+        self._lifecycle_lock = asyncio.Lock()
+        self._stopping = False
+        self._stopped = True
+        self._next_connection_identity = 0
         self.bound_endpoint: str | None = None
 
     async def start(self, endpoint: str) -> int:
-        if self._server is not None:
-            raise RuntimeError("stage-ring server is already started")
-        host, port = split_endpoint(endpoint)
-        self._workers = [
-            asyncio.create_task(self._dispatch(), name=f"stage-ring-dispatch:{index}")
-            for index in range(self.dispatch_workers)
-        ]
-        try:
-            self._server = await asyncio.start_server(self._handle_connection, host, port)
-        except BaseException:
-            await self._stop_workers()
-            raise
-        server_sockets = self._server.sockets
-        if not server_sockets:
-            await self.stop()
-            raise TransportError(f"could not bind stage-ring endpoint {endpoint}")
-        bound = server_sockets[0].getsockname()
-        bound_port = int(bound[1])
-        self.bound_endpoint = format_endpoint(host, bound_port)
-        return bound_port
+        async with self._lifecycle_lock:
+            if self._server is not None or not self._stopped:
+                raise RuntimeError("stage-ring server is already started")
+            host, port = split_endpoint(endpoint)
+            self._stopping = False
+            self._stopped = False
+            self.bound_endpoint = None
+            self._dispatch_tasks = {
+                asyncio.create_task(self._dispatch(), name=f"stage-ring-dispatch:{index}")
+                for index in range(self.dispatch_workers)
+            }
+            try:
+                server = await asyncio.start_server(self._handle_connection, host, port)
+                self._server = server
+                server_sockets = server.sockets
+                if not server_sockets:
+                    raise TransportError(f"could not bind stage-ring endpoint {endpoint}")
+            except BaseException:
+                self._stopping = True
+                partial_server = self._server
+                self._server = None
+                if partial_server is not None:
+                    partial_server.close()
+                await self._cancel_tasks(self._dispatch_tasks, owner="dispatch")
+                self._drain_queue()
+                if partial_server is not None:
+                    with suppress(TimeoutError):
+                        await asyncio.wait_for(
+                            partial_server.wait_closed(),
+                            timeout=self.shutdown_timeout_s,
+                        )
+                self._stopped = True
+                raise
+            bound = server_sockets[0].getsockname()
+            bound_port = int(bound[1])
+            self.bound_endpoint = format_endpoint(host, bound_port)
+            return bound_port
 
     async def _dispatch(self) -> None:
         while True:
@@ -152,24 +196,30 @@ class StageRingServer:
         writer: asyncio.StreamWriter,
     ) -> None:
         connection_task = asyncio.current_task()
+        if self._stopping or self._stopped or len(self._connections) >= self.maximum_connections:
+            writer.close()
+            with suppress(OSError, TimeoutError):
+                await asyncio.wait_for(writer.wait_closed(), timeout=self.shutdown_timeout_s)
+            return
+        self._next_connection_identity += 1
+        connection = _ActiveConnection(
+            identity=self._next_connection_identity,
+            reader=reader,
+            writer=writer,
+            task=connection_task,
+        )
         if connection_task is not None:
             self._connection_tasks.add(connection_task)
-        if len(self._connections) >= self.maximum_connections:
-            writer.close()
-            with suppress(OSError):
-                await writer.wait_closed()
-            if connection_task is not None:
-                self._connection_tasks.discard(connection_task)
-            return
         transport_socket = writer.get_extra_info("socket")
         if transport_socket is not None:
             transport_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self._connections.add(writer)
+        self._connections[writer] = connection
         self.metrics.connections_accepted += 1
-        self.metrics.active_connections += 1
+        self.metrics.active_connections = len(self._connections)
         frames_on_connection = 0
         connection_role: str | None = None
         try:
+            connection.state = "reading"
             while True:
                 try:
                     message = await read_stage_message(
@@ -193,6 +243,16 @@ class StageRingServer:
                         self.metrics.malformed_frames += 1
                     break
                 self.metrics.frames_received += 1
+                connection.topology_ids.add(message.topology_id)
+                connection.session_ids.add(message.session_id)
+                route_generation = message.attributes.get("route_generation")
+                if isinstance(route_generation, int):
+                    connection.route_generations.add(route_generation)
+                declared_peer = message.attributes.get("worker_id") or message.attributes.get(
+                    "peer_id"
+                )
+                if isinstance(declared_peer, str) and declared_peer:
+                    connection.peer_identity = declared_peer
                 peer_handshake = False
                 authentication_required = (
                     self.require_peer_authentication()
@@ -237,49 +297,169 @@ class StageRingServer:
                     response = _error_response(message, "stage-ring inbound queue is full")
                 else:
                     response = await future
+                connection.state = "writing"
                 await write_stage_message(
                     writer,
                     response,
                     write_timeout_s=self.write_timeout_s,
                 )
                 self.metrics.frames_sent += 1
+                connection.state = "reading"
                 if peer_handshake:
                     if response.operation != Operation.HELLO or response.status != "OK":
                         break
                     connection_role = "peer"
         except (ConnectionError, OSError, TimeoutError):
             pass
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self.metrics.connection_errors += 1
+            LOGGER.exception(
+                "unexpected stage-ring connection failure",
+                extra={"connection_identity": connection.identity},
+            )
         finally:
-            self._connections.discard(writer)
-            self.metrics.active_connections = max(0, self.metrics.active_connections - 1)
-            writer.close()
-            with suppress(OSError, TimeoutError):
-                await asyncio.wait_for(writer.wait_closed(), timeout=self.write_timeout_s)
+            connection.state = "closing"
+            self._connections.pop(writer, None)
+            self.metrics.active_connections = len(self._connections)
+            await self._close_connection(connection)
+            connection.state = "closed"
             if connection_task is not None:
                 self._connection_tasks.discard(connection_task)
 
-    async def _stop_workers(self) -> None:
-        for task in self._workers:
+    async def _close_connection(self, connection: _ActiveConnection) -> None:
+        async with connection.close_lock:
+            if connection.state == "closed":
+                return
+            connection.state = "closing"
+            writer = connection.writer
+            if not writer.is_closing():
+                writer.close()
+            try:
+                await asyncio.wait_for(
+                    writer.wait_closed(),
+                    timeout=self.shutdown_timeout_s,
+                )
+            except TimeoutError:
+                self.metrics.shutdown_timeouts += 1
+                LOGGER.error(
+                    "stage-ring writer closure timed out",
+                    extra={
+                        "connection_identity": connection.identity,
+                        "timeout_s": self.shutdown_timeout_s,
+                    },
+                )
+            except (ConnectionError, OSError):
+                pass
+            finally:
+                connection.state = "closed"
+
+    async def _close_active_connections(self) -> None:
+        connections = tuple(self._connections.values())
+        if connections:
+            results = await asyncio.gather(
+                *(self._close_connection(connection) for connection in connections),
+                return_exceptions=True,
+            )
+            for connection, result in zip(connections, results, strict=True):
+                if isinstance(result, BaseException) and not isinstance(
+                    result, asyncio.CancelledError
+                ):
+                    self.metrics.connection_errors += 1
+                    LOGGER.error(
+                        "stage-ring connection cleanup failed",
+                        exc_info=(type(result), result, result.__traceback__),
+                        extra={"connection_identity": connection.identity},
+                    )
+
+    async def _cancel_tasks(
+        self,
+        tasks: set[asyncio.Task[None]],
+        *,
+        owner: str,
+    ) -> None:
+        current = asyncio.current_task()
+        snapshot = [task for task in tuple(tasks) if task is not current]
+        active = [task for task in snapshot if not task.done()]
+        for task in active:
             task.cancel()
-        await asyncio.gather(*self._workers, return_exceptions=True)
-        self._workers.clear()
+        if active:
+            _done, pending = await asyncio.wait(active, timeout=self.shutdown_timeout_s)
+            if pending:
+                self.metrics.shutdown_timeouts += len(pending)
+                LOGGER.error(
+                    "stage-ring managed tasks did not stop before the shutdown deadline",
+                    extra={
+                        "owner": owner,
+                        "pending_tasks": sorted(task.get_name() for task in pending),
+                        "timeout_s": self.shutdown_timeout_s,
+                    },
+                )
+                for task in pending:
+                    task.cancel()
+        completed = [task for task in snapshot if task.done()]
+        if completed:
+            results = await asyncio.gather(*completed, return_exceptions=True)
+            for task, result in zip(completed, results, strict=True):
+                if isinstance(result, BaseException) and not isinstance(
+                    result, asyncio.CancelledError
+                ):
+                    LOGGER.error(
+                        "stage-ring managed task failed",
+                        exc_info=(type(result), result, result.__traceback__),
+                        extra={"owner": owner, "task_name": task.get_name()},
+                    )
+        tasks.difference_update(task for task in tuple(tasks) if task.done())
+
+    def _drain_queue(self) -> None:
+        while not self._queue.empty():
+            item = self._queue.get_nowait()
+            if not item.future.done():
+                item.future.cancel()
+            self._queue.task_done()
 
     async def stop(self) -> None:
-        server = self._server
-        self._server = None
-        if server is not None:
-            server.close()
-            await server.wait_closed()
-        for writer in list(self._connections):
-            writer.close()
-        connection_tasks = list(self._connection_tasks)
-        for task in connection_tasks:
-            task.cancel()
-        await asyncio.gather(*connection_tasks, return_exceptions=True)
-        self._connections.clear()
-        self._connection_tasks.clear()
-        self.metrics.active_connections = 0
-        await self._stop_workers()
+        async with self._lifecycle_lock:
+            if self._stopped:
+                return
+            self._stopping = True
+            server = self._server
+            self._server = None
+            self.bound_endpoint = None
+
+            # Closing the listener prevents new accepts.  Active connections
+            # remain explicitly owned below and are detached before the final
+            # listener wait; this ordering is required by Python 3.12+.
+            if server is not None:
+                server.close()
+
+            await self._close_active_connections()
+            await self._cancel_tasks(self._connection_tasks, owner="connection")
+            await self._cancel_tasks(self._dispatch_tasks, owner="dispatch")
+            self._drain_queue()
+
+            # A callback accepted just before server.close() may have entered
+            # while the first snapshots were being cancelled.  Sweep once more
+            # before waiting for listener closure.
+            await self._close_active_connections()
+            await self._cancel_tasks(self._connection_tasks, owner="connection")
+            self._connections.clear()
+            self.metrics.active_connections = 0
+
+            if server is not None:
+                try:
+                    await asyncio.wait_for(
+                        server.wait_closed(),
+                        timeout=self.shutdown_timeout_s,
+                    )
+                except TimeoutError:
+                    self.metrics.shutdown_timeouts += 1
+                    LOGGER.error(
+                        "stage-ring listener closure timed out",
+                        extra={"timeout_s": self.shutdown_timeout_s},
+                    )
+            self._stopped = True
 
 
 __all__ = ["StageMessageHandler", "StageRingServer", "StageRingServerMetrics"]

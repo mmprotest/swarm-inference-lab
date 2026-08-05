@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import platform
 import socket
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from swarm_inference.acceptance.productization import (
+    REAL_MODEL_GATES,
+    SOFTWARE_GATES,
     AcceptanceStatus,
     GateResult,
     GateSpec,
@@ -18,6 +22,7 @@ from swarm_inference.acceptance.productization import (
     machine_identity,
     validate_physical_configuration,
     validate_physical_evidence,
+    validate_repeatability_evidence,
 )
 
 
@@ -35,8 +40,18 @@ def result(
     )
 
 
+def software_passes() -> list[GateResult]:
+    return [result(spec.name, "software", AcceptanceStatus.PASS) for spec in SOFTWARE_GATES] + [
+        result("process_repeatability", "software", AcceptanceStatus.PASS)
+    ]
+
+
+def real_passes() -> list[GateResult]:
+    return [result(spec.name, "real_model", AcceptanceStatus.PASS) for spec in REAL_MODEL_GATES]
+
+
 def test_status_aggregation_never_promotes_skip_or_not_run() -> None:
-    software = [result("software", "software", AcceptanceStatus.PASS)]
+    software = software_passes()
     real_not_run = [
         result(f"real-{index}", "real_model", AcceptanceStatus.NOT_RUN) for index in range(4)
     ]
@@ -58,9 +73,9 @@ def test_status_aggregation_never_promotes_skip_or_not_run() -> None:
 
 
 def test_status_aggregation_requires_real_before_physical_full_pass() -> None:
-    software = [result("software", "software", AcceptanceStatus.PASS)]
-    real = [result(f"real-{index}", "real_model", AcceptanceStatus.PASS) for index in range(4)]
-    physical = [result("physical", "physical", AcceptanceStatus.PASS)]
+    software = software_passes()
+    real = real_passes()
+    physical = [result("physical_two_machine", "physical", AcceptanceStatus.PASS)]
     assert aggregate_status(software + real) == OverallStatus.REAL_MODEL_ACCEPTANCE_PASS
     assert aggregate_status(software + real + physical) == OverallStatus.PHYSICAL_ACCEPTANCE_PASS
     assert aggregate_status(software + physical) == OverallStatus.SOFTWARE_ACCEPTANCE_PASS
@@ -129,7 +144,11 @@ def test_acceptance_bundle_has_provenance_placeholders_and_verified_checksums(
         repository_root=Path.cwd(),
         output_root=tmp_path,
     )
-    runner.results.append(result("software", "software", AcceptanceStatus.PASS))
+    runner.results.extend(
+        result(spec.name, "software", AcceptanceStatus.PASS) for spec in SOFTWARE_GATES
+    )
+    repeatability, _ = _write_repeatability_bundle(tmp_path)
+    runner.consume_repeatability(repeatability)
     runner.record_real_not_run("not requested")
     runner.record_physical_not_run("not requested")
     bundle, overall = runner.write_bundle()
@@ -139,6 +158,7 @@ def test_acceptance_bundle_has_provenance_placeholders_and_verified_checksums(
         "acceptance-summary.json",
         "gate-results.json",
         "environment.json",
+        "repeatability.json",
         "model.json",
         "commands.json",
         "checksums.json",
@@ -170,6 +190,183 @@ def test_dirty_tree_reporting_is_explicit() -> None:
     evidence = environment_evidence(Path.cwd())
     assert isinstance(evidence["git_dirty"], bool)
     assert "git_status" in evidence
+
+
+def _git_output(*arguments: str) -> str:
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=Path.cwd(),
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _write_repeatability_bundle(tmp_path: Path) -> tuple[Path, dict[str, object]]:
+    evidence = tmp_path / "repeatability"
+    evidence.mkdir()
+    results: list[dict[str, object]] = []
+    names = [f"full-{index}" for index in range(1, 4)] + [
+        f"stage-ring-{index}" for index in range(1, 6)
+    ]
+    for name in names:
+        stdout = evidence / f"{name}.stdout.log"
+        stderr = evidence / f"{name}.stderr.log"
+        stdout.write_text("passed\n", encoding="utf-8")
+        stderr.write_text("", encoding="utf-8")
+        results.append(
+            {
+                "name": name,
+                "status": "PASS",
+                "exit_code": 0,
+                "resource_warning_count": 0,
+                "warning_scan": {"status": "PASS", "matches": [], "ignore_list": []},
+                "graceful_shutdown_count": 2,
+                "unexpected_terminate_count": 0,
+                "unexpected_kill_count": 0,
+                "leaked_process_count": 0,
+                "checksums": {
+                    stdout.name: "sha256:" + hashlib.sha256(stdout.read_bytes()).hexdigest(),
+                    stderr.name: "sha256:" + hashlib.sha256(stderr.read_bytes()).hexdigest(),
+                },
+            }
+        )
+    git_status = _git_output("status", "--porcelain")
+    process_script = Path("scripts/run_productization_process_suite.py")
+    acceptance_source = Path("src/swarm_inference/acceptance/productization.py")
+    payload: dict[str, object] = {
+        "document_type": "swarm-process-repeatability",
+        "schema_version": 2,
+        "test_command_version": 2,
+        "acceptance_schema_version": 2,
+        "git_commit": _git_output("rev-parse", "HEAD"),
+        "git_dirty": bool(git_status),
+        "git_status": git_status,
+        "finish_git_status": git_status,
+        "python_version": platform.python_version(),
+        "os": platform.platform(),
+        "required_runs": {"full_process_suite": 3, "stage_ring_module": 5},
+        "requested_runs": {"full_process_suite": 3, "stage_ring_module": 5},
+        "process_runner_sha256": "sha256:"
+        + hashlib.sha256(process_script.read_bytes()).hexdigest(),
+        "acceptance_source_sha256": "sha256:"
+        + hashlib.sha256(acceptance_source.read_bytes()).hexdigest(),
+        "results": results,
+        "overall_repeatability_status": "PASS",
+    }
+    _save_repeatability_payload(evidence, payload)
+    return evidence, payload
+
+
+def _save_repeatability_payload(evidence: Path, payload: dict[str, object]) -> None:
+    payload.pop("evidence_checksum", None)
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    payload["evidence_checksum"] = "sha256:" + hashlib.sha256(canonical).hexdigest()
+    (evidence / "summary.json").write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def test_missing_repeatability_evidence_yields_incomplete(tmp_path: Path) -> None:
+    runner = ProductizationAcceptanceRunner(repository_root=Path.cwd(), output_root=tmp_path)
+    runner.results.extend(
+        result(spec.name, "software", AcceptanceStatus.PASS) for spec in SOFTWARE_GATES
+    )
+    runner.record_repeatability_not_run("missing")
+    assert aggregate_status(runner.results) == OverallStatus.INCOMPLETE
+
+    status, errors, payload = validate_repeatability_evidence(Path.cwd(), tmp_path / "missing")
+    assert status == AcceptanceStatus.NOT_RUN
+    assert errors
+    assert payload is None
+
+
+def test_stale_commit_and_dirty_tree_repeatability_are_rejected(tmp_path: Path) -> None:
+    evidence, payload = _write_repeatability_bundle(tmp_path)
+    payload["git_commit"] = "0" * 40
+    _save_repeatability_payload(evidence, payload)
+    status, errors, _ = validate_repeatability_evidence(Path.cwd(), evidence)
+    assert status == AcceptanceStatus.NOT_RUN
+    assert any("another git commit" in error for error in errors)
+
+    payload["git_commit"] = _git_output("rev-parse", "HEAD")
+    payload["git_status"] = "synthetic dirty-tree mismatch"
+    _save_repeatability_payload(evidence, payload)
+    status, errors, _ = validate_repeatability_evidence(Path.cwd(), evidence)
+    assert status == AcceptanceStatus.NOT_RUN
+    assert any("dirty-tree state" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_fragment"),
+    [
+        ({"status": "FAIL", "exit_code": 1}, "has status FAIL"),
+        (
+            {
+                "status": "WARNING_FAILURE",
+                "resource_warning_count": 1,
+                "warning_scan": {
+                    "status": "FAIL",
+                    "matches": ["resource_tracker"],
+                    "ignore_list": [],
+                },
+            },
+            "managed-resource warning",
+        ),
+        ({"unexpected_terminate_count": 1}, "unexpected_terminate_count"),
+    ],
+)
+def test_failed_warning_or_forced_repeatability_run_fails_acceptance(
+    tmp_path: Path,
+    mutation: dict[str, object],
+    expected_fragment: str,
+) -> None:
+    evidence, payload = _write_repeatability_bundle(tmp_path)
+    results = payload["results"]
+    assert isinstance(results, list)
+    first = results[0]
+    assert isinstance(first, dict)
+    first.update(mutation)
+    payload["overall_repeatability_status"] = "FAIL"
+    _save_repeatability_payload(evidence, payload)
+
+    status, errors, _ = validate_repeatability_evidence(Path.cwd(), evidence)
+    assert status == AcceptanceStatus.FAIL
+    assert any(expected_fragment in error for error in errors)
+
+
+def test_three_plus_five_clean_runs_permit_software_acceptance(tmp_path: Path) -> None:
+    evidence, _ = _write_repeatability_bundle(tmp_path)
+    status, errors, _ = validate_repeatability_evidence(Path.cwd(), evidence)
+    assert status == AcceptanceStatus.PASS
+    assert errors == []
+
+    runner = ProductizationAcceptanceRunner(
+        repository_root=Path.cwd(), output_root=tmp_path / "acceptance"
+    )
+    runner.results.extend(
+        result(spec.name, "software", AcceptanceStatus.PASS) for spec in SOFTWARE_GATES
+    )
+    consumed = runner.consume_repeatability(evidence)
+    assert consumed.status == AcceptanceStatus.PASS
+    runner.record_real_not_run("not requested")
+    runner.record_physical_not_run("not requested")
+    _bundle, overall = runner.write_bundle()
+    assert overall == OverallStatus.SOFTWARE_ACCEPTANCE_PASS
+
+
+def test_real_model_baseline_and_recovery_are_distinct_gates() -> None:
+    gates = {spec.name: spec for spec in REAL_MODEL_GATES}
+    baseline = gates["two_stage_olmoe_baseline"]
+    recovery = gates["restart_and_replay_olmoe"]
+    assert baseline.tests != recovery.tests
+    assert "test_exact_two_stage_olmoe_cuda_baseline" in baseline.tests[0]
+    assert "restart_and_replay_recovery" in recovery.tests[0]
+
+    source = Path("tests/integration/test_product_stage_ring.py").read_text(encoding="utf-8")
+    assert '"failure_injected": False' in source
+    assert '"failure_injected": True' in source
 
 
 def test_real_model_pytest_skip_is_never_classified_as_pass(tmp_path: Path) -> None:

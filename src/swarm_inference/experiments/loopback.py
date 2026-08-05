@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -434,6 +435,7 @@ async def _run_runtime_experiment(
         )
 
     processes: list[subprocess.Popen[str]] = []
+    shutdown_paths: list[Path] = []
     log_handles: list[Any] = []
     worker_proofs_before: dict[str, dict[str, Any]] = {}
     worker_proofs_after: dict[str, dict[str, Any]] = {}
@@ -455,6 +457,8 @@ async def _run_runtime_experiment(
             port = _free_port()
             endpoint = f"127.0.0.1:{port}"
             worker_id = f"loopback-worker-{index:03d}"
+            shutdown_path = process_dir / f"{worker_id}.shutdown"
+            shutdown_paths.append(shutdown_path)
             log_path = process_dir / f"{worker_id}.log"
             log_handle = log_path.open("w", encoding="utf-8")
             log_handles.append(log_handle)
@@ -476,6 +480,8 @@ async def _run_runtime_experiment(
                 str(process_dir / f"{worker_id}.pem"),
                 "--worker-id",
                 worker_id,
+                "--shutdown-file",
+                str(shutdown_path),
                 "--queue-capacity",
                 str(config.queue.capacity),
                 "--max-microbatch-size",
@@ -625,11 +631,29 @@ async def _run_runtime_experiment(
         if profile_task is not None:
             profile_stop.set()
             await profile_task
+        cleanup_errors: list[str] = []
+        for shutdown_path in shutdown_paths:
+            shutdown_path.write_text("shutdown\n", encoding="utf-8")
+        for index, process in enumerate(processes):
+            try:
+                await asyncio.to_thread(process.wait, 15)
+            except subprocess.TimeoutExpired:
+                stop_process(process)
+                cleanup_errors.append(
+                    f"loopback worker {index} required terminate fallback; pid={process.pid}"
+                )
+            else:
+                if process.returncode != 0:
+                    cleanup_errors.append(
+                        f"loopback worker {index} exited with code {process.returncode}; "
+                        f"pid={process.pid}"
+                    )
         await server.stop()
-        for process in processes:
-            stop_process(process)
         for handle in log_handles:
             handle.close()
+        for shutdown_path in shutdown_paths:
+            with suppress(OSError):
+                shutdown_path.unlink(missing_ok=True)
         if coordinator_affinity_before:
             try:
                 import psutil
@@ -637,6 +661,8 @@ async def _run_runtime_experiment(
                 psutil.Process().cpu_affinity(coordinator_affinity_before)
             except (AttributeError, OSError, ValueError, psutil.Error):
                 pass
+        if cleanup_errors:
+            raise RuntimeError("; ".join(cleanup_errors))
 
     end = datetime.now(UTC)
     actual_worker_count = len(core.registry.workers())

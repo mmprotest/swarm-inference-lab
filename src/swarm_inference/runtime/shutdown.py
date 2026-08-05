@@ -60,6 +60,8 @@ def install_shutdown_signal_handlers(
 async def wait_for_service_shutdown(
     termination: Awaitable[None],
     stop_event: asyncio.Event,
+    *,
+    shutdown: Callable[[], Awaitable[None]] | None = None,
 ) -> None:
     """Return on an explicit stop request or propagate service termination errors."""
 
@@ -74,6 +76,13 @@ async def wait_for_service_shutdown(
             return_when=asyncio.FIRST_COMPLETED,
         )
         if termination_task in done:
+            await termination_task
+        elif shutdown is not None:
+            # Stop the service before cancelling its termination waiter.  Some
+            # AsyncIO servers share internal futures with wait_for_termination;
+            # cancelling that waiter first can poison the subsequent graceful
+            # stop operation.
+            await shutdown()
             await termination_task
     finally:
         for task in (termination_task, stop_task):

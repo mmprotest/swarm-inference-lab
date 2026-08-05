@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
@@ -50,7 +51,9 @@ class PersistentStageWorkerService:
             if stage_runtime is not None
             else None
         )
+        self._lifecycle_lock = asyncio.Lock()
         self._started = False
+        self._stopping = False
 
     async def start(
         self,
@@ -58,45 +61,56 @@ class PersistentStageWorkerService:
         control_listen_endpoint: str,
         data_listen_endpoint: str | None,
     ) -> tuple[int, int | None]:
-        if self._started:
-            raise RuntimeError("persistent worker service is already started")
-        if (self.data_server is None) != (data_listen_endpoint is None):
-            raise ValueError(
-                "data listen endpoint must be supplied exactly when stage runtime is enabled"
-            )
-        data_port = None
-        try:
-            if self.stage_runtime is not None:
-                await self.stage_runtime.start()
-            if self.data_server is not None and data_listen_endpoint is not None:
-                data_port = await self.data_server.start(data_listen_endpoint)
-            control_port = await self.control_server.start(control_listen_endpoint)
-        except BaseException:
-            if self.data_server is not None:
-                await self.data_server.stop()
-            if self.stage_runtime is not None:
-                await self.stage_runtime.close()
-            with suppress(Exception):
-                await self.agent.stop()
-            raise
-        self._started = True
-        return control_port, data_port
+        async with self._lifecycle_lock:
+            if self._started:
+                raise RuntimeError("persistent worker service is already started")
+            if (self.data_server is None) != (data_listen_endpoint is None):
+                raise ValueError(
+                    "data listen endpoint must be supplied exactly when stage runtime is enabled"
+                )
+            self._stopping = False
+            data_port = None
+            try:
+                if self.stage_runtime is not None:
+                    await self.stage_runtime.start()
+                if self.data_server is not None and data_listen_endpoint is not None:
+                    data_port = await self.data_server.start(data_listen_endpoint)
+                control_port = await self.control_server.start(control_listen_endpoint)
+            except BaseException:
+                self._stopping = True
+                if self.data_server is not None:
+                    await self.data_server.stop()
+                if self.stage_runtime is not None:
+                    await self.stage_runtime.close()
+                with suppress(Exception):
+                    await self.agent.stop()
+                raise
+            self._started = True
+            return control_port, data_port
 
     async def wait_for_termination(self) -> None:
         await self.control_server.wait_for_termination()
 
     async def stop(self, grace_s: float = 2.0) -> None:
-        try:
-            if self.data_server is not None:
-                await self.data_server.stop()
-        finally:
+        async with self._lifecycle_lock:
+            if self._stopping and not self._started:
+                return
+            self._stopping = True
+            if self.stage_runtime is not None:
+                self.stage_runtime.begin_draining()
             try:
-                if self._started:
-                    await self.control_server.stop(grace_s)
+                if self.data_server is not None:
+                    await self.data_server.stop()
             finally:
-                if self.stage_runtime is not None:
-                    await self.stage_runtime.close()
-                self._started = False
+                try:
+                    if self._started:
+                        await self.control_server.stop(grace_s)
+                    else:
+                        if self.stage_runtime is not None:
+                            await self.stage_runtime.close()
+                        await self.agent.stop()
+                finally:
+                    self._started = False
 
 
 __all__ = ["PersistentStageWorkerService"]

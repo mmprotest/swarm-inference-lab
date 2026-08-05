@@ -9,12 +9,14 @@ import ipaddress
 import json
 import os
 import platform
+import shutil
 import socket
 import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
-from dataclasses import asdict, dataclass
+from contextlib import suppress
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from itertools import pairwise
@@ -23,11 +25,22 @@ from typing import Any, Literal
 
 import psutil
 
-ACCEPTANCE_BUNDLE_VERSION = 1
+ACCEPTANCE_BUNDLE_VERSION = 2
+REPEATABILITY_SCHEMA_VERSION = 2
+REPEATABILITY_TEST_COMMAND_VERSION = 2
 MACHINE_IDENTITY_VERSION = 1
 PHYSICAL_EVIDENCE_VERSION = 1
 REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
 REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
+MANAGED_RESOURCE_WARNINGS = (
+    "resource_tracker",
+    "leaked semaphore",
+    "leaked shared_memory",
+    "Task was destroyed but it is pending",
+    "Unclosed client session",
+    "unclosed transport",
+    "unclosed event loop",
+)
 
 
 class AcceptanceStatus(StrEnum):
@@ -59,6 +72,11 @@ class GateResult:
     exit_code: int | None = None
     stdout_log: str | None = None
     stderr_log: str | None = None
+    resource_warnings: tuple[str, ...] = ()
+    graceful_shutdown_count: int = 0
+    unexpected_terminate_count: int = 0
+    unexpected_kill_count: int = 0
+    leaked_process_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,10 +176,8 @@ SOFTWARE_GATES = (
 
 REAL_MODEL_GATES = (
     GateSpec(
-        "two_stage_olmoe",
-        (
-            "tests/integration/test_product_stage_ring.py::test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker",
-        ),
+        "two_stage_olmoe_baseline",
+        ("tests/integration/test_product_stage_ring.py::test_exact_two_stage_olmoe_cuda_baseline",),
         900,
     ),
     GateSpec(
@@ -187,6 +203,13 @@ REAL_MODEL_GATES = (
     ),
 )
 
+REAL_MODEL_EVIDENCE_IDS = {
+    "two_stage_olmoe_baseline": "two-stage-baseline",
+    "restart_and_replay_olmoe": "two-stage-restart-and-replay",
+    "whole_expert_olmoe": "whole-remote",
+    "native_microshard_olmoe": "microshard-remote",
+}
+
 
 def aggregate_status(results: list[GateResult]) -> OverallStatus:
     software = [result for result in results if result.category == "software"]
@@ -194,11 +217,19 @@ def aggregate_status(results: list[GateResult]) -> OverallStatus:
     physical = [result for result in results if result.category == "physical"]
     if any(result.status == AcceptanceStatus.FAIL for result in results):
         return OverallStatus.FAIL
-    if not software or any(result.status != AcceptanceStatus.PASS for result in software):
+    required_software = {spec.name for spec in SOFTWARE_GATES} | {"process_repeatability"}
+    passed_software = {result.name for result in software if result.status == AcceptanceStatus.PASS}
+    if not required_software <= passed_software or any(
+        result.status != AcceptanceStatus.PASS for result in software
+    ):
         return OverallStatus.INCOMPLETE
-    real_pass = bool(real) and all(result.status == AcceptanceStatus.PASS for result in real)
-    physical_pass = bool(physical) and all(
-        result.status == AcceptanceStatus.PASS for result in physical
+    required_real = {spec.name for spec in REAL_MODEL_GATES}
+    real_pass = required_real <= {
+        result.name for result in real if result.status == AcceptanceStatus.PASS
+    }
+    physical_pass = any(
+        result.name == "physical_two_machine" and result.status == AcceptanceStatus.PASS
+        for result in physical
     )
     if physical_pass and real_pass:
         return OverallStatus.PHYSICAL_ACCEPTANCE_PASS
@@ -549,6 +580,141 @@ def _git_value(repository_root: Path, *args: str) -> str | None:
     return result.stdout.strip()
 
 
+def _canonical_payload_checksum(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return _sha256_bytes(encoded)
+
+
+def _repeatability_summary_path(path: Path) -> Path:
+    resolved = path.expanduser().resolve()
+    return resolved / "summary.json" if resolved.is_dir() else resolved
+
+
+def validate_repeatability_evidence(
+    repository_root: Path,
+    evidence_path: Path,
+) -> tuple[AcceptanceStatus, list[str], dict[str, Any] | None]:
+    """Validate repeatability provenance, completeness, warnings, and cleanup."""
+
+    summary_path = _repeatability_summary_path(evidence_path)
+    try:
+        payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return (
+            AcceptanceStatus.NOT_RUN,
+            [f"repeatability evidence is missing: {summary_path}"],
+            None,
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        return AcceptanceStatus.NOT_RUN, [f"repeatability evidence is unreadable: {exc}"], None
+    if not isinstance(payload, dict):
+        return AcceptanceStatus.NOT_RUN, ["repeatability summary is not a JSON object"], None
+
+    stale: list[str] = []
+    failures: list[str] = []
+    if payload.get("document_type") != "swarm-process-repeatability":
+        stale.append("repeatability document type is invalid")
+    if payload.get("schema_version") != REPEATABILITY_SCHEMA_VERSION:
+        stale.append("repeatability schema version is stale")
+    if payload.get("acceptance_schema_version") != ACCEPTANCE_BUNDLE_VERSION:
+        stale.append("repeatability acceptance schema version is stale")
+    if payload.get("test_command_version") != REPEATABILITY_TEST_COMMAND_VERSION:
+        stale.append("repeatability test command version is stale")
+
+    current_status = _git_value(repository_root, "status", "--porcelain")
+    current_commit = _git_value(repository_root, "rev-parse", "HEAD")
+    if payload.get("git_commit") != current_commit:
+        stale.append("repeatability evidence belongs to another git commit")
+    if payload.get("git_status") != current_status:
+        stale.append("repeatability dirty-tree state does not match the current tree")
+    if payload.get("finish_git_status") != current_status:
+        stale.append("repeatability tree changed while the runs were executing")
+    if payload.get("git_dirty") != (current_status is None or bool(current_status)):
+        stale.append("repeatability dirty-tree flag does not match the current tree")
+    if payload.get("python_version") != platform.python_version():
+        stale.append("repeatability Python version does not match acceptance")
+    if payload.get("os") != platform.platform():
+        stale.append("repeatability OS does not match acceptance")
+
+    process_script = repository_root / "scripts/run_productization_process_suite.py"
+    expected_process_hash = f"sha256:{_sha256_bytes(process_script.read_bytes())}"
+    expected_acceptance_hash = f"sha256:{_sha256_bytes(Path(__file__).read_bytes())}"
+    if payload.get("process_runner_sha256") != expected_process_hash:
+        stale.append("repeatability process runner content hash is stale")
+    if payload.get("acceptance_source_sha256") != expected_acceptance_hash:
+        stale.append("repeatability acceptance source content hash is stale")
+
+    recorded_checksum = payload.get("evidence_checksum")
+    checksummed = dict(payload)
+    checksummed.pop("evidence_checksum", None)
+    if recorded_checksum != f"sha256:{_canonical_payload_checksum(checksummed)}":
+        stale.append("repeatability summary checksum is invalid")
+
+    required = payload.get("required_runs")
+    requested = payload.get("requested_runs")
+    expected_counts = {
+        "full_process_suite": 3,
+        "stage_ring_module": 5,
+    }
+    if required != expected_counts or requested != expected_counts:
+        stale.append("repeatability evidence does not contain the required three plus five runs")
+    results = payload.get("results")
+    expected_names = [f"full-{index}" for index in range(1, 4)] + [
+        f"stage-ring-{index}" for index in range(1, 6)
+    ]
+    if (
+        not isinstance(results, list)
+        or not all(isinstance(item, dict) for item in results)
+        or [item.get("name") for item in results] != expected_names
+    ):
+        stale.append("repeatability run list is incomplete or out of order")
+        results = []
+    evidence_root = summary_path.parent
+    for result in results:
+        name = str(result.get("name", "unknown"))
+        status = result.get("status")
+        if status in {"FAIL", "TIMEOUT", "WARNING_FAILURE"}:
+            failures.append(f"{name} has status {status}")
+        elif status != "PASS":
+            stale.append(f"{name} has incomplete status {status}")
+        if result.get("resource_warning_count") != 0 or result.get("warning_scan", {}).get(
+            "matches"
+        ):
+            failures.append(f"{name} emitted a managed-resource warning")
+        for field in (
+            "unexpected_terminate_count",
+            "unexpected_kill_count",
+            "leaked_process_count",
+        ):
+            if int(result.get(field, 0)):
+                failures.append(f"{name} recorded non-zero {field}")
+        if result.get("exit_code") != 0:
+            failures.append(f"{name} did not exit with code zero")
+        checksums = result.get("checksums")
+        if not isinstance(checksums, dict) or not checksums:
+            stale.append(f"{name} has no retained log checksums")
+            continue
+        for relative, expected in checksums.items():
+            candidate = evidence_root / str(relative)
+            try:
+                actual = f"sha256:{_sha256_bytes(candidate.read_bytes())}"
+            except OSError:
+                stale.append(f"{name} retained evidence is missing: {relative}")
+                continue
+            if actual != expected:
+                stale.append(f"{name} retained evidence checksum mismatch: {relative}")
+    if payload.get("overall_repeatability_status") == "FAIL":
+        failures.append("repeatability overall status is FAIL")
+    elif payload.get("overall_repeatability_status") != "PASS":
+        stale.append("repeatability overall status is incomplete")
+
+    if failures:
+        return AcceptanceStatus.FAIL, [*stale, *failures], payload
+    if stale:
+        return AcceptanceStatus.NOT_RUN, stale, payload
+    return AcceptanceStatus.PASS, [], payload
+
+
 def environment_evidence(repository_root: Path) -> dict[str, Any]:
     packages = {
         distribution.metadata["Name"]: distribution.version
@@ -589,6 +755,105 @@ def environment_evidence(repository_root: Path) -> dict[str, Any]:
     }
 
 
+def _terminate_subprocess_tree(process: subprocess.Popen[str]) -> tuple[int, int, int]:
+    try:
+        descendants = psutil.Process(process.pid).children(recursive=True)
+    except psutil.Error:
+        descendants = []
+    terminate_count = 0
+    kill_count = 0
+    for child in reversed(descendants):
+        with suppress(psutil.Error):
+            child.terminate()
+            terminate_count += 1
+    if process.poll() is None:
+        process.terminate()
+        terminate_count += 1
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        kill_count += 1
+        process.wait(timeout=5)
+    _, alive = psutil.wait_procs(descendants, timeout=5)
+    for child in alive:
+        with suppress(psutil.Error):
+            child.kill()
+            kill_count += 1
+    _, survivors = psutil.wait_procs(alive, timeout=5)
+    return terminate_count, kill_count, len(survivors)
+
+
+def _process_lifecycle_counts(path: Path) -> dict[str, int]:
+    totals = {
+        "graceful_shutdown_count": 0,
+        "unexpected_terminate_count": 0,
+        "unexpected_kill_count": 0,
+        "leaked_process_count": 0,
+    }
+    paths = ([path] if path.is_file() else []) + sorted(
+        path.parent.glob(f"{path.name}.worker-*.json")
+    )
+    for lifecycle_path in paths:
+        for line in lifecycle_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            payload = json.loads(line)
+            for field in totals:
+                totals[field] += int(payload.get(field, 0))
+    return totals
+
+
+def _validate_real_gate_payload(gate: str, payload: dict[str, Any]) -> list[str]:
+    expected_gate = REAL_MODEL_EVIDENCE_IDS[gate]
+    errors: list[str] = []
+    if payload.get("gate") != expected_gate:
+        errors.append(f"real-model evidence gate must be {expected_gate!r}")
+    required = (
+        "model_id",
+        "model_revision",
+        "tokenizer_revision",
+        "model_metadata_hash",
+        "prompt",
+        "prompt_token_ids",
+        "generated_token_ids",
+        "expected_token_ids",
+        "worker_identities",
+        "worker_pids",
+        "stage_assignments",
+        "route_generations",
+        "bytes_transferred",
+        "critical_path_timings",
+        "fallback_count",
+        "recovery_events",
+        "git_commit",
+        "git_dirty",
+        "environment",
+        "status",
+    )
+    missing = [field for field in required if field not in payload]
+    if missing:
+        errors.append("real-model evidence is missing fields: " + ", ".join(missing))
+    if payload.get("status") != "PASS":
+        errors.append("real-model evidence does not explicitly record PASS")
+    if payload.get("model_id") != REAL_MODEL_ID:
+        errors.append("real-model evidence model ID is not pinned")
+    if payload.get("model_revision") != REAL_MODEL_REVISION:
+        errors.append("real-model evidence revision is not pinned")
+    if payload.get("generated_token_ids") != payload.get("expected_token_ids"):
+        errors.append("real-model evidence generated token IDs do not match expected IDs")
+    if gate == "two_stage_olmoe_baseline" and payload.get("recovery_events"):
+        errors.append("baseline evidence contains a recovery event")
+    if gate == "restart_and_replay_olmoe" and not payload.get("recovery_events"):
+        errors.append("recovery evidence contains no recovery event")
+    if (
+        gate in {"whole_expert_olmoe", "native_microshard_olmoe"}
+        and int(payload.get("fallback_count", -1)) != 0
+    ):
+        errors.append("forced-remote real-model evidence recorded a fallback")
+    return errors
+
+
 class ProductizationAcceptanceRunner:
     def __init__(self, *, repository_root: Path, output_root: Path) -> None:
         self.repository_root = repository_root.expanduser().resolve()
@@ -601,6 +866,8 @@ class ProductizationAcceptanceRunner:
         self.results: list[GateResult] = []
         self.physical_evidence: dict[str, Any] | None = None
         self.model_evidence_records: list[dict[str, Any]] = []
+        self.repeatability_evidence: dict[str, Any] | None = None
+        self.repeatability_path: Path | None = None
 
     def _run_pytest(self, spec: GateSpec, *, category: GateCategory) -> GateResult:
         junit_path = self.temp / f"{spec.name}.junit.xml"
@@ -621,19 +888,25 @@ class ProductizationAcceptanceRunner:
         gate_evidence = self.bundle / "gate-evidence" / spec.name
         gate_evidence.mkdir(parents=True, exist_ok=True)
         environment["SWARM_ACCEPTANCE_GATE_EVIDENCE"] = str(gate_evidence)
+        lifecycle_path = self.logs / f"{spec.name}.lifecycle.jsonl"
+        environment["SWARM_PROCESS_LIFECYCLE_LOG"] = str(lifecycle_path)
         started = time.monotonic()
+        external_terminate_count = 0
+        external_kill_count = 0
+        external_leak_count = 0
+        process = subprocess.Popen(
+            command,
+            cwd=self.repository_root,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
         try:
-            completed = subprocess.run(
-                command,
-                cwd=self.repository_root,
-                env=environment,
-                capture_output=True,
-                text=True,
-                timeout=spec.timeout_s,
-            )
-            status = AcceptanceStatus.PASS if completed.returncode == 0 else AcceptanceStatus.FAIL
+            stdout, stderr = process.communicate(timeout=spec.timeout_s)
+            status = AcceptanceStatus.PASS if process.returncode == 0 else AcceptanceStatus.FAIL
             reason = "pytest command passed" if status == AcceptanceStatus.PASS else "pytest failed"
-            if completed.returncode == 0 and category == "real_model":
+            if process.returncode == 0 and category == "real_model":
                 try:
                     tests, failures, errors, skipped = _junit_counts(junit_path)
                 except (OSError, ET.ParseError, ValueError) as exc:
@@ -649,28 +922,80 @@ class ProductizationAcceptanceRunner:
                     elif failures or errors:
                         status = AcceptanceStatus.FAIL
                         reason = f"JUnit reported {failures} failures and {errors} errors"
-            exit_code: int | None = completed.returncode
-            stdout = completed.stdout
-            stderr = completed.stderr
-        except subprocess.TimeoutExpired as exc:
+            exit_code: int | None = process.returncode
+        except subprocess.TimeoutExpired:
+            (
+                external_terminate_count,
+                external_kill_count,
+                external_leak_count,
+            ) = _terminate_subprocess_tree(process)
+            stdout, stderr = process.communicate()
             status = AcceptanceStatus.FAIL
             reason = f"external timeout after {spec.timeout_s:.0f}s"
             exit_code = None
-            stdout = (
-                exc.stdout.decode(errors="replace")
-                if isinstance(exc.stdout, bytes)
-                else exc.stdout or ""
-            )
-            stderr = (
-                exc.stderr.decode(errors="replace")
-                if isinstance(exc.stderr, bytes)
-                else exc.stderr or ""
-            )
         duration = time.monotonic() - started
         stdout_path = self.logs / f"{spec.name}.stdout.log"
         stderr_path = self.logs / f"{spec.name}.stderr.log"
         stdout_path.write_text(str(stdout), encoding="utf-8")
         stderr_path.write_text(str(stderr), encoding="utf-8")
+
+        warning_matches = tuple(
+            fragment
+            for fragment in MANAGED_RESOURCE_WARNINGS
+            if fragment.lower() in f"{stdout}\n{stderr}".lower()
+        )
+        try:
+            lifecycle = _process_lifecycle_counts(lifecycle_path)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            lifecycle = {
+                "graceful_shutdown_count": 0,
+                "unexpected_terminate_count": 0,
+                "unexpected_kill_count": 0,
+                "leaked_process_count": 0,
+            }
+            status = AcceptanceStatus.FAIL
+            reason = f"process lifecycle telemetry is invalid: {exc}"
+        lifecycle["unexpected_terminate_count"] += external_terminate_count
+        lifecycle["unexpected_kill_count"] += external_kill_count
+        lifecycle["leaked_process_count"] += external_leak_count
+        if warning_matches:
+            status = AcceptanceStatus.FAIL
+            reason = "managed-resource warning signature was emitted"
+        if (
+            lifecycle["unexpected_terminate_count"]
+            or lifecycle["unexpected_kill_count"]
+            or lifecycle["leaked_process_count"]
+        ):
+            status = AcceptanceStatus.FAIL
+            reason = "managed process cleanup required force or leaked a child"
+
+        evidence_records: list[dict[str, Any]] = []
+        for evidence_path in sorted(gate_evidence.glob("*.json")):
+            try:
+                payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if isinstance(payload, dict):
+                evidence_records.append(
+                    {
+                        "gate": spec.name,
+                        "path": str(evidence_path.relative_to(self.bundle)),
+                        "evidence": payload,
+                    }
+                )
+        if category == "real_model" and status == AcceptanceStatus.PASS:
+            if len(evidence_records) != 1:
+                status = AcceptanceStatus.FAIL
+                reason = "real-model gate did not produce exactly one evidence record"
+            else:
+                evidence_errors = _validate_real_gate_payload(
+                    spec.name,
+                    evidence_records[0]["evidence"],
+                )
+                if evidence_errors:
+                    status = AcceptanceStatus.FAIL
+                    reason = "; ".join(evidence_errors)
+
         result = GateResult(
             name=spec.name,
             category=category,
@@ -681,26 +1006,167 @@ class ProductizationAcceptanceRunner:
             exit_code=exit_code,
             stdout_log=str(stdout_path.relative_to(self.bundle)),
             stderr_log=str(stderr_path.relative_to(self.bundle)),
+            resource_warnings=warning_matches,
+            graceful_shutdown_count=lifecycle["graceful_shutdown_count"],
+            unexpected_terminate_count=lifecycle["unexpected_terminate_count"],
+            unexpected_kill_count=lifecycle["unexpected_kill_count"],
+            leaked_process_count=lifecycle["leaked_process_count"],
         )
         self.results.append(result)
-        for evidence_path in sorted(gate_evidence.glob("*.json")):
-            try:
-                payload = json.loads(evidence_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                continue
-            if isinstance(payload, dict):
-                self.model_evidence_records.append(
-                    {
-                        "gate": spec.name,
-                        "path": str(evidence_path.relative_to(self.bundle)),
-                        "evidence": payload,
-                    }
-                )
+        self.model_evidence_records.extend(evidence_records)
         return result
 
     def run_software(self) -> None:
         for spec in SOFTWARE_GATES:
             self._run_pytest(spec, category="software")
+
+    def record_repeatability_not_run(self, reason: str) -> None:
+        self.results.append(
+            GateResult(
+                name="process_repeatability",
+                category="software",
+                status=AcceptanceStatus.NOT_RUN,
+                command=[],
+                reason=reason,
+            )
+        )
+
+    def consume_repeatability(
+        self,
+        evidence_path: Path,
+        *,
+        command: list[str] | None = None,
+        stdout_log: str | None = None,
+        stderr_log: str | None = None,
+        duration_s: float = 0.0,
+        exit_code: int | None = None,
+    ) -> GateResult:
+        status, errors, payload = validate_repeatability_evidence(
+            self.repository_root,
+            evidence_path,
+        )
+        summary_path = _repeatability_summary_path(evidence_path)
+        if summary_path.is_file():
+            source = summary_path.parent
+            try:
+                source.relative_to(self.bundle)
+            except ValueError:
+                retained = self.bundle / "repeatability-evidence"
+                if retained.exists():
+                    shutil.rmtree(retained)
+                shutil.copytree(source, retained)
+                summary_path = retained / "summary.json"
+        self.repeatability_path = summary_path if summary_path.is_file() else None
+        self.repeatability_evidence = payload
+        result = GateResult(
+            name="process_repeatability",
+            category="software",
+            status=status,
+            command=command or [],
+            reason=(
+                "three full process-suite runs and five stage-ring runs passed"
+                if status == AcceptanceStatus.PASS
+                else "; ".join(errors)
+            ),
+            duration_s=duration_s,
+            exit_code=exit_code,
+            stdout_log=stdout_log,
+            stderr_log=stderr_log,
+            resource_warnings=tuple(
+                sorted(
+                    {
+                        warning
+                        for item in (payload or {}).get("results", [])
+                        for warning in item.get("warning_scan", {}).get("matches", [])
+                    }
+                )
+            ),
+            graceful_shutdown_count=sum(
+                int(item.get("graceful_shutdown_count", 0))
+                for item in (payload or {}).get("results", [])
+            ),
+            unexpected_terminate_count=sum(
+                int(item.get("unexpected_terminate_count", 0))
+                for item in (payload or {}).get("results", [])
+            ),
+            unexpected_kill_count=sum(
+                int(item.get("unexpected_kill_count", 0))
+                for item in (payload or {}).get("results", [])
+            ),
+            leaked_process_count=sum(
+                int(item.get("leaked_process_count", 0))
+                for item in (payload or {}).get("results", [])
+            ),
+        )
+        self.results.append(result)
+        return result
+
+    def run_repeatability(self, *, timeout_s: float) -> GateResult:
+        if timeout_s <= 0:
+            raise ValueError("repeatability timeout must be positive")
+        output_root = self.bundle / "repeatability-runs"
+        output_root.mkdir()
+        command = [
+            sys.executable,
+            str(self.repository_root / "scripts/run_productization_process_suite.py"),
+            "--full-runs",
+            "3",
+            "--stage-runs",
+            "5",
+            "--timeout-seconds",
+            str(timeout_s),
+            "--output",
+            str(output_root),
+        ]
+        started = time.monotonic()
+        process = subprocess.Popen(
+            command,
+            cwd=self.repository_root,
+            env={**os.environ, "TEMP": str(self.temp), "TMP": str(self.temp)},
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        external_timeout = timeout_s * 8 + 120
+        timed_out = False
+        try:
+            stdout, stderr = process.communicate(timeout=external_timeout)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            _terminate_subprocess_tree(process)
+            stdout, stderr = process.communicate()
+        duration = time.monotonic() - started
+        stdout_path = self.logs / "process_repeatability.stdout.log"
+        stderr_path = self.logs / "process_repeatability.stderr.log"
+        stdout_path.write_text(stdout, encoding="utf-8")
+        stderr_path.write_text(stderr, encoding="utf-8")
+        evidence_directories = sorted(output_root.glob("process-repeatability-*"))
+        if timed_out or len(evidence_directories) != 1:
+            result = GateResult(
+                name="process_repeatability",
+                category="software",
+                status=AcceptanceStatus.FAIL,
+                command=command,
+                reason=(
+                    f"repeatability runner exceeded {external_timeout:.0f}s"
+                    if timed_out
+                    else "repeatability runner did not produce exactly one evidence bundle"
+                ),
+                duration_s=duration,
+                exit_code=None if timed_out else process.returncode,
+                stdout_log=str(stdout_path.relative_to(self.bundle)),
+                stderr_log=str(stderr_path.relative_to(self.bundle)),
+            )
+            self.results.append(result)
+            return result
+        return self.consume_repeatability(
+            evidence_directories[0],
+            command=command,
+            stdout_log=str(stdout_path.relative_to(self.bundle)),
+            stderr_log=str(stderr_path.relative_to(self.bundle)),
+            duration_s=duration,
+            exit_code=process.returncode,
+        )
 
     def record_real_not_run(self, reason: str) -> None:
         for spec in REAL_MODEL_GATES:
@@ -793,6 +1259,34 @@ class ProductizationAcceptanceRunner:
         )
 
     def write_bundle(self) -> tuple[Path, OverallStatus]:
+        repeatability_results = [
+            (index, result)
+            for index, result in enumerate(self.results)
+            if result.category == "software" and result.name == "process_repeatability"
+        ]
+        if not repeatability_results:
+            self.record_repeatability_not_run("repeatability evidence was never evaluated")
+        else:
+            index, repeatability_result = repeatability_results[-1]
+            if repeatability_result.status == AcceptanceStatus.PASS:
+                if self.repeatability_path is None:
+                    self.results[index] = replace(
+                        repeatability_result,
+                        status=AcceptanceStatus.NOT_RUN,
+                        reason="validated repeatability evidence is missing",
+                    )
+                else:
+                    status, errors, payload = validate_repeatability_evidence(
+                        self.repository_root,
+                        self.repeatability_path,
+                    )
+                    self.repeatability_evidence = payload
+                    if status != AcceptanceStatus.PASS:
+                        self.results[index] = replace(
+                            repeatability_result,
+                            status=status,
+                            reason="; ".join(errors),
+                        )
         overall = aggregate_status(self.results)
         evidence = environment_evidence(self.repository_root)
         summary = {
@@ -835,6 +1329,25 @@ class ProductizationAcceptanceRunner:
             json.dumps(evidence, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        repeatability_relative: str | None = None
+        repeatability_checksum: str | None = None
+        if self.repeatability_path is not None and self.repeatability_path.is_file():
+            repeatability_relative = str(self.repeatability_path.relative_to(self.bundle))
+            repeatability_checksum = f"sha256:{_sha256_bytes(self.repeatability_path.read_bytes())}"
+        (self.bundle / "repeatability.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": REPEATABILITY_SCHEMA_VERSION,
+                    "summary_path": repeatability_relative,
+                    "summary_sha256": repeatability_checksum,
+                    "evidence": self.repeatability_evidence,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         executed = [record["evidence"] for record in self.model_evidence_records]
         (self.bundle / "model.json").write_text(
             json.dumps(
@@ -860,8 +1373,14 @@ class ProductizationAcceptanceRunner:
                         for item in executed
                         for identity in item.get("worker_identities", [])
                     ],
-                    "token_ids": [item.get("token_ids", []) for item in executed],
-                    "timings": [item.get("timings", {}) for item in executed],
+                    "token_ids": [
+                        item.get("generated_token_ids", item.get("token_ids", []))
+                        for item in executed
+                    ],
+                    "timings": [
+                        item.get("critical_path_timings", item.get("timings", {}))
+                        for item in executed
+                    ],
                     "recovery_events": [
                         event for item in executed for event in item.get("recovery_events", [])
                     ],
@@ -914,6 +1433,10 @@ def _parser() -> argparse.ArgumentParser:
     machine.add_argument("--output", type=Path)
     run = subparsers.add_parser("run")
     run.add_argument("--output", type=Path, default=Path("artifacts/acceptance"))
+    repeatability = run.add_mutually_exclusive_group()
+    repeatability.add_argument("--run-repeatability", action="store_true")
+    repeatability.add_argument("--repeatability-evidence", type=Path)
+    run.add_argument("--repeatability-timeout-seconds", type=float, default=600)
     run.add_argument("--real-model", action="store_true")
     run.add_argument("--physical-config", type=Path)
     return parser
@@ -937,6 +1460,15 @@ def main(argv: list[str] | None = None) -> int:
         output_root=args.output,
     )
     runner.run_software()
+    if args.run_repeatability:
+        runner.run_repeatability(timeout_s=args.repeatability_timeout_seconds)
+    elif args.repeatability_evidence is not None:
+        runner.consume_repeatability(args.repeatability_evidence)
+    else:
+        runner.record_repeatability_not_run(
+            "repeatability evidence was not supplied; use --run-repeatability or "
+            "--repeatability-evidence"
+        )
     if args.real_model:
         runner.run_real_model()
     else:
@@ -955,6 +1487,7 @@ __all__ = [
     "ACCEPTANCE_BUNDLE_VERSION",
     "MACHINE_IDENTITY_VERSION",
     "PHYSICAL_EVIDENCE_VERSION",
+    "REPEATABILITY_SCHEMA_VERSION",
     "AcceptanceStatus",
     "GateResult",
     "OverallStatus",
@@ -964,4 +1497,5 @@ __all__ = [
     "machine_identity",
     "validate_physical_configuration",
     "validate_physical_evidence",
+    "validate_repeatability_evidence",
 ]

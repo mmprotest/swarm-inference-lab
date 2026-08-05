@@ -290,6 +290,7 @@ class PersistentStageRuntime:
         self._execution_runner: asyncio.Task[None] | None = None
         self._token_runner: asyncio.Task[None] | None = None
         self._executor_lock = asyncio.Lock()
+        self._lifecycle_lock = asyncio.Lock()
         self._sequence_validator = MessageSequenceValidator()
         self._sequence_allocator = SequenceAllocator()
         self._draining = False
@@ -314,6 +315,11 @@ class PersistentStageRuntime:
     @property
     def draining(self) -> bool:
         return self._draining
+
+    def begin_draining(self) -> None:
+        """Synchronously reject new lifecycle work before asynchronous cleanup."""
+
+        self._draining = True
 
     async def start(self) -> None:
         if self._closed:
@@ -2429,24 +2435,34 @@ class PersistentStageRuntime:
                 self._token_queue.task_done()
 
     async def close(self) -> None:
-        if self._closed:
-            return
-        self._draining = True
-        with suppress(TimeoutError):
-            await asyncio.wait_for(self._execution_queue.join(), timeout=30.0)
-        if self._execution_runner is not None:
-            self._execution_runner.cancel()
-            await asyncio.gather(self._execution_runner, return_exceptions=True)
-            self._execution_runner = None
-        async with self._executor_lock:
-            if self._loaded is not None:
-                await self._unload_locked(force=True)
-        if self._token_runner is not None:
-            self._token_runner.cancel()
-            await asyncio.gather(self._token_runner, return_exceptions=True)
-            self._token_runner = None
-        await self.connection_pool.close()
-        self._closed = True
+        async with self._lifecycle_lock:
+            if self._closed:
+                return
+            self.begin_draining()
+            with suppress(TimeoutError):
+                await asyncio.wait_for(self._execution_queue.join(), timeout=30.0)
+            if self._execution_runner is not None:
+                self._execution_runner.cancel()
+                await asyncio.gather(self._execution_runner, return_exceptions=True)
+                self._execution_runner = None
+            execution_error = TransportError("stage runtime is shutting down")
+            while not self._execution_queue.empty():
+                item = self._execution_queue.get_nowait()
+                if not item.future.done():
+                    item.future.set_exception(execution_error)
+                self._execution_queue.task_done()
+            async with self._executor_lock:
+                if self._loaded is not None:
+                    await self._unload_locked(force=True)
+            if self._token_runner is not None:
+                self._token_runner.cancel()
+                await asyncio.gather(self._token_runner, return_exceptions=True)
+                self._token_runner = None
+            while not self._token_queue.empty():
+                self._token_queue.get_nowait()
+                self._token_queue.task_done()
+            await self.connection_pool.close()
+            self._closed = True
 
 
 __all__ = [

@@ -6,7 +6,6 @@ import asyncio
 import json
 import os
 import time
-from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -503,17 +502,29 @@ async def run_worker(
     restore_signal_handlers = (
         install_shutdown_signal_handlers(shutdown_event) if stop_event is None else lambda: None
     )
-    try:
-        await wait_for_service_shutdown(service.wait_for_termination(), shutdown_event)
-    finally:
-        restore_signal_handlers()
+    shutdown_started = False
+
+    async def shutdown_service() -> None:
+        nonlocal shutdown_started
+        if shutdown_started:
+            return
+        shutdown_started = True
         if recorder is not None:
             recorder.emit("worker_shutdown_started")
         heartbeat_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await heartbeat_task
+        await asyncio.gather(heartbeat_task, return_exceptions=True)
+        await service.stop()
+
+    try:
+        await wait_for_service_shutdown(
+            service.wait_for_termination(),
+            shutdown_event,
+            shutdown=shutdown_service,
+        )
+    finally:
+        restore_signal_handlers()
         try:
-            await service.stop()
+            await shutdown_service()
         finally:
             try:
                 if expert_server is not None:

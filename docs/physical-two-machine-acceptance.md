@@ -236,6 +236,7 @@ Validate it with:
 
 ```powershell
 uv run python scripts/run_productization_acceptance.py run --real-model `
+  --repeatability-evidence artifacts/acceptance/process-repeatability-<timestamp> `
   --physical-config artifacts/acceptance/physical-current/config.json `
   --output artifacts/acceptance
 ```

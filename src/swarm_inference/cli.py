@@ -1730,7 +1730,11 @@ def coordinator_command(
         shutdown_event = asyncio.Event()
         restore_signal_handlers = install_shutdown_signal_handlers(shutdown_event)
         try:
-            await wait_for_service_shutdown(server.wait_for_termination(), shutdown_event)
+            await wait_for_service_shutdown(
+                server.wait_for_termination(),
+                shutdown_event,
+                shutdown=server.stop,
+            )
         finally:
             restore_signal_handlers()
             await server.stop()

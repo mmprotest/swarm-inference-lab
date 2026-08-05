@@ -17,7 +17,8 @@ backend targets are:
 | Linux ARM64 / Raspberry Pi | `torch-cpu` | `bash scripts/bootstrap.sh --backend cpu` |
 | macOS Apple Silicon | `torch-mps` or `torch-cpu` | `bash scripts/bootstrap.sh --backend mps` |
 
-Python 3.11 is required. Docker, WSL, and a shared filesystem are not required.
+Python 3.11, 3.12, and 3.13 are supported. Use the same supported Python minor
+version on all participating machines. Docker, WSL, and a shared filesystem are not required.
 Use the same Git commit and lock file on all machines.
 
 Run the backend-specific doctor on every host:

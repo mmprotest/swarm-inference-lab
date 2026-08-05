@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
+import platform
 import socket
+import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -112,6 +116,44 @@ def _write_gate_evidence(name: str, payload: dict[str, object]) -> None:
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def _evidence_provenance(reference: dict[str, object]) -> dict[str, object]:
+    metadata_hasher = hashlib.sha256()
+    for relative in ("config.json", "model.safetensors.index.json", "tokenizer_config.json"):
+        path = REAL_MODEL_PATH / relative
+        if path.is_file():
+            metadata_hasher.update(relative.encode())
+            metadata_hasher.update(path.read_bytes())
+    git_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    git_status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return {
+        "model_metadata_hash": f"sha256:{metadata_hasher.hexdigest()}",
+        "prompt": str(reference.get("prompt", reference.get("text", ""))),
+        "git_commit": git_commit,
+        "git_dirty": bool(git_status),
+        "git_status": git_status,
+        "environment": {
+            "python_version": platform.python_version(),
+            "python_executable": sys.executable,
+            "os": platform.platform(),
+            "torch_version": torch.__version__,
+            "cuda_version": torch.version.cuda,
+            "cuda_device": torch.cuda.get_device_name(0),
+        },
+    }
 
 
 async def _wait_for_workers(
@@ -326,11 +368,14 @@ async def _run_real_remote_expert_product_inference(
             f"real-{policy}.json",
             {
                 "document_type": "swarm-real-model-gate-evidence",
-                "format_version": 1,
+                "format_version": 2,
                 "gate": policy,
+                "status": "PASS",
                 "model_id": REAL_MODEL_ID,
                 "model_revision": REAL_MODEL_REVISION,
                 "tokenizer_revision": REAL_TOKENIZER_REVISION,
+                **_evidence_provenance(reference),
+                "prompt_token_ids": prompt_ids,
                 "topology": {
                     "topology_id": planned.plan.topology_id,
                     "route_generation": planned.plan.generation,
@@ -347,11 +392,36 @@ async def _run_real_remote_expert_product_inference(
                     }
                     for worker in core.registry.workers()
                 ],
+                "worker_pids": {
+                    worker.worker_id: os.getpid() for worker in core.registry.workers()
+                },
+                "expert_assignments": [
+                    placement.model_dump(mode="json") for placement in placements
+                ],
+                "generated_token_ids": [event.token_id for event in generated],
+                "expected_token_ids": expected_tokens,
                 "token_ids": expected_tokens,
+                "bytes_transferred": {
+                    "expert_bytes_transferred": status.expert_bytes_transferred,
+                    "coordinator_activation_bytes": core.runtime_transport_metrics[
+                        "coordinator_activation_bytes"
+                    ],
+                },
+                "critical_path_timings": events[-1].timing_metrics,
                 "timings": events[-1].timing_metrics,
+                "fallback_count": status.expert_fallbacks,
                 "recovery_events": [],
                 "route_generations": [planned.plan.generation],
                 "expert_metrics": generated[0].expert_metrics,
+                "expert_trace": generated[0].expert_trace,
+                "distributed_ownership": [
+                    {
+                        "worker_id": worker.worker_id,
+                        "manifest": str(worker.manifest),
+                        "manifest_sha256": f"sha256:{hashlib.sha256(worker.manifest.read_bytes()).hexdigest()}",
+                    }
+                    for worker in expert_workers
+                ],
             },
         )
     finally:
