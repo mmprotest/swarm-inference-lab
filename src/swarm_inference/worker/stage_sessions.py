@@ -16,6 +16,7 @@ class StageSessionRecord:
     session_id: str
     model_revision: str
     route_generation: int
+    request_generation: int
     stage_id: int
     cache_position: int
     opened_monotonic_ns: int
@@ -46,6 +47,7 @@ class StageSessionRegistry:
         session_id: str,
         model_revision: str,
         route_generation: int,
+        request_generation: int,
         stage_id: int,
     ) -> StageSessionRecord:
         key = (topology_id, session_id)
@@ -65,6 +67,7 @@ class StageSessionRegistry:
                 session_id=session_id,
                 model_revision=model_revision,
                 route_generation=route_generation,
+                request_generation=request_generation,
                 stage_id=stage_id,
                 cache_position=0,
                 opened_monotonic_ns=now,
@@ -80,6 +83,7 @@ class StageSessionRegistry:
         session_id: str,
         model_revision: str,
         route_generation: int,
+        request_generation: int,
         stage_id: int,
         cache_position_start: int | None = None,
     ) -> StageSessionRecord:
@@ -95,6 +99,8 @@ class StageSessionRegistry:
                 raise ValueError("stage session model revision mismatch")
             if record.route_generation != route_generation:
                 raise ValueError("stage session route generation mismatch")
+            if record.request_generation != request_generation:
+                raise ValueError("stage session request generation mismatch")
             if record.stage_id != stage_id:
                 raise ValueError("stage session is bound to another stage")
             if cache_position_start is not None and cache_position_start != record.cache_position:
@@ -170,6 +176,7 @@ class StageSessionRegistry:
                     session_id=record.session_id,
                     model_revision=record.model_revision,
                     route_generation=record.route_generation,
+                    request_generation=record.request_generation,
                     stage_id=record.stage_id,
                     cache_position=record.cache_position,
                     kv_cache_bytes=executor.kv_cache_bytes(record.session_id),

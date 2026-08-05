@@ -76,6 +76,7 @@ def main() -> None:
     parser.add_argument("--memory-limit-bytes", type=int, required=True)
     parser.add_argument("--total-memory-limit-bytes", type=int)
     parser.add_argument("--identity", required=True)
+    parser.add_argument("--trusted-coordinator-fingerprint")
     parser.add_argument("--shutdown-file")
     parser.add_argument("--worker-id", required=True)
     parser.add_argument("--queue-capacity", type=int, default=256)
@@ -104,6 +105,8 @@ def main() -> None:
         not arguments.data_listen or not arguments.data_advertise or not arguments.device
     ):
         parser.error("--stage-runtime requires --data-listen, --data-advertise, and --device")
+    if arguments.stage_runtime and not arguments.trusted_coordinator_fingerprint:
+        parser.error("--stage-runtime requires --trusted-coordinator-fingerprint")
     if not arguments.stage_runtime and any(
         (
             arguments.data_listen,
@@ -235,6 +238,7 @@ def main() -> None:
                 model_cache_dir=arguments.model_cache_dir,
                 allow_model_download=arguments.allow_model_download,
                 max_stage_sessions=arguments.max_stage_sessions,
+                trusted_coordinator_fingerprint=arguments.trusted_coordinator_fingerprint,
             )
         finally:
             if shutdown_watcher is not None:

@@ -25,6 +25,14 @@ class ProductCoordinatorConfig(StrictModel):
     token_ingress_capacity: PositiveInt = 256
     planning_max_sequence_tokens: PositiveInt = 2048
     maximum_active_sessions_per_worker: PositiveInt = 256
+    coordinator_id: str = "coordinator"
+    route_future_tolerance_s: float = Field(default=30.0, ge=0)
+    route_nonce_cache_capacity: PositiveInt = 4096
+    cleanup_timeout_s: float = Field(default=10.0, gt=0)
+    recovery_timeout_s: float = Field(default=120.0, gt=0)
+    maximum_recovery_attempts: PositiveInt = 2
+    trusted_worker_fingerprints: list[str] = Field(default_factory=list)
+    require_trusted_workers: bool = True
 
 
 def load_product_config(path: Path) -> ProductCoordinatorConfig:

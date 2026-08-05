@@ -45,6 +45,7 @@ class PersistentStageWorkerService:
                 read_timeout_s=data_read_timeout_s,
                 write_timeout_s=data_write_timeout_s,
                 idle_timeout_s=data_idle_timeout_s,
+                require_peer_authentication=lambda: stage_runtime.require_authenticated_peers,
             )
             if stage_runtime is not None
             else None

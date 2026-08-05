@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from pathlib import Path
 from typing import Protocol
@@ -14,7 +15,13 @@ from swarm_inference.protocol.product import (
     DeploymentPhase,
     DeploymentStatus,
     DeploymentWorkerStatus,
+    PlanWorkerAssignment,
     ProductStagePlan,
+)
+from swarm_inference.protocol.routes import (
+    RouteLeaseParticipant,
+    SignedRouteLease,
+    sign_route_lease,
 )
 from swarm_inference.protocol.stage_worker import (
     GetStageStatusRequest,
@@ -27,6 +34,22 @@ from swarm_inference.protocol.stage_worker import (
     UnloadStageRequest,
     VerifyStageRouteRequest,
 )
+from swarm_inference.runtime.telemetry import ProductTelemetry
+from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
+
+
+def _atomic_write_text(path: Path, payload: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    try:
+        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
 
 
 class DeploymentTransport(Protocol):
@@ -64,17 +87,25 @@ class DeploymentManager:
         state_directory: Path,
         lease_seconds: float,
         control_timeout_s: float,
+        coordinator_identity: CoordinatorIdentity | None = None,
+        coordinator_id: str = "coordinator",
+        telemetry: ProductTelemetry | None = None,
     ) -> None:
         self.registry = registry
         self.transport = transport
         self.state_directory = state_directory.resolve()
         self.lease_seconds = lease_seconds
         self.control_timeout_s = control_timeout_s
+        self.coordinator_identity = coordinator_identity
+        self.coordinator_id = coordinator_id
+        self.telemetry = telemetry
         self._lock = asyncio.Lock()
         self._reserved_workers: set[str] = set()
         self._deployments: dict[str, DeploymentStatus] = {}
         self._plans: dict[str, ProductStagePlan] = {}
         self._current_topology_id: str | None = None
+        self._publication_destination: str | None = None
+        self._load_persisted_state()
 
     @property
     def reserved_worker_ids(self) -> tuple[str, ...]:
@@ -95,6 +126,16 @@ class DeploymentManager:
             )
         return plan
 
+    @property
+    def current_topology_id(self) -> str | None:
+        return self._current_topology_id
+
+    @property
+    def current_generation(self) -> int | None:
+        if self._current_topology_id is None:
+            return None
+        return self._deployments[self._current_topology_id].generation
+
     def statuses(self, topology_id: str | None = None) -> list[DeploymentStatus]:
         values = list(self._deployments.values())
         if topology_id is not None:
@@ -103,11 +144,92 @@ class DeploymentManager:
 
     def _save(self, status: DeploymentStatus) -> None:
         directory = self.state_directory / "deployments"
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / f"{status.deployment_id}.json").write_text(
+        _atomic_write_text(
+            directory / f"{status.deployment_id}.json",
             status.model_dump_json(indent=2) + "\n",
-            encoding="utf-8",
         )
+
+    def _save_plan(self, plan: ProductStagePlan) -> None:
+        directory = self.state_directory / "plans"
+        _atomic_write_text(
+            directory / f"{plan.plan_id}.json",
+            plan.model_dump_json(indent=2) + "\n",
+        )
+
+    def _load_persisted_state(self) -> None:
+        deployment_directory = self.state_directory / "deployments"
+        plan_directory = self.state_directory / "plans"
+        if not deployment_directory.is_dir() or not plan_directory.is_dir():
+            return
+        plans: dict[str, ProductStagePlan] = {}
+        for path in sorted(plan_directory.glob("*.json")):
+            plan = ProductStagePlan.model_validate_json(path.read_text(encoding="utf-8"))
+            plans[plan.plan_id] = plan
+        for path in sorted(deployment_directory.glob("*.json")):
+            status = DeploymentStatus.model_validate_json(path.read_text(encoding="utf-8"))
+            loaded_plan = plans.get(status.plan_id)
+            if loaded_plan is None:
+                continue
+            # Connections and worker registrations are process-local. Keep the
+            # evidence inspectable, but never advertise a pre-restart route as live.
+            if status.ready:
+                status = status.model_copy(
+                    update={
+                        "ready": False,
+                        "phase": DeploymentPhase.FAILED,
+                        "detail": (
+                            "coordinator restarted; workers must re-register before route recovery"
+                        ),
+                        "updated_monotonic_ns": time.monotonic_ns(),
+                    }
+                )
+            self._deployments[status.topology_id] = status
+            self._plans[status.topology_id] = loaded_plan
+            self._save(status)
+
+    def _signed_route_lease(
+        self,
+        plan: ProductStagePlan,
+        *,
+        lease_expiry_unix_ns: int,
+    ) -> SignedRouteLease | None:
+        identity = self.coordinator_identity
+        if identity is None:
+            return None
+        participants: list[RouteLeaseParticipant] = []
+        for item in plan.assignments:
+            capability = self.registry.capability(item.worker_id)
+            participants.append(
+                RouteLeaseParticipant(
+                    worker_id=item.worker_id,
+                    worker_public_key=capability.public_key,
+                    worker_public_key_fingerprint=public_key_fingerprint(capability.public_key),
+                    control_endpoint=item.control_endpoint,
+                    data_endpoint=item.data_endpoint,
+                    stage_id=item.stage_id,
+                    assignment=item.assignment,
+                    device=item.device,
+                    dtype=plan.model.dtype,
+                )
+            )
+        issued = time.time_ns()
+        unsigned = SignedRouteLease(
+            topology_id=plan.topology_id,
+            route_generation=plan.generation,
+            model_id=plan.model.model_id,
+            model_revision=plan.model.model_revision,
+            tokenizer_revision=plan.model.tokenizer_revision,
+            adapter_id=plan.model.adapter_id,
+            dtype=plan.model.dtype,
+            participants=participants,
+            lease_issued_unix_ns=issued,
+            lease_expiry_unix_ns=lease_expiry_unix_ns,
+            nonce=uuid4().hex,
+            coordinator_identity=self.coordinator_id,
+            coordinator_public_key=identity.public_key_b64,
+            coordinator_public_key_fingerprint=identity.public_key_fingerprint,
+        )
+        return sign_route_lease(unsigned, identity)
 
     def _transition(
         self,
@@ -137,6 +259,7 @@ class DeploymentManager:
         publication_destination: str,
     ) -> DeploymentStatus:
         async with self._lock:
+            self._publication_destination = publication_destination
             existing = self._deployments.get(plan.topology_id)
             existing_plan = self._plans.get(plan.topology_id)
             if (
@@ -178,7 +301,16 @@ class DeploymentManager:
             )
             self._deployments[plan.topology_id] = status
             self._plans[plan.topology_id] = plan
+            self._save_plan(plan)
             self._save(status)
+            if self.telemetry is not None:
+                self.telemetry.emit(
+                    "deployment_started",
+                    deployment_id=status.deployment_id,
+                    topology_id=plan.topology_id,
+                    route_generation=plan.generation,
+                    model_revision=plan.model.model_revision,
+                )
             loaded_stage_ids: set[int] = set()
             installed_stage_ids: set[int] = set()
             try:
@@ -274,6 +406,10 @@ class DeploymentManager:
                     worker_record.load_count = loaded.load_count
 
                 status = self._transition(status, DeploymentPhase.INSTALLING_ROUTES)
+                signed_lease = self._signed_route_lease(
+                    plan,
+                    lease_expiry_unix_ns=lease_expiry,
+                )
                 route_requests: list[InstallStageRouteRequest] = []
                 for index, item in enumerate(plan.assignments):
                     previous = plan.assignments[index - 1] if index > 0 else None
@@ -320,6 +456,7 @@ class DeploymentManager:
                             deadline_unix_ns=(
                                 time.time_ns() + int(self.control_timeout_s * 1_000_000_000)
                             ),
+                            route_lease=signed_lease,
                         )
                     )
                 route_results = await asyncio.gather(
@@ -377,6 +514,19 @@ class DeploymentManager:
                     ready=True,
                 )
                 self._current_topology_id = plan.topology_id
+                if self.telemetry is not None:
+                    self.telemetry.emit(
+                        "deployment_ready",
+                        deployment_id=status.deployment_id,
+                        topology_id=plan.topology_id,
+                        route_generation=plan.generation,
+                    )
+                    self.telemetry.emit(
+                        "route_generation_installed",
+                        topology_id=plan.topology_id,
+                        route_generation=plan.generation,
+                        worker_ids=[item.worker_id for item in plan.assignments],
+                    )
                 return status.model_copy(deep=True)
             except BaseException as exc:
                 status = self._transition(
@@ -399,6 +549,387 @@ class DeploymentManager:
                     detail=detail,
                 )
                 raise RuntimeError(status.detail) from exc
+
+    def _eligible_replacements(
+        self,
+        *,
+        plan: ProductStagePlan,
+        failed: PlanWorkerAssignment,
+        excluded_worker_ids: set[str],
+    ) -> list[PlanWorkerAssignment]:
+        failed_capability = self.registry.capability(failed.worker_id)
+        candidates: list[PlanWorkerAssignment] = []
+        for capability in self.registry.healthy_workers():
+            if capability.worker_id in excluded_worker_ids:
+                continue
+            control_endpoint = capability.control_endpoint or capability.endpoint
+            data_endpoint = capability.data_plane_endpoint
+            same_device = capability.device_identifier == failed.device
+            same_protocol = (
+                capability.stage_ring_protocol_version
+                == failed_capability.stage_ring_protocol_version
+            )
+            adapter_ok = plan.model.adapter_id in capability.supported_model_adapters
+            dtype_ok = plan.model.dtype in {
+                *capability.supported_dtypes,
+                *capability.supported_activation_dtypes,
+            }
+            if (
+                not capability.stage_runtime_enabled
+                or control_endpoint is None
+                or data_endpoint is None
+                or not same_device
+                or not same_protocol
+                or not adapter_ok
+                or not dtype_ok
+                or capability.backend != failed_capability.backend
+                or capability.effective_memory_bytes < failed.required_memory_bytes
+            ):
+                continue
+            candidates.append(
+                failed.model_copy(
+                    update={
+                        "worker_id": capability.worker_id,
+                        "control_endpoint": control_endpoint,
+                        "data_endpoint": data_endpoint,
+                        "device": capability.device_identifier,
+                        "effective_memory_bytes": capability.effective_memory_bytes,
+                    },
+                    deep=True,
+                )
+            )
+        return sorted(
+            candidates,
+            key=lambda item: (
+                self.registry.capability(item.worker_id).active_session_count,
+                self.registry.capability(item.worker_id).current_queue_depth,
+                item.worker_id,
+            ),
+        )
+
+    async def recover(
+        self,
+        *,
+        failed_worker_ids: set[str],
+        publication_destination: str | None = None,
+    ) -> ProductStagePlan:
+        """Replace failed stages, install one newer route, and keep weights resident."""
+
+        async with self._lock:
+            topology_id = self._current_topology_id
+            if topology_id is None:
+                raise RuntimeError("no active topology is available for recovery")
+            status = self._deployments[topology_id]
+            plan = self._plans[topology_id]
+            destination = publication_destination or self._publication_destination
+            if destination is None:
+                raise RuntimeError("coordinator publication endpoint is unavailable")
+            status = self._transition(
+                status,
+                DeploymentPhase.RECOVERING,
+                detail="rebuilding route generation after a stage-ring failure",
+            )
+            selected_assignments = list(plan.assignments)
+            replacement_stage_ids: set[int] = set()
+            excluded = {
+                item.worker_id
+                for item in plan.assignments
+                if item.worker_id not in failed_worker_ids
+            } | set(failed_worker_ids)
+            for item in plan.assignments:
+                if item.worker_id not in failed_worker_ids:
+                    continue
+                candidates = self._eligible_replacements(
+                    plan=plan,
+                    failed=item,
+                    excluded_worker_ids=excluded,
+                )
+                if not candidates:
+                    raise RuntimeError(
+                        f"no exact eligible replacement for stage {item.stage_id} "
+                        f"worker {item.worker_id}"
+                    )
+                replacement = candidates[0]
+                selected_assignments[item.stage_id] = replacement
+                replacement_stage_ids.add(item.stage_id)
+                excluded.add(replacement.worker_id)
+                self._reserved_workers.discard(item.worker_id)
+                self._reserved_workers.add(replacement.worker_id)
+                if self.telemetry is not None:
+                    self.telemetry.emit(
+                        "replacement_selected",
+                        topology_id=plan.topology_id,
+                        failed_worker_id=item.worker_id,
+                        replacement_worker_id=replacement.worker_id,
+                        stage_id=item.stage_id,
+                    )
+
+            generation = plan.generation + 1
+            new_plan = plan.model_copy(
+                update={
+                    "generation": generation,
+                    "assignments": selected_assignments,
+                    "report": plan.report.model_copy(
+                        update={"worker_assignments": selected_assignments},
+                        deep=True,
+                    ),
+                },
+                deep=True,
+            )
+            lease_expiry = time.time_ns() + int(self.lease_seconds * 1_000_000_000)
+            deadline = time.time_ns() + int(self.control_timeout_s * 1_000_000_000)
+            replacement_items = [
+                item for item in new_plan.assignments if item.stage_id in replacement_stage_ids
+            ]
+            try:
+                load_results = await asyncio.wait_for(
+                    asyncio.gather(
+                        *(
+                            self.transport.load_stage(
+                                item.control_endpoint,
+                                LoadStageRequest(
+                                    worker_id=item.worker_id,
+                                    request_id=(
+                                        f"{status.deployment_id}:recover-load:{generation}:"
+                                        f"{item.stage_id}"
+                                    ),
+                                    model_id=new_plan.model.model_id,
+                                    model_revision=new_plan.model.model_revision,
+                                    tokenizer_revision=new_plan.model.tokenizer_revision,
+                                    topology_id=new_plan.topology_id,
+                                    route_generation=generation,
+                                    stage_count=new_plan.stage_count,
+                                    assignment=item.assignment,
+                                    device=item.device,
+                                    dtype=new_plan.model.dtype,
+                                    allow_download=(
+                                        new_plan.model.resolution_policy
+                                        == ModelResolutionPolicy.ALLOW_DOWNLOAD
+                                    ),
+                                    lease_expiry_unix_ns=lease_expiry,
+                                    deadline_unix_ns=deadline,
+                                ),
+                            )
+                            for item in replacement_items
+                        ),
+                        return_exceptions=True,
+                    ),
+                    timeout=self.control_timeout_s,
+                )
+                errors = [
+                    str(result)
+                    for result in load_results
+                    if isinstance(result, BaseException) or not result.accepted
+                ]
+                if errors:
+                    raise RuntimeError("replacement stage load failed: " + "; ".join(errors))
+
+                for item in replacement_items:
+                    worker_status = await asyncio.wait_for(
+                        self.transport.get_stage_status(
+                            item.control_endpoint,
+                            GetStageStatusRequest(
+                                worker_id=item.worker_id,
+                                request_id=(
+                                    f"{status.deployment_id}:recover-verify:{generation}:"
+                                    f"{item.stage_id}"
+                                ),
+                                topology_id=new_plan.topology_id,
+                                deadline_unix_ns=deadline,
+                            ),
+                        ),
+                        timeout=self.control_timeout_s,
+                    )
+                    loaded = worker_status.loaded_stage
+                    if (
+                        loaded is None
+                        or loaded.model_id != new_plan.model.model_id
+                        or loaded.model_revision != new_plan.model.model_revision
+                        or loaded.tokenizer_revision != new_plan.model.tokenizer_revision
+                        or loaded.assignment != item.assignment
+                        or loaded.device != item.device
+                        or loaded.dtype != new_plan.model.dtype
+                    ):
+                        raise RuntimeError(
+                            f"replacement worker {item.worker_id} failed exact load verification"
+                        )
+
+                signed_lease = self._signed_route_lease(
+                    new_plan,
+                    lease_expiry_unix_ns=lease_expiry,
+                )
+                route_requests: list[InstallStageRouteRequest] = []
+                for index, item in enumerate(new_plan.assignments):
+                    previous = new_plan.assignments[index - 1] if index > 0 else None
+                    following = (
+                        new_plan.assignments[index + 1]
+                        if index + 1 < new_plan.stage_count
+                        else None
+                    )
+                    route_requests.append(
+                        InstallStageRouteRequest(
+                            worker_id=item.worker_id,
+                            request_id=(
+                                f"{status.deployment_id}:recover-route:{generation}:{item.stage_id}"
+                            ),
+                            model_id=new_plan.model.model_id,
+                            model_revision=new_plan.model.model_revision,
+                            tokenizer_revision=new_plan.model.tokenizer_revision,
+                            topology_id=new_plan.topology_id,
+                            route_generation=generation,
+                            assignment=item.assignment,
+                            device=item.device,
+                            dtype=new_plan.model.dtype,
+                            previous_stage=(
+                                StageRouteEndpoint(
+                                    worker_id=previous.worker_id,
+                                    stage_id=previous.stage_id,
+                                    data_endpoint=previous.data_endpoint,
+                                    assignment=previous.assignment,
+                                )
+                                if previous is not None
+                                else None
+                            ),
+                            next_stage=(
+                                StageRouteEndpoint(
+                                    worker_id=following.worker_id,
+                                    stage_id=following.stage_id,
+                                    data_endpoint=following.data_endpoint,
+                                    assignment=following.assignment,
+                                )
+                                if following is not None
+                                else None
+                            ),
+                            stage_count=new_plan.stage_count,
+                            stage_zero_publication_destination=(
+                                destination if item.stage_id == 0 else None
+                            ),
+                            lease_expiry_unix_ns=lease_expiry,
+                            deadline_unix_ns=deadline,
+                            replace=True,
+                            route_lease=signed_lease,
+                        )
+                    )
+                route_results = await asyncio.wait_for(
+                    asyncio.gather(
+                        *(
+                            self.transport.install_stage_route(item.control_endpoint, request)
+                            for item, request in zip(
+                                new_plan.assignments,
+                                route_requests,
+                                strict=True,
+                            )
+                        ),
+                        return_exceptions=True,
+                    ),
+                    timeout=self.control_timeout_s,
+                )
+                route_errors = [
+                    str(result)
+                    for result in route_results
+                    if isinstance(result, BaseException) or not result.accepted
+                ]
+                if route_errors:
+                    raise RuntimeError(
+                        "replacement route installation failed: " + "; ".join(route_errors)
+                    )
+                for item in reversed(new_plan.assignments):
+                    result = await asyncio.wait_for(
+                        self.transport.verify_stage_route(
+                            item.control_endpoint,
+                            VerifyStageRouteRequest(
+                                worker_id=item.worker_id,
+                                request_id=(
+                                    f"{status.deployment_id}:recover-peer:{generation}:"
+                                    f"{item.stage_id}"
+                                ),
+                                model_id=new_plan.model.model_id,
+                                model_revision=new_plan.model.model_revision,
+                                tokenizer_revision=new_plan.model.tokenizer_revision,
+                                topology_id=new_plan.topology_id,
+                                route_generation=generation,
+                                stage_id=item.stage_id,
+                                device=item.device,
+                                dtype=new_plan.model.dtype,
+                                deadline_unix_ns=deadline,
+                            ),
+                        ),
+                        timeout=self.control_timeout_s,
+                    )
+                    if not result.accepted:
+                        raise RuntimeError(
+                            f"replacement route peer verification failed at stage "
+                            f"{item.stage_id}: {result.detail}"
+                        )
+            except asyncio.CancelledError:
+                # Request cancellation owns session cleanup.  Do not roll back the
+                # deployment here: loaded stages are shared product resources and
+                # must remain resident when one request is cancelled.
+                raise
+            except BaseException as exc:
+                all_stage_ids = {item.stage_id for item in new_plan.assignments}
+                rollback_errors = await self._rollback(
+                    new_plan,
+                    status,
+                    loaded_stage_ids=all_stage_ids,
+                    installed_stage_ids=all_stage_ids,
+                )
+                for item in [*plan.assignments, *new_plan.assignments]:
+                    self._reserved_workers.discard(item.worker_id)
+                self._current_topology_id = None
+                detail = f"route recovery failed: {type(exc).__name__}: {exc}"
+                if rollback_errors:
+                    detail += "; bounded cleanup incomplete: " + "; ".join(rollback_errors)
+                self._transition(
+                    status,
+                    DeploymentPhase.FAILED,
+                    detail=detail,
+                )
+                raise
+
+            workers = [
+                DeploymentWorkerStatus(
+                    worker_id=item.worker_id,
+                    stage_id=item.stage_id,
+                    control_endpoint=item.control_endpoint,
+                    data_endpoint=item.data_endpoint,
+                    reserved=True,
+                    loaded=True,
+                    ownership_verified=True,
+                    route_installed=True,
+                    peer_verified=True,
+                    detail=(
+                        "replacement loaded and verified"
+                        if item.stage_id in replacement_stage_ids
+                        else "resident stage reused for newer route generation"
+                    ),
+                )
+                for item in new_plan.assignments
+            ]
+            status = status.model_copy(
+                update={
+                    "generation": generation,
+                    "workers": workers,
+                    "updated_monotonic_ns": time.monotonic_ns(),
+                },
+                deep=True,
+            )
+            self._plans[topology_id] = new_plan
+            self._save_plan(new_plan)
+            status = self._transition(
+                status,
+                DeploymentPhase.READY,
+                detail="replacement topology installed and peer-verified",
+                ready=True,
+            )
+            if self.telemetry is not None:
+                self.telemetry.emit(
+                    "route_generation_installed",
+                    topology_id=new_plan.topology_id,
+                    route_generation=new_plan.generation,
+                    worker_ids=[item.worker_id for item in new_plan.assignments],
+                )
+            return new_plan.model_copy(deep=True)
 
     async def _rollback(
         self,
@@ -566,6 +1097,15 @@ class DeploymentManager:
         )
         if self._current_topology_id == status.topology_id:
             self._current_topology_id = None
+        if self.telemetry is not None:
+            for item in plan.assignments:
+                self.telemetry.emit(
+                    "stage_unloaded",
+                    topology_id=plan.topology_id,
+                    route_generation=plan.generation,
+                    worker_id=item.worker_id,
+                    stage_id=item.stage_id,
+                )
         return status.model_copy(deep=True)
 
 

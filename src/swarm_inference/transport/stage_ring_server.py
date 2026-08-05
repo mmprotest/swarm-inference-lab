@@ -80,6 +80,7 @@ class StageRingServer:
         read_timeout_s: float = 30.0,
         write_timeout_s: float = 30.0,
         idle_timeout_s: float = 120.0,
+        require_peer_authentication: bool | Callable[[], bool] = False,
     ) -> None:
         if min(queue_capacity, dispatch_workers, maximum_connections) <= 0:
             raise ValueError("stage-ring server bounds must be positive")
@@ -98,6 +99,7 @@ class StageRingServer:
         self.read_timeout_s = read_timeout_s
         self.write_timeout_s = write_timeout_s
         self.idle_timeout_s = idle_timeout_s
+        self.require_peer_authentication = require_peer_authentication
         self.metrics = StageRingServerMetrics()
         self._queue: asyncio.Queue[_InboundFrame] = asyncio.Queue(maxsize=queue_capacity)
         self._workers: list[asyncio.Task[None]] = []
@@ -166,6 +168,7 @@ class StageRingServer:
         self.metrics.connections_accepted += 1
         self.metrics.active_connections += 1
         frames_on_connection = 0
+        connection_role: str | None = None
         try:
             while True:
                 try:
@@ -190,6 +193,38 @@ class StageRingServer:
                         self.metrics.malformed_frames += 1
                     break
                 self.metrics.frames_received += 1
+                peer_handshake = False
+                authentication_required = (
+                    self.require_peer_authentication()
+                    if callable(self.require_peer_authentication)
+                    else self.require_peer_authentication
+                )
+                if authentication_required:
+                    if connection_role is None:
+                        if message.source_stage == -1:
+                            connection_role = "coordinator"
+                        elif message.operation == Operation.HELLO and isinstance(
+                            message.attributes.get("peer_handshake"), dict
+                        ):
+                            peer_handshake = True
+                        else:
+                            self.metrics.malformed_frames += 1
+                            response = _error_response(
+                                message,
+                                "authenticated peer handshake required before stage frames",
+                            )
+                            await write_stage_message(
+                                writer,
+                                response,
+                                write_timeout_s=self.write_timeout_s,
+                            )
+                            self.metrics.frames_sent += 1
+                            break
+                    elif (connection_role == "coordinator" and message.source_stage != -1) or (
+                        connection_role == "peer" and message.source_stage < 0
+                    ):
+                        self.metrics.malformed_frames += 1
+                        break
                 if frames_on_connection:
                     self.metrics.reused_frames += 1
                 frames_on_connection += 1
@@ -208,6 +243,10 @@ class StageRingServer:
                     write_timeout_s=self.write_timeout_s,
                 )
                 self.metrics.frames_sent += 1
+                if peer_handshake:
+                    if response.operation != Operation.HELLO or response.status != "OK":
+                        break
+                    connection_role = "peer"
         except (ConnectionError, OSError, TimeoutError):
             pass
         finally:

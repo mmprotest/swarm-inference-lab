@@ -83,3 +83,30 @@ def test_product_commands_do_not_import_or_name_experiment_011_controller() -> N
         if "StageRingController" in source or "experiments.experiment_011" in source:
             violations.append(path.relative_to(SOURCE_ROOT).as_posix())
     assert not violations, f"product paths depend on Experiment 011: {violations}"
+
+
+def test_product_telemetry_and_worker_lifecycle_have_no_experiment_imports() -> None:
+    protected_roots = [
+        SOURCE_ROOT / "swarm_inference" / "runtime",
+        SOURCE_ROOT / "swarm_inference" / "worker",
+    ]
+    violations: list[str] = []
+    for root in protected_roots:
+        for path in root.rglob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    modules = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    modules = [_resolve_from_import(path, node)]
+                else:
+                    continue
+                if any(
+                    module == "swarm_inference.experiments"
+                    or module.startswith("swarm_inference.experiments.")
+                    for module in modules
+                ):
+                    violations.append(path.relative_to(SOURCE_ROOT).as_posix())
+    assert not violations, (
+        f"product telemetry or worker lifecycle imports experiments: {violations}"
+    )

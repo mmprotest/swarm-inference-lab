@@ -5,10 +5,11 @@ from __future__ import annotations
 import asyncio
 import socket
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import asdict, dataclass
 
-from swarm_inference.exceptions import BackpressureError, TransportError
+from swarm_inference.exceptions import BackpressureError, IntegrityError, TransportError
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.protocol.stage_ring import (
     HEADER,
@@ -20,6 +21,9 @@ from swarm_inference.protocol.stage_ring import (
     encode_message,
     inspect_frame_header,
 )
+
+HandshakeFactory = Callable[[str], StageMessage | None]
+HandshakeVerifier = Callable[[StageMessage, StageMessage], None]
 
 
 async def read_stage_message(
@@ -100,6 +104,8 @@ class _StageRingConnection:
         maximum_metadata_bytes: int,
         maximum_payload_bytes: int,
         metrics: StageRingConnectionMetrics,
+        handshake_factory: HandshakeFactory | None,
+        handshake_verifier: HandshakeVerifier | None,
     ) -> None:
         host, port = split_endpoint(endpoint)
         if is_wildcard_host(host) or port == 0:
@@ -113,6 +119,8 @@ class _StageRingConnection:
         self.maximum_metadata_bytes = maximum_metadata_bytes
         self.maximum_payload_bytes = maximum_payload_bytes
         self.metrics = metrics
+        self.handshake_factory = handshake_factory
+        self.handshake_verifier = handshake_verifier
         self._queue: asyncio.Queue[_OutboundFrame] = asyncio.Queue(maxsize=queue_capacity)
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
@@ -150,6 +158,27 @@ class _StageRingConnection:
         self.metrics.connections_created += 1
         self._reader = reader
         self._writer = writer
+        if self.handshake_factory is not None:
+            request = self.handshake_factory(self.endpoint)
+            if request is not None:
+                encoded = await write_stage_message(
+                    writer,
+                    request,
+                    write_timeout_s=self.write_timeout_s,
+                )
+                response = await read_stage_message(
+                    reader,
+                    read_timeout_s=self.read_timeout_s,
+                    maximum_metadata_bytes=self.maximum_metadata_bytes,
+                    maximum_payload_bytes=self.maximum_payload_bytes,
+                )
+                if self.handshake_verifier is None:
+                    raise TransportError("stage-ring peer handshake verifier is missing")
+                self.handshake_verifier(request, response)
+                self.metrics.messages_sent += 1
+                self.metrics.messages_received += 1
+                self.metrics.wire_bytes_sent += encoded.wire_bytes
+                self.metrics.payload_bytes_sent += encoded.payload_bytes
 
     async def _disconnect(self) -> None:
         writer = self._writer
@@ -194,6 +223,7 @@ class _StageRingConnection:
                 OSError,
                 TimeoutError,
                 ValueError,
+                IntegrityError,
                 asyncio.IncompleteReadError,
             ) as exc:
                 self.metrics.failures += 1
@@ -236,6 +266,8 @@ class StageRingConnectionPool:
         maximum_metadata_bytes: int = MAX_METADATA_BYTES,
         maximum_payload_bytes: int = MAX_PAYLOAD_BYTES,
         reconnect_attempts: int = 2,
+        handshake_factory: HandshakeFactory | None = None,
+        handshake_verifier: HandshakeVerifier | None = None,
     ) -> None:
         if queue_capacity <= 0 or reconnect_attempts <= 0:
             raise ValueError("stage-ring queue capacity and reconnect attempts must be positive")
@@ -252,6 +284,12 @@ class StageRingConnectionPool:
         self.maximum_metadata_bytes = maximum_metadata_bytes
         self.maximum_payload_bytes = maximum_payload_bytes
         self.reconnect_attempts = reconnect_attempts
+        if (handshake_factory is None) != (handshake_verifier is None):
+            raise ValueError(
+                "stage-ring handshake factory and verifier must be configured together"
+            )
+        self.handshake_factory = handshake_factory
+        self.handshake_verifier = handshake_verifier
         self.metrics = StageRingConnectionMetrics()
         self._connections: dict[str, _StageRingConnection] = {}
         self._closed = False
@@ -270,6 +308,8 @@ class StageRingConnectionPool:
                 maximum_metadata_bytes=self.maximum_metadata_bytes,
                 maximum_payload_bytes=self.maximum_payload_bytes,
                 metrics=self.metrics,
+                handshake_factory=self.handshake_factory,
+                handshake_verifier=self.handshake_verifier,
             )
             self._connections[endpoint] = connection
         return connection
@@ -325,6 +365,8 @@ class StageRingConnectionPool:
 
 
 __all__ = [
+    "HandshakeFactory",
+    "HandshakeVerifier",
     "StageRingConnectionMetrics",
     "StageRingConnectionPool",
     "read_stage_message",

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, PositiveInt, model_validator
 
@@ -14,6 +14,7 @@ from swarm_inference.model.product import (
     ProductModelReference,
     ProductModelSpec,
 )
+from swarm_inference.protocol.stage_worker import LoadedStageStatus
 
 
 class WorkerModelProbeRequest(StrictModel):
@@ -153,6 +154,7 @@ class DeploymentPhase(StrEnum):
     INSTALLING_ROUTES = "installing-routes"
     VERIFYING_PEERS = "verifying-peers"
     READY = "ready"
+    RECOVERING = "recovering"
     ROLLING_BACK = "rolling-back"
     FAILED = "failed"
     UNLOADING = "unloading"
@@ -219,6 +221,14 @@ class WorkerProductStatus(StrictModel):
     capability: WorkerCapability
     healthy_registration: bool
     heartbeat_age_s: float = Field(ge=0)
+    last_heartbeat_unix_ns: int | None = Field(default=None, gt=0)
+    control_endpoint: str | None = None
+    data_endpoint: str | None = None
+    loaded_stages: list[LoadedStageStatus] = Field(default_factory=list)
+    active_sessions: int = Field(default=0, ge=0)
+    queue_depths: dict[str, int] = Field(default_factory=dict)
+    memory_bytes: dict[str, int] = Field(default_factory=dict)
+    last_error: str | None = None
     detail: str = ""
 
 
@@ -237,9 +247,131 @@ class ProductTokenPublication(StrictModel):
     token_id: int = Field(ge=0)
     decoded_text_fragment: str = ""
     published_monotonic_ns: PositiveInt
+    request_generation: PositiveInt = 1
+    replay_only: bool = False
+    signature: str = ""
+
+
+class ProductRequestPhase(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    RECOVERING = "recovering"
+    RECOVERABLE = "recoverable"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class ProductRequestRecoveryState(StrictModel):
+    """Durable coordinator-owned state sufficient for exact full replay."""
+
+    request_id: str
+    request_generation: PositiveInt = 1
+    session_id: str
+    model_id: str
+    model_revision: str
+    tokenizer_revision: str
+    topology_id: str
+    route_generation: PositiveInt
+    prompt_token_ids: list[int]
+    accepted_generated_token_ids: list[int] = Field(default_factory=list)
+    next_token_position: int = Field(ge=0)
+    sampling_policy: Literal["greedy"] = "greedy"
+    active_workers: list[str]
+    stage_assignments: list[PlanWorkerAssignment]
+    recovery_count: int = Field(default=0, ge=0)
+    last_healthy_checkpoint: int = Field(default=0, ge=0)
+    status: ProductRequestPhase
+    last_error: str | None = None
+    started_unix_ns: PositiveInt
+    updated_unix_ns: PositiveInt
+
+    @model_validator(mode="after")
+    def validate_replay_position(self) -> ProductRequestRecoveryState:
+        if self.next_token_position != len(self.accepted_generated_token_ids):
+            raise ValueError("next token position must equal the accepted token count")
+        if self.last_healthy_checkpoint > self.next_token_position:
+            raise ValueError("last healthy checkpoint is beyond accepted history")
+        if self.active_workers != [item.worker_id for item in self.stage_assignments]:
+            raise ValueError("active worker list must match ordered stage assignments")
+        return self
+
+
+class CoordinatorStatusRequest(StrictModel):
+    pass
+
+
+class CoordinatorStatusResponse(StrictModel):
+    coordinator_identity: str
+    coordinator_public_key_fingerprint: str
+    uptime_s: float = Field(ge=0)
+    state_directory: str
+    registered_worker_count: int = Field(ge=0)
+    healthy_worker_count: int = Field(ge=0)
+    known_deployments: int = Field(ge=0)
+    active_topology_id: str | None = None
+    route_generation: int | None = Field(default=None, ge=1)
+    active_session_count: int = Field(ge=0)
+    generated_tokens: int = Field(ge=0)
+    throughput_tokens_s: float = Field(ge=0)
+    time_to_first_token_s: float | None = Field(default=None, ge=0)
+    inter_token_latency_s: float | None = Field(default=None, ge=0)
+    recovery_count: int = Field(ge=0)
+    recovering_requests: int = Field(ge=0)
+    queue_depths: dict[str, int] = Field(default_factory=dict)
+    memory_bytes: dict[str, int] = Field(default_factory=dict)
+    reservations: dict[str, Any] = Field(default_factory=dict)
+    last_error: str | None = None
+
+
+class SessionsRequest(StrictModel):
+    include_terminal: bool = False
+
+
+class ProductSessionStatus(StrictModel):
+    request_id: str
+    request_generation: PositiveInt
+    session_id: str
+    model_id: str
+    model_revision: str
+    tokenizer_revision: str
+    topology_id: str
+    route_generation: PositiveInt
+    status: ProductRequestPhase
+    token_position: int = Field(ge=0)
+    accepted_token_ids: list[int] = Field(default_factory=list)
+    active_workers: list[str] = Field(default_factory=list)
+    kv_cache_bytes: int = Field(default=0, ge=0)
+    queue_depth: int = Field(default=0, ge=0)
+    recovery_count: int = Field(default=0, ge=0)
+    last_healthy_checkpoint: int = Field(default=0, ge=0)
+    time_to_first_token_s: float | None = Field(default=None, ge=0)
+    inter_token_latency_s: float | None = Field(default=None, ge=0)
+    last_error: str | None = None
+
+
+class SessionsResponse(StrictModel):
+    sessions: list[ProductSessionStatus]
+
+
+class CancelProductRequest(StrictModel):
+    request_id: str
+
+
+class CancelProductResponse(StrictModel):
+    request_id: str
+    accepted: bool
+    idempotent: bool = False
+    status: ProductRequestPhase
+    released_kv_bytes: int = Field(default=0, ge=0)
+    detail: str = ""
 
 
 __all__ = [
+    "CancelProductRequest",
+    "CancelProductResponse",
+    "CoordinatorStatusRequest",
+    "CoordinatorStatusResponse",
     "DeploymentPhase",
     "DeploymentStatus",
     "DeploymentWorkerStatus",
@@ -253,8 +385,13 @@ __all__ = [
     "ModelUnloadResponse",
     "PlanCandidateReport",
     "PlanWorkerAssignment",
+    "ProductRequestPhase",
+    "ProductRequestRecoveryState",
+    "ProductSessionStatus",
     "ProductStagePlan",
     "ProductTokenPublication",
+    "SessionsRequest",
+    "SessionsResponse",
     "StagePlanReport",
     "TopologyStatusRequest",
     "TopologyStatusResponse",

@@ -202,6 +202,7 @@ single-host correctness - not a working global inference network.
 
 - [Architecture](docs/architecture.md)
 - [Protocol](docs/protocol.md)
+- [Product runtime operations](docs/product-runtime.md)
 - [Experiment design](docs/experiments.md)
 - [Known limitations](docs/limitations.md)
 
@@ -211,11 +212,14 @@ is under [`artifacts`](artifacts).
 
 ## Security boundary
 
-Do not expose the initial insecure gRPC channel to the public Internet or send
-sensitive prompts to untrusted workers. Workers can inspect their input
-activations and cache state. Signatures and duplicate audits do not provide
-channel confidentiality, prompt privacy, activation privacy, Byzantine fault
-tolerance, collusion resistance, or cryptographic proof of neural computation.
+Do not expose the runtime to the public Internet or send sensitive prompts to
+untrusted workers. Product routes and direct stage peers authenticate each
+other with Ed25519 identities, but stage-ring traffic is not encrypted. The
+supported boundary is a trusted LAN or private network. Workers can inspect
+their input activations and cache state. Signatures and duplicate audits do not
+provide channel confidentiality, prompt privacy, activation privacy, Byzantine
+fault tolerance, collusion resistance, or cryptographic proof of neural
+computation.
 
 ## License
 

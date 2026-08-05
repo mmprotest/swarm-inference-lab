@@ -11,9 +11,15 @@
 - Slow devices may have zero or negligible useful contribution and can remain
   idle.
 - Single-request speed can decline while aggregate throughput rises.
-- The current coordinator-relayed data path adds traffic and latency.
+- Legacy execution paths still relay activations through the coordinator. The
+  OLMoE product stage ring sends intermediate activations directly between
+  workers.
 - Channel confidentiality is not implemented by the initial insecure gRPC
   deployment; envelope signatures do not provide privacy.
+- Product route leases and stage-ring peer handshakes authenticate
+  participation, but product stage-ring TCP payloads are not encrypted. The
+  supported deployment boundary is a trusted LAN or private network; untrusted
+  Internet participation remains unsupported.
 - Microbatch grouping is intentionally conservative and does not yet implement
   every backend-specific cache layout.
 - `Qwen/Qwen3-0.6B` correctness has been validated in native Windows CPU and

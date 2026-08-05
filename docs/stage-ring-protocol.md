@@ -125,13 +125,37 @@ activation transport, uses a big-endian header-length prefix, and carries NumPy
 array metadata inside that envelope. Neither codec is a fallback for the other,
 and their magic values, headers, and metadata contracts must not be mixed.
 
+## Route and peer authentication
+
+Before a product worker installs a route, it verifies a finite-lived route
+lease signed by the coordinator's persistent Ed25519 identity. The worker must
+be configured with that coordinator key's SHA-256 fingerprint. The signed
+lease binds the topology and route generation, exact model and tokenizer
+revisions, adapter and dtype, ordered stage assignments, worker IDs and public
+key fingerprints, control and data endpoints, issue and expiry times, and a
+random nonce. Workers reject missing or invalid signatures, unknown
+coordinators, expired or excessively future-dated leases, reused nonces, stale
+generations, and any local identity, endpoint, model, tokenizer, dtype, or
+assignment mismatch.
+
+Each direct worker connection begins with a signed `HELLO` handshake. It binds
+both stage identities, worker identity and public-key fingerprint, topology,
+route generation, model revision, timestamp, one-time nonce, and the hash of
+the installed coordinator-signed lease. Both peers check the other against the
+installed route before accepting execution frames. A bounded nonce cache,
+strict per-session sequence numbers, request generations, route generations,
+and lease expiry reject replayed or stale participation. Frames from an older
+route generation are rejected after recovery.
+
 ## Security boundary
 
-Version 1 provides framing, strict semantic validation, ordering checks, and
-accidental-corruption detection. SHA-256 here is an unkeyed integrity checksum;
-it does not authenticate a peer or prevent deliberate modification by an
-attacker who can rewrite the stream. This protocol version does not provide
-authentication, authorization, encryption, replay protection across fresh
-validator state, or TLS. Deployments must place the connection inside an
-appropriate trusted or externally secured transport boundary. Those controls
-are intentionally outside this pull request.
+Routes and direct peers are authenticated. Payload confidentiality is **not**
+provided: version 1 is plain TCP, without TLS or application-layer encryption.
+The supported boundary is a trusted LAN or private network. Operation across
+the untrusted public Internet is unsupported, and prompts, activations, and KV
+state must not be treated as private from participating workers.
+
+The frame SHA-256 value remains only an unkeyed accidental-corruption check.
+It is not malicious tamper resistance and must not be described as one. Peer
+signatures authenticate the connection setup and route participation; they do
+not encrypt subsequent tensor payloads.

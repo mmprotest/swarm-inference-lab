@@ -9,8 +9,10 @@ import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar, cast
+from uuid import uuid4
 
 import grpc
 import numpy as np
@@ -37,6 +39,7 @@ from swarm_inference.config.models import (
 )
 from swarm_inference.config.product import ProductCoordinatorConfig
 from swarm_inference.coordinator.deployment import DeploymentManager
+from swarm_inference.coordinator.durable_state import DurableCoordinatorState
 from swarm_inference.coordinator.model_catalog import ProductModelCatalog
 from swarm_inference.coordinator.placement import estimate_worker_stage_rate
 from swarm_inference.coordinator.registry import WorkerRegistry
@@ -78,6 +81,11 @@ from swarm_inference.protocol.messages import (
     serialize_message,
 )
 from swarm_inference.protocol.product import (
+    CancelProductRequest,
+    CancelProductResponse,
+    CoordinatorStatusRequest,
+    CoordinatorStatusResponse,
+    DeploymentPhase,
     ModelDeployRequest,
     ModelDeployResponse,
     ModelInspectRequest,
@@ -86,7 +94,10 @@ from swarm_inference.protocol.product import (
     ModelPlanResponse,
     ModelUnloadRequest,
     ModelUnloadResponse,
+    ProductRequestPhase,
     ProductTokenPublication,
+    SessionsRequest,
+    SessionsResponse,
     TopologyStatusRequest,
     TopologyStatusResponse,
     WorkerProductStatus,
@@ -94,12 +105,16 @@ from swarm_inference.protocol.product import (
     WorkersResponse,
 )
 from swarm_inference.protocol.routes import (
+    BoundedNonceCache,
     encode_route_key,
     sign_data_envelope,
     sign_route_plan,
     verify_final_result,
 )
+from swarm_inference.protocol.stage_worker import GetStageStatusRequest
 from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tensor, encode_tensor
+from swarm_inference.runtime.telemetry import ProductTelemetry
+from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
 from swarm_inference.simulation.model import build_synthetic_stages
 from swarm_inference.transport.base import ActivationTransport
@@ -189,6 +204,17 @@ class CoordinatorCore:
         self.product_mode = product_config is not None
         self.config = config or _product_compatibility_config()
         self.state_directory = Path(state_directory or ".swarm/coordinator").resolve()
+        self.started_monotonic_s = time.monotonic()
+        self.started_unix_ns = time.time_ns()
+        self.durable_state: DurableCoordinatorState | None = None
+        self.coordinator_identity: CoordinatorIdentity | None = None
+        self.product_telemetry: ProductTelemetry | None = None
+        self._last_heartbeat_sequences: dict[str, int] = {}
+        self._registration_nonce_cache = BoundedNonceCache(
+            capacity=(
+                product_config.route_nonce_cache_capacity if product_config is not None else 4096
+            )
+        )
         self.registry = registry or WorkerRegistry(
             heartbeat_timeout_s=(
                 product_config.worker_heartbeat_timeout_s if product_config is not None else 15.0
@@ -244,6 +270,44 @@ class CoordinatorCore:
         self.deployment_manager: DeploymentManager | None = None
         self.session_controller: ProductSessionController | None = None
         if product_config is not None:
+            self.durable_state = DurableCoordinatorState(self.state_directory)
+            self.coordinator_identity = CoordinatorIdentity.load_or_create(
+                self.durable_state.identity_path
+            )
+            persisted_metadata = self.durable_state.load_metadata()
+            if persisted_metadata:
+                expected_metadata = {
+                    "schema_version": 1,
+                    "coordinator_identity": product_config.coordinator_id,
+                    "coordinator_public_key": self.coordinator_identity.public_key_b64,
+                    "coordinator_public_key_fingerprint": (
+                        self.coordinator_identity.public_key_fingerprint
+                    ),
+                }
+                mismatched = [
+                    key
+                    for key, expected in expected_metadata.items()
+                    if persisted_metadata.get(key) != expected
+                ]
+                if mismatched:
+                    raise IntegrityError(
+                        "durable coordinator metadata does not match the configured "
+                        "identity: " + ", ".join(sorted(mismatched))
+                    )
+            self.product_telemetry = ProductTelemetry(self.state_directory / "product-events.jsonl")
+            self.durable_state.mark_restart_boundaries()
+            self.durable_state.save_metadata(
+                {
+                    "schema_version": 1,
+                    "coordinator_identity": product_config.coordinator_id,
+                    "coordinator_public_key": self.coordinator_identity.public_key_b64,
+                    "coordinator_public_key_fingerprint": (
+                        self.coordinator_identity.public_key_fingerprint
+                    ),
+                    "last_started_unix_ns": self.started_unix_ns,
+                    "state_directory": str(self.state_directory),
+                }
+            )
             product_transport = cast(Any, self.transport)
             self.product_catalog = ProductModelCatalog(
                 registry=self.registry,
@@ -259,6 +323,9 @@ class CoordinatorCore:
                 state_directory=self.state_directory,
                 lease_seconds=product_config.deployment_lease_seconds,
                 control_timeout_s=product_config.control_timeout_s,
+                coordinator_identity=self.coordinator_identity,
+                coordinator_id=product_config.coordinator_id,
+                telemetry=self.product_telemetry,
             )
             self.session_controller = ProductSessionController(
                 deployments=self.deployment_manager,
@@ -266,6 +333,11 @@ class CoordinatorCore:
                 event_queue_capacity=product_config.event_queue_capacity,
                 request_timeout_s=product_config.request_timeout_s,
                 data_queue_capacity=product_config.token_ingress_capacity,
+                state=self.durable_state,
+                telemetry=self.product_telemetry,
+                cleanup_timeout_s=product_config.cleanup_timeout_s,
+                recovery_timeout_s=product_config.recovery_timeout_s,
+                maximum_recovery_attempts=product_config.maximum_recovery_attempts,
             )
 
     @staticmethod
@@ -344,7 +416,18 @@ class CoordinatorCore:
             signed_payload,
             request.signature,
         )
+        fingerprint = public_key_fingerprint(request.capability.public_key)
+        if self.product_config is not None:
+            trusted = set(self.product_config.trusted_worker_fingerprints)
+            if self.product_config.require_trusted_workers and fingerprint not in trusted:
+                raise IntegrityError(
+                    f"worker {request.capability.worker_id} identity is not trusted"
+                )
+            self._registration_nonce_cache.add(request.benchmark_nonce)
+            assert self.durable_state is not None
+            self.durable_state.save_worker(request.capability)
         self.registry.register(request.capability, benchmark_verified=True)
+        self._last_heartbeat_sequences.pop(request.capability.worker_id, None)
         self.events.append(
             {
                 "event_type": "worker_registered",
@@ -354,9 +437,36 @@ class CoordinatorCore:
                 "timestamp_monotonic_ns": time.monotonic_ns(),
             }
         )
+        if self.product_telemetry is not None:
+            self.product_telemetry.emit(
+                "worker_registered",
+                worker_id=request.capability.worker_id,
+                worker_public_key_fingerprint=fingerprint,
+                control_endpoint=(
+                    request.capability.control_endpoint or request.capability.endpoint
+                ),
+                data_endpoint=request.capability.data_plane_endpoint,
+            )
+            if self.durable_state is not None:
+                self.durable_state.append_audit_event(
+                    "worker_registered",
+                    worker_id=request.capability.worker_id,
+                    worker_public_key_fingerprint=fingerprint,
+                )
         if not self.product_mode:
             await self.rebalance()
-        return RegistrationResponse(accepted=True, heartbeat_interval_s=2.0)
+        identity = self.coordinator_identity
+        return RegistrationResponse(
+            accepted=True,
+            heartbeat_interval_s=2.0,
+            coordinator_identity=(
+                self.product_config.coordinator_id if self.product_config is not None else None
+            ),
+            coordinator_public_key=(identity.public_key_b64 if identity is not None else None),
+            coordinator_public_key_fingerprint=(
+                identity.public_key_fingerprint if identity is not None else None
+            ),
+        )
 
     def remove_worker(self, worker_id: str) -> None:
         """Remove an exited process so a cached-cold replacement can own its stage."""
@@ -387,11 +497,31 @@ class CoordinatorCore:
             }
         )
         verify_signature(capability.public_key, signed_payload, request.signature)
+        previous = self._last_heartbeat_sequences.get(request.worker_id)
+        if previous is not None and request.monotonic_ns <= previous:
+            raise IntegrityError("stale or replayed worker heartbeat")
+        now_utc = datetime.now(UTC)
+        age_s = (now_utc - request.timestamp).total_seconds()
+        future_tolerance = (
+            self.product_config.route_future_tolerance_s
+            if self.product_config is not None
+            else 30.0
+        )
+        if age_s < -future_tolerance:
+            raise IntegrityError("worker heartbeat is future-dated outside tolerance")
+        maximum_age = (
+            self.product_config.worker_heartbeat_timeout_s * 2
+            if self.product_config is not None
+            else 30.0
+        )
+        if age_s > maximum_age:
+            raise IntegrityError("worker heartbeat is stale")
         self.registry.heartbeat(
             request.worker_id,
             queue_depth=request.queue_depth,
             assignments=request.assignments,
         )
+        self._last_heartbeat_sequences[request.worker_id] = request.monotonic_ns
         return Ack(accepted=True, detail="heartbeat recorded")
 
     def _require_product(
@@ -481,19 +611,170 @@ class CoordinatorCore:
     async def product_workers(self, request: WorkersRequest) -> WorkersResponse:
         self._require_product()
         statuses: list[WorkerProductStatus] = []
-        for capability in sorted(self.registry.workers(), key=lambda item: item.worker_id):
+
+        async def inspect_worker(capability: Any) -> WorkerProductStatus | None:
             healthy, age = self.registry.registration_health(capability.worker_id)
             if not request.include_unhealthy and not healthy:
-                continue
-            statuses.append(
-                WorkerProductStatus(
-                    capability=capability,
-                    healthy_registration=healthy,
-                    heartbeat_age_s=age,
-                    detail="healthy" if healthy else "heartbeat expired",
-                )
+                return None
+            loaded_stages = []
+            active_sessions = capability.active_session_count
+            queue_depths = {"worker": capability.current_queue_depth}
+            memory_bytes = {
+                "effective": capability.effective_memory_bytes,
+                "available_ram": capability.available_ram_bytes,
+                "available_vram": capability.available_vram_bytes,
+            }
+            last_error = None
+            control_endpoint = capability.control_endpoint or capability.endpoint
+            if capability.stage_runtime_enabled and control_endpoint is not None:
+                try:
+                    worker_status = await cast(Any, self.transport).get_stage_status(
+                        control_endpoint,
+                        GetStageStatusRequest(
+                            worker_id=capability.worker_id,
+                            request_id=f"workers-status:{capability.worker_id}:{uuid4().hex}",
+                        ),
+                    )
+                    if worker_status.loaded_stage is not None:
+                        loaded_stages.append(worker_status.loaded_stage)
+                    active_sessions = len(worker_status.sessions)
+                    queue_depths.update(
+                        {
+                            "execution": worker_status.execution_queue_depth,
+                            "token_publication": worker_status.token_queue_depth,
+                        }
+                    )
+                    if worker_status.loaded_stage is not None:
+                        loaded = worker_status.loaded_stage
+                        memory_bytes.update(
+                            {
+                                "process_rss": loaded.process_rss_after_bytes,
+                                "cuda_allocated": loaded.cuda_allocated_after_bytes,
+                                "cuda_reserved": loaded.cuda_reserved_after_bytes,
+                            }
+                        )
+                except Exception as exc:
+                    last_error = f"{type(exc).__name__}: {exc}"
+            return WorkerProductStatus(
+                capability=capability,
+                healthy_registration=healthy,
+                heartbeat_age_s=age,
+                last_heartbeat_unix_ns=int(capability.last_heartbeat.timestamp() * 1e9),
+                control_endpoint=control_endpoint,
+                data_endpoint=capability.data_plane_endpoint,
+                loaded_stages=loaded_stages,
+                active_sessions=active_sessions,
+                queue_depths=queue_depths,
+                memory_bytes=memory_bytes,
+                last_error=last_error,
+                detail=(
+                    "healthy"
+                    if healthy and last_error is None
+                    else last_error or "heartbeat expired"
+                ),
             )
+
+        inspected = await asyncio.gather(
+            *(
+                inspect_worker(item)
+                for item in sorted(self.registry.workers(), key=lambda x: x.worker_id)
+            )
+        )
+        statuses.extend(item for item in inspected if item is not None)
         return WorkersResponse(workers=statuses)
+
+    async def product_sessions(self, request: SessionsRequest) -> SessionsResponse:
+        _, _, _, sessions = self._require_product()
+        return SessionsResponse(
+            sessions=await sessions.statuses(include_terminal=request.include_terminal)
+        )
+
+    async def cancel_product_request(
+        self,
+        request: CancelProductRequest,
+    ) -> CancelProductResponse:
+        _, _, _, sessions = self._require_product()
+        return await sessions.cancel(request.request_id)
+
+    async def product_status(
+        self,
+        request: CoordinatorStatusRequest,
+    ) -> CoordinatorStatusResponse:
+        del request
+        _, _, deployments, sessions = self._require_product()
+        identity = self.coordinator_identity
+        assert identity is not None and self.product_config is not None
+        worker_response = await self.product_workers(WorkersRequest(include_unhealthy=True))
+        session_values = await sessions.statuses(include_terminal=True)
+        active = [
+            item
+            for item in session_values
+            if item.status
+            in {
+                ProductRequestPhase.PENDING,
+                ProductRequestPhase.RUNNING,
+                ProductRequestPhase.RECOVERING,
+            }
+        ]
+        ttft_values = [
+            item.time_to_first_token_s
+            for item in session_values
+            if item.time_to_first_token_s is not None
+        ]
+        inter_values = [
+            item.inter_token_latency_s
+            for item in session_values
+            if item.inter_token_latency_s is not None
+        ]
+        uptime = max(0.0, time.monotonic() - self.started_monotonic_s)
+        queue_depths: dict[str, int] = {"client_events": sessions.queue_depth}
+        memory_bytes: dict[str, int] = {}
+        for worker in worker_response.workers:
+            for name, value in worker.queue_depths.items():
+                queue_depths[f"{worker.capability.worker_id}:{name}"] = value
+            for name, value in worker.memory_bytes.items():
+                memory_bytes[f"{worker.capability.worker_id}:{name}"] = value
+        deployment_values = deployments.statuses()
+        last_error = next(
+            (item.last_error for item in reversed(session_values) if item.last_error is not None),
+            next(
+                (
+                    item.detail
+                    for item in reversed(deployment_values)
+                    if item.phase == DeploymentPhase.FAILED
+                ),
+                None,
+            ),
+        )
+        return CoordinatorStatusResponse(
+            coordinator_identity=self.product_config.coordinator_id,
+            coordinator_public_key_fingerprint=identity.public_key_fingerprint,
+            uptime_s=uptime,
+            state_directory=str(self.state_directory),
+            registered_worker_count=len(worker_response.workers),
+            healthy_worker_count=sum(
+                1 for item in worker_response.workers if item.healthy_registration
+            ),
+            known_deployments=len(deployment_values),
+            active_topology_id=deployments.current_topology_id,
+            route_generation=deployments.current_generation,
+            active_session_count=len(active),
+            generated_tokens=sessions.generated_token_count,
+            throughput_tokens_s=(sessions.generated_token_count / uptime if uptime > 0 else 0.0),
+            time_to_first_token_s=(sum(ttft_values) / len(ttft_values) if ttft_values else None),
+            inter_token_latency_s=(sum(inter_values) / len(inter_values) if inter_values else None),
+            recovery_count=sessions.recovery_count,
+            recovering_requests=sum(
+                1 for item in active if item.status == ProductRequestPhase.RECOVERING
+            ),
+            queue_depths=queue_depths,
+            memory_bytes=memory_bytes,
+            reservations={
+                "deployment_worker_ids": list(deployments.reserved_worker_ids),
+                "active_sessions": len(active),
+            },
+            last_error=last_error,
+        )
 
     async def accept_product_token(self, publication: ProductTokenPublication) -> Ack:
         _, _, _, sessions = self._require_product()
@@ -2063,6 +2344,21 @@ class CoordinatorRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "Status": grpc.unary_unary_rpc_method_handler(
+                self._status,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "Sessions": grpc.unary_unary_rpc_method_handler(
+                self._sessions,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "CancelRequest": grpc.unary_unary_rpc_method_handler(
+                self._cancel_request,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
             "PublishToken": grpc.unary_unary_rpc_method_handler(
                 self._publish_token,
                 request_deserializer=lambda value: value,
@@ -2213,6 +2509,44 @@ class CoordinatorRpcServer:
             await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
             raise
 
+    async def _status(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.product_status(parse_message(data, CoordinatorStatusRequest))
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _sessions(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.product_sessions(parse_message(data, SessionsRequest))
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _cancel_request(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            response = await self.core.cancel_product_request(
+                parse_message(data, CancelProductRequest)
+            )
+            return serialize_message(response)
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
     async def _publish_token(
         self,
         data: bytes,
@@ -2354,6 +2688,27 @@ class CoordinatorClient:
             "/swarm.v1.Coordinator/Workers",
             request,
             WorkersResponse,
+        )
+
+    async def status(self) -> CoordinatorStatusResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/Status",
+            CoordinatorStatusRequest(),
+            CoordinatorStatusResponse,
+        )
+
+    async def sessions(self, request: SessionsRequest) -> SessionsResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/Sessions",
+            request,
+            SessionsResponse,
+        )
+
+    async def cancel_request(self, request_id: str) -> CancelProductResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/CancelRequest",
+            CancelProductRequest(request_id=request_id),
+            CancelProductResponse,
         )
 
     async def publish_token(self, publication: ProductTokenPublication) -> Ack:

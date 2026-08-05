@@ -34,6 +34,9 @@ class RegistrationResponse(StrictModel):
     accepted: bool
     reason: str = ""
     heartbeat_interval_s: float = 5.0
+    coordinator_identity: str | None = None
+    coordinator_public_key: str | None = None
+    coordinator_public_key_fingerprint: str | None = None
 
 
 class Heartbeat(StrictModel):
@@ -266,6 +269,7 @@ class WireChunk(StrictModel):
 
 class SubmitRequest(StrictModel):
     request_id: str
+    request_generation: int = Field(default=1, ge=1)
     prompt: str | None = None
     prompt_token_ids: list[int] = Field(default_factory=list)
     max_new_tokens: int = Field(gt=0)
@@ -304,6 +308,9 @@ class StreamEventType(StrEnum):
     SESSION_OPENED = "SESSION_OPENED"
     PREFILL_STARTED = "PREFILL_STARTED"
     TOKEN_GENERATED = "TOKEN_GENERATED"
+    RECOVERY_STARTED = "RECOVERY_STARTED"
+    RECOVERY_COMPLETED = "RECOVERY_COMPLETED"
+    RECOVERY_FAILED = "RECOVERY_FAILED"
     SESSION_CLOSED = "SESSION_CLOSED"
     REQUEST_COMPLETED = "REQUEST_COMPLETED"
     REQUEST_FAILED = "REQUEST_FAILED"

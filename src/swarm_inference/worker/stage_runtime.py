@@ -13,6 +13,7 @@ from contextlib import suppress
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Protocol, TypeVar
+from uuid import uuid4
 
 import psutil
 import torch
@@ -42,6 +43,15 @@ from swarm_inference.protocol.product import (
     WorkerModelProbeRequest,
     WorkerModelProbeResponse,
 )
+from swarm_inference.protocol.routes import (
+    BoundedNonceCache,
+    PeerHandshake,
+    SignedRouteLease,
+    route_lease_hash,
+    sign_peer_handshake,
+    verify_peer_handshake,
+    verify_worker_route_lease,
+)
 from swarm_inference.protocol.stage_ring import (
     MessageSequenceValidator,
     Operation,
@@ -68,6 +78,7 @@ from swarm_inference.protocol.stage_worker import (
     UnloadStageRequest,
     VerifyStageRouteRequest,
 )
+from swarm_inference.security.identity import WorkerIdentity, public_key_fingerprint
 from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
 from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
 from swarm_inference.worker.stage_sessions import StageSessionRegistry
@@ -211,6 +222,11 @@ class PersistentStageRuntime:
         loader: StageLoader | None = None,
         token_publisher: TokenPublisher | None = None,
         connection_pool: StageRingConnectionPool | None = None,
+        identity: WorkerIdentity | None = None,
+        trusted_coordinators: dict[str, str] | None = None,
+        require_authenticated_routes: bool = False,
+        route_future_tolerance_s: float = 30.0,
+        nonce_cache_capacity: int = 4096,
     ) -> None:
         if not worker_id:
             raise ValueError("stage runtime worker ID cannot be empty")
@@ -234,6 +250,16 @@ class PersistentStageRuntime:
         )
         self.allow_model_download = allow_model_download
         self.capability = capability
+        self.identity = identity
+        self._trusted_coordinators = dict(trusted_coordinators or {})
+        self.require_authenticated_routes = require_authenticated_routes
+        self.require_authenticated_peers = require_authenticated_routes
+        self.route_future_tolerance_ns = int(route_future_tolerance_s * 1_000_000_000)
+        if self.route_future_tolerance_ns < 0:
+            raise ValueError("route future tolerance cannot be negative")
+        self._route_nonce_cache = BoundedNonceCache(capacity=nonce_cache_capacity)
+        self._peer_nonce_cache = BoundedNonceCache(capacity=nonce_cache_capacity)
+        self._verified_route_lease: SignedRouteLease | None = None
         self.sessions = StageSessionRegistry(maximum_sessions=maximum_sessions)
         self.execution_queue_capacity = execution_queue_capacity
         self.token_queue_capacity = token_queue_capacity
@@ -247,7 +273,9 @@ class PersistentStageRuntime:
         self._custom_loader = loader is not None
         self._token_publisher = token_publisher
         self.connection_pool = connection_pool or StageRingConnectionPool(
-            queue_capacity=execution_queue_capacity
+            queue_capacity=execution_queue_capacity,
+            handshake_factory=self._peer_handshake_message,
+            handshake_verifier=self._verify_peer_handshake_response,
         )
         self._loaded: _LoadedStage | None = None
         self._route: InstallStageRouteRequest | None = None
@@ -702,6 +730,7 @@ class PersistentStageRuntime:
         await asyncio.to_thread(loaded.executor.close)
         self._loaded = None
         self._route = None
+        self._verified_route_lease = None
         self._last_route_generation = None
         self._tokenizer = None
         self._sequence_validator = MessageSequenceValidator()
@@ -725,12 +754,44 @@ class PersistentStageRuntime:
         self._check_worker(request.worker_id)
         self._check_deadline(request.deadline_unix_ns)
         self._check_lease(request.lease_expiry_unix_ns)
+        lease = request.route_lease
+        authentication_configured = bool(self._trusted_coordinators)
+        if self.require_authenticated_routes and lease is None:
+            raise IntegrityError("coordinator-signed route lease is required")
+        if lease is not None and (self.require_authenticated_routes or authentication_configured):
+            capability = self.capability
+            if capability is None:
+                raise IntegrityError("worker capability identity is unavailable")
+            control_endpoint = capability.control_endpoint or capability.endpoint
+            data_endpoint = capability.data_plane_endpoint
+            if control_endpoint is None or data_endpoint is None:
+                raise IntegrityError("worker control and data endpoints must be configured")
+            verify_worker_route_lease(
+                lease,
+                self._trusted_coordinators,
+                worker_id=self.worker_id,
+                worker_public_key=capability.public_key,
+                control_endpoint=control_endpoint,
+                data_endpoint=data_endpoint,
+                topology_id=request.topology_id,
+                route_generation=request.route_generation,
+                model_id=request.model_id,
+                model_revision=request.model_revision,
+                tokenizer_revision=request.tokenizer_revision,
+                assignment=request.assignment,
+                device=request.device,
+                dtype=request.dtype,
+                last_route_generation=self._last_route_generation,
+                future_tolerance_ns=self.route_future_tolerance_ns,
+                nonce_cache=self._route_nonce_cache,
+            )
         if self._draining:
             raise RuntimeError("worker is draining and cannot install a route")
         async with self._executor_lock:
             if self._draining:
                 raise RuntimeError("worker is draining and cannot install a route")
             endpoint_to_remove, response = self._install_route_locked(request)
+            self._verified_route_lease = lease
         if endpoint_to_remove is not None:
             await self.connection_pool.remove(endpoint_to_remove)
         return response
@@ -840,7 +901,11 @@ class PersistentStageRuntime:
         endpoint_to_remove = (
             old_endpoint
             if old_endpoint is not None
-            and (request.next_stage is None or request.next_stage.data_endpoint != old_endpoint)
+            and (
+                self.require_authenticated_peers
+                or request.next_stage is None
+                or request.next_stage.data_endpoint != old_endpoint
+            )
             else None
         )
         return (
@@ -898,6 +963,7 @@ class PersistentStageRuntime:
             raise RuntimeError("cannot remove a route while sessions are active")
         endpoint = route.next_stage.data_endpoint if route.next_stage is not None else None
         self._route = None
+        self._verified_route_lease = None
         self._sync_capability()
         return (
             endpoint,
@@ -941,6 +1007,17 @@ class PersistentStageRuntime:
             raise ValueError("next-stage route is missing its exact assignment")
         probe_session = f"__route_probe__:{request.topology_id}:{request.route_generation}"
         current_stage = loaded.request.assignment.stage_id
+        probe_attributes: dict[str, object] = {
+            "model_id": request.model_id,
+            "route_generation": request.route_generation,
+            "source_worker_id": self.worker_id,
+            "destination_worker_id": next_stage.worker_id,
+        }
+        if self.require_authenticated_peers:
+            probe_attributes["peer_handshake"] = self._signed_peer_handshake(
+                peer_worker_id=next_stage.worker_id,
+                peer_stage_id=next_stage.stage_id,
+            ).model_dump(mode="json")
         probe = StageMessage(
             operation=Operation.HELLO,
             model_revision=request.model_revision,
@@ -957,12 +1034,7 @@ class PersistentStageRuntime:
             token_position=-1,
             source_stage=current_stage,
             destination_stage=next_stage.stage_id,
-            attributes={
-                "model_id": request.model_id,
-                "route_generation": request.route_generation,
-                "source_worker_id": self.worker_id,
-                "destination_worker_id": next_stage.worker_id,
-            },
+            attributes=probe_attributes,
         )
         response = await self.connection_pool.send(next_stage.data_endpoint, probe)
         if (
@@ -972,6 +1044,8 @@ class PersistentStageRuntime:
             or response.destination_stage != current_stage
         ):
             raise TransportError("next-stage peer returned an invalid route probe response")
+        if self.require_authenticated_peers:
+            self._verify_peer_handshake_response(probe, response)
         self._sequence_validator.validate(response)
         return StageActionResponse(
             worker_id=self.worker_id,
@@ -1077,6 +1151,7 @@ class PersistentStageRuntime:
                 session_id=request.session_id,
                 model_revision=request.model_revision,
                 route_generation=request.route_generation,
+                request_generation=request.request_generation,
                 stage_id=request.stage_id,
             )
             self._sync_capability()
@@ -1095,6 +1170,14 @@ class PersistentStageRuntime:
     ) -> StageActionResponse:
         async with self._executor_lock:
             loaded, _ = self._validate_session_request(request, require_live_lease=False)
+            self.sessions.require(
+                topology_id=request.topology_id,
+                session_id=request.session_id,
+                model_revision=request.model_revision,
+                route_generation=request.route_generation,
+                request_generation=request.request_generation,
+                stage_id=request.stage_id,
+            )
             released = await asyncio.to_thread(
                 self.sessions.close,
                 loaded.executor,
@@ -1121,6 +1204,14 @@ class PersistentStageRuntime:
     ) -> StageActionResponse:
         async with self._executor_lock:
             loaded, _ = self._validate_session_request(request, require_live_lease=False)
+            self.sessions.require(
+                topology_id=request.topology_id,
+                session_id=request.session_id,
+                model_revision=request.model_revision,
+                route_generation=request.route_generation,
+                request_generation=request.request_generation,
+                stage_id=request.stage_id,
+            )
             released = await asyncio.to_thread(
                 self.sessions.cancel,
                 loaded.executor,
@@ -1257,6 +1348,12 @@ class PersistentStageRuntime:
                 stage_count=self._route.stage_count,
                 stage_zero_publication_destination=(self._route.stage_zero_publication_destination),
                 lease_expiry_unix_ns=self._route.lease_expiry_unix_ns,
+                authenticated=self._verified_route_lease is not None,
+                route_lease_hash=(
+                    route_lease_hash(self._verified_route_lease)
+                    if self._verified_route_lease is not None
+                    else None
+                ),
             )
         return StageStatusResponse(
             worker_id=self.worker_id,
@@ -1313,6 +1410,161 @@ class PersistentStageRuntime:
 
         self._sync_capability()
 
+    def configure_route_trust(
+        self,
+        *,
+        coordinator_identity: str,
+        coordinator_public_key: str,
+        expected_fingerprint: str | None = None,
+    ) -> None:
+        """Pin the coordinator key before accepting authenticated routes."""
+
+        fingerprint = public_key_fingerprint(coordinator_public_key)
+        if expected_fingerprint is not None and fingerprint != expected_fingerprint:
+            raise IntegrityError(
+                "coordinator fingerprint does not match worker trust configuration"
+            )
+        existing = self._trusted_coordinators.get(coordinator_identity)
+        if existing is not None and existing != coordinator_public_key:
+            raise IntegrityError("coordinator identity is already pinned to another key")
+        self._trusted_coordinators[coordinator_identity] = coordinator_public_key
+        self.require_authenticated_routes = True
+        self.require_authenticated_peers = True
+
+    def _signed_peer_handshake(
+        self,
+        *,
+        peer_worker_id: str,
+        peer_stage_id: int,
+    ) -> PeerHandshake:
+        route = self._route
+        lease = self._verified_route_lease
+        identity = self.identity
+        if route is None or lease is None or identity is None:
+            raise IntegrityError("authenticated peer route is not configured")
+        handshake = PeerHandshake(
+            worker_id=self.worker_id,
+            public_key_fingerprint=identity.public_key_fingerprint,
+            topology_id=route.topology_id,
+            route_generation=route.route_generation,
+            stage_id=route.assignment.stage_id,
+            peer_stage_id=peer_stage_id,
+            model_revision=route.model_revision,
+            nonce=uuid4().hex,
+            timestamp_unix_ns=time.time_ns(),
+            route_lease_hash=route_lease_hash(lease),
+        )
+        return sign_peer_handshake(handshake, identity)
+
+    def _peer_handshake_message(self, endpoint: str) -> StageMessage | None:
+        """Build the connection-opening proof for the installed next-stage peer."""
+
+        if not self.require_authenticated_peers:
+            return None
+        route, loaded = self._route_and_loaded()
+        peer = route.next_stage
+        if peer is None or peer.data_endpoint != endpoint or peer.assignment is None:
+            raise IntegrityError("outbound endpoint is not the installed next-stage peer")
+        handshake = self._signed_peer_handshake(
+            peer_worker_id=peer.worker_id,
+            peer_stage_id=peer.stage_id,
+        )
+        session_id = (
+            f"__peer_handshake__:{route.topology_id}:{route.route_generation}:"
+            f"{loaded.request.assignment.stage_id}:{uuid4().hex}"
+        )
+        return StageMessage(
+            operation=Operation.HELLO,
+            model_revision=route.model_revision,
+            tokenizer_revision=route.tokenizer_revision,
+            topology_id=route.topology_id,
+            stage_id=peer.stage_id,
+            layer_start=peer.assignment.layer_start,
+            layer_end=peer.assignment.layer_end,
+            session_id=session_id,
+            request_id=f"peer-handshake:{uuid4().hex}",
+            sequence_number=self._sequence_allocator.next(
+                session_id,
+                loaded.request.assignment.stage_id,
+                peer.stage_id,
+            ),
+            token_position=-1,
+            source_stage=loaded.request.assignment.stage_id,
+            destination_stage=peer.stage_id,
+            attributes={
+                "model_id": route.model_id,
+                "route_generation": route.route_generation,
+                "source_worker_id": self.worker_id,
+                "destination_worker_id": peer.worker_id,
+                "peer_handshake": handshake.model_dump(mode="json"),
+            },
+        )
+
+    def _verify_handshake(
+        self,
+        message: StageMessage,
+        *,
+        expected_worker_id: str,
+        expected_stage_id: int,
+        expected_peer_stage_id: int,
+    ) -> None:
+        lease = self._verified_route_lease
+        if lease is None:
+            raise IntegrityError("installed route has no verified coordinator lease")
+        raw = message.attributes.get("peer_handshake")
+        if not isinstance(raw, dict):
+            raise IntegrityError("peer handshake is missing")
+        handshake = PeerHandshake.model_validate(raw)
+        verify_peer_handshake(
+            handshake,
+            lease,
+            expected_worker_id=expected_worker_id,
+            expected_stage_id=expected_stage_id,
+            expected_peer_stage_id=expected_peer_stage_id,
+            timestamp_tolerance_ns=self.route_future_tolerance_ns,
+            nonce_cache=self._peer_nonce_cache,
+        )
+
+    def _verify_peer_handshake_response(
+        self,
+        request: StageMessage,
+        response: StageMessage,
+    ) -> None:
+        if not self.require_authenticated_peers:
+            return
+        route = self._route
+        if route is None or route.next_stage is None:
+            raise IntegrityError("peer handshake response has no installed next stage")
+        if (
+            response.operation != Operation.HELLO
+            or response.status != "OK"
+            or response.session_id != request.session_id
+            or response.request_id != request.request_id
+            or response.source_stage != route.next_stage.stage_id
+            or response.destination_stage != route.assignment.stage_id
+        ):
+            raise IntegrityError("peer handshake response identity mismatch")
+        self._verify_handshake(
+            response,
+            expected_worker_id=route.next_stage.worker_id,
+            expected_stage_id=route.next_stage.stage_id,
+            expected_peer_stage_id=route.assignment.stage_id,
+        )
+
+    def _peer_handshake_response(self, message: StageMessage) -> dict[str, object]:
+        route = self._route
+        if route is None or route.previous_stage is None:
+            raise IntegrityError("inbound peer handshake has no installed previous stage")
+        handshake = self._signed_peer_handshake(
+            peer_worker_id=route.previous_stage.worker_id,
+            peer_stage_id=route.previous_stage.stage_id,
+        )
+        return {
+            "worker_id": self.worker_id,
+            "route_generation": route.route_generation,
+            "peer_handshake": handshake.model_dump(mode="json"),
+        }
+
     def _route_and_loaded(
         self,
         *,
@@ -1364,6 +1616,22 @@ class PersistentStageRuntime:
         model_id = self._message_attribute(message, "model_id", str)
         if model_id != loaded.request.model_id:
             raise ValueError("wrong model identity")
+        if message.operation in {Operation.PREFILL, Operation.DECODE, Operation.TOKEN_RESULT}:
+            request_generation = message.attributes.get("request_generation", 1)
+            replay_only = message.attributes.get("replay_only", False)
+            if (
+                isinstance(request_generation, bool)
+                or not isinstance(request_generation, int)
+                or request_generation <= 0
+            ):
+                raise ValueError("stage request generation is malformed")
+            if not isinstance(replay_only, bool):
+                raise ValueError("stage replay marker is malformed")
+            if self.require_authenticated_routes and (
+                "request_generation" not in message.attributes
+                or "replay_only" not in message.attributes
+            ):
+                raise ValueError("authenticated stage frame lacks request replay identity")
         source_worker = self._message_attribute(message, "source_worker_id", str)
         destination_worker = self._message_attribute(message, "destination_worker_id", str)
         expected_source_stage = route.previous_stage.stage_id if route.previous_stage else -1
@@ -1377,6 +1645,13 @@ class PersistentStageRuntime:
         ):
             raise ValueError("stage message peer identity does not match the installed route")
         return route, loaded, int(route_generation)
+
+    @staticmethod
+    def _request_generation(message: StageMessage) -> int:
+        value = message.attributes.get("request_generation", 1)
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError("stage request generation is malformed")
+        return value
 
     def _control_message_response(
         self,
@@ -1416,6 +1691,7 @@ class PersistentStageRuntime:
             require_live_lease=message.operation
             not in {Operation.CLOSE_SESSION, Operation.CANCEL_SESSION},
         )
+        request_generation = self._request_generation(message)
         if message.operation == Operation.OPEN_SESSION:
             self._sequence_validator.validate(message)
             await self.open_session(
@@ -1431,21 +1707,34 @@ class PersistentStageRuntime:
                     device=self.device,
                     dtype=self.dtype,
                     session_id=message.session_id,
+                    request_generation=request_generation,
                     lease_expiry_unix_ns=route.lease_expiry_unix_ns,
                 )
             )
             return self._control_message_response(message, operation=Operation.OPEN_SESSION)
         if message.operation in {Operation.HELLO, Operation.HEALTH}:
             self._sequence_validator.validate(message)
+            response_attributes: dict[str, object] = {
+                "worker_id": self.worker_id,
+                "route_generation": route.route_generation,
+                "active_session_count": self.sessions.active_count,
+                "execution_queue_depth": self._execution_queue.qsize(),
+            }
+            if message.operation == Operation.HELLO and self.require_authenticated_peers:
+                previous = route.previous_stage
+                if previous is None:
+                    raise IntegrityError("stage zero cannot accept a worker peer handshake")
+                self._verify_handshake(
+                    message,
+                    expected_worker_id=previous.worker_id,
+                    expected_stage_id=previous.stage_id,
+                    expected_peer_stage_id=route.assignment.stage_id,
+                )
+                response_attributes.update(self._peer_handshake_response(message))
             return self._control_message_response(
                 message,
                 operation=message.operation,
-                attributes={
-                    "worker_id": self.worker_id,
-                    "route_generation": route.route_generation,
-                    "active_session_count": self.sessions.active_count,
-                    "execution_queue_depth": self._execution_queue.qsize(),
-                },
+                attributes=response_attributes,
             )
         if message.operation in {Operation.CLOSE_SESSION, Operation.CANCEL_SESSION}:
             self.sessions.require(
@@ -1453,6 +1742,7 @@ class PersistentStageRuntime:
                 session_id=message.session_id,
                 model_revision=message.model_revision,
                 route_generation=route_generation,
+                request_generation=request_generation,
                 stage_id=message.stage_id,
             )
             self._sequence_validator.validate(message)
@@ -1470,6 +1760,7 @@ class PersistentStageRuntime:
                         device=self.device,
                         dtype=self.dtype,
                         session_id=message.session_id,
+                        request_generation=request_generation,
                         lease_expiry_unix_ns=route.lease_expiry_unix_ns,
                     ),
                     reset_sequences=False,
@@ -1488,6 +1779,7 @@ class PersistentStageRuntime:
                         device=self.device,
                         dtype=self.dtype,
                         session_id=message.session_id,
+                        request_generation=request_generation,
                         lease_expiry_unix_ns=route.lease_expiry_unix_ns,
                     ),
                     reset_sequences=False,
@@ -1526,12 +1818,21 @@ class PersistentStageRuntime:
                 "nonzero stages require a rank-three hidden-state tensor in the "
                 "configured activation dtype"
             )
+        self.sessions.require(
+            topology_id=message.topology_id,
+            session_id=message.session_id,
+            model_revision=message.model_revision,
+            route_generation=route_generation,
+            request_generation=request_generation,
+            stage_id=message.stage_id,
+        )
         self._sequence_validator.validate(message)
         self.sessions.require(
             topology_id=message.topology_id,
             session_id=message.session_id,
             model_revision=message.model_revision,
             route_generation=route_generation,
+            request_generation=request_generation,
             stage_id=message.stage_id,
             cache_position_start=int(cache_position),
         )
@@ -1564,11 +1865,13 @@ class PersistentStageRuntime:
         cache_position = int(message.attributes["cache_position_start"])
         async with self._executor_lock:
             route, loaded, route_generation = self._validate_message_base(message)
+            request_generation = self._request_generation(message)
             self.sessions.require(
                 topology_id=message.topology_id,
                 session_id=message.session_id,
                 model_revision=message.model_revision,
                 route_generation=route_generation,
+                request_generation=request_generation,
                 stage_id=message.stage_id,
                 cache_position_start=cache_position,
             )
@@ -1607,6 +1910,7 @@ class PersistentStageRuntime:
                 session_id=message.session_id,
                 model_revision=message.model_revision,
                 route_generation=route_generation,
+                request_generation=request_generation,
                 stage_id=message.stage_id,
                 cache_position_start=result.cache_sequence_length,
             )
@@ -1664,6 +1968,8 @@ class PersistentStageRuntime:
             attributes={
                 "model_id": route.model_id,
                 "route_generation": route.route_generation,
+                "request_generation": int(incoming.attributes.get("request_generation", 1)),
+                "replay_only": bool(incoming.attributes.get("replay_only", False)),
                 "source_worker_id": self.worker_id,
                 "destination_worker_id": route.next_stage.worker_id,
                 "cache_position_start": int(incoming.attributes["cache_position_start"]),
@@ -1711,6 +2017,8 @@ class PersistentStageRuntime:
             attributes={
                 "model_id": route.model_id,
                 "route_generation": route.route_generation,
+                "request_generation": int(incoming.attributes.get("request_generation", 1)),
+                "replay_only": bool(incoming.attributes.get("replay_only", False)),
                 "source_worker_id": self.worker_id,
                 "destination_worker_id": (
                     route.previous_stage.worker_id if route.previous_stage else "coordinator"
@@ -1755,7 +2063,9 @@ class PersistentStageRuntime:
         if downstream.operation == Operation.ERROR:
             self._sequence_validator.validate(downstream)
             detail = downstream.attributes.get("error", "downstream stage rejected the frame")
-            raise TransportError(str(detail))
+            raise TransportError(
+                f"downstream worker {next_stage.worker_id} at {next_stage.data_endpoint}: {detail}"
+            )
         if downstream.operation != Operation.TOKEN_RESULT or downstream.status != "OK":
             raise ValueError("downstream response is not a successful token result")
         if self._message_attribute(downstream, "model_id", str) != route.model_id:
@@ -1763,6 +2073,12 @@ class PersistentStageRuntime:
         generation = self._message_attribute(downstream, "route_generation", int)
         if isinstance(generation, bool) or generation != route.route_generation:
             raise ValueError("downstream response route generation mismatch")
+        if int(downstream.attributes.get("request_generation", 1)) != int(
+            incoming.attributes.get("request_generation", 1)
+        ) or bool(downstream.attributes.get("replay_only", False)) != bool(
+            incoming.attributes.get("replay_only", False)
+        ):
+            raise ValueError("downstream response request generation mismatch")
         if (
             self._message_attribute(downstream, "source_worker_id", str) != next_stage.worker_id
             or self._message_attribute(downstream, "destination_worker_id", str) != self.worker_id

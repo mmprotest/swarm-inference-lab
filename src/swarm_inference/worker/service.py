@@ -62,8 +62,11 @@ async def run_worker(
     upload_bandwidth_bytes_s: float = 0.0,
     download_bandwidth_bytes_s: float = 0.0,
     network_rates_measured: bool = False,
+    trusted_coordinator_fingerprint: str | None = None,
 ) -> None:
     if stage_runtime_enabled:
+        if trusted_coordinator_fingerprint is None:
+            raise ValueError("stage runtime requires an explicitly pinned coordinator fingerprint")
         if data_listen_endpoint is None or data_advertised_endpoint is None:
             raise ValueError("stage runtime requires both data listen and advertised endpoints")
         advertised_host, advertised_port = split_endpoint(data_advertised_endpoint)
@@ -151,20 +154,30 @@ async def run_worker(
             if token_tensor.numel() != 1:
                 raise ValueError("stage token publication must contain exactly one token")
             token_id = int(token_tensor.item())
-            response = await client.publish_token(
-                ProductTokenPublication(
-                    worker_id=capability.worker_id,
-                    request_id=message.request_id,
-                    session_id=message.session_id,
-                    topology_id=message.topology_id,
-                    route_generation=int(message.attributes["route_generation"]),
-                    model_revision=message.model_revision,
-                    token_position=message.token_position,
-                    token_id=token_id,
-                    decoded_text_fragment=stage_runtime.decode_token_id(token_id),
-                    published_monotonic_ns=time.monotonic_ns(),
-                )
+            publication = ProductTokenPublication(
+                worker_id=capability.worker_id,
+                request_id=message.request_id,
+                session_id=message.session_id,
+                topology_id=message.topology_id,
+                route_generation=int(message.attributes["route_generation"]),
+                model_revision=message.model_revision,
+                token_position=message.token_position,
+                token_id=token_id,
+                decoded_text_fragment=stage_runtime.decode_token_id(token_id),
+                published_monotonic_ns=time.monotonic_ns(),
+                request_generation=int(message.attributes["request_generation"]),
+                replay_only=bool(message.attributes["replay_only"]),
             )
+            publication = publication.model_copy(
+                update={
+                    "signature": identity.sign(
+                        canonical_json_bytes(
+                            publication.model_dump(mode="json", exclude={"signature"})
+                        )
+                    )
+                }
+            )
+            response = await client.publish_token(publication)
             if not response.accepted:
                 raise RuntimeError(f"coordinator rejected token publication: {response.detail}")
 
@@ -181,6 +194,7 @@ async def run_worker(
             allow_model_download=allow_model_download,
             capability=capability,
             token_publisher=publish_token,
+            identity=identity,
         )
     service = PersistentStageWorkerService(
         agent=agent,
@@ -234,6 +248,20 @@ async def run_worker(
         await service.stop()
         await client.close()
         raise RuntimeError(f"coordinator rejected worker: {response.reason}")
+    if stage_runtime is not None:
+        if (
+            response.coordinator_identity is None
+            or response.coordinator_public_key is None
+            or response.coordinator_public_key_fingerprint is None
+        ):
+            await service.stop()
+            await client.close()
+            raise RuntimeError("coordinator did not provide an authenticated product identity")
+        stage_runtime.configure_route_trust(
+            coordinator_identity=response.coordinator_identity,
+            coordinator_public_key=response.coordinator_public_key,
+            expected_fingerprint=trusted_coordinator_fingerprint,
+        )
 
     async def heartbeat_loop() -> None:
         while True:

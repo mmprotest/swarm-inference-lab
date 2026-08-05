@@ -1,8 +1,10 @@
 """Reusable runtime support primitives."""
 
 from swarm_inference.runtime.telemetry import (
+    PRODUCT_EVENT_NAMES,
     JsonlLifecycleObserver,
     LifecycleObserver,
+    ProductTelemetry,
     TraceContext,
     TraceWriter,
     configure_lifecycle_observer,
@@ -14,8 +16,10 @@ from swarm_inference.runtime.telemetry import (
 )
 
 __all__ = [
+    "PRODUCT_EVENT_NAMES",
     "JsonlLifecycleObserver",
     "LifecycleObserver",
+    "ProductTelemetry",
     "TraceContext",
     "TraceWriter",
     "configure_lifecycle_observer",

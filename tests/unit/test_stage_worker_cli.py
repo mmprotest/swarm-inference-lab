@@ -29,6 +29,8 @@ def test_worker_cli_passes_independent_stage_runtime_endpoints(monkeypatch) -> N
             "--advertise",
             "worker.test:50052",
             "--stage-runtime",
+            "--trusted-coordinator-fingerprint",
+            "a" * 64,
             "--data-listen",
             "0.0.0.0:50053",
             "--data-advertise",
@@ -48,6 +50,7 @@ def test_worker_cli_passes_independent_stage_runtime_endpoints(monkeypatch) -> N
     assert captured["stage_runtime_enabled"] is True
     assert captured["device"] == "cpu"
     assert captured["max_stage_sessions"] == 17
+    assert captured["trusted_coordinator_fingerprint"] == "a" * 64
 
 
 def test_worker_cli_rejects_wildcard_data_advertisement(monkeypatch) -> None:
@@ -70,6 +73,8 @@ def test_worker_cli_rejects_wildcard_data_advertisement(monkeypatch) -> None:
             "--advertise",
             "worker.test:50052",
             "--stage-runtime",
+            "--trusted-coordinator-fingerprint",
+            "a" * 64,
             "--data-listen",
             "0.0.0.0:50053",
             "--data-advertise",

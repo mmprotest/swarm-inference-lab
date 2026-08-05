@@ -14,6 +14,56 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
+PRODUCT_EVENT_NAMES = frozenset(
+    {
+        "worker_registered",
+        "worker_unhealthy",
+        "deployment_started",
+        "deployment_ready",
+        "session_opened",
+        "token_accepted",
+        "recovery_started",
+        "replacement_selected",
+        "route_generation_installed",
+        "replay_token_verified",
+        "recovery_completed",
+        "recovery_failed",
+        "session_cancelled",
+        "session_closed",
+        "stage_unloaded",
+    }
+)
+
+
+class ProductTelemetry:
+    """Canonical product event sink independent of experiment recorders."""
+
+    def __init__(self, path: str | Path | None = None) -> None:
+        self.path = Path(path).expanduser().resolve() if path is not None else None
+        if self.path is not None:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.events: list[dict[str, Any]] = []
+        self._lock = threading.Lock()
+
+    def emit(self, event_type: str, **details: Any) -> dict[str, Any]:
+        if event_type not in PRODUCT_EVENT_NAMES:
+            raise ValueError(f"unknown canonical product event {event_type!r}")
+        row = {
+            "event_type": event_type,
+            "timestamp_unix_ns": time.time_ns(),
+            "timestamp_monotonic_ns": time.monotonic_ns(),
+            **details,
+        }
+        serialized = json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+        with self._lock:
+            self.events.append(dict(row))
+            if self.path is not None:
+                with self.path.open("a", encoding="utf-8", newline="\n") as handle:
+                    handle.write(serialized)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+        return row
+
 
 class LifecycleObserver(Protocol):
     """Optional sink for generic worker lifecycle events."""
@@ -380,8 +430,10 @@ def reconstruct_critical_path(
 
 
 __all__ = [
+    "PRODUCT_EVENT_NAMES",
     "JsonlLifecycleObserver",
     "LifecycleObserver",
+    "ProductTelemetry",
     "TraceContext",
     "TraceWriter",
     "configure_lifecycle_observer",

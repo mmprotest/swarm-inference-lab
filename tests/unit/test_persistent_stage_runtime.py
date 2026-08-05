@@ -10,9 +10,15 @@ from pathlib import Path
 import pytest
 import torch
 
+from swarm_inference.config.models import Backend, WorkerCapability
 from swarm_inference.exceptions import BackpressureError, IntegrityError, MemoryLimitExceededError
 from swarm_inference.execution.interfaces import StageExecutionResult, WeightOwnership
 from swarm_inference.model.partition import StageAssignment
+from swarm_inference.protocol.routes import (
+    RouteLeaseParticipant,
+    SignedRouteLease,
+    sign_route_lease,
+)
 from swarm_inference.protocol.stage_ring import Operation, StageMessage
 from swarm_inference.protocol.stage_worker import (
     CancelStageSessionRequest,
@@ -26,6 +32,7 @@ from swarm_inference.protocol.stage_worker import (
     StageRouteEndpoint,
     UnloadStageRequest,
 )
+from swarm_inference.security.identity import CoordinatorIdentity, WorkerIdentity
 from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
 from swarm_inference.transport.stage_ring_server import StageRingServer
 from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
@@ -229,7 +236,13 @@ def route_request(*, generation: int = 1, replace_route: bool = False):
     )
 
 
-def session_request(session_id: str, *, request_id: str | None = None):
+def session_request(
+    session_id: str,
+    *,
+    request_id: str | None = None,
+    route_generation: int = 1,
+    request_generation: int = 1,
+):
     return OpenStageSessionRequest(
         worker_id="worker-a",
         request_id=request_id or f"open-{session_id}",
@@ -237,11 +250,12 @@ def session_request(session_id: str, *, request_id: str | None = None):
         model_revision="model-revision",
         tokenizer_revision="tokenizer-revision",
         topology_id="topology-a",
-        route_generation=1,
+        route_generation=route_generation,
         stage_id=0,
         device="cpu",
         dtype="float32",
         session_id=session_id,
+        request_generation=request_generation,
     )
 
 
@@ -251,6 +265,8 @@ def data_message(
     *,
     cache_position: int,
     sequence: int,
+    route_generation: int = 1,
+    request_generation: int = 1,
 ) -> StageMessage:
     packed = pack_tensor(torch.tensor([values], dtype=torch.int64), requested_mode="none")
     return StageMessage(
@@ -273,7 +289,9 @@ def data_message(
         payload=packed.payload,
         attributes={
             "model_id": "test/olmoe",
-            "route_generation": 1,
+            "route_generation": route_generation,
+            "request_generation": request_generation,
+            "replay_only": False,
             "source_worker_id": "coordinator",
             "destination_worker_id": "worker-a",
             "cache_position_start": cache_position,
@@ -440,6 +458,150 @@ async def test_load_route_identity_memory_and_ownership_rejections() -> None:
         await ownership_runtime.load_stage(load_request())
     assert ownership_loader.executor is not None and ownership_loader.executor.closed
     await ownership_runtime.close()
+
+
+@pytest.mark.asyncio
+async def test_old_route_and_request_generation_frames_are_rejected_after_recovery() -> None:
+    runtime, _ = await loaded_runtime()
+    try:
+        await runtime.install_route(route_request(generation=2, replace_route=True))
+        await runtime.open_session(
+            session_request(
+                "recovered",
+                route_generation=2,
+                request_generation=2,
+            )
+        )
+        with pytest.raises(ValueError, match="stale route generation"):
+            await runtime.handle_message(
+                data_message(
+                    "recovered",
+                    [1],
+                    cache_position=0,
+                    sequence=0,
+                    route_generation=1,
+                    request_generation=1,
+                )
+            )
+        with pytest.raises(ValueError, match="request generation mismatch"):
+            await runtime.handle_message(
+                data_message(
+                    "recovered",
+                    [1],
+                    cache_position=0,
+                    sequence=0,
+                    route_generation=2,
+                    request_generation=1,
+                )
+            )
+
+        response = await runtime.handle_message(
+            data_message(
+                "recovered",
+                [1],
+                cache_position=0,
+                sequence=0,
+                route_generation=2,
+                request_generation=2,
+            )
+        )
+        assert response.operation == Operation.TOKEN_RESULT
+    finally:
+        await runtime.close()
+
+
+@pytest.mark.asyncio
+async def test_runtime_requires_and_records_coordinator_authenticated_route_lease() -> None:
+    coordinator = CoordinatorIdentity.generate()
+    identity = WorkerIdentity.generate()
+    capability = WorkerCapability(
+        worker_id="worker-a",
+        public_key=identity.public_key_b64,
+        hostname="localhost",
+        operating_system="test",
+        architecture="test",
+        backend=Backend.TORCH_CPU,
+        cpu_model="test",
+        logical_cpu_count=1,
+        total_ram_bytes=4096,
+        available_ram_bytes=4096,
+        supported_dtypes=["float32"],
+        upload_bandwidth_bytes_s=1_000,
+        download_bandwidth_bytes_s=1_000,
+        coordinator_latency_ms=0.1,
+        memory_limit_bytes=4096,
+        endpoint="127.0.0.1:5001",
+        control_endpoint="127.0.0.1:5001",
+        data_plane_endpoint="127.0.0.1:6001",
+        device_identifier="cpu",
+        stage_runtime_enabled=True,
+    )
+    loader = CountingLoader()
+    runtime = PersistentStageRuntime(
+        worker_id="worker-a",
+        device="cpu",
+        dtype="float32",
+        memory_limit_bytes=4096,
+        maximum_sessions=8,
+        capability=capability,
+        loader=loader,
+        identity=identity,
+        trusted_coordinators={"coordinator-test": coordinator.public_key_b64},
+        require_authenticated_routes=True,
+    )
+    expiry = time.time_ns() + 60_000_000_000
+    participant = RouteLeaseParticipant(
+        worker_id="worker-a",
+        worker_public_key=identity.public_key_b64,
+        worker_public_key_fingerprint=identity.public_key_fingerprint,
+        control_endpoint="127.0.0.1:5001",
+        data_endpoint="127.0.0.1:6001",
+        stage_id=0,
+        assignment=assignment(),
+        device="cpu",
+        dtype="float32",
+    )
+    lease = sign_route_lease(
+        SignedRouteLease(
+            topology_id="topology-a",
+            route_generation=1,
+            model_id="test/olmoe",
+            model_revision="model-revision",
+            tokenizer_revision="tokenizer-revision",
+            adapter_id="olmoe",
+            dtype="float32",
+            participants=[participant],
+            lease_issued_unix_ns=time.time_ns(),
+            lease_expiry_unix_ns=expiry,
+            nonce="authenticated-route",
+            coordinator_identity="coordinator-test",
+            coordinator_public_key=coordinator.public_key_b64,
+            coordinator_public_key_fingerprint=coordinator.public_key_fingerprint,
+        ),
+        coordinator,
+    )
+    try:
+        await runtime.load_stage(load_request())
+        with pytest.raises(IntegrityError, match="signed route lease is required"):
+            await runtime.install_route(route_request())
+        installed = await runtime.install_route(
+            route_request().model_copy(
+                update={
+                    "lease_expiry_unix_ns": expiry,
+                    "route_lease": lease,
+                }
+            )
+        )
+        assert installed.accepted
+        status = await runtime.status(
+            GetStageStatusRequest(worker_id="worker-a", request_id="authenticated-status")
+        )
+        assert status.installed_route is not None
+        assert status.installed_route.authenticated
+        assert status.installed_route.route_lease_hash is not None
+        assert runtime.require_authenticated_peers
+    finally:
+        await runtime.close()
 
 
 @pytest.mark.asyncio

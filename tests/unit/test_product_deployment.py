@@ -296,6 +296,33 @@ async def test_deployment_is_idempotent_installs_every_route_and_reports_status(
 
 
 @pytest.mark.asyncio
+async def test_deployment_reload_keeps_evidence_but_never_assumes_old_routes_are_live(
+    tmp_path: Path,
+) -> None:
+    first = _manager(tmp_path, _DeploymentTransport())
+    plan = _plan()
+    deployed = await first.deploy(
+        plan,
+        publication_destination="127.0.0.1:50051",
+    )
+    assert deployed.ready
+
+    reloaded = _manager(tmp_path, _DeploymentTransport())
+    status = reloaded.statuses()[0]
+    assert status.topology_id == deployed.topology_id
+    assert status.generation == deployed.generation
+    assert not status.ready
+    assert status.phase == DeploymentPhase.FAILED
+    assert "workers must re-register" in status.detail
+    assert reloaded.current_topology_id is None
+    with pytest.raises(RuntimeError, match="no product topology is deployed"):
+        reloaded.ready_plan(
+            model_id=plan.model.model_id,
+            model_revision=plan.model.model_revision,
+        )
+
+
+@pytest.mark.asyncio
 async def test_partial_load_failure_rolls_back_every_success_and_reservation(
     tmp_path: Path,
 ) -> None:

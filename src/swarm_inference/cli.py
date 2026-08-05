@@ -1157,8 +1157,9 @@ def product_model_unload_command(
 
 @app.command("topology")
 def product_topology_command(
-    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")] = "127.0.0.1:50051",
     topology_id: Annotated[str | None, typer.Option()] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Show product topology deployment state."""
 
@@ -1172,13 +1173,30 @@ def product_topology_command(
         finally:
             await client.close()
 
-    typer.echo(asyncio.run(run()).model_dump_json(indent=2))
+    response = asyncio.run(run())
+    if json_output:
+        typer.echo(response.model_dump_json(indent=2))
+        return
+    if not response.deployments:
+        typer.echo("No known deployments.")
+        return
+    for deployment in response.deployments:
+        typer.echo(
+            f"{deployment.topology_id} generation={deployment.generation} "
+            f"phase={deployment.phase.value} ready={str(deployment.ready).lower()}"
+        )
+        for worker in deployment.workers:
+            typer.echo(
+                f"  stage={worker.stage_id} worker={worker.worker_id} "
+                f"control={worker.control_endpoint} data={worker.data_endpoint}"
+            )
 
 
 @app.command("workers")
 def product_workers_command(
-    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")] = "127.0.0.1:50051",
     include_unhealthy: Annotated[bool, typer.Option()] = True,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Show registered workers and advertised product capabilities."""
 
@@ -1192,7 +1210,130 @@ def product_workers_command(
         finally:
             await client.close()
 
-    typer.echo(asyncio.run(run()).model_dump_json(indent=2))
+    response = asyncio.run(run())
+    if json_output:
+        typer.echo(response.model_dump_json(indent=2))
+        return
+    if not response.workers:
+        typer.echo("No registered workers.")
+        return
+    for worker in response.workers:
+        capability = worker.capability
+        typer.echo(
+            f"{capability.worker_id} health={'healthy' if worker.healthy_registration else 'unhealthy'} "
+            f"heartbeat_age_s={worker.heartbeat_age_s:.3f} "
+            f"control={worker.control_endpoint or '-'} data={worker.data_endpoint or '-'} "
+            f"sessions={worker.active_sessions} queue={sum(worker.queue_depths.values())}"
+        )
+
+
+@app.command("status")
+def product_status_command(
+    coordinator: Annotated[
+        str,
+        typer.Option(help="Coordinator host:port."),
+    ] = "127.0.0.1:50051",
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Show coordinator identity, uptime, capacity, queues, and recoveries."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.status()
+        finally:
+            await client.close()
+
+    response = asyncio.run(run())
+    if json_output:
+        typer.echo(response.model_dump_json(indent=2))
+        return
+    typer.echo(
+        f"coordinator={response.coordinator_identity} "
+        f"fingerprint={response.coordinator_public_key_fingerprint} "
+        f"uptime_s={response.uptime_s:.1f}"
+    )
+    typer.echo(
+        f"workers={response.healthy_worker_count}/{response.registered_worker_count} "
+        f"topology={response.active_topology_id or '-'} "
+        f"generation={response.route_generation or '-'} sessions={response.active_session_count}"
+    )
+    typer.echo(
+        f"tokens={response.generated_tokens} throughput_tokens_s="
+        f"{response.throughput_tokens_s:.3f} recoveries={response.recovery_count} "
+        f"recovering={response.recovering_requests}"
+    )
+    if response.last_error:
+        typer.echo(f"last_error={response.last_error}")
+
+
+@app.command("sessions")
+def product_sessions_command(
+    coordinator: Annotated[
+        str,
+        typer.Option(help="Coordinator host:port."),
+    ] = "127.0.0.1:50051",
+    include_terminal: Annotated[bool, typer.Option()] = False,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Show active request sessions, KV bytes, token positions, and recovery state."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+    from swarm_inference.protocol.product import SessionsRequest
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.sessions(SessionsRequest(include_terminal=include_terminal))
+        finally:
+            await client.close()
+
+    response = asyncio.run(run())
+    if json_output:
+        typer.echo(response.model_dump_json(indent=2))
+        return
+    if not response.sessions:
+        typer.echo("No active sessions.")
+        return
+    for session in response.sessions:
+        typer.echo(
+            f"request={session.request_id} session={session.session_id} "
+            f"status={session.status.value} position={session.token_position} "
+            f"generation={session.route_generation} kv_bytes={session.kv_cache_bytes} "
+            f"queue={session.queue_depth} recoveries={session.recovery_count}"
+        )
+
+
+@app.command("cancel")
+def product_cancel_command(
+    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
+    request_id: Annotated[str, typer.Option("--request-id")],
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Idempotently cancel one request and release only its session KV state."""
+
+    from swarm_inference.coordinator.service import CoordinatorClient
+
+    async def run() -> Any:
+        client = CoordinatorClient(coordinator)
+        try:
+            return await client.cancel_request(request_id)
+        finally:
+            await client.close()
+
+    response = asyncio.run(run())
+    if json_output:
+        typer.echo(response.model_dump_json(indent=2))
+    else:
+        typer.echo(
+            f"request={response.request_id} status={response.status.value} "
+            f"idempotent={str(response.idempotent).lower()} "
+            f"released_kv_bytes={response.released_kv_bytes} detail={response.detail}"
+        )
+    if not response.accepted:
+        raise typer.Exit(1)
 
 
 @app.command("coordinator")
@@ -1205,7 +1346,12 @@ def coordinator_command(
     ] = None,
     state: Annotated[
         Path,
-        typer.Option(help="Persistent coordinator plans and deployment status directory."),
+        typer.Option(
+            help=(
+                "Durable coordinator identity, deployments, request replay, telemetry, "
+                "and audit directory."
+            )
+        ),
     ] = Path(".swarm/coordinator"),
     model_manifest: Annotated[
         Path | None,
@@ -1293,6 +1439,11 @@ def coordinator_command(
         typer.echo(
             f"coordinator listening on {listen}; mode={mode_label}; state={core.state_directory}"
         )
+        if core.coordinator_identity is not None:
+            typer.echo(
+                "coordinator_identity_fingerprint="
+                f"{core.coordinator_identity.public_key_fingerprint}"
+            )
         try:
             await server.wait_for_termination()
         finally:
@@ -1319,6 +1470,10 @@ def worker_command(
     identity: Annotated[Path, typer.Option(help="Persistent Ed25519 private key.")] = Path(
         ".swarm/worker-identity.pem"
     ),
+    trusted_coordinator_fingerprint: Annotated[
+        str | None,
+        typer.Option(help="Pinned SHA-256 fingerprint of the trusted coordinator Ed25519 key."),
+    ] = None,
     worker_id: Annotated[str | None, typer.Option()] = None,
     model_shard_root: Annotated[
         Path | None,
@@ -1404,6 +1559,8 @@ def worker_command(
         (device, data_advertise, model_cache_dir, model_snapshot, allow_model_download)
     )
     if enable_stage_runtime:
+        if trusted_coordinator_fingerprint is None:
+            _fail("--trusted-coordinator-fingerprint is required with --stage-runtime")
         default_devices = {
             Backend.TORCH_CPU: "cpu",
             Backend.TORCH_CUDA: "cuda",
@@ -1457,6 +1614,7 @@ def worker_command(
             upload_bandwidth_bytes_s=upload_bandwidth_mbps * 1_000_000 / 8,
             download_bandwidth_bytes_s=download_bandwidth_mbps * 1_000_000 / 8,
             network_rates_measured=(upload_bandwidth_mbps > 0 and download_bandwidth_mbps > 0),
+            trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
         )
     )
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from swarm_inference.config.models import (
     HealthStatus,
@@ -20,6 +21,7 @@ class RegistryRecord:
     registered_monotonic_s: float
     last_heartbeat_monotonic_s: float
     measured_registration: bool
+    participation_eligible: bool
 
 
 class WorkerRegistry:
@@ -51,6 +53,7 @@ class WorkerRegistry:
                 registered_monotonic_s=timestamp,
                 last_heartbeat_monotonic_s=timestamp,
                 measured_registration=True,
+                participation_eligible=True,
             )
 
     def heartbeat(
@@ -68,6 +71,7 @@ class WorkerRegistry:
             except KeyError as exc:
                 raise ConfigurationError(f"heartbeat from unknown worker {worker_id}") from exc
             record.last_heartbeat_monotonic_s = timestamp
+            record.capability.last_heartbeat = datetime.now(UTC)
             record.capability.current_queue_depth = queue_depth
             record.capability.current_shard_assignments = list(assignments)
             for key, replica in self._replicas.items():
@@ -98,6 +102,7 @@ class WorkerRegistry:
                 age = timestamp - record.last_heartbeat_monotonic_s
                 if age > self._heartbeat_timeout_s:
                     expired.append(worker_id)
+                    record.participation_eligible = False
                     for key, replica in self._replicas.items():
                         if key[1] == worker_id and replica.health != HealthStatus.QUARANTINED:
                             replica.health = HealthStatus.UNHEALTHY
@@ -113,6 +118,10 @@ class WorkerRegistry:
         """Exclude a failed worker immediately, without waiting for heartbeat expiry."""
 
         with self._lock:
+            try:
+                self._workers[worker_id].participation_eligible = False
+            except KeyError as exc:
+                raise ConfigurationError(f"unknown worker {worker_id}") from exc
             for key, replica in self._replicas.items():
                 if key[1] == worker_id and replica.health != HealthStatus.QUARANTINED:
                     replica.health = HealthStatus.UNHEALTHY
@@ -137,7 +146,9 @@ class WorkerRegistry:
                 raise ConfigurationError(f"unknown worker {worker_id}") from exc
             age = max(0.0, timestamp - record.last_heartbeat_monotonic_s)
             return (
-                record.measured_registration and age <= self._heartbeat_timeout_s,
+                record.measured_registration
+                and record.participation_eligible
+                and age <= self._heartbeat_timeout_s,
                 age,
             )
 
@@ -148,6 +159,7 @@ class WorkerRegistry:
                 record.capability.model_copy(deep=True)
                 for record in self._workers.values()
                 if record.measured_registration
+                and record.participation_eligible
                 and timestamp - record.last_heartbeat_monotonic_s <= self._heartbeat_timeout_s
             ]
 

@@ -13,6 +13,7 @@ from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
 
 from swarm_inference.config.models import StrictModel, WorkerCapability
 from swarm_inference.model.partition import StageAssignment
+from swarm_inference.protocol.routes import SignedRouteLease
 
 
 class _StageControlModel(StrictModel):
@@ -97,6 +98,7 @@ class InstallStageRouteRequest(_StageControlModel):
     lease_expiry_unix_ns: PositiveInt
     deadline_unix_ns: PositiveInt | None = None
     replace: bool = False
+    route_lease: SignedRouteLease | None = None
 
 
 class RemoveStageRouteRequest(_StageControlModel):
@@ -139,6 +141,7 @@ class OpenStageSessionRequest(_StageControlModel):
     device: str
     dtype: str
     session_id: str
+    request_generation: PositiveInt = 1
     lease_expiry_unix_ns: PositiveInt | None = None
     deadline_unix_ns: PositiveInt | None = None
 
@@ -201,6 +204,7 @@ class StageSessionStatus(_StageControlModel):
     session_id: str
     model_revision: str
     route_generation: PositiveInt
+    request_generation: PositiveInt = 1
     stage_id: NonNegativeInt
     cache_position: NonNegativeInt
     kv_cache_bytes: NonNegativeInt
@@ -237,6 +241,8 @@ class InstalledStageRouteStatus(_StageControlModel):
     stage_count: PositiveInt
     stage_zero_publication_destination: str | None
     lease_expiry_unix_ns: PositiveInt
+    authenticated: bool = False
+    route_lease_hash: str | None = None
 
 
 class StageStatusResponse(_StageControlModel):

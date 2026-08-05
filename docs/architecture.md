@@ -60,6 +60,12 @@ The current transport is coordinator-relayed gRPC. The `ActivationTransport`
 interface permits a future QUIC implementation without modifying worker
 execution.
 
+The OLMoE product slice uses a separate persistent stage-ring runtime. Its
+coordinator sends prompt/token inputs to stage zero, while stage-boundary
+activations travel directly between authenticated worker peers. Intermediate
+activations do not pass through the coordinator in this product path. The
+older experimental and dense-stage paths above remain documented separately.
+
 ## Model shards
 
 The dense Qwen3 adapter reads `config.json` and safetensors indexes, maps every
@@ -96,6 +102,15 @@ but can consume substantial coordinator storage, network bandwidth, and
 additional compute. Periodic cache snapshots are a future extension behind the
 same recovery boundary.
 
+The product recovery mechanism is restart-and-replay, not transparent KV
+migration. When a route fails, the coordinator stops accepting its output,
+selects an exact eligible replacement, installs a higher signed route
+generation, opens a fresh session, replays the prompt and every accepted token
+through greedy decoding, and compares each replayed token with durable history.
+Replay token events are suppressed. Generation resumes only after the entire
+accepted prefix verifies; the first divergence fails the request without
+emitting another client token.
+
 ## Integrity
 
 Registrations, heartbeats, and result checksums are signed with Ed25519.
@@ -104,4 +119,3 @@ synthetic outputs use checksums; real outputs use configured tolerances.
 Disagreements reduce reputation and can quarantine a worker. This is
 probabilistic detection, not Byzantine fault tolerance or a proof of correct
 neural computation.
-
