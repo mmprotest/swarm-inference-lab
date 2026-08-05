@@ -15,6 +15,10 @@ from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
 from swarm_inference.protocol.product import ProductTokenPublication
+from swarm_inference.runtime.shutdown import (
+    install_shutdown_signal_handlers,
+    wait_for_service_shutdown,
+)
 from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
@@ -495,18 +499,24 @@ async def run_worker(
             },
         )
     heartbeat_task = asyncio.create_task(heartbeat_loop(), name=f"heartbeat:{capability.worker_id}")
+    shutdown_event = stop_event or asyncio.Event()
+    restore_signal_handlers = (
+        install_shutdown_signal_handlers(shutdown_event) if stop_event is None else lambda: None
+    )
     try:
-        if stop_event is None:
-            await service.wait_for_termination()
-        else:
-            await stop_event.wait()
+        await wait_for_service_shutdown(service.wait_for_termination(), shutdown_event)
     finally:
+        restore_signal_handlers()
         if recorder is not None:
             recorder.emit("worker_shutdown_started")
         heartbeat_task.cancel()
         with suppress(asyncio.CancelledError):
             await heartbeat_task
-        await client.close()
-        await service.stop()
-        if expert_server is not None:
-            await expert_server.close()
+        try:
+            await service.stop()
+        finally:
+            try:
+                if expert_server is not None:
+                    await expert_server.close()
+            finally:
+                await client.close()

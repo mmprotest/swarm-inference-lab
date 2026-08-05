@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from datetime import UTC, datetime
 from typing import Any
 
@@ -26,10 +27,18 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, sort_keys=True, default=str)
 
 
+class DynamicStderrHandler(logging.StreamHandler[Any]):
+    """Resolve stderr at emit time so in-process CLI capture cannot leave a closed stream."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.stream = sys.stderr
+        super().emit(record)
+
+
 def configure_logging(*, level: str = "INFO", json_output: bool = False) -> None:
     """Configure the process root logger once at a CLI boundary."""
 
-    handler = logging.StreamHandler()
+    handler = DynamicStderrHandler()
     if json_output:
         handler.setFormatter(JsonFormatter())
     else:

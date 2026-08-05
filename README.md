@@ -1,225 +1,287 @@
 # Swarm Inference Lab
 
-> Researching whether computers around the world can work together as one AI
-> inference system.
+Swarm Inference Lab is an open-source prototype for measured, heterogeneous distributed
+inference. Its product runtime coordinates persistent workers and sends hidden states directly
+around a stage ring. The broader research question—whether independent machines can deliver
+useful scaling over physical LAN or WAN links—remains open.
 
-Swarm Inference Lab is an open-source prototype for **global distributed
-inference**. The aim is to pool heterogeneous CPUs, GPUs, memory, and storage so
-they can serve models or workloads that no participating machine could handle
-alone.
+This is model-agnostic infrastructure, not a Kimi K3 implementation. Qwen, OLMoE, and
+Kimi-shaped workloads are test vehicles for different mechanisms.
 
-This is a model-agnostic infrastructure project. It is **not a Kimi K3
-implementation**. Qwen, OLMoE, and Kimi-shaped workloads are test vehicles for
-different parts of the distributed system.
+## Current status — August 2026
 
-## What the project is trying to prove
+The software product path works in process-isolated loopback tests. The first proven product
+model family is OLMoE. Physical multi-machine product performance has not been proven, and this
+repository does not claim a secure public-Internet service.
 
-The core research question is:
+Working today:
 
-> Can geographically distributed machines collectively host a model larger
-> than any one node and increase verified output throughput as useful nodes are
-> added, despite latency, uneven hardware, churn, failures, and incorrect
-> workers?
+- persistent coordinator-managed OLMoE stage workers;
+- direct stage-to-stage tensor transport with bounded queues and streaming token publication;
+- Ed25519 worker identities, reloadable coordinator trust, signed route leases, and authenticated
+  peer handshakes;
+- restart-and-replay recovery with accepted-prefix verification and duplicate-token suppression;
+- canonical whole-expert and native microshard backends as optional stage-internal execution
+  paths; and
+- simulator and historical experiment tooling kept outside the canonical product runtime.
 
-Success has three parts:
+Not yet demonstrated:
 
-1. **Capacity:** model stages or experts can be split across machines.
-2. **Useful scaling:** adding suitable machines increases aggregate verified
-   throughput across concurrent requests.
-3. **Correctness and resilience:** the system detects bad results and survives
-   realistic worker failures without silently corrupting output.
+- a product acceptance run on two distinct physical machines;
+- positive product scaling over a physical LAN or WAN;
+- payload confidentiality on the stage-ring data plane;
+- continuous tensor batching (current concurrency is session interleaving); or
+- seamless failover or KV migration (current recovery restarts a session and replays it).
 
-The goal is not necessarily to make one prompt faster. A distributed network
-may increase total serving capacity while adding latency to an individual
-request.
+## Product architecture
 
-## Current status - August 2026
-
-**The prototype works on one machine. The global scaling hypothesis is not yet
-proven.**
-
-### Working today
-
-- A deterministic simulator models heterogeneous nodes, LAN/WAN links, replica
-  placement, workload-aware scheduling, churn, and adversarial workers.
-- Independent worker processes exchange real gRPC activations and expert
-  results through bounded queues, with replay, signatures, audits, quarantine,
-  and clean shutdown.
-- Dense Qwen3-0.6B stage partitioning matches a separate full-model reference
-  on native Windows CPU and RTX 5090 CUDA.
-- Real Colibri OLMoE inference consumes whole-expert and native-microshard
-  results from separate worker processes while preserving exact tokens and
-  internal numerical boundaries.
-- The physical experiment runner and cross-platform worker entry point are
-  implemented. Windows is the exercised hardware platform; Linux x86-64,
-  Linux ARM64, and macOS paths still need full target-hardware validation.
-- Every standard run produces machine-readable provenance, metrics, acceptance
-  results, charts, an offline report, and artifact hashes.
-
-### Not yet demonstrated
-
-- a completed inference run across two or more physical machines;
-- positive scaling over a real LAN or WAN;
-- a complete current over-VRAM Level B run with all correctness and performance
-  gates passing;
-- Kimi K3 checkpoint execution; or
-- a secure production network for untrusted Internet workers.
-
-### Latest result: Experiment 010
-
-Experiment 010 exercised a hardware-in-the-loop virtual swarm on one Windows
-workstation. Separate native expert workers matched 1,600/1,600 whole-expert
-tokens and 640/640 microshard tokens. All recoverable cases in an eight-scenario
-failure matrix remained exact, and all 120 scheduled corruptions were detected
-with zero false positives across 14,484 clean controls.
-
-The distributed configurations were correct but slower than local execution on
-that workstation: local decode measured 5.26 tokens/s versus roughly 2.81-2.95
-tokens/s for the exact distributed paths. The planner correctly chose local
-execution for ordinary decode and distributed execution only for the capacity
-objective.
-
-The official result is therefore `PARTIAL` / `INCOMPLETE_FULL_RUN`: the
-single-workstation software gates pass, but the required current over-VRAM
-Level B workload was unavailable and no physical multi-machine run exists. 
-
-## How the system works
-
-The coordinator owns placement, routing, verification, and recovery. Workers
-host only their assigned model stages or experts.
+The coordinator owns the control plane. It registers workers, plans and deploys a topology,
+admits sessions, coordinates recovery, and receives token publications. It is absent from
+steady-state hidden-state forwarding.
 
 ```mermaid
 flowchart LR
-    R[Concurrent requests] --> C[Coordinator<br/>schedule, verify, recover]
-    C <--> G[GPU workers<br/>stages or experts]
-    C <--> P[CPU workers<br/>stages or experts]
-    C <--> W[Workers at other sites]
+    subgraph C[Coordinator control plane]
+      R[worker registry]
+      P[planning and deployment]
+      A[admission and recovery]
+      T[token publication]
+    end
+
+    subgraph D[Direct stage-ring data plane]
+      S0[Persistent stage 0]
+      S1[Persistent stage 1]
+      SN[Persistent stage N]
+      S0 -->|hidden state| S1
+      S1 -->|hidden state| SN
+      SN -->|token result / next step| S0
+    end
+
+    C -. signed routes and control RPCs .-> S0
+    C -. signed routes and control RPCs .-> S1
+    C -. signed routes and control RPCs .-> SN
+    S0 -. ordered token publications .-> T
 ```
 
-For each request:
+Workers and loaded model stages persist across requests. Whole-expert and microshard execution
+are stage-internal optional backends; they do not create another coordinator or inference
+runtime. Multiple sessions may be interleaved through bounded queues, but that is not
+continuous tensor batching.
 
-1. workers register their measured capabilities, identity, endpoint, and model
-   partitions;
-2. the planner chooses a route using compute time, queue depth, network cost,
-   reliability, and workload priority;
-3. selected workers execute their stages or experts and return activations or
-   expert results;
-4. the coordinator verifies and commits output; and
-5. failed work is replayed to a compatible replica when recovery is possible.
+If a process, active data connection, control RPC, or publication dependency fails, the
+coordinator retires the affected route generation, selects compatible replacements, installs a
+higher signed generation, and replays the prompt plus the accepted greedy-token prefix. Replay
+tokens are verified and suppressed. This is restart-and-replay, not seamless failover.
 
-A slow or unreliable node is not forced into a route merely because it is
-available. The scheduler can leave nodes idle when they would reduce useful
-throughput.
+See [Architecture](docs/architecture.md), [security boundaries](docs/security-boundary.md), and
+[recovery](docs/recovery.md) for the precise contracts.
 
-The centralized coordinator is intentional at this stage. It keeps the scaling
-experiment measurable before decentralized discovery or consensus adds more
-failure modes.
+## Secure product quick start
 
-## Where the model names fit
-
-- **Qwen3-0.6B** tests dense stage partitioning.
-- **OLMoE-1B-7B** tests real sparse-expert distribution.
-- **Qwen3-Next** supplied the historical over-VRAM workload. It generated text
-  with 45.081 GiB of Q4_K_M tensors across GPU and system RAM, but its
-  correctness and adaptive-performance gates failed.
-- **Kimi K3** is only a future feasibility target. The repository has a
-  compiled synthetic K3-shaped MXFP4 fixture, not Kimi K3 inference or model
-  support.
-
-Future models matter only insofar as they test the general distributed
-inference design.
-
-## Quick start
-
-Python 3.11 is required. The synthetic path needs neither PyTorch nor a model
-download.
-
-Windows PowerShell:
+Python 3.11 is required. Install the appropriate backend first:
 
 ```powershell
-.\scripts\bootstrap.ps1 -Backend synthetic
-.\.venv\Scripts\swarm.exe simulate --config configs/experiments/smoke.yaml
+uv sync --extra cpu
 ```
 
-Linux or macOS:
+The shipped product configuration remains secure: `require_trusted_workers: true`. Provision
+identities and trust before starting workers. These commands never print private-key bytes.
+
+### 1. Create identities and trust workers
+
+```powershell
+uv run swarm identity create --path .swarm/coordinator/coordinator-identity.json --kind coordinator
+uv run swarm identity create --path .swarm/identities/worker-1.json --kind worker
+uv run swarm identity create --path .swarm/identities/worker-2.json --kind worker
+
+$CoordinatorFingerprint = (uv run swarm identity fingerprint `
+  --path .swarm/coordinator/coordinator-identity.json).Trim()
+
+uv run swarm identity trust --coordinator-state .swarm/coordinator `
+  --identity .swarm/identities/worker-1.json --label worker-1
+uv run swarm identity trust --coordinator-state .swarm/coordinator `
+  --identity .swarm/identities/worker-2.json --label worker-2
+uv run swarm identity list-trusted --coordinator-state .swarm/coordinator
+```
+
+Set an exact local OLMoE snapshot and immutable revisions. Each worker needs access to its own
+local cache or snapshot; a remote worker does not read the coordinator's filesystem.
+
+```powershell
+$ModelSnapshot = "C:\models\OLMoE-1B-7B-0125-Instruct-b89a7c4"
+$ModelId = "allenai/OLMoE-1B-7B-0125-Instruct"
+$ModelRevision = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
+$TokenizerRevision = "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea"
+```
+
+### 2. Start the coordinator and two persistent workers
+
+Coordinator terminal:
+
+```powershell
+uv run swarm coordinator --config configs/product/olmoe-stage-ring.yaml `
+  --state .swarm/coordinator --listen 0.0.0.0:50051 `
+  --advertise 127.0.0.1:50051
+```
+
+Worker 1 terminal:
+
+```powershell
+uv run swarm worker --coordinator 127.0.0.1:50051 --worker-id worker-1 `
+  --identity .swarm/identities/worker-1.json --backend torch-cpu `
+  --memory-limit-gb 16 --listen 0.0.0.0:50052 --advertise 127.0.0.1:50052 `
+  --stage-runtime --data-listen 0.0.0.0:50053 --data-advertise 127.0.0.1:50053 `
+  --device cpu --dtype float32 --model-snapshot $ModelSnapshot `
+  --trusted-coordinator-fingerprint $CoordinatorFingerprint
+```
+
+Worker 2 terminal:
+
+```powershell
+uv run swarm worker --coordinator 127.0.0.1:50051 --worker-id worker-2 `
+  --identity .swarm/identities/worker-2.json --backend torch-cpu `
+  --memory-limit-gb 16 --listen 0.0.0.0:50062 --advertise 127.0.0.1:50062 `
+  --stage-runtime --data-listen 0.0.0.0:50063 --data-advertise 127.0.0.1:50063 `
+  --device cpu --dtype float32 --model-snapshot $ModelSnapshot `
+  --trusted-coordinator-fingerprint $CoordinatorFingerprint
+```
+
+Loopback proves software behavior only. Use routable host addresses and the
+[physical two-machine runbook](docs/physical-two-machine-acceptance.md) for physical evidence.
+
+### 3. Inspect, plan, and deploy
+
+```powershell
+uv run swarm workers --coordinator 127.0.0.1:50051 --json
+uv run swarm model inspect --coordinator 127.0.0.1:50051 `
+  --model-id $ModelId --revision $ModelRevision `
+  --tokenizer-revision $TokenizerRevision --dtype float32
+uv run swarm model plan --coordinator 127.0.0.1:50051 `
+  --model-id $ModelId --revision $ModelRevision `
+  --tokenizer-revision $TokenizerRevision --dtype float32 `
+  --stage-count 2 --partition balanced --require-distributed `
+  --output .swarm/plans/olmoe-two-stage.json
+uv run swarm model deploy --coordinator 127.0.0.1:50051 `
+  --plan .swarm/plans/olmoe-two-stage.json
+uv run swarm topology --coordinator 127.0.0.1:50051 --json
+```
+
+### 4. Stream, inspect, cancel, unload, and stop
+
+```powershell
+uv run swarm submit --coordinator 127.0.0.1:50051 `
+  --model-id $ModelId --model-revision $ModelRevision `
+  --prompt "Write a Python function that merges two sorted lists." `
+  --max-new-tokens 32 --temperature 0 --stream --ndjson
+
+uv run swarm status --coordinator 127.0.0.1:50051 --json
+uv run swarm sessions --coordinator 127.0.0.1:50051 --json
+uv run swarm cancel --coordinator 127.0.0.1:50051 --request-id <request-id> --json
+uv run swarm model unload --coordinator 127.0.0.1:50051 --topology-id <topology-id>
+```
+
+For cancellation, copy `request_id` from the initial NDJSON stream event while a sufficiently
+long request is active. After unload completes, press Ctrl+C in each worker terminal and then in
+the coordinator terminal. Both entry points close sessions, transports, and servers in `finally`
+cleanup.
+
+Concise POSIX equivalent (after `uv sync --extra cpu`):
 
 ```bash
-bash scripts/bootstrap.sh --backend synthetic
-.venv/bin/swarm simulate --config configs/experiments/smoke.yaml
+uv run swarm identity create --path .swarm/coordinator/coordinator-identity.json --kind coordinator
+uv run swarm identity create --path .swarm/identities/worker-1.json --kind worker
+uv run swarm identity create --path .swarm/identities/worker-2.json --kind worker
+COORDINATOR_FINGERPRINT="$(uv run swarm identity fingerprint --path .swarm/coordinator/coordinator-identity.json)"
+uv run swarm identity trust --coordinator-state .swarm/coordinator --identity .swarm/identities/worker-1.json --label worker-1
+uv run swarm identity trust --coordinator-state .swarm/coordinator --identity .swarm/identities/worker-2.json --label worker-2
+uv run swarm coordinator --config configs/product/olmoe-stage-ring.yaml --state .swarm/coordinator --listen 0.0.0.0:50051 --advertise 127.0.0.1:50051
+# In two other terminals, run the worker commands above with POSIX paths and distinct ports.
 ```
 
-Use `cpu`, `cuda`, or `mps` instead of `synthetic` to install a supported real
-model backend. The smoke command writes a report and may return `FAIL` when an
-acceptance threshold is missed; that is a valid experimental result, not a
-crashed installation.
+## Experiment history
 
-Run four process-isolated workers on the local machine after activating the
-virtual environment:
+Experiment 011 is the latest completed experiment. Its August 2026 single-workstation,
+shaped-loopback evidence closed the communication-avoiding exact-decode experiment gates and
+demonstrated direct contiguous-stage execution. Its network-profile results are descriptive:
+they do not substitute for physical NIC, switch, independent-clock, host-failure, or
+cross-machine scheduling evidence.
 
-```bash
-swarm experiment --config configs/experiments/scaling_loopback.yaml --workers 4
+Experiment 010 remains the preceding expert-runtime experiment. Its retained historical runtime
+is explicitly frozen and mapped in
+[Experiment 010 runtime mapping](docs/experiment-010-runtime-mapping.md); canonical product code
+does not import experiments. Archived Experiment 010 and 011 evidence is not rewritten by the
+product runtime.
+
+Do not begin Experiment 012 based on software-only acceptance. At least real-model product
+acceptance is required; physical acceptance is preferable when a second machine is available.
+
+## Acceptance and evidence
+
+Run the software productization acceptance bundle with:
+
+```powershell
+uv run python scripts/run_productization_acceptance.py run `
+  --output artifacts/acceptance
 ```
 
-That command tests the runtime, not physical scaling. For separate machines,
-follow the [physical-node procedure](docs/physical_nodes.md); the runner rejects
-same-host workers when a physical result is requested.
+The process repeatability target uses a hard timeout per invocation and records all three full
+suite runs plus all five stage-ring-module runs:
 
-## Reproducing real-model work
+```powershell
+uv run python scripts/run_productization_process_suite.py `
+  --full-runs 3 --stage-runs 5 --timeout-seconds 600 `
+  --output artifacts/acceptance
+```
 
-- [Dense Qwen stage correctness](docs/experiment-002-real-qwen3.md)
-- [Colibri expert runtime](experiments/009_colibri_adaptive_expert_runtime/README.md)
-- [Latest virtual-swarm closure](experiments/010_hardware_in_loop_virtual_swarm_closure/README.md)
+Real-model gates use the pinned checkpoint, never a synthetic fixture. Before the first
+whole-expert or native-microshard run, prepare the canonical ownership artifacts. Native
+microshards are physically sliced; the two banks require approximately 26 GB in addition to the
+checkpoint.
 
-Model downloads and checkpoint revisions are always explicit. A distributed
-validation run does not silently load a full reference model into a worker or
-coordinator; reference validation runs separately and is disclosed.
+```powershell
+$ModelSnapshot = "artifacts/models/colibri/source-b89a7c4bc24f"
+$TokenizerRevision = "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea"
+uv run python scripts/prepare_real_olmoe_expert_acceptance.py `
+  --model-path $ModelSnapshot --tokenizer-revision $TokenizerRevision `
+  --output artifacts/acceptance/olmoe-expert-prerequisites `
+  --whole --microshards
+```
 
-## Evidence rules
+Then explicitly enable and request all four real-model gates:
 
-Every result says what actually ran:
+```powershell
+$env:SWARM_RUN_PRODUCT_OLMOE_CUDA = "1"
+uv run python scripts/run_productization_acceptance.py run `
+  --real-model --output artifacts/acceptance
+```
 
-- `simulation` models behavior from measured or declared inputs;
-- `single-host-loopback` uses real processes and transport on one machine;
-- `physical-lan` requires separate machines on a real local network; and
-- `physical-wan` requires separate machines on a real wide-area network.
+The runner records `PASS`, `FAIL`, `SKIP`, and `NOT_RUN` per gate. A skipped GPU or physical gate
+cannot become a real-model or physical pass. JUnit execution counts distinguish a test that ran
+from one that merely collected and skipped. The versioned bundle includes commands, logs,
+environment and dirty-tree provenance, per-gate topology/token/recovery evidence, and SHA-256
+checksums. See the physical runbook for the distinct-machine procedure.
 
-Only committed tokens from completed and verified requests count toward the
-primary throughput metric. A failed gate stays `FAIL`, and an unrun gate is
-never converted into a pass.
+## Security boundary
 
-## Next milestone
-
-The next decisive experiment is the exact expert path on at least two
-independently powered hosts. It must show whether any distributed placement has
-positive utility after real NIC, storage, synchronization, thermal, and failure
-domain costs are included. If that works on a LAN, the project can move toward
-geographically separated WAN nodes.
-
-Until then, this repository demonstrates distributed-inference mechanisms and
-single-host correctness - not a working global inference network.
+Do not expose the runtime to the public Internet or send sensitive prompts to untrusted workers.
+Ed25519 identities authenticate registrations, route authority, and direct peers, but stage-ring
+TCP payloads are not encrypted. Checksums detect accidental corruption; they do not provide
+confidentiality or replace authentication. The current supported boundary is a trusted LAN or
+private network. See [Security boundary](docs/security-boundary.md).
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
-- [Protocol](docs/protocol.md)
 - [Product runtime operations](docs/product-runtime.md)
-- [Experiment design](docs/experiments.md)
+- [Stage-ring protocol](docs/stage-ring-protocol.md)
+- [Security boundary](docs/security-boundary.md)
+- [Recovery](docs/recovery.md)
+- [Physical two-machine acceptance](docs/physical-two-machine-acceptance.md)
 - [Known limitations](docs/limitations.md)
 
-Source code is under [`src/swarm_inference`](src/swarm_inference), experiment
-configurations are under [`configs`](configs), and checked-in reference evidence
-is under [`artifacts`](artifacts).
-
-## Security boundary
-
-Do not expose the runtime to the public Internet or send sensitive prompts to
-untrusted workers. Product routes and direct stage peers authenticate each
-other with Ed25519 identities, but stage-ring traffic is not encrypted. The
-supported boundary is a trusted LAN or private network. Workers can inspect
-their input activations and cache state. Signatures and duplicate audits do not
-provide channel confidentiality, prompt privacy, activation privacy, Byzantine
-fault tolerance, collusion resistance, or cryptographic proof of neural
-computation.
+Source is under [`src/swarm_inference`](src/swarm_inference), product configuration is under
+[`configs/product`](configs/product), and generated acceptance evidence belongs under
+`artifacts/acceptance`.
 
 ## License
 

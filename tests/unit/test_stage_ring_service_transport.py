@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import socket
+from dataclasses import replace
 
 import pytest
 
@@ -18,12 +19,19 @@ from swarm_inference.transport.stage_ring_connection import (
     StageRingConnectionPool,
     read_stage_message,
 )
+from swarm_inference.transport.stage_ring_faults import CloseConnectionBeforeSendInjector
 from swarm_inference.transport.stage_ring_server import StageRingServer
 
 
-def message(sequence: int, *, payload: bytes = b"payload") -> StageMessage:
+def message(
+    sequence: int,
+    *,
+    payload: bytes = b"payload",
+    operation: Operation = Operation.HEALTH,
+    token_position: int = -1,
+) -> StageMessage:
     return StageMessage(
-        operation=Operation.HEALTH,
+        operation=operation,
         model_revision="model",
         tokenizer_revision="tokenizer",
         topology_id="topology",
@@ -33,7 +41,7 @@ def message(sequence: int, *, payload: bytes = b"payload") -> StageMessage:
         session_id="session",
         request_id=f"request-{sequence}",
         sequence_number=sequence,
-        token_position=-1,
+        token_position=token_position,
         source_stage=-1,
         destination_stage=0,
         payload=payload,
@@ -164,6 +172,159 @@ async def test_outbound_queue_applies_bounded_backpressure(monkeypatch) -> None:
     await pool.close()
     with pytest.raises(TransportError, match="closed"):
         await first
+
+
+@pytest.mark.asyncio
+async def test_fault_injector_closes_the_matching_active_connection_and_evicts_it() -> None:
+    server = StageRingServer(handler=echo, maximum_payload_bytes=1024)
+    port = await server.start("127.0.0.1:0")
+    endpoint = f"127.0.0.1:{port}"
+    injector = CloseConnectionBeforeSendInjector(
+        token_position=2,
+        source_stage=0,
+        destination_stage=1,
+        request_id="request-2",
+    )
+    pool = StageRingConnectionPool(
+        read_timeout_s=1,
+        write_timeout_s=1,
+        reconnect_attempts=1,
+        fault_injector=injector,
+    )
+    try:
+        # Establish and prove the connection before crossing the injected boundary.
+        await pool.send(endpoint, message(0))
+        assert pool.snapshot()["active_connections"] == 1
+        injected = message(2, operation=Operation.DECODE, token_position=2)
+        injected = replace(
+            injected,
+            source_stage=0,
+            destination_stage=1,
+            attributes={"route_generation": 7},
+        )
+        with pytest.raises(
+            TransportError,
+            match=r"route_generation=7.*request=request-2.*sequence=2",
+        ):
+            await pool.send(endpoint, injected)
+
+        assert injector.triggered
+        assert len(injector.events) == 1
+        event = injector.events[0]
+        assert event["event_type"] == "stage_ring_fault_injected"
+        assert event["active_connection"] is True
+        assert event["route_generation"] == 7
+        assert event["token_position"] == 2
+        snapshot = pool.snapshot()
+        assert snapshot["fault_injections"] == 1
+        assert snapshot["connection_evictions"] == 1
+        assert snapshot["active_connections"] == 0
+
+        # The listener and control-independent peer remain healthy, and the
+        # one-shot injector does not poison the replacement connection.
+        response = await pool.send(endpoint, message(3))
+        assert response.request_id == "request-3"
+        assert pool.snapshot()["connections_created"] == 2
+    finally:
+        await pool.close()
+        await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_listener_closure_is_not_counted_as_active_connection_injection() -> None:
+    async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            while True:
+                value = await read_stage_message(reader, read_timeout_s=1)
+                response = await echo(value)
+                writer.write(encode_message(response).frame)
+                await writer.drain()
+        except asyncio.IncompleteReadError:
+            pass
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    listener = await asyncio.start_server(handle, "127.0.0.1", 0)
+    port = listener.sockets[0].getsockname()[1]
+    endpoint = f"127.0.0.1:{port}"
+    injector = CloseConnectionBeforeSendInjector(token_position=99)
+    pool = StageRingConnectionPool(read_timeout_s=1, write_timeout_s=1, fault_injector=injector)
+    try:
+        assert (await pool.send(endpoint, message(0))).request_id == "request-0"
+        listener.close()
+        await listener.wait_closed()
+        # Closing only the listener does not interrupt this established socket.
+        assert (await pool.send(endpoint, message(1))).request_id == "request-1"
+        assert not injector.triggered
+        assert pool.snapshot()["fault_injections"] == 0
+    finally:
+        await pool.close()
+        listener.close()
+        await listener.wait_closed()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("abort", [False, True], ids=["eof", "reset"])
+async def test_eof_and_reset_evict_failed_peer_connections(abort: bool) -> None:
+    async def close_after_read(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        await read_stage_message(reader, read_timeout_s=1)
+        if abort:
+            writer.transport.abort()
+        else:
+            writer.close()
+            await writer.wait_closed()
+
+    listener = await asyncio.start_server(close_after_read, "127.0.0.1", 0)
+    port = listener.sockets[0].getsockname()[1]
+    pool = StageRingConnectionPool(read_timeout_s=1, write_timeout_s=1, reconnect_attempts=1)
+    try:
+        with pytest.raises(TransportError, match="stage-ring exchange"):
+            await pool.send(f"127.0.0.1:{port}", message(8))
+        snapshot = pool.snapshot()
+        assert snapshot["failures"] == 1
+        assert snapshot["connection_evictions"] == 1
+        assert snapshot["active_connections"] == 0
+    finally:
+        await pool.close()
+        listener.close()
+        await listener.wait_closed()
+
+
+@pytest.mark.asyncio
+async def test_pending_response_timeout_evicts_connection() -> None:
+    release = asyncio.Event()
+
+    async def never_respond(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            await read_stage_message(reader, read_timeout_s=1)
+            await release.wait()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    listener = await asyncio.start_server(never_respond, "127.0.0.1", 0)
+    port = listener.sockets[0].getsockname()[1]
+    pool = StageRingConnectionPool(
+        read_timeout_s=0.05,
+        write_timeout_s=1,
+        reconnect_attempts=1,
+    )
+    try:
+        with pytest.raises(
+            TransportError,
+            match=r"response timeout.*session=session.*request=request-9.*sequence=9",
+        ):
+            await pool.send(f"127.0.0.1:{port}", message(9))
+        snapshot = pool.snapshot()
+        assert snapshot["response_timeouts"] == 1
+        assert snapshot["connection_evictions"] == 1
+        assert snapshot["active_connections"] == 0
+    finally:
+        release.set()
+        await pool.close()
+        listener.close()
+        await listener.wait_closed()
 
 
 @pytest.mark.asyncio

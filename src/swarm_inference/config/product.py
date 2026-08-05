@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, field_validator
 
 from swarm_inference.config.models import StrictModel
 
@@ -33,6 +33,14 @@ class ProductCoordinatorConfig(StrictModel):
     maximum_recovery_attempts: PositiveInt = 2
     trusted_worker_fingerprints: list[str] = Field(default_factory=list)
     require_trusted_workers: bool = True
+    trust_store_path: Path | None = None
+
+    @field_validator("trusted_worker_fingerprints")
+    @classmethod
+    def validate_trusted_worker_fingerprints(cls, values: list[str]) -> list[str]:
+        from swarm_inference.security.trust_store import normalize_fingerprint
+
+        return sorted({normalize_fingerprint(value) for value in values})
 
 
 def load_product_config(path: Path) -> ProductCoordinatorConfig:

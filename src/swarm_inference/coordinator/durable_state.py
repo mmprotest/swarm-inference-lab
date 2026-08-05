@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from swarm_inference.config.models import WorkerCapability
 from swarm_inference.exceptions import IntegrityError
+from swarm_inference.filesystem import replace_atomically
 from swarm_inference.protocol.product import (
     ProductRequestPhase,
     ProductRequestRecoveryState,
@@ -28,7 +29,7 @@ def _atomic_write(path: Path, payload: str) -> None:
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
+        replace_atomically(temporary, path)
     finally:
         if temporary.exists():
             temporary.unlink()
@@ -49,7 +50,9 @@ class DurableCoordinatorState:
 
     @property
     def identity_path(self) -> Path:
-        return self.directory / "coordinator-identity.pem"
+        canonical = self.directory / "coordinator-identity.json"
+        legacy = self.directory / "coordinator-identity.pem"
+        return legacy if legacy.is_file() and not canonical.exists() else canonical
 
     def save_metadata(self, values: dict[str, Any]) -> None:
         with self._lock:

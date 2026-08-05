@@ -1,121 +1,117 @@
-# Architecture
+# Product architecture
 
-The initial design is centralised on purpose. Decentralised consensus and a DHT
-would add failure modes before the scaling hypothesis has evidence.
-
-```mermaid
-flowchart LR
-    C[Coordinator<br/>tokenizer, registry, scheduler] -->|token IDs / activation| S0
-    subgraph P0[Stage pool 0]
-      S0[Replica A]
-      S0B[Replica B]
-    end
-    subgraph P1[Stage pool 1]
-      S1[Replica C]
-      S1B[Replica D]
-    end
-    S0 -->|hidden state| S1
-    S0B -->|hidden state| S1B
-    S1 -->|logits| C
-    S1B -->|logits| C
-```
-
-## Coordinator
-
-The coordinator owns model metadata, tokenizer state, worker registration,
-placement, per-request routes, token commitment, audit decisions, and exact
-stage-input replay logs. It does not instantiate a full model during a
-distributed run. A full reference model is permitted only in the separate,
-disclosed validation process.
-
-Every scheduling decision retains candidates, rejection reasons, predicted
-execution/queue/network components, reliability penalty, selection, actual
-elapsed time, and prediction error. Static mode is the baseline. Fastest-route
-mode minimises estimated completion time. Replicated placement balances stage
-capacity and holds incomplete, non-beneficial replica rounds idle. Workload-tier
-routing weights reliability/latency more strongly for interactive work.
-
-## Workers and stage pools
-
-A worker measures a registration profile, advertises an Ed25519 public key,
-receives an explicit assignment, checks the stage hash and logical memory cap,
-and constructs only that stage. Stage pools may contain replicas on different
-hardware. A slow node never becomes a mandatory hop for an existing fast route.
+The canonical product has a coordinator control plane and a direct stage-ring data plane. This
+document describes the product path; older coordinator-relayed experiment paths are historical
+baselines, not the primary architecture.
 
 ```mermaid
-sequenceDiagram
-    participant C as Coordinator
-    participant A as Stage 0 worker
-    participant B as Stage 1 worker
-    C->>A: committed token or prompt IDs
-    A->>A: embeddings + owned layers + local KV cache
-    A-->>C: signed hidden state
-    C->>B: verified hidden state
-    B->>B: owned layers + norm/head + local KV cache
-    B-->>C: signed logits
-    C->>C: greedy/sample and commit token
-```
-
-The current transport is coordinator-relayed gRPC. The `ActivationTransport`
-interface permits a future QUIC implementation without modifying worker
-execution.
-
-The OLMoE product slice uses a separate persistent stage-ring runtime. Its
-coordinator sends prompt/token inputs to stage zero, while stage-boundary
-activations travel directly between authenticated worker peers. Intermediate
-activations do not pass through the coordinator in this product path. The
-older experimental and dense-stage paths above remain documented separately.
-
-## Model shards
-
-The dense Qwen3 adapter reads `config.json` and safetensors indexes, maps every
-source tensor to embeddings, one decoder layer, final normalisation, or output
-head, and partitions contiguous layers. Tied tensors are duplicated only when
-declared in `manifest.shared_tensors`. The generated union is compared with the
-source state-dictionary key set. Each stage directory is SHA-256 hashed.
-
-Workers expose a load proof containing logical bytes and source tensor names.
-The coordinator may hold tokenizer and metadata, but not the full weights.
-
-## Cache ownership and replay
-
-Each cache is keyed by request, model revision, stage, cache generation, and
-token position. Cancellation removes local state.
-
-```mermaid
-sequenceDiagram
-    participant C as Coordinator replay log
-    participant F as Failed replica
-    participant R as Replacement replica
-    C-xF: operation times out
-    C->>R: verify shard hash/revision
-    loop committed prefill/decode positions
-      C->>R: exact recorded stage input (replay)
-      R->>R: reconstruct local cache
+flowchart TB
+    subgraph C[Coordinator control plane]
+      REG[worker registry and trust]
+      PLAN[model inspection and planning]
+      DEPLOY[signed route deployment]
+      ADMIT[session admission]
+      RECOVER[replacement and replay]
+      PUB[ordered token publication]
     end
-    C->>R: current stage input
-    R-->>C: signed result
+
+    subgraph R[Direct stage-ring data plane]
+      S0[persistent stage 0]
+      S1[persistent stage 1]
+      SN[persistent stage N]
+      S0 -->|activation frame| S1
+      S1 -->|activation frame| SN
+      SN -->|token result / next dependency| S0
+    end
+
+    C -. control RPCs .-> S0
+    C -. control RPCs .-> S1
+    C -. control RPCs .-> SN
+    S0 -. token publication .-> PUB
 ```
 
-Replay avoids restarting a complete request when a compatible replica exists,
-but can consume substantial coordinator storage, network bandwidth, and
-additional compute. Periodic cache snapshots are a future extension behind the
-same recovery boundary.
+The coordinator is not on the steady-state hidden-state forwarding path. It starts sessions at
+stage zero and receives bounded token publications; stage-boundary activations move directly
+between authenticated peers. Coordinator gRPC and stage-ring TCP therefore have separate
+endpoints and failure domains.
 
-The product recovery mechanism is restart-and-replay, not transparent KV
-migration. When a route fails, the coordinator stops accepting its output,
-selects an exact eligible replacement, installs a higher signed route
-generation, opens a fresh session, replays the prompt and every accepted token
-through greedy decoding, and compares each replayed token with durable history.
-Replay token events are suppressed. Generation resumes only after the entire
-accepted prefix verifies; the first divergence fails the request without
-emitting another client token.
+## Coordinator control plane
 
-## Integrity
+The coordinator owns:
 
-Registrations, heartbeats, and result checksums are signed with Ed25519.
-Selected operations may be duplicated across independent replicas. Exact
-synthetic outputs use checksums; real outputs use configured tolerances.
-Disagreements reduce reputation and can quarantine a worker. This is
-probabilistic detection, not Byzantine fault tolerance or a proof of correct
-neural computation.
+- durable Ed25519 route authority and worker trust decisions;
+- registration and heartbeat health;
+- exact model/revision inspection and measured placement planning;
+- transactional stage load, route installation, admission, cancellation, and unload;
+- route-generation retirement and compatible replacement selection;
+- durable request state and accepted-token replay logs; and
+- ordered publication, duplicate suppression, and client streaming.
+
+It does not load the full distributed model and does not relay product hidden states. Reference
+models are allowed only in separately disclosed validation processes.
+
+## Persistent workers and stage ownership
+
+A worker advertises separate control and data endpoints, protocol/backend support, resource
+limits, an Ed25519 public key, and measured capacity. Deployment assigns a contiguous stage and
+loads it once. The loaded stage, weights, queues, and service processes persist across requests;
+session-local KV state is opened and released independently.
+
+The first proven product adapter is OLMoE. Stage zero owns embeddings and input token handling;
+intermediate stages own contiguous decoder layers; the last stage owns final normalization and
+the output projection. Exact ownership is part of the signed route.
+
+Whole-expert and native microshard execution are optional, canonical backends within a stage.
+They use coordinator-planned expert ownership and direct expert transport, but do not introduce a
+second product coordinator, protocol family, or inference runtime.
+
+## Direct protocol and route generations
+
+Each stage-ring frame carries the topology, route generation, session, request, operation,
+source/destination stage, token position, and sequence number. Frames use bounded metadata and
+payload lengths plus SHA-256 corruption detection. Persistent peer connections are ordered and
+poisoned connections are evicted after EOF, reset, broken pipe, integrity failure, or timeout.
+
+The coordinator signs finite route leases containing worker identities, endpoints, model and
+tokenizer revisions, assignments, generation, and nonce. Workers pin the coordinator identity
+and verify the lease. Direct peers then authenticate the expected worker identity before using a
+connection. Old-generation frames and publications are rejected after replacement.
+
+Authentication does not encrypt payloads. See [Security boundary](security-boundary.md).
+
+## Session interleaving
+
+Bounded worker queues can interleave independent sessions while keeping KV state isolated by
+topology, route generation, request generation, session, and stage. This improves aggregate
+serving concurrency, but it is not continuous tensor batching: requests are not automatically
+stacked into one tensor execution.
+
+## Restart-and-replay recovery
+
+When a required worker, RPC, active data connection, or token publication fails, the coordinator
+stops accepting output from that generation, selects compatible replacements, installs a higher
+signed generation, and opens a fresh session. It replays the prompt and accepted greedy-token
+prefix, verifies every replay token against durable history, suppresses replay events, and then
+resumes at the first unaccepted token.
+
+The first divergence fails closed. There is no transparent KV transfer, coordinator high
+availability, or seamless failover. Full detail is in [Recovery](recovery.md).
+
+## Product and experiment boundary
+
+Canonical product packages under `protocol`, `transport`, `execution`, `runtime`, `coordinator`,
+and `worker` do not import `swarm_inference.experiments`. Experiment 011 compatibility paths may
+re-export canonical stage-ring primitives. Experiment 010 evidence and report code may call
+canonical modules; its retained historical coordinator/worker implementation is frozen under
+`experiment_010.legacy_runtime` and cannot be imported by non-experiment code.
+
+Historical coordinator-relayed activation paths remain useful as comparison baselines. They are
+not the product diagram above and must not be used to describe product steady state.
+
+## Evidence boundary
+
+Single-host loopback validates process separation, transport, correctness, and recovery logic.
+Network shaping validates declared delay/loss behavior on one host. Neither supplies physical
+NIC, switch, independent-clock, machine-failure, or cross-host scheduler evidence. Product
+multi-machine performance remains unproven until a bundle from
+[Physical two-machine acceptance](physical-two-machine-acceptance.md) is attached.

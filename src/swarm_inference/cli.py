@@ -31,6 +31,10 @@ from swarm_inference.model.shard_builder import (
     resolve_model,
     shard_model,
 )
+from swarm_inference.runtime.shutdown import (
+    install_shutdown_signal_handlers,
+    wait_for_service_shutdown,
+)
 
 app = typer.Typer(
     name="swarm",
@@ -52,8 +56,14 @@ model_app = typer.Typer(
     help="Inspect, plan, deploy, and unload persistent product models.",
     no_args_is_help=True,
 )
+identity_app = typer.Typer(
+    name="identity",
+    help="Create and inspect Ed25519 identities and manage coordinator worker trust.",
+    no_args_is_help=True,
+)
 app.add_typer(experiment_app, name="experiment")
 app.add_typer(model_app, name="model")
+app.add_typer(identity_app, name="identity")
 
 
 def _fail(message: str, *, code: int = 1) -> None:
@@ -67,6 +77,233 @@ def main(
     json_logs: Annotated[bool, typer.Option(help="Emit process logs as JSON lines.")] = False,
 ) -> None:
     configure_logging(level=log_level, json_output=json_logs)
+
+
+def _render_identity_metadata(metadata: Any, *, json_output: bool) -> None:
+    payload = metadata.as_dict()
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    typer.echo(f"identity kind: {payload['identity_kind']}")
+    typer.echo(f"fingerprint: {payload['fingerprint']}")
+    typer.echo(f"public key: {payload['public_key']}")
+    typer.echo(f"public-key encoding: {payload['public_key_encoding']}")
+    typer.echo(f"created time: {payload['created_at'] or 'unknown (legacy PEM)'}")
+    typer.echo(f"format version: {payload['format_version']}")
+    typer.echo(f"path: {payload['path']}")
+
+
+@identity_app.command("create")
+def identity_create_command(
+    path: Annotated[Path, typer.Option(help="New versioned identity JSON path.")],
+    kind: Annotated[str, typer.Option(help="Identity kind: worker or coordinator.")] = "worker",
+    force: Annotated[
+        bool, typer.Option(help="Replace an existing identity intentionally.")
+    ] = False,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Emit public metadata as JSON.")
+    ] = False,
+) -> None:
+    """Create a versioned Ed25519 identity without printing private key bytes."""
+
+    from typing import cast
+
+    from swarm_inference.security.identity import IdentityKind, create_identity_file
+
+    if kind not in {"coordinator", "worker"}:
+        _fail("identity kind must be worker or coordinator")
+    try:
+        _, metadata = create_identity_file(path, kind=cast(IdentityKind, kind), force=force)
+    except (OSError, ValueError, SwarmError) as exc:
+        _fail(f"identity create failed: {exc}")
+    _render_identity_metadata(metadata, json_output=json_output)
+
+
+@identity_app.command("show")
+def identity_show_command(
+    path: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Validate an identity and show only its public metadata."""
+
+    from swarm_inference.security.identity import inspect_identity_file
+
+    try:
+        metadata = inspect_identity_file(path)
+    except (OSError, ValueError, SwarmError) as exc:
+        _fail(f"identity show failed: {exc}")
+    _render_identity_metadata(metadata, json_output=json_output)
+
+
+@identity_app.command("fingerprint")
+def identity_fingerprint_command(
+    path: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Print the stable SHA-256 fingerprint of an identity public key."""
+
+    from swarm_inference.security.identity import inspect_identity_file
+
+    try:
+        metadata = inspect_identity_file(path)
+    except (OSError, ValueError, SwarmError) as exc:
+        _fail(f"identity fingerprint failed: {exc}")
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {"fingerprint": metadata.fingerprint, "path": metadata.path},
+                indent=2,
+                sort_keys=True,
+            )
+        )
+    else:
+        typer.echo(metadata.fingerprint)
+
+
+def _trust_store_path(coordinator_state: Path, trust_store: Path | None) -> Path:
+    return trust_store or coordinator_state / "trusted-workers.json"
+
+
+def _resolve_trust_fingerprint(
+    *,
+    fingerprint: str | None,
+    identity: Path | None,
+) -> str:
+    from swarm_inference.security.identity import inspect_identity_file
+    from swarm_inference.security.trust_store import normalize_fingerprint
+
+    if (fingerprint is None) == (identity is None):
+        raise ValueError("provide exactly one of --fingerprint or --identity")
+    if identity is not None:
+        return inspect_identity_file(identity, expected_kind="worker").fingerprint
+    assert fingerprint is not None
+    return normalize_fingerprint(fingerprint)
+
+
+@identity_app.command("trust")
+def identity_trust_command(
+    coordinator_state: Annotated[
+        Path, typer.Option(help="Coordinator durable-state directory.")
+    ] = Path(".swarm/coordinator"),
+    fingerprint: Annotated[str | None, typer.Option(help="Worker SHA-256 fingerprint.")] = None,
+    identity: Annotated[
+        Path | None,
+        typer.Option(exists=True, dir_okay=False, help="Worker identity document to trust."),
+    ] = None,
+    label: Annotated[str | None, typer.Option(help="Auditable worker label.")] = None,
+    notes: Annotated[str | None, typer.Option(help="Optional trust notes.")] = None,
+    trust_store: Annotated[
+        Path | None, typer.Option(help="Override the coordinator trust-store path.")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Atomically add or update a trusted worker fingerprint."""
+
+    from swarm_inference.security.trust_store import WorkerTrustStore
+
+    try:
+        resolved_fingerprint = _resolve_trust_fingerprint(
+            fingerprint=fingerprint,
+            identity=identity,
+        )
+        store = WorkerTrustStore(_trust_store_path(coordinator_state, trust_store))
+        record, added = store.trust(resolved_fingerprint, label=label, notes=notes)
+    except (OSError, ValueError, SwarmError) as exc:
+        _fail(f"identity trust failed: {exc}")
+    payload = {
+        "status": "trusted" if added else "updated",
+        "trust_store": str(store.path),
+        **record.model_dump(mode="json"),
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            f"{payload['status']} worker fingerprint={record.fingerprint} "
+            f"label={record.label or '-'} trust_store={store.path}"
+        )
+
+
+@identity_app.command("untrust")
+def identity_untrust_command(
+    coordinator_state: Annotated[
+        Path, typer.Option(help="Coordinator durable-state directory.")
+    ] = Path(".swarm/coordinator"),
+    fingerprint: Annotated[str | None, typer.Option(help="Worker SHA-256 fingerprint.")] = None,
+    identity: Annotated[
+        Path | None,
+        typer.Option(exists=True, dir_okay=False, help="Worker identity document to untrust."),
+    ] = None,
+    trust_store: Annotated[
+        Path | None, typer.Option(help="Override the coordinator trust-store path.")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Atomically remove worker trust; active sessions may finish on their route."""
+
+    from swarm_inference.security.trust_store import WorkerTrustStore
+
+    try:
+        resolved_fingerprint = _resolve_trust_fingerprint(
+            fingerprint=fingerprint,
+            identity=identity,
+        )
+        store = WorkerTrustStore(_trust_store_path(coordinator_state, trust_store))
+        removed = store.untrust(resolved_fingerprint)
+    except (OSError, ValueError, SwarmError) as exc:
+        _fail(f"identity untrust failed: {exc}")
+    payload = {
+        "status": "untrusted" if removed else "not_found",
+        "fingerprint": resolved_fingerprint,
+        "trust_store": str(store.path),
+    }
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        typer.echo(
+            f"{payload['status']} worker fingerprint={resolved_fingerprint} trust_store={store.path}"
+        )
+
+
+@identity_app.command("list-trusted")
+def identity_list_trusted_command(
+    coordinator_state: Annotated[
+        Path, typer.Option(help="Coordinator durable-state directory.")
+    ] = Path(".swarm/coordinator"),
+    trust_store: Annotated[
+        Path | None, typer.Option(help="Override the coordinator trust-store path.")
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List the current reloadable worker trust snapshot."""
+
+    from swarm_inference.security.trust_store import WorkerTrustStore
+
+    try:
+        store = WorkerTrustStore(_trust_store_path(coordinator_state, trust_store))
+        document = store.load()
+    except (OSError, ValueError, SwarmError) as exc:
+        _fail(f"identity list-trusted failed: {exc}")
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {
+                    "trust_store": str(store.path),
+                    **document.model_dump(mode="json"),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return
+    if not document.workers:
+        typer.echo(f"No trusted workers in {store.path}.")
+        return
+    for record in document.workers:
+        typer.echo(
+            f"{record.fingerprint} label={record.label or '-'} "
+            f"trusted_at={record.trusted_at} notes={record.notes or '-'}"
+        )
 
 
 @app.command("doctor")
@@ -1490,9 +1727,12 @@ def coordinator_command(
                 "coordinator_identity_fingerprint="
                 f"{core.coordinator_identity.public_key_fingerprint}"
             )
+        shutdown_event = asyncio.Event()
+        restore_signal_handlers = install_shutdown_signal_handlers(shutdown_event)
         try:
-            await server.wait_for_termination()
+            await wait_for_service_shutdown(server.wait_for_termination(), shutdown_event)
         finally:
+            restore_signal_handlers()
             await server.stop()
 
     asyncio.run(run())
@@ -1514,7 +1754,7 @@ def worker_command(
         ),
     ] = None,
     identity: Annotated[Path, typer.Option(help="Persistent Ed25519 private key.")] = Path(
-        ".swarm/worker-identity.pem"
+        ".swarm/identities/worker.json"
     ),
     trusted_coordinator_fingerprint: Annotated[
         str | None,

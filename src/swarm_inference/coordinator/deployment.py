@@ -5,12 +5,15 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
 from swarm_inference.config.models import WorkerRole
 from swarm_inference.coordinator.registry import WorkerRegistry
+from swarm_inference.exceptions import IntegrityError
+from swarm_inference.filesystem import replace_atomically
 from swarm_inference.model.product import ModelResolutionPolicy
 from swarm_inference.protocol.expert import (
     ExpertRouteParticipant,
@@ -53,7 +56,7 @@ def _atomic_write_text(path: Path, payload: str) -> None:
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
+        replace_atomically(temporary, path)
     finally:
         if temporary.exists():
             temporary.unlink()
@@ -97,6 +100,7 @@ class DeploymentManager:
         coordinator_identity: CoordinatorIdentity | None = None,
         coordinator_id: str = "coordinator",
         telemetry: ProductTelemetry | None = None,
+        worker_trust_checker: Callable[[str], bool] | None = None,
     ) -> None:
         self.registry = registry
         self.transport = transport
@@ -106,6 +110,7 @@ class DeploymentManager:
         self.coordinator_identity = coordinator_identity
         self.coordinator_id = coordinator_id
         self.telemetry = telemetry
+        self.worker_trust_checker = worker_trust_checker
         self._lock = asyncio.Lock()
         self._reserved_workers: set[str] = set()
         self._deployments: dict[str, DeploymentStatus] = {}
@@ -131,7 +136,23 @@ class DeploymentManager:
                 f"ready topology owns {plan.model.model_id}@{plan.model.model_revision}, "
                 f"not {model_id}@{model_revision}"
             )
+        self._require_trusted_plan(plan, action="new session admission")
         return plan
+
+    def _require_trusted_plan(self, plan: ProductStagePlan, *, action: str) -> None:
+        checker = self.worker_trust_checker
+        if checker is None:
+            return
+        worker_ids = {
+            *(item.worker_id for item in plan.assignments),
+            *self._expert_worker_ids(plan),
+        }
+        untrusted = sorted(worker_id for worker_id in worker_ids if not checker(worker_id))
+        if untrusted:
+            raise IntegrityError(
+                f"{action} rejected because worker trust was removed or is absent: "
+                + ", ".join(untrusted)
+            )
 
     @property
     def current_topology_id(self) -> str | None:
@@ -400,6 +421,7 @@ class DeploymentManager:
         publication_destination: str,
     ) -> DeploymentStatus:
         async with self._lock:
+            self._require_trusted_plan(plan, action="route deployment")
             self._publication_destination = publication_destination
             existing = self._deployments.get(plan.topology_id)
             existing_plan = self._plans.get(plan.topology_id)
@@ -726,6 +748,10 @@ class DeploymentManager:
         for capability in self.registry.healthy_workers():
             if capability.worker_id in excluded_worker_ids:
                 continue
+            if self.worker_trust_checker is not None and not self.worker_trust_checker(
+                capability.worker_id
+            ):
+                continue
             control_endpoint = capability.control_endpoint or capability.endpoint
             data_endpoint = capability.data_plane_endpoint
             same_device = capability.device_identifier == failed.device
@@ -840,6 +866,7 @@ class DeploymentManager:
                 },
                 deep=True,
             )
+            self._require_trusted_plan(new_plan, action="replacement route deployment")
             lease_expiry = time.time_ns() + int(self.lease_seconds * 1_000_000_000)
             deadline = time.time_ns() + int(self.control_timeout_s * 1_000_000_000)
             replacement_items = [

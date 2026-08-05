@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import math
 import os
 import time
@@ -116,11 +117,13 @@ from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tenso
 from swarm_inference.runtime.telemetry import ProductTelemetry
 from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
+from swarm_inference.security.trust_store import WorkerTrustStore
 from swarm_inference.simulation.model import build_synthetic_stages
 from swarm_inference.transport.base import ActivationTransport
 from swarm_inference.transport.grpc_transport import GrpcTransport
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -208,6 +211,7 @@ class CoordinatorCore:
         self.started_unix_ns = time.time_ns()
         self.durable_state: DurableCoordinatorState | None = None
         self.coordinator_identity: CoordinatorIdentity | None = None
+        self.worker_trust_store: WorkerTrustStore | None = None
         self.product_telemetry: ProductTelemetry | None = None
         self._last_heartbeat_sequences: dict[str, int] = {}
         self._registration_nonce_cache = BoundedNonceCache(
@@ -271,6 +275,13 @@ class CoordinatorCore:
         self.session_controller: ProductSessionController | None = None
         if product_config is not None:
             self.durable_state = DurableCoordinatorState(self.state_directory)
+            configured_trust_store = product_config.trust_store_path
+            trust_store_path = (
+                Path(configured_trust_store).expanduser().resolve()
+                if configured_trust_store is not None
+                else self.state_directory / "trusted-workers.json"
+            )
+            self.worker_trust_store = WorkerTrustStore(trust_store_path)
             self.coordinator_identity = CoordinatorIdentity.load_or_create(
                 self.durable_state.identity_path
             )
@@ -326,6 +337,7 @@ class CoordinatorCore:
                 coordinator_identity=self.coordinator_identity,
                 coordinator_id=product_config.coordinator_id,
                 telemetry=self.product_telemetry,
+                worker_trust_checker=self.is_worker_trusted,
             )
             self.session_controller = ProductSessionController(
                 deployments=self.deployment_manager,
@@ -404,6 +416,29 @@ class CoordinatorCore:
         self.route_allocator.release_all(reason="coordinator-shutdown")
         await self.transport.close()
 
+    def trusted_worker_fingerprints(self) -> tuple[str, ...]:
+        """Return the deterministic union of static and reloadable trust."""
+
+        if self.product_config is None:
+            return ()
+        static = set(self.product_config.trusted_worker_fingerprints)
+        dynamic = set(
+            self.worker_trust_store.fingerprints() if self.worker_trust_store is not None else ()
+        )
+        return tuple(sorted(static | dynamic))
+
+    def is_worker_trusted(self, worker_id: str) -> bool:
+        """Check current trust without mutating registration or active sessions."""
+
+        if self.product_config is None or not self.product_config.require_trusted_workers:
+            return True
+        try:
+            capability = self.registry.capability(worker_id)
+        except Exception:
+            return False
+        fingerprint = public_key_fingerprint(capability.public_key)
+        return fingerprint in self.trusted_worker_fingerprints()
+
     async def register(self, request: RegistrationRequest) -> RegistrationResponse:
         signed_payload = canonical_json_bytes(
             {
@@ -418,11 +453,29 @@ class CoordinatorCore:
         )
         fingerprint = public_key_fingerprint(request.capability.public_key)
         if self.product_config is not None:
-            trusted = set(self.product_config.trusted_worker_fingerprints)
+            trusted = set(self.trusted_worker_fingerprints())
             if self.product_config.require_trusted_workers and fingerprint not in trusted:
-                raise IntegrityError(
-                    f"worker {request.capability.worker_id} identity is not trusted"
+                detail = (
+                    f"worker {request.capability.worker_id} identity {fingerprint} is not trusted; "
+                    "run 'swarm identity trust --coordinator-state "
+                    f"{self.state_directory} --fingerprint {fingerprint}' before registration"
                 )
+                LOGGER.warning(detail)
+                if self.product_telemetry is not None:
+                    self.product_telemetry.emit(
+                        "worker_registration_rejected",
+                        worker_id=request.capability.worker_id,
+                        worker_public_key_fingerprint=fingerprint,
+                        reason="worker identity is not trusted",
+                    )
+                if self.durable_state is not None:
+                    self.durable_state.append_audit_event(
+                        "worker_registration_rejected",
+                        worker_id=request.capability.worker_id,
+                        worker_public_key_fingerprint=fingerprint,
+                        reason="worker identity is not trusted",
+                    )
+                raise IntegrityError(detail)
             self._registration_nonce_cache.add(request.benchmark_nonce)
             assert self.durable_state is not None
             self.durable_state.save_worker(request.capability)

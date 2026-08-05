@@ -16,6 +16,7 @@ from typing import Any, Protocol
 
 PRODUCT_EVENT_NAMES = frozenset(
     {
+        "worker_registration_rejected",
         "worker_registered",
         "worker_unhealthy",
         "deployment_started",

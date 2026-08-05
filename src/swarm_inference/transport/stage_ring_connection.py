@@ -21,6 +21,11 @@ from swarm_inference.protocol.stage_ring import (
     encode_message,
     inspect_frame_header,
 )
+from swarm_inference.transport.stage_ring_faults import (
+    FrameContext,
+    StageRingFaultAction,
+    StageRingFaultInjector,
+)
 
 HandshakeFactory = Callable[[str], StageMessage | None]
 HandshakeVerifier = Callable[[StageMessage, StageMessage], None]
@@ -80,6 +85,9 @@ class StageRingConnectionMetrics:
     payload_bytes_sent: int = 0
     backpressure_events: int = 0
     failures: int = 0
+    connection_evictions: int = 0
+    response_timeouts: int = 0
+    fault_injections: int = 0
 
     def snapshot(self) -> dict[str, int]:
         return asdict(self)
@@ -106,6 +114,7 @@ class _StageRingConnection:
         metrics: StageRingConnectionMetrics,
         handshake_factory: HandshakeFactory | None,
         handshake_verifier: HandshakeVerifier | None,
+        fault_injector: StageRingFaultInjector | None,
     ) -> None:
         host, port = split_endpoint(endpoint)
         if is_wildcard_host(host) or port == 0:
@@ -121,6 +130,7 @@ class _StageRingConnection:
         self.metrics = metrics
         self.handshake_factory = handshake_factory
         self.handshake_verifier = handshake_verifier
+        self.fault_injector = fault_injector
         self._queue: asyncio.Queue[_OutboundFrame] = asyncio.Queue(maxsize=queue_capacity)
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
@@ -189,14 +199,49 @@ class _StageRingConnection:
             with suppress(OSError, TimeoutError):
                 await asyncio.wait_for(writer.wait_closed(), timeout=self.write_timeout_s)
 
+    async def _run_fault_hook(
+        self,
+        hook_name: str,
+        context: FrameContext,
+    ) -> None:
+        if self.fault_injector is None:
+            return
+        hook = getattr(self.fault_injector, hook_name)
+        action = await hook(context)
+        if action is None:
+            return
+        if action is not StageRingFaultAction.CLOSE_ACTIVE_CONNECTION:
+            raise ValueError(f"unsupported stage-ring fault action {action!r}")
+        writer = self._writer
+        active = writer is not None and not writer.is_closing()
+        if writer is not None and not writer.is_closing():
+            # abort() closes this established connection immediately; it does
+            # not merely stop or close the peer's listening socket.
+            writer.transport.abort()
+            await asyncio.sleep(0)
+        self.metrics.fault_injections += 1
+        await self.fault_injector.fault_applied(
+            context,
+            action,
+            active_connection=active,
+        )
+        raise ConnectionResetError(
+            "diagnostic fault closed active stage-ring connection "
+            f"topology={context.topology_id} route_generation={context.route_generation} "
+            f"session={context.session_id} request={context.request_id} "
+            f"sequence={context.sequence_number} token_position={context.token_position}"
+        )
+
     async def _run(self) -> None:
         while not self._closed:
             item = await self._queue.get()
             try:
                 if item.future.done():
                     continue
+                context = FrameContext.from_message(item.message, endpoint=self.endpoint)
                 await self._connect()
                 assert self._reader is not None and self._writer is not None
+                await self._run_fault_hook("before_send", context)
                 encoded = await write_stage_message(
                     self._writer,
                     item.message,
@@ -205,6 +250,8 @@ class _StageRingConnection:
                 self.metrics.messages_sent += 1
                 self.metrics.wire_bytes_sent += encoded.wire_bytes
                 self.metrics.payload_bytes_sent += encoded.payload_bytes
+                await self._run_fault_hook("after_send", context)
+                await self._run_fault_hook("before_receive", context)
                 response = await read_stage_message(
                     self._reader,
                     read_timeout_s=self.read_timeout_s,
@@ -212,6 +259,7 @@ class _StageRingConnection:
                     maximum_payload_bytes=self.maximum_payload_bytes,
                 )
                 self.metrics.messages_received += 1
+                await self._run_fault_hook("after_receive", context)
                 if not item.future.done():
                     item.future.set_result(response)
             except asyncio.CancelledError:
@@ -229,8 +277,21 @@ class _StageRingConnection:
                 self.metrics.failures += 1
                 await self._disconnect()
                 if not item.future.done():
+                    context = FrameContext.from_message(item.message, endpoint=self.endpoint)
+                    if isinstance(exc, TimeoutError):
+                        self.metrics.response_timeouts += 1
+                        detail = "stage-ring exchange exceeded the response timeout"
+                    else:
+                        detail = f"stage-ring exchange failed: {exc}"
                     item.future.set_exception(
-                        TransportError(f"stage-ring exchange with {self.endpoint} failed: {exc}")
+                        TransportError(
+                            f"{detail} endpoint={self.endpoint} "
+                            f"topology={context.topology_id} "
+                            f"route_generation={context.route_generation} "
+                            f"session={context.session_id} request={context.request_id} "
+                            f"sequence={context.sequence_number} "
+                            f"token_position={context.token_position}"
+                        )
                     )
             finally:
                 self._queue.task_done()
@@ -268,6 +329,7 @@ class StageRingConnectionPool:
         reconnect_attempts: int = 2,
         handshake_factory: HandshakeFactory | None = None,
         handshake_verifier: HandshakeVerifier | None = None,
+        fault_injector: StageRingFaultInjector | None = None,
     ) -> None:
         if queue_capacity <= 0 or reconnect_attempts <= 0:
             raise ValueError("stage-ring queue capacity and reconnect attempts must be positive")
@@ -290,6 +352,7 @@ class StageRingConnectionPool:
             )
         self.handshake_factory = handshake_factory
         self.handshake_verifier = handshake_verifier
+        self.fault_injector = fault_injector
         self.metrics = StageRingConnectionMetrics()
         self._connections: dict[str, _StageRingConnection] = {}
         self._closed = False
@@ -310,6 +373,7 @@ class StageRingConnectionPool:
                 metrics=self.metrics,
                 handshake_factory=self.handshake_factory,
                 handshake_verifier=self.handshake_verifier,
+                fault_injector=self.fault_injector,
             )
             self._connections[endpoint] = connection
         return connection
@@ -331,11 +395,19 @@ class StageRingConnectionPool:
                 return await asyncio.wait_for(future, timeout=self.read_timeout_s)
             except TransportError as exc:
                 last_error = exc
+                self.metrics.connection_evictions += 1
+                await self.remove(endpoint)
             except TimeoutError:
                 future.cancel()
+                self.metrics.response_timeouts += 1
                 last_error = TransportError(
-                    f"stage-ring exchange with {endpoint} exceeded the response timeout"
+                    "stage-ring exchange exceeded the response timeout "
+                    f"endpoint={endpoint} topology={message.topology_id} "
+                    f"route_generation={message.attributes.get('route_generation', 0)} "
+                    f"session={message.session_id} request={message.request_id} "
+                    f"sequence={message.sequence_number}"
                 )
+                self.metrics.connection_evictions += 1
                 await self.remove(endpoint)
         assert last_error is not None
         raise last_error
@@ -369,6 +441,7 @@ __all__ = [
     "HandshakeVerifier",
     "StageRingConnectionMetrics",
     "StageRingConnectionPool",
+    "StageRingFaultInjector",
     "read_stage_message",
     "write_encoded_frame",
     "write_stage_message",

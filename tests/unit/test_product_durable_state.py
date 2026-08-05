@@ -179,7 +179,7 @@ async def test_coordinator_restart_reloads_validated_state_without_live_workers(
                 )
             )
         assert (tmp_path / "audit.jsonl").is_file()
-        assert (tmp_path / "coordinator-identity.pem").is_file()
+        assert (tmp_path / "coordinator-identity.json").is_file()
     finally:
         await second.close()
 
@@ -255,7 +255,7 @@ async def test_product_worker_registration_requires_configured_identity_trust(
         state_directory=tmp_path / "rejected",
     )
     try:
-        with pytest.raises(IntegrityError, match="identity is not trusted"):
+        with pytest.raises(IntegrityError, match="is not trusted"):
             await rejected.register(_registration(capability, identity, nonce="reject"))
     finally:
         await rejected.close()

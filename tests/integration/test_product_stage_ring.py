@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-import multiprocessing
 import os
+import queue
 import time
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import pytest
 import torch
@@ -24,6 +25,7 @@ from swarm_inference.coordinator.service import (
     CoordinatorCore,
     CoordinatorRpcServer,
 )
+from swarm_inference.exceptions import TransportError
 from swarm_inference.execution.interfaces import StageExecutionResult, WeightOwnership
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.model.product import (
@@ -31,7 +33,7 @@ from swarm_inference.model.product import (
     ProductModelReference,
     ProductModelSpec,
 )
-from swarm_inference.protocol.messages import StreamEventType, SubmitRequest
+from swarm_inference.protocol.messages import RegistrationRequest, StreamEventType, SubmitRequest
 from swarm_inference.protocol.product import (
     ModelDeployRequest,
     ModelPlanRequest,
@@ -45,9 +47,17 @@ from swarm_inference.protocol.product import (
 )
 from swarm_inference.protocol.stage_ring import STAGE_RING_PROTOCOL_VERSION
 from swarm_inference.protocol.stage_worker import GetStageStatusRequest, LoadStageRequest
-from swarm_inference.security.identity import WorkerIdentity
+from swarm_inference.security.identity import (
+    WorkerIdentity,
+    create_identity_file,
+    public_key_fingerprint,
+)
 from swarm_inference.security.signatures import canonical_json_bytes
+from swarm_inference.security.trust_store import WorkerTrustStore
+from swarm_inference.testing.process_harness import ProductCluster
 from swarm_inference.transport.grpc_transport import GrpcTransport
+from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
+from swarm_inference.transport.stage_ring_faults import CloseConnectionBeforeSendInjector
 from swarm_inference.transport.stage_tensor import unpack_tensor
 from swarm_inference.worker.agent import WorkerAgent
 from swarm_inference.worker.stage_runtime import PersistentStageRuntime, TokenPublication
@@ -68,6 +78,18 @@ REAL_REFERENCE_PATH = (
 REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
 REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 REAL_TOKENIZER_REVISION = "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea"
+
+
+def _write_real_gate_evidence(name: str, payload: dict[str, Any]) -> None:
+    configured = os.environ.get("SWARM_ACCEPTANCE_GATE_EVIDENCE")
+    if not configured:
+        return
+    directory = Path(configured).expanduser().resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
 def _assignment(stage_id: int) -> StageAssignment:
@@ -241,9 +263,18 @@ def _worker_process(
     token_offset: int = 0,
     data_plane_stop_event: Any | None = None,
     trusted_coordinator: tuple[str, str] | None = None,
+    fault_token_position: int | None = None,
+    fault_event_queue: Any | None = None,
+    identity_path: str | None = None,
+    registration_commands: Any | None = None,
+    registration_results: Any | None = None,
 ) -> None:
     async def run() -> None:
-        identity = WorkerIdentity.generate()
+        identity = (
+            WorkerIdentity.load(identity_path)
+            if identity_path is not None
+            else WorkerIdentity.generate()
+        )
         capability = _worker_capability(worker_id, identity)
         agent = WorkerAgent(
             capability=capability,
@@ -316,6 +347,22 @@ def _worker_process(
             ),
             require_authenticated_routes=trusted_coordinator is not None,
         )
+        if fault_token_position is not None:
+            await runtime.connection_pool.close()
+            injector = CloseConnectionBeforeSendInjector(
+                token_position=fault_token_position,
+                source_stage=0,
+                destination_stage=1,
+                request_id="socket-recovery",
+                event_sink=(fault_event_queue.put if fault_event_queue is not None else None),
+            )
+            runtime.connection_pool = StageRingConnectionPool(
+                queue_capacity=32,
+                reconnect_attempts=1,
+                handshake_factory=runtime._peer_handshake_message,
+                handshake_verifier=runtime._verify_peer_handshake_response,
+                fault_injector=injector,
+            )
         service = PersistentStageWorkerService(agent=agent, stage_runtime=runtime)
         try:
             control_port, data_port = await service.start(
@@ -335,6 +382,44 @@ def _worker_process(
             )
             data_plane_stopped = False
             while not stop_event.is_set():
+                if registration_commands is not None and registration_results is not None:
+                    try:
+                        command = registration_commands.get_nowait()
+                    except queue.Empty:
+                        command = None
+                    if command == "register":
+                        nonce = f"{worker_id}:{uuid4().hex}"
+                        signed_payload = canonical_json_bytes(
+                            {
+                                "capability": capability.model_dump(mode="json"),
+                                "benchmark_nonce": nonce,
+                            }
+                        )
+                        registration = RegistrationRequest(
+                            capability=capability,
+                            benchmark_nonce=nonce,
+                            signature=identity.sign(signed_payload),
+                        )
+                        try:
+                            response = await coordinator.register(registration)
+                        except Exception as exc:
+                            registration_results.put(
+                                {
+                                    "worker_id": worker_id,
+                                    "accepted": False,
+                                    "error": f"{type(exc).__name__}: {exc}",
+                                }
+                            )
+                        else:
+                            registration_results.put(
+                                {
+                                    "worker_id": worker_id,
+                                    "accepted": response.accepted,
+                                    "coordinator_fingerprint": (
+                                        response.coordinator_public_key_fingerprint
+                                    ),
+                                }
+                            )
                 if (
                     not data_plane_stopped
                     and data_plane_stop_event is not None
@@ -441,6 +526,7 @@ async def test_product_route_lease_and_direct_peer_handshake_are_authenticated(
         token_ingress_capacity=16,
         request_timeout_s=5,
         control_timeout_s=5,
+        require_trusted_workers=False,
     )
     core = CoordinatorCore(
         product_config=config,
@@ -454,11 +540,12 @@ async def test_product_route_lease_and_direct_peer_handshake_are_authenticated(
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
-    processes = [
-        context.Process(
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
+    for index in range(2):
+        cluster.process(
+            f"worker-{index}",
             target=_worker_process,
             args=(
                 f"worker-{index}",
@@ -470,15 +557,13 @@ async def test_product_route_lease_and_direct_peer_handshake_are_authenticated(
                 None,
                 coordinator_trust,
             ),
+            shutdown=stop_event.set,
         )
-        for index in range(2)
-    ]
     client = CoordinatorClient(coordinator_endpoint, timeout_s=20)
     inspector = GrpcTransport(timeout_s=5)
     try:
-        for process in processes:
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 30) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=2, timeout=30)
         assert not [item for item in startup if "error" in item], startup
         capabilities = sorted(
             (WorkerCapability.model_validate(item["capability"]) for item in startup),
@@ -516,13 +601,161 @@ async def test_product_route_lease_and_direct_peer_handshake_are_authenticated(
         assert response.status == "completed"
         assert response.output_token_ids == [21, 22]
     finally:
-        stop_event.set()
-        for process in processes:
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 10)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
+        await inspector.close()
+        await client.close()
+        await server.stop(grace_s=0)
+
+
+@pytest.mark.asyncio
+async def test_secure_identity_bootstrap_registration_route_and_revocation(
+    tmp_path: Path,
+) -> None:
+    coordinator_state = tmp_path / "coordinator"
+    _, coordinator_metadata = create_identity_file(
+        coordinator_state / "coordinator-identity.json",
+        kind="coordinator",
+    )
+    worker_paths = [tmp_path / "identities" / f"worker-{index}.json" for index in range(2)]
+    worker_metadata = [create_identity_file(path, kind="worker")[1] for path in worker_paths]
+    trust_store = WorkerTrustStore(coordinator_state / "trusted-workers.json")
+
+    core = CoordinatorCore(
+        product_config=ProductCoordinatorConfig(
+            event_queue_capacity=16,
+            token_ingress_capacity=16,
+            request_timeout_s=5,
+            control_timeout_s=5,
+            worker_heartbeat_timeout_s=30,
+            require_trusted_workers=True,
+            trust_store_path=trust_store.path,
+        ),
+        state_directory=coordinator_state,
+    )
+    assert core.coordinator_identity is not None
+    assert core.coordinator_identity.public_key_fingerprint == coordinator_metadata.fingerprint
+    coordinator_trust = (
+        core.product_config.coordinator_id,
+        core.coordinator_identity.public_key_b64,
+    )
+    server = CoordinatorRpcServer(core)
+    coordinator_port = await server.start("127.0.0.1:0")
+    coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    registration_results = cluster.queue()
+    registration_commands = [cluster.queue() for _ in range(2)]
+    stop_event = cluster.event()
+    for index in range(2):
+        cluster.process(
+            f"secure-worker-{index}",
+            target=_worker_process,
+            args=(
+                f"worker-{index}",
+                coordinator_endpoint,
+                ready_queue,
+                stop_event,
+                0.05,
+                0,
+                None,
+                coordinator_trust,
+                None,
+                None,
+                str(worker_paths[index]),
+                registration_commands[index],
+                registration_results,
+            ),
+            shutdown=stop_event.set,
+        )
+    client = CoordinatorClient(coordinator_endpoint, timeout_s=20)
+    inspector = GrpcTransport(timeout_s=5)
+
+    async def register(index: int) -> dict[str, Any]:
+        registration_commands[index].put("register")
+        result = await asyncio.to_thread(registration_results.get, True, 10)
+        assert result["worker_id"] == f"worker-{index}"
+        return dict(result)
+
+    try:
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=2, timeout=30)
+        capabilities = sorted(
+            (WorkerCapability.model_validate(item["capability"]) for item in startup),
+            key=lambda item: item.worker_id,
+        )
+
+        rejected = await register(0)
+        assert rejected["accepted"] is False
+        assert worker_metadata[0].fingerprint in rejected["error"]
+        assert "swarm identity trust" in rejected["error"]
+        assert core.registry.workers() == []
+
+        trust_store.trust(worker_metadata[0].fingerprint, label="worker-0")
+        trust_store.trust(worker_metadata[1].fingerprint, label="worker-1")
+        accepted_zero = await register(0)
+        accepted_one = await register(1)
+        assert accepted_zero["accepted"] and accepted_one["accepted"]
+        assert accepted_zero["coordinator_fingerprint"] == coordinator_metadata.fingerprint
+        assert accepted_one["coordinator_fingerprint"] == coordinator_metadata.fingerprint
+        assert [item.worker_id for item in core.registry.workers()] == ["worker-0", "worker-1"]
+
+        plan = _plan(capabilities)
+        deployed = await client.deploy_model(ModelDeployRequest(plan=plan))
+        assert deployed.deployment.ready
+        for assignment in plan.assignments:
+            status = await inspector.get_stage_status(
+                assignment.control_endpoint,
+                GetStageStatusRequest(
+                    worker_id=assignment.worker_id,
+                    request_id=f"secure-route:{assignment.stage_id}",
+                    topology_id=plan.topology_id,
+                ),
+            )
+            assert status.installed_route is not None
+            assert status.installed_route.authenticated
+
+        events: list[Any] = []
+        revoked = False
+        async for event in client.submit_stream(
+            SubmitRequest(
+                request_id="secure-active-session",
+                prompt_token_ids=[10, 20],
+                max_new_tokens=3,
+                random_seed=1,
+                model_id=plan.model.model_id,
+                model_revision=plan.model.model_revision,
+            )
+        ):
+            events.append(event)
+            if event.event_type == StreamEventType.TOKEN_GENERATED and not revoked:
+                revoked = trust_store.untrust(worker_metadata[1].fingerprint)
+        assert revoked
+        assert [
+            event.token_id
+            for event in events
+            if event.event_type == StreamEventType.TOKEN_GENERATED
+        ] == [21, 22, 23]
+        assert events[-1].event_type == StreamEventType.REQUEST_COMPLETED
+
+        rejected_again = await register(1)
+        assert rejected_again["accepted"] is False
+        assert "is not trusted" in rejected_again["error"]
+        with pytest.raises(TransportError, match="worker trust was removed or is absent"):
+            await client.deploy_model(ModelDeployRequest(plan=plan))
+        blocked = await client.submit(
+            SubmitRequest(
+                request_id="secure-new-session-blocked",
+                prompt_token_ids=[1],
+                max_new_tokens=1,
+                random_seed=1,
+                model_id=plan.model.model_id,
+                model_revision=plan.model.model_revision,
+            )
+        )
+        assert blocked.status == "failed"
+        assert "worker trust was removed or is absent" in blocked.detail
+    finally:
+        await cluster.close()
         await inspector.close()
         await client.close()
         await server.stop(grace_s=0)
@@ -539,6 +772,7 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
             token_ingress_capacity=16,
             request_timeout_s=10,
             control_timeout_s=10,
+            require_trusted_workers=False,
         ),
         state_directory=tmp_path,
         transport=transport,
@@ -546,22 +780,23 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
     processes = [
-        context.Process(
+        cluster.process(
+            f"worker-{stage_id}",
             target=_worker_process,
             args=(f"worker-{stage_id}", coordinator_endpoint, ready_queue, stop_event),
+            shutdown=stop_event.set,
         )
         for stage_id in range(2)
     ]
     client = CoordinatorClient(coordinator_endpoint, timeout_s=15)
     inspector = GrpcTransport(timeout_s=10)
     try:
-        for process in processes:
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 30) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
         assert not [item for item in startup if "error" in item], startup
         capabilities = [WorkerCapability.model_validate(item["capability"]) for item in startup]
         for capability in capabilities:
@@ -703,13 +938,7 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
         assert unloaded.deployment is not None
         assert unloaded.deployment.phase.value == "unloaded"
     finally:
-        stop_event.set()
-        for process in processes:
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 10)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
         await inspector.close()
         await client.close()
         await server.stop(grace_s=0)
@@ -729,6 +958,7 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
             recovery_timeout_s=15,
             cleanup_timeout_s=2,
             worker_heartbeat_timeout_s=30,
+            require_trusted_workers=False,
         ),
         state_directory=tmp_path,
         transport=transport,
@@ -736,11 +966,12 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
     processes = {
-        f"worker-{index}": context.Process(
+        f"worker-{index}": cluster.process(
+            f"worker-{index}",
             target=_worker_process,
             args=(
                 f"worker-{index}",
@@ -749,14 +980,14 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
                 stop_event,
                 0.1,
             ),
+            shutdown=stop_event.set,
         )
         for index in range(3)
     }
     client = CoordinatorClient(coordinator_endpoint, timeout_s=30)
     try:
-        for process in processes.values():
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 30) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
         assert not [item for item in startup if "error" in item], startup
         capabilities = sorted(
             (WorkerCapability.model_validate(item["capability"]) for item in startup),
@@ -819,19 +1050,13 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
         assert event_types.count("replay_token_verified") >= 1
         assert event_types.count("recovery_completed") == 1
     finally:
-        stop_event.set()
-        for process in processes.values():
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 10)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
         await client.close()
         await server.stop(grace_s=0)
 
 
 @pytest.mark.asyncio
-async def test_stage_ring_socket_closure_selects_replacement_while_control_rpc_stays_live(
+async def test_deterministic_active_socket_closure_recovers_without_duplicate_tokens(
     tmp_path: Path,
 ) -> None:
     core = CoordinatorCore(
@@ -843,18 +1068,20 @@ async def test_stage_ring_socket_closure_selects_replacement_while_control_rpc_s
             recovery_timeout_s=15,
             cleanup_timeout_s=2,
             worker_heartbeat_timeout_s=30,
+            require_trusted_workers=False,
         ),
         state_directory=tmp_path,
     )
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
-    close_worker_one_data = context.Event()
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    fault_events = cluster.queue()
+    stop_event = cluster.event()
     processes = {
-        f"worker-{index}": context.Process(
+        f"worker-{index}": cluster.process(
+            f"worker-{index}",
             target=_worker_process,
             args=(
                 f"worker-{index}",
@@ -863,17 +1090,20 @@ async def test_stage_ring_socket_closure_selects_replacement_while_control_rpc_s
                 stop_event,
                 0.15,
                 0,
-                close_worker_one_data if index == 1 else None,
+                None,
+                None,
+                1 if index == 0 else None,
+                fault_events if index == 0 else None,
             ),
+            shutdown=stop_event.set,
         )
         for index in range(3)
     }
     client = CoordinatorClient(coordinator_endpoint, timeout_s=30)
     inspector = GrpcTransport(timeout_s=5)
     try:
-        for process in processes.values():
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 30) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
         assert not [item for item in startup if "error" in item], startup
         capabilities = sorted(
             (WorkerCapability.model_validate(item["capability"]) for item in startup),
@@ -885,7 +1115,6 @@ async def test_stage_ring_socket_closure_selects_replacement_while_control_rpc_s
         assert (await client.deploy_model(ModelDeployRequest(plan=plan))).deployment.ready
 
         events: list[Any] = []
-        socket_closed = False
         async for event in client.submit_stream(
             SubmitRequest(
                 request_id="socket-recovery",
@@ -897,11 +1126,17 @@ async def test_stage_ring_socket_closure_selects_replacement_while_control_rpc_s
             )
         ):
             events.append(event)
-            if event.event_type == StreamEventType.TOKEN_GENERATED and not socket_closed:
-                socket_closed = True
-                close_worker_one_data.set()
 
-        assert socket_closed
+        fault_event = await asyncio.to_thread(fault_events.get, True, 5)
+        assert fault_event["event_type"] == "stage_ring_fault_injected"
+        assert fault_event["action"] == "close_active_connection"
+        assert fault_event["active_connection"] is True
+        assert fault_event["request_id"] == "socket-recovery"
+        assert fault_event["route_generation"] == 1
+        assert fault_event["operation"] == "DECODE"
+        assert fault_event["source_stage"] == 0
+        assert fault_event["destination_stage"] == 1
+        assert fault_event["token_position"] == 1
         assert processes["worker-1"].is_alive()
         control_status = await inspector.get_stage_status(
             capabilities[1].control_endpoint or "",
@@ -917,22 +1152,31 @@ async def test_stage_ring_socket_closure_selects_replacement_while_control_rpc_s
         ]
         assert [event.token_position for event in token_events] == [0, 1, 2, 3]
         assert [event.token_id for event in token_events] == [21, 22, 23, 24]
+        assert len({(event.token_position, event.token_id) for event in token_events}) == 4
+        assert sum(event.event_type == StreamEventType.RECOVERY_STARTED for event in events) == 1
         assert sum(event.event_type == StreamEventType.RECOVERY_COMPLETED for event in events) == 1
         topology = await client.topology_status(TopologyStatusRequest())
+        assert topology.deployments[0].generation == 2
         assert [worker.worker_id for worker in topology.deployments[0].workers] == [
             "worker-0",
             "worker-2",
         ]
         healthy, _ = core.registry.registration_health("worker-1")
         assert not healthy
+        assert core.product_telemetry is not None
+        event_types = [item["event_type"] for item in core.product_telemetry.events]
+        assert event_types.count("recovery_started") == 1
+        assert event_types.count("replacement_selected") == 1
+        route_events = [
+            item
+            for item in core.product_telemetry.events
+            if item["event_type"] == "route_generation_installed"
+        ]
+        assert [item["route_generation"] for item in route_events] == [1, 2]
+        assert event_types.count("replay_token_verified") == 1
+        assert event_types.count("recovery_completed") == 1
     finally:
-        stop_event.set()
-        for process in processes.values():
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 10)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
         await inspector.close()
         await client.close()
         await server.stop(grace_s=0)
@@ -951,17 +1195,19 @@ async def test_restart_and_replay_divergence_fails_before_any_duplicate_token_ev
             recovery_timeout_s=15,
             cleanup_timeout_s=2,
             worker_heartbeat_timeout_s=30,
+            require_trusted_workers=False,
         ),
         state_directory=tmp_path,
     )
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
     processes = {
-        f"worker-{index}": context.Process(
+        f"worker-{index}": cluster.process(
+            f"worker-{index}",
             target=_worker_process,
             args=(
                 f"worker-{index}",
@@ -971,14 +1217,14 @@ async def test_restart_and_replay_divergence_fails_before_any_duplicate_token_ev
                 0.1,
                 100 if index == 2 else 0,
             ),
+            shutdown=stop_event.set,
         )
         for index in range(3)
     }
     client = CoordinatorClient(coordinator_endpoint, timeout_s=30)
     try:
-        for process in processes.values():
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 30) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
         assert not [item for item in startup if "error" in item], startup
         capabilities = sorted(
             (WorkerCapability.model_validate(item["capability"]) for item in startup),
@@ -1030,13 +1276,7 @@ async def test_restart_and_replay_divergence_fails_before_any_duplicate_token_ev
         assert durable.status == "failed"
         assert durable.accepted_generated_token_ids == [21]
     finally:
-        stop_event.set()
-        for process in processes.values():
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 10)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
         await client.close()
         await server.stop(grace_s=0)
 
@@ -1053,17 +1293,19 @@ async def test_product_cancel_during_prefill_and_decode_releases_kv_but_keeps_st
             control_timeout_s=2,
             cleanup_timeout_s=3,
             worker_heartbeat_timeout_s=30,
+            require_trusted_workers=False,
         ),
         state_directory=tmp_path,
     )
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
     processes = [
-        context.Process(
+        cluster.process(
+            f"worker-{index}",
             target=_worker_process,
             args=(
                 f"worker-{index}",
@@ -1072,15 +1314,15 @@ async def test_product_cancel_during_prefill_and_decode_releases_kv_but_keeps_st
                 stop_event,
                 0.4,
             ),
+            shutdown=stop_event.set,
         )
         for index in range(2)
     ]
     client = CoordinatorClient(coordinator_endpoint, timeout_s=20)
     inspector = GrpcTransport(timeout_s=5)
     try:
-        for process in processes:
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 30) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
         assert not [item for item in startup if "error" in item], startup
         capabilities = sorted(
             (WorkerCapability.model_validate(item["capability"]) for item in startup),
@@ -1167,13 +1409,7 @@ async def test_product_cancel_during_prefill_and_decode_releases_kv_but_keeps_st
             "cancel-decode",
         ]
     finally:
-        stop_event.set()
-        for process in processes:
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 10)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
         await inspector.close()
         await client.close()
         await server.stop(grace_s=0)
@@ -1192,17 +1428,19 @@ async def test_product_cancel_during_recovery_uses_the_same_bounded_cleanup_path
             recovery_timeout_s=15,
             cleanup_timeout_s=3,
             worker_heartbeat_timeout_s=30,
+            require_trusted_workers=False,
         ),
         state_directory=tmp_path,
     )
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
     processes = {
-        f"worker-{index}": context.Process(
+        f"worker-{index}": cluster.process(
+            f"worker-{index}",
             target=_worker_process,
             args=(
                 f"worker-{index}",
@@ -1211,15 +1449,15 @@ async def test_product_cancel_during_recovery_uses_the_same_bounded_cleanup_path
                 stop_event,
                 0.15,
             ),
+            shutdown=stop_event.set,
         )
         for index in range(3)
     }
     client = CoordinatorClient(coordinator_endpoint, timeout_s=30)
     inspector = GrpcTransport(timeout_s=5)
     try:
-        for process in processes.values():
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 30) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
         assert not [item for item in startup if "error" in item], startup
         capabilities = sorted(
             (WorkerCapability.model_validate(item["capability"]) for item in startup),
@@ -1273,13 +1511,7 @@ async def test_product_cancel_during_recovery_uses_the_same_bounded_cleanup_path
         assert event_types.count("recovery_started") == 1
         assert event_types.count("session_cancelled") == 1
     finally:
-        stop_event.set()
-        for process in processes.values():
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 10)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
         await inspector.close()
         await client.close()
         await server.stop(grace_s=0)
@@ -1454,6 +1686,7 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
             token_ingress_capacity=16,
             request_timeout_s=180,
             control_timeout_s=180,
+            require_trusted_workers=False,
         ),
         state_directory=tmp_path,
         transport=transport,
@@ -1461,11 +1694,12 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
     server = CoordinatorRpcServer(core)
     coordinator_port = await server.start("127.0.0.1:0")
     coordinator_endpoint = f"127.0.0.1:{coordinator_port}"
-    context = multiprocessing.get_context("spawn")
-    ready_queue = context.Queue()
-    stop_event = context.Event()
+    cluster = ProductCluster()
+    ready_queue = cluster.queue()
+    stop_event = cluster.event()
     processes = {
-        f"cuda-worker-{stage_id}": context.Process(
+        f"cuda-worker-{stage_id}": cluster.process(
+            f"cuda-worker-{stage_id}",
             target=_real_worker_process,
             args=(
                 f"cuda-worker-{stage_id}",
@@ -1474,15 +1708,15 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
                 ready_queue,
                 stop_event,
             ),
+            shutdown=stop_event.set,
         )
         for stage_id in range(3)
     }
     client = CoordinatorClient(coordinator_endpoint, timeout_s=240)
     inspector = GrpcTransport(timeout_s=180)
     try:
-        for process in processes.values():
-            process.start()
-        startup = [await asyncio.to_thread(ready_queue.get, True, 60) for _ in processes]
+        cluster.start()
+        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=60)
         assert not [item for item in startup if "error" in item], startup
         capabilities = [WorkerCapability.model_validate(item["capability"]) for item in startup]
         for capability in capabilities:
@@ -1570,19 +1804,53 @@ async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
         assert transport.activation_relay_calls == 0
         assert core.runtime_transport_metrics["coordinator_activation_bytes"] == 0
 
+        _write_real_gate_evidence(
+            "real-two-stage-recovery.json",
+            {
+                "document_type": "swarm-real-model-gate-evidence",
+                "format_version": 1,
+                "gate": "two-stage-restart-and-replay",
+                "model_id": REAL_MODEL_ID,
+                "model_revision": REAL_MODEL_REVISION,
+                "tokenizer_revision": REAL_TOKENIZER_REVISION,
+                "topology": {
+                    "topology_id": current_plan.topology_id,
+                    "route_generation": current_plan.generation,
+                    "stage_count": current_plan.stage_count,
+                },
+                "stage_assignments": [
+                    assignment.model_dump(mode="json") for assignment in current_plan.assignments
+                ],
+                "worker_identities": [
+                    {
+                        "worker_id": capability.worker_id,
+                        "fingerprint": public_key_fingerprint(capability.public_key),
+                    }
+                    for capability in capabilities
+                ],
+                "token_ids": expected,
+                "timings": events[-1].timing_metrics,
+                "recovery_events": [
+                    event.model_dump(mode="json")
+                    for event in events
+                    if event.event_type
+                    in {
+                        StreamEventType.RECOVERY_STARTED,
+                        StreamEventType.RECOVERY_COMPLETED,
+                    }
+                ],
+                "route_generations": [planned.plan.generation, current_plan.generation],
+                "failed_worker_id": failed_worker_id,
+            },
+        )
+
         unloaded = await client.unload_model(
             ModelUnloadRequest(topology_id=current_plan.topology_id)
         )
         assert unloaded.deployment is not None
         assert unloaded.deployment.phase.value == "unloaded"
     finally:
-        stop_event.set()
-        for process in processes.values():
-            if process.pid is not None:
-                await asyncio.to_thread(process.join, 30)
-                if process.is_alive():
-                    process.terminate()
-                    await asyncio.to_thread(process.join, 5)
+        await cluster.close()
         await inspector.close()
         await client.close()
         await server.stop(grace_s=0)

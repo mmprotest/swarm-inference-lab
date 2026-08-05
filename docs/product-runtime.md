@@ -33,19 +33,29 @@ private key establishes route authority.
 
 ## Identity bootstrap
 
-The coordinator prints its persistent public-key fingerprint at startup. Every
-product stage worker must pin that value explicitly:
+Create identities and establish both trust directions before startup:
 
 ```powershell
-swarm worker ... --stage-runtime `
-  --trusted-coordinator-fingerprint <64-hex-fingerprint>
+swarm identity create --path .swarm/coordinator/coordinator-identity.json `
+  --kind coordinator
+swarm identity create --path .swarm/identities/worker-1.json --kind worker
+$CoordinatorFingerprint = (swarm identity fingerprint `
+  --path .swarm/coordinator/coordinator-identity.json).Trim()
+swarm identity trust --coordinator-state .swarm/coordinator `
+  --identity .swarm/identities/worker-1.json --label worker-1
 ```
 
-The coordinator can additionally require worker fingerprints from
-`trusted_worker_fingerprints` in the product configuration. A known worker ID
-cannot silently change its persisted public key. Signed route leases bind all
-worker identities, endpoints, revisions, and assignments for one finite-lived
-route generation.
+The recommended configuration requires worker trust and loads the versioned,
+atomically written trust store from `.swarm/coordinator/trusted-workers.json`.
+Its entries are combined with the static configuration allowlist. Every stage
+worker pins `$CoordinatorFingerprint` with
+`--trusted-coordinator-fingerprint`; it must receive that value over an
+authenticated administrative channel.
+
+A known worker ID cannot silently change its persisted public key. Removing
+trust allows already admitted sessions to finish but blocks new registration,
+admission, deployment, and replacement routes. See
+[Security boundary](security-boundary.md) for rotation and revocation details.
 
 ## Live inspection and cancellation
 
@@ -89,6 +99,9 @@ termination, the coordinator:
 The first divergence fails safely. The runtime does not silently restart from
 scratch, emit duplicate token events, transfer distributed KV checkpoints, or
 route intermediate activations through the coordinator.
+
+See [Restart-and-replay recovery](recovery.md) for failure classification,
+accepted-prefix semantics, cancellation, and limitations.
 
 ## Network security boundary
 

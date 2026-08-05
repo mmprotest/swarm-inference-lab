@@ -20,6 +20,16 @@ PROTECTED_PACKAGES = (
 # Pull Request 5 closes the product-to-experiment boundary. This remains an
 # explicit empty set so a future exception cannot be introduced invisibly.
 EXPERIMENT_IMPORT_ALLOWLIST: set[tuple[str, str]] = set()
+LEGACY_RUNTIME_PREFIX = "swarm_inference.experiments.experiment_010.legacy_runtime"
+LEGACY_RUNTIME_MODULES = {
+    "__init__.py",
+    "coordinator.py",
+    "dispatch.py",
+    "planner.py",
+    "process_main.py",
+    "transport.py",
+    "worker.py",
+}
 
 
 def _resolve_from_import(path: Path, node: ast.ImportFrom) -> str:
@@ -107,6 +117,43 @@ def test_product_telemetry_and_worker_lifecycle_have_no_experiment_imports() -> 
     )
 
 
+def test_non_experiment_source_tests_and_tools_do_not_import_legacy_runtime() -> None:
+    roots = [SOURCE_ROOT, REPOSITORY_ROOT / "tests", REPOSITORY_ROOT / "scripts"]
+    violations: list[tuple[str, str]] = []
+    for root in roots:
+        for path in root.rglob("*.py"):
+            relative = path.relative_to(REPOSITORY_ROOT).as_posix()
+            if "src/swarm_inference/experiments/experiment_010/" in relative:
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                modules: list[str] = []
+                if isinstance(node, ast.Import):
+                    modules.extend(alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom):
+                    modules.append(node.module or "")
+                for module in modules:
+                    if module == LEGACY_RUNTIME_PREFIX or module.startswith(
+                        f"{LEGACY_RUNTIME_PREFIX}."
+                    ):
+                        violations.append((relative, module))
+    assert not violations, f"non-experiment code imports frozen runtime: {violations}"
+
+
+def test_legacy_runtime_is_frozen_to_the_documented_module_set() -> None:
+    legacy = SOURCE_ROOT / "swarm_inference" / "experiments" / "experiment_010" / "legacy_runtime"
+    actual = {path.name for path in legacy.glob("*.py")}
+    assert actual == LEGACY_RUNTIME_MODULES
+    for path in legacy.glob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        if path.name == "__init__.py":
+            assert "No product features" in source or "do not add product features" in source
+        else:
+            assert "LEGACY_FROZEN" in source.splitlines()[0]
+    forbidden = {"protocol.py", "codecs.py", "kernels.py", "schemas.py"}
+    assert not (actual & forbidden), "new runtime primitives must be canonical"
+
+
 def test_experiment_010_runtime_compatibility_names_are_canonical() -> None:
     from swarm_inference.backends.colibri import expert_bank as canonical_bank
     from swarm_inference.execution import expert as canonical_expert
@@ -128,3 +175,19 @@ def test_experiment_010_runtime_compatibility_names_are_canonical() -> None:
     assert legacy_wire.encode_request is canonical_transport.encode_request
     assert legacy_wire.decode_response is canonical_transport.decode_response
     assert legacy_bank.scan_safetensors is canonical_bank.scan_safetensors
+
+
+def test_experiment_010_frozen_public_paths_are_named_compatibility_shims() -> None:
+    from swarm_inference.experiments.experiment_010 import (
+        coordinator,
+        dispatch,
+        planner,
+        transport,
+        worker,
+    )
+
+    assert coordinator.StableExpertCoordinator.__module__ == f"{LEGACY_RUNTIME_PREFIX}.coordinator"
+    assert dispatch.ExpertDispatcher.__module__ == f"{LEGACY_RUNTIME_PREFIX}.dispatch"
+    assert planner.PositiveUtilityPlanner.__module__ == f"{LEGACY_RUNTIME_PREFIX}.planner"
+    assert transport.ExpertTransportClient.__module__ == f"{LEGACY_RUNTIME_PREFIX}.transport"
+    assert worker.ExpertWorkerRuntime.__module__ == f"{LEGACY_RUNTIME_PREFIX}.worker"
