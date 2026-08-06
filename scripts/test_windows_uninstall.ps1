@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$SetupPath,
-    [string]$ExpectedVersion = '0.1.0rc7',
+    [string]$ExpectedVersion = '0.1.0rc8',
     [string]$EvidencePath
 )
 

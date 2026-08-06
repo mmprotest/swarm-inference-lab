@@ -19,7 +19,7 @@ def _msys_path(path: Path) -> str:
 @pytest.mark.skipif(os.name != "nt", reason="PowerShell installer is the Windows path")
 def test_windows_installer_defers_service_until_cluster_membership(tmp_path: Path) -> None:
     uv_log = tmp_path / "uv-calls.log"
-    fake_uv = tmp_path / "uv.cmd"
+    fake_uv = tmp_path / "uv.exe"
     tool_bin = tmp_path / "tool-bin"
     tool_bin.mkdir()
     source = tmp_path / "doctor.cs"
@@ -41,15 +41,25 @@ def test_windows_installer_defers_service_until_cluster_membership(tmp_path: Pat
         timeout=30,
     )
     assert compiled.returncode == 0, compiled.stderr or compiled.stdout
-    fake_uv.write_text(
-        "@echo off\r\n"
-        f'>>"{uv_log}" echo %*\r\n'
-        'if "%~1"=="tool" if "%~2"=="dir" (\r\n'
-        f"  echo {tool_bin}\r\n"
-        ")\r\n"
-        "exit /b 0\r\n",
+    uv_source = tmp_path / "uv.cs"
+    uv_source.write_text(
+        "using System; using System.IO; public class UvFixture { "
+        "public static int Main(string[] args) { "
+        f"File.AppendAllText({json.dumps(str(uv_log))}, "
+        'string.Join(" ", args) + Environment.NewLine); '
+        'if (args.Length >= 2 && args[0] == "tool" && args[1] == "dir") { '
+        f"Console.WriteLine({json.dumps(str(tool_bin))}); "
+        "} return 0; } }\n",
         encoding="utf-8",
     )
+    uv_compiled = subprocess.run(
+        [str(compiler), "/nologo", f"/out:{fake_uv}", str(uv_source)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert uv_compiled.returncode == 0, uv_compiled.stderr or uv_compiled.stdout
     wheel = tmp_path / "swarm_inference_lab-0.1.0-py3-none-any.whl"
     wheel.write_bytes(b"installer contract fixture")
     environment = dict(os.environ)

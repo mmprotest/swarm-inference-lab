@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import generate_runtime_profiles
 import pytest
-from generate_runtime_profiles import _normalise_export
+from generate_runtime_profiles import _normalise_export, _runtime_profile_temporary_parent
 from release_common import ReleaseError
 
 HASH = "a" * 64
@@ -52,3 +53,16 @@ def test_generator_contract_is_locked_and_toolchain_is_hash_pinned(repository_ro
     assert '"version": "0.12.0"' in toolchain
     assert '"executable_sha256": "sha256:' in toolchain
     assert '"compiler_sha256": "sha256:' in toolchain
+
+
+def test_generator_creates_its_ignored_temporary_parent(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "fresh-checkout"
+    monkeypatch.setattr(generate_runtime_profiles, "ROOT", repository)
+
+    temporary_parent = _runtime_profile_temporary_parent()
+
+    assert temporary_parent == repository / ".tmp"
+    assert temporary_parent.is_dir()

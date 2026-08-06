@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0rc8 - 2026-08-06
+
+- Make fresh hosted Windows checkouts hermetic by creating the ignored runtime-profile temporary
+  parent before use and replacing the developer-installer's batch-file fake with a compiled
+  executable whose process exit code is stable under Windows PowerShell and PowerShell 7.
+
 ## 0.1.0rc7 - 2026-08-06
 
 - Make the multi-process stage-ring harness renew worker liveness with the same signed heartbeat
