@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0rc9 - 2026-08-06
+
+- Keep pinned Inno Setup publisher verification deterministic across Windows trust-cache states:
+  verify the complete installer/compiler hashes first, require the exact signer-certificate
+  thumbprint and signer subject, and reject missing, damaged, or unsupported signature formats.
+
 ## 0.1.0rc8 - 2026-08-06
 
 - Make fresh hosted Windows checkouts hermetic by creating the ignored runtime-profile temporary
