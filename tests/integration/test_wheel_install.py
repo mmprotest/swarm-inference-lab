@@ -65,6 +65,9 @@ def test_built_wheel_installs_without_importing_checkout(tmp_path: Path) -> None
     evidence = json.loads(output.read_text(encoding="utf-8"))
     assert evidence["status"] == "PASS", result.stderr
     assert evidence["checkout_imported"] is False
+    assert evidence["third_party_colibri_imported"] is False
+    assert evidence["experiments_imported"] is False
+    assert evidence["wheel_contains_third_party_colibri"] is False
     module = Path(evidence["module"])
     assert not module.is_relative_to(repository / "src")
     assert module.is_relative_to(Path(evidence["environment_root"]) / "environment")

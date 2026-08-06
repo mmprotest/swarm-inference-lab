@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import platform
+import re
 import shlex
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -18,6 +19,7 @@ from swarm_inference.platforms.base import (
     ServiceDefinition,
     ServiceStatus,
     default_command_runner,
+    platform_implementation,
 )
 
 
@@ -39,25 +41,15 @@ class LinuxPlatformAdapter(BasePlatformAdapter):
 
     def identity(self) -> PlatformIdentity:
         architecture = platform.machine() or "unknown"
-        supported = architecture.lower() in {"x86_64", "amd64", "aarch64", "arm64"}
+        implementation_status, implementation_reason = platform_implementation(
+            "linux", architecture
+        )
         return PlatformIdentity(
             system="linux",
             release=platform.release(),
             architecture=architecture,
-            support_status=(
-                "validated"
-                if architecture.lower() in {"x86_64", "amd64"}
-                else "implemented-unvalidated"
-                if supported
-                else "unsupported"
-            ),
-            support_reason=(
-                "Linux x86-64 CPU product path"
-                if architecture.lower() in {"x86_64", "amd64"}
-                else "Linux ARM64 CPU path is implemented but requires physical validation"
-                if supported
-                else f"Linux architecture {architecture} is not supported"
-            ),
+            implementation_status=implementation_status,
+            implementation_reason=implementation_reason,
         )
 
     def state_directory(self) -> Path:
@@ -201,20 +193,48 @@ class LinuxPlatformAdapter(BasePlatformAdapter):
 
     def _firewall_remediation(self, specification: FirewallRuleSpec) -> str:
         ports = sorted({*specification.control_ports, *specification.data_ports})
-        subnets = specification.private_subnets or ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
-        rules = " ".join(
-            f"ip saddr {subnet} tcp dport {{{','.join(str(port) for port in ports)}}} accept"
-            for subnet in subnets
-        )
-        return (
-            "sudo nft add table inet swarm_inference; sudo nft add chain inet "
-            "swarm_inference input '{ type filter hook input priority 0; policy accept; }'; "
-            f"sudo nft add rule inet swarm_inference input comment {shlex.quote(specification.owner_label)} {rules}"
-        )
+        table = specification.resource_name("linux")
+        commands = [
+            shlex.join(["sudo", "nft", "delete", "table", "inet", table]),
+            shlex.join(["sudo", "nft", "add", "table", "inet", table]),
+            (
+                shlex.join(["sudo", "nft", "add", "chain", "inet", table, "input"])
+                + " "
+                + shlex.quote("{ type filter hook input priority 0; policy accept; }")
+            ),
+        ]
+        for subnet in specification.private_subnets:
+            for port in ports:
+                commands.append(
+                    shlex.join(
+                        [
+                            "sudo",
+                            "nft",
+                            "add",
+                            "rule",
+                            "inet",
+                            table,
+                            "input",
+                            "ip",
+                            "saddr",
+                            subnet,
+                            "tcp",
+                            "dport",
+                            str(port),
+                            "counter",
+                            "accept",
+                            "comment",
+                            table,
+                        ]
+                    )
+                )
+        return "; ".join(commands)
 
     def configure_firewall(self, specification: FirewallRuleSpec) -> FirewallStatus:
+        resource = specification.resource_name("linux")
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=resource,
             configured=False,
             private_only=True,
             blocked=True,
@@ -223,31 +243,59 @@ class LinuxPlatformAdapter(BasePlatformAdapter):
         )
 
     def firewall_status(self, specification: FirewallRuleSpec) -> FirewallStatus:
+        resource = specification.resource_name("linux")
         result = self.command_runner(
             CommandSpec(
                 executable="nft",
-                arguments=["list", "table", "inet", "swarm_inference"],
+                arguments=["list", "table", "inet", resource],
                 description="inspect owned nftables table",
             ),
             self.safe_environment(),
         )
-        configured = result.succeeded and specification.owner_label in result.stdout
+        ports = sorted({*specification.control_ports, *specification.data_ports})
+        configured = (
+            result.succeeded
+            and resource in result.stdout
+            and all(
+                re.search(rf"(?<![0-9.]){re.escape(subnet)}(?![0-9.])", result.stdout)
+                for subnet in specification.private_subnets
+            )
+            and all(re.search(rf"(?<!\d){port}(?!\d)", result.stdout) for port in ports)
+        )
+        broad_result = self.command_runner(
+            CommandSpec(
+                executable="nft",
+                arguments=["list", "ruleset"],
+                description="report broader unrelated nftables allow rules",
+            ),
+            self.safe_environment(),
+        )
+        broader = [
+            line.strip()
+            for line in broad_result.stdout.splitlines()
+            if "accept" in line
+            and ("0.0.0.0/0" in line or ("tcp dport" in line and "ip saddr" not in line))
+        ]
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=resource,
             configured=configured,
             private_only=configured,
+            broader_existing_rules=broader,
             blocked=False,
             detail="owned nftables rule found" if configured else "owned nftables rule not found",
         )
 
     def remove_firewall(self, specification: FirewallRuleSpec) -> FirewallStatus:
+        resource = specification.resource_name("linux")
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=resource,
             configured=True,
             private_only=True,
             blocked=True,
             detail="remove only the owned nftables table with administrator approval",
-            remediation_command="sudo nft delete table inet swarm_inference",
+            remediation_command=shlex.join(["sudo", "nft", "delete", "table", "inet", resource]),
         )
 
 

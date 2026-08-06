@@ -36,7 +36,8 @@ def test_pairing_json_redacts_single_use_secret(monkeypatch, tmp_path: Path) -> 
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert payload["pairing_uri"].startswith("<redacted")
+    assert payload["pairing"]["redacted_uri"].endswith("secret=<redacted>")
+    assert Path(payload["pairing"]["invitation_file"]).read_text(encoding="utf-8").endswith(secret)
     assert secret not in result.output
 
 
@@ -53,6 +54,7 @@ def test_cluster_create_rejects_empty_name_before_service_mutation(tmp_path: Pat
             "--coordinator-endpoint",
             "192.168.1.20:55000",
             "--json",
+            "--yes",
         ],
     )
 

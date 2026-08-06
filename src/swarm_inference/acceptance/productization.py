@@ -25,11 +25,11 @@ from typing import Any, Literal
 
 import psutil
 
-ACCEPTANCE_BUNDLE_VERSION = 3
+ACCEPTANCE_BUNDLE_VERSION = 4
 REPEATABILITY_SCHEMA_VERSION = 2
-REPEATABILITY_TEST_COMMAND_VERSION = 2
+REPEATABILITY_TEST_COMMAND_VERSION = 3
 MACHINE_IDENTITY_VERSION = 1
-PHYSICAL_EVIDENCE_VERSION = 2
+PHYSICAL_EVIDENCE_VERSION = 3
 REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
 REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 MANAGED_RESOURCE_WARNINGS = (
@@ -40,6 +40,23 @@ MANAGED_RESOURCE_WARNINGS = (
     "Unclosed client session",
     "unclosed transport",
     "unclosed event loop",
+)
+
+# These tests audit retained Experiment 007 artifacts supplied through opt-in
+# environment variables. They are not cluster product tests and running the
+# experiment is explicitly outside the productization acceptance contract.
+# Keep the exclusions visible in every retained pytest command instead of
+# allowing those source-audit tests to appear as implicit skips.
+NON_PRODUCT_SOURCE_AUDIT_TESTS = (
+    "tests/integration/test_experiment_007_corrections_run.py",
+    "tests/integration/test_experiment_007_run.py",
+)
+NON_GPU_PRODUCT_TEST_ARGUMENTS = (
+    "tests/integration",
+    "tests/failure",
+    "-m",
+    "not gpu",
+    *(f"--ignore={path}" for path in NON_PRODUCT_SOURCE_AUDIT_TESTS),
 )
 
 
@@ -77,6 +94,10 @@ class GateResult:
     unexpected_terminate_count: int = 0
     unexpected_kill_count: int = 0
     leaked_process_count: int = 0
+    tests: int = 0
+    failures: int = 0
+    errors: int = 0
+    skipped: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +108,60 @@ class GateSpec:
 
 
 SOFTWARE_GATES = (
+    GateSpec(
+        "pairing_json_contract",
+        ("tests/unit/test_pairing_delivery.py::test_pairing_commands_emit_one_json_document",),
+        120,
+    ),
+    GateSpec(
+        "invitation_secret_file_protection",
+        ("tests/unit/test_pairing_delivery.py::test_protected_invitation_file_contract",),
+        120,
+    ),
+    GateSpec(
+        "no_secret_in_machine_output",
+        (
+            "tests/unit/test_pairing_delivery.py::test_pairing_secret_is_absent_from_machine_channels",
+        ),
+        120,
+    ),
+    GateSpec(
+        "platform_status_separation",
+        ("tests/unit/test_platform_validation_evidence.py",),
+        120,
+    ),
+    GateSpec(
+        "firewall_ownership_isolation",
+        ("tests/unit/test_firewall_ownership.py",),
+        120,
+    ),
+    GateSpec(
+        "unpaired_wheel_installer_success",
+        ("tests/unit/test_installer_contract.py",),
+        120,
+    ),
+    GateSpec(
+        "confirmation_semantics",
+        ("tests/unit/test_command_confirmations.py",),
+        120,
+    ),
+    GateSpec(
+        "recursive_source_dependency_validation",
+        ("tests/unit/test_colibri_source_contract.py",),
+        120,
+    ),
+    GateSpec(
+        "clean_wheel_import_isolation",
+        ("tests/integration/test_wheel_install.py",),
+        1800,
+    ),
+    GateSpec(
+        "physical_two_machine_configuration_readiness",
+        (
+            "tests/unit/test_productization_acceptance.py::test_physical_configuration_readiness_contract",
+        ),
+        120,
+    ),
     GateSpec(
         "static_architecture",
         ("tests/unit/test_architecture_boundaries.py",),
@@ -237,7 +312,7 @@ SOFTWARE_GATES = (
     ),
     GateSpec(
         "complete_non_gpu_process_suite",
-        ("tests/integration", "tests/failure", "-m", "not gpu"),
+        NON_GPU_PRODUCT_TEST_ARGUMENTS,
         600,
     ),
 )
@@ -319,6 +394,23 @@ def _utc_now() -> str:
 
 def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def _bounded_tree_sha256(root: Path, *, maximum_files: int = 10_000) -> str | None:
+    if not root.is_dir():
+        return None
+    files = sorted(path for path in root.rglob("*") if path.is_file())
+    if len(files) > maximum_files:
+        raise ValueError(f"package hash input exceeds {maximum_files} files")
+    digest = hashlib.sha256()
+    for path in files:
+        relative = path.relative_to(root).as_posix().encode("utf-8")
+        payload = path.read_bytes()
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative)
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+    return digest.hexdigest()
 
 
 def machine_identity() -> dict[str, Any]:
@@ -691,22 +783,89 @@ def validate_physical_evidence(
     ):
         errors.append("physical network evidence must contain both link directions")
 
-    for name, participation_key in (
-        ("speed_run", "excluded_slow_node_id"),
-        ("capacity_run", "included_slow_node_id"),
-    ):
+    capacity_workers: set[str] = set()
+    for name in ("speed_run", "capacity_run"):
         run = evidence.get(name)
         if not isinstance(run, dict):
             errors.append(f"physical evidence must contain {name}")
             continue
-        if (
-            run.get("status") != "completed"
-            or run.get("token_ids") != run.get("expected_token_ids")
-            or not run.get(participation_key)
+        if run.get("status") != "completed" or run.get("token_ids") != run.get(
+            "expected_token_ids"
         ):
-            errors.append(
-                f"{name} must complete with exact tokens and prove the slow-node participation decision"
-            )
+            errors.append(f"{name} must complete with the exact expected token IDs")
+        run_topology = run.get("topology")
+        run_assignments = (
+            run_topology.get("assignments") if isinstance(run_topology, dict) else None
+        )
+        if not isinstance(run_assignments, list) or not run_assignments:
+            errors.append(f"{name} must retain its deployed topology assignments")
+            run_workers: set[str] = set()
+        else:
+            run_workers = {
+                str(item.get("worker_id"))
+                for item in run_assignments
+                if isinstance(item, dict) and item.get("worker_id")
+            }
+            if not run_workers or not run_workers <= worker_ids:
+                errors.append(f"{name} topology contains an unknown or absent worker")
+        if name == "speed_run":
+            excluded = run.get("excluded_slow_node_id")
+            if excluded is not None and str(excluded) in run_workers:
+                errors.append("speed_run claims to exclude a worker that its topology assigns")
+        else:
+            capacity_workers = run_workers
+            capacity_machine_ids = {
+                str(worker.get("machine_identity"))
+                for worker in workers
+                if isinstance(worker, dict)
+                and worker.get("worker_id") in capacity_workers
+                and worker.get("machine_identity")
+            }
+            if len(capacity_workers) < 2 or len(capacity_machine_ids) < 2:
+                errors.append(
+                    "capacity_run must assign work to both distinct physical machine identities"
+                )
+            included = str(run.get("included_slow_node_id", ""))
+            if not included or not any(
+                worker_id.startswith(f"{included}/") or worker_id == included
+                for worker_id in capacity_workers
+            ):
+                errors.append("capacity_run does not assign the required laptop node")
+
+    direct_traffic = evidence.get("direct_stage_traffic")
+    required_direct_traffic_files: set[str] = set()
+    if not isinstance(direct_traffic, list) or not direct_traffic:
+        errors.append("physical evidence must retain observed direct-stage traffic")
+    else:
+        observed_edges: set[tuple[str, str]] = set()
+        for observation in direct_traffic:
+            if not isinstance(observation, dict):
+                errors.append("direct-stage traffic observations must be objects")
+                continue
+            source = str(observation.get("source_worker_id", ""))
+            destination = str(observation.get("destination_worker_id", ""))
+            endpoint = str(observation.get("destination_endpoint", ""))
+            host = endpoint.rsplit(":", 1)[0].strip("[]") if ":" in endpoint else endpoint
+            evidence_file = str(observation.get("evidence_file", ""))
+            if (
+                observation.get("observed") is not True
+                or int(observation.get("bytes_observed", 0)) <= 0
+                or source == destination
+                or source not in capacity_workers
+                or destination not in capacity_workers
+                or not host
+                or _is_loopback_host(host)
+                or not evidence_file
+            ):
+                errors.append(
+                    "direct-stage traffic must be observed between assigned distinct workers "
+                    "on a non-loopback endpoint with retained evidence"
+                )
+                continue
+            observed_edges.add((source, destination))
+            required_direct_traffic_files.add(evidence_file)
+        if capacity_workers and not observed_edges:
+            errors.append("capacity topology has no retained cross-worker direct-stage traffic")
 
     commands = [_command_text(item) for item in evidence.get("commands", [])]
     required_commands = {
@@ -729,6 +888,12 @@ def validate_physical_evidence(
     if not isinstance(source_files, dict) or not source_files:
         errors.append("physical evidence must checksum its source logs and command outputs")
     else:
+        missing_direct = sorted(required_direct_traffic_files - set(source_files))
+        if missing_direct:
+            errors.append(
+                "direct-stage traffic evidence files are not checksummed: "
+                + ", ".join(missing_direct)
+            )
         root = evidence_directory.resolve()
         for relative, expected_hash in source_files.items():
             candidate = (root / str(relative)).resolve()
@@ -850,6 +1015,8 @@ def validate_repeatability_evidence(
     }
     if required != expected_counts or requested != expected_counts:
         stale.append("repeatability evidence does not contain the required three plus five runs")
+    if payload.get("excluded_source_audit_tests") != list(NON_PRODUCT_SOURCE_AUDIT_TESTS):
+        stale.append("repeatability source-audit exclusion contract is stale")
     results = payload.get("results")
     expected_names = [f"full-{index}" for index in range(1, 4)] + [
         f"stage-ring-{index}" for index in range(1, 6)
@@ -882,6 +1049,11 @@ def validate_repeatability_evidence(
                 failures.append(f"{name} recorded non-zero {field}")
         if result.get("exit_code") != 0:
             failures.append(f"{name} did not exit with code zero")
+        test_counts = result.get("test_counts")
+        if not isinstance(test_counts, dict) or int(test_counts.get("tests", 0)) <= 0:
+            stale.append(f"{name} has no retained test counts")
+        elif int(test_counts.get("skipped", 0)):
+            stale.append(f"{name} contains skipped tests")
         checksums = result.get("checksums")
         if not isinstance(checksums, dict) or not checksums:
             stale.append(f"{name} has no retained log checksums")
@@ -933,6 +1105,15 @@ def environment_evidence(repository_root: Path) -> dict[str, Any]:
     except (ImportError, RuntimeError) as exc:
         cuda["error"] = f"{type(exc).__name__}: {exc}"
     status = _git_value(repository_root, "status", "--porcelain")
+    wheels = [
+        {
+            "path": str(path.relative_to(repository_root)),
+            "size_bytes": path.stat().st_size,
+            "sha256": _sha256_bytes(path.read_bytes()),
+        }
+        for path in sorted((repository_root / "dist").glob("*.whl"))
+    ]
+    lock_path = repository_root / "uv.lock"
     return {
         "captured_at": _utc_now(),
         "git_commit": _git_value(repository_root, "rev-parse", "HEAD"),
@@ -944,6 +1125,15 @@ def environment_evidence(repository_root: Path) -> dict[str, Any]:
         "machine": machine_identity(),
         "cuda": cuda,
         "packages": dict(sorted(packages.items())),
+        "package_hashes": {
+            "swarm_inference_source_tree_sha256": _bounded_tree_sha256(
+                repository_root / "src" / "swarm_inference"
+            ),
+            "uv_lock_sha256": (
+                _sha256_bytes(lock_path.read_bytes()) if lock_path.is_file() else None
+            ),
+        },
+        "wheel_hashes": wheels,
     }
 
 
@@ -1098,22 +1288,23 @@ class ProductizationAcceptanceRunner:
             stdout, stderr = process.communicate(timeout=spec.timeout_s)
             status = AcceptanceStatus.PASS if process.returncode == 0 else AcceptanceStatus.FAIL
             reason = "pytest command passed" if status == AcceptanceStatus.PASS else "pytest failed"
-            if process.returncode == 0 and category == "real_model":
-                try:
-                    tests, failures, errors, skipped = _junit_counts(junit_path)
-                except (OSError, ET.ParseError, ValueError) as exc:
+            tests = failures = errors = skipped = 0
+            try:
+                tests, failures, errors, skipped = _junit_counts(junit_path)
+            except (OSError, ET.ParseError, ValueError) as exc:
+                status = AcceptanceStatus.FAIL
+                reason = f"cannot verify test execution: {exc}"
+            else:
+                if tests == 0:
                     status = AcceptanceStatus.FAIL
-                    reason = f"cannot verify real-model test execution: {exc}"
-                else:
-                    if tests == 0:
-                        status = AcceptanceStatus.FAIL
-                        reason = "real-model gate selected no tests"
-                    elif skipped:
-                        status = AcceptanceStatus.SKIP
-                        reason = f"{skipped} of {tests} required real-model tests skipped"
-                    elif failures or errors:
-                        status = AcceptanceStatus.FAIL
-                        reason = f"JUnit reported {failures} failures and {errors} errors"
+                    reason = "gate selected no tests"
+            if process.returncode == 0:
+                if skipped:
+                    status = AcceptanceStatus.SKIP
+                    reason = f"{skipped} of {tests} required tests skipped"
+                elif failures or errors:
+                    status = AcceptanceStatus.FAIL
+                    reason = f"JUnit reported {failures} failures and {errors} errors"
             exit_code: int | None = process.returncode
         except subprocess.TimeoutExpired:
             (
@@ -1125,6 +1316,7 @@ class ProductizationAcceptanceRunner:
             status = AcceptanceStatus.FAIL
             reason = f"external timeout after {spec.timeout_s:.0f}s"
             exit_code = None
+            tests = failures = errors = skipped = 0
         duration = time.monotonic() - started
         stdout_path = self.logs / f"{spec.name}.stdout.log"
         stderr_path = self.logs / f"{spec.name}.stderr.log"
@@ -1203,6 +1395,10 @@ class ProductizationAcceptanceRunner:
             unexpected_terminate_count=lifecycle["unexpected_terminate_count"],
             unexpected_kill_count=lifecycle["unexpected_kill_count"],
             leaked_process_count=lifecycle["leaked_process_count"],
+            tests=tests,
+            failures=failures,
+            errors=errors,
+            skipped=skipped,
         )
         self.results.append(result)
         self.model_evidence_records.extend(evidence_records)
@@ -1512,6 +1708,12 @@ class ProductizationAcceptanceRunner:
                 status.value: sum(result.status == status for result in self.results)
                 for status in AcceptanceStatus
             },
+            "test_counts": {
+                "tests": sum(result.tests for result in self.results),
+                "failures": sum(result.failures for result in self.results),
+                "errors": sum(result.errors for result in self.results),
+                "skipped": sum(result.skipped for result in self.results),
+            },
             "definitions": {
                 OverallStatus.SOFTWARE_ACCEPTANCE_PASS.value: (
                     "all software gates passed; real-model and physical closure are not claimed"
@@ -1741,8 +1943,11 @@ def main(argv: list[str] | None = None) -> int:
 __all__ = [
     "ACCEPTANCE_BUNDLE_VERSION",
     "MACHINE_IDENTITY_VERSION",
+    "NON_GPU_PRODUCT_TEST_ARGUMENTS",
+    "NON_PRODUCT_SOURCE_AUDIT_TESTS",
     "PHYSICAL_EVIDENCE_VERSION",
     "REPEATABILITY_SCHEMA_VERSION",
+    "REPEATABILITY_TEST_COMMAND_VERSION",
     "AcceptanceStatus",
     "GateResult",
     "OverallStatus",

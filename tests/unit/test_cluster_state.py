@@ -89,16 +89,16 @@ def test_explicit_schema_zero_migration_rewrites_document(tmp_path: Path) -> Non
         encoding="utf-8",
     )
     document = state.load_nodes()
-    assert document.schema_version == 1
+    assert document.schema_version == 2
     rewritten = json.loads(state.paths.nodes.read_text(encoding="utf-8"))
-    assert rewritten["schema_version"] == 1
-    assert rewritten["document_version"] == 1
+    assert rewritten["schema_version"] == 2
+    assert rewritten["document_version"] == 2
 
 
 def test_unknown_or_future_state_fails_closed(tmp_path: Path) -> None:
     state = ClusterStateStore(tmp_path / "state")
     state.paths.nodes.write_text(
-        json.dumps({"schema_version": 2, "document_version": 1, "nodes": []}),
+        json.dumps({"schema_version": 3, "document_version": 3, "nodes": []}),
         encoding="utf-8",
     )
     with pytest.raises(IntegrityError, match="future state schema"):

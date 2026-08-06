@@ -25,21 +25,35 @@ export UV_CONCURRENT_DOWNLOADS=8
 run_bounded() {
     limit=$1
     shift
-    "$@" &
+    # The explicit stdin duplication is required: POSIX asynchronous commands
+    # may otherwise inherit /dev/null, which breaks the bounded JSON parsers
+    # used in pipelines and with the final here-document.
+    "$@" <&0 &
     command_pid=$!
-    (
-        sleep "$limit"
-        kill -TERM "$command_pid" 2>/dev/null || true
-        sleep 5
-        kill -KILL "$command_pid" 2>/dev/null || true
-    ) &
-    watchdog_pid=$!
+    elapsed=0
+    timed_out=0
+    while kill -0 "$command_pid" 2>/dev/null; do
+        if [ "$elapsed" -ge "$limit" ]; then
+            timed_out=1
+            kill -TERM "$command_pid" 2>/dev/null || true
+            grace=0
+            while kill -0 "$command_pid" 2>/dev/null && [ "$grace" -lt 5 ]; do
+                sleep 1
+                grace=$((grace + 1))
+            done
+            kill -KILL "$command_pid" 2>/dev/null || true
+            break
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
     set +e
     wait "$command_pid"
     status=$?
     set -e
-    kill "$watchdog_pid" 2>/dev/null || true
-    wait "$watchdog_pid" 2>/dev/null || true
+    if [ "$timed_out" -eq 1 ]; then
+        return 124
+    fi
     return "$status"
 }
 
@@ -122,14 +136,15 @@ if [ "$selected_extra" != "$candidate" ]; then
     selected=$(printf '%s' "$doctor" | run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.load(sys.stdin)["backend_selection"]["selected_backend"])') || fail "fallback doctor result parsing failed"
 fi
 
-service="deferred-until-cluster-join"
+service="deferred-until-cluster-create-or-join"
 if [ "$install_service" -eq 1 ]; then
-    run_bounded 180 "$swarm_executable" node install-service --yes --json >/dev/null || fail "service installation failed"
-    service="installed"
+    service_preference="requested-deferred"
+else
+    service_preference="default-deferred"
 fi
 
 if [ "$json_output" -eq 1 ]; then
-    run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.dumps({"schema_version":1,"status":"PASS","operating_system":sys.argv[1],"architecture":sys.argv[2],"python_version":sys.argv[3],"source":sys.argv[4],"package_extra":sys.argv[5],"selected_backend":sys.argv[6],"swarm_executable":sys.argv[7],"service":sys.argv[8],"doctor":json.load(sys.stdin)},sort_keys=True,separators=(",",":")))' "$system" "$architecture" "$python_version" "$source_kind" "$selected_extra" "$selected" "$swarm_executable" "$service" <<EOF
+    run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.dumps({"schema_version":1,"status":"PASS","operating_system":sys.argv[1],"architecture":sys.argv[2],"python_version":sys.argv[3],"source":sys.argv[4],"package_extra":sys.argv[5],"selected_backend":sys.argv[6],"swarm_executable":sys.argv[7],"service":sys.argv[8],"install_service_preference":sys.argv[9],"doctor":json.load(sys.stdin)},sort_keys=True,separators=(",",":")))' "$system" "$architecture" "$python_version" "$source_kind" "$selected_extra" "$selected" "$swarm_executable" "$service" "$service_preference" <<EOF
 $doctor
 EOF
 else

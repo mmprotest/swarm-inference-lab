@@ -283,12 +283,27 @@ class WorkerCapability(StrictModel):
     product_protocol_minor: NonNegativeInt | None = None
     artifact_format_versions: list[PositiveInt] = Field(default_factory=list)
     service_mode: str = "foreground"
-    platform_support_status: Literal[
-        "validated",
-        "implemented-unvalidated",
+    platform_implementation_status: Literal[
+        "implemented",
         "unsupported",
         "unknown",
     ] = "unknown"
+    software_validation_status: Literal["validated", "failed", "not-run"] = "not-run"
+    physical_validation_status: Literal["validated", "failed", "not-run"] = "not-run"
+    validation_evidence_ids: list[str] = Field(default_factory=list)
+    latest_validation_unix_ns: PositiveInt | None = None
+    validation_detail: str = "no retained validation evidence"
+
+    @model_validator(mode="after")
+    def validate_retained_backend_evidence(self) -> WorkerCapability:
+        if "validated" in {
+            self.software_validation_status,
+            self.physical_validation_status,
+        } and (not self.validation_evidence_ids or self.latest_validation_unix_ns is None):
+            raise ValueError(
+                "validated worker capability requires retained evidence identity and time"
+            )
+        return self
 
     @property
     def effective_memory_bytes(self) -> int:

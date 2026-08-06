@@ -31,3 +31,20 @@ def test_product_ci_declares_actual_supported_platform_jobs_and_wheel_gates() ->
         "upload-artifact",
     ):
         assert requirement in serialized
+
+
+def test_source_test_jobs_initialize_and_verify_the_pinned_submodule() -> None:
+    workflow = yaml.safe_load(
+        Path(".github/workflows/productization.yml").read_text(encoding="utf-8")
+    )
+    for job_name in (
+        "quality",
+        "platform-product",
+        "python-compatibility",
+        "software-acceptance",
+    ):
+        steps = workflow["jobs"][job_name]["steps"]
+        checkout = next(step for step in steps if step.get("uses") == "actions/checkout@v4")
+        assert checkout["with"]["submodules"] == "recursive"
+        commands = [str(step.get("run", "")) for step in steps]
+        assert any("verify_colibri_source.py" in command for command in commands)

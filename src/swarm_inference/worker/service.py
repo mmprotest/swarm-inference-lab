@@ -80,7 +80,12 @@ async def run_worker(
     expert_max_concurrent_requests: int = 1,
     startup_future: asyncio.Future[WorkerCapability] | None = None,
     service_mode: str = "foreground",
-    platform_support_status: str = "unknown",
+    platform_implementation_status: str = "unknown",
+    software_validation_status: str = "not-run",
+    physical_validation_status: str = "not-run",
+    validation_evidence_ids: list[str] | None = None,
+    latest_validation_unix_ns: int | None = None,
+    validation_detail: str = "no retained validation evidence",
 ) -> None:
     roles = set(worker_roles or ({WorkerRole.CONTIGUOUS_STAGE} if stage_runtime_enabled else set()))
     expert_roles = roles & {
@@ -147,7 +152,12 @@ async def run_worker(
         network_rates_measured=network_rates_measured,
         benchmark_dtype=dtype,
         service_mode=service_mode,
-        platform_support_status=platform_support_status,
+        platform_implementation_status=platform_implementation_status,
+        software_validation_status=software_validation_status,
+        physical_validation_status=physical_validation_status,
+        validation_evidence_ids=validation_evidence_ids,
+        latest_validation_unix_ns=latest_validation_unix_ns,
+        validation_detail=validation_detail,
     )
     capability.roles = sorted(roles, key=lambda item: item.value)
     if stage_runtime_enabled and expert_roles:

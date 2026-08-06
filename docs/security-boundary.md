@@ -17,6 +17,15 @@ membership/trust on the coordinator and pins cluster/coordinator metadata on the
 secrets, raw proofs, ephemeral/session/AES keys, and private keys are excluded from logs, machine
 status, and audit documents. See [pairing](pairing.md).
 
+Human cluster creation/pairing may reveal the complete URI once. Machine-readable creation and
+pairing each return one non-secret JSON document. The secret is delivered only through an
+explicit/default invitation file created from a complete temporary file with atomic publication,
+POSIX `0600` or a user-only Windows SID ACL where available, and explicit overwrite refusal.
+Secret-bearing URIs are redacted recursively in nested command payloads and scrubbed from error
+text. Default files for expired, consumed, or invalidated sessions are retired without deleting
+active-session invitations. Invitation contents are never ordinary cluster metadata or service
+state.
+
 ## Identity generation and storage
 
 Cluster creation/join automatically generates an Ed25519 keypair using the canonical security module and
@@ -107,6 +116,19 @@ expert traffic is not protected by validated TLS in the current product. Pairing
 encryption must not be generalized into a data-plane encryption claim. Network observers and
 participating workers may inspect data available to them. Sensitive prompts and proprietary
 weights require an independently secured network boundary.
+
+## Owned firewall and confirmation boundary
+
+Privileged firewall identifiers are deterministic hashes of validated cluster/node ownership;
+raw labels never reach a command. Linux allocates one nftables table per owner, macOS one PF
+anchor per owner, and Windows two exact owned rule names. Status, reconciliation, and removal
+address only those resources. Broader unrelated rules are reported but not adopted or removed.
+All owned rules remain limited to selected ports and RFC1918 source networks.
+
+Administrative mutations prompt once only for an interactive human. `--yes` preauthorizes the
+operation. JSON/NDJSON or non-interactive input without `--yes` fails with permission exit code 10
+before service, firewall, trust, update, deletion, leave, or revocation mutation. Confirmation
+text is command-owned and contains no secret material.
 
 ## Rotation and revocation
 

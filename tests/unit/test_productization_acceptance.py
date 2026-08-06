@@ -3,15 +3,21 @@ from __future__ import annotations
 import hashlib
 import json
 import platform
+import runpy
 import socket
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 from swarm_inference.acceptance import productization
 from swarm_inference.acceptance.productization import (
+    ACCEPTANCE_BUNDLE_VERSION,
+    NON_GPU_PRODUCT_TEST_ARGUMENTS,
+    NON_PRODUCT_SOURCE_AUDIT_TESTS,
     REAL_MODEL_GATES,
+    REPEATABILITY_TEST_COMMAND_VERSION,
     SOFTWARE_GATES,
     AcceptanceStatus,
     GateResult,
@@ -25,6 +31,35 @@ from swarm_inference.acceptance.productization import (
     validate_physical_evidence,
     validate_repeatability_evidence,
 )
+
+
+def test_repeatability_producer_reuses_current_acceptance_contract() -> None:
+    namespace = runpy.run_path("scripts/run_productization_process_suite.py")
+
+    assert namespace["ACCEPTANCE_BUNDLE_VERSION"] == ACCEPTANCE_BUNDLE_VERSION
+    assert namespace["REPEATABILITY_TEST_COMMAND_VERSION"] == REPEATABILITY_TEST_COMMAND_VERSION
+    assert tuple(namespace["NON_GPU_PRODUCT_TEST_ARGUMENTS"]) == NON_GPU_PRODUCT_TEST_ARGUMENTS
+
+
+def test_non_gpu_product_collection_excludes_opt_in_experiment_audits() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            *NON_GPU_PRODUCT_TEST_ARGUMENTS,
+            "--collect-only",
+            "-q",
+        ],
+        cwd=Path.cwd(),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "test_cluster_pair_and_join.py" in completed.stdout
+    assert all(path not in completed.stdout for path in NON_PRODUCT_SOURCE_AUDIT_TESTS)
 
 
 def test_acceptance_parser_supports_required_repeatability_command() -> None:
@@ -140,7 +175,7 @@ def test_loopback_and_same_host_cannot_satisfy_physical_gate() -> None:
     assert "physical workers report the same process namespace" in errors
 
 
-def test_distinct_resolvable_physical_configuration_passes_static_validation(
+def test_physical_configuration_readiness_contract(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     addresses = {
@@ -246,6 +281,7 @@ def _write_repeatability_bundle(tmp_path: Path) -> tuple[Path, dict[str, object]
                 "unexpected_terminate_count": 0,
                 "unexpected_kill_count": 0,
                 "leaked_process_count": 0,
+                "test_counts": {"tests": 1, "failures": 0, "errors": 0, "skipped": 0},
                 "checksums": {
                     stdout.name: "sha256:" + hashlib.sha256(stdout.read_bytes()).hexdigest(),
                     stderr.name: "sha256:" + hashlib.sha256(stderr.read_bytes()).hexdigest(),
@@ -258,8 +294,9 @@ def _write_repeatability_bundle(tmp_path: Path) -> tuple[Path, dict[str, object]
     payload: dict[str, object] = {
         "document_type": "swarm-process-repeatability",
         "schema_version": 2,
-        "test_command_version": 2,
-        "acceptance_schema_version": 3,
+        "test_command_version": REPEATABILITY_TEST_COMMAND_VERSION,
+        "acceptance_schema_version": ACCEPTANCE_BUNDLE_VERSION,
+        "excluded_source_audit_tests": list(NON_PRODUCT_SOURCE_AUDIT_TESTS),
         "git_commit": _git_output("rev-parse", "HEAD"),
         "git_dirty": bool(git_status),
         "git_status": git_status,
@@ -317,6 +354,22 @@ def test_stale_commit_and_dirty_tree_repeatability_are_rejected(tmp_path: Path) 
     status, errors, _ = validate_repeatability_evidence(Path.cwd(), evidence)
     assert status == AcceptanceStatus.NOT_RUN
     assert any("dirty-tree state" in error for error in errors)
+
+
+def test_repeatability_with_skipped_product_test_is_incomplete(tmp_path: Path) -> None:
+    evidence, payload = _write_repeatability_bundle(tmp_path)
+    results = payload["results"]
+    assert isinstance(results, list)
+    first = results[0]
+    assert isinstance(first, dict)
+    counts = first["test_counts"]
+    assert isinstance(counts, dict)
+    counts["skipped"] = 1
+    _save_repeatability_payload(evidence, payload)
+
+    status, errors, _ = validate_repeatability_evidence(Path.cwd(), evidence)
+    assert status == AcceptanceStatus.NOT_RUN
+    assert any("contains skipped tests" in error for error in errors)
 
 
 @pytest.mark.parametrize(
@@ -409,6 +462,25 @@ def test_real_model_pytest_skip_is_never_classified_as_pass(tmp_path: Path) -> N
     assert "1 of 1" in result.reason
 
 
+def test_software_pytest_skip_is_never_classified_as_pass(tmp_path: Path) -> None:
+    test_file = tmp_path / "test_skipped_software_gate.py"
+    test_file.write_text(
+        "import pytest\n\n@pytest.mark.skip(reason='fixture unavailable')\n"
+        "def test_software_gate():\n    raise AssertionError('must not run')\n",
+        encoding="utf-8",
+    )
+    runner = ProductizationAcceptanceRunner(
+        repository_root=tmp_path,
+        output_root=tmp_path / "output",
+    )
+    result = runner._run_pytest(
+        GateSpec("skipped_software", (str(test_file),), 30),
+        category="software",
+    )
+    assert result.status == AcceptanceStatus.SKIP
+    assert aggregate_status([result]) == OverallStatus.INCOMPLETE
+
+
 def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
     configuration = _physical_configuration()
     source = tmp_path / "operator.log"
@@ -419,7 +491,7 @@ def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
     assert isinstance(worker_b_identity, dict)
     evidence = {
         "document_type": "swarm-physical-two-machine-evidence",
-        "format_version": 2,
+        "format_version": 3,
         "model_revision": "commit",
         "machine_identities": {
             "worker_a": worker_a_identity,
@@ -531,13 +603,30 @@ def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
             "expected_token_ids": [7, 8],
             "token_ids": [7, 8],
             "excluded_slow_node_id": "worker-b",
+            "topology": {"assignments": [{"stage_id": 0, "worker_id": "worker-a"}]},
         },
         "capacity_run": {
             "status": "completed",
             "expected_token_ids": [7, 8],
             "token_ids": [7, 8],
             "included_slow_node_id": "worker-b",
+            "topology": {
+                "assignments": [
+                    {"stage_id": 0, "worker_id": "worker-a"},
+                    {"stage_id": 1, "worker_id": "worker-b"},
+                ]
+            },
         },
+        "direct_stage_traffic": [
+            {
+                "source_worker_id": "worker-a",
+                "destination_worker_id": "worker-b",
+                "destination_endpoint": "192.0.2.12:51052",
+                "observed": True,
+                "bytes_observed": 4096,
+                "evidence_file": source.name,
+            }
+        ],
         "commands": [
             "swarm cluster create --name physical-gate",
             "swarm node join <redacted-pairing-uri>",
@@ -551,3 +640,27 @@ def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
     status, errors = validate_physical_evidence(configuration, tmp_path)
     assert status == AcceptanceStatus.PASS
     assert errors == []
+
+    capacity = evidence["capacity_run"]
+    assert isinstance(capacity, dict)
+    capacity["topology"] = {"assignments": [{"stage_id": 0, "worker_id": "worker-a"}]}
+    (tmp_path / "physical-evidence.json").write_text(json.dumps(evidence), encoding="utf-8")
+    status, errors = validate_physical_evidence(configuration, tmp_path)
+    assert status == AcceptanceStatus.FAIL
+    assert any("both distinct physical machine identities" in error for error in errors)
+
+
+def test_release_candidate_software_gates_are_explicit() -> None:
+    names = {spec.name for spec in SOFTWARE_GATES}
+    assert {
+        "pairing_json_contract",
+        "invitation_secret_file_protection",
+        "no_secret_in_machine_output",
+        "platform_status_separation",
+        "firewall_ownership_isolation",
+        "unpaired_wheel_installer_success",
+        "confirmation_semantics",
+        "recursive_source_dependency_validation",
+        "clean_wheel_import_isolation",
+        "physical_two_machine_configuration_readiness",
+    } <= names

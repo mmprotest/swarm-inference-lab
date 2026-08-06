@@ -18,6 +18,7 @@ from swarm_inference.platforms.base import (
     PlatformIdentity,
     ServiceDefinition,
     default_command_runner,
+    platform_implementation,
 )
 
 
@@ -52,17 +53,15 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
 
     def identity(self) -> PlatformIdentity:
         architecture = platform.machine() or "unknown"
-        supported = architecture.lower() in {"amd64", "x86_64"}
+        implementation_status, implementation_reason = platform_implementation(
+            "windows", architecture
+        )
         return PlatformIdentity(
             system="windows",
             release=platform.release(),
             architecture=architecture,
-            support_status="validated" if supported else "unsupported",
-            support_reason=(
-                "Windows x86-64 CPU product path"
-                if supported
-                else f"Windows architecture {architecture} is not supported"
-            ),
+            implementation_status=implementation_status,
+            implementation_reason=implementation_reason,
         )
 
     def _local_app_data(self) -> Path:
@@ -168,8 +167,8 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         )
 
     def _firewall_script(self, specification: FirewallRuleSpec) -> str:
-        label = specification.owner_label
-        subnets = ",".join(specification.private_subnets or ["LocalSubnet"])
+        resource = specification.resource_name("windows")
+        subnets = ",".join(specification.private_subnets)
         statements: list[str] = []
         for kind, ports in (
             ("control", specification.control_ports),
@@ -177,15 +176,16 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         ):
             if not ports:
                 continue
-            name = f"{label}-{kind}"
+            name = f"{resource}-{kind}"
             port_text = ",".join(str(port) for port in sorted(set(ports)))
             statements.append(
-                f"if (-not (Get-NetFirewallRule -DisplayName {_powershell_literal(name)} "
-                "-ErrorAction SilentlyContinue)) { "
+                f"$existing=Get-NetFirewallRule -DisplayName {_powershell_literal(name)} "
+                "-ErrorAction SilentlyContinue; "
+                "if ($existing) { $existing | Remove-NetFirewallRule }; "
                 f"New-NetFirewallRule -DisplayName {_powershell_literal(name)} "
                 "-Direction Inbound -Action Allow -Protocol TCP "
                 f"-LocalPort {_powershell_literal(port_text)} -Profile Private "
-                f"-RemoteAddress {_powershell_literal(subnets)} | Out-Null }}"
+                f"-RemoteAddress {_powershell_literal(subnets)} | Out-Null"
             )
         return "; ".join(statements)
 
@@ -194,9 +194,11 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         return f'powershell.exe -NoProfile -Command "{script.replace(chr(34), chr(96) + chr(34))}"'
 
     def configure_firewall(self, specification: FirewallRuleSpec) -> FirewallStatus:
+        resource = specification.resource_name("windows")
         if not self.administrator_probe():
             return FirewallStatus(
                 owner_label=specification.owner_label,
+                resource_name=resource,
                 configured=False,
                 private_only=True,
                 blocked=True,
@@ -216,6 +218,7 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         result = self.command_runner(command, self.safe_environment())
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=resource,
             configured=result.succeeded,
             private_only=True,
             blocked=not result.succeeded,
@@ -230,14 +233,38 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         )
 
     def firewall_status(self, specification: FirewallRuleSpec) -> FirewallStatus:
-        label = specification.owner_label
+        resource = specification.resource_name("windows")
+        expected_subnets = ",".join(sorted(specification.private_subnets))
+        checks = ["$valid=$true"]
+        for kind, ports in (
+            ("control", specification.control_ports),
+            ("data", specification.data_ports),
+        ):
+            if not ports:
+                continue
+            name = f"{resource}-{kind}"
+            expected_ports = ",".join(str(port) for port in sorted(set(ports)))
+            checks.append(
+                f"$rule=Get-NetFirewallRule -DisplayName {_powershell_literal(name)} "
+                "-ErrorAction SilentlyContinue; "
+                "if (-not $rule) { $valid=$false } else { "
+                "$portText=(($rule | Get-NetFirewallPortFilter).LocalPort | Sort-Object) -join ','; "
+                "$addressText=(($rule | Get-NetFirewallAddressFilter).RemoteAddress | "
+                "Sort-Object) -join ','; "
+                f"if ($portText -ne {_powershell_literal(expected_ports)} -or "
+                f"$addressText -ne {_powershell_literal(expected_subnets)} -or "
+                "$rule.Profile -notmatch '^Private$' -or $rule.Direction -ne 'Inbound' -or "
+                "$rule.Action -ne 'Allow') { $valid=$false } }"
+            )
+        checks.append("if ($valid) { 'OWNED=1' } else { 'OWNED=0' }")
         script = (
-            f"$owned=Get-NetFirewallRule -DisplayName {_powershell_literal(label + '-*')} "
-            "-ErrorAction SilentlyContinue; "
-            "if ($owned) { 'OWNED=1' } else { 'OWNED=0' }; "
-            "$broad=Get-NetFirewallRule -Enabled True -Direction Inbound -Action Allow "
-            "-ErrorAction SilentlyContinue | Where-Object {$_.Profile -match 'Any|Public'}; "
-            "if ($broad) { $broad | ForEach-Object { 'BROAD=' + $_.DisplayName } }"
+            "; ".join(checks)
+            + "; "
+            + (
+                "$broad=Get-NetFirewallRule -Enabled True -Direction Inbound -Action Allow "
+                "-ErrorAction SilentlyContinue | Where-Object {$_.Profile -match 'Any|Public'}; "
+                "if ($broad) { $broad | ForEach-Object { 'BROAD=' + $_.DisplayName } }"
+            )
         )
         result = self.command_runner(
             CommandSpec(
@@ -254,9 +281,10 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         ]
         configured = result.succeeded and "OWNED=1" in result.stdout
         return FirewallStatus(
-            owner_label=label,
+            owner_label=specification.owner_label,
+            resource_name=resource,
             configured=configured,
-            private_only=not broader,
+            private_only=configured,
             broader_existing_rules=broader,
             blocked=False,
             detail=(
@@ -265,23 +293,28 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         )
 
     def remove_firewall(self, specification: FirewallRuleSpec) -> FirewallStatus:
+        resource = specification.resource_name("windows")
+        names = [f"{resource}-control", f"{resource}-data"]
         if not self.administrator_probe():
-            label = specification.owner_label
-            command = (
-                'powershell.exe -NoProfile -Command "Get-NetFirewallRule '
-                f"-DisplayName '{label}-*' | Remove-NetFirewallRule\""
+            remove_script = "; ".join(
+                f"Get-NetFirewallRule -DisplayName {_powershell_literal(name)} "
+                "-ErrorAction SilentlyContinue | Remove-NetFirewallRule"
+                for name in names
             )
+            command = f'powershell.exe -NoProfile -Command "{remove_script}"'
             return FirewallStatus(
-                owner_label=label,
+                owner_label=specification.owner_label,
+                resource_name=resource,
                 configured=True,
                 private_only=True,
                 blocked=True,
                 detail="removing owned firewall rules requires an elevated PowerShell",
                 remediation_command=command,
             )
-        script = (
-            f"Get-NetFirewallRule -DisplayName {_powershell_literal(specification.owner_label + '-*')} "
+        script = "; ".join(
+            f"Get-NetFirewallRule -DisplayName {_powershell_literal(name)} "
             "-ErrorAction SilentlyContinue | Remove-NetFirewallRule"
+            for name in names
         )
         result = self.command_runner(
             CommandSpec(
@@ -293,6 +326,7 @@ class WindowsPlatformAdapter(BasePlatformAdapter):
         )
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=resource,
             configured=not result.succeeded,
             private_only=True,
             blocked=not result.succeeded,

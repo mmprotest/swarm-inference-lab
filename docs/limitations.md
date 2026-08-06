@@ -29,15 +29,20 @@
   throughput experiment with the complete standard report matrix.
 - CUDA compatibility depends on the installed driver, PyTorch build, and GPU
   architecture.
-- Windows x86-64 CPU is the exercised native development platform. Windows CUDA,
-  Linux x86-64 CPU, Linux ARM64 CPU, and macOS ARM64 MPS product paths are
-  implemented-unvalidated until their distinct platform/physical evidence is retained.
+- Windows x86-64, Linux x86-64, Linux ARM64, and macOS ARM64 adapters are implemented.
+  Implementation is not validation: every backend's software and physical status remains
+  `not-run` on a clean machine until exact retained evidence is attached.
 - Physical LAN/WAN artifacts require another actual machine and have not yet
   been produced in this repository build.
 - Pairing protects onboarding, not inference payload confidentiality. It does
   not add NAT traversal or public-Internet participation.
+- JSON/NDJSON never contains the pairing URI. Automation must protect and later retire the
+  invitation file; a user-scoped ACL fallback can be weaker than an explicit Windows SID ACL and
+  is reported as a limitation in the delivery receipt.
 - User-scoped firewall automation cannot silently elevate. A node remains
   blocked until the exact remediation is reviewed and reachability passes.
+- Firewall resources are isolated per cluster/node, but broader rules created by other software
+  remain an operator responsibility; Swarm Inference reports and does not delete them.
 - Stage-artifact source resolution may download one complete immutable snapshot
   on the source node; participating stage nodes receive only owned artifacts.
 - Stale or unmeasured links are excluded from automatic distributed plans and

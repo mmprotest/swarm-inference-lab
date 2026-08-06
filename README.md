@@ -11,7 +11,7 @@ expose the runtime to the public Internet or send sensitive prompts through untr
 
 ## Current status — August 2026
 
-Implemented and software-validated behavior includes:
+Implemented product behavior includes:
 
 - durable single-use X25519/HKDF/AES-GCM pairing backed by Ed25519 node identities;
 - a persistent user-scoped node agent using the canonical coordinator and worker runtimes;
@@ -25,9 +25,11 @@ Implemented and software-validated behavior includes:
   restart-and-replay recovery; and
 - strict versioned state, JSON/NDJSON automation, wheel installation, and cross-platform CI.
 
-Physical multi-machine product performance has not been proven in this repository state.
-Loopback, simulation, and CI evidence do not count as physical validation. CUDA and MPS remain
-implemented-unvalidated until their physical gates are run.
+Implementation support is separate from validation evidence. A clean machine reports software
+and physical validation as `not-run`; OS/architecture detection, hardware visibility, imports,
+and tensor probes never manufacture validation. Physical multi-machine product performance has
+not been proven in this repository state. Loopback, simulation, and CI evidence do not count as
+physical validation.
 
 ## Install without Git
 
@@ -48,30 +50,42 @@ sh ./install.sh --source-wheel ./swarm_inference_lab-0.1.0-py3-none-any.whl --js
 ```
 
 The installer locates or installs `uv`, installs a managed supported Python, tests the selected
-device through `swarm node doctor`, and installs the wheel as an isolated tool. Cluster creation
-or joining installs the persistent user service. See [platform support](docs/platform-support.md).
+device through `swarm node doctor`, and installs the wheel as an isolated tool. It does not create
+an unpaired service: installer output reports
+`deferred-until-cluster-create-or-join`. Cluster creation or joining installs and starts the
+persistent user service by default; `--foreground` opts out. See
+[platform support](docs/platform-support.md).
 
 ## Cluster quick start
 
 Use routable private addresses. The commands select identities, ports, backend, dtype, memory,
 and storage automatically.
 
-Machine 1:
+1. Install the wheel/tool on both machines.
+2. Create the cluster on the PC:
 
 ```powershell
-swarm cluster create --name villani-home
+swarm cluster create --name villani-home --yes --json `
+  --pairing-output C:\Protected\villani-home-invitation.uri
 ```
 
-Copy the single-use pairing URI printed by that command to Machine 2:
+3. Transfer the protected single-use invitation file through a secure channel. JSON contains
+   only the path and redacted metadata, never the URI.
+4. Read the URI locally on the laptop and join:
 
 ```powershell
-swarm node join "<pairing-uri>"
+swarm node join "<pairing-uri>" --yes --json
 ```
 
-Back on Machine 1:
+5. Back on the PC, inspect cluster status:
 
 ```powershell
-swarm cluster status
+swarm cluster status --json
+```
+
+6. Run the physical acceptance command from the runbook. A normal inference command is:
+
+```powershell
 
 swarm run allenai/OLMoE-1B-7B-0125-Instruct `
   --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
@@ -117,10 +131,13 @@ decode/publication assets. Nodes do not need complete model snapshots. See
 
 ## Machine-readable operation
 
-All new commands support `--json`; progress-producing commands support `--ndjson`. Pairing
+All new commands support `--json`; progress-producing commands support `--ndjson`. `cluster
+create --json` and `cluster pair --json` each emit exactly one JSON document. They never include
+the pairing URI: automation receives the complete invitation only through an atomically written,
+owner-protected `--pairing-output` file (or a default secret path beneath cluster state). Pairing
 secrets, private keys, raw authentication proofs, session keys, and prompt contents are never
-included in machine-readable output. Stable non-zero exit categories distinguish permission,
-connectivity, compatibility, capacity, artifact-integrity, and execution failures.
+included in machine-readable output. Machine-readable or non-interactive administrative
+mutations require `--yes` and fail with the permission exit category before mutation otherwise.
 
 Useful commands include:
 
@@ -178,14 +195,13 @@ procedure is in [physical two-machine acceptance](docs/physical-two-machine-acce
 
 ## Platform status
 
-| Platform | Backend | Status |
-|---|---|---|
-| Windows x86-64 | CPU | validated |
-| Windows x86-64 | CUDA | implemented-unvalidated; RTX 5090 physical gate required |
-| Linux x86-64 | CPU | implemented-unvalidated until its platform CI/physical evidence is retained |
-| macOS ARM64 | MPS/CPU | implemented-unvalidated; physical MPS gate required |
-| Linux ARM64 | CPU | implemented-unvalidated; ARM64 runner and physical gate required |
-| Windows ARM64, macOS Intel, 32-bit systems | — | unsupported for this milestone |
+| Platform | Implementation | Software validation | Physical validation |
+|---|---|---|---|
+| Windows x86-64 | implemented | retained evidence or `not-run` | RTX 5090 gate currently `NOT_RUN` |
+| Linux x86-64 | implemented | retained evidence or `not-run` | retained evidence or `not-run` |
+| macOS ARM64 | implemented | retained evidence or `not-run` | retained evidence or `not-run` |
+| Linux ARM64 | implemented | retained evidence or `not-run` | retained evidence or `not-run` |
+| Windows ARM64, macOS Intel, 32-bit systems | unsupported | `not-run` | `not-run` |
 
 Validation is attached to an OS/architecture/backend combination, not inferred from hardware
 presence. See [platform support](docs/platform-support.md) for service and firewall behavior.

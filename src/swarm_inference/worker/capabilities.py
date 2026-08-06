@@ -355,7 +355,12 @@ def measure_capabilities(
     benchmark_dtype: str | None = None,
     node_id: str | None = None,
     service_mode: str = "foreground",
-    platform_support_status: str = "unknown",
+    platform_implementation_status: str = "unknown",
+    software_validation_status: str = "not-run",
+    physical_validation_status: str = "not-run",
+    validation_evidence_ids: list[str] | None = None,
+    latest_validation_unix_ns: int | None = None,
+    validation_detail: str = "no retained validation evidence",
 ) -> WorkerCapability:
     memory = psutil.virtual_memory()
     host = detect_host_runtime()
@@ -451,5 +456,10 @@ def measure_capabilities(
         product_protocol_minor=0,
         artifact_format_versions=[1],
         service_mode=service_mode,
-        platform_support_status=platform_support_status,
+        platform_implementation_status=platform_implementation_status,
+        software_validation_status=software_validation_status,
+        physical_validation_status=physical_validation_status,
+        validation_evidence_ids=list(validation_evidence_ids or []),
+        latest_validation_unix_ns=latest_validation_unix_ns,
+        validation_detail=validation_detail,
     )

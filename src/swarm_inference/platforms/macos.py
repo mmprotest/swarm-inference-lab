@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import platform
 import plistlib
+import re
+import shlex
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import cast
@@ -20,6 +22,7 @@ from swarm_inference.platforms.base import (
     ServiceDefinition,
     ServiceStatus,
     default_command_runner,
+    platform_implementation,
 )
 
 
@@ -41,17 +44,15 @@ class MacOSPlatformAdapter(BasePlatformAdapter):
 
     def identity(self) -> PlatformIdentity:
         architecture = platform.machine() or "unknown"
-        arm = architecture.lower() in {"arm64", "aarch64"}
+        implementation_status, implementation_reason = platform_implementation(
+            "macos", architecture
+        )
         return PlatformIdentity(
             system="macos",
             release=platform.release(),
             architecture=architecture,
-            support_status="implemented-unvalidated" if arm else "unsupported",
-            support_reason=(
-                "Apple Silicon MPS path is implemented and awaits physical acceptance"
-                if arm
-                else "the product MPS milestone supports Apple Silicon only"
-            ),
+            implementation_status=implementation_status,
+            implementation_reason=implementation_reason,
         )
 
     def state_directory(self) -> Path:
@@ -153,45 +154,78 @@ class MacOSPlatformAdapter(BasePlatformAdapter):
 
     def configure_firewall(self, specification: FirewallRuleSpec) -> FirewallStatus:
         ports = sorted({*specification.control_ports, *specification.data_ports})
-        subnets = specification.private_subnets or ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
-        rules = " ".join(
-            f"pass in proto tcp from {subnet} to any port {{{','.join(map(str, ports))}}}"
-            for subnet in subnets
+        anchor = specification.resource_name("macos")
+        rules = "\n".join(
+            f"pass in proto tcp from {subnet} to any port {port}"
+            for subnet in specification.private_subnets
+            for port in ports
         )
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=anchor,
             configured=False,
             private_only=True,
             blocked=True,
             detail="macOS packet-filter changes require explicit administrator approval",
-            remediation_command=f"echo {rules!r} | sudo pfctl -a swarm-inference -f -",
+            remediation_command=(
+                f"printf '%s\\n' {shlex.quote(rules)} | "
+                + shlex.join(["sudo", "pfctl", "-a", anchor, "-f", "-"])
+            ),
         )
 
     def firewall_status(self, specification: FirewallRuleSpec) -> FirewallStatus:
+        anchor = specification.resource_name("macos")
         result = self.command_runner(
             CommandSpec(
                 executable="pfctl",
-                arguments=["-a", "swarm-inference", "-sr"],
+                arguments=["-a", anchor, "-sr"],
                 description="inspect owned macOS packet-filter anchor",
             ),
             self.safe_environment(),
         )
+        ports = sorted({*specification.control_ports, *specification.data_ports})
+        configured = (
+            result.succeeded
+            and all(
+                re.search(rf"(?<![0-9.]){re.escape(subnet)}(?![0-9.])", result.stdout)
+                for subnet in specification.private_subnets
+            )
+            and all(re.search(rf"(?<!\d){port}(?!\d)", result.stdout) for port in ports)
+        )
+        broad_result = self.command_runner(
+            CommandSpec(
+                executable="pfctl",
+                arguments=["-sr"],
+                description="report broader unrelated packet-filter rules",
+            ),
+            self.safe_environment(),
+        )
+        broader = [
+            line.strip()
+            for line in broad_result.stdout.splitlines()
+            if line.lstrip().startswith("pass in")
+            and (" from any " in f" {line} " or "0.0.0.0/0" in line)
+        ]
         return FirewallStatus(
             owner_label=specification.owner_label,
-            configured=result.succeeded and "pass in" in result.stdout,
-            private_only=result.succeeded,
+            resource_name=anchor,
+            configured=configured,
+            private_only=configured,
+            broader_existing_rules=broader,
             blocked=False,
             detail="owned packet-filter anchor inspected",
         )
 
     def remove_firewall(self, specification: FirewallRuleSpec) -> FirewallStatus:
+        anchor = specification.resource_name("macos")
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=anchor,
             configured=True,
             private_only=True,
             blocked=True,
             detail="flush only the owned packet-filter anchor with administrator approval",
-            remediation_command="sudo pfctl -a swarm-inference -F rules",
+            remediation_command=shlex.join(["sudo", "pfctl", "-a", anchor, "-F", "rules"]),
         )
 
 

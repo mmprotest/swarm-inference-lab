@@ -76,7 +76,12 @@ class WorkerRuntimeConfig(StrictModel):
     expert_queue_capacity: PositiveInt = 64
     expert_max_concurrent_requests: PositiveInt = 1
     service_mode: str = "foreground"
-    platform_support_status: str = "unknown"
+    platform_implementation_status: Literal["implemented", "unsupported", "unknown"] = "unknown"
+    software_validation_status: Literal["validated", "failed", "not-run"] = "not-run"
+    physical_validation_status: Literal["validated", "failed", "not-run"] = "not-run"
+    validation_evidence_ids: list[str] = Field(default_factory=list)
+    latest_validation_unix_ns: PositiveInt | None = None
+    validation_detail: str = "no retained validation evidence"
 
 
 class WorkerRuntimeStatus(StrictModel):
@@ -195,7 +200,12 @@ class WorkerRuntime:
             "expert_max_concurrent_requests": config.expert_max_concurrent_requests,
             "startup_future": startup_future,
             "service_mode": config.service_mode,
-            "platform_support_status": config.platform_support_status,
+            "platform_implementation_status": config.platform_implementation_status,
+            "software_validation_status": config.software_validation_status,
+            "physical_validation_status": config.physical_validation_status,
+            "validation_evidence_ids": config.validation_evidence_ids,
+            "latest_validation_unix_ns": config.latest_validation_unix_ns,
+            "validation_detail": config.validation_detail,
         }
 
     async def _run(

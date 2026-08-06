@@ -26,6 +26,12 @@ Transient worker failures use capped exponential backoff and a finite attempt co
 identity, compatibility, backend, or configuration failures do not spin. Status is persisted
 atomically and published to the coordinator.
 
+Node metadata schema 2 keeps platform implementation, software validation, and physical
+validation independent. Validation records are backend- and exact-platform-scoped and refer to
+retained evidence by identity, path, and timestamp. Backend probing updates operational
+capabilities only; it does not create validation claims. `cluster status`, `node status`, `node
+doctor`, and worker capability documents expose the same separation.
+
 ## Configuration ownership
 
 The agent selects and periodically re-evaluates:
@@ -56,7 +62,16 @@ overrides support VPN and multi-NIC hosts.
 ## Services and updates
 
 Windows uses a current-user Task Scheduler task, Linux uses `systemd --user`, and macOS uses a
-LaunchAgent. `--foreground` is the explicit fallback when user service management is unavailable.
+LaunchAgent. Installation has no cluster metadata and therefore never creates an agent service;
+it reports `deferred-until-cluster-create-or-join`. `cluster create` installs and starts the
+coordinator/local-worker service by default, and `node join` does the same for a worker.
+`--foreground` is the explicit no-service fallback. `node install-service` is post-pair only and
+is idempotent; when unpaired it reports: `create or join a cluster first`.
+
+Administrative service, firewall, endpoint, backend, memory, update, leave, deletion, and
+revocation mutations require one interactive confirmation unless `--yes` is supplied. JSON,
+NDJSON, and non-interactive stdin never prompt and fail with permission exit code 10 before the
+mutation if `--yes` is absent. Read-only status and doctor commands never prompt.
 
 Updates are never automatic:
 

@@ -35,8 +35,8 @@ class _InjectedPlatform:
             system="windows",
             release="11",
             architecture="AMD64",
-            support_status="validated",
-            support_reason="process-injected platform",
+            implementation_status="implemented",
+            implementation_reason="process-injected platform implementation",
         )
 
     def accelerator_probes(self) -> list[BackendProbeResult]:

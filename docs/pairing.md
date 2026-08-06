@@ -7,8 +7,22 @@ trusted LAN/private network; it does not encrypt subsequent inference payloads.
 
 `swarm cluster pair` creates a cryptographically random secret with at least 128 bits of entropy,
 a session ID, and an ephemeral X25519 keypair. The default expiry is ten minutes. The URI contains
-the private coordinator endpoint, session ID, ephemeral public key, and secret. It is printed
-once for the operator, never logged or included in JSON/NDJSON status output.
+the private coordinator endpoint, session ID, ephemeral public key, and secret. Human `cluster
+create` and `cluster pair` output may display it exactly once. It is never repeated in status,
+logs, errors, audits, or service state.
+
+`cluster create --json` and `cluster pair --json` each emit exactly one JSON document and never
+contain the URI. With `--pairing-output <path>`, the complete URI is written using a complete
+temporary file followed by atomic publication. JSON without an explicit path uses a secret
+location under the cluster state directory and returns only that path. Existing files are
+rejected unless `--force-pairing-output` is explicit, and `--pairing-output -` is forbidden in
+machine-readable mode. Parent directories are created safely.
+
+Invitation files use POSIX mode `0600`. Windows grants the actual process-user SID exclusive
+access when ACL tooling is available; otherwise the result explicitly reports the strongest
+user-scoped fallback and its limitation. Default expired, consumed, or invalidated invitation
+files are retired during session cleanup while active sessions remain untouched. The URI is not
+stored in ordinary cluster metadata.
 
 Unused in-memory ephemeral sessions are invalidated by coordinator restart. Consumed, expired,
 or rejected sessions cannot be revived.
@@ -53,3 +67,13 @@ Never paste a pairing URI into public issue trackers or logs. If disclosure is s
 expire or create a new session; the old session is not reusable after a successful join. Audit
 records include session IDs and decisions, not secrets, raw proofs, private keys, AES/session
 keys, or prompt contents.
+
+Automation example:
+
+```powershell
+swarm cluster pair --json --pairing-output C:\Protected\one-time.uri
+```
+
+The caller reads that protected file locally, transfers it through an authenticated secure
+channel, joins, and deletes the consumed transfer copy. Do not redirect JSON stdout expecting a
+secret; JSON is intentionally non-secret.

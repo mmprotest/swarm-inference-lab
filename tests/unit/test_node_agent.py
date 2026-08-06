@@ -39,8 +39,8 @@ class _Platform:
             system="windows",
             release="11",
             architecture="AMD64",
-            support_status="validated",
-            support_reason="injected platform",
+            implementation_status="implemented",
+            implementation_reason="injected platform implementation",
         )
 
     def accelerator_probes(self):
@@ -143,6 +143,7 @@ class _BlockedFirewallManager:
     async def configure_firewall(self, specification):
         return FirewallStatus(
             owner_label=specification.owner_label,
+            resource_name=specification.resource_name("windows"),
             configured=False,
             private_only=True,
             blocked=True,

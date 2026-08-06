@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import re
-from typing import Literal, Self
+from pathlib import Path
+from typing import Any, Literal, Self
 
 from pydantic import (
     Field,
@@ -15,11 +16,14 @@ from pydantic import (
 )
 
 from swarm_inference.config.models import Backend, StrictModel
+from swarm_inference.platforms.base import ImplementationStatus, PlatformIdentity, ValidationStatus
 from swarm_inference.security.identity import public_key_fingerprint
 from swarm_inference.security.trust_store import normalize_fingerprint
 
 CLUSTER_SCHEMA_VERSION: Literal[1] = 1
 CLUSTER_DOCUMENT_VERSION: Literal[1] = 1
+NODE_METADATA_DOCUMENT_VERSION: Literal[2] = 2
+NODE_REGISTRY_SCHEMA_VERSION: Literal[2] = 2
 PRODUCT_PROTOCOL_MAJOR = 1
 PRODUCT_PROTOCOL_MINOR = 0
 ARTIFACT_FORMAT_VERSION = 1
@@ -114,13 +118,6 @@ class ClusterMetadata(StrictModel):
         return self
 
 
-NodeValidationStatus = Literal[
-    "pending",
-    "validated",
-    "implemented-unvalidated",
-    "unsupported",
-    "failed",
-]
 NodeServiceMode = Literal[
     "foreground",
     "windows-task",
@@ -130,9 +127,142 @@ NodeServiceMode = Literal[
 ]
 
 
+class BackendValidationRecord(StrictModel):
+    """Retained evidence scoped to one platform identity and backend."""
+
+    backend: Backend
+    platform_system: Literal["windows", "linux", "macos"]
+    platform_release: str
+    platform_architecture: str
+    software_status: ValidationStatus = "not-run"
+    physical_status: ValidationStatus = "not-run"
+    evidence_id: str | None = None
+    evidence_path: Path | None = None
+    validated_at_unix_ns: PositiveInt | None = None
+    detail: str
+
+    @classmethod
+    def not_run(
+        cls,
+        *,
+        backend: Backend,
+        platform: PlatformIdentity,
+        detail: str = "no retained acceptance evidence exists for this platform/backend scope",
+    ) -> BackendValidationRecord:
+        return cls(
+            backend=backend,
+            platform_system=platform.system,
+            platform_release=platform.release,
+            platform_architecture=platform.architecture,
+            software_status="not-run",
+            physical_status="not-run",
+            detail=detail,
+        )
+
+    @model_validator(mode="after")
+    def validate_evidence_identity(self) -> Self:
+        if "validated" in {self.software_status, self.physical_status} and (
+            not self.evidence_id or self.evidence_path is None or self.validated_at_unix_ns is None
+        ):
+            raise ValueError(
+                "validated backend status requires retained evidence identity and time"
+            )
+        return self
+
+
+def aggregate_validation_status(
+    records: list[BackendValidationRecord],
+    *,
+    backend: Backend | None,
+    architecture: str,
+    operating_system: str,
+) -> tuple[ValidationStatus, ValidationStatus]:
+    system_label, _, release = operating_system.partition(" ")
+    current_system = (
+        "windows"
+        if system_label.lower().startswith("win")
+        else "macos"
+        if system_label.lower() in {"darwin", "macos"}
+        else "linux"
+    )
+    scoped = [
+        item
+        for item in records
+        if backend is not None
+        and item.backend == backend
+        and item.platform_system == current_system
+        and item.platform_release == (release or "unknown")
+        and item.platform_architecture.lower() == architecture.lower()
+    ]
+
+    def aggregate(field: Literal["software_status", "physical_status"]) -> ValidationStatus:
+        values = [getattr(item, field) for item in scoped]
+        if "failed" in values:
+            return "failed"
+        if "validated" in values:
+            return "validated"
+        return "not-run"
+
+    return aggregate("software_status"), aggregate("physical_status")
+
+
+def migrate_legacy_node_metadata(raw: dict[str, Any]) -> dict[str, Any]:
+    """Conservatively translate the former overloaded validation fields."""
+
+    migrated = dict(raw)
+    legacy_validation = str(migrated.pop("validation_status", "pending"))
+    legacy_support = str(migrated.pop("platform_support_status", legacy_validation))
+    implementation_status: ImplementationStatus = (
+        "unsupported" if "unsupported" in {legacy_validation, legacy_support} else "implemented"
+    )
+    operating_system = str(migrated.get("operating_system", "unknown"))
+    system_label = operating_system.split(maxsplit=1)[0].lower()
+    system: Literal["windows", "linux", "macos"] = (
+        "windows"
+        if system_label.startswith("win")
+        else "macos"
+        if system_label in {"darwin", "macos"}
+        else "linux"
+    )
+    release = operating_system.partition(" ")[2] or "unknown"
+    software_status: ValidationStatus = "failed" if legacy_validation == "failed" else "not-run"
+    records = list(migrated.get("backend_validations", []))
+    selected_backend = migrated.get("selected_backend")
+    note = (
+        "legacy validated/platform-support labels were not promoted without verifiable retained "
+        "acceptance evidence"
+        if "validated" in {legacy_validation, legacy_support}
+        else "legacy platform support state migrated to the separated implementation/evidence contract"
+    )
+    if selected_backend is not None and not records:
+        records.append(
+            {
+                "backend": selected_backend,
+                "platform_system": system,
+                "platform_release": release,
+                "platform_architecture": str(migrated.get("architecture", "unknown")),
+                "software_status": software_status,
+                "physical_status": "not-run",
+                "detail": note,
+            }
+        )
+    migrated.update(
+        {
+            "document_version": NODE_METADATA_DOCUMENT_VERSION,
+            "implementation_status": implementation_status,
+            "implementation_reason": note,
+            "software_validation_status": software_status,
+            "physical_validation_status": "not-run",
+            "backend_validations": records,
+            "validation_migration_note": note,
+        }
+    )
+    return migrated
+
+
 class NodeMetadata(StrictModel):
     schema_version: Literal[1] = CLUSTER_SCHEMA_VERSION
-    document_version: Literal[1] = CLUSTER_DOCUMENT_VERSION
+    document_version: Literal[2] = NODE_METADATA_DOCUMENT_VERSION
     node_id: str
     public_key: str
     fingerprint: str
@@ -157,11 +287,27 @@ class NodeMetadata(StrictModel):
     joined_at_unix_ns: PositiveInt
     last_seen_at_unix_ns: PositiveInt
     service_mode: NodeServiceMode = "foreground"
-    validation_status: NodeValidationStatus = "pending"
-    platform_support_status: NodeValidationStatus = "pending"
+    implementation_status: ImplementationStatus
+    implementation_reason: str
+    software_validation_status: ValidationStatus = "not-run"
+    physical_validation_status: ValidationStatus = "not-run"
+    backend_validations: list[BackendValidationRecord] = Field(default_factory=list)
+    validation_migration_note: str | None = None
     revoked: bool = False
     revoked_at_unix_ns: PositiveInt | None = None
     revocation_reason: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_validation_contract(cls, value: Any) -> Any:
+        if isinstance(value, dict) and (
+            "implementation_status" not in value
+            or "validation_status" in value
+            or "platform_support_status" in value
+            or value.get("document_version") != NODE_METADATA_DOCUMENT_VERSION
+        ):
+            return migrate_legacy_node_metadata(value)
+        return value
 
     @field_validator("fingerprint")
     @classmethod
@@ -197,6 +343,16 @@ class NodeMetadata(StrictModel):
     @model_validator(mode="after")
     def validate_identity_and_revocation(self) -> Self:
         self.verify_identity_binding()
+        software, physical = aggregate_validation_status(
+            self.backend_validations,
+            backend=self.selected_backend,
+            architecture=self.architecture,
+            operating_system=self.operating_system,
+        )
+        if self.software_validation_status != software:
+            raise ValueError("software validation summary disagrees with backend evidence")
+        if self.physical_validation_status != physical:
+            raise ValueError("physical validation summary disagrees with backend evidence")
         if self.revoked and self.revoked_at_unix_ns is None:
             raise ValueError("revoked node metadata requires a revocation timestamp")
         if not self.revoked and (
@@ -604,8 +760,8 @@ class ClusterAuditEvent(StrictModel):
 
 
 class NodeRegistryDocument(StrictModel):
-    schema_version: Literal[1] = CLUSTER_SCHEMA_VERSION
-    document_version: Literal[1] = CLUSTER_DOCUMENT_VERSION
+    schema_version: Literal[2] = NODE_REGISTRY_SCHEMA_VERSION
+    document_version: Literal[2] = NODE_METADATA_DOCUMENT_VERSION
     nodes: list[NodeMetadata] = Field(default_factory=list)
 
 
@@ -645,6 +801,8 @@ __all__ = [
     "ARTIFACT_FORMAT_VERSION",
     "CLUSTER_DOCUMENT_VERSION",
     "CLUSTER_SCHEMA_VERSION",
+    "NODE_METADATA_DOCUMENT_VERSION",
+    "NODE_REGISTRY_SCHEMA_VERSION",
     "PRODUCT_PROTOCOL_MAJOR",
     "PRODUCT_PROTOCOL_MINOR",
     "TRUSTED_LAN_SECURITY_CLASSIFICATION",
@@ -657,6 +815,7 @@ __all__ = [
     "ArtifactTransferStatus",
     "BackendCandidateRecord",
     "BackendSelectionReport",
+    "BackendValidationRecord",
     "ClusterAuditEvent",
     "ClusterMetadata",
     "EndpointSelection",
@@ -674,5 +833,7 @@ __all__ = [
     "PairingSessionRegistryDocument",
     "RevocationRegistryDocument",
     "VersionCompatibility",
+    "aggregate_validation_status",
+    "migrate_legacy_node_metadata",
     "node_id_from_fingerprint",
 ]

@@ -14,7 +14,7 @@
     "swarm run allenai/OLMoE-1B-7B-0125-Instruct --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea --mode capacity --require-node node-laptop --ndjson"
   ],
   "document_type": "swarm-physical-two-machine-evidence",
-  "format_version": 2,
+  "format_version": 3,
   "machine_identities": {
     "worker_a": {
       "host_identity": "sha256:<host-a>",
@@ -146,15 +146,39 @@
     "excluded_slow_node_id": "node-laptop",
     "expected_token_ids": [123, 456],
     "status": "completed",
-    "token_ids": [123, 456]
+    "token_ids": [123, 456],
+    "topology": {
+      "assignments": [
+        {"stage_id": 0, "worker_id": "node-rtx/cuda-0"}
+      ],
+      "topology_id": "<speed-topology-id>"
+    }
   },
   "capacity_run": {
     "expected_token_ids": [123, 456],
     "included_slow_node_id": "node-laptop",
     "status": "completed",
-    "token_ids": [123, 456]
+    "token_ids": [123, 456],
+    "topology": {
+      "assignments": [
+        {"stage_id": 0, "worker_id": "node-rtx/cuda-0"},
+        {"stage_id": 1, "worker_id": "node-laptop/cpu-0"}
+      ],
+      "topology_id": "<capacity-topology-id>"
+    }
   },
+  "direct_stage_traffic": [
+    {
+      "bytes_observed": 4096,
+      "destination_endpoint": "192.0.2.20:50053",
+      "destination_worker_id": "node-laptop/cpu-0",
+      "evidence_file": "capacity-direct-stage.json",
+      "observed": true,
+      "source_worker_id": "node-rtx/cuda-0"
+    }
+  ],
   "source_files": {
+    "capacity-direct-stage.json": "sha256:<64-lowercase-hex>",
     "capacity.ndjson": "sha256:<64-lowercase-hex>",
     "cluster-status-after-restart.json": "sha256:<64-lowercase-hex>",
     "coordinator.log": "sha256:<64-lowercase-hex>",

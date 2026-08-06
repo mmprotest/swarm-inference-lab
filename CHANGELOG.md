@@ -17,6 +17,25 @@
 
 ## Unreleased
 
+- Correct release-candidate pairing output so `cluster create --json` and `cluster pair --json`
+  each emit one non-secret document, with atomic protected invitation-file delivery for
+  automation and one-time URI display for humans.
+- Split platform implementation support from exact backend-scoped retained software/physical
+  validation evidence, including conservative node-registry schema-2 migration.
+- Isolate Linux nftables tables, macOS PF anchors, and Windows firewall reconciliation by a
+  bounded owner hash so one cluster cannot remove another cluster's resources.
+- Defer service creation during clean wheel installation; cluster creation and node join now own
+  default install/start behavior, while foreground mode and post-pair administration remain.
+- Enforce shared interactive/`--yes` confirmation semantics before administrative mutation and
+  permission-category failure for non-interactive machine calls without `--yes`.
+- Initialize/verify the pinned source-only Colibri submodule in source CI while keeping wheels and
+  clean node operation independent of `third_party/colibri` and experiment packages.
+- Extend productization acceptance with explicit pairing, secrecy, platform evidence, firewall
+  isolation, installer, confirmation, source dependency, clean-wheel, and physical-readiness
+  gates, a shared repeatability schema, and fail-closed handling for skipped product tests. Opt-in
+  Experiment 007 artifact audits are explicitly outside the product selection. The
+  two-physical-machine gate remains `NOT_RUN` until executed on distinct hosts.
+
 - Productize the canonical OLMoE runtime as a self-configuring cross-platform cluster with
   `swarm cluster`, `swarm node`, and one-shot `swarm run` commands.
 - Add reusable idempotent coordinator/worker lifecycle classes and a persistent bounded node

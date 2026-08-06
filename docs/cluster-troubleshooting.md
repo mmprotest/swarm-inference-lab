@@ -12,6 +12,21 @@ Known failures retain their stage, node, category, corrective action, and retry 
 exit categories are permission (10), connectivity (11), compatibility (12), capacity (13),
 artifact integrity (14), and execution (15).
 
+## Permission error requires `--yes`
+
+Administrative mutations prompt once only in an interactive human terminal. JSON/NDJSON and
+non-interactive invocations never prompt; add `--yes` after reviewing the operation. A refusal or
+missing `--yes` exits with category `permission` before service, firewall, trust, configuration,
+update, deletion, leave, or revocation state changes. Prompts contain fixed action text and never
+contain a pairing URI.
+
+## Installer reports a deferred service
+
+`service=deferred-until-cluster-create-or-join` is the successful clean-install state, not an
+error. Create the coordinator with `swarm cluster create` or join with `swarm node join`; either
+installs and starts the correct cluster-specific service unless `--foreground` is used. Running
+`swarm node install-service` while unpaired correctly fails with `create or join a cluster first`.
+
 ## Node is blocked
 
 Read `runtime.reason` and `runtime.error_category`. A firewall block includes one exact remediation
@@ -32,6 +47,25 @@ swarm node configure --data-endpoint <private-ip:port>
 Create a new invitation if the URI expired, was consumed, exceeded attempts, or the coordinator
 restarted. Do not retry a known-disclosed secret. Version errors identify supported protocol
 minor/artifact ranges. Major mismatches require an explicit wheel update.
+
+JSON pairing output is exactly one non-secret document. Read `pairing.invitation_file`, not
+stdout, to obtain the complete URI. The file is owner-protected and atomically published. An
+existing destination is refused unless `--force-pairing-output` is explicit. If a default
+invitation expires, cleanup removes that expired file without touching active session files.
+
+## Validation remains `not-run`
+
+This is expected on a clean machine. `implementation_status=implemented` says the adapter path
+exists; it does not imply software or physical validation. A visible GPU and a passing tensor
+probe select CUDA but do not validate the RTX 5090 gate. Only a retained, exact
+platform/backend-scoped acceptance record can report `validated`.
+
+## Firewall ownership and stale rules
+
+Linux status/removal targets only `swarm_<owner-hash>`; macOS targets only
+`swarm-inference/<owner-hash>`; Windows targets the two hashed owned display names. Re-run the
+reported remediation when ports change to reconcile stale owned rules. Broader unrelated rules
+are reported for operator review but are never adopted or deleted by Swarm Inference.
 
 ## No distributed speed plan
 

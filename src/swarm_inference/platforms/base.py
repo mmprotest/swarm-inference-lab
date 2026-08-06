@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import ipaddress
 import os
 import re
@@ -13,20 +14,73 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 import psutil
-from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
+from pydantic import Field, NonNegativeInt, PositiveInt, field_validator, model_validator
 
 from swarm_inference.config.models import Backend, StrictModel
 
-PlatformSupportStatus = Literal["validated", "implemented-unvalidated", "unsupported"]
+ImplementationStatus = Literal["implemented", "unsupported"]
+ValidationStatus = Literal["validated", "failed", "not-run"]
 _SERVICE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$")
+_PRIVATE_IPV4_NETWORKS = tuple(
+    ipaddress.IPv4Network(value) for value in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
+)
+PLATFORM_IMPLEMENTATION_CONTRACT: dict[str, frozenset[str]] = {
+    "windows": frozenset({"amd64", "x86_64"}),
+    "linux": frozenset({"amd64", "x86_64", "aarch64", "arm64"}),
+    "macos": frozenset({"aarch64", "arm64"}),
+}
+
+
+def platform_implementation(
+    system: Literal["windows", "linux", "macos"],
+    architecture: str,
+) -> tuple[ImplementationStatus, str]:
+    normalized = architecture.lower()
+    if normalized in PLATFORM_IMPLEMENTATION_CONTRACT[system]:
+        return (
+            "implemented",
+            f"{system} {architecture} product path is implemented; validation requires retained evidence",
+        )
+    return "unsupported", f"{system} architecture {architecture} is not implemented"
+
+
+def owned_firewall_resource_name(
+    owner_label: str,
+    *,
+    platform_name: Literal["windows", "linux", "macos"],
+) -> str:
+    """Return a bounded, injection-safe, collision-resistant owned resource name."""
+
+    digest = hashlib.sha256(owner_label.encode("utf-8")).hexdigest()[:20]
+    if platform_name == "windows":
+        return f"SwarmInference-{digest}"
+    if platform_name == "linux":
+        return f"swarm_{digest}"
+    return f"swarm-inference/{digest}"
 
 
 class PlatformIdentity(StrictModel):
     system: Literal["windows", "linux", "macos"]
     release: str
     architecture: str
-    support_status: PlatformSupportStatus
-    support_reason: str
+    implementation_status: ImplementationStatus
+    implementation_reason: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_support_fields(cls, value: object) -> object:
+        if isinstance(value, dict) and "support_status" in value:
+            migrated = dict(value)
+            legacy = str(migrated.pop("support_status"))
+            reason = str(migrated.pop("support_reason", "legacy platform support state"))
+            migrated["implementation_status"] = (
+                "unsupported" if legacy == "unsupported" else "implemented"
+            )
+            migrated["implementation_reason"] = (
+                f"{reason}; legacy status did not provide validation evidence"
+            )
+            return migrated
+        return value
 
 
 class BackendProbeResult(StrictModel):
@@ -134,9 +188,42 @@ class FirewallRuleSpec(StrictModel):
     def owner_label(self) -> str:
         return f"SwarmInference-{self.cluster_id}-{self.node_id}"
 
+    @field_validator("control_ports", "data_ports")
+    @classmethod
+    def validate_ports(cls, value: list[int]) -> list[int]:
+        if len(value) > 32:
+            raise ValueError("firewall port lists are bounded to 32 entries")
+        if any(port > 65535 for port in value):
+            raise ValueError("firewall ports must be in the range 1..65535")
+        return sorted(set(value))
+
+    @field_validator("private_subnets")
+    @classmethod
+    def validate_private_subnets(cls, value: list[str]) -> list[str]:
+        if len(value) > 16:
+            raise ValueError("firewall subnet lists are bounded to 16 entries")
+        networks: list[str] = []
+        for item in value:
+            try:
+                network = ipaddress.ip_network(item, strict=True)
+            except ValueError as exc:
+                raise ValueError(f"invalid private subnet {item!r}") from exc
+            if not isinstance(network, ipaddress.IPv4Network) or not any(
+                network.subnet_of(private) for private in _PRIVATE_IPV4_NETWORKS
+            ):
+                raise ValueError(f"firewall subnet is outside RFC1918 private space: {item}")
+            networks.append(str(network))
+        if not networks:
+            raise ValueError("at least one RFC1918 private subnet is required")
+        return sorted(set(networks))
+
+    def resource_name(self, platform_name: Literal["windows", "linux", "macos"]) -> str:
+        return owned_firewall_resource_name(self.owner_label, platform_name=platform_name)
+
 
 class FirewallStatus(StrictModel):
     owner_label: str
+    resource_name: str
     configured: bool
     private_only: bool
     broader_existing_rules: list[str] = Field(default_factory=list)
@@ -560,14 +647,15 @@ class BasePlatformAdapter(ABC):
         identity = self.identity()
         return [
             PlatformDiagnostic(
-                name="platform-support",
-                status="pass" if identity.support_status != "unsupported" else "fail",
-                detail=identity.support_reason,
+                name="platform-implementation",
+                status="pass" if identity.implementation_status == "implemented" else "fail",
+                detail=identity.implementation_reason,
             )
         ]
 
 
 __all__ = [
+    "PLATFORM_IMPLEMENTATION_CONTRACT",
     "BackendProbeResult",
     "BasePlatformAdapter",
     "CommandResult",
@@ -575,12 +663,15 @@ __all__ = [
     "CommandSpec",
     "FirewallRuleSpec",
     "FirewallStatus",
+    "ImplementationStatus",
     "InterfaceAddress",
     "PlatformAdapter",
     "PlatformDiagnostic",
     "PlatformIdentity",
-    "PlatformSupportStatus",
     "ServiceDefinition",
     "ServiceStatus",
+    "ValidationStatus",
     "default_command_runner",
+    "owned_firewall_resource_name",
+    "platform_implementation",
 ]

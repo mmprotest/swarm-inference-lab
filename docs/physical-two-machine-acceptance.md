@@ -28,25 +28,33 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 `
 ```
 
 The RTX machine must report `torch-cuda`; the laptop must report `torch-cpu`. A hardware-present
-but failed tensor probe is not CUDA validation.
+but failed tensor probe is not CUDA validation. Both installers must report
+`service=deferred-until-cluster-create-or-join`; installation alone creates no service and no
+validation record.
 
 ## 2. Create and pair using only product commands
 
 Machine A:
 
 ```powershell
-swarm cluster create --name physical-gate-a
+swarm cluster create --name villani-home --yes --json `
+  --pairing-output C:\Protected\villani-home-invitation.uri
 ```
 
-Machine B, using the single-use URI shown once by Machine A:
+The JSON document must be parseable as one object and must contain only redacted pairing metadata
+and the invitation path. Transfer that protected file through an authenticated secure channel.
+
+Machine B, after reading the URI locally:
 
 ```powershell
-swarm node join "<pairing-uri>"
+swarm node join "<pairing-uri>" --yes --json
 ```
 
 Do not run identity, trust, coordinator, worker, inspect, plan, deploy, or submit commands. Save
-redacted command transcripts; never save the secret-bearing URI. Capture its public session ID,
-expiry, and consumed audit event from status/audit evidence.
+redacted command transcripts; never copy the secret-bearing URI into a transcript, JSON, log, or
+acceptance summary. Delete the transferred invitation copy after consumption. Capture its public
+session ID, expiry, protected delivery metadata, and consumed audit event from status/audit
+evidence.
 
 ## 3. Prove automatic configuration and persistence
 
@@ -58,7 +66,9 @@ swarm cluster status --json | Tee-Object .\cluster-status-before-restart.json
 
 The document must prove both distinct machine/node identities, OS/architecture/backend, selected
 dtype and memory, non-loopback control/data/probe endpoints, service state, bidirectional
-reachability, and fresh directed measurements in both directions.
+reachability, and fresh directed measurements in both directions. It must report implementation,
+software validation, and physical validation separately. Tensor probing cannot pre-populate the
+physical validation status.
 
 Close both install/join terminals. Restart each owned user service or sign out/in. Then capture:
 
@@ -76,22 +86,24 @@ Machine A:
 swarm run allenai/OLMoE-1B-7B-0125-Instruct `
   --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
   --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea `
-  --mode speed --prompt "Explain distributed inference." --ndjson `
+  --mode speed --prompt "Write a Python function that merges two sorted lists." --ndjson `
   | Tee-Object .\speed.ndjson
 
 swarm run allenai/OLMoE-1B-7B-0125-Instruct `
   --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
   --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea `
   --mode capacity --require-node <laptop-node-id> `
-  --prompt "Explain distributed inference." --ndjson `
+  --prompt "Write a Python function that merges two sorted lists." --ndjson `
   | Tee-Object .\capacity.ndjson
 ```
 
-Speed mode must exclude the laptop when its measured utility lowers expected single-request
-throughput. Capacity mode must include it in a separate feasible run. Both runs must match a
-separately recorded exact deterministic token-ID expectation. Artifact events must show automatic
-preparation/transfer/verification. Selected stage traffic must use direct non-loopback data
-endpoints; coordinator latency is not link evidence.
+Speed mode may exclude the laptop when its measured utility lowers expected single-request
+throughput. Capacity mode must assign work to both machines when the model/partition requires and
+permits it. Neither result counts as a two-machine pass unless the deployed topology names both
+distinct machine identities. Both runs must match a separately recorded exact deterministic
+token-ID expectation. Artifact events must show automatic preparation/transfer/verification.
+Selected stage traffic must use direct non-loopback data endpoints and retain direct-stage traffic
+evidence; coordinator latency is not link evidence.
 
 ## 5. Revocation check
 
@@ -104,7 +116,7 @@ swarm cluster revoke <laptop-node-id> --reason "physical gate revocation" --yes 
 Restart the laptop agent and prove registration is rejected. New deployment/recovery selection
 must not trust the revoked node. Preserve the historical membership/revocation record.
 
-## 6. Evidence schema version 2
+## 6. Evidence schema version 3
 
 Create `physical-evidence.json` with:
 
@@ -116,7 +128,8 @@ Create `physical-evidence.json` with:
 - persistent/reconnected `services` records;
 - verified stage `artifacts` and content identities;
 - authenticated, measured, non-loopback `directed_network_links` in both directions;
-- topology, normal/recovery exact-token evidence;
+- per-run deployed topology, normal/recovery exact-token evidence, and retained direct-stage
+  traffic observations;
 - `speed_run.excluded_slow_node_id` and `capacity_run.included_slow_node_id`;
 - only the high-level product commands above; and
 - SHA-256 `source_files` for every retained log/output used by the summary.
@@ -133,4 +146,11 @@ uv run python scripts/run_productization_acceptance.py run `
 
 The gate is `PASS` only when the acceptance validator verifies the checksummed evidence from two
 distinct physical machines. Missing evidence is `NOT_RUN`; malformed or contradictory executed
-evidence is `FAIL`.
+evidence is `FAIL`. During this release-candidate software correction pass the physical gate is
+honestly `NOT_RUN`; only the later two-machine execution may create physical validation records.
+
+Software repeatability runs the complete non-GPU cluster product suite three times and the product
+stage-ring module five times. The retained command explicitly excludes the two opt-in Experiment
+007 artifact-audit files because starting or supplying that research experiment is outside this
+product gate. Any skipped test that remains in the product selection makes the evidence incomplete;
+the producer and consumer share the same schema and test-command version constants.

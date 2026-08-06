@@ -17,6 +17,16 @@ from swarm_inference.backends.colibri.constants import (
 )
 from swarm_inference.protocol.checksums import sha256_file
 
+COLIBRI_SOURCE_REMEDIATION = "git submodule update --init --recursive third_party/colibri"
+
+
+class ColibriSourceDependencyError(RuntimeError):
+    """The source-only pinned checkout contract is absent or inconsistent."""
+
+
+def _source_dependency_error(detail: str) -> ColibriSourceDependencyError:
+    return ColibriSourceDependencyError(f"{detail}. Remediation: {COLIBRI_SOURCE_REMEDIATION}")
+
 
 def _git(path: Path, *arguments: str) -> str:
     safe = path.resolve().as_posix()
@@ -34,17 +44,24 @@ def _git(path: Path, *arguments: str) -> str:
 
 def verify_colibri_checkout(path: str | Path) -> dict[str, Any]:
     root = Path(path).expanduser().resolve()
-    if not root.is_dir():
-        raise FileNotFoundError(f"Colibri checkout does not exist: {root}")
-    commit = _git(root, "rev-parse", "HEAD")
+    if not root.is_dir() or not (root / ".git").exists():
+        raise _source_dependency_error(f"pinned Colibri source checkout is missing at {root}")
+    try:
+        commit = _git(root, "rev-parse", "HEAD")
+    except RuntimeError as exc:
+        raise _source_dependency_error(f"cannot inspect pinned Colibri checkout: {exc}") from exc
     if commit != COLIBRI_COMMIT:
-        raise ValueError(f"Colibri commit mismatch: expected {COLIBRI_COMMIT}, found {commit}")
+        raise _source_dependency_error(
+            f"Colibri commit mismatch: expected {COLIBRI_COMMIT}, found {commit}"
+        )
     license_path = root / "LICENSE"
     if not license_path.is_file():
-        raise FileNotFoundError("Colibri Apache-2.0 license is missing")
+        raise _source_dependency_error("Colibri Apache-2.0 license is missing")
     license_text = license_path.read_text(encoding="utf-8", errors="strict")
     if "Apache License" not in license_text or "Version 2.0" not in license_text:
-        raise ValueError("Colibri LICENSE is not the expected Apache-2.0 license text")
+        raise _source_dependency_error(
+            "Colibri LICENSE is not the expected Apache-2.0 license text"
+        )
     return {
         "repository": COLIBRI_REPOSITORY,
         "repository_url": COLIBRI_REPOSITORY_URL,
@@ -53,6 +70,49 @@ def verify_colibri_checkout(path: str | Path) -> dict[str, Any]:
         "license": COLIBRI_LICENSE,
         "license_sha256": sha256_file(license_path),
         "checkout": str(root),
+    }
+
+
+def verify_colibri_source_contract(repository_root: str | Path) -> dict[str, Any]:
+    """Verify the source-only submodule pin and licence against dependency.json."""
+
+    root = Path(repository_root).expanduser().resolve()
+    dependency_path = root / "integrations" / "colibri" / "dependency.json"
+    if not dependency_path.is_file():
+        raise _source_dependency_error(
+            f"Colibri dependency manifest is missing at {dependency_path}"
+        )
+    try:
+        dependency = json.loads(dependency_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise _source_dependency_error(f"Colibri dependency manifest is invalid: {exc}") from exc
+    expected = {
+        "commit": COLIBRI_COMMIT,
+        "release": COLIBRI_RELEASE,
+        "license": COLIBRI_LICENSE,
+        "repository": COLIBRI_REPOSITORY,
+        "repository_url": COLIBRI_REPOSITORY_URL,
+    }
+    mismatches = [
+        f"{key} expected {value!r}, found {dependency.get(key)!r}"
+        for key, value in expected.items()
+        if dependency.get(key) != value
+    ]
+    if mismatches:
+        raise _source_dependency_error(
+            "Colibri dependency manifest mismatch: " + "; ".join(mismatches)
+        )
+    checkout = verify_colibri_checkout(root / "third_party" / "colibri")
+    declared_license = root / str(dependency.get("license_path", ""))
+    if declared_license.resolve() != (root / "third_party" / "colibri" / "LICENSE").resolve():
+        raise _source_dependency_error("Colibri dependency manifest has an unexpected licence path")
+    if not declared_license.is_file():
+        raise _source_dependency_error(f"declared Colibri licence is missing at {declared_license}")
+    return {
+        "schema_version": 1,
+        "status": "PASS",
+        "dependency_manifest": str(dependency_path),
+        **checkout,
     }
 
 

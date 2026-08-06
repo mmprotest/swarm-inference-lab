@@ -16,6 +16,7 @@ from pydantic import Field, PositiveInt
 
 from swarm_inference import __version__
 from swarm_inference.cluster.models import (
+    BackendValidationRecord,
     ClusterAuditEvent,
     ClusterMetadata,
     NodeAgentState,
@@ -23,6 +24,7 @@ from swarm_inference.cluster.models import (
     NodeMembership,
     NodeMetadata,
     NodeRuntimeMetadata,
+    aggregate_validation_status,
     node_id_from_fingerprint,
 )
 from swarm_inference.cluster.network import (
@@ -34,7 +36,7 @@ from swarm_inference.cluster.pairing import create_cluster_authentication
 from swarm_inference.cluster.runtime_manager import RuntimeManager
 from swarm_inference.cluster.service_manager import ServiceManager
 from swarm_inference.cluster.state import ClusterStateStore
-from swarm_inference.config.models import Backend, StrictModel
+from swarm_inference.config.models import StrictModel
 from swarm_inference.coordinator.runtime import CoordinatorRuntime
 from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.exceptions import (
@@ -346,18 +348,32 @@ class NodeAgent:
         platform_identity = self.platform.identity()
         existing = self.state.node(configuration.node_id)
         build_id, lock_hash = _build_identity()
-        support_status = platform_identity.support_status
-        if (
-            configuration.backend_selection.selected_backend == Backend.TORCH_CUDA
-            and support_status == "validated"
-        ):
-            support_status = "implemented-unvalidated"
-        validation_status = (
-            "validated"
-            if support_status == "validated"
-            else "implemented-unvalidated"
-            if support_status == "implemented-unvalidated"
-            else "unsupported"
+        operating_system = f"{platform_identity.system} {platform_identity.release}"
+        records = list(existing.backend_validations if existing is not None else [])
+        selected_backend = configuration.backend_selection.selected_backend
+        current_record = next(
+            (
+                item
+                for item in records
+                if item.backend == selected_backend
+                and item.platform_system == platform_identity.system
+                and item.platform_release == platform_identity.release
+                and item.platform_architecture.lower() == platform_identity.architecture.lower()
+            ),
+            None,
+        )
+        if current_record is None:
+            records.append(
+                BackendValidationRecord.not_run(
+                    backend=selected_backend,
+                    platform=platform_identity,
+                )
+            )
+        software_status, physical_status = aggregate_validation_status(
+            records,
+            backend=selected_backend,
+            architecture=platform_identity.architecture,
+            operating_system=operating_system,
         )
         return (
             NodeMetadata(
@@ -365,7 +381,7 @@ class NodeAgent:
                 public_key=self._identity.public_key_b64,
                 fingerprint=self._identity.public_key_fingerprint,
                 hostname=socket.gethostname(),
-                operating_system=f"{platform_identity.system} {platform_identity.release}",
+                operating_system=operating_system,
                 architecture=platform_identity.architecture,
                 agent_version=__version__,
                 runtime_version=__version__,
@@ -380,8 +396,11 @@ class NodeAgent:
                 joined_at_unix_ns=self._membership.joined_at_unix_ns,
                 last_seen_at_unix_ns=self.clock_ns(),
                 service_mode=configuration.service_mode,
-                validation_status=validation_status,
-                platform_support_status=validation_status,
+                implementation_status=platform_identity.implementation_status,
+                implementation_reason=platform_identity.implementation_reason,
+                software_validation_status=software_status,
+                physical_validation_status=physical_status,
+                backend_validations=records,
                 revoked=False,
                 revoked_at_unix_ns=None,
                 revocation_reason=None,
@@ -390,7 +409,7 @@ class NodeAgent:
             else existing.model_copy(
                 update={
                     "hostname": socket.gethostname(),
-                    "operating_system": f"{platform_identity.system} {platform_identity.release}",
+                    "operating_system": operating_system,
                     "architecture": platform_identity.architecture,
                     "agent_version": __version__,
                     "runtime_version": __version__,
@@ -404,8 +423,11 @@ class NodeAgent:
                     "probe_endpoint": configuration.endpoints.probe_advertised_endpoint,
                     "last_seen_at_unix_ns": self.clock_ns(),
                     "service_mode": configuration.service_mode,
-                    "validation_status": validation_status,
-                    "platform_support_status": validation_status,
+                    "implementation_status": platform_identity.implementation_status,
+                    "implementation_reason": platform_identity.implementation_reason,
+                    "software_validation_status": software_status,
+                    "physical_validation_status": physical_status,
+                    "backend_validations": records,
                 }
             )
         )

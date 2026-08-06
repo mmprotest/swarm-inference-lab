@@ -86,7 +86,10 @@ def run_command(
     ] = False,
     yes: Annotated[
         bool,
-        typer.Option("--yes", help="Acknowledge pre-reviewed deployment actions."),
+        typer.Option(
+            "--yes",
+            help="Record explicit preauthorization; run submission itself does not prompt.",
+        ),
     ] = False,
     state_root: Annotated[
         Path | None,
@@ -95,7 +98,6 @@ def run_command(
 ) -> None:
     """Validate, plan, provision, deploy, and stream through the canonical runtime."""
 
-    del yes  # Deployment is transactional; this flag is for non-interactive policy parity.
     if json_output and ndjson:
         fail("arguments", ValueError("--json and --ndjson are mutually exclusive"))
     if mode not in {"speed", "capacity", "balanced"}:
@@ -139,6 +141,7 @@ def run_command(
         fail("run", exc)
 
     payload = summary.model_dump(mode="json")
+    payload["confirmation_policy"] = "preauthorized" if yes else "submission-does-not-prompt"
     if not explain_plan:
         plan = cast(dict[str, object], payload["plan"])
         plan.pop("report", None)

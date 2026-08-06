@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import zipfile
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
@@ -157,9 +158,16 @@ def main() -> int:
             timeout=1800,
         )
         probe_code = (
-            "import json, pathlib, swarm_inference; "
+            "import json,pathlib,sys,swarm_inference; "
+            "import swarm_inference.commands.cluster,swarm_inference.commands.node; "
+            "paths=[str(pathlib.Path(getattr(m,'__file__','')).resolve()) for m in "
+            "sys.modules.values() if getattr(m,'__file__',None)]; "
             "print(json.dumps({'module':str(pathlib.Path(swarm_inference.__file__).resolve()),"
-            "'version':swarm_inference.__version__},sort_keys=True))"
+            "'version':swarm_inference.__version__,"
+            "'third_party_colibri_imports':[p for p in paths if '/third_party/colibri/' in "
+            "p.replace('\\\\','/').lower()],"
+            "'experiment_imports':sorted(n for n in sys.modules if "
+            "n.startswith('swarm_inference.experiments'))},sort_keys=True))"
         )
         _progress("verifying-import")
         imported = _run(
@@ -174,6 +182,18 @@ def main() -> int:
             raise RuntimeError("wheel smoke imported source code from the checkout")
         if not module_path.is_relative_to(environment_directory):
             raise RuntimeError("wheel smoke did not import from the fresh validation venv")
+        if import_evidence["third_party_colibri_imports"]:
+            raise RuntimeError("wheel runtime imported the source-only Colibri checkout")
+        if import_evidence["experiment_imports"]:
+            raise RuntimeError("cluster product packages imported swarm_inference.experiments")
+        with zipfile.ZipFile(wheel) as archive:
+            wheel_colibri_sources = [
+                name
+                for name in archive.namelist()
+                if name.lower().startswith("third_party/colibri/")
+            ]
+        if wheel_colibri_sources:
+            raise RuntimeError("wheel contains source-only third_party/colibri files")
         _progress("running-doctor")
         help_result = _run(
             [
@@ -193,7 +213,7 @@ def main() -> int:
         )
         doctor = json.loads(help_result.stdout)
         result: dict[str, Any] = {
-            "schema_version": 1,
+            "schema_version": 2,
             "status": "PASS",
             "wheel": str(wheel),
             "wheel_size_bytes": wheel.stat().st_size,
@@ -203,6 +223,9 @@ def main() -> int:
             "module": str(module_path),
             "environment_root": str(environment_root),
             "checkout_imported": False,
+            "third_party_colibri_imported": False,
+            "experiments_imported": False,
+            "wheel_contains_third_party_colibri": False,
             "doctor": doctor,
             "install_stdout_tail": installed.stdout[-2000:],
             "elapsed_seconds": time.monotonic() - started,

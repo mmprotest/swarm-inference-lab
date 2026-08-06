@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import shutil
 import socket
 import time
@@ -29,6 +30,7 @@ from swarm_inference.commands._common import (
     build_context,
     emit_document,
     fail,
+    require_confirmation,
     service_definition,
     wait_for_runtime,
 )
@@ -39,6 +41,7 @@ from swarm_inference.protocol.cluster import (
     ClusterStatusRequest,
     PairingCreateRequest,
     PairingCreateResponse,
+    PairingDeliveryResult,
 )
 from swarm_inference.runtime.shutdown import (
     install_shutdown_signal_handlers,
@@ -146,8 +149,8 @@ def _bootstrap_cluster(
         joined_at_unix_ns=now,
         last_seen_at_unix_ns=now,
         service_mode=platform.service_mode,
-        validation_status="pending",
-        platform_support_status=platform_identity.support_status,
+        implementation_status=platform_identity.implementation_status,
+        implementation_reason=platform_identity.implementation_reason,
     )
     membership = NodeMembership(
         cluster_id=cluster.cluster_id,
@@ -196,19 +199,88 @@ async def _foreground_create(
     return status, pairing, agent
 
 
-def _show_pairing(
+def _preflight_pairing_output(
+    pairing_output: Path | None,
+    *,
+    machine_readable: bool,
+    force: bool,
+) -> None:
+    if pairing_output is None:
+        return
+    if str(pairing_output) == "-":
+        if machine_readable:
+            raise ValueError("--pairing-output - is forbidden in machine-readable mode")
+        return
+    destination = pairing_output.expanduser().resolve()
+    if not force and os.path.lexists(destination):
+        raise FileExistsError(f"refusing to overwrite existing file: {destination}")
+
+
+def _deliver_pairing(
+    state: ClusterStateStore,
     pairing: PairingCreateResponse,
     *,
     json_output: bool,
-) -> None:
-    payload = pairing.model_dump(mode="json")
-    if json_output:
-        emit_document(payload, json_output=True)
-    else:
-        typer.echo(f"pairing_expires_at_unix_ns={pairing.expires_at_unix_ns}")
-        # This is the sole intentional secret-bearing output. It is never logged,
-        # persisted, represented, or included in machine-readable documents.
+    pairing_output: Path | None,
+    force: bool,
+) -> PairingDeliveryResult:
+    if pairing_output is not None and str(pairing_output) == "-":
+        # This is one of only two intentional secret-bearing outputs. It is
+        # human-only and is never represented by the returned public model.
         typer.echo(f"pairing_uri={pairing.pairing_uri}")
+        return PairingDeliveryResult(
+            session_id=pairing.session_id,
+            expires_at_unix_ns=pairing.expires_at_unix_ns,
+            redacted_uri=pairing.redacted_uri,
+            delivery="interactive",
+        )
+    if json_output or pairing_output is not None:
+        destination, protection, limitation = state.write_pairing_invitation(
+            session_id=pairing.session_id,
+            pairing_uri=pairing.pairing_uri,
+            output_path=pairing_output,
+            force=force,
+        )
+        return PairingDeliveryResult(
+            session_id=pairing.session_id,
+            expires_at_unix_ns=pairing.expires_at_unix_ns,
+            redacted_uri=pairing.redacted_uri,
+            delivery="protected-file",
+            invitation_file=destination,
+            permission_protection=protection,
+            permission_limitation=limitation,
+        )
+    # This is the other intentional secret-bearing output: exactly one line for
+    # an interactive human command with no file destination.
+    typer.echo(f"pairing_uri={pairing.pairing_uri}")
+    return PairingDeliveryResult(
+        session_id=pairing.session_id,
+        expires_at_unix_ns=pairing.expires_at_unix_ns,
+        redacted_uri=pairing.redacted_uri,
+        delivery="interactive",
+    )
+
+
+def _create_payload(
+    *,
+    cluster: ClusterMetadata,
+    status: Any,
+    service_mode: str,
+    delivery: PairingDeliveryResult,
+) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "status": status.state,
+        "reason": status.reason,
+        "cluster": {
+            "cluster_id": cluster.cluster_id,
+            "name": cluster.name,
+            "coordinator_endpoint": cluster.coordinator_endpoint,
+            "security_boundary": cluster.security_classification,
+        },
+        "service": {"mode": service_mode},
+        "pairing": delivery.model_dump(mode="json", exclude_none=True),
+    }
 
 
 @cluster_app.command("create")
@@ -226,11 +298,28 @@ def create_command(
     ] = False,
     json_output: Annotated[bool, typer.Option("--json")] = False,
     yes: Annotated[bool, typer.Option("--yes")] = False,
+    pairing_output: Annotated[
+        Path | None,
+        typer.Option("--pairing-output", help="Protected destination for the one-time URI."),
+    ] = None,
+    force_pairing_output: Annotated[
+        bool,
+        typer.Option("--force-pairing-output", help="Replace an existing invitation file."),
+    ] = False,
 ) -> None:
     """Create/adopt coordinator state, start its agent, and issue one invitation."""
 
-    del yes
     try:
+        _preflight_pairing_output(
+            pairing_output,
+            machine_readable=json_output,
+            force=force_pairing_output,
+        )
+        require_confirmation(
+            "Create cluster state and start its node service",
+            yes=yes,
+            json_output=json_output,
+        )
         state, platform, runtime, services = build_context(state_root)
         cluster, node = _bootstrap_cluster(
             state,
@@ -249,17 +338,22 @@ def create_command(
                     state,
                     ttl_seconds=ttl_seconds,
                 )
+                delivery = _deliver_pairing(
+                    state,
+                    pairing,
+                    json_output=json_output,
+                    pairing_output=pairing_output,
+                    force=force_pairing_output,
+                )
                 emit_document(
-                    {
-                        "status": status.state,
-                        "cluster_id": cluster.cluster_id,
-                        "cluster_name": cluster.name,
-                        "coordinator_endpoint": cluster.coordinator_endpoint,
-                        "security_boundary": cluster.security_classification,
-                    },
+                    _create_payload(
+                        cluster=cluster,
+                        status=status,
+                        service_mode="foreground",
+                        delivery=delivery,
+                    ),
                     json_output=json_output,
                 )
-                _show_pairing(pairing, json_output=json_output)
                 if status.state in {"blocked", "failed"}:
                     await agent.stop()
                     raise RuntimeError(status.reason or "node agent did not become ready")
@@ -294,19 +388,22 @@ def create_command(
             return status, pairing
 
         status, pairing = asyncio.run(install_and_pair())
+        delivery = _deliver_pairing(
+            state,
+            pairing,
+            json_output=json_output,
+            pairing_output=pairing_output,
+            force=force_pairing_output,
+        )
         emit_document(
-            {
-                "status": status.state,
-                "reason": status.reason,
-                "cluster_id": cluster.cluster_id,
-                "cluster_name": cluster.name,
-                "coordinator_endpoint": cluster.coordinator_endpoint,
-                "service_mode": platform.service_mode,
-                "security_boundary": cluster.security_classification,
-            },
+            _create_payload(
+                cluster=cluster,
+                status=status,
+                service_mode=platform.service_mode,
+                delivery=delivery,
+            ),
             json_output=json_output,
         )
-        _show_pairing(pairing, json_output=json_output)
         if status.state in {"blocked", "failed"}:
             raise RuntimeError(status.reason or "coordinator node did not become ready")
     except (OSError, RuntimeError, ValueError, PermissionError) as exc:
@@ -318,14 +415,40 @@ def pair_command(
     state_root: Annotated[Path | None, typer.Option()] = None,
     ttl_seconds: Annotated[int, typer.Option(min=1, max=3600)] = 600,
     json_output: Annotated[bool, typer.Option("--json")] = False,
+    pairing_output: Annotated[
+        Path | None,
+        typer.Option("--pairing-output", help="Protected destination for the one-time URI."),
+    ] = None,
+    force_pairing_output: Annotated[
+        bool,
+        typer.Option("--force-pairing-output", help="Replace an existing invitation file."),
+    ] = False,
 ) -> None:
     """Create a bounded, single-use pairing invitation on the coordinator."""
 
     try:
-        pairing = asyncio.run(
-            _create_pairing(ClusterStateStore(state_root), ttl_seconds=ttl_seconds)
+        _preflight_pairing_output(
+            pairing_output,
+            machine_readable=json_output,
+            force=force_pairing_output,
         )
-        _show_pairing(pairing, json_output=json_output)
+        state = ClusterStateStore(state_root)
+        pairing = asyncio.run(_create_pairing(state, ttl_seconds=ttl_seconds))
+        delivery = _deliver_pairing(
+            state,
+            pairing,
+            json_output=json_output,
+            pairing_output=pairing_output,
+            force=force_pairing_output,
+        )
+        emit_document(
+            {
+                "schema_version": 1,
+                "status": "ready",
+                "pairing": delivery.model_dump(mode="json", exclude_none=True),
+            },
+            json_output=json_output,
+        )
     except (OSError, RuntimeError, ValueError, PermissionError) as exc:
         fail("pairing-create", exc)
 
@@ -390,8 +513,12 @@ def revoke_command(
 ) -> None:
     """Remove node trust for registration, deployment, and recovery."""
 
-    del yes
     try:
+        require_confirmation(
+            "Revoke cluster node trust",
+            yes=yes,
+            json_output=json_output,
+        )
         state = ClusterStateStore(state_root)
         cluster, node_id, identity = _auth_context(state)
         body = {"node_id": node_id_to_revoke, "reason": reason}
@@ -434,8 +561,10 @@ def _definition_from_state(state: ClusterStateStore) -> tuple[Any, Any, Any]:
 def start_command(
     state_root: Annotated[Path | None, typer.Option()] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
+    yes: Annotated[bool, typer.Option("--yes")] = False,
 ) -> None:
     try:
+        require_confirmation("Start the cluster node service", yes=yes, json_output=json_output)
         state = ClusterStateStore(state_root)
         _, _, _, services = build_context(state.paths.root)
         _, _, definition = _definition_from_state(state)
@@ -451,8 +580,10 @@ def start_command(
 def stop_command(
     state_root: Annotated[Path | None, typer.Option()] = None,
     json_output: Annotated[bool, typer.Option("--json")] = False,
+    yes: Annotated[bool, typer.Option("--yes")] = False,
 ) -> None:
     try:
+        require_confirmation("Stop the cluster node service", yes=yes, json_output=json_output)
         state = ClusterStateStore(state_root)
         _, _, _, services = build_context(state.paths.root)
         _, _, definition = _definition_from_state(state)
@@ -470,9 +601,12 @@ def delete_command(
 ) -> None:
     """Uninstall this node service and remove only its explicit state root."""
 
-    if not yes:
-        fail("cluster-delete", PermissionError("cluster deletion requires --yes"))
     try:
+        require_confirmation(
+            "Delete local cluster service, firewall rules, and state",
+            yes=yes,
+            json_output=json_output,
+        )
         state = ClusterStateStore(state_root)
         root = state.paths.root.resolve()
         if root == Path(root.anchor) or root == Path.home().resolve():

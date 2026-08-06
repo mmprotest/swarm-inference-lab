@@ -52,13 +52,13 @@ def test_windows_task_commands_are_user_scoped_and_restart_bounded(tmp_path: Pat
             node_id="node-12345678",
             control_ports=[50051],
             data_ports=[50052],
-            private_subnets=["LocalSubnet"],
+            private_subnets=["192.168.0.0/16"],
         )
     )
     assert firewall.blocked
     assert firewall.private_only
     assert "-Profile Private" in firewall.remediation_command
-    assert "LocalSubnet" in firewall.remediation_command
+    assert "192.168.0.0/16" in firewall.remediation_command
 
 
 def test_linux_systemd_user_unit_has_restart_and_shutdown_bounds(tmp_path: Path) -> None:

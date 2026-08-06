@@ -20,6 +20,7 @@ from swarm_inference.cluster.models import (
     MemoryBudget,
     NodeConfiguration,
     NodeServiceMode,
+    aggregate_validation_status,
 )
 from swarm_inference.cluster.network import NetworkProbeCoordinator
 from swarm_inference.cluster.pairing import PairingManager
@@ -547,6 +548,36 @@ class RuntimeManager:
                 storage_limit_bytes=configuration.storage_limit_bytes,
                 clock_ns=self.clock_ns,
             )
+        platform_identity = self.platform.identity()
+        metadata = self.state.node(configuration.node_id)
+        records = list(metadata.backend_validations if metadata is not None else [])
+        software_status, physical_status = aggregate_validation_status(
+            records,
+            backend=configuration.backend_selection.selected_backend,
+            architecture=platform_identity.architecture,
+            operating_system=f"{platform_identity.system} {platform_identity.release}",
+        )
+        scoped_records = [
+            item
+            for item in records
+            if item.backend == configuration.backend_selection.selected_backend
+            and item.platform_system == platform_identity.system
+            and item.platform_release == platform_identity.release
+            and item.platform_architecture.lower() == platform_identity.architecture.lower()
+        ]
+        evidence_ids = sorted(
+            {item.evidence_id for item in scoped_records if item.evidence_id is not None}
+        )
+        timestamps = [
+            item.validated_at_unix_ns
+            for item in scoped_records
+            if item.validated_at_unix_ns is not None
+        ]
+        validation_detail = (
+            "; ".join(item.detail for item in scoped_records)
+            if scoped_records
+            else "no retained validation evidence for the selected platform/backend scope"
+        )
         return WorkerRuntime(
             config=WorkerRuntimeConfig(
                 coordinator_endpoint=configuration.coordinator_endpoint,
@@ -567,7 +598,12 @@ class RuntimeManager:
                 trusted_coordinator_fingerprint=configuration.coordinator_fingerprint,
                 worker_roles={WorkerRole.CONTIGUOUS_STAGE},
                 service_mode=configuration.service_mode,
-                platform_support_status=self.platform.identity().support_status,
+                platform_implementation_status=platform_identity.implementation_status,
+                software_validation_status=software_status,
+                physical_validation_status=physical_status,
+                validation_evidence_ids=evidence_ids,
+                latest_validation_unix_ns=max(timestamps) if timestamps else None,
+                validation_detail=validation_detail,
             ),
             artifact_manager=self.artifact_manager,
         )

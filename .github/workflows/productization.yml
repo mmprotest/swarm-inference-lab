@@ -11,10 +11,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
       - run: uv sync --python 3.11 --extra cpu --extra dev
+      - run: uv run --python 3.11 python scripts/verify_colibri_source.py
       - run: uv run --python 3.11 ruff format --check src tests scripts
       - run: uv run --python 3.11 ruff check src tests scripts
       - run: uv run --python 3.11 mypy
@@ -41,10 +44,13 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
       - run: uv sync --python 3.11 --extra ${{ matrix.extra }} --extra dev
+      - run: uv run --python 3.11 python scripts/verify_colibri_source.py
       - run: uv build --wheel
       - name: Fresh wheel install (no checkout imports)
         run: >-
@@ -87,10 +93,13 @@ jobs:
         python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
       - run: uv sync --python ${{ matrix.python-version }} --extra cpu --extra dev
+      - run: uv run --python ${{ matrix.python-version }} python scripts/verify_colibri_source.py
       - run: uv run --python ${{ matrix.python-version }} pytest tests/unit -q
       - run: >-
           uv run --python ${{ matrix.python-version }} pytest
@@ -102,10 +111,13 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
       - run: uv sync --python 3.11 --extra cpu --extra dev
+      - run: uv run --python 3.11 python scripts/verify_colibri_source.py
       - run: uv build --wheel
       - name: Authoritative software acceptance with repeatability
         run: >-

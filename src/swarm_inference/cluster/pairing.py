@@ -352,6 +352,7 @@ class PairingManager:
                 update={"state": "expired", "last_rejection_reason": "pairing session expired"}
             )
             self.state.save_pairing_session(live.public)
+            self.state.retire_pairing_invitation(session_id)
             self._audit("pairing_expired", session_id=session_id)
             del self._sessions[session_id]
 
@@ -754,6 +755,7 @@ class PairingManager:
                     notes="secure cluster pairing",
                 )
                 self.state.save_pairing_session(consumed)
+                self.state.retire_pairing_invitation(request.session_id)
             except BaseException:
                 live.public = live.public.model_copy(
                     update={

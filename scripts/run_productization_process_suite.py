@@ -19,8 +19,14 @@ from typing import Any
 
 import psutil
 
-REPEATABILITY_SCHEMA_VERSION = 2
-TEST_COMMAND_VERSION = 2
+from swarm_inference.acceptance.productization import (
+    ACCEPTANCE_BUNDLE_VERSION,
+    NON_GPU_PRODUCT_TEST_ARGUMENTS,
+    NON_PRODUCT_SOURCE_AUDIT_TESTS,
+    REPEATABILITY_SCHEMA_VERSION,
+    REPEATABILITY_TEST_COMMAND_VERSION,
+)
+
 REQUIRED_FULL_RUNS = 3
 REQUIRED_STAGE_RUNS = 5
 WARNING_FRAGMENTS = (
@@ -335,6 +341,9 @@ def _run(
         if status == "PASS":
             status = "FAIL"
             reason = "JUnit execution counts are unavailable"
+    if status == "PASS" and test_counts["skipped"]:
+        status = "SKIP"
+        reason = f"{test_counts['skipped']} required product tests skipped"
     return {
         "name": name,
         "command": command,
@@ -373,10 +382,11 @@ def main(argv: list[str] | None = None) -> int:
     output = args.output.expanduser().resolve() / f"process-repeatability-{timestamp}"
     output.mkdir(parents=True, exist_ok=False)
 
-    full_tests = ["tests/integration", "tests/failure", "-m", "not gpu"]
+    full_tests = list(NON_GPU_PRODUCT_TEST_ARGUMENTS)
     # Real-model GPU gates are evaluated separately.  Repeatability proves the
-    # complete non-GPU process module and records GPU nodes as deselected rather
-    # than silently treating unavailable real checkpoints as passing evidence.
+    # complete non-GPU product process module. Opt-in source-audit tests for an
+    # already completed Experiment 007 run are explicitly excluded and retained
+    # in the evidence contract; real-model GPU nodes remain separately gated.
     stage_tests = ["tests/integration/test_product_stage_ring.py", "-m", "not gpu"]
     specifications = [(f"full-{index + 1}", full_tests) for index in range(args.full_runs)] + [
         (f"stage-ring-{index + 1}", stage_tests) for index in range(args.stage_runs)
@@ -425,8 +435,9 @@ def main(argv: list[str] | None = None) -> int:
     payload: dict[str, Any] = {
         "document_type": "swarm-process-repeatability",
         "schema_version": REPEATABILITY_SCHEMA_VERSION,
-        "test_command_version": TEST_COMMAND_VERSION,
-        "acceptance_schema_version": 3,
+        "test_command_version": REPEATABILITY_TEST_COMMAND_VERSION,
+        "acceptance_schema_version": ACCEPTANCE_BUNDLE_VERSION,
+        "excluded_source_audit_tests": list(NON_PRODUCT_SOURCE_AUDIT_TESTS),
         "git_commit": _git_value(repository_root, "rev-parse", "HEAD"),
         "git_dirty": start_git_status is None or bool(start_git_status),
         "git_status": start_git_status,

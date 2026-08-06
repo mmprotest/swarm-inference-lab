@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+from pathlib import Path
 from typing import Literal, Self
 
 from pydantic import Field, NonNegativeInt, PositiveInt, field_validator, model_validator
@@ -201,6 +202,32 @@ class PairingCreateResponse(StrictModel):
     pairing_uri: str = Field(repr=False)
     redacted_uri: str
     expires_at_unix_ns: PositiveInt
+
+
+class PairingDeliveryResult(StrictModel):
+    """Public delivery receipt; the secret-bearing URI is intentionally absent."""
+
+    schema_version: Literal[1] = CLUSTER_RPC_SCHEMA_VERSION
+    status: Literal["ready"] = "ready"
+    session_id: str
+    expires_at_unix_ns: PositiveInt
+    redacted_uri: str
+    delivery: Literal["interactive", "protected-file"]
+    invitation_file: Path | None = None
+    permission_protection: (
+        Literal["posix-0600", "windows-user-acl", "user-scoped-best-effort"] | None
+    ) = None
+    permission_limitation: str | None = None
+
+    @model_validator(mode="after")
+    def validate_delivery(self) -> Self:
+        if self.delivery == "protected-file" and self.invitation_file is None:
+            raise ValueError("protected-file pairing delivery requires an invitation path")
+        if self.delivery == "protected-file" and self.permission_protection is None:
+            raise ValueError("protected-file pairing delivery requires a protection result")
+        if self.delivery == "interactive" and self.invitation_file is not None:
+            raise ValueError("interactive pairing delivery cannot claim an invitation file")
+        return self
 
 
 class ClusterStatusRequest(StrictModel):
@@ -470,6 +497,7 @@ __all__ = [
     "PairingCoordinatorCompletionPayload",
     "PairingCreateRequest",
     "PairingCreateResponse",
+    "PairingDeliveryResult",
     "PairingHello",
     "PairingNodeCompletionPayload",
     "PairingResult",

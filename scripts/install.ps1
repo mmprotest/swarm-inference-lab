@@ -193,12 +193,11 @@ try {
         $doctorDocument = $doctor.Stdout | ConvertFrom-Json
         $selected = [string]$doctorDocument.backend_selection.selected_backend
     }
-    $serviceStatus = "deferred-until-cluster-join"
-    if ($InstallService) {
-        $service = Invoke-BoundedProcess -FilePath $swarm -Arguments @("node", "install-service", "--yes", "--json") -TimeoutSeconds 180 -AllowFailure
-        if ($service.ExitCode -ne 0) { throw "service installation failed: $($service.Stderr)" }
-        $serviceStatus = "installed"
-    }
+    # A service definition is cluster-specific. Keep the compatibility switch
+    # as a deferred preference, but never invoke the paired-only service command
+    # from a clean installer.
+    $serviceStatus = "deferred-until-cluster-create-or-join"
+    $servicePreference = if ($InstallService) { "requested-deferred" } else { "default-deferred" }
     $diagnostics = [ordered]@{
         schema_version = 1
         status = "PASS"
@@ -211,6 +210,7 @@ try {
         selected_backend = $selected
         swarm_executable = $swarm
         service = $serviceStatus
+        install_service_preference = $servicePreference
         doctor = $doctorDocument
     }
     if ($Json) { $diagnostics | ConvertTo-Json -Depth 20 -Compress }

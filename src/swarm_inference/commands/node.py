@@ -13,7 +13,11 @@ import typer
 
 from swarm_inference import __version__
 from swarm_inference.cluster.agent import NodeAgent, NodeAgentOptions, NodeAgentRole
-from swarm_inference.cluster.models import NodeMetadata, node_id_from_fingerprint
+from swarm_inference.cluster.models import (
+    BackendValidationRecord,
+    NodeMetadata,
+    node_id_from_fingerprint,
+)
 from swarm_inference.cluster.pairing import (
     PairingClient,
     PairingInvitation,
@@ -25,6 +29,7 @@ from swarm_inference.commands._common import (
     build_context,
     emit_document,
     fail,
+    require_confirmation,
     service_definition,
     wait_for_runtime,
 )
@@ -102,8 +107,8 @@ def _pending_metadata(state: ClusterStateStore, invitation: PairingInvitation) -
         joined_at_unix_ns=now,
         last_seen_at_unix_ns=now,
         service_mode=platform.service_mode,
-        validation_status="pending",
-        platform_support_status=platform_identity.support_status,
+        implementation_status=platform_identity.implementation_status,
+        implementation_reason=platform_identity.implementation_reason,
     )
 
 
@@ -169,8 +174,13 @@ def join_command(
 ) -> None:
     """Pair once, auto-configure the worker, and start its persistent agent."""
 
-    del yes
     try:
+        require_confirmation(
+            "Join the cluster and start its worker service",
+            yes=yes,
+            json_output=json_output,
+            ndjson=ndjson,
+        )
         invitation = PairingInvitation.parse(pairing_uri)
         state, platform, runtime, services = build_context(state_root)
         metadata = _pending_metadata(state, invitation)
@@ -293,8 +303,12 @@ def configure_command(
 ) -> None:
     """Persist reviewed backend, memory, storage, interface, or endpoint overrides."""
 
-    del yes
     try:
+        require_confirmation(
+            "Change node configuration and restart its service if installed",
+            yes=yes,
+            json_output=json_output,
+        )
         state, platform, runtime, services = build_context(state_root)
         cluster = state.load_cluster()
         if cluster is None:
@@ -345,13 +359,37 @@ def doctor_command(
         state, platform, runtime, _ = build_context(state_root)
         report, _ = runtime.select_backend()
         diagnostics = platform.diagnostics()
+        platform_identity = platform.identity()
+        configuration = state.load_node_configuration()
+        metadata = state.node(configuration.node_id) if configuration is not None else None
+        retained = list(metadata.backend_validations if metadata is not None else [])
+        validation_records = []
+        for candidate in report.candidates:
+            matching = [
+                item
+                for item in retained
+                if item.backend == candidate.backend
+                and item.platform_system == platform_identity.system
+                and item.platform_release == platform_identity.release
+                and item.platform_architecture.lower() == platform_identity.architecture.lower()
+            ]
+            validation_records.extend(
+                matching
+                or [
+                    BackendValidationRecord.not_run(
+                        backend=candidate.backend,
+                        platform=platform_identity,
+                    )
+                ]
+            )
         payload = {
             "status": (
                 "pass"
                 if all(item.status in {"pass", "warning"} for item in diagnostics)
                 else "fail"
             ),
-            "platform": platform.identity().model_dump(mode="json"),
+            "platform": platform_identity.model_dump(mode="json"),
+            "backend_validation": [item.model_dump(mode="json") for item in validation_records],
             "diagnostics": [item.model_dump(mode="json") for item in diagnostics],
             "backend_selection": report.model_dump(mode="json"),
             "state_root": str(state.paths.root),
@@ -392,8 +430,12 @@ def leave_command(
 ) -> None:
     """Authenticate departure, remove owned service/firewall state, preserve identity history."""
 
-    del yes
     try:
+        require_confirmation(
+            "Leave the cluster and remove owned service and firewall state",
+            yes=yes,
+            json_output=json_output,
+        )
         state, _, _, services = build_context(state_root)
         cluster = state.load_cluster()
         if cluster is None:
@@ -444,11 +486,17 @@ def _service_operation(
     *,
     state_root: Path | None,
     json_output: bool,
+    yes: bool,
 ) -> None:
     state, _, _, services = build_context(state_root)
     cluster = state.load_cluster()
     if cluster is None:
-        raise RuntimeError("node is not paired with a cluster")
+        raise RuntimeError("node is not paired; create or join a cluster first")
+    require_confirmation(
+        f"{operation.capitalize()} the cluster node service",
+        yes=yes,
+        json_output=json_output,
+    )
     identity = state.load_or_create_node_identity()
     node_id = node_id_from_fingerprint(identity.public_key_fingerprint)
     definition = service_definition(
@@ -469,9 +517,13 @@ def install_service_command(
     json_output: Annotated[bool, typer.Option("--json")] = False,
     yes: Annotated[bool, typer.Option("--yes")] = False,
 ) -> None:
-    del yes
     try:
-        _service_operation("install", state_root=state_root, json_output=json_output)
+        _service_operation(
+            "install",
+            state_root=state_root,
+            json_output=json_output,
+            yes=yes,
+        )
     except (OSError, RuntimeError, ValueError, PermissionError) as exc:
         fail("service-install", exc)
 
@@ -482,9 +534,13 @@ def uninstall_service_command(
     json_output: Annotated[bool, typer.Option("--json")] = False,
     yes: Annotated[bool, typer.Option("--yes")] = False,
 ) -> None:
-    del yes
     try:
-        _service_operation("uninstall", state_root=state_root, json_output=json_output)
+        _service_operation(
+            "uninstall",
+            state_root=state_root,
+            json_output=json_output,
+            yes=yes,
+        )
     except (OSError, RuntimeError, ValueError, PermissionError) as exc:
         fail("service-uninstall", exc)
 
@@ -523,8 +579,12 @@ def update_command(
 ) -> None:
     """Stage and validate an explicit wheel; commit only after agent startup succeeds."""
 
-    del yes
     try:
+        require_confirmation(
+            "Update the node runtime and restart its service",
+            yes=yes,
+            json_output=json_output,
+        )
         from swarm_inference.cluster.updates import RuntimeUpdater
 
         state, platform, _, services = build_context(state_root)

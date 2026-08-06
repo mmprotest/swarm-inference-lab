@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -48,6 +49,7 @@ _SENSITIVE_KEYS = (
     "raw_proof",
     "prompt",
 )
+_PAIRING_SECRET_IN_URI = re.compile(r"(?i)(swarm\+pair://[^\s\"']*[?&]secret=)([^&\s\"']+)")
 
 
 def state_store(root: Path | None) -> ClusterStateStore:
@@ -108,7 +110,39 @@ def _redact(value: Any, *, key: str = "") -> Any:
         return {str(name): _redact(item, key=str(name)) for name, item in value.items()}
     if isinstance(value, list):
         return [_redact(item) for item in value]
+    if isinstance(value, str):
+        return _PAIRING_SECRET_IN_URI.sub(r"\1<redacted>", value)
     return value
+
+
+def redact_text(value: object) -> str:
+    """Remove secret-bearing pairing query values from arbitrary diagnostics."""
+
+    return _PAIRING_SECRET_IN_URI.sub(r"\1<redacted>", str(value))
+
+
+def require_confirmation(
+    action: str,
+    *,
+    yes: bool,
+    json_output: bool = False,
+    ndjson: bool = False,
+) -> None:
+    """Require one human confirmation or an explicit non-interactive ``--yes``.
+
+    The caller must invoke this before its first mutation. ``action`` is fixed
+    command-owned text and must never contain a pairing invitation or other secret.
+    """
+
+    if yes:
+        return
+    if json_output or ndjson:
+        mode = "JSON" if json_output else "NDJSON"
+        raise PermissionError(f"{action} requires --yes in {mode} mode; no changes were made")
+    if not sys.stdin.isatty():
+        raise PermissionError(f"{action} requires interactive stdin or --yes; no changes were made")
+    if not typer.confirm(f"{action}. Continue?", default=False):
+        raise PermissionError(f"{action} cancelled; no changes were made")
 
 
 def emit_document(
@@ -155,8 +189,9 @@ def fail(stage: str, exc: BaseException, *, node_id: str | None = None) -> None:
         EXIT_EXECUTION: "execution",
     }[exit_code_for(exc)]
     affected = f" node={node_id}" if node_id else ""
+    detail = redact_text(exc)
     typer.echo(
-        f"failed_stage={stage}{affected} category={category} detail={exc} retry_safe=true",
+        f"failed_stage={stage}{affected} category={category} detail={detail} retry_safe=true",
         err=True,
     )
     raise typer.Exit(exit_code_for(exc))
@@ -236,6 +271,8 @@ __all__ = [
     "build_context",
     "emit_document",
     "fail",
+    "redact_text",
+    "require_confirmation",
     "run_agent_foreground",
     "service_definition",
     "state_store",
