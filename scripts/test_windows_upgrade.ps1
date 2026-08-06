@@ -3,9 +3,9 @@ param(
     [Parameter(Mandatory)][string]$SetupA,
     [Parameter(Mandatory)][string]$SetupB,
     [Parameter(Mandatory)][string]$BrokenSetup,
-    [string]$VersionA = '0.1.0rc3',
-    [string]$VersionB = '0.1.0rc4',
-    [string]$BrokenVersion = '0.1.0rc5',
+    [string]$VersionA = '0.1.0rc4',
+    [string]$VersionB = '0.1.0rc5',
+    [string]$BrokenVersion = '0.1.0rc6',
     [string]$EvidencePath
 )
 

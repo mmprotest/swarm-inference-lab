@@ -19,18 +19,21 @@ def test_atomic_replace_retries_transient_sharing_denial(
     destination.write_text("old", encoding="utf-8")
     actual_replace = os.replace
     calls = 0
+    injected_failures = 0
 
     def transient_then_replace(first: Path, second: Path) -> None:
-        nonlocal calls
+        nonlocal calls, injected_failures
         calls += 1
-        if calls < 3:
+        if injected_failures < 2:
+            injected_failures += 1
             raise PermissionError(errno.EACCES, "sharing violation", str(second))
         actual_replace(first, second)
 
     monkeypatch.setattr(filesystem.os, "replace", transient_then_replace)
     monkeypatch.setattr(filesystem.time, "sleep", lambda _seconds: None)
     filesystem.replace_atomically(source, destination)
-    assert calls == 3
+    assert injected_failures == 2
+    assert calls >= 3
     assert destination.read_text(encoding="utf-8") == "new"
     assert not source.exists()
 

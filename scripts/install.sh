@@ -6,6 +6,14 @@ install_service=0
 json_output=0
 uv_path=""
 python_version="3.11"
+installer=""
+doctor_file=""
+
+cleanup() {
+    [ -z "$installer" ] || rm -f "$installer"
+    [ -z "$doctor_file" ] || rm -f "$doctor_file"
+}
+trap cleanup EXIT HUP INT TERM
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -73,7 +81,6 @@ if [ -z "$uv_path" ]; then
 fi
 if [ -z "$uv_path" ]; then
     installer=$(mktemp "${TMPDIR:-/tmp}/swarm-uv-install.XXXXXX")
-    trap 'rm -f "$installer"' EXIT HUP INT TERM
     if command -v curl >/dev/null 2>&1; then
         curl --fail --silent --show-error --max-time 120 https://astral.sh/uv/install.sh -o "$installer" || fail "uv download failed"
     elif command -v wget >/dev/null 2>&1; then
@@ -124,7 +131,10 @@ bin_directory=$(run_bounded 30 "$uv_path" tool dir --bin) || fail "uv tool bin l
 swarm_executable="$bin_directory/swarm"
 [ -x "$swarm_executable" ] || fail "installed swarm executable was not found"
 doctor=$(run_bounded 180 "$swarm_executable" node doctor --json) || fail "swarm node doctor failed"
-selected=$(printf '%s' "$doctor" | run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.load(sys.stdin)["backend_selection"]["selected_backend"])') || fail "doctor result parsing failed"
+doctor_file=$(mktemp "${TMPDIR:-/tmp}/swarm-doctor.XXXXXX")
+chmod 600 "$doctor_file"
+printf '%s\n' "$doctor" >"$doctor_file"
+selected=$(run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["backend_selection"]["selected_backend"])' "$doctor_file") || fail "doctor result parsing failed"
 selected_extra="cpu"
 [ "$selected" = "torch-cuda" ] && selected_extra="cuda"
 [ "$selected" = "torch-mps" ] && selected_extra="mps"
@@ -133,7 +143,8 @@ if [ "$selected_extra" != "$candidate" ]; then
     [ "$selected_extra" = "mps" ] && fallback_backend="auto"
     install_tool "$selected_extra" "$fallback_backend" || fail "operational-backend reinstall failed"
     doctor=$(run_bounded 180 "$swarm_executable" node doctor --json) || fail "post-fallback node doctor failed"
-    selected=$(printf '%s' "$doctor" | run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.load(sys.stdin)["backend_selection"]["selected_backend"])') || fail "fallback doctor result parsing failed"
+    printf '%s\n' "$doctor" >"$doctor_file"
+    selected=$(run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["backend_selection"]["selected_backend"])' "$doctor_file") || fail "fallback doctor result parsing failed"
 fi
 
 service="deferred-until-cluster-create-or-join"
@@ -144,9 +155,7 @@ else
 fi
 
 if [ "$json_output" -eq 1 ]; then
-    run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.dumps({"schema_version":1,"status":"PASS","operating_system":sys.argv[1],"architecture":sys.argv[2],"python_version":sys.argv[3],"source":sys.argv[4],"package_extra":sys.argv[5],"selected_backend":sys.argv[6],"swarm_executable":sys.argv[7],"service":sys.argv[8],"install_service_preference":sys.argv[9],"doctor":json.load(sys.stdin)},sort_keys=True,separators=(",",":")))' "$system" "$architecture" "$python_version" "$source_kind" "$selected_extra" "$selected" "$swarm_executable" "$service" "$service_preference" <<EOF
-$doctor
-EOF
+    run_bounded 60 "$uv_path" run --python "$python_version" python -c 'import json,sys; print(json.dumps({"schema_version":1,"status":"PASS","operating_system":sys.argv[1],"architecture":sys.argv[2],"python_version":sys.argv[3],"source":sys.argv[4],"package_extra":sys.argv[5],"selected_backend":sys.argv[6],"swarm_executable":sys.argv[7],"service":sys.argv[8],"install_service_preference":sys.argv[9],"doctor":json.load(open(sys.argv[10], encoding="utf-8"))},sort_keys=True,separators=(",",":")))' "$system" "$architecture" "$python_version" "$source_kind" "$selected_extra" "$selected" "$swarm_executable" "$service" "$service_preference" "$doctor_file"
 else
     printf 'status=PASS\nswarm_executable=%s\nselected_backend=%s\nservice=%s\n' "$swarm_executable" "$selected" "$service"
 fi

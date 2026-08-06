@@ -15,7 +15,7 @@ def test_built_wheel_installs_without_importing_checkout(tmp_path: Path) -> None
     distribution = tmp_path / "dist"
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
-    environment["UV_CACHE_DIR"] = str(repository / ".uv-cache")
+    environment.setdefault("UV_CACHE_DIR", str(repository / ".uv-cache"))
     subprocess.run(
         [uv, "build", "--offline", "--wheel", "--out-dir", str(distribution)],
         cwd=repository,

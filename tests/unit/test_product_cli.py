@@ -4,10 +4,18 @@ import json
 from pathlib import Path
 from typing import Any
 
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from swarm_inference.cli import app
 from swarm_inference.config.product import load_product_config
+
+
+def _options(*arguments: str) -> set[str]:
+    command = get_command(app)
+    for argument in arguments:
+        command = command.commands[argument]
+    return {option for parameter in command.params for option in getattr(parameter, "opts", ())}
 
 
 def test_product_cli_help_exposes_complete_command_path() -> None:
@@ -38,17 +46,17 @@ def test_product_cli_help_exposes_complete_command_path() -> None:
     for command in ("inspect", "plan", "deploy", "unload"):
         assert command in model.output
     for option in ("--model-id", "--model-revision", "--stream", "--json", "--ndjson"):
-        assert option in submit.output
-    for option in ("--expert-policy", "--require-remo"):
-        assert option in plan.output
+        assert option in _options("submit")
+    for option in ("--expert-policy", "--require-remote-experts"):
+        assert option in _options("model", "plan")
     for option in (
         "--roles",
-        "--expert-manif",
-        "--expert-data-",
-        "--expert-resid",
-        "--expert-cache",
+        "--expert-manifest",
+        "--expert-data-listen",
+        "--expert-residency-budget-gb",
+        "--expert-cache-budget-gb",
     ):
-        assert option in worker.output
+        assert option in _options("worker")
 
 
 def test_product_model_plan_validates_partition_before_network_access() -> None:

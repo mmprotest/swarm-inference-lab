@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0rc4 - 2026-08-06
+
+- Make cross-platform CI hermetic by checking in the Experiment 010 transport-profile test
+  fixture, validating full command options through Typer's command model, preserving the
+  warmed offline build cache, and using bounded file-backed JSON parsing in the Unix recovery
+  installer.
+- Allow the documented floating-point tolerance for equivalent split MoE matrix products and
+  give concurrent Windows lifecycle writers one bounded shared startup deadline.
+
 ## 0.1.0rc3 - 2026-08-06
 
 - Pin the GitHub Actions orchestration interpreter to Python 3.11.9, the exact newest 3.11 build

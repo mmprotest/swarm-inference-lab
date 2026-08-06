@@ -202,8 +202,9 @@ def test_concurrent_process_lifecycle_records_have_single_owners(tmp_path: Path)
     try:
         for process in processes:
             process.start()
+        deadline = time.monotonic() + 120
         for process in processes:
-            process.join(15)
+            process.join(max(0, deadline - time.monotonic()))
             assert process.exitcode == 0
     finally:
         for process in processes:

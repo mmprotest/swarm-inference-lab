@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from swarm_inference.acceptance.productization import _parser
@@ -15,11 +16,18 @@ def _help(*arguments: str) -> str:
     return result.output
 
 
+def _options(*arguments: str) -> set[str]:
+    command = get_command(app)
+    for argument in arguments:
+        command = command.commands[argument]
+    return {option for parameter in command.params for option in getattr(parameter, "opts", ())}
+
+
 def test_documented_product_command_tree_and_options_are_real() -> None:
     root = _help()
     cluster = _help("cluster")
     node = _help("node")
-    run = _help("run")
+    _help("run")
 
     for command in (
         "cluster",
@@ -52,7 +60,7 @@ def test_documented_product_command_tree_and_options_are_real() -> None:
         assert command in node
     for option in (
         "--revision",
-        "--tokenizer-re",
+        "--tokenizer-revision",
         "--prompt",
         "--mode",
         "--dry-run",
@@ -63,22 +71,22 @@ def test_documented_product_command_tree_and_options_are_real() -> None:
         "--ndjson",
         "--yes",
     ):
-        assert option in run
+        assert option in _options("run")
 
 
 def test_low_level_product_commands_remain_available() -> None:
     identity = _help("identity")
     model = _help("model")
-    coordinator = _help("coordinator")
-    worker = _help("worker")
-    submit = _help("submit")
+    _help("coordinator")
+    _help("worker")
+    _help("submit")
 
     for command in ("create", "show", "fingerprint", "trust", "untrust", "list-trusted"):
         assert command in identity
     for command in ("inspect", "plan", "deploy", "unload"):
         assert command in model
     for option in ("--config", "--state", "--listen", "--advertise"):
-        assert option in coordinator
+        assert option in _options("coordinator")
     for option in (
         "--coordinator",
         "--worker-id",
@@ -87,11 +95,11 @@ def test_low_level_product_commands_remain_available() -> None:
         "--advertise",
         "--stage-runtime",
         "--data-listen",
-        "--data-adverti",
-        "--model-snapsh",
-        "--trusted-coor",
+        "--data-advertise",
+        "--model-snapshot",
+        "--trusted-coordinator-fingerprint",
     ):
-        assert option in worker
+        assert option in _options("worker")
     for option in (
         "--coordinator",
         "--model-id",
@@ -101,7 +109,7 @@ def test_low_level_product_commands_remain_available() -> None:
         "--stream",
         "--ndjson",
     ):
-        assert option in submit
+        assert option in _options("submit")
 
 
 def test_normal_quick_start_has_no_manual_provisioning() -> None:

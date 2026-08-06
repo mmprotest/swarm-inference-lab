@@ -116,20 +116,17 @@ def test_primary_cpu_kernel_does_real_work_without_sleep(monkeypatch) -> None:
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("sleep must not be used")),
     )
     before = time.process_time_ns()
-    first = deterministic_cpu_kernel(
-        b"input",
-        work_units=1000,
-        buffer_bytes=16 * 1024,
-        seed_material=b"context",
-    )
+    results = [
+        deterministic_cpu_kernel(
+            b"input",
+            work_units=1000,
+            buffer_bytes=16 * 1024,
+            seed_material=b"context",
+        )
+        for _ in range(16)
+    ]
     cpu_time_ns = time.process_time_ns() - before
-    second = deterministic_cpu_kernel(
-        b"input",
-        work_units=1000,
-        buffer_bytes=16 * 1024,
-        seed_material=b"context",
-    )
-    assert first == second
+    assert len(set(results)) == 1
     assert cpu_time_ns > 0
     assert "time.sleep(" not in inspect.getsource(deterministic_cpu_kernel)
 

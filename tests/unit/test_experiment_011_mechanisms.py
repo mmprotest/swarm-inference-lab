@@ -222,12 +222,7 @@ def test_critical_path_reconstructed_from_links_not_message_total() -> None:
 
 def test_network_profile_manifest_is_reused_exactly() -> None:
     manifest_path = (
-        REPOSITORY_ROOT
-        / "artifacts"
-        / "runs"
-        / "experiment-010-correction-final"
-        / "experiment_010"
-        / "transport_profiles.json"
+        REPOSITORY_ROOT / "tests" / "fixtures" / "experiment_010_transport_profiles.json"
     )
     archived = json.loads(manifest_path.read_text(encoding="utf-8"))
     current = {name: profile.model_dump(mode="json") for name, profile in NETWORK_PROFILES.items()}

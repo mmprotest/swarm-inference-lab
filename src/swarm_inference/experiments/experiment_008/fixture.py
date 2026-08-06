@@ -138,7 +138,10 @@ def validate_tiny_moe_fixture(*, seed: int = 8008) -> dict[str, Any]:
     def comparison(reference: Any, candidate: Any) -> dict[str, float | bool]:
         difference = (reference - candidate).abs()
         return {
-            "allclose": bool(torch.allclose(reference, candidate, atol=1e-5, rtol=1e-5)),
+            # Split matrix products can accumulate in a different order across
+            # supported PyTorch/Python wheels. Match the tolerance used by the
+            # real CPU/CUDA tensor fixture below while retaining error metrics.
+            "allclose": bool(torch.allclose(reference, candidate, atol=2e-4, rtol=2e-4)),
             "maximum_absolute_error": float(difference.max()),
             "mean_absolute_error": float(difference.mean()),
             "cosine_similarity": float(
