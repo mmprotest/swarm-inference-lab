@@ -14,7 +14,7 @@ from release_common import (
 
 
 def test_current_version_is_single_sourced_from_pyproject(repository_root: Path) -> None:
-    assert read_pyproject_version(repository_root / "pyproject.toml") == "0.1.0rc5"
+    assert read_pyproject_version(repository_root / "pyproject.toml") == "0.1.0rc6"
     source = (repository_root / "src/swarm_inference/__init__.py").read_text(encoding="utf-8")
     assert 'version("swarm-inference-lab")' in source
     assert '__version__ = "0.1.0' not in source

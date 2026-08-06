@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0rc6 - 2026-08-06
+
+- Keep the real multi-process stage-ring integration assertions intact while giving bounded
+  control, token-publication, cleanup, and recovery operations enough time on contended Windows
+  CI runners; failed unary and streaming assertions now retain structured response diagnostics.
+
 ## 0.1.0rc5 - 2026-08-06
 
 - Make the cross-platform validation matrix portable on macOS: treat unavailable CPU affinity

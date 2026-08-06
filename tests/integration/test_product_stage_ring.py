@@ -82,6 +82,11 @@ REAL_REFERENCE_PATH = (
 REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
 REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 REAL_TOKENIZER_REVISION = "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea"
+INTEGRATION_CONTROL_TIMEOUT_S = 60.0
+INTEGRATION_REQUEST_TIMEOUT_S = 120.0
+INTEGRATION_RECOVERY_TIMEOUT_S = 120.0
+INTEGRATION_CLIENT_TIMEOUT_S = 180.0
+INTEGRATION_STARTUP_TIMEOUT_S = 60.0
 
 
 def _write_real_gate_evidence(name: str, payload: dict[str, Any]) -> None:
@@ -328,7 +333,10 @@ def _worker_process(
             identity=identity,
             queue_config=QueueConfig(capacity=32),
         )
-        coordinator = CoordinatorClient(coordinator_endpoint, timeout_s=10)
+        coordinator = CoordinatorClient(
+            coordinator_endpoint,
+            timeout_s=INTEGRATION_CONTROL_TIMEOUT_S,
+        )
 
         async def publish_token(publication: TokenPublication) -> None:
             message = publication.message
@@ -817,8 +825,8 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
         product_config=ProductCoordinatorConfig(
             event_queue_capacity=16,
             token_ingress_capacity=16,
-            request_timeout_s=10,
-            control_timeout_s=10,
+            request_timeout_s=INTEGRATION_REQUEST_TIMEOUT_S,
+            control_timeout_s=INTEGRATION_CONTROL_TIMEOUT_S,
             require_trusted_workers=False,
         ),
         state_directory=tmp_path,
@@ -839,11 +847,15 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
         )
         for stage_id in range(2)
     ]
-    client = CoordinatorClient(coordinator_endpoint, timeout_s=15)
-    inspector = GrpcTransport(timeout_s=10)
+    client = CoordinatorClient(coordinator_endpoint, timeout_s=INTEGRATION_CLIENT_TIMEOUT_S)
+    inspector = GrpcTransport(timeout_s=INTEGRATION_CONTROL_TIMEOUT_S)
     try:
         cluster.start()
-        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
+        startup = await cluster.wait_ready(
+            ready_queue,
+            count=len(processes),
+            timeout=INTEGRATION_STARTUP_TIMEOUT_S,
+        )
         assert not [item for item in startup if "error" in item], startup
         capabilities = [WorkerCapability.model_validate(item["capability"]) for item in startup]
         for capability in capabilities:
@@ -910,6 +922,7 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
                     model_revision=plan.model.model_revision,
                 )
             )
+            assert response.status == "completed", response.model_dump(mode="json")
             assert response.output_token_ids == [index + 2]
 
         interleaved = await asyncio.gather(
@@ -1000,10 +1013,10 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
         product_config=ProductCoordinatorConfig(
             event_queue_capacity=32,
             token_ingress_capacity=32,
-            request_timeout_s=5,
-            control_timeout_s=2,
-            recovery_timeout_s=15,
-            cleanup_timeout_s=2,
+            request_timeout_s=INTEGRATION_REQUEST_TIMEOUT_S,
+            control_timeout_s=INTEGRATION_CONTROL_TIMEOUT_S,
+            recovery_timeout_s=INTEGRATION_RECOVERY_TIMEOUT_S,
+            cleanup_timeout_s=15,
             worker_heartbeat_timeout_s=30,
             require_trusted_workers=False,
         ),
@@ -1031,10 +1044,14 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
         )
         for index in range(3)
     }
-    client = CoordinatorClient(coordinator_endpoint, timeout_s=30)
+    client = CoordinatorClient(coordinator_endpoint, timeout_s=INTEGRATION_CLIENT_TIMEOUT_S)
     try:
         cluster.start()
-        startup = await cluster.wait_ready(ready_queue, count=len(processes), timeout=30)
+        startup = await cluster.wait_ready(
+            ready_queue,
+            count=len(processes),
+            timeout=INTEGRATION_STARTUP_TIMEOUT_S,
+        )
         assert not [item for item in startup if "error" in item], startup
         capabilities = sorted(
             (WorkerCapability.model_validate(item["capability"]) for item in startup),
@@ -1077,8 +1094,11 @@ async def test_three_worker_restart_and_replay_replaces_failed_stage_without_dup
         token_events = [
             event for event in events if event.event_type == StreamEventType.TOKEN_GENERATED
         ]
-        assert [event.token_position for event in token_events] == list(range(6))
-        assert [event.token_id for event in token_events] == [21, 22, 23, 24, 25, 26]
+        event_diagnostics = [event.model_dump(mode="json") for event in events]
+        assert [event.token_position for event in token_events] == list(range(6)), event_diagnostics
+        assert [event.token_id for event in token_events] == [21, 22, 23, 24, 25, 26], (
+            event_diagnostics
+        )
         assert events[-1].event_type == StreamEventType.REQUEST_COMPLETED
         assert events[-1].final_token_ids == [21, 22, 23, 24, 25, 26]
         assert sum(event.event_type == StreamEventType.RECOVERY_STARTED for event in events) == 1
