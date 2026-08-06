@@ -49,6 +49,10 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+      - name: Select portable CPU kernels on hosted Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: '"ATEN_CPU_CAPABILITY=default" | Out-File $env:GITHUB_ENV -Append'
       - run: uv sync --python 3.11 --extra ${{ matrix.extra }} --extra dev
       - run: uv run --python 3.11 python scripts/verify_colibri_source.py
       - run: uv build --wheel
@@ -110,6 +114,8 @@ jobs:
     needs: platform-product
     runs-on: windows-latest
     timeout-minutes: 120
+    env:
+      ATEN_CPU_CAPABILITY: default
     steps:
       - uses: actions/checkout@v4
         with:

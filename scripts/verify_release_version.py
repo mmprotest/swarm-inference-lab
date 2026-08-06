@@ -37,10 +37,19 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def default_release_tag(version: str) -> str:
+    """Use a tag ref in CI, but never mistake a branch name for a release tag."""
+
+    github_ref_name = os.environ.get("GITHUB_REF_NAME")
+    if github_ref_name and github_ref_name.startswith("v"):
+        return github_ref_name
+    return pep440_to_git_tag(version)
+
+
 def main(argv: list[str] | None = None) -> int:
     arguments = build_parser().parse_args(argv)
     version = read_pyproject_version()
-    tag = arguments.tag or os.environ.get("GITHUB_REF_NAME") or pep440_to_git_tag(version)
+    tag = arguments.tag or default_release_tag(version)
     commit = (arguments.commit or git_commit()).lower()
     try:
         evidence = verify_release_identity(

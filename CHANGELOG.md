@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0rc11 - 2026-08-06
+
+- Make Windows release workflows fail immediately on any non-zero native command instead of
+  allowing a later command to mask the failure.
+- Select portable ATen CPU kernels on hosted Windows validation guests, which can migrate between
+  CPU models, while leaving native physical-hardware performance validation unchanged.
+- Ignore branch refs such as `main` when deriving the development-only release tag.
+
 ## 0.1.0rc10 - 2026-08-06
 
 - Add a deterministic signed-file certificate extraction fallback for Windows images where
