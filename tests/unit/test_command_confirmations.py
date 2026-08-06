@@ -169,6 +169,27 @@ def _paired_state(tmp_path: Path) -> ClusterStateStore:
     return state
 
 
+def test_service_definition_preserves_virtual_environment_python_symlink(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import swarm_inference.commands._common as common
+
+    state = _paired_state(tmp_path)
+    cluster = state.load_cluster()
+    assert cluster is not None
+    base_python = tmp_path / "python3.11"
+    base_python.touch()
+    venv_python = tmp_path / "venv" / "bin" / "python"
+    venv_python.parent.mkdir(parents=True)
+    venv_python.symlink_to(base_python)
+    monkeypatch.setattr(common.sys, "executable", str(venv_python))
+
+    definition = common.service_definition(state, cluster, roles={"worker"})
+
+    assert definition.executable == venv_python
+
+
 @pytest.mark.parametrize("command", ["install-service", "uninstall-service"])
 def test_service_commands_require_yes_before_calling_service_manager(
     monkeypatch: pytest.MonkeyPatch,

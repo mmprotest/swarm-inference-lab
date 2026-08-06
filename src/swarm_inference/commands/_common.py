@@ -93,7 +93,7 @@ def service_definition(
         node_id=node_id_from_fingerprint(
             state.load_or_create_node_identity().public_key_fingerprint
         ),
-        executable=active_python or Path(sys.executable).resolve(),
+        executable=active_python or Path(sys.executable).absolute(),
         arguments=arguments,
         environment={
             "PYTHONUTF8": "1",
