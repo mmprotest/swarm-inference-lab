@@ -14,6 +14,7 @@ metadata. Supported mappings are:
 | `0.1.0rc2` | `v0.1.0-rc.2` | prerelease |
 | `0.1.0rc3` | `v0.1.0-rc.3` | prerelease |
 | `0.1.0rc4` | `v0.1.0-rc.4` | prerelease |
+| `0.1.0rc5` | `v0.1.0-rc.5` | prerelease |
 | `0.1.0` | `v0.1.0` | stable |
 
 Never overwrite, move, or force-push a release tag. If a version or tag already exists, increment
@@ -81,10 +82,10 @@ After all changes and evidence are ready:
 
 ```powershell
 git add --all
-git commit -m "release: native Windows installer 0.1.0rc4"
-git tag -a v0.1.0-rc.4 -m "Swarm Inference 0.1.0rc4"
+git commit -m "release: native Windows installer 0.1.0rc5"
+git tag -a v0.1.0-rc.5 -m "Swarm Inference 0.1.0rc5"
 git push origin HEAD
-git push origin v0.1.0-rc.4
+git push origin v0.1.0-rc.5
 ```
 
 `.github/workflows/release.yml` checks out that tag recursively and independently repeats source,

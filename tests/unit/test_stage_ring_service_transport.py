@@ -89,7 +89,7 @@ async def test_tcp_connection_is_persistent_reused_and_nodelay() -> None:
         connection = pool._connection(endpoint)
         assert connection._writer is not None
         transport_socket = connection._writer.get_extra_info("socket")
-        assert transport_socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY) == 1
+        assert transport_socket.getsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY) != 0
     finally:
         await pool.close()
         await server.stop()

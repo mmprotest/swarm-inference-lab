@@ -100,7 +100,7 @@ def test_identity_cli_json_never_discloses_private_key(tmp_path: Path) -> None:
     assert created.exit_code == 0, created.output
     public_metadata = json.loads(created.output)
     assert public_metadata["identity_kind"] == "worker"
-    assert "private" not in created.output.lower()
+    assert all("private" not in str(key).lower() for key in public_metadata)
     private_record = json.loads(identity_path.read_text(encoding="utf-8"))["private_key"]
     assert private_record["value"] not in created.output
 

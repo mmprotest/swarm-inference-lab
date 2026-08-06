@@ -666,7 +666,8 @@ class ExpertWorkerManager:
         stderr.close()
         try:
             ps_process = psutil.Process(process.pid)
-            ps_process.cpu_affinity(budget.cpu_affinity)
+            if hasattr(ps_process, "cpu_affinity"):
+                ps_process.cpu_affinity(budget.cpu_affinity)
             deadline = time.monotonic() + timeout_seconds
             while time.monotonic() < deadline:
                 if process.poll() is not None:

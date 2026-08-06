@@ -84,7 +84,8 @@ def _request(request_id: str, expert_ids: list[int] | None = None) -> ExpertExec
 
 
 def _budget(worker_id: str, root: Path, expert_bytes: int) -> WorkerBudget:
-    affinity = psutil.Process().cpu_affinity()
+    process = psutil.Process()
+    affinity = process.cpu_affinity() if hasattr(process, "cpu_affinity") else [0]
     return WorkerBudget(
         worker_id=worker_id,
         memory_budget_bytes=max(expert_bytes, 1 << 20),
@@ -239,7 +240,10 @@ def test_worker_universal_abi_moe_expert(rpc_system: dict[str, Any]) -> None:
 
 
 def test_worker_affinity(rpc_system: dict[str, Any]) -> None:
-    expected = psutil.Process().cpu_affinity()[0]
+    parent = psutil.Process()
+    if not hasattr(parent, "cpu_affinity"):
+        pytest.skip("CPU affinity is not supported by psutil on this platform")
+    expected = parent.cpu_affinity()[0]
     for process in rpc_system["processes"].values():
         assert psutil.Process(process.process.pid).cpu_affinity() == [expected]
 

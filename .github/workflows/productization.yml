@@ -100,6 +100,7 @@ jobs:
           enable-cache: true
       - run: uv sync --python ${{ matrix.python-version }} --extra cpu --extra dev
       - run: uv run --python ${{ matrix.python-version }} python scripts/verify_colibri_source.py
+      - run: uv build --wheel
       - run: uv run --python ${{ matrix.python-version }} pytest tests/unit -q
       - run: >-
           uv run --python ${{ matrix.python-version }} pytest

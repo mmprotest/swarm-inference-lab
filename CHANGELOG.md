@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0rc5 - 2026-08-06
+
+- Make the cross-platform validation matrix portable on macOS: treat unavailable CPU affinity
+  as an unsupported pinning capability, accept Darwin's nonzero socket-option representation,
+  and inspect identity JSON fields instead of matching the `/private` temporary path prefix.
+- Warm the exact wheel build backend in Python 3.12 and 3.13 compatibility jobs and preserve
+  each workflow's active uv cache for the deliberately offline wheel-isolation test.
+
 ## 0.1.0rc4 - 2026-08-06
 
 - Make cross-platform CI hermetic by checking in the Experiment 010 transport-profile test
