@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.protocol.messages import parse_message, serialize_message
 from swarm_inference.protocol.stage_worker import (
+    ArtifactTransferLease,
     CancelStageSessionRequest,
     CloseStageSessionRequest,
     DrainWorkerRequest,
@@ -19,7 +20,10 @@ from swarm_inference.protocol.stage_worker import (
     RemoveStageRouteRequest,
     StageRouteEndpoint,
     UnloadStageRequest,
+    sign_artifact_transfer_lease,
+    verify_artifact_transfer_lease,
 )
+from swarm_inference.security.identity import CoordinatorIdentity
 
 
 def _assignment() -> StageAssignment:
@@ -90,3 +94,30 @@ def test_route_peer_can_carry_exact_adjacent_assignment() -> None:
 def test_stage_control_identities_reject_empty_strings() -> None:
     with pytest.raises(ValidationError, match="cannot be empty"):
         GetStageCapabilitiesRequest(worker_id=" ", request_id="request")
+
+
+def test_artifact_transfer_lease_can_be_constructed_before_signing() -> None:
+    coordinator = CoordinatorIdentity.generate()
+    issued_at = time.time_ns()
+    unsigned = ArtifactTransferLease(
+        artifact_id="a" * 64,
+        destination_worker_id="node-local/mps-0",
+        source_node_id="node-local",
+        issued_at_unix_ns=issued_at,
+        expires_at_unix_ns=issued_at + 60_000_000_000,
+        nonce="nonce",
+        coordinator_identity="node-local",
+        coordinator_public_key=coordinator.public_key_b64,
+        coordinator_fingerprint=coordinator.public_key_fingerprint,
+    )
+
+    signed = sign_artifact_transfer_lease(unsigned, coordinator)
+
+    verify_artifact_transfer_lease(
+        signed,
+        trusted_coordinator_public_key=coordinator.public_key_b64,
+        trusted_coordinator_fingerprint=coordinator.public_key_fingerprint,
+        destination_worker_id="node-local/mps-0",
+        artifact_id="a" * 64,
+        now_unix_ns=issued_at,
+    )
