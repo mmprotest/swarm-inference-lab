@@ -858,6 +858,34 @@ async def test_execution_queue_rejects_work_when_bounded_capacity_is_full() -> N
 
 
 @pytest.mark.asyncio
+async def test_verified_artifact_revision_is_used_without_huggingface_metadata(
+    tmp_path: Path,
+) -> None:
+    model_path = tmp_path / "artifact"
+    model_path.mkdir()
+    (model_path / "config.json").write_text('{"model_type":"olmoe"}', encoding="utf-8")
+    (model_path / "model.safetensors.index.json").write_text("{}", encoding="utf-8")
+    runtime = PersistentStageRuntime(
+        worker_id="worker-a",
+        device="cpu",
+        dtype="float32",
+        memory_limit_bytes=4096,
+        maximum_sessions=1,
+    )
+    try:
+        runtime._verify_model_identity_values(
+            model_id="test/model",
+            requested_model_revision="actual-model",
+            requested_tokenizer_revision="actual-tokenizer",
+            model_path=model_path,
+            artifact_model_revision="actual-model",
+            artifact_tokenizer_revision="actual-tokenizer",
+        )
+    finally:
+        await runtime.close()
+
+
+@pytest.mark.asyncio
 async def test_local_checkpoint_model_and_tokenizer_revisions_are_verified(
     tmp_path: Path,
 ) -> None:
