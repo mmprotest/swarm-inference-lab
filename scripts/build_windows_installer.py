@@ -172,7 +172,7 @@ def _verify_pinned_publisher_identity(
     # revocation caches. The executable hash is verified immediately before this
     # check, so pin the actual signer certificate identity and reject statuses
     # that indicate missing or damaged signature bytes.
-    accepted_statuses = {"Valid", "UnknownError", "NotTrusted"}
+    accepted_statuses = {"Valid", "UnknownError", "NotTrusted", "CertificateOnly"}
     if status not in accepted_statuses or not subject or thumbprint != expected_thumbprint:
         raise ReleaseError(
             f"{label} publisher verification failed "

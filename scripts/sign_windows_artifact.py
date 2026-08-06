@@ -77,10 +77,19 @@ def _signtool(explicit: Path | None) -> Path:
 def authenticode_info(path: Path) -> dict[str, Any]:
     literal_path = str(path.resolve()).replace("'", "''")
     command = (
-        f"$signature=Get-AuthenticodeSignature -LiteralPath '{literal_path}'; "
-        "[ordered]@{status=[string]$signature.Status; "
-        "subject=if($signature.SignerCertificate){$signature.SignerCertificate.Subject}else{$null}; "
-        "thumbprint=if($signature.SignerCertificate){$signature.SignerCertificate.Thumbprint}else{$null}; "
+        f"$signature=Get-AuthenticodeSignature -LiteralPath '{literal_path}' "
+        "-ErrorAction SilentlyContinue; "
+        "$certificate=if($signature){$signature.SignerCertificate}else{$null}; "
+        "if(-not $certificate){try{$certificate="
+        "[System.Security.Cryptography.X509Certificates.X509Certificate2]::new("
+        "[System.Security.Cryptography.X509Certificates.X509Certificate]::"
+        f"CreateFromSignedFile('{literal_path}'))"
+        "}catch{$certificate=$null}}; "
+        "$status=if($signature){[string]$signature.Status}"
+        "elseif($certificate){'CertificateOnly'}else{''}; "
+        "[ordered]@{status=$status; "
+        "subject=if($certificate){$certificate.Subject}else{$null}; "
+        "thumbprint=if($certificate){$certificate.Thumbprint}else{$null}; "
         "timestamp_subject=if($signature.TimeStamperCertificate)"
         "{$signature.TimeStamperCertificate.Subject}else{$null}} | ConvertTo-Json -Compress"
     )

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0rc10 - 2026-08-06
+
+- Add a deterministic signed-file certificate extraction fallback for Windows images where
+  `Get-AuthenticodeSignature` returns no object. The pinned build-tool hash and exact signer
+  thumbprint remain mandatory, while public stable product signatures still require `Valid`.
+
 ## 0.1.0rc9 - 2026-08-06
 
 - Keep pinned Inno Setup publisher verification deterministic across Windows trust-cache states:

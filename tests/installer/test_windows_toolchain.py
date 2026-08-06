@@ -11,7 +11,7 @@ METADATA = {
 }
 
 
-@pytest.mark.parametrize("status", ["Valid", "UnknownError", "NotTrusted"])
+@pytest.mark.parametrize("status", ["Valid", "UnknownError", "NotTrusted", "CertificateOnly"])
 def test_pinned_publisher_accepts_exact_certificate_after_hash_verification(status: str) -> None:
     _verify_pinned_publisher_identity(
         {

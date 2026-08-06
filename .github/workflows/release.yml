@@ -121,8 +121,8 @@ jobs:
       - name: Build upgrade and rollback fixtures
         shell: pwsh
         run: |
-          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc10 --output-dir release/fixtures/version-b
-          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc11 --fixture-doctor-failure --output-dir release/fixtures/broken
+          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc11 --output-dir release/fixtures/version-b
+          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc12 --fixture-doctor-failure --output-dir release/fixtures/broken
 
       - name: Upgrade, rollback, and uninstall acceptance
         shell: pwsh
