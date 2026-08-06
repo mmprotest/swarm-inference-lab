@@ -354,7 +354,14 @@ def prepare_native_update(
     if not hmac.compare_digest(installer_digest, expected):
         installer_path.unlink(missing_ok=True)
         raise RuntimeError("downloaded setup SHA-256 does not match the release manifest")
-    controlled_copy = staging / f"verified-{INSTALLER_FILENAME}"
+    controlled_directory = staging / "verified"
+    controlled_directory.mkdir(parents=True, exist_ok=True)
+    controlled_manifest = controlled_directory / MANIFEST_FILENAME
+    shutil.copyfile(manifest_path, controlled_manifest)
+    if hashlib.sha256(controlled_manifest.read_bytes()).hexdigest() != manifest_digest:
+        controlled_manifest.unlink(missing_ok=True)
+        raise RuntimeError("controlled release manifest copy failed SHA-256 re-verification")
+    controlled_copy = controlled_directory / INSTALLER_FILENAME
     shutil.copyfile(installer_path, controlled_copy)
     if hashlib.sha256(controlled_copy.read_bytes()).hexdigest() != expected:
         controlled_copy.unlink(missing_ok=True)

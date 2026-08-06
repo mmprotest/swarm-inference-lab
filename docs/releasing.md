@@ -75,10 +75,10 @@ After all changes and evidence are ready:
 
 ```powershell
 git add --all
-git commit -m "release: native Windows installer 0.1.0rc1"
-git tag -a v0.1.0-rc.1 -m "Swarm Inference 0.1.0rc1"
+git commit -m "release: native Windows installer 0.1.0rc2"
+git tag -a v0.1.0-rc.2 -m "Swarm Inference 0.1.0rc2"
 git push origin HEAD
-git push origin v0.1.0-rc.1
+git push origin v0.1.0-rc.2
 ```
 
 `.github/workflows/release.yml` checks out that tag recursively and independently repeats source,

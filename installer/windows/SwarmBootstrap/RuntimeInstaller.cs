@@ -6,6 +6,7 @@ internal sealed class RuntimeInstaller
 {
     private readonly PathInfo _layout;
     private readonly string _payloadDirectory;
+    private readonly string? _setupPath;
     private readonly IBoundedProcessRunner _processes;
     private readonly BackendDetector _backendDetector;
     private readonly ServiceLifecycle _services;
@@ -16,6 +17,7 @@ internal sealed class RuntimeInstaller
     public RuntimeInstaller(
         PathInfo layout,
         string payloadDirectory,
+        string? setupPath,
         IBoundedProcessRunner processes,
         BootstrapLogger logger,
         TimeSpan processTimeout,
@@ -23,6 +25,7 @@ internal sealed class RuntimeInstaller
     {
         _layout = layout;
         _payloadDirectory = Path.GetFullPath(payloadDirectory);
+        _setupPath = setupPath is null ? null : Path.GetFullPath(setupPath);
         _processes = processes;
         _logger = logger;
         _processTimeout = processTimeout;
@@ -39,6 +42,13 @@ internal sealed class RuntimeInstaller
     {
         BackendDetector.ValidatePlatform();
         ReleaseManifest manifest = HashVerifier.LoadAndVerifyPayload(_payloadDirectory);
+        ReleaseManifestEvidence manifestEvidence = await ReleaseManifestResolver.ResolveAsync(
+                manifest,
+                _payloadDirectory,
+                _setupPath,
+                _logger,
+                cancellationToken)
+            .ConfigureAwait(false);
         _layout.EnsureBaseDirectories();
         InstallRecord? previous = InstallRecord.Load(_layout);
         string operation = ResolveOperation(requestedOperation, previous, manifest, allowDowngrade);
@@ -54,7 +64,12 @@ internal sealed class RuntimeInstaller
         try
         {
             transaction.MoveActiveAside(previous);
-            string controlledUv = CacheVerifiedUv(manifest.Uv);
+            string stagedPayloadCache = transaction.CreateStagingPayloadCache();
+            string stagedUv = StageVerifiedPayload(manifest, stagedPayloadCache);
+            string uvRelativePath = Path.GetRelativePath(stagedPayloadCache, stagedUv);
+            transaction.PublishPayloadCache();
+            string controlledUv = Path.Combine(_layout.PayloadCache, uvRelativePath);
+            HashVerifier.Verify(controlledUv, manifest.Uv);
             BackendDetectionResult detection = requestedBackend == BackendProfile.Auto
                 ? await _backendDetector.DetectAsync(cancellationToken).ConfigureAwait(false)
                 : new BackendDetectionResult(
@@ -107,7 +122,6 @@ internal sealed class RuntimeInstaller
                     selected,
                     cancellationToken)
                 .ConfigureAwait(false);
-            CacheVerifiedPayload(manifest);
             UserPathRegistration.Add(_layout.ScriptsPath);
             pathAdded = true;
             await _services.RestoreAsync(
@@ -115,9 +129,11 @@ internal sealed class RuntimeInstaller
                     _layout.StateRoot,
                     cancellationToken)
                 .ConfigureAwait(false);
+            PublishApplicationMetadata(manifest, manifestEvidence);
             InstallRecord record = BuildInstallRecord(
                 operation,
                 manifest,
+                manifestEvidence,
                 detection.Candidate,
                 selected,
                 rejectedProfile,
@@ -318,15 +334,6 @@ internal sealed class RuntimeInstaller
         return detection.Candidate == BackendProfile.Cuda
             ? [BackendProfile.Cuda, BackendProfile.Cpu]
             : [BackendProfile.Cpu];
-    }
-
-    private string CacheVerifiedUv(UvAsset uvAsset)
-    {
-        string tools = Path.Combine(_layout.PayloadCache, "tools", uvAsset.Version);
-        Directory.CreateDirectory(tools);
-        string destination = Path.Combine(tools, "uv.exe");
-        CopyVerified(Path.Combine(_payloadDirectory, uvAsset.Filename), destination, uvAsset);
-        return destination;
     }
 
     private async Task<CandidateRuntime> InstallCandidateAsync(
@@ -617,9 +624,9 @@ internal sealed class RuntimeInstaller
         return false;
     }
 
-    private void CacheVerifiedPayload(ReleaseManifest manifest)
+    private string StageVerifiedPayload(ReleaseManifest manifest, string destinationRoot)
     {
-        Directory.CreateDirectory(_layout.PayloadCache);
+        Directory.CreateDirectory(destinationRoot);
         List<FileAsset> assets =
         [
             manifest.Uv,
@@ -633,14 +640,28 @@ internal sealed class RuntimeInstaller
         {
             CopyVerified(
                 Path.Combine(_payloadDirectory, asset.Filename),
-                Path.Combine(_layout.PayloadCache, asset.Filename),
+                Path.Combine(destinationRoot, asset.Filename),
                 asset);
         }
 
         string manifestSource = Path.Combine(_payloadDirectory, "release-manifest.json");
         byte[] manifestBytes = File.ReadAllBytes(manifestSource);
-        AtomicFile.WriteAllBytes(Path.Combine(_layout.PayloadCache, "release-manifest.json"), manifestBytes);
-        AtomicFile.WriteAllBytes(_layout.Manifest, manifestBytes);
+        AtomicFile.WriteAllBytes(Path.Combine(destinationRoot, "release-manifest.json"), manifestBytes);
+        string tools = Path.Combine(destinationRoot, "tools", manifest.Uv.Version);
+        Directory.CreateDirectory(tools);
+        string controlledUv = Path.Combine(tools, "uv.exe");
+        CopyVerified(
+            Path.Combine(_payloadDirectory, manifest.Uv.Filename),
+            controlledUv,
+            manifest.Uv);
+        return controlledUv;
+    }
+
+    private void PublishApplicationMetadata(
+        ReleaseManifest manifest,
+        ReleaseManifestEvidence manifestEvidence)
+    {
+        AtomicFile.WriteAllBytes(_layout.Manifest, manifestEvidence.Content);
         CopyVerified(
             Path.Combine(_payloadDirectory, manifest.Bootstrapper.Filename),
             Path.Combine(_layout.Bin, manifest.Bootstrapper.Filename),
@@ -672,6 +693,7 @@ internal sealed class RuntimeInstaller
     private InstallRecord BuildInstallRecord(
         string operation,
         ReleaseManifest manifest,
+        ReleaseManifestEvidence manifestEvidence,
         BackendProfile candidate,
         CandidateRuntime selected,
         string? rejected,
@@ -702,8 +724,7 @@ internal sealed class RuntimeInstaller
             DoctorSummary = selected.Doctor,
             ApplicationPath = _layout.Root,
             StatePath = _layout.StateRoot,
-            ReleaseManifestSha256 = HashVerifier.ComputeSha256(
-                Path.Combine(_payloadDirectory, "release-manifest.json")),
+            ReleaseManifestSha256 = manifestEvidence.Sha256,
         };
     }
 

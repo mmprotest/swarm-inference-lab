@@ -9,9 +9,13 @@ internal sealed class RuntimeTransaction : IDisposable
     private readonly byte[]? _previousManifest;
     private string? _previousRuntime;
     private string? _stagingRuntime;
+    private string? _previousPayloadCache;
+    private string? _stagingPayloadCache;
     private bool _activeMoved;
     private bool _published;
+    private bool _payloadPublished;
     private bool _committed;
+    private bool _rolledBack;
 
     public RuntimeTransaction(PathInfo layout, BootstrapLogger logger, bool keepFailedStaging)
     {
@@ -44,6 +48,20 @@ internal sealed class RuntimeTransaction : IDisposable
         }
 
         _stagingRuntime = null;
+    }
+
+    public string CreateStagingPayloadCache()
+    {
+        if (_stagingPayloadCache is not null)
+        {
+            SafeDeleteDirectory(_stagingPayloadCache);
+        }
+
+        _stagingPayloadCache = Path.Combine(
+            _layout.Root,
+            $".payload-cache.{Guid.NewGuid():N}.staging");
+        Directory.CreateDirectory(_stagingPayloadCache);
+        return _stagingPayloadCache;
     }
 
     public void MoveActiveAside(InstallRecord? previous)
@@ -82,13 +100,41 @@ internal sealed class RuntimeTransaction : IDisposable
         _logger.Info("candidate runtime published at the stable runtime path");
     }
 
+    public void PublishPayloadCache()
+    {
+        if (_stagingPayloadCache is null || !Directory.Exists(_stagingPayloadCache))
+        {
+            throw new IOException("candidate payload cache does not exist");
+        }
+
+        if (Directory.Exists(_layout.PayloadCache))
+        {
+            _previousPayloadCache = Path.Combine(
+                _layout.Previous,
+                $"payload-cache-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(_layout.Previous);
+            Directory.Move(_layout.PayloadCache, _previousPayloadCache);
+        }
+
+        Directory.Move(_stagingPayloadCache, _layout.PayloadCache);
+        _stagingPayloadCache = null;
+        _payloadPublished = true;
+        _logger.Info("candidate payload cache published transactionally");
+    }
+
     public void Commit()
     {
         _committed = true;
         if (_previousRuntime is not null)
         {
-            SafeDeleteDirectory(_previousRuntime);
+            TryDeleteCommittedDirectory(_previousRuntime, "previous runtime");
             _previousRuntime = null;
+        }
+
+        if (_previousPayloadCache is not null)
+        {
+            TryDeleteCommittedDirectory(_previousPayloadCache, "previous payload cache");
+            _previousPayloadCache = null;
         }
 
         _logger.Info("runtime transaction committed; previous runtime removed");
@@ -96,7 +142,7 @@ internal sealed class RuntimeTransaction : IDisposable
 
     public void Rollback()
     {
-        if (_committed)
+        if (_committed || _rolledBack)
         {
             return;
         }
@@ -105,11 +151,25 @@ internal sealed class RuntimeTransaction : IDisposable
         {
             SafeDeleteDirectory(_layout.Runtime);
         }
+        _published = false;
 
         if (_activeMoved && _previousRuntime is not null && Directory.Exists(_previousRuntime))
         {
             Directory.Move(_previousRuntime, _layout.Runtime);
             _previousRuntime = null;
+            _activeMoved = false;
+        }
+
+        if (_payloadPublished && Directory.Exists(_layout.PayloadCache))
+        {
+            SafeDeleteDirectory(_layout.PayloadCache);
+        }
+        _payloadPublished = false;
+
+        if (_previousPayloadCache is not null && Directory.Exists(_previousPayloadCache))
+        {
+            Directory.Move(_previousPayloadCache, _layout.PayloadCache);
+            _previousPayloadCache = null;
         }
 
         RestoreFile(_layout.InstallRecord, _previousRecord);
@@ -120,6 +180,13 @@ internal sealed class RuntimeTransaction : IDisposable
             _stagingRuntime = null;
         }
 
+        if (_stagingPayloadCache is not null && !_keepFailedStaging)
+        {
+            SafeDeleteDirectory(_stagingPayloadCache);
+            _stagingPayloadCache = null;
+        }
+
+        _rolledBack = true;
         _logger.Info("runtime transaction rolled back to the previous installation");
     }
 
@@ -144,8 +211,32 @@ internal sealed class RuntimeTransaction : IDisposable
 
         if (Directory.Exists(path))
         {
-            Directory.Delete(path, recursive: true);
+            RuntimeInstaller.DeleteOwnedDirectory(path, _layout.Root);
         }
+    }
+
+    private void TryDeleteCommittedDirectory(string path, string label)
+    {
+        Exception? lastFailure = null;
+        for (int attempt = 1; attempt <= 6; attempt++)
+        {
+            try
+            {
+                SafeDeleteDirectory(path);
+                return;
+            }
+            catch (Exception exception) when (
+                exception is IOException or UnauthorizedAccessException)
+            {
+                lastFailure = exception;
+                if (attempt < 6)
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(200 * attempt));
+                }
+            }
+        }
+
+        _logger.Error($"{label} cleanup was deferred: {lastFailure!.Message}");
     }
 
     private static void RestoreFile(string path, byte[]? content)

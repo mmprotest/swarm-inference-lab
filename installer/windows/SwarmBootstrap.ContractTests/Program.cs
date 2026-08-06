@@ -41,9 +41,13 @@ internal static class Program
             ("process-tree-termination", TestProcessTreeTerminationAsync),
             ("strict-manifest-parsing", TestStrictManifestParsingAsync),
             ("hash-mismatch-rejection", TestHashMismatchAsync),
+            ("external-manifest-setup-binding", TestExternalManifestBindingAsync),
+            ("external-manifest-redirect-policy", TestReleaseManifestRedirectPolicyAsync),
             ("atomic-install", TestAtomicInstallAsync),
             ("upgrade-commit", TestUpgradeCommitAsync),
             ("rollback-restoration", TestRollbackAsync),
+            ("payload-cache-rollback", TestPayloadCacheRollbackAsync),
+            ("payload-cache-commit-cleanup", TestPayloadCacheCommitCleanupAsync),
             ("path-idempotency", TestPathIdempotencyAsync),
             ("install-record-atomicity", TestInstallRecordAtomicityAsync),
             ("owned-tree-reparse-safe-delete", TestOwnedTreeDeleteAsync),
@@ -192,6 +196,33 @@ internal static class Program
         Throws<HashMismatchException>(() => HashVerifier.Verify(file, asset));
     }
 
+    private static async Task TestExternalManifestBindingAsync()
+    {
+        using TestArea area = new();
+        string setup = area.Path("SwarmInferenceSetup-x64.exe");
+        await File.WriteAllTextAsync(setup, "setup-fixture").ConfigureAwait(false);
+        ReleaseManifest embedded = ManifestFixture("embedded-payload", setup: null);
+        ReleaseManifest release = ManifestFixture("release", setup);
+        byte[] content = JsonSerializer.SerializeToUtf8Bytes(release, JsonDefaults.Strict);
+        ReleaseManifest validated = HashVerifier.ValidateReleaseManifest(content, embedded, setup);
+        Equal("release", validated.ManifestScope, "external release manifest was rejected");
+        byte[] mismatch = JsonSerializer.SerializeToUtf8Bytes(
+            release with { GitCommit = new string('b', 40) },
+            JsonDefaults.Strict);
+        Throws<ManifestException>(() =>
+            HashVerifier.ValidateReleaseManifest(mismatch, embedded, setup));
+    }
+
+    private static Task TestReleaseManifestRedirectPolicyAsync()
+    {
+        ReleaseManifestResolver.ValidateUri(new Uri("https://github.com/owner/release"));
+        Throws<ManifestException>(() =>
+            ReleaseManifestResolver.ValidateUri(new Uri("https://example.invalid/setup")));
+        Throws<ManifestException>(() =>
+            ReleaseManifestResolver.ValidateUri(new Uri("http://github.com/owner/release")));
+        return Task.CompletedTask;
+    }
+
     private static Task TestAtomicInstallAsync()
     {
         using TestArea area = new();
@@ -247,6 +278,50 @@ internal static class Program
         return Task.CompletedTask;
     }
 
+    private static Task TestPayloadCacheRollbackAsync()
+    {
+        using TestArea area = new();
+        PathInfo layout = PathInfo.Create(area.Path("app"));
+        layout.EnsureBaseDirectories();
+        File.WriteAllText(Path.Combine(layout.PayloadCache, "version.txt"), "A");
+        using BootstrapLogger logger = new(area.Path("payload-rollback.log"), console: false);
+        using RuntimeTransaction transaction = new(layout, logger, keepFailedStaging: false);
+        string staging = transaction.CreateStagingPayloadCache();
+        File.WriteAllText(Path.Combine(staging, "version.txt"), "broken-B");
+        transaction.PublishPayloadCache();
+        transaction.Rollback();
+        transaction.Rollback();
+        Equal(
+            "A",
+            File.ReadAllText(Path.Combine(layout.PayloadCache, "version.txt")),
+            "payload cache rollback failed");
+        return Task.CompletedTask;
+    }
+
+    private static Task TestPayloadCacheCommitCleanupAsync()
+    {
+        using TestArea area = new();
+        PathInfo layout = PathInfo.Create(area.Path("app"));
+        layout.EnsureBaseDirectories();
+        string retired = Path.Combine(layout.PayloadCache, "read-only.txt");
+        File.WriteAllText(retired, "A");
+        File.SetAttributes(retired, FileAttributes.ReadOnly);
+        using BootstrapLogger logger = new(area.Path("payload-commit.log"), console: false);
+        using RuntimeTransaction transaction = new(layout, logger, keepFailedStaging: false);
+        string staging = transaction.CreateStagingPayloadCache();
+        File.WriteAllText(Path.Combine(staging, "version.txt"), "B");
+        transaction.PublishPayloadCache();
+        transaction.Commit();
+        Equal(
+            "B",
+            File.ReadAllText(Path.Combine(layout.PayloadCache, "version.txt")),
+            "candidate payload cache was not committed");
+        True(
+            !Directory.EnumerateDirectories(layout.Previous).Any(),
+            "retired payload cache survived commit");
+        return Task.CompletedTask;
+    }
+
     private static Task TestPathIdempotencyAsync()
     {
         string owned = Path.GetFullPath(@"C:\Apps\SwarmInference\runtime\Scripts");
@@ -280,7 +355,7 @@ internal static class Program
             RuntimeProfileFilename = "cpu.lock",
             RuntimeProfileSha256 = "sha256:" + new string('3', 64),
             InstalledAtUtc = DateTimeOffset.UtcNow.ToString("O"),
-            InstallerVersion = "0.1.0.1",
+            InstallerVersion = "0.1.0rc1",
             SignatureStatus = "unsigned-prerelease",
             DoctorSummary = doctor,
             ApplicationPath = layout.Root,
@@ -351,6 +426,65 @@ internal static class Program
             },
         },
     });
+
+    private static ReleaseManifest ManifestFixture(string scope, string? setup)
+    {
+        string hash = "sha256:" + new string('1', 64);
+        FileAsset Asset(string filename) => new()
+        {
+            Filename = filename,
+            Sha256 = hash,
+            SizeBytes = 1,
+        };
+        SignedAsset bootstrapper = new()
+        {
+            Filename = "SwarmBootstrap.exe",
+            Sha256 = hash,
+            SizeBytes = 1,
+            SignatureStatus = "unsigned-prerelease",
+            SignatureVerification = "not-signed",
+        };
+        SignedAsset installer = new()
+        {
+            Filename = "SwarmInferenceSetup-x64.exe",
+            Sha256 = setup is null
+                ? "sha256:" + new string('0', 64)
+                : HashVerifier.ComputeSha256(setup),
+            SizeBytes = setup is null ? 0 : new FileInfo(setup).Length,
+            SignatureStatus = "unsigned-prerelease",
+            SignatureVerification = "not-signed",
+        };
+        return new ReleaseManifest
+        {
+            SchemaVersion = 1,
+            ManifestScope = scope,
+            Product = "swarm-inference-lab",
+            Version = "0.1.0rc1",
+            GitTag = "v0.1.0-rc.1",
+            GitCommit = new string('a', 40),
+            Channel = "prerelease",
+            BuiltAtUtc = "2026-08-06T00:00:00Z",
+            MinimumWindows = "10.0.22621",
+            Architecture = "x86_64",
+            Python = new PythonAsset { Version = "3.11.15" },
+            Uv = new UvAsset
+            {
+                Filename = "uv.exe",
+                Sha256 = hash,
+                SizeBytes = 1,
+                Version = "0.12.0",
+            },
+            Wheel = Asset("swarm.whl"),
+            RuntimeProfiles = new RuntimeProfiles
+            {
+                Cpu = Asset("cpu.lock"),
+                Cuda = Asset("cuda.lock"),
+            },
+            Bootstrapper = bootstrapper,
+            Installer = installer,
+            Payload = [],
+        };
+    }
 
     private static void True(bool condition, string message)
     {

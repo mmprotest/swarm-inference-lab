@@ -159,7 +159,11 @@ function Invoke-SetupExecutable {
         "/BACKEND=$Backend", "/PURGESTATE=0", "/DIR=$($Context.InstallRoot)",
         "/LOG=$(Join-Path $Context.Profile $LogName)"
     ) + $AdditionalArguments
-    return Invoke-BoundedProcess -FilePath $SetupPath -ArgumentList $arguments -TimeoutSeconds 2400 -ExpectedExitCodes $ExpectedExitCodes
+    $result = Invoke-BoundedProcess -FilePath $SetupPath -ArgumentList $arguments -TimeoutSeconds 2400 -ExpectedExitCodes $ExpectedExitCodes
+    if ($result.exit_code -eq 0) {
+        $Context | Add-Member -NotePropertyName ActiveSetupPath -NotePropertyValue $SetupPath -Force
+    }
+    return $result
 }
 
 function Invoke-UninstallExecutable {
@@ -230,6 +234,11 @@ function Assert-InstalledRuntime {
     Assert-Condition ($record.selected_backend -eq 'cpu') 'CPU acceptance selected the CPU profile'
     Assert-Condition ([IO.Path]::GetFullPath($record.application_path) -eq [IO.Path]::GetFullPath($Context.InstallRoot)) 'record application path matches isolated root'
     Assert-Condition ([IO.Path]::GetFullPath($record.state_path) -eq [IO.Path]::GetFullPath($Context.StateRoot)) 'record state path is separate and correct'
+    Assert-Condition ($null -ne $Context.PSObject.Properties['ActiveSetupPath']) 'successful setup path is tracked for release evidence'
+    $releaseManifest = Join-Path (Split-Path -Parent $Context.ActiveSetupPath) 'release-manifest.json'
+    Assert-Condition (Test-Path -LiteralPath $releaseManifest -PathType Leaf) 'external release manifest is available beside the accepted setup'
+    $expectedManifestHash = "sha256:$((Get-FileHash -LiteralPath $releaseManifest -Algorithm SHA256).Hash.ToLowerInvariant())"
+    Assert-Condition ($record.release_manifest_sha256 -eq $expectedManifestHash) 'installation record identifies the external release manifest'
     if ($ExpectedOperation) { Assert-Condition ($record.installation_operation -eq $ExpectedOperation) "installation operation is $ExpectedOperation" }
     $scripts = Join-Path $Context.InstallRoot 'runtime\Scripts'
     $env:PATH = "$scripts;$($script:InstallerCleanPath)"

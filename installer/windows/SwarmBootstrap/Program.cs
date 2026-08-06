@@ -95,6 +95,7 @@ internal static class Program
         RuntimeInstaller installer = new(
             layout,
             command.Payload ?? layout.PayloadCache,
+            command.SetupPath,
             processRunner,
             logger,
             TimeSpan.FromSeconds(command.TimeoutSeconds),
@@ -183,6 +184,7 @@ internal static class Program
 internal sealed record CommandLine(
     string Operation,
     string? Payload,
+    string? SetupPath,
     string? InstallRoot,
     bool Json,
     string? LogPath,
@@ -201,6 +203,7 @@ internal sealed record CommandLine(
 
         string operation = arguments[0];
         string? payload = null;
+        string? setupPath = null;
         string? installRoot = null;
         string? logPath = null;
         bool json = false;
@@ -231,6 +234,9 @@ internal sealed record CommandLine(
                     break;
                 case "--install-root":
                     installRoot = RequireValue(arguments, ref index, option);
+                    break;
+                case "--setup-path":
+                    setupPath = RequireValue(arguments, ref index, option);
                     break;
                 case "--log":
                     logPath = RequireValue(arguments, ref index, option);
@@ -276,6 +282,11 @@ internal sealed record CommandLine(
             throw new InvalidArgumentsException($"{operation} does not accept --payload");
         }
 
+        if (!mutating && setupPath is not null)
+        {
+            throw new InvalidArgumentsException($"{operation} does not accept --setup-path");
+        }
+
         if (operation is "doctor" or "detect-backend" && (purgeState || allowDowngrade))
         {
             throw new InvalidArgumentsException($"{operation} does not accept mutating recovery flags");
@@ -295,6 +306,7 @@ internal sealed record CommandLine(
         return new CommandLine(
             operation,
             payload,
+            setupPath,
             installRoot,
             json,
             logPath,
@@ -318,7 +330,8 @@ internal sealed record CommandLine(
 
     private static string Usage() =>
         "Usage: SwarmBootstrap.exe install|repair|upgrade --payload DIR --install-root DIR "
-        + "[--backend auto|cpu|cuda] [--json] [--log PATH] [--timeout-seconds N]\n"
+        + "[--setup-path FILE] [--backend auto|cpu|cuda] [--json] [--log PATH] "
+        + "[--timeout-seconds N]\n"
         + "       SwarmBootstrap.exe uninstall|doctor --install-root DIR [--json]\n"
         + "       SwarmBootstrap.exe detect-backend --json";
 

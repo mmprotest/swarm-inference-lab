@@ -20,6 +20,9 @@ internal static partial class HashVerifier
         return $"sha256:{Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant()}";
     }
 
+    public static string ComputeSha256(ReadOnlySpan<byte> content) =>
+        $"sha256:{Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant()}";
+
     public static void Verify(string path, FileAsset asset)
     {
         if (!File.Exists(path))
@@ -105,8 +108,54 @@ internal static partial class HashVerifier
 
     public static void ValidateManifest(ReleaseManifest manifest)
     {
+        ValidateManifestScope(manifest, "embedded-payload");
+    }
+
+    public static ReleaseManifest ValidateReleaseManifest(
+        byte[] content,
+        ReleaseManifest embedded,
+        string setupPath)
+    {
+        ReleaseManifest release;
+        try
+        {
+            release = JsonSerializer.Deserialize<ReleaseManifest>(content, JsonDefaults.Strict)
+                ?? throw new ManifestException("external release manifest is empty");
+        }
+        catch (JsonException exception)
+        {
+            throw new ManifestException(
+                "external release manifest is not strict valid JSON",
+                exception);
+        }
+
+        ValidateManifestScope(release, "release");
+        ValidateMatchingReleaseIdentity(embedded, release);
+        FileInfo setup = new(setupPath);
+        if (!setup.Exists
+            || release.Installer.Filename != setup.Name
+            || release.Installer.SizeBytes != setup.Length)
+        {
+            throw new ManifestException(
+                "external release manifest does not identify the executing setup file");
+        }
+
+        string actual = ComputeSha256(setup.FullName);
+        if (!CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.ASCII.GetBytes(actual),
+                System.Text.Encoding.ASCII.GetBytes(release.Installer.Sha256)))
+        {
+            throw new HashMismatchException(
+                "executing setup SHA-256 does not match the external release manifest");
+        }
+
+        return release;
+    }
+
+    private static void ValidateManifestScope(ReleaseManifest manifest, string expectedScope)
+    {
         if (manifest.SchemaVersion != 1
-            || manifest.ManifestScope != "embedded-payload"
+            || manifest.ManifestScope != expectedScope
             || manifest.Product != "swarm-inference-lab"
             || manifest.Architecture != "x86_64"
             || manifest.MinimumWindows != "10.0.22621")
@@ -153,11 +202,20 @@ internal static partial class HashVerifier
         }
 
         ValidateSignature(manifest.Bootstrapper, prerelease, allowPlaceholder: false);
-        ValidateSignature(manifest.Installer, prerelease, allowPlaceholder: true);
-        if (manifest.Installer.Sha256 != ZeroSha256 || manifest.Installer.SizeBytes != 0)
+        bool embedded = expectedScope == "embedded-payload";
+        ValidateSignature(manifest.Installer, prerelease, allowPlaceholder: embedded);
+        if (embedded
+            && (manifest.Installer.Sha256 != ZeroSha256 || manifest.Installer.SizeBytes != 0))
         {
             throw new ManifestException(
                 "embedded payload manifest must use the documented installer self-hash placeholder");
+        }
+
+        if (!embedded
+            && (manifest.Installer.Sha256 == ZeroSha256 || manifest.Installer.SizeBytes <= 0))
+        {
+            throw new ManifestException(
+                "external release manifest must identify the final setup executable");
         }
 
         if (!prerelease
@@ -167,6 +225,51 @@ internal static partial class HashVerifier
             throw new ManifestException("stable payloads require signed executables");
         }
     }
+
+    private static void ValidateMatchingReleaseIdentity(
+        ReleaseManifest embedded,
+        ReleaseManifest release)
+    {
+        bool identityMatches = embedded.SchemaVersion == release.SchemaVersion
+            && embedded.Product == release.Product
+            && embedded.Version == release.Version
+            && embedded.GitTag == release.GitTag
+            && embedded.GitCommit == release.GitCommit
+            && embedded.Channel == release.Channel
+            && embedded.BuiltAtUtc == release.BuiltAtUtc
+            && embedded.MinimumWindows == release.MinimumWindows
+            && embedded.Architecture == release.Architecture
+            && embedded.Python.Version == release.Python.Version
+            && SameUv(embedded.Uv, release.Uv)
+            && SameAsset(embedded.Wheel, release.Wheel)
+            && SameAsset(embedded.RuntimeProfiles.Cpu, release.RuntimeProfiles.Cpu)
+            && SameAsset(embedded.RuntimeProfiles.Cuda, release.RuntimeProfiles.Cuda)
+            && SameSignedAsset(embedded.Bootstrapper, release.Bootstrapper)
+            && embedded.Installer.SignatureStatus == release.Installer.SignatureStatus
+            && embedded.Installer.SignatureVerification == release.Installer.SignatureVerification
+            && embedded.Installer.PublisherSubject == release.Installer.PublisherSubject
+            && embedded.Payload.Count == release.Payload.Count
+            && embedded.Payload.Zip(release.Payload, SameAsset).All(matches => matches);
+        if (!identityMatches)
+        {
+            throw new ManifestException(
+                "external release manifest does not match the embedded payload identity");
+        }
+    }
+
+    private static bool SameAsset(FileAsset left, FileAsset right) =>
+        left.Filename == right.Filename
+        && left.Sha256 == right.Sha256
+        && left.SizeBytes == right.SizeBytes;
+
+    private static bool SameUv(UvAsset left, UvAsset right) =>
+        left.Version == right.Version && SameAsset(left, right);
+
+    private static bool SameSignedAsset(SignedAsset left, SignedAsset right) =>
+        SameAsset(left, right)
+        && left.SignatureStatus == right.SignatureStatus
+        && left.SignatureVerification == right.SignatureVerification
+        && left.PublisherSubject == right.PublisherSubject;
 
     private static IEnumerable<FileAsset> EnumerateAssets(ReleaseManifest manifest)
     {

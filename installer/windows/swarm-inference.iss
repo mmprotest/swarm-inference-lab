@@ -208,6 +208,7 @@ begin
     WizardForm.StatusLabel.Caption := 'Installing the verified ' + RequestedBackend + ' runtime...';
     Parameters := 'install --payload ' + QuoteArgument(Payload) +
       ' --install-root ' + QuoteArgument(ExpandConstant('{app}')) +
+      ' --setup-path ' + QuoteArgument(ExpandConstant('{srcexe}')) +
       ' --backend ' + RequestedBackend +
       ' --timeout-seconds 1800 --json --log ' + QuoteArgument(LogPath) + DowngradeFlag;
     if not Exec(Payload + '\SwarmBootstrap.exe', Parameters, '', SW_HIDE,

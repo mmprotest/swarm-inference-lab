@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import sys
@@ -104,3 +105,53 @@ def test_native_install_detection_requires_matching_runtime_and_record(
     detected = native_install.native_install_record()
     assert detected is not None
     assert detected[0] == root.resolve()
+
+
+def test_native_update_stages_verified_setup_and_manifest_together(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    setup = b"fixture setup"
+    setup_digest = hashlib.sha256(setup).hexdigest()
+    release = _release(tag="v0.1.0-rc.1", prerelease=True)
+    release["assets"] = [
+        {
+            "name": native_update.MANIFEST_FILENAME,
+            "browser_download_url": (
+                "https://github.com/mmprotest/swarm-inference-lab/releases/download/"
+                "v0.1.0-rc.1/release-manifest.json"
+            ),
+        },
+        {
+            "name": native_update.INSTALLER_FILENAME,
+            "browser_download_url": (
+                "https://github.com/mmprotest/swarm-inference-lab/releases/download/"
+                "v0.1.0-rc.1/SwarmInferenceSetup-x64.exe"
+            ),
+        },
+    ]
+    manifest = json.loads(
+        _manifest(
+            version="0.1.0rc1",
+            tag="v0.1.0-rc.1",
+            signature_status="unsigned-prerelease",
+        )
+    )
+    manifest["installer"]["sha256"] = f"sha256:{setup_digest}"
+    raw_manifest = json.dumps(manifest, sort_keys=True).encode()
+    install_root = tmp_path / "Programs" / "SwarmInference"
+    monkeypatch.setattr(native_update, "native_install_record", lambda: (install_root, {}))
+    monkeypatch.setattr(native_update, "_select_release", lambda **_: release)
+    monkeypatch.setattr(native_update, "_authenticode_valid", lambda _: False)
+
+    def download(url: str, destination: Path, **_: object) -> str:
+        data = raw_manifest if destination.name == native_update.MANIFEST_FILENAME else setup
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
+        return hashlib.sha256(data).hexdigest()
+
+    monkeypatch.setattr(native_update, "_download", download)
+    result = native_update.prepare_native_update(channel="prerelease", launch=False)
+    controlled_setup = Path(result.installer_path)
+    assert controlled_setup.name == native_update.INSTALLER_FILENAME
+    assert controlled_setup.read_bytes() == setup
+    assert (controlled_setup.parent / native_update.MANIFEST_FILENAME).read_bytes() == raw_manifest

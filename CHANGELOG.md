@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0rc1 - 2026-08-06
+## 0.1.0rc2 - 2026-08-06
 
 - Add a self-contained native Windows x86-64 setup executable with verified embedded wheel,
   pinned uv and Python tooling, exact CPU/CUDA dependency profiles, per-user Apps & Features and
