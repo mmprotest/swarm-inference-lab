@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$SetupPath,
-    [string]$ExpectedVersion = '0.1.0rc2',
+    [string]$ExpectedVersion = '0.1.0rc3',
     [string]$Label = 'clean-cpu',
     [string]$EvidencePath
 )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -58,6 +59,19 @@ def test_workflow_actions_are_immutable_commit_pins(repository_root: Path) -> No
         assert action_refs
         assert all(re.fullmatch(r"[^@]+@[0-9a-f]{40}", ref) for ref in action_refs)
         assert not re.search(r"(?m)^\s+uses:\s+[^\s]+@v\d+", workflow)
+
+
+def test_windows_workflows_pin_available_build_python_separately_from_runtime(
+    repository_root: Path,
+) -> None:
+    for name in ("installer.yml", "release.yml"):
+        workflow = (repository_root / ".github/workflows" / name).read_text(encoding="utf-8")
+        assert 'python-version: "3.11.9"' in workflow
+        assert 'python-version: "3.11.15"' not in workflow
+    toolchain = json.loads(
+        (repository_root / "installer/windows/toolchain.json").read_text(encoding="utf-8")
+    )
+    assert toolchain["python"]["version"] == "3.11.15"
 
 
 def test_normal_readme_does_not_use_powershell_script_installation(repository_root: Path) -> None:

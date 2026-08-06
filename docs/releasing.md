@@ -12,6 +12,7 @@ metadata. Supported mappings are:
 |---|---|---|
 | `0.1.0rc1` | `v0.1.0-rc.1` | prerelease |
 | `0.1.0rc2` | `v0.1.0-rc.2` | prerelease |
+| `0.1.0rc3` | `v0.1.0-rc.3` | prerelease |
 | `0.1.0` | `v0.1.0` | stable |
 
 Never overwrite, move, or force-push a release tag. If a version or tag already exists, increment
@@ -25,6 +26,10 @@ hashes, .NET LTS SDK archive/executable hashes, and Inno Setup installer/compile
 publisher identity. `scripts/prepare_windows_toolchain.py` verifies every download before any
 downloaded executable runs. Runtime profiles are exported from `uv.lock` with the pinned uv and
 contain exact versions and artifact hashes.
+
+GitHub Actions uses exact Python 3.11.9 only to orchestrate the build because it is the newest
+Python 3.11 artifact published for the Windows runner. The installed product runtime remains the
+separately pinned uv-managed Python 3.11.15 recorded in the release manifest.
 
 ## Local release-candidate build
 
@@ -75,10 +80,10 @@ After all changes and evidence are ready:
 
 ```powershell
 git add --all
-git commit -m "release: native Windows installer 0.1.0rc2"
-git tag -a v0.1.0-rc.2 -m "Swarm Inference 0.1.0rc2"
+git commit -m "release: native Windows installer 0.1.0rc3"
+git tag -a v0.1.0-rc.3 -m "Swarm Inference 0.1.0rc3"
 git push origin HEAD
-git push origin v0.1.0-rc.2
+git push origin v0.1.0-rc.3
 ```
 
 `.github/workflows/release.yml` checks out that tag recursively and independently repeats source,

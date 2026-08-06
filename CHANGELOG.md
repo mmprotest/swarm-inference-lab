@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0rc3 - 2026-08-06
+
+- Pin the GitHub Actions orchestration interpreter to Python 3.11.9, the exact newest 3.11 build
+  published for the Windows runner, while retaining uv-managed Python 3.11.15 in the installed
+  runtime.
+
 ## 0.1.0rc2 - 2026-08-06
 
 - Add a self-contained native Windows x86-64 setup executable with verified embedded wheel,
