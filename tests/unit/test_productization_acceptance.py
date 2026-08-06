@@ -491,7 +491,7 @@ def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
     assert isinstance(worker_b_identity, dict)
     evidence = {
         "document_type": "swarm-physical-two-machine-evidence",
-        "format_version": 3,
+        "format_version": 4,
         "model_revision": "commit",
         "machine_identities": {
             "worker_a": worker_a_identity,
@@ -538,20 +538,49 @@ def test_complete_distinct_physical_evidence_can_pass(tmp_path: Path) -> None:
             "recovery_events": [{"event": "recovery_completed"}],
             "route_generations": [1, 2],
         },
+        "release": {
+            "git_tag": "v0.1.0-rc.1",
+            "url": "https://github.com/mmprotest/swarm-inference-lab/releases/tag/v0.1.0-rc.1",
+            "installer_filename": "SwarmInferenceSetup-x64.exe",
+            "release_manifest_sha256": "sha256:" + "d" * 64,
+            "authenticode_status": "unsigned-prerelease",
+        },
         "installations": [
             {
                 "node_id": "worker-a",
                 "status": "PASS",
-                "source": "source-wheel",
+                "source": "github-release-installer",
                 "repository_cloned": False,
-                "wheel_sha256": "sha256:" + "c" * 64,
+                "installer_filename": "SwarmInferenceSetup-x64.exe",
+                "installer_sha256": "sha256:" + "c" * 64,
+                "release_manifest_sha256": "sha256:" + "d" * 64,
+                "authenticode_status": "unsigned-prerelease",
+                "selected_profile": "cuda",
+                "product_version": "0.1.0rc1",
+                "installation_record": {
+                    "installation_mode": "native-windows",
+                    "product_version": "0.1.0rc1",
+                    "selected_backend": "cuda",
+                    "release_manifest_sha256": "sha256:" + "d" * 64,
+                },
             },
             {
                 "node_id": "worker-b",
                 "status": "PASS",
-                "source": "source-wheel",
+                "source": "github-release-installer",
                 "repository_cloned": False,
-                "wheel_sha256": "sha256:" + "c" * 64,
+                "installer_filename": "SwarmInferenceSetup-x64.exe",
+                "installer_sha256": "sha256:" + "c" * 64,
+                "release_manifest_sha256": "sha256:" + "d" * 64,
+                "authenticode_status": "unsigned-prerelease",
+                "selected_profile": "cpu",
+                "product_version": "0.1.0rc1",
+                "installation_record": {
+                    "installation_mode": "native-windows",
+                    "product_version": "0.1.0rc1",
+                    "selected_backend": "cpu",
+                    "release_manifest_sha256": "sha256:" + "d" * 64,
+                },
             },
         ],
         "pairing": {

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
 import stat
@@ -22,9 +23,19 @@ from swarm_inference.commands._common import _redact, redact_text
 from swarm_inference.protocol.cluster import PairingCreateResponse
 from swarm_inference.security.identity import CoordinatorIdentity
 
-SECRET = "single-use-secret-value"
-URI = f"swarm+pair://192.168.1.20:55000/join?session=session-1&secret={SECRET}&key=public"
-REDACTED = "swarm+pair://192.168.1.20:55000/join?session=session-1&secret=REDACTED&key=public"
+_INVITATION = json.dumps(
+    {
+        "key": base64.urlsafe_b64encode(b"k" * 32).decode().rstrip("="),
+        "secret": base64.urlsafe_b64encode(b"s" * 32).decode().rstrip("="),
+        "session": "session-1",
+        "version": 1,
+    },
+    separators=(",", ":"),
+    sort_keys=True,
+).encode()
+SECRET = base64.urlsafe_b64encode(_INVITATION).decode().rstrip("=")
+URI = f"swarm://192.168.1.20:55000/join/{SECRET}"
+REDACTED = "swarm://192.168.1.20:55000/join/REDACTED"
 
 
 def _pairing() -> PairingCreateResponse:
@@ -257,6 +268,7 @@ def test_human_pairing_uri_is_displayed_exactly_once(
     assert result.exit_code == 0, result.output
     assert result.stdout.count(URI) == 1
     assert result.stdout.count(SECRET) == 1
+    assert f'swarm node join "{URI}"' in result.stdout
 
 
 def test_nested_pairing_redaction_and_expired_cleanup(tmp_path: Path) -> None:

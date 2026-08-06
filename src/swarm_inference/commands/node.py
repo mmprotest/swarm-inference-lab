@@ -577,9 +577,15 @@ def update_command(
     json_output: Annotated[bool, typer.Option("--json")] = False,
     yes: Annotated[bool, typer.Option("--yes")] = False,
 ) -> None:
-    """Stage and validate an explicit wheel; commit only after agent startup succeeds."""
+    """Developer/offline recovery: update a non-native runtime from an explicit wheel."""
 
     try:
+        from swarm_inference.native_install import native_install_record
+
+        if native_install_record() is not None:
+            raise RuntimeError(
+                "native-windows runtime is installer-owned; use `swarm update` for normal updates"
+            )
         require_confirmation(
             "Update the node runtime and restart its service",
             yes=yes,

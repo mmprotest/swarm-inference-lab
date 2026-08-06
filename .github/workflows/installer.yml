@@ -1,0 +1,141 @@
+name: native-windows-installer
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/installer.yml"
+      - "installer/**"
+      - "release/**"
+      - "scripts/**"
+      - "src/swarm_inference/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/installer.yml"
+      - "installer/**"
+      - "release/**"
+      - "scripts/**"
+      - "src/swarm_inference/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout recursively
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install exact build Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.11.15"
+
+      - name: Download and verify pinned uv
+        shell: pwsh
+        run: |
+          python scripts/prepare_windows_toolchain.py --tools uv
+          "PINNED_UV=$((Resolve-Path build/toolchain/uv-0.12.0/uv.exe).Path)" | Out-File $env:GITHUB_ENV -Append
+
+      - name: Synchronise locked quality environment
+        shell: pwsh
+        run: '& $env:PINNED_UV sync --locked --python 3.11 --extra cpu --extra dev'
+
+      - name: Validate development version mapping and release tests
+        shell: pwsh
+        run: |
+          & $env:PINNED_UV run --python 3.11 python scripts/verify_release_version.py --allow-dirty --allow-untagged
+          & $env:PINNED_UV run --python 3.11 pytest tests/installer -q
+
+      - name: Static analysis
+        shell: pwsh
+        run: |
+          & $env:PINNED_UV run --python 3.11 ruff format --check src tests scripts
+          & $env:PINNED_UV run --python 3.11 ruff check src tests scripts
+          & $env:PINNED_UV run --python 3.11 mypy
+
+      - name: Unit and non-GPU integration tests
+        shell: pwsh
+        run: |
+          & $env:PINNED_UV run --python 3.11 pytest tests/unit -q
+          & $env:PINNED_UV run --python 3.11 pytest tests/integration tests/failure -m "not gpu" -q
+
+      - name: Build wheel and prove checkout isolation
+        shell: pwsh
+        run: |
+          & $env:PINNED_UV build --wheel
+          & $env:PINNED_UV run --python 3.11 python scripts/test_wheel_install.py --uv $env:PINNED_UV --python 3.11 --extra cpu --output artifacts/wheel-isolation.json
+
+      - name: Generate locked CPU and CUDA profiles
+        shell: pwsh
+        run: '& $env:PINNED_UV run --python 3.11 python scripts/generate_runtime_profiles.py --uv $env:PINNED_UV --output-dir artifacts/runtime-profiles'
+
+      - name: Download and verify complete pinned native toolchain
+        shell: pwsh
+        run: 'python scripts/prepare_windows_toolchain.py --tools all'
+
+      - name: Run compiled bootstrapper contract tests
+        shell: pwsh
+        run: '& build/toolchain/dotnet-10.0.302/dotnet.exe run --project installer/windows/SwarmBootstrap.ContractTests/SwarmBootstrap.ContractTests.csproj -c Release'
+
+      - name: Productization software acceptance
+        shell: pwsh
+        run: |
+          & $env:PINNED_UV run --python 3.11 python scripts/run_productization_acceptance.py run --run-repeatability --repeatability-timeout-seconds 600 --output artifacts/acceptance
+          Compress-Archive -Path artifacts/acceptance/* -DestinationPath artifacts/productization-acceptance.zip -Force
+
+      - name: Build unsigned prerelease setup
+        shell: pwsh
+        run: '& $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --output-dir release/generated --acceptance-zip artifacts/productization-acceptance.zip'
+
+      - name: Verify complete release payload
+        shell: pwsh
+        run: '& $env:PINNED_UV run --python 3.11 python scripts/verify_release_payload.py --manifest release/generated/release-manifest.json --payload-dir release/generated --checksums release/generated/SHA256SUMS'
+
+      - name: Clean CPU install and repair
+        shell: pwsh
+        run: '& scripts/test_windows_installer.ps1 -SetupPath release/generated/SwarmInferenceSetup-x64.exe -Label clean-cpu -EvidencePath artifacts/installer-clean.json'
+
+      - name: Independent silent CPU install
+        shell: pwsh
+        run: '& scripts/test_windows_installer.ps1 -SetupPath release/generated/SwarmInferenceSetup-x64.exe -Label silent-cpu -EvidencePath artifacts/installer-silent.json'
+
+      - name: Build deterministic lifecycle fixtures
+        shell: pwsh
+        run: |
+          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc2 --output-dir release/fixtures/version-b
+          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc3 --fixture-doctor-failure --output-dir release/fixtures/broken
+
+      - name: Upgrade, downgrade, and rollback acceptance
+        shell: pwsh
+        run: '& scripts/test_windows_upgrade.ps1 -SetupA release/generated/SwarmInferenceSetup-x64.exe -SetupB release/fixtures/version-b/SwarmInferenceSetup-x64.exe -BrokenSetup release/fixtures/broken/SwarmInferenceSetup-x64.exe -EvidencePath artifacts/installer-upgrade.json'
+
+      - name: Preserve, reinstall, and purge uninstall acceptance
+        shell: pwsh
+        run: '& scripts/test_windows_uninstall.ps1 -SetupPath release/generated/SwarmInferenceSetup-x64.exe -EvidencePath artifacts/installer-uninstall.json'
+
+      - name: Upload installer and validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-windows-installer-${{ github.sha }}
+          path: |
+            release/generated
+            artifacts
+          if-no-files-found: error
+          retention-days: 14

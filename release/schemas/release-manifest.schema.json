@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mmprotest/swarm-inference-lab/release/schemas/release-manifest.schema.json",
+  "title": "Swarm Inference release manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_scope",
+    "product",
+    "version",
+    "git_tag",
+    "git_commit",
+    "channel",
+    "built_at_utc",
+    "minimum_windows",
+    "architecture",
+    "python",
+    "uv",
+    "wheel",
+    "runtime_profiles",
+    "bootstrapper",
+    "installer",
+    "payload"
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filename", "sha256"],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^/\\\\]+$"
+        },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size_bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "signed_file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "filename",
+        "sha256",
+        "size_bytes",
+        "signature_status",
+        "signature_verification"
+      ],
+      "properties": {
+        "filename": { "type": "string", "minLength": 1, "pattern": "^[^/\\\\]+$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size_bytes": { "type": "integer", "minimum": 0 },
+        "signature_status": { "enum": ["signed", "unsigned-prerelease"] },
+        "publisher_subject": { "type": "string", "minLength": 1 },
+        "signature_verification": { "enum": ["valid", "not-signed"] }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": { "const": 1 },
+    "manifest_scope": { "enum": ["embedded-payload", "release"] },
+    "product": { "const": "swarm-inference-lab" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:rc[0-9]+)?$" },
+    "git_tag": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(?:-rc\\.[0-9]+)?$" },
+    "git_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "channel": { "enum": ["stable", "prerelease"] },
+    "built_at_utc": { "type": "string", "format": "date-time" },
+    "minimum_windows": { "const": "10.0.22621" },
+    "architecture": { "const": "x86_64" },
+    "python": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version"],
+      "properties": { "version": { "type": "string", "pattern": "^3\\.11\\.[0-9]+$" } }
+    },
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "filename", "sha256", "size_bytes"],
+      "properties": {
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "filename": { "const": "uv.exe" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size_bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "wheel": { "$ref": "#/$defs/file" },
+    "runtime_profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["windows-x64-cpu", "windows-x64-cuda"],
+      "properties": {
+        "windows-x64-cpu": { "$ref": "#/$defs/file" },
+        "windows-x64-cuda": { "$ref": "#/$defs/file" }
+      }
+    },
+    "bootstrapper": { "$ref": "#/$defs/signed_file" },
+    "installer": { "$ref": "#/$defs/signed_file" },
+    "payload": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/file" },
+      "uniqueItems": true
+    }
+  }
+}

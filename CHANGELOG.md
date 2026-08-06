@@ -1,6 +1,19 @@
 # Changelog
 
-## 0.1.0 - unreleased
+## 0.1.0rc1 - 2026-08-06
+
+- Add a self-contained native Windows x86-64 setup executable with verified embedded wheel,
+  pinned uv and Python tooling, exact CPU/CUDA dependency profiles, per-user Apps & Features and
+  PATH registration, transactional repair/upgrade/rollback, and state-preserving uninstall.
+- Add strict release manifests, checksums, CycloneDX SBOM generation, optional Authenticode
+  signing, draft-first GitHub prerelease publication, clean-install/lifecycle acceptance, and
+  tag/version/commit validation.
+- Print one complete opaque `swarm node join "swarm://..."` command for human pairing while
+  retaining secret-free JSON and protected invitation files for automation.
+- Add release-aware `swarm update` behavior for native Windows installations without introducing
+  a competing runtime updater.
+
+## 0.1.0 - historical unreleased development
 
 - Establish the deterministic simulation, loopback runtime, experiment artifact format,
   Qwen3 shard tooling, replay recovery, and integrity-audit research harness.

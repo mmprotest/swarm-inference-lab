@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
@@ -290,7 +289,7 @@ async def test_pairing_secret_is_redacted_from_repr_audit_and_status(tmp_path: P
     coordinator = CoordinatorIdentity.generate()
     manager = _manager(tmp_path / "coordinator", coordinator, clock)
     invitation = await manager.create_session("10.0.0.1:50051")
-    secret_text = parse_qs(urlsplit(invitation.uri()).query)["secret"][0]
+    secret_text = invitation.uri().removeprefix(f"swarm://{invitation.coordinator_endpoint}/join/")
     assert secret_text not in repr(invitation)
     assert secret_text not in invitation.redacted_uri()
     assert secret_text not in manager.state.paths.audit_log.read_text(encoding="utf-8")

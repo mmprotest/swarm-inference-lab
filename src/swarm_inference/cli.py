@@ -11,6 +11,7 @@ from uuid import uuid4
 
 import typer
 
+from swarm_inference import __version__
 from swarm_inference.commands import cluster_app, node_app, run_command
 from swarm_inference.config.loader import load_experiment_config
 from swarm_inference.config.models import Backend, ExecutionMode, QueueConfig, WorkerRole
@@ -70,16 +71,74 @@ app.add_typer(node_app, name="node")
 app.command("run")(run_command)
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
 def _fail(message: str, *, code: int = 1) -> None:
     typer.echo(message, err=True)
     raise typer.Exit(code)
+
+
+@app.command("update")
+def native_update_command(
+    channel: Annotated[str, typer.Option(help="Release channel: stable or prerelease.")] = "stable",
+    version: Annotated[
+        str | None, typer.Option(help="Exact package version or Git tag to install.")
+    ] = None,
+    timeout_seconds: Annotated[
+        float, typer.Option(min=5.0, max=120.0, help="Bounded timeout for each HTTPS request.")
+    ] = 30.0,
+    dry_run: Annotated[
+        bool, typer.Option(help="Download and verify the setup without launching it.")
+    ] = False,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Download, verify, and launch the authoritative native Windows installer."""
+
+    from dataclasses import asdict
+    from typing import cast
+
+    from swarm_inference.native_update import prepare_native_update
+
+    if channel not in {"stable", "prerelease"}:
+        _fail("update channel must be stable or prerelease")
+    try:
+        result = prepare_native_update(
+            channel=cast("Any", channel),
+            version=version,
+            timeout_seconds=timeout_seconds,
+            launch=not dry_run,
+        )
+    except (OSError, RuntimeError, ValueError) as exc:
+        _fail(f"native update failed: {exc}")
+    payload = asdict(result)
+    if json_output:
+        typer.echo(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    action = "launched" if result.launched else "verified"
+    typer.echo(f"{action} {result.tag} from {result.release_url}")
+    typer.echo(f"installer SHA-256: {result.installer_sha256}")
+    typer.echo(f"signature status: {result.signature_status}")
 
 
 @app.callback()
 def main(
     log_level: Annotated[str, typer.Option(help="Python logging level.")] = "INFO",
     json_logs: Annotated[bool, typer.Option(help="Emit process logs as JSON lines.")] = False,
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            callback=_version_callback,
+            is_eager=True,
+            help="Show the installed product version and exit.",
+        ),
+    ] = False,
 ) -> None:
+    del version
     configure_logging(level=log_level, json_output=json_logs)
 
 

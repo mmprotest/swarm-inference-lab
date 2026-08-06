@@ -20,12 +20,16 @@ missing `--yes` exits with category `permission` before service, firewall, trust
 update, deletion, leave, or revocation state changes. Prompts contain fixed action text and never
 contain a pairing URI.
 
-## Installer reports a deferred service
+## Installer creates no cluster service
 
-`service=deferred-until-cluster-create-or-join` is the successful clean-install state, not an
-error. Create the coordinator with `swarm cluster create` or join with `swarm node join`; either
-installs and starts the correct cluster-specific service unless `--foreground` is used. Running
-`swarm node install-service` while unpaired correctly fails with `create or join a cluster first`.
+This is the successful clean-install state, not an error. Create the coordinator with
+`swarm cluster create` or join with `swarm node join`; either installs and starts the correct
+cluster-specific service unless `--foreground` is used. Running `swarm node install-service`
+while unpaired correctly fails with `create or join a cluster first`.
+
+The setup log path is displayed on failure. Native bootstrapper logs are under the installation
+`logs` directory. A failed upgrade returns non-zero and restores the previous runtime before
+reporting failure.
 
 ## Node is blocked
 
@@ -48,10 +52,11 @@ Create a new invitation if the URI expired, was consumed, exceeded attempts, or 
 restarted. Do not retry a known-disclosed secret. Version errors identify supported protocol
 minor/artifact ranges. Major mismatches require an explicit wheel update.
 
-JSON pairing output is exactly one non-secret document. Read `pairing.invitation_file`, not
-stdout, to obtain the complete URI. The file is owner-protected and atomically published. An
-existing destination is refused unless `--force-pairing-output` is explicit. If a default
-invitation expires, cleanup removes that expired file without touching active session files.
+Human pairing output prints one quoted `swarm node join "swarm://..."` command. JSON pairing
+output is exactly one non-secret document. Automation reads `pairing.invitation_file`, not stdout,
+to obtain the complete URI. The file is owner-protected and atomically published. An existing
+destination is refused unless `--force-pairing-output` is explicit. If a default invitation
+expires, cleanup removes that expired file without touching active session files.
 
 ## Validation remains `not-run`
 
@@ -86,9 +91,14 @@ published artifact contents.
 
 ## Service fails after update
 
-`swarm node update` stages a separate runtime and commits only after a fresh ready state. A
-startup failure restores the previous service executable. Inspect the platform service log from
-`swarm node status`; identity and membership remain outside runtime slots.
+For a native Windows installation, use `swarm update`. It selects a GitHub Release, validates the
+fixed repository identity and manifest, downloads with bounded HTTPS requests, verifies SHA-256,
+requires Authenticode for stable releases, and launches setup in upgrade mode. It never replaces
+running application files itself. A setup failure restores the previous runtime and service.
+
+`swarm node update --source-wheel ...` remains an explicit developer/offline recovery path for
+non-native installations. Inspect the platform service log from `swarm node status`; identity and
+membership remain outside application runtime slots.
 
 ## Public networking
 

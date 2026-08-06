@@ -13,7 +13,7 @@ from collections import OrderedDict, deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, Final
-from urllib.parse import parse_qs, urlencode, urlsplit
+from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
 
 from cryptography.exceptions import InvalidTag
@@ -71,7 +71,8 @@ from swarm_inference.security.identity import (
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
 from swarm_inference.security.trust_store import WorkerTrustStore
 
-PAIRING_URI_SCHEME: Final = "swarm+pair"
+PAIRING_URI_SCHEME: Final = "swarm"
+LEGACY_PAIRING_URI_SCHEME: Final = "swarm+pair"
 PAIRING_PROTOCOL_LABEL: Final = b"swarm-cluster-pairing-v1"
 PAIRING_DEFAULT_TTL_SECONDS: Final = 600
 PAIRING_MINIMUM_SECRET_BYTES: Final = 16
@@ -202,42 +203,64 @@ class PairingInvitation:
         )
 
     def uri(self) -> str:
-        query = urlencode(
+        invitation_data = canonical_json_bytes(
             {
-                "session": self.session_id,
-                "secret": _url_b64(self.pairing_secret),
                 "key": _url_b64(self.coordinator_ephemeral_public_key),
+                "secret": _url_b64(self.pairing_secret),
+                "session": self.session_id,
+                "version": 1,
             }
         )
-        return f"{PAIRING_URI_SCHEME}://{self.coordinator_endpoint}/join?{query}"
+        return (
+            f"{PAIRING_URI_SCHEME}://{self.coordinator_endpoint}/join/{_url_b64(invitation_data)}"
+        )
 
     def redacted_uri(self) -> str:
-        query = urlencode(
-            {
-                "session": self.session_id,
-                "secret": "REDACTED",
-                "key": _url_b64(self.coordinator_ephemeral_public_key),
-            }
-        )
-        return f"{PAIRING_URI_SCHEME}://{self.coordinator_endpoint}/join?{query}"
+        return f"{PAIRING_URI_SCHEME}://{self.coordinator_endpoint}/join/REDACTED"
 
     @classmethod
     def parse(cls, uri: str) -> PairingInvitation:
         parsed = urlsplit(uri)
-        if parsed.scheme != PAIRING_URI_SCHEME or parsed.path != "/join":
-            raise PairingError("pairing URI has an unsupported scheme or path")
         if not parsed.netloc or parsed.username is not None or parsed.password is not None:
             raise PairingError("pairing URI has an invalid coordinator endpoint")
-        query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
-        if set(query) != {"session", "secret", "key"} or any(
-            len(values) != 1 for values in query.values()
-        ):
-            raise PairingError("pairing URI query is malformed")
-        secret = _url_unb64(query["secret"][0])
-        key = _url_unb64(query["key"][0])
+        if parsed.scheme == PAIRING_URI_SCHEME:
+            if parsed.query or parsed.fragment or not parsed.path.startswith("/join/"):
+                raise PairingError("pairing URI has an unsupported scheme or path")
+            encoded = parsed.path.removeprefix("/join/")
+            if not encoded or "/" in encoded:
+                raise PairingError("pairing URI invitation data is malformed")
+            try:
+                payload = json.loads(_url_unb64(encoded))
+            except (UnicodeDecodeError, json.JSONDecodeError, PairingError) as exc:
+                raise PairingError("pairing URI invitation data is malformed") from exc
+            if not isinstance(payload, dict) or set(payload) != {
+                "version",
+                "session",
+                "secret",
+                "key",
+            }:
+                raise PairingError("pairing URI invitation data is malformed")
+            if payload["version"] != 1 or not all(
+                isinstance(payload[name], str) for name in ("session", "secret", "key")
+            ):
+                raise PairingError("pairing URI invitation data is malformed")
+            session_id = payload["session"]
+            secret = _url_unb64(payload["secret"])
+            key = _url_unb64(payload["key"])
+        elif parsed.scheme == LEGACY_PAIRING_URI_SCHEME and parsed.path == "/join":
+            query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
+            if set(query) != {"session", "secret", "key"} or any(
+                len(values) != 1 for values in query.values()
+            ):
+                raise PairingError("pairing URI query is malformed")
+            session_id = query["session"][0]
+            secret = _url_unb64(query["secret"][0])
+            key = _url_unb64(query["key"][0])
+        else:
+            raise PairingError("pairing URI has an unsupported scheme or path")
         return cls(
             coordinator_endpoint=parsed.netloc,
-            session_id=query["session"][0],
+            session_id=session_id,
             pairing_secret=secret,
             coordinator_ephemeral_public_key=key,
         )
@@ -1213,6 +1236,7 @@ class PairingClient:
 
 
 __all__ = [
+    "LEGACY_PAIRING_URI_SCHEME",
     "PAIRING_DEFAULT_TTL_SECONDS",
     "PAIRING_URI_SCHEME",
     "PairingClient",

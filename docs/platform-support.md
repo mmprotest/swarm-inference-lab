@@ -55,11 +55,16 @@ Default memory budgets are bounded:
 ## Service lifecycle
 
 Windows uses a current-user Task Scheduler task, Linux uses `systemd --user`, and macOS uses a
-LaunchAgent. Wheel installation is deliberately unpaired and reports
-`deferred-until-cluster-create-or-join`. `cluster create` installs/starts the coordinator plus
-local-worker service, and `node join` installs/starts the worker service. `--foreground` skips
-service installation. `node install-service` remains an idempotent post-pair administrative
-command.
+LaunchAgent. The native Windows setup is deliberately unpaired. `cluster create` installs/starts
+the coordinator plus local-worker service, and `node join` installs/starts the worker service.
+`--foreground` skips service installation. `node install-service` remains an idempotent post-pair
+administrative command.
+
+Native Windows application files live under
+`%LOCALAPPDATA%\Programs\SwarmInference\`; durable cluster state remains under the separate
+`%LOCALAPPDATA%\SwarmInference\` root. Native setup owns runtime upgrades and the stable service
+executable path. Shell/wheel runtime slots remain developer, CI, offline, and recovery tooling and
+do not compete with the active native runtime.
 
 ## Firewall ownership
 

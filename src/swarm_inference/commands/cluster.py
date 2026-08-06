@@ -223,11 +223,12 @@ def _deliver_pairing(
     json_output: bool,
     pairing_output: Path | None,
     force: bool,
+    cluster_name: str | None = None,
 ) -> PairingDeliveryResult:
     if pairing_output is not None and str(pairing_output) == "-":
         # This is one of only two intentional secret-bearing outputs. It is
         # human-only and is never represented by the returned public model.
-        typer.echo(f"pairing_uri={pairing.pairing_uri}")
+        _emit_join_command(pairing.pairing_uri, cluster_name=cluster_name)
         return PairingDeliveryResult(
             session_id=pairing.session_id,
             expires_at_unix_ns=pairing.expires_at_unix_ns,
@@ -250,15 +251,26 @@ def _deliver_pairing(
             permission_protection=protection,
             permission_limitation=limitation,
         )
-    # This is the other intentional secret-bearing output: exactly one line for
-    # an interactive human command with no file destination.
-    typer.echo(f"pairing_uri={pairing.pairing_uri}")
+    # This is the other intentional secret-bearing output: one complete command
+    # for an interactive human with no invitation-file transfer.
+    _emit_join_command(pairing.pairing_uri, cluster_name=cluster_name)
     return PairingDeliveryResult(
         session_id=pairing.session_id,
         expires_at_unix_ns=pairing.expires_at_unix_ns,
         redacted_uri=pairing.redacted_uri,
         delivery="interactive",
     )
+
+
+def _emit_join_command(pairing_uri: str, *, cluster_name: str | None) -> None:
+    if any(character in pairing_uri for character in ('"', "\r", "\n")):
+        raise ValueError("pairing URI cannot be quoted safely for an interactive command")
+    if cluster_name is not None:
+        typer.echo(f"Cluster ready: {cluster_name}")
+        typer.echo()
+    typer.echo("Run this command on the machine joining the cluster:")
+    typer.echo()
+    typer.echo(f'swarm node join "{pairing_uri}"')
 
 
 def _create_payload(
@@ -344,16 +356,18 @@ def create_command(
                     json_output=json_output,
                     pairing_output=pairing_output,
                     force=force_pairing_output,
+                    cluster_name=cluster.name,
                 )
-                emit_document(
-                    _create_payload(
-                        cluster=cluster,
-                        status=status,
-                        service_mode="foreground",
-                        delivery=delivery,
-                    ),
-                    json_output=json_output,
-                )
+                if json_output or pairing_output is not None:
+                    emit_document(
+                        _create_payload(
+                            cluster=cluster,
+                            status=status,
+                            service_mode="foreground",
+                            delivery=delivery,
+                        ),
+                        json_output=json_output,
+                    )
                 if status.state in {"blocked", "failed"}:
                     await agent.stop()
                     raise RuntimeError(status.reason or "node agent did not become ready")
@@ -394,16 +408,18 @@ def create_command(
             json_output=json_output,
             pairing_output=pairing_output,
             force=force_pairing_output,
+            cluster_name=cluster.name,
         )
-        emit_document(
-            _create_payload(
-                cluster=cluster,
-                status=status,
-                service_mode=platform.service_mode,
-                delivery=delivery,
-            ),
-            json_output=json_output,
-        )
+        if json_output or pairing_output is not None:
+            emit_document(
+                _create_payload(
+                    cluster=cluster,
+                    status=status,
+                    service_mode=platform.service_mode,
+                    delivery=delivery,
+                ),
+                json_output=json_output,
+            )
         if status.state in {"blocked", "failed"}:
             raise RuntimeError(status.reason or "coordinator node did not become ready")
     except (OSError, RuntimeError, ValueError, PermissionError) as exc:
@@ -434,21 +450,24 @@ def pair_command(
         )
         state = ClusterStateStore(state_root)
         pairing = asyncio.run(_create_pairing(state, ttl_seconds=ttl_seconds))
+        cluster = state.load_cluster()
         delivery = _deliver_pairing(
             state,
             pairing,
             json_output=json_output,
             pairing_output=pairing_output,
             force=force_pairing_output,
+            cluster_name=cluster.name if cluster is not None else None,
         )
-        emit_document(
-            {
-                "schema_version": 1,
-                "status": "ready",
-                "pairing": delivery.model_dump(mode="json", exclude_none=True),
-            },
-            json_output=json_output,
-        )
+        if json_output or pairing_output is not None:
+            emit_document(
+                {
+                    "schema_version": 1,
+                    "status": "ready",
+                    "pairing": delivery.model_dump(mode="json", exclude_none=True),
+                },
+                json_output=json_output,
+            )
     except (OSError, RuntimeError, ValueError, PermissionError) as exc:
         fail("pairing-create", exc)
 

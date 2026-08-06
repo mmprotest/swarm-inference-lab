@@ -4,46 +4,55 @@ This is the normal OLMoE product workflow. It assumes a trusted LAN or private n
 traffic is authenticated and completion payloads are encrypted; inference data-plane payloads
 are not encrypted.
 
-## 1. Install the wheel/tool on each machine
+## 1. Install the GitHub Release on each machine
 
-Give each machine the built wheel and the matching installer. Git, Python, and `uv` are not
-prerequisites.
+On each machine, independently open the same [GitHub Release](https://github.com/mmprotest/swarm-inference-lab/releases),
+download `SwarmInferenceSetup-x64.exe`, and double-click it. Do not transfer installation files
+between the machines. Git, Python, `uv`, a wheel, PowerShell installation, and a repository clone
+are not prerequisites.
+
+Open a new terminal on each machine and run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1 `
-  -SourceWheel .\swarm_inference_lab-0.1.0-py3-none-any.whl -Json
+swarm --version
+swarm node doctor
 ```
 
-The clean installer runs `swarm node doctor` but does not create a service before membership
-exists. Its successful service state is `deferred-until-cluster-create-or-join`; the legacy
-installer `--install-service` preference is accepted but remains deferred.
+The installer verifies the embedded application and locked dependency profile, runs the real
+installed doctor, and does not create a service before cluster membership exists.
 
 ## 2. Create the cluster on the PC
 
 On the coordinator machine:
 
 ```powershell
-swarm cluster create --name villani-home --yes --json `
-  --pairing-output C:\Protected\villani-home-invitation.uri
+swarm cluster create --name villani-home
 ```
 
 The command creates or adopts the durable identity, selects a private endpoint and available
 ports, probes the backend, establishes memory/storage budgets, and installs/starts the user
-service. JSON is one document and contains only redacted invitation metadata and the protected
-file path, never the URI.
+service. Human output prints exactly one complete command:
 
-## 3. Transfer the invitation securely
+```text
+Cluster ready: villani-home
 
-Transfer the owner-protected invitation file to the laptop through a secure channel, read the URI
-only at the destination, and delete the transfer copy after successful consumption. Human mode
-without `--json` may instead display the URI once.
+Run this command on the machine joining the cluster:
+
+swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+```
+
+## 3. Paste the join command
+
+Paste the command printed by the PC into the laptop terminal. The single-use invitation is text;
+no installer, wheel, repository, or invitation file is transferred. Do not save the command in
+logs or screenshots.
 
 ## 4. Join from the laptop
 
 On another machine:
 
 ```powershell
-swarm node join "<pairing-uri>" --yes --json
+swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
 ```
 
 Joining creates or reuses the node identity, verifies both transcript-bound identity proofs,
@@ -99,3 +108,7 @@ Use `--json` for a final document and `--ndjson` for progress/token streams. Mac
 not contain pairing secrets or prompts. Administrative mutations in JSON/NDJSON or with
 non-interactive stdin require `--yes`; they never prompt. Exit categories are documented in
 [cluster troubleshooting](cluster-troubleshooting.md).
+
+For pairing automation, `--json` keeps the URI out of JSON and writes it to an owner-protected
+file. An explicit `--pairing-output` remains available for automation; it is not needed in the
+normal human workflow.

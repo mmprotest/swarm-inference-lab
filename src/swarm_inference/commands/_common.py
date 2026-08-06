@@ -50,6 +50,7 @@ _SENSITIVE_KEYS = (
     "prompt",
 )
 _PAIRING_SECRET_IN_URI = re.compile(r"(?i)(swarm\+pair://[^\s\"']*[?&]secret=)([^&\s\"']+)")
+_OPAQUE_PAIRING_URI = re.compile(r"(?i)swarm://[^\s\"']+/join/[A-Za-z0-9_-]+")
 
 
 def state_store(root: Path | None) -> ClusterStateStore:
@@ -83,8 +84,10 @@ def service_definition(
     for role in sorted(roles):
         arguments.extend(("--role", role))
     from swarm_inference.cluster.updates import load_active_runtime_python
+    from swarm_inference.native_install import native_install_record
 
-    active_python = load_active_runtime_python(state)
+    native_installation = native_install_record()
+    active_python = None if native_installation is not None else load_active_runtime_python(state)
     return ServiceDefinition(
         cluster_id=cluster.cluster_id,
         node_id=node_id_from_fingerprint(
@@ -111,14 +114,16 @@ def _redact(value: Any, *, key: str = "") -> Any:
     if isinstance(value, list):
         return [_redact(item) for item in value]
     if isinstance(value, str):
-        return _PAIRING_SECRET_IN_URI.sub(r"\1<redacted>", value)
+        redacted = _PAIRING_SECRET_IN_URI.sub(r"\1<redacted>", value)
+        return _OPAQUE_PAIRING_URI.sub("swarm://<redacted>/join/<redacted>", redacted)
     return value
 
 
 def redact_text(value: object) -> str:
     """Remove secret-bearing pairing query values from arbitrary diagnostics."""
 
-    return _PAIRING_SECRET_IN_URI.sub(r"\1<redacted>", str(value))
+    redacted = _PAIRING_SECRET_IN_URI.sub(r"\1<redacted>", str(value))
+    return _OPAQUE_PAIRING_URI.sub("swarm://<redacted>/join/<redacted>", redacted)
 
 
 def require_confirmation(

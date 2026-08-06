@@ -14,7 +14,7 @@
     "swarm run allenai/OLMoE-1B-7B-0125-Instruct --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea --mode capacity --require-node node-laptop --ndjson"
   ],
   "document_type": "swarm-physical-two-machine-evidence",
-  "format_version": 3,
+  "format_version": 4,
   "machine_identities": {
     "worker_a": {
       "host_identity": "sha256:<host-a>",
@@ -29,20 +29,49 @@
   },
   "model_revision": "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e",
   "tokenizer_revision": "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea",
+  "release": {
+    "git_tag": "v0.1.0-rc.1",
+    "url": "https://github.com/mmprotest/swarm-inference-lab/releases/tag/v0.1.0-rc.1",
+    "installer_filename": "SwarmInferenceSetup-x64.exe",
+    "release_manifest_sha256": "sha256:<64-lowercase-hex>",
+    "authenticode_status": "unsigned-prerelease"
+  },
   "installations": [
     {
       "node_id": "node-rtx",
       "repository_cloned": false,
-      "source": "source-wheel",
+      "source": "github-release-installer",
       "status": "PASS",
-      "wheel_sha256": "sha256:<64-lowercase-hex>"
+      "installer_filename": "SwarmInferenceSetup-x64.exe",
+      "installer_sha256": "sha256:<same-64-lowercase-hex-on-both-machines>",
+      "release_manifest_sha256": "sha256:<64-lowercase-hex>",
+      "authenticode_status": "unsigned-prerelease",
+      "selected_profile": "cuda",
+      "product_version": "0.1.0rc1",
+      "installation_record": {
+        "installation_mode": "native-windows",
+        "product_version": "0.1.0rc1",
+        "selected_backend": "cuda",
+        "release_manifest_sha256": "sha256:<64-lowercase-hex>"
+      }
     },
     {
       "node_id": "node-laptop",
       "repository_cloned": false,
-      "source": "source-wheel",
+      "source": "github-release-installer",
       "status": "PASS",
-      "wheel_sha256": "sha256:<64-lowercase-hex>"
+      "installer_filename": "SwarmInferenceSetup-x64.exe",
+      "installer_sha256": "sha256:<same-64-lowercase-hex-on-both-machines>",
+      "release_manifest_sha256": "sha256:<64-lowercase-hex>",
+      "authenticode_status": "unsigned-prerelease",
+      "selected_profile": "cpu",
+      "product_version": "0.1.0rc1",
+      "installation_record": {
+        "installation_mode": "native-windows",
+        "product_version": "0.1.0rc1",
+        "selected_backend": "cpu",
+        "release_manifest_sha256": "sha256:<64-lowercase-hex>"
+      }
     }
   ],
   "pairing": {

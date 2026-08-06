@@ -29,7 +29,7 @@ ACCEPTANCE_BUNDLE_VERSION = 4
 REPEATABILITY_SCHEMA_VERSION = 2
 REPEATABILITY_TEST_COMMAND_VERSION = 3
 MACHINE_IDENTITY_VERSION = 1
-PHYSICAL_EVIDENCE_VERSION = 3
+PHYSICAL_EVIDENCE_VERSION = 4
 REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
 REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 MANAGED_RESOURCE_WARNINGS = (
@@ -396,6 +396,16 @@ def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _is_sha256_identity(value: object) -> bool:
+    text = str(value)
+    digest = text.removeprefix("sha256:")
+    return (
+        text.startswith("sha256:")
+        and len(digest) == 64
+        and all(character in "0123456789abcdef" for character in digest)
+    )
+
+
 def _bounded_tree_sha256(root: Path, *, maximum_files: int = 10_000) -> str | None:
     if not root.is_dir():
         return None
@@ -688,23 +698,78 @@ def validate_physical_evidence(
         ):
             errors.append("physical recovery must prove an increasing route generation")
 
+    release = evidence.get("release")
+    if not isinstance(release, dict):
+        errors.append("physical evidence must identify the GitHub Release installer")
+        release = {}
+    release_tag = str(release.get("git_tag", ""))
+    release_url = str(release.get("url", ""))
+    installer_filename = str(release.get("installer_filename", ""))
+    release_manifest_hash = release.get("release_manifest_sha256")
+    signature_status = release.get("authenticode_status")
+    if not release_tag.startswith("v"):
+        errors.append("physical release evidence must record the immutable Git tag")
+    if not release_url.startswith(
+        f"https://github.com/mmprotest/swarm-inference-lab/releases/tag/{release_tag}"
+    ):
+        errors.append("physical release URL must identify the fixed GitHub repository and tag")
+    if installer_filename != "SwarmInferenceSetup-x64.exe":
+        errors.append("physical nodes must use SwarmInferenceSetup-x64.exe")
+    if not _is_sha256_identity(release_manifest_hash):
+        errors.append("physical release evidence must record the release manifest SHA-256")
+    if signature_status not in {"signed-valid", "unsigned-prerelease"}:
+        errors.append("physical release evidence must record explicit Authenticode status")
+    if "-rc." not in release_tag and signature_status != "signed-valid":
+        errors.append("stable physical release evidence requires valid Authenticode")
+
     installations = evidence.get("installations")
     if not isinstance(installations, list) or len(installations) < 2:
-        errors.append("physical evidence must contain wheel installation evidence for both nodes")
+        errors.append("physical evidence must contain native installer evidence for both nodes")
         installations = []
+    installer_hashes: set[str] = set()
+    selected_profiles: set[str] = set()
     for installation in installations:
         if not isinstance(installation, dict):
             errors.append("physical installation records must be objects")
             continue
         if installation.get("status") != "PASS":
-            errors.append("each physical node must pass wheel installation")
-        if installation.get("source") != "source-wheel":
-            errors.append("physical nodes must install from the supplied wheel")
+            errors.append("each physical node must pass native setup installation")
+        if installation.get("source") != "github-release-installer":
+            errors.append("physical nodes must install independently from the GitHub Release")
         if installation.get("repository_cloned") is not False:
             errors.append("physical installation must prove that no repository clone was used")
-        wheel_hash = str(installation.get("wheel_sha256", ""))
-        if not wheel_hash.startswith("sha256:") or len(wheel_hash) != 71:
-            errors.append("physical installation must record the source wheel SHA-256")
+        if installation.get("installer_filename") != installer_filename:
+            errors.append("physical installation filename must match the release installer")
+        installer_hash = str(installation.get("installer_sha256", ""))
+        if not _is_sha256_identity(installer_hash):
+            errors.append("physical installation must record the installer SHA-256")
+        else:
+            installer_hashes.add(installer_hash)
+        if installation.get("release_manifest_sha256") != release_manifest_hash:
+            errors.append("physical installation manifest hash must match the GitHub Release")
+        if installation.get("authenticode_status") != signature_status:
+            errors.append("physical installation Authenticode status must match the release")
+        profile = str(installation.get("selected_profile", ""))
+        if profile not in {"cpu", "cuda"}:
+            errors.append("physical installation must record the selected CPU or CUDA profile")
+        else:
+            selected_profiles.add(profile)
+        product_version = installation.get("product_version")
+        record = installation.get("installation_record")
+        if not isinstance(record, dict):
+            errors.append("physical installation must retain its strict installation record")
+            continue
+        if (
+            record.get("installation_mode") != "native-windows"
+            or record.get("product_version") != product_version
+            or record.get("selected_backend") != profile
+            or record.get("release_manifest_sha256") != release_manifest_hash
+        ):
+            errors.append("physical installation record does not match its release evidence")
+    if installations and len(installer_hashes) != 1:
+        errors.append("both physical machines must use the same installer SHA-256")
+    if installations and selected_profiles != {"cpu", "cuda"}:
+        errors.append("physical gate requires one CUDA profile and one CPU profile")
 
     pairing = evidence.get("pairing")
     if not isinstance(pairing, dict):

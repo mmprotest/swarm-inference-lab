@@ -23,7 +23,8 @@ Implemented product behavior includes:
 - stage-owned, content-addressed OLMoE artifacts with bounded resumable transfers;
 - transactional deployment, direct stage-ring execution, streaming publication, and
   restart-and-replay recovery; and
-- strict versioned state, JSON/NDJSON automation, wheel installation, and cross-platform CI.
+- strict versioned state, JSON/NDJSON automation, native Windows installation, wheel recovery,
+  and cross-platform CI.
 
 Implementation support is separate from validation evidence. A clean machine reports software
 and physical validation as `not-run`; OS/architecture detection, hardware visibility, imports,
@@ -31,29 +32,25 @@ and tensor probes never manufacture validation. Physical multi-machine product p
 not been proven in this repository state. Loopback, simulation, and CI evidence do not count as
 physical validation.
 
-## Install without Git
+## Windows installation
 
-Build artifacts are installed with the platform installer. A participating node does not need
-the repository, Python, or `uv` in advance.
+A Windows user does not need the repository, Git, Python, `uv`, a wheel, or an administrator
+terminal.
 
-Windows PowerShell:
+1. Open [GitHub Releases](https://github.com/mmprotest/swarm-inference-lab/releases).
+2. Download `SwarmInferenceSetup-x64.exe` from the selected release.
+3. Double-click it and complete the normal per-user installer.
+4. Open a new terminal.
+5. Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1 `
-  -SourceWheel .\swarm_inference_lab-0.1.0-py3-none-any.whl -Json
+swarm --version
+swarm node doctor
 ```
 
-Linux or macOS:
-
-```bash
-sh ./install.sh --source-wheel ./swarm_inference_lab-0.1.0-py3-none-any.whl --json
-```
-
-The installer locates or installs `uv`, installs a managed supported Python, tests the selected
-device through `swarm node doctor`, and installs the wheel as an isolated tool. It does not create
-an unpaired service: installer output reports
-`deferred-until-cluster-create-or-join`. Cluster creation or joining installs and starts the
-persistent user service by default; `--foreground` opts out. See
+Setup selects CUDA only after the installed runtime passes a real CUDA tensor doctor; automatic
+selection falls back transactionally to the locked CPU profile. Installation does not create a
+cluster-specific service. See [Windows installation](docs/windows-installation.md) and
 [platform support](docs/platform-support.md).
 
 ## Cluster quick start
@@ -61,26 +58,25 @@ persistent user service by default; `--foreground` opts out. See
 Use routable private addresses. The commands select identities, ports, backend, dtype, memory,
 and storage automatically.
 
-1. Install the wheel/tool on both machines.
+1. Independently install the same `SwarmInferenceSetup-x64.exe` release on both machines.
 2. Create the cluster on the PC:
 
 ```powershell
-swarm cluster create --name villani-home --yes --json `
-  --pairing-output C:\Protected\villani-home-invitation.uri
+swarm cluster create --name villani-home
 ```
 
-3. Transfer the protected single-use invitation file through a secure channel. JSON contains
-   only the path and redacted metadata, never the URI.
-4. Read the URI locally on the laptop and join:
+3. The PC prints one complete single-use join command. Paste that command on the laptop; no
+   installer or invitation file is transferred between machines.
+4. Join on the laptop:
 
 ```powershell
-swarm node join "<pairing-uri>" --yes --json
+swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
 ```
 
 5. Back on the PC, inspect cluster status:
 
 ```powershell
-swarm cluster status --json
+swarm cluster status
 ```
 
 6. Run the physical acceptance command from the runbook. A normal inference command is:
@@ -101,6 +97,25 @@ weights. Use `--dry-run --explain-plan` to inspect the decision without deployin
 
 See [cluster quick start](docs/cluster-quickstart.md), [pairing](docs/pairing.md), and
 [troubleshooting](docs/cluster-troubleshooting.md).
+
+## Developer, CI and offline recovery installation
+
+The cross-platform shell installers remain available for repository development, CI, offline
+wheel recovery, and platforms without the native Windows setup. They are not the normal Windows
+user path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 `
+  -SourceWheel .\dist\swarm_inference_lab-0.1.0rc1-py3-none-any.whl -Json
+```
+
+```bash
+sh ./scripts/install.sh --source-wheel ./dist/swarm_inference_lab-0.1.0rc1-py3-none-any.whl --json
+```
+
+For a native Windows installation, `swarm update` downloads and verifies a GitHub Release setup
+and launches it; `swarm node update --source-wheel ...` is only a developer/offline recovery
+path.
 
 ## Product architecture
 
@@ -182,6 +197,7 @@ uv run --python 3.11 ruff format --check src tests scripts
 uv run --python 3.11 ruff check src tests scripts
 uv run --python 3.11 mypy
 uv run --python 3.11 pytest tests/unit -q
+uv run --python 3.11 pytest tests/installer -q
 uv run --python 3.11 pytest tests/integration tests/failure -m "not gpu" -q
 uv build
 uv run --python 3.11 python scripts/run_productization_acceptance.py run `
@@ -219,6 +235,8 @@ research or analysis inputs and are not product support claims.
 ## Documentation
 
 - [Cluster quick start](docs/cluster-quickstart.md)
+- [Windows installation](docs/windows-installation.md)
+- [Maintainer release process](docs/releasing.md)
 - [Node agent](docs/node-agent.md)
 - [Pairing protocol](docs/pairing.md)
 - [Platform support](docs/platform-support.md)

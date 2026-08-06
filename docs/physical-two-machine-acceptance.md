@@ -9,52 +9,49 @@ Loopback aliases, VMs on one host, simulations, shaped traffic, or two processes
 can never be used as physical evidence. If both machines are unavailable, record `NOT_RUN` with
 the exact reason.
 
-## 1. Build and transfer the product artifact
+## 1. Independently install the same GitHub prerelease
 
-On the development machine:
+On both machines, open the same GitHub prerelease page and independently download
+`SwarmInferenceSetup-x64.exe`. Do not transfer the setup executable between machines. Do not
+clone the repository or install Git, Python, `uv`, a wheel, or a PowerShell installer.
 
-```powershell
-uv build --wheel
-Get-FileHash .\dist\swarm_inference_lab-0.1.0-py3-none-any.whl -Algorithm SHA256
-```
-
-Copy only the wheel and `scripts/install.ps1` to each machine. Do not clone the repository. Save
-the copied wheel hash from both machines.
+Double-click setup on each machine, complete the wizard, open a new terminal, and run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1 `
-  -SourceWheel .\swarm_inference_lab-0.1.0-py3-none-any.whl -Json `
-  | Tee-Object .\install-evidence.json
+swarm --version
+swarm node doctor --json | Tee-Object .\doctor.json
 ```
 
-The RTX machine must report `torch-cuda`; the laptop must report `torch-cpu`. A hardware-present
-but failed tensor probe is not CUDA validation. Both installers must report
-`service=deferred-until-cluster-create-or-join`; installation alone creates no service and no
-validation record.
+Record the GitHub release tag/URL, installer filename, installer SHA-256 on each machine,
+Authenticode status, exact release-manifest SHA-256, selected profile, product version, and the
+complete non-secret installation record. The setup hashes on both machines must be identical.
+
+The RTX machine must report the CUDA profile and operational `torch-cuda`; the laptop must report
+the CPU profile and `torch-cpu`. A hardware-present but failed tensor probe is not CUDA validation.
+Installation alone creates no cluster service and no validation record. An unsigned RC must be
+recorded as `unsigned-prerelease`; it must never be described as signed.
 
 ## 2. Create and pair using only product commands
 
 Machine A:
 
 ```powershell
-swarm cluster create --name villani-home --yes --json `
-  --pairing-output C:\Protected\villani-home-invitation.uri
+swarm cluster create --name villani-home
 ```
 
-The JSON document must be parseable as one object and must contain only redacted pairing metadata
-and the invitation path. Transfer that protected file through an authenticated secure channel.
+The human output must contain one complete quoted `swarm node join "swarm://..."` command. Do not
+write the secret URI into retained evidence.
 
-Machine B, after reading the URI locally:
+Machine B, paste the command printed by Machine A:
 
 ```powershell
-swarm node join "<pairing-uri>" --yes --json
+swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
 ```
 
 Do not run identity, trust, coordinator, worker, inspect, plan, deploy, or submit commands. Save
 redacted command transcripts; never copy the secret-bearing URI into a transcript, JSON, log, or
-acceptance summary. Delete the transferred invitation copy after consumption. Capture its public
-session ID, expiry, protected delivery metadata, and consumed audit event from status/audit
-evidence.
+acceptance summary. No invitation file is transferred. Capture its public session ID, expiry, and
+consumed audit event from status/audit evidence.
 
 ## 3. Prove automatic configuration and persistence
 
@@ -116,13 +113,17 @@ swarm cluster revoke <laptop-node-id> --reason "physical gate revocation" --yes 
 Restart the laptop agent and prove registration is rejected. New deployment/recovery selection
 must not trust the revoked node. Preserve the historical membership/revocation record.
 
-## 6. Evidence schema version 3
+## 6. Evidence schema version 4
 
 Create `physical-evidence.json` with:
 
-- `document_type: swarm-physical-two-machine-evidence` and `format_version: 2`;
+- `document_type: swarm-physical-two-machine-evidence` and `format_version: 4`;
+- one `release` record with GitHub tag/URL, `SwarmInferenceSetup-x64.exe`, release-manifest
+  SHA-256, and explicit Authenticode status;
 - exact model/tokenizer revisions and distinct machine/node/worker identities;
-- `installations` for both nodes with source-wheel SHA-256 and `repository_cloned: false`;
+- `installations` for both nodes with the identical setup SHA-256, complete installation record,
+  selected CPU/CUDA profile, product version, manifest hash, `source:
+  github-release-installer`, and `repository_cloned: false`;
 - consumed single-use `pairing` with `fingerprint_copied_manually: false`;
 - `automatic_configuration` booleans for backend, memory, endpoints, and ports;
 - persistent/reconnected `services` records;
@@ -145,9 +146,10 @@ uv run python scripts/run_productization_acceptance.py run `
 ```
 
 The gate is `PASS` only when the acceptance validator verifies the checksummed evidence from two
-distinct physical machines. Missing evidence is `NOT_RUN`; malformed or contradictory executed
-evidence is `FAIL`. During this release-candidate software correction pass the physical gate is
-honestly `NOT_RUN`; only the later two-machine execution may create physical validation records.
+distinct physical machines, including one operational CUDA installation and one CPU installation
+from the exact same GitHub setup. Missing evidence is `NOT_RUN`; malformed or contradictory
+executed evidence is `FAIL`. During release-candidate software CI the physical gate is honestly
+`NOT_RUN`; only the later two-machine execution may create physical validation records.
 
 Software repeatability runs the complete non-GPU cluster product suite three times and the product
 stage-ring module five times. The retained command explicitly excludes the two opt-in Experiment

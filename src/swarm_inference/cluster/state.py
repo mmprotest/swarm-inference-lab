@@ -319,7 +319,9 @@ class ClusterStateStore:
         """Atomically publish one secret invitation without storing it in metadata."""
 
         self._validate_pairing_session_id(session_id)
-        if "\n" in pairing_uri or "\r" in pairing_uri or "secret=" not in pairing_uri:
+        native_uri = pairing_uri.startswith("swarm://") and "/join/" in pairing_uri
+        legacy_uri = pairing_uri.startswith("swarm+pair://") and "secret=" in pairing_uri
+        if "\n" in pairing_uri or "\r" in pairing_uri or not (native_uri or legacy_uri):
             raise ValueError("pairing invitation URI is malformed")
         path = (
             output_path.expanduser().resolve()

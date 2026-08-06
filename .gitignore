@@ -18,8 +18,17 @@ coverage.xml
 htmlcov/
 dist/
 build/
+.dotnet/
+installer/windows/**/bin/
+installer/windows/**/obj/
 .task-cache/
 .tmp/
+
+# Native release payloads are generated, hash-addressed build products.
+release/generated/*
+!release/generated/.gitkeep
+release/fixtures/
+installer/windows/payload/
 
 # Local secrets and machine-specific configuration.
 .env

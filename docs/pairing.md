@@ -7,9 +7,15 @@ trusted LAN/private network; it does not encrypt subsequent inference payloads.
 
 `swarm cluster pair` creates a cryptographically random secret with at least 128 bits of entropy,
 a session ID, and an ephemeral X25519 keypair. The default expiry is ten minutes. The URI contains
-the private coordinator endpoint, session ID, ephemeral public key, and secret. Human `cluster
-create` and `cluster pair` output may display it exactly once. It is never repeated in status,
-logs, errors, audits, or service state.
+the private coordinator endpoint and opaque single-use data. Human `cluster create` and `cluster
+pair` output prints it exactly once as a complete quoted command:
+
+```text
+swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+```
+
+The URI is never repeated in status, logs, errors, audits, or service state. The ordinary human
+workflow pastes this text on an independently installed node and transfers no invitation file.
 
 `cluster create --json` and `cluster pair --json` each emit exactly one JSON document and never
 contain the URI. With `--pairing-output <path>`, the complete URI is written using a complete
@@ -68,7 +74,7 @@ expire or create a new session; the old session is not reusable after a successf
 records include session IDs and decisions, not secrets, raw proofs, private keys, AES/session
 keys, or prompt contents.
 
-Automation example:
+Protected invitation files are an automation feature, not an interactive prerequisite:
 
 ```powershell
 swarm cluster pair --json --pairing-output C:\Protected\one-time.uri
