@@ -20,6 +20,7 @@ from swarm_inference.cluster.state import ClusterStateStore
 from swarm_inference.config.models import StrictModel
 from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.model.product import ModelResolutionPolicy, ProductModelReference
+from swarm_inference.model.source_paths import materialized_snapshot_path
 from swarm_inference.protocol.cluster import ClusterStatusRequest
 from swarm_inference.protocol.messages import (
     StreamEventType,
@@ -125,10 +126,11 @@ async def resolve_upstream_source(
             raise OSError(
                 f"immutable source is {total} bytes, above the {maximum_bytes}-byte bound"
             )
+        materialized = materialized_snapshot_path(cache_directory, model_id, model_revision)
         resolved = snapshot_download(
             repo_id=model_id,
             revision=model_revision,
-            cache_dir=str(cache_directory),
+            local_dir=str(materialized),
             local_files_only=False,
         )
         source = Path(resolved).resolve()
