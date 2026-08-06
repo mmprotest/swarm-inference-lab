@@ -9,6 +9,7 @@ import queue
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -37,7 +38,12 @@ from swarm_inference.model.product import (
     ProductModelReference,
     ProductModelSpec,
 )
-from swarm_inference.protocol.messages import RegistrationRequest, StreamEventType, SubmitRequest
+from swarm_inference.protocol.messages import (
+    Heartbeat,
+    RegistrationRequest,
+    StreamEventType,
+    SubmitRequest,
+)
 from swarm_inference.protocol.product import (
     ModelDeployRequest,
     ModelPlanRequest,
@@ -436,6 +442,8 @@ def _worker_process(
                 }
             )
             data_plane_stopped = False
+            heartbeat_recorded = False
+            next_heartbeat_at = time.monotonic() + 0.5
             while not stop_event.is_set():
                 if registration_commands is not None and registration_results is not None:
                     try:
@@ -475,6 +483,38 @@ def _worker_process(
                                     ),
                                 }
                             )
+                now = time.monotonic()
+                if now >= next_heartbeat_at:
+                    runtime.refresh_capability()
+                    loaded_executor = runtime.loaded_executor
+                    heartbeat_payload = {
+                        "worker_id": capability.worker_id,
+                        "queue_depth": agent.execution.queue_depth,
+                        "assignments": (
+                            [loaded_executor.ownership.stage_id]
+                            if loaded_executor is not None
+                            else []
+                        ),
+                        "monotonic_ns": time.monotonic_ns(),
+                    }
+                    timestamp = datetime.now(UTC)
+                    signed_heartbeat = canonical_json_bytes(
+                        {**heartbeat_payload, "timestamp": timestamp.isoformat()}
+                    )
+                    try:
+                        await coordinator.heartbeat(
+                            Heartbeat(
+                                **heartbeat_payload,
+                                timestamp=timestamp,
+                                signature=identity.sign(signed_heartbeat),
+                            )
+                        )
+                    except TransportError:
+                        if heartbeat_recorded:
+                            raise
+                    else:
+                        heartbeat_recorded = True
+                    next_heartbeat_at = now + 1.0
                 if (
                     not data_plane_stopped
                     and data_plane_stop_event is not None
@@ -827,6 +867,7 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
             token_ingress_capacity=16,
             request_timeout_s=INTEGRATION_REQUEST_TIMEOUT_S,
             control_timeout_s=INTEGRATION_CONTROL_TIMEOUT_S,
+            worker_heartbeat_timeout_s=3,
             require_trusted_workers=False,
         ),
         state_directory=tmp_path,
@@ -922,7 +963,10 @@ async def test_two_process_product_ring_persists_streams_and_never_relays_activa
                     model_revision=plan.model.model_revision,
                 )
             )
-            assert response.status == "completed", response.model_dump(mode="json")
+            assert response.status == "completed", (
+                response.detail,
+                response.model_dump(mode="json"),
+            )
             assert response.output_token_ids == [index + 2]
 
         interleaved = await asyncio.gather(

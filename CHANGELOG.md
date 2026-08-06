@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0rc7 - 2026-08-06
+
+- Make the multi-process stage-ring harness renew worker liveness with the same signed heartbeat
+  protocol as the product worker, so a slower hosted runner cannot misclassify healthy synthetic
+  workers as stale during the 100-session persistent-connection stress test.
+
 ## 0.1.0rc6 - 2026-08-06
 
 - Keep the real multi-process stage-ring integration assertions intact while giving bounded
