@@ -391,6 +391,14 @@ class PersistentStageRuntime:
             candidates.append(supplied)
             if self.model_cache_dir is not None and not supplied.is_absolute():
                 candidates.append(self.model_cache_dir / supplied)
+        if self.model_cache_dir is not None:
+            candidates.append(
+                self.model_cache_dir
+                / "materialized"
+                / model_id.replace("/", "--")
+                / "snapshots"
+                / model_revision
+            )
         model_id_path = Path(model_id).expanduser()
         candidates.append(model_id_path)
         for candidate in candidates:
@@ -454,6 +462,7 @@ class PersistentStageRuntime:
         requested_model_revision: str,
         requested_tokenizer_revision: str,
         model_path: Path,
+        artifact_model_revision: str | None = None,
         artifact_tokenizer_revision: str | None = None,
     ) -> None:
         config_path = model_path / "config.json"
@@ -466,6 +475,13 @@ class PersistentStageRuntime:
         resolved_model_revision = self._metadata_revision(
             model_path, ("config.json", "model.safetensors.index.json")
         )
+        if artifact_model_revision is not None:
+            if (
+                resolved_model_revision is not None
+                and resolved_model_revision != artifact_model_revision
+            ):
+                raise IntegrityError("artifact model revision conflicts with local metadata")
+            resolved_model_revision = artifact_model_revision
         config_revision = config_value.get("_commit_hash")
         if resolved_model_revision is None and isinstance(config_revision, str):
             resolved_model_revision = config_revision or None
@@ -513,6 +529,7 @@ class PersistentStageRuntime:
                 raise IntegrityError("resolved checkpoint model ID does not match the request")
 
     def _verify_model_identity(self, request: LoadStageRequest, model_path: Path) -> None:
+        artifact_model_revision: str | None = None
         artifact_tokenizer_revision: str | None = None
         if request.artifact_id is not None:
             from swarm_inference.cluster.artifacts import verify_artifact_directory
@@ -533,12 +550,14 @@ class PersistentStageRuntime:
                 or manifest.owns_output_projection != assignment.owns_output_projection
             ):
                 raise IntegrityError("artifact identity or ownership differs from the load request")
+            artifact_model_revision = manifest.model_revision
             artifact_tokenizer_revision = manifest.tokenizer_revision
         self._verify_model_identity_values(
             model_id=request.model_id,
             requested_model_revision=request.model_revision,
             requested_tokenizer_revision=request.tokenizer_revision,
             model_path=model_path,
+            artifact_model_revision=artifact_model_revision,
             artifact_tokenizer_revision=artifact_tokenizer_revision,
         )
 
