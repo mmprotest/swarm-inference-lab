@@ -11,6 +11,7 @@ from swarm_inference.engines.interfaces import (
     ExecutionEngineCapability,
     WorkerExecutionCapability,
 )
+from swarm_inference.engines.topology import NetworkLinkProfile
 
 
 def _legacy_native_capability(worker: WorkerCapability) -> ExecutionEngineCapability | None:
@@ -69,6 +70,7 @@ def worker_execution_capability(
     *,
     network_latency_ms: dict[str, float] | None = None,
     network_bandwidth_bytes_s: dict[str, float] | None = None,
+    network_links: dict[str, NetworkLinkProfile] | None = None,
     resident_model_fingerprints: tuple[str, ...] = (),
     storage_available_bytes: int = 0,
 ) -> WorkerExecutionCapability:
@@ -91,6 +93,7 @@ def worker_execution_capability(
         reliability=worker.reliability_score,
         network_latency_ms=network_latency_ms or {},
         network_bandwidth_bytes_s=network_bandwidth_bytes_s or {},
+        network_links=network_links or {},
         resident_model_fingerprints=resident_model_fingerprints,
         storage_available_bytes=max(0, storage_available_bytes),
     )
@@ -101,15 +104,18 @@ def cluster_execution_capabilities(
     *,
     latency_by_worker: dict[str, dict[str, float]] | None = None,
     bandwidth_by_worker: dict[str, dict[str, float]] | None = None,
+    network_links_by_worker: dict[str, dict[str, NetworkLinkProfile]] | None = None,
 ) -> ClusterCapabilities:
     latency = latency_by_worker or {}
     bandwidth = bandwidth_by_worker or {}
+    links = network_links_by_worker or {}
     return ClusterCapabilities(
         workers=tuple(
             worker_execution_capability(
                 worker,
                 network_latency_ms=latency.get(worker.worker_id, {}),
                 network_bandwidth_bytes_s=bandwidth.get(worker.worker_id, {}),
+                network_links=links.get(worker.worker_id, {}),
             )
             for worker in workers
         )

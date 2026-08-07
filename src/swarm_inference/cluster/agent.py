@@ -58,6 +58,7 @@ from swarm_inference.protocol.cluster import (
     ReachabilityCheckResponse,
 )
 from swarm_inference.security.identity import WorkerIdentity
+from swarm_inference.security.tls import TlsServerConfig
 
 NodeAgentRole = Literal["coordinator", "worker"]
 ErrorCategory = Literal[
@@ -177,7 +178,7 @@ class NodeAgent:
         worker_factory: WorkerFactory | None = None,
         coordinator_factory: CoordinatorFactory | None = None,
         network_probe_factory: NetworkProbeFactory | None = None,
-        client_factory: ClusterClientFactory = _default_client_factory,
+        client_factory: ClusterClientFactory | None = None,
         clock_ns: Callable[[], int] = time.time_ns,
         sleep: Sleep = asyncio.sleep,
     ) -> None:
@@ -192,7 +193,12 @@ class NodeAgent:
         self.worker_factory = worker_factory or runtime_manager.build_worker_runtime
         self.coordinator_factory = coordinator_factory or self._default_coordinator_factory
         self.network_probe_factory = network_probe_factory or self._default_network_probe_factory
-        self.client_factory = client_factory
+        self.client_factory = client_factory or (
+            lambda endpoint: CoordinatorClient(
+                endpoint,
+                tls=state.coordinator_tls_client_config(),
+            )
+        )
         self.clock_ns = clock_ns
         self.sleep = sleep
         self._lifecycle_lock = asyncio.Lock()
@@ -225,6 +231,15 @@ class NodeAgent:
     ) -> DirectNetworkProbeServer:
         assert self._identity is not None
         assert self._cluster is not None
+        tls_material = self.state.node_tls_paths()
+        tls_available = all(
+            path.is_file()
+            for path in (
+                tls_material.certificate,
+                tls_material.private_key,
+                tls_material.ca_certificate,
+            )
+        )
         return DirectNetworkProbeServer(
             state=self.state,
             cluster=self._cluster,
@@ -234,6 +249,7 @@ class NodeAgent:
             maximum_bytes=self.options.network_probe_max_bytes,
             timeout_seconds=self.options.network_probe_timeout_seconds,
             clock_ns=self.clock_ns,
+            tls_server=TlsServerConfig(tls_material) if tls_available else None,
         )
 
     @property
@@ -534,7 +550,7 @@ class NodeAgent:
         )
         firewall = await self.service_manager.configure_firewall(specification)
         if firewall.blocked:
-            action = firewall.remediation_command or "configure the private firewall rule"
+            action = firewall.remediation_command or "configure the required firewall rule"
             raise PermissionError(f"{firewall.detail}; corrective action: {action}")
         return await self._publish_node_and_verify(metadata)
 
@@ -591,6 +607,7 @@ class NodeAgent:
                 source_mtu=(interface.mtu if interface is not None else None),
                 timeout_seconds=self.options.network_probe_timeout_seconds,
                 clock_ns=self.clock_ns,
+                tls_client=self.state.worker_tls_client_config(),
             )
             destinations = sorted(
                 (

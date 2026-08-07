@@ -18,6 +18,7 @@ from swarm_inference.model.adapter import (
     ModelDescription,
     TensorInfo,
 )
+from swarm_inference.model.architecture import ModelArchitecture, normalize_model_architecture
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import ModelPartitionMetadata, StageAssignment
 
@@ -69,8 +70,8 @@ class OlmoeAdapter:
                 AdapterSupportStatus.UNSUPPORTED_FORMAT,
                 "native adapter requires a safetensors checkpoint",
             )
-        architecture = (model.architecture or "").lower()
-        if "olmoe" not in architecture:
+        architecture = normalize_model_architecture(model.architecture)
+        if architecture != ModelArchitecture.OLMOE:
             return AdapterSupportReport(
                 self.adapter_id,
                 AdapterSupportStatus.UNSUPPORTED_ARCHITECTURE,
@@ -195,9 +196,10 @@ class OlmoeAdapter:
     def create_stage_executor(self, *args: Any, **kwargs: Any) -> Any:
         request = kwargs.pop("request", None)
         resolved_model_path = kwargs.pop("resolved_model_path", None)
+        expert_tls = kwargs.pop("expert_tls", None)
         kwargs.pop("fast_path_profile_store", None)
         if request is not None:
-            return self._create_product_stage(request, resolved_model_path)
+            return self._create_product_stage(request, resolved_model_path, expert_tls)
         from swarm_inference.execution.olmoe_stage import ContiguousOlmoeStage
 
         return ContiguousOlmoeStage(*args, **kwargs)
@@ -239,7 +241,11 @@ class OlmoeAdapter:
         )
 
     @staticmethod
-    def _create_product_stage(request: Any, resolved_model_path: Path | None) -> Any:
+    def _create_product_stage(
+        request: Any,
+        resolved_model_path: Path | None,
+        expert_tls: Any,
+    ) -> Any:
         if resolved_model_path is None:
             raise FileNotFoundError("native stage loading requires a resolved local checkpoint")
         import torch
@@ -295,7 +301,10 @@ class OlmoeAdapter:
                 for worker_id, endpoint in item.worker_endpoints.items():
                     if not endpoint:
                         raise ValueError("remote expert placement has no reachable endpoint")
-                    clients.setdefault(worker_id, ExpertTransportClient(endpoint))
+                    clients.setdefault(
+                        worker_id,
+                        ExpertTransportClient(endpoint, tls=expert_tls),
+                    )
                 if item.strategy == "whole-remote":
                     if len(item.worker_ids) != 1:
                         raise ValueError("whole-expert placement requires exactly one owner")

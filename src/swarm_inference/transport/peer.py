@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -21,6 +21,9 @@ from swarm_inference.protocol.messages import (
     parse_message,
     serialize_message,
 )
+from swarm_inference.security.tls import TlsClientConfig, require_tls_for_endpoint
+
+PeerTlsResolver = Callable[[str], TlsClientConfig | None]
 
 
 @contextmanager
@@ -90,6 +93,8 @@ class _PeerConnection:
         reconnect_initial_backoff_ms: float,
         reconnect_max_backoff_ms: float,
         metrics: PeerConnectionMetrics,
+        tls: TlsClientConfig | None,
+        allow_plaintext_loopback: bool,
     ) -> None:
         self.endpoint = endpoint
         self.timeout_s = timeout_s
@@ -99,12 +104,24 @@ class _PeerConnection:
         self.metrics = metrics
         self._queue: asyncio.Queue[_OutboundItem] = asyncio.Queue(maxsize=queue_capacity)
         self._pending: dict[str, _OutboundItem] = {}
-        self._channel = grpc.aio.insecure_channel(
+        options = [
+            ("grpc.max_send_message_length", maximum_message_bytes),
+            ("grpc.max_receive_message_length", maximum_message_bytes),
+        ]
+        require_tls_for_endpoint(
             endpoint,
-            options=[
-                ("grpc.max_send_message_length", maximum_message_bytes),
-                ("grpc.max_receive_message_length", maximum_message_bytes),
-            ],
+            tls_configured=tls is not None,
+            allow_plaintext_loopback=allow_plaintext_loopback,
+            transport_name="worker peer gRPC client",
+        )
+        self._channel = (
+            grpc.aio.secure_channel(
+                endpoint,
+                tls.grpc_credentials(),
+                options=[*options, *tls.grpc_options()],
+            )
+            if tls is not None
+            else grpc.aio.insecure_channel(endpoint, options=options)
         )
         self.metrics.channels_created += 1
         self._runner: asyncio.Task[None] | None = None
@@ -288,6 +305,8 @@ class PeerConnectionPool:
         reconnect_attempts: int = 5,
         reconnect_initial_backoff_ms: float = 25.0,
         reconnect_max_backoff_ms: float = 1000.0,
+        tls: TlsClientConfig | PeerTlsResolver | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if queue_capacity <= 0:
             raise ValueError("queue_capacity must be positive")
@@ -297,6 +316,8 @@ class PeerConnectionPool:
         self.reconnect_attempts = reconnect_attempts
         self.reconnect_initial_backoff_ms = reconnect_initial_backoff_ms
         self.reconnect_max_backoff_ms = reconnect_max_backoff_ms
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self.metrics = PeerConnectionMetrics()
         self._connections: dict[str, _PeerConnection] = {}
         self._closed = False
@@ -306,6 +327,7 @@ class PeerConnectionPool:
             raise TransportError("peer connection pool is closed")
         connection = self._connections.get(endpoint)
         if connection is None:
+            tls = self.tls(endpoint) if callable(self.tls) else self.tls
             connection = _PeerConnection(
                 endpoint=endpoint,
                 queue_capacity=self.queue_capacity,
@@ -315,6 +337,8 @@ class PeerConnectionPool:
                 reconnect_initial_backoff_ms=self.reconnect_initial_backoff_ms,
                 reconnect_max_backoff_ms=self.reconnect_max_backoff_ms,
                 metrics=self.metrics,
+                tls=tls,
+                allow_plaintext_loopback=self.allow_plaintext_loopback,
             )
             self._connections[endpoint] = connection
         return connection
@@ -369,15 +393,29 @@ class FinalResultClient:
         *,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         timeout_s: float = 120.0,
+        tls: TlsClientConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         self.endpoint = endpoint
         self.timeout_s = timeout_s
-        self.channel = grpc.aio.insecure_channel(
+        options = [
+            ("grpc.max_send_message_length", maximum_message_bytes),
+            ("grpc.max_receive_message_length", maximum_message_bytes),
+        ]
+        require_tls_for_endpoint(
             endpoint,
-            options=[
-                ("grpc.max_send_message_length", maximum_message_bytes),
-                ("grpc.max_receive_message_length", maximum_message_bytes),
-            ],
+            tls_configured=tls is not None,
+            allow_plaintext_loopback=allow_plaintext_loopback,
+            transport_name="final-result gRPC client",
+        )
+        self.channel = (
+            grpc.aio.secure_channel(
+                endpoint,
+                tls.grpc_credentials(),
+                options=[*options, *tls.grpc_options()],
+            )
+            if tls is not None
+            else grpc.aio.insecure_channel(endpoint, options=options)
         )
 
     async def send(self, message: FinalResultMessage) -> Ack:

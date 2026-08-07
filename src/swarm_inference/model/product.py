@@ -146,9 +146,7 @@ class ProductModelSpec(StrictModel):
             layer_count=len(metadata.layer_costs),
             hidden_size=metadata.hidden_size,
             metadata_hash=metadata.metadata_hash,
-            model_fingerprint=(
-                reference.model_fingerprint or metadata.model_fingerprint
-            ),
+            model_fingerprint=(reference.model_fingerprint or metadata.model_fingerprint),
             model_format=reference.model_format,
             quantization=reference.quantization,
             quantization_fingerprint=metadata.quantization_fingerprint,

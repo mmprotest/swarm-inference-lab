@@ -164,9 +164,7 @@ def _routing_profile(raw: object, *, manifest_path: Path) -> ColibriRoutingProfi
         manifest_path=manifest_path,
         field="routing profile hot_pin_path",
     )
-    expected_sha = _normalise_sha256(
-        raw["hot_pin_sha256"], field="routing profile hot_pin_sha256"
-    )
+    expected_sha = _normalise_sha256(raw["hot_pin_sha256"], field="routing profile hot_pin_sha256")
     actual_sha = _sha256(path)
     if actual_sha != expected_sha:
         raise ValueError("Colibri routing profile bitmap hash does not match its manifest")
@@ -175,7 +173,9 @@ def _routing_profile(raw: object, *, manifest_path: Path) -> ColibriRoutingProfi
         raise ValueError("Colibri routing profile settings must be an object")
     unsupported = set(supplied_settings).difference(ROUTING_PROFILE_SETTINGS)
     if unsupported:
-        raise ValueError(f"Colibri routing profile contains unsupported settings: {sorted(unsupported)}")
+        raise ValueError(
+            f"Colibri routing profile contains unsupported settings: {sorted(unsupported)}"
+        )
     settings = {str(key): str(value) for key, value in supplied_settings.items()}
     if not settings or any(not _INTEGER_SETTING.fullmatch(value) for value in settings.values()):
         raise ValueError("Colibri routing profile settings must be bounded non-negative integers")
@@ -211,8 +211,7 @@ def _routing_profile(raw: object, *, manifest_path: Path) -> ColibriRoutingProfi
         exactness_passed=raw["exactness_passed"],
         measured_utility=measured_utility,
         evidence_fingerprint=evidence_fingerprint,
-        content_fingerprint="sha256:"
-        + hashlib.sha256(identity.encode("utf-8")).hexdigest(),
+        content_fingerprint="sha256:" + hashlib.sha256(identity.encode("utf-8")).hexdigest(),
     )
 
 

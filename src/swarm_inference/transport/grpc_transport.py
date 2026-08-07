@@ -6,7 +6,7 @@ import asyncio
 import hmac
 import time
 from collections import OrderedDict
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -69,6 +69,12 @@ from swarm_inference.protocol.stage_worker import (
     verify_artifact_transfer_lease,
 )
 from swarm_inference.security.identity import public_key_fingerprint
+from swarm_inference.security.tls import (
+    TlsBootstrapClientConfig,
+    TlsClientConfig,
+    TlsServerConfig,
+    require_tls_for_endpoint,
+)
 from swarm_inference.worker.agent import WorkerAgent
 
 if TYPE_CHECKING:
@@ -77,6 +83,8 @@ if TYPE_CHECKING:
     from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
+GrpcClientTlsConfig = TlsClientConfig | TlsBootstrapClientConfig
+GrpcTlsResolver = Callable[[str], GrpcClientTlsConfig | None]
 
 
 @dataclass(slots=True)
@@ -149,11 +157,15 @@ class GrpcTransport:
         *,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         timeout_s: float = 120.0,
+        tls: GrpcClientTlsConfig | GrpcTlsResolver | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if maximum_message_bytes <= 1024:
             raise ValueError("maximum_message_bytes must exceed 1024")
         self.maximum_message_bytes = maximum_message_bytes
         self.timeout_s = timeout_s
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self._channels: dict[str, grpc.aio.Channel] = {}
         self._closed = False
         self.metrics = GrpcTransportMetrics()
@@ -167,7 +179,21 @@ class GrpcTransport:
                 ("grpc.max_send_message_length", self.maximum_message_bytes),
                 ("grpc.max_receive_message_length", self.maximum_message_bytes),
             ]
-            channel = grpc.aio.insecure_channel(endpoint, options=options)
+            tls = self.tls(endpoint) if callable(self.tls) else self.tls
+            if tls is None:
+                require_tls_for_endpoint(
+                    endpoint,
+                    tls_configured=False,
+                    allow_plaintext_loopback=self.allow_plaintext_loopback,
+                    transport_name="worker gRPC client",
+                )
+                channel = grpc.aio.insecure_channel(endpoint, options=options)
+            else:
+                channel = grpc.aio.secure_channel(
+                    endpoint,
+                    tls.grpc_credentials(),
+                    options=[*options, *tls.grpc_options()],
+                )
             self._channels[endpoint] = channel
             self.metrics.channels_created += 1
         return channel
@@ -422,9 +448,7 @@ class GrpcTransport:
                     time.perf_counter_ns() - deserialization_started
                 ) / 1_000_000
                 yield chunk
-            self.metrics.call_time_ms += (
-                time.perf_counter_ns() - call_started
-            ) / 1_000_000
+            self.metrics.call_time_ms += (time.perf_counter_ns() - call_started) / 1_000_000
         except grpc.aio.AioRpcError as exc:
             raise TransportError(
                 "streaming gRPC engine submission to "
@@ -563,6 +587,8 @@ class WorkerRpcServer:
         trusted_coordinator_fingerprint: str | None = None,
         maximum_active_artifact_transfers: int = 128,
         shutdown_timeout_s: float = 10.0,
+        tls: TlsServerConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if shutdown_timeout_s <= 0:
             raise ValueError("worker gRPC shutdown timeout must be positive")
@@ -580,6 +606,8 @@ class WorkerRpcServer:
         self._artifact_authorizations: OrderedDict[str, ArtifactTransferLease] = OrderedDict()
         self._maximum_active_artifact_transfers = maximum_active_artifact_transfers
         self.shutdown_timeout_s = shutdown_timeout_s
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self.server = grpc.aio.server(
             options=[
                 ("grpc.max_send_message_length", maximum_message_bytes),
@@ -758,7 +786,17 @@ class WorkerRpcServer:
                 await self.agent.start()
                 if self.stage_runtime is not None:
                     await self.stage_runtime.start()
-                self.bound_port = self.server.add_insecure_port(endpoint)
+                require_tls_for_endpoint(
+                    endpoint,
+                    tls_configured=self.tls is not None,
+                    allow_plaintext_loopback=self.allow_plaintext_loopback,
+                    transport_name="worker gRPC server",
+                )
+                self.bound_port = (
+                    self.server.add_secure_port(endpoint, self.tls.grpc_credentials())
+                    if self.tls is not None
+                    else self.server.add_insecure_port(endpoint)
+                )
                 if self.bound_port == 0:
                     raise TransportError(f"could not bind worker gRPC endpoint {endpoint}")
                 await self.server.start()

@@ -156,9 +156,7 @@ def _write_routing_runtime(tmp_path: Path) -> tuple[Path, Path, str]:
         json.dumps(
             {
                 "runtime_revision": "colibri-pinned",
-                "binary_hashes": {
-                    "olmoe": hashlib.sha256(binary.read_bytes()).hexdigest()
-                },
+                "binary_hashes": {"olmoe": hashlib.sha256(binary.read_bytes()).hexdigest()},
                 "model_families": ["olmoe"],
                 "formats": ["safetensors"],
                 "engine_directory": "engine",
@@ -190,9 +188,7 @@ def test_verified_routing_profile_is_advertised_and_changes_backend_environment(
     tmp_path: Path,
 ) -> None:
     manifest, config, fingerprint = _write_routing_runtime(tmp_path)
-    capabilities = discover_configured_general_engine_capabilities(
-        colibri_manifest=manifest
-    )
+    capabilities = discover_configured_general_engine_capabilities(colibri_manifest=manifest)
     capability = next(item for item in capabilities if item.engine_id == "colibri")
     assert capability.enabled
     assert capability.fast_paths == ("routing-aware-placement",)
@@ -245,9 +241,7 @@ def test_colibri_routing_profile_hash_mismatch_fails_closed(tmp_path: Path) -> N
 
     capability = next(
         item
-        for item in discover_configured_general_engine_capabilities(
-            colibri_manifest=manifest
-        )
+        for item in discover_configured_general_engine_capabilities(colibri_manifest=manifest)
         if item.engine_id == "colibri"
     )
     assert not capability.enabled

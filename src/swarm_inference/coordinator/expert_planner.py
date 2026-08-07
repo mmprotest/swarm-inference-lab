@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import Field, model_validator
 
 from swarm_inference.config.models import StrictModel
+from swarm_inference.engines.topology import TopologyDomain
 
 
 class ExpertPolicy(StrEnum):
@@ -95,6 +96,7 @@ class ExpertStrategyCandidate(StrictModel):
     worker_memory_required_bytes: dict[str, int] = Field(default_factory=dict)
     worker_memory_available_bytes: dict[str, int] = Field(default_factory=dict)
     explanation: list[str] = Field(default_factory=list)
+    topology_domain: TopologyDomain = TopologyDomain.LOCAL_FAST
 
     @model_validator(mode="after")
     def validate_candidate(self) -> ExpertStrategyCandidate:
@@ -218,6 +220,14 @@ class ExpertUtilityPlanner:
                 )
             if require_remote and candidate.strategy == ExpertStrategy.LOCAL:
                 reasons.append("forced-remote validation excludes local execution")
+            if (
+                candidate.strategy != ExpertStrategy.LOCAL
+                and candidate.topology_domain == TopologyDomain.WAN
+            ):
+                reasons.append(
+                    "fine-grained synchronous expert RPC is not admitted across a WAN "
+                    "topology domain; place the expert inside a contiguous WAN stage"
+                )
             if selected_policy == ExpertPolicy.LOCAL and candidate.strategy != ExpertStrategy.LOCAL:
                 reasons.append("local policy excludes remote execution")
             if (

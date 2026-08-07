@@ -1,7 +1,9 @@
 # Secure single-use pairing
 
-Pairing replaces manual fingerprint copying and trust-store editing. It secures onboarding on a
-trusted LAN/private network; it does not encrypt subsequent inference payloads.
+Pairing replaces manual fingerprint copying and trust-store editing. It is a short-lived
+onboarding protocol: it authenticates durable identities and provisions cluster-scoped TLS
+credentials. Subsequent remote inference control and data traffic uses those credentials rather
+than the pairing secret.
 
 ## Invitation
 
@@ -11,7 +13,7 @@ the private coordinator endpoint and opaque single-use data. Human `cluster crea
 pair` output prints it exactly once as a complete quoted command:
 
 ```text
-swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+swarm node join "swarm://<reachable-address>:<port>/join/<single-use-data>"
 ```
 
 The URI is never repeated in status, logs, errors, audits, or service state. The ordinary human
@@ -46,6 +48,9 @@ or rejected sessions cannot be revived.
 5. The coordinator returns the reciprocal proof and signature.
 6. Sensitive completion documents use AES-GCM with unique nonces and phase-specific associated
    data.
+7. The node contributes a TLS public key inside its signed transcript. The coordinator issues a
+   cluster certificate bound to that public key and the durable Ed25519 fingerprint. The node
+   retains the corresponding private key locally.
 
 Secret-derived proof comparison is constant-time. Completion is bounded by expiry, maximum
 attempts, per-session and source-address rate limits, nonce replay caches, and explicit RPC

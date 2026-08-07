@@ -21,6 +21,7 @@ from swarm_inference.protocol.stage_ring import (
     encode_message,
     inspect_frame_header,
 )
+from swarm_inference.security.tls import TlsClientConfig, require_tls_for_endpoint
 from swarm_inference.transport.stage_ring_faults import (
     FrameContext,
     StageRingFaultAction,
@@ -115,6 +116,8 @@ class _StageRingConnection:
         handshake_factory: HandshakeFactory | None,
         handshake_verifier: HandshakeVerifier | None,
         fault_injector: StageRingFaultInjector | None,
+        tls: TlsClientConfig | None,
+        allow_plaintext_loopback: bool,
     ) -> None:
         host, port = split_endpoint(endpoint)
         if is_wildcard_host(host) or port == 0:
@@ -131,6 +134,8 @@ class _StageRingConnection:
         self.handshake_factory = handshake_factory
         self.handshake_verifier = handshake_verifier
         self.fault_injector = fault_injector
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self._queue: asyncio.Queue[_OutboundFrame] = asyncio.Queue(maxsize=queue_capacity)
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
@@ -157,9 +162,25 @@ class _StageRingConnection:
         if self._writer is not None and not self._writer.is_closing():
             self.metrics.connection_reuses += 1
             return
-        reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(self.host, self.port), timeout=self.connect_timeout_s
+        require_tls_for_endpoint(
+            self.endpoint,
+            tls_configured=self.tls is not None,
+            allow_plaintext_loopback=self.allow_plaintext_loopback,
+            transport_name="stage-ring client",
         )
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(
+                self.host,
+                self.port,
+                ssl=self.tls.ssl_context() if self.tls is not None else None,
+                server_hostname=(self.tls.expected_server_name if self.tls is not None else None),
+            ),
+            timeout=self.connect_timeout_s,
+        )
+        if self.tls is not None:
+            tls_object = writer.get_extra_info("ssl_object")
+            peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+            self.tls.validate_peer_der(peer_der)
         transport_socket = writer.get_extra_info("socket")
         if transport_socket is not None:
             transport_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -330,6 +351,8 @@ class StageRingConnectionPool:
         handshake_factory: HandshakeFactory | None = None,
         handshake_verifier: HandshakeVerifier | None = None,
         fault_injector: StageRingFaultInjector | None = None,
+        tls: TlsClientConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if queue_capacity <= 0 or reconnect_attempts <= 0:
             raise ValueError("stage-ring queue capacity and reconnect attempts must be positive")
@@ -353,6 +376,8 @@ class StageRingConnectionPool:
         self.handshake_factory = handshake_factory
         self.handshake_verifier = handshake_verifier
         self.fault_injector = fault_injector
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self.metrics = StageRingConnectionMetrics()
         self._connections: dict[str, _StageRingConnection] = {}
         self._closed = False
@@ -374,6 +399,8 @@ class StageRingConnectionPool:
                 handshake_factory=self.handshake_factory,
                 handshake_verifier=self.handshake_verifier,
                 fault_injector=self.fault_injector,
+                tls=self.tls,
+                allow_plaintext_loopback=self.allow_plaintext_loopback,
             )
             self._connections[endpoint] = connection
         return connection

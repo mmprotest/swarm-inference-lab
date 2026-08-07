@@ -16,6 +16,7 @@ import typer
 from swarm_inference import __version__
 from swarm_inference.cluster.agent import NodeAgent, NodeAgentOptions
 from swarm_inference.cluster.models import (
+    SECURE_WAN_SECURITY_CLASSIFICATION,
     ClusterAuditEvent,
     ClusterMetadata,
     NodeMembership,
@@ -48,11 +49,17 @@ from swarm_inference.runtime.shutdown import (
     wait_for_service_shutdown,
 )
 from swarm_inference.security.identity import CoordinatorIdentity
+from swarm_inference.security.tls import (
+    certificate_sha256,
+    create_cluster_ca_certificate,
+    issue_node_certificate,
+    tls_public_key_pem,
+)
 from swarm_inference.security.trust_store import WorkerTrustStore
 
 cluster_app = typer.Typer(
     name="cluster",
-    help="Create and operate a persistent trusted-LAN swarm cluster.",
+    help="Create and operate a persistent authenticated swarm cluster.",
     no_args_is_help=True,
 )
 
@@ -85,7 +92,11 @@ async def _create_pairing(
         ),
         ttl_seconds=ttl_seconds,
     )
-    client = CoordinatorClient(cluster.coordinator_endpoint, timeout_s=15.0)
+    client = CoordinatorClient(
+        cluster.coordinator_endpoint,
+        timeout_s=15.0,
+        tls=state.coordinator_tls_client_config(),
+    )
     try:
         return await client.pairing_create(request)
     finally:
@@ -120,13 +131,21 @@ def _bootstrap_cluster(
         override=endpoint_override,
     )
     now = time.time_ns()
+    cluster_id = f"cluster-{uuid4().hex[:12]}"
+    coordinator_certificate = create_cluster_ca_certificate(
+        coordinator_identity,
+        cluster_id=cluster_id,
+    )
     cluster = ClusterMetadata(
-        cluster_id=f"cluster-{uuid4().hex[:12]}",
+        cluster_id=cluster_id,
         name=name,
         coordinator_id=node_id,
         coordinator_endpoint=endpoint,
         coordinator_public_key=coordinator_identity.public_key_b64,
         coordinator_fingerprint=coordinator_identity.public_key_fingerprint,
+        coordinator_certificate_pem=coordinator_certificate,
+        coordinator_certificate_sha256=certificate_sha256(coordinator_certificate),
+        security_classification=SECURE_WAN_SECURITY_CLASSIFICATION,
         created_at_unix_ns=now,
         runtime_compatibility=VersionCompatibility(
             minimum_runtime_version=__version__,
@@ -135,6 +154,16 @@ def _bootstrap_cluster(
     )
     build_id, lock_hash = bootstrap_package_identity()
     platform_identity = platform.identity()
+    node_tls_private_key = state.prepare_node_tls_private_key(rotate=True)
+    node_tls_public_key = tls_public_key_pem(node_tls_private_key)
+    node_certificate = issue_node_certificate(
+        coordinator_identity,
+        ca_certificate_pem=coordinator_certificate,
+        cluster_id=cluster.cluster_id,
+        node_public_key_b64=node_identity.public_key_b64,
+        node_fingerprint=node_identity.public_key_fingerprint,
+        node_tls_public_key_pem=node_tls_public_key,
+    )
     node = NodeMetadata(
         node_id=node_id,
         public_key=node_identity.public_key_b64,
@@ -151,6 +180,9 @@ def _bootstrap_cluster(
         service_mode=platform.service_mode,
         implementation_status=platform_identity.implementation_status,
         implementation_reason=platform_identity.implementation_reason,
+        tls_certificate_pem=node_certificate,
+        tls_certificate_sha256=certificate_sha256(node_certificate),
+        tls_public_key_pem=node_tls_public_key,
     )
     membership = NodeMembership(
         cluster_id=cluster.cluster_id,
@@ -160,6 +192,12 @@ def _bootstrap_cluster(
         coordinator_public_key=cluster.coordinator_public_key,
         coordinator_fingerprint=cluster.coordinator_fingerprint,
         joined_at_unix_ns=now,
+    )
+    state.materialize_coordinator_tls(coordinator_identity, coordinator_certificate)
+    state.materialize_node_tls(
+        node_identity,
+        certificate_pem=node_certificate,
+        ca_certificate_pem=coordinator_certificate,
     )
     state.save_cluster(cluster)
     state.save_node(node)
@@ -176,7 +214,7 @@ def _bootstrap_cluster(
             timestamp_unix_ns=now,
             cluster_id=cluster.cluster_id,
             node_id=node_id,
-            detail="trusted-LAN cluster state created",
+            detail="TLS 1.3 cluster trust and durable node identities created",
         )
     )
     return cluster, node
@@ -301,7 +339,7 @@ def create_command(
     state_root: Annotated[Path | None, typer.Option(help="Override product state root.")] = None,
     coordinator_endpoint: Annotated[
         str | None,
-        typer.Option(help="Private advertised coordinator endpoint override."),
+        typer.Option(help="Routed advertised coordinator endpoint override."),
     ] = None,
     ttl_seconds: Annotated[int, typer.Option(min=1, max=3600)] = 600,
     foreground: Annotated[
@@ -483,7 +521,11 @@ async def _status(state: ClusterStateStore) -> Any:
             body=body,
         )
     )
-    client = CoordinatorClient(cluster.coordinator_endpoint, timeout_s=15.0)
+    client = CoordinatorClient(
+        cluster.coordinator_endpoint,
+        timeout_s=15.0,
+        tls=state.coordinator_tls_client_config(),
+    )
     try:
         return await client.cluster_status(request)
     finally:
@@ -553,7 +595,11 @@ def revoke_command(
         )
 
         async def revoke() -> Any:
-            client = CoordinatorClient(cluster.coordinator_endpoint, timeout_s=15.0)
+            client = CoordinatorClient(
+                cluster.coordinator_endpoint,
+                timeout_s=15.0,
+                tls=state.coordinator_tls_client_config(),
+            )
             try:
                 return await client.cluster_revoke(request)
             finally:

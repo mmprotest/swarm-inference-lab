@@ -27,10 +27,13 @@ NODE_METADATA_DOCUMENT_VERSION: Literal[2] = 2
 NODE_REGISTRY_SCHEMA_VERSION: Literal[2] = 2
 PRODUCT_PROTOCOL_MAJOR = 1
 PRODUCT_PROTOCOL_MINOR = 0
-ARTIFACT_FORMAT_VERSION = 2
+ARTIFACT_FORMAT_VERSION: Literal[2] = 2
 TRUSTED_LAN_SECURITY_CLASSIFICATION: Literal[
     "trusted-lan-private-network-unencrypted-data-plane"
 ] = "trusted-lan-private-network-unencrypted-data-plane"
+SECURE_WAN_SECURITY_CLASSIFICATION: Literal["authenticated-encrypted-wan-tls13"] = (
+    "authenticated-encrypted-wan-tls13"
+)
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _NODE_ID = re.compile(r"^node-[0-9a-f]{8}$")
@@ -85,9 +88,12 @@ class ClusterMetadata(StrictModel):
     product_protocol_major: PositiveInt = PRODUCT_PROTOCOL_MAJOR
     product_protocol_minor: NonNegativeInt = PRODUCT_PROTOCOL_MINOR
     runtime_compatibility: VersionCompatibility
-    security_classification: Literal["trusted-lan-private-network-unencrypted-data-plane"] = (
-        TRUSTED_LAN_SECURITY_CLASSIFICATION
-    )
+    security_classification: Literal[
+        "trusted-lan-private-network-unencrypted-data-plane",
+        "authenticated-encrypted-wan-tls13",
+    ] = TRUSTED_LAN_SECURITY_CLASSIFICATION
+    coordinator_certificate_pem: str | None = None
+    coordinator_certificate_sha256: str | None = None
 
     @field_validator("coordinator_fingerprint")
     @classmethod
@@ -112,6 +118,24 @@ class ClusterMetadata(StrictModel):
     def verify_identity_binding(self) -> None:
         if public_key_fingerprint(self.coordinator_public_key) != self.coordinator_fingerprint:
             raise ValueError("cluster coordinator public key and fingerprint do not match")
+        if self.coordinator_certificate_pem is not None:
+            from swarm_inference.security.tls import (
+                certificate_sha256,
+                validate_coordinator_certificate_binding,
+            )
+
+            validate_coordinator_certificate_binding(
+                self.coordinator_certificate_pem,
+                cluster_id=self.cluster_id,
+                coordinator_public_key_b64=self.coordinator_public_key,
+                coordinator_fingerprint=self.coordinator_fingerprint,
+            )
+            if (
+                self.coordinator_certificate_sha256 is not None
+                and certificate_sha256(self.coordinator_certificate_pem)
+                != self.coordinator_certificate_sha256
+            ):
+                raise ValueError("cluster TLS certificate digest does not match")
 
     @model_validator(mode="after")
     def validate_identity_binding(self) -> Self:
@@ -285,6 +309,9 @@ class NodeMetadata(StrictModel):
     control_endpoint: str | None = None
     data_endpoint: str | None = None
     probe_endpoint: str | None = None
+    tls_certificate_pem: str | None = None
+    tls_certificate_sha256: str | None = None
+    tls_public_key_pem: str | None = None
     joined_at_unix_ns: PositiveInt
     last_seen_at_unix_ns: PositiveInt
     service_mode: NodeServiceMode = "foreground"
@@ -333,6 +360,24 @@ class NodeMetadata(StrictModel):
             raise ValueError("node public key and fingerprint do not match")
         if self.node_id != node_id_from_fingerprint(fingerprint):
             raise ValueError("node_id is not derived from the node fingerprint")
+        if self.tls_certificate_pem is not None:
+            from swarm_inference.security.tls import (
+                certificate_identity_fingerprint,
+                certificate_sha256,
+                certificate_tls_public_key_pem,
+            )
+
+            if certificate_identity_fingerprint(self.tls_certificate_pem) != fingerprint:
+                raise ValueError("node TLS certificate changed the durable node identity")
+            if (
+                self.tls_certificate_sha256 is not None
+                and certificate_sha256(self.tls_certificate_pem) != self.tls_certificate_sha256
+            ):
+                raise ValueError("node TLS certificate digest does not match")
+            if self.tls_public_key_pem is None:
+                raise ValueError("node TLS certificate has no signed public-key binding")
+            if certificate_tls_public_key_pem(self.tls_certificate_pem) != self.tls_public_key_pem:
+                raise ValueError("node TLS certificate does not match its signed TLS public key")
         invalid_workers = [
             worker_id
             for worker_id in self.worker_ids
@@ -587,6 +632,8 @@ class NetworkLinkMeasurement(StrictModel):
     payload_sizes: list[PositiveInt]
     sample_count: PositiveInt
     p95_transfer_ms: NonNegativeFloat
+    jitter_ms: NonNegativeFloat | None = None
+    connection_stability: float | None = Field(default=None, ge=0, le=1)
     source_endpoint: str | None = None
     destination_endpoint: str | None = None
     source_interface: str | None = None
@@ -681,7 +728,9 @@ class ArtifactManifest(StrictModel):
         migrated.setdefault("model_fingerprint", migrated.get("content_hash", ""))
         migrated.setdefault("total_bytes", migrated.get("total_size_bytes"))
         migrated.setdefault("total_size_bytes", migrated.get("total_bytes"))
-        migrated.setdefault("content_hash", str(migrated.get("artifact_id", "")).removeprefix("sha256:"))
+        migrated.setdefault(
+            "content_hash", str(migrated.get("artifact_id", "")).removeprefix("sha256:")
+        )
         return migrated
 
     @field_validator("content_hash")

@@ -1554,6 +1554,11 @@ class ProductizationAcceptanceRunner:
         self.results.append(result)
         return result
 
+    def run_gate(self, spec: GateSpec, *, category: GateCategory = "software") -> GateResult:
+        """Run one gate with the canonical isolation, evidence, and cleanup checks."""
+
+        return self._run_pytest(spec, category=category)
+
     def run_repeatability(
         self,
         *,

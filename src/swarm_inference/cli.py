@@ -1073,7 +1073,7 @@ def adaptive_moe_saturation_command(
                 quick=quick,
                 full=full,
                 skip_download=skip_download,
-                configuration=selected,  # type: ignore[arg-type]
+                configuration=selected,
                 server_path=server_path,
                 gate_17_only=gate_17_only,
             )
@@ -1175,7 +1175,7 @@ def colibri_adaptive_runtime_command(
                 rebuild_colibri=rebuild_colibri,
                 apply_bridge_patches=apply_bridge_patches,
                 telemetry_level=telemetry_level,
-                configuration=selected,  # type: ignore[arg-type]
+                configuration=selected,
                 skip_model_download=skip_model_download,
             )
         )

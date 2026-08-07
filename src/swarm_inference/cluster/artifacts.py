@@ -151,6 +151,12 @@ def calculate_manifest_content_hash(manifest: ArtifactManifest) -> str:
     return hashlib.sha256(_manifest_content_payload(manifest)).hexdigest()
 
 
+def _manifest_total_size(manifest: ArtifactManifest) -> int:
+    if manifest.total_size_bytes is None:
+        raise IntegrityError("artifact manifest does not declare its total byte size")
+    return manifest.total_size_bytes
+
+
 def load_artifact_manifest(directory: Path) -> ArtifactManifest:
     path = directory.resolve() / _MANIFEST_NAME
     if not path.is_file():
@@ -456,11 +462,7 @@ class StageArtifactBuilder:
                 component = adapter.map_tensor_to_component(name)
                 if component.kind == ComponentKind.DECODER_LAYER and (
                     component.layer_index is None
-                    or not (
-                        assignment.layer_start
-                        <= component.layer_index
-                        < assignment.layer_end
-                    )
+                    or not (assignment.layer_start <= component.layer_index < assignment.layer_end)
                 ):
                     raise IntegrityError("unassigned layer tensor entered the stage artifact")
             if not selected_set.issubset(output_weight_map):
@@ -1184,7 +1186,8 @@ class ArtifactManager:
         artifact_hash = _normalise_artifact_id(manifest.artifact_id)
         if artifact_hash != calculate_manifest_content_hash(manifest):
             raise IntegrityError("artifact manifest complete content hash is invalid")
-        if manifest.total_size_bytes > self.maximum_transfer_bytes:
+        total_size_bytes = _manifest_total_size(manifest)
+        if total_size_bytes > self.maximum_transfer_bytes:
             raise ValueError("artifact exceeds the configured transfer byte bound")
         with self._lock:
             destination = self._entry_directory(artifact_hash)
@@ -1204,7 +1207,7 @@ class ArtifactManager:
                     started_at_unix_ns=now,
                     updated_at_unix_ns=now,
                 )
-            self.evict_to_fit(manifest.total_size_bytes)
+            self.evict_to_fit(total_size_bytes)
             status, _ = self._begin_transfer(
                 manifest=manifest,
                 source=source,
@@ -1302,7 +1305,8 @@ class ArtifactManager:
             raise ValueError("per-call artifact chunk limit must be positive")
         source = source_directory.expanduser().resolve()
         manifest = verify_artifact_directory(source)
-        if manifest.total_size_bytes > self.maximum_transfer_bytes:
+        total_size_bytes = _manifest_total_size(manifest)
+        if total_size_bytes > self.maximum_transfer_bytes:
             raise ValueError("artifact exceeds the configured transfer byte bound")
         chunks = self._chunk_plan(source, manifest)
         with self._lock:
@@ -1322,7 +1326,7 @@ class ArtifactManager:
                     started_at_unix_ns=now,
                     updated_at_unix_ns=now,
                 )
-            self.evict_to_fit(manifest.total_size_bytes)
+            self.evict_to_fit(total_size_bytes)
             status, resume = self._begin_transfer(
                 manifest=manifest, source=str(source), chunks_total=len(chunks)
             )
@@ -1392,7 +1396,7 @@ class ArtifactOperationCoordinator:
             if request.chunks_total is None:
                 raise ValueError("artifact prepare requires a bounded chunk count")
             if request.maximum_bytes is not None and (
-                request.manifest.total_size_bytes > request.maximum_bytes
+                _manifest_total_size(request.manifest) > request.maximum_bytes
             ):
                 raise ValueError("artifact exceeds the caller's transfer byte bound")
             transfer = self.manager.prepare_incoming(

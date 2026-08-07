@@ -17,6 +17,7 @@ from swarm_inference.protocol.stage_ring import (
     Operation,
     StageMessage,
 )
+from swarm_inference.security.tls import TlsServerConfig, require_tls_for_endpoint
 from swarm_inference.transport.stage_ring_connection import (
     read_stage_message,
     write_stage_message,
@@ -103,6 +104,8 @@ class StageRingServer:
         idle_timeout_s: float = 120.0,
         shutdown_timeout_s: float = 5.0,
         require_peer_authentication: bool | Callable[[], bool] = False,
+        tls: TlsServerConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if min(queue_capacity, dispatch_workers, maximum_connections) <= 0:
             raise ValueError("stage-ring server bounds must be positive")
@@ -123,6 +126,8 @@ class StageRingServer:
         self.idle_timeout_s = idle_timeout_s
         self.shutdown_timeout_s = shutdown_timeout_s
         self.require_peer_authentication = require_peer_authentication
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self.metrics = StageRingServerMetrics()
         self._queue: asyncio.Queue[_InboundFrame] = asyncio.Queue(maxsize=queue_capacity)
         self._dispatch_tasks: set[asyncio.Task[None]] = set()
@@ -140,6 +145,12 @@ class StageRingServer:
             if self._server is not None or not self._stopped:
                 raise RuntimeError("stage-ring server is already started")
             host, port = split_endpoint(endpoint)
+            require_tls_for_endpoint(
+                endpoint,
+                tls_configured=self.tls is not None,
+                allow_plaintext_loopback=self.allow_plaintext_loopback,
+                transport_name="stage-ring server",
+            )
             self._stopping = False
             self._stopped = False
             self.bound_endpoint = None
@@ -148,7 +159,13 @@ class StageRingServer:
                 for index in range(self.dispatch_workers)
             }
             try:
-                server = await asyncio.start_server(self._handle_connection, host, port)
+                server = await asyncio.start_server(
+                    self._handle_connection,
+                    host,
+                    port,
+                    ssl=self.tls.ssl_context() if self.tls is not None else None,
+                    ssl_handshake_timeout=(self.read_timeout_s if self.tls is not None else None),
+                )
                 self._server = server
                 server_sockets = server.sockets
                 if not server_sockets:
@@ -208,6 +225,17 @@ class StageRingServer:
             writer=writer,
             task=connection_task,
         )
+        if self.tls is not None:
+            try:
+                tls_object = writer.get_extra_info("ssl_object")
+                peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+                connection.peer_identity = self.tls.validate_peer_der(peer_der)
+            except TransportError:
+                self.metrics.connection_errors += 1
+                writer.close()
+                with suppress(OSError, TimeoutError):
+                    await asyncio.wait_for(writer.wait_closed(), timeout=self.shutdown_timeout_s)
+                return
         if connection_task is not None:
             self._connection_tasks.add(connection_task)
         transport_socket = writer.get_extra_info("socket")

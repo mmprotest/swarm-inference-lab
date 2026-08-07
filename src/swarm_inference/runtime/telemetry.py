@@ -181,7 +181,10 @@ def _json_metrics(metrics: Mapping[str, Any] | None) -> dict[str, Any]:
 
     if not metrics:
         return {}
-    return json.loads(json.dumps(dict(metrics), sort_keys=True, default=str))
+    loaded = json.loads(json.dumps(dict(metrics), sort_keys=True, default=str))
+    if not isinstance(loaded, dict):  # pragma: no cover - JSON source is constructed above
+        raise TypeError("runtime metrics must serialize to a JSON object")
+    return dict(loaded)
 
 
 def execution_runtime_revisions(
@@ -243,13 +246,13 @@ def _execution_layout(
             for placement in stage.placements:
                 row = {
                     "stage_id": stage.stage_id,
-                    **placement.model_dump(mode="json", exclude={"worker_endpoints", "microshards"}),
+                    **placement.model_dump(
+                        mode="json", exclude={"worker_endpoints", "microshards"}
+                    ),
                 }
                 experts.append(row)
                 role = (
-                    "whole_expert"
-                    if placement.strategy == "whole-remote"
-                    else "expert_microshard"
+                    "whole_expert" if placement.strategy == "whole-remote" else "expert_microshard"
                 )
                 if placement.strategy != "local":
                     for worker_id in placement.worker_ids:
@@ -310,13 +313,10 @@ def build_inference_telemetry_record(
     observed_tokens = tuple(float(item) for item in token_monotonic_s)
     elapsed_s = max(0.0, completed_monotonic_s - submitted_monotonic_s)
     ttft_ms = (
-        max(0.0, observed_tokens[0] - submitted_monotonic_s) * 1000
-        if observed_tokens
-        else None
+        max(0.0, observed_tokens[0] - submitted_monotonic_s) * 1000 if observed_tokens else None
     )
     inter_token_ms = tuple(
-        max(0.0, right - left) * 1000
-        for left, right in pairwise(observed_tokens)
+        max(0.0, right - left) * 1000 for left, right in pairwise(observed_tokens)
     )
     decode_tokens_s = (
         (len(observed_tokens) - 1) / (observed_tokens[-1] - observed_tokens[0])
@@ -389,10 +389,12 @@ def build_inference_telemetry_record(
         if (value := _nonnegative_int(metrics.get("bytes_transferred"))) is not None
     )
     if expert_network_bytes:
-        measured_ints["network_bytes"] = (measured_ints["network_bytes"] or 0) + expert_network_bytes
+        measured_ints["network_bytes"] = (
+            measured_ints["network_bytes"] or 0
+        ) + expert_network_bytes
         sources["network_bytes"] = "coordinator-verified-expert-trace"
-    for name, value in measured_ints.items():
-        if value is not None and name not in sources:
+    for name, integer_value in measured_ints.items():
+        if integer_value is not None and name not in sources:
             sources[name] = "engine-reported"
 
     float_metrics = {
@@ -410,8 +412,8 @@ def build_inference_telemetry_record(
     measured_floats = {
         name: _first_float(engine_metrics, paths) for name, paths in float_metrics.items()
     }
-    for name, value in measured_floats.items():
-        if value is not None:
+    for name, float_value in measured_floats.items():
+        if float_value is not None:
             sources[name] = "engine-reported"
 
     fallbacks: list[str] = []

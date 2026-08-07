@@ -42,6 +42,7 @@ from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tenso
 from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
+from swarm_inference.security.tls import TlsClientConfig
 from swarm_inference.transport.peer import FinalResultClient, PeerConnectionPool
 from swarm_inference.worker.execution import ExecutionEngine
 from swarm_inference.worker.metrics import WorkerMetrics
@@ -62,6 +63,8 @@ class WorkerAgent:
         reconnect_attempts: int = 5,
         reconnect_initial_backoff_ms: float = 25.0,
         reconnect_max_backoff_ms: float = 1000.0,
+        peer_tls: TlsClientConfig | None = None,
+        coordinator_tls: TlsClientConfig | None = None,
     ) -> None:
         if capability.memory_limit_bytes is None:
             raise ValueError("worker capability must declare an enforced memory limit")
@@ -84,7 +87,9 @@ class WorkerAgent:
             reconnect_attempts=reconnect_attempts,
             reconnect_initial_backoff_ms=reconnect_initial_backoff_ms,
             reconnect_max_backoff_ms=reconnect_max_backoff_ms,
+            tls=peer_tls,
         )
+        self._coordinator_tls = coordinator_tls
         self._inbound_capacity = inbound_queue_capacity
         self._inbound_active = 0
         self._inbound_lock = asyncio.Lock()
@@ -138,7 +143,10 @@ class WorkerAgent:
             self._route_key = key
             self._coordinator_data_endpoint = assignment.coordinator_data_endpoint
             if self._final_client is None:
-                self._final_client = FinalResultClient(assignment.coordinator_data_endpoint)
+                self._final_client = FinalResultClient(
+                    assignment.coordinator_data_endpoint,
+                    tls=self._coordinator_tls,
+                )
 
     def install_route(self, route: RoutePlan) -> None:
         if self._data_plane_mode != DataPlaneMode.DIRECT:

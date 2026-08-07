@@ -85,6 +85,7 @@ from swarm_inference.protocol.stage_worker import (
 )
 from swarm_inference.runtime.performance_profiles import FastPathProfileStore
 from swarm_inference.security.identity import WorkerIdentity, public_key_fingerprint
+from swarm_inference.security.tls import TlsClientConfig
 from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
 from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
 from swarm_inference.worker.stage_sessions import StageSessionRegistry
@@ -229,6 +230,7 @@ class PersistentStageRuntime:
         loader: StageLoader | None = None,
         token_publisher: TokenPublisher | None = None,
         connection_pool: StageRingConnectionPool | None = None,
+        connection_tls: TlsClientConfig | None = None,
         identity: WorkerIdentity | None = None,
         trusted_coordinators: dict[str, str] | None = None,
         require_authenticated_routes: bool = False,
@@ -261,6 +263,7 @@ class PersistentStageRuntime:
         )
         self.allow_model_download = allow_model_download
         self.fast_path_profile_store = fast_path_profile_store
+        self.connection_tls = connection_tls
         self._artifact_resolver = artifact_resolver
         self._artifact_lease_acquirer = artifact_lease_acquirer
         self._artifact_lease_releaser = artifact_lease_releaser
@@ -295,6 +298,7 @@ class PersistentStageRuntime:
             queue_capacity=execution_queue_capacity,
             handshake_factory=self._peer_handshake_message,
             handshake_verifier=self._verify_peer_handshake_response,
+            tls=connection_tls,
         )
         self._loaded: _LoadedStage | None = None
         self._route: InstallStageRouteRequest | None = None
@@ -482,9 +486,7 @@ class PersistentStageRuntime:
         revision_files = ["config.json"]
         if index_path.is_file():
             revision_files.append(index_path.name)
-        resolved_model_revision = self._metadata_revision(
-            model_path, tuple(revision_files)
-        )
+        resolved_model_revision = self._metadata_revision(model_path, tuple(revision_files))
         config_revision = config_value.get("_commit_hash")
         if resolved_model_revision is None and isinstance(config_revision, str):
             resolved_model_revision = config_revision or None
@@ -553,10 +555,7 @@ class PersistentStageRuntime:
                 or manifest.owns_embeddings != assignment.owns_embeddings
                 or manifest.owns_final_norm != assignment.owns_final_norm
                 or manifest.owns_output_projection != assignment.owns_output_projection
-                or (
-                    request.adapter_id is not None
-                    and manifest.adapter_id != request.adapter_id
-                )
+                or (request.adapter_id is not None and manifest.adapter_id != request.adapter_id)
             ):
                 raise IntegrityError("artifact identity or ownership differs from the load request")
             artifact_tokenizer_revision = manifest.tokenizer_revision
@@ -576,9 +575,7 @@ class PersistentStageRuntime:
     ) -> StageExecutor:
         if resolved_model_path is None:
             raise FileNotFoundError("native stage loading requires a resolved local checkpoint")
-        config_value = json.loads(
-            (resolved_model_path / "config.json").read_text(encoding="utf-8")
-        )
+        config_value = json.loads((resolved_model_path / "config.json").read_text(encoding="utf-8"))
         adapter = (
             self._adapters.get(request.adapter_id)
             if request.adapter_id is not None
@@ -588,6 +585,7 @@ class PersistentStageRuntime:
             request=request,
             resolved_model_path=resolved_model_path,
             fast_path_profile_store=self.fast_path_profile_store,
+            expert_tls=self.connection_tls,
         )
         if not isinstance(executor, StageExecutor):
             raise TypeError(

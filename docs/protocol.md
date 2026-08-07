@@ -1,6 +1,7 @@
 # Protocol
 
-Control and activation RPCs use gRPC AsyncIO. The checked-in
+Control and activation RPCs use gRPC AsyncIO over TLS 1.3 for non-loopback product endpoints.
+The checked-in
 [`proto/swarm.proto`](../proto/swarm.proto) defines coordinator and worker
 services. Validated control models are carried in protobuf `Any` envelopes; no
 pickle or arbitrary Python object is transmitted.
@@ -46,7 +47,8 @@ result activations are chunked.
 - `Worker.Cancel`: remove request-local state.
 - `Worker.Health`: loaded stages, health, and queue depth.
 
-The initial transport is insecure gRPC at the channel layer. Ed25519 protects
-envelope authenticity, not confidentiality. Physical experiments should use a
-trusted LAN or add TLS termination; Internet exposure is unsafe.
-
+Product channels validate the cluster CA and durable peer identity. Worker and stage paths use
+mutually authenticated TLS; coordinator long-lived requests also require signed durable
+identity authentication because the same TLS listener serves the one-time onboarding endpoint.
+Unauthenticated plaintext is rejected for non-loopback endpoints. Plaintext loopback channels
+exist only for isolated development and test fixtures.

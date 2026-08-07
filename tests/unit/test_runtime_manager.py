@@ -60,6 +60,15 @@ class _Platform:
                 is_up=True,
                 mtu=1400,
             ),
+            InterfaceAddress(
+                interface="Public",
+                address="198.51.100.20",
+                prefix_length=24,
+                is_private=False,
+                is_loopback=False,
+                is_up=True,
+                mtu=1500,
+            ),
         ]
 
     def accelerator_probes(self):
@@ -176,6 +185,34 @@ def test_endpoint_selection_rejects_loopback_wildcard_and_honours_multi_nic(tmp_
     )
     assert selected.source_address == "10.8.0.4"
     assert selected.interface_name == "VPN"
+    public = manager.select_endpoints(
+        node_id="node-public",
+        coordinator_endpoint="203.0.113.10:50051",
+        interface_override="Public",
+    )
+    assert public.source_address == "198.51.100.20"
+    assert public.interface_name == "Public"
+
+
+def test_loopback_development_endpoints_do_not_bind_wildcards(tmp_path: Path) -> None:
+    platform = _Platform()
+    platform.source = "127.0.0.1"
+    manager = RuntimeManager(
+        state=ClusterStateStore(tmp_path),
+        platform=platform,  # type: ignore[arg-type]
+        port_available=lambda host, port: True,
+        allow_loopback=True,
+    )
+
+    selected = manager.select_endpoints(
+        node_id="node-loopback",
+        coordinator_endpoint="127.0.0.1:50051",
+    )
+
+    assert selected.control_listen_endpoint.startswith("127.0.0.1:")
+    assert selected.data_listen_endpoint.startswith("127.0.0.1:")
+    assert selected.probe_listen_endpoint is not None
+    assert selected.probe_listen_endpoint.startswith("127.0.0.1:")
 
 
 def test_prepared_configuration_persists_every_automatic_choice(tmp_path: Path) -> None:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from itertools import pairwise
 from typing import Protocol
 
@@ -24,6 +24,7 @@ from swarm_inference.engines.interfaces import (
     PhasePlan,
     WorkerExecutionCapability,
 )
+from swarm_inference.engines.topology import summarize_network_path
 from swarm_inference.model.adapter import (
     NativeModelAdapterRegistry,
     default_native_adapter_registry,
@@ -42,17 +43,13 @@ class NativeStageRuntimeBridge(Protocol):
 
 
 def _stage_capable(capability: ExecutionEngineCapability) -> bool:
-    return bool(
-        {"stage", "critical_path_stage", "contiguous-stage"}.intersection(
-            capability.roles
-        )
-    )
+    return bool({"stage", "critical_path_stage", "contiguous-stage"}.intersection(capability.roles))
 
 
 def _stage_runtime_facts(
     worker: WorkerExecutionCapability,
     *,
-    ownership: dict[str, object],
+    ownership: Mapping[str, object],
     fast_path: str,
 ) -> dict[str, object]:
     capability, device = _engine_device(worker)
@@ -154,6 +151,9 @@ class NativeStageEngine:
                 engine_id=self.engine_id,
                 status=status,
                 reason="; ".join(f"{item.adapter_id}: {item.reason}" for item in reports),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="PyTorch native stage runtime and a registered adapter",
             )
         adapter = supported[0]
         workers = [
@@ -170,9 +170,12 @@ class NativeStageEngine:
                 status=EngineSupportStatus.MISSING_RUNTIME,
                 reason=f"no worker advertises native adapter {adapter.adapter_id}",
                 adapter_id=adapter.adapter_id,
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime=f"native-stage adapter {adapter.adapter_id}",
             )
         memory = sum(
-            max(device.usable_memory_bytes for device in worker.engine(self.engine_id).devices)  # type: ignore[union-attr]
+            max(device.usable_memory_bytes for device in _engine_device(worker)[0].devices)
             for worker in workers
         )
         if memory < model.weight_bytes:
@@ -182,6 +185,9 @@ class NativeStageEngine:
                 reason="aggregate native-stage memory cannot own the immutable checkpoint",
                 supported_worker_ids=tuple(worker.worker_id for worker in workers),
                 adapter_id=adapter.adapter_id,
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime=f"native-stage adapter {adapter.adapter_id}",
             )
         return EngineSupportReport(
             engine_id=self.engine_id,
@@ -190,7 +196,17 @@ class NativeStageEngine:
             supported_worker_ids=tuple(worker.worker_id for worker in workers),
             adapter_id=adapter.adapter_id,
             runtime_identity={"engine_version": self.engine_version},
+            model_architecture=model.architecture,
+            model_format=model.format,
+            required_runtime=f"native-stage adapter {adapter.adapter_id}",
         )
+
+    def probe_model_support(
+        self,
+        model: ResolvedModelDescriptor,
+        cluster: ClusterCapabilities,
+    ) -> EngineSupportReport:
+        return self.probe(model, cluster)
 
     async def candidate_plans(
         self,
@@ -230,10 +246,13 @@ class NativeStageEngine:
             local_rates[worker.worker_id] = rate
             roles = {worker.worker_id: "critical_path_stage"}
             fast_path = _fast_path_mode(capability, adapter.adapter_id, device.device_type)
-            assignment = {
+            assignment: dict[str, object] = {
                 "stage_id": 0,
                 "layer_start": 0,
                 "layer_end": model.layer_count,
+                "model_bytes": model.weight_bytes,
+                "expected_memory_bytes": model.weight_bytes,
+                "execution_device": device.device_id,
             }
             execution_identity = _identity(
                 model,
@@ -267,11 +286,16 @@ class NativeStageEngine:
                     ),
                     concurrency=request.concurrency,
                     request_priority=request.priority,
+                    network_latency_ms=0.0,
+                    network_jitter_ms=0.0,
+                    messages_per_token=0.0,
+                    bytes_per_token=0.0,
+                    serial_waits_per_token=0.0,
                 ),
                 objective=request.objective,
             )
             topology = "local-one-stage"
-            plan_identity = {
+            plan_identity: dict[str, object] = {
                 "model": model.content_fingerprint,
                 "execution": execution_identity,
                 "topology": topology,
@@ -300,6 +324,14 @@ class NativeStageEngine:
                     predicted_ttft_ms=costs.predicted_ttft_ms,
                     predicted_decode_tokens_s=costs.predicted_decode_tokens_s,
                     predicted_aggregate_tokens_s=costs.predicted_aggregate_tokens_s,
+                    predicted_network_bytes=0,
+                    predicted_messages_per_token=0.0,
+                    predicted_bytes_per_token=0.0,
+                    predicted_serial_waits_per_token=0.0,
+                    number_of_wan_stage_boundaries=0,
+                    persistent_connections=False,
+                    network_cost_confidence="measured",
+                    network_cost_provenance="no network boundary",
                     required_memory_bytes=model.weight_bytes,
                     score=costs.score,
                     explanation=("one stage avoids network and acquisition costs",),
@@ -320,12 +352,20 @@ class NativeStageEngine:
                 continue
             rates = [float(device.measured_decode_tokens_s or 1.0) for device in devices]
             stage_rate = min(rate * stage_count for rate in rates)
-            network_ms = 0.0
-            for left, right in pairwise(selected):
-                network_ms += float(left.network_latency_ms.get(right.worker_id, 0.0))
-            predicted = 1000 / (1000 / max(stage_rate, 0.001) + network_ms)
+            links = tuple(left.link_to(right.worker_id) for left, right in pairwise(selected))
+            network = summarize_network_path(links)
+            predicted = (
+                1000
+                / (
+                    1000 / max(stage_rate, 0.001)
+                    + float(network.aggregate_rtt_ms)
+                    + float(network.aggregate_jitter_ms or 0.0)
+                )
+                if network.aggregate_rtt_ms is not None
+                else None
+            )
             capacity_required = not local_rates
-            positive = predicted > best_local
+            positive = predicted is not None and predicted > best_local
             if (
                 request.objective == "speed"
                 and not request.require_distributed
@@ -337,21 +377,27 @@ class NativeStageEngine:
                 item.worker_id: "outside the positive-utility contiguous partition"
                 for item in workers[stage_count:]
             }
-            assignments = []
+            assignments: list[dict[str, object]] = []
             fast_paths: dict[str, str] = {}
             layers = model.layer_count or stage_count
             for index, worker in enumerate(selected):
                 start = index * layers // stage_count
                 end = (index + 1) * layers // stage_count
+                capability, device = _engine_device(worker)
                 assignments.append(
                     {
                         "stage_id": index,
                         "worker_id": worker.worker_id,
                         "layer_start": start,
                         "layer_end": end,
+                        "model_bytes": (
+                            (model.weight_bytes * (index + 1) // stage_count)
+                            - (model.weight_bytes * index // stage_count)
+                        ),
+                        "expected_memory_bytes": per_stage,
+                        "execution_device": device.device_id,
                     }
                 )
-                capability, device = _engine_device(worker)
                 fast_paths[worker.worker_id] = _fast_path_mode(
                     capability,
                     adapter.adapter_id,
@@ -365,9 +411,7 @@ class NativeStageEngine:
                     _stage_runtime_facts(
                         worker,
                         ownership={
-                            key: value
-                            for key, value in assignment.items()
-                            if key != "worker_id"
+                            key: value for key, value in assignment.items() if key != "worker_id"
                         },
                         fast_path=fast_paths[worker.worker_id],
                     )
@@ -376,6 +420,11 @@ class NativeStageEngine:
             )
             reliability = min(item.reliability for item in selected)
             usable_memory = sum(device.usable_memory_bytes for device in devices)
+            bytes_per_token = (
+                float(model.hidden_size * model.activation_dtype_bytes * (stage_count - 1))
+                if model.hidden_size is not None and model.activation_dtype_bytes is not None
+                else None
+            )
             costs = score_costs(
                 PlanCostInputs(
                     measured_decode_tokens_s=max(stage_rate, 1e-9),
@@ -383,8 +432,10 @@ class NativeStageEngine:
                     reliability=reliability,
                     usable_memory_bytes=usable_memory,
                     required_memory_bytes=model.weight_bytes,
-                    network_latency_ms=network_ms,
+                    network_latency_ms=network.aggregate_rtt_ms,
+                    network_jitter_ms=network.aggregate_jitter_ms,
                     messages_per_token=float(stage_count),
+                    bytes_per_token=bytes_per_token,
                     serial_waits_per_token=float(stage_count),
                     concurrency=request.concurrency,
                     request_priority=request.priority,
@@ -421,19 +472,31 @@ class NativeStageEngine:
                     predicted_ttft_ms=costs.predicted_ttft_ms,
                     predicted_decode_tokens_s=costs.predicted_decode_tokens_s,
                     predicted_aggregate_tokens_s=costs.predicted_aggregate_tokens_s,
+                    predicted_network_bytes=(
+                        int(bytes_per_token * request.max_new_tokens)
+                        if bytes_per_token is not None
+                        else None
+                    ),
                     predicted_messages_per_token=float(stage_count),
+                    predicted_bytes_per_token=bytes_per_token,
                     predicted_serial_waits_per_token=float(stage_count),
+                    number_of_wan_stage_boundaries=network.wan_boundaries,
+                    persistent_connections=True,
+                    network_cost_confidence=network.confidence.value,
+                    network_cost_provenance=network.provenance,
                     required_memory_bytes=model.weight_bytes,
                     score=costs.score,
                     explanation=(
                         "persistent workers own contiguous stages",
                         "adjacent stages use direct persistent tensor connections",
                         "coordinator has zero hidden-state relay edges",
+                        "network domains: " + ", ".join(item.value for item in network.domains),
                     ),
                     engine_parameters={
                         "adapter_id": adapter.adapter_id,
                         "cost_components": costs.components,
                         "unmeasured_inputs": costs.unmeasured_inputs,
+                        "network_links": [item.model_dump(mode="json") for item in links],
                     },
                 )
             )
@@ -492,6 +555,14 @@ class NativeStageEngine:
                         predicted_ttft_ms=1000 / max(local_rates[replicas[0].worker_id], 0.001),
                         predicted_decode_tokens_s=local_rates[replicas[0].worker_id],
                         predicted_aggregate_tokens_s=aggregate,
+                        predicted_network_bytes=0,
+                        predicted_messages_per_token=0.0,
+                        predicted_bytes_per_token=0.0,
+                        predicted_serial_waits_per_token=0.0,
+                        number_of_wan_stage_boundaries=0,
+                        persistent_connections=False,
+                        network_cost_confidence="measured",
+                        network_cost_provenance="independent complete-model replicas",
                         required_memory_bytes=model.weight_bytes * len(replicas),
                         score=aggregate,
                         explanation=(

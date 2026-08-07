@@ -105,9 +105,7 @@ class _FakeEngine:
         self, deployment: Deployment, request: InferenceRequest
     ) -> AsyncIterator[InferenceEvent]:
         assert deployment.deployment_id == "engine-private-id"
-        yield InferenceEvent(
-            event_type="started", request_id=request.request_id, sequence_number=0
-        )
+        yield InferenceEvent(event_type="started", request_id=request.request_id, sequence_number=0)
         yield InferenceEvent(
             event_type="token",
             request_id=request.request_id,

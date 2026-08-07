@@ -1,8 +1,9 @@
 # Cluster quick start
 
-This is the normal OLMoE product workflow. It assumes a trusted LAN or private network. Pairing
-traffic is authenticated and completion payloads are encrypted; inference data-plane payloads
-are not encrypted.
+This is the normal model-independent product workflow. It may be used across routed WAN links
+when the advertised endpoints are reachable. Pairing authenticates durable identities and
+provisions identity-bound TLS 1.3 credentials; remote inference control and data traffic is
+encrypted in transit.
 
 ## 1. Install the GitHub Release on each machine
 
@@ -26,19 +27,19 @@ installed doctor, and does not create a service before cluster membership exists
 On the coordinator machine:
 
 ```powershell
-swarm cluster create --name villani-home
+swarm cluster create --name my-swarm
 ```
 
-The command creates or adopts the durable identity, selects a private endpoint and available
+The command creates or adopts the durable identity, selects a routed endpoint and available
 ports, probes the backend, establishes memory/storage budgets, and installs/starts the user
 service. Human output prints exactly one complete command:
 
 ```text
-Cluster ready: villani-home
+Cluster ready: my-swarm
 
 Run this command on the machine joining the cluster:
 
-swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+swarm node join "swarm://<reachable-address>:<port>/join/<single-use-data>"
 ```
 
 ## 3. Paste the join command
@@ -52,7 +53,7 @@ logs or screenshots.
 On another machine:
 
 ```powershell
-swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+swarm node join "swarm://<reachable-address>:<port>/join/<single-use-data>"
 ```
 
 Joining creates or reuses the node identity, verifies both transcript-bound identity proofs,
@@ -70,23 +71,25 @@ Implementation, software validation, and physical validation are independent fie
 probe selects an operational backend but does not turn a `not-run` validation record into
 `validated`.
 
-## 6. Run physical acceptance, then infer
+## 6. Inspect a plan, then infer
 
 Follow [physical two-machine acceptance](physical-two-machine-acceptance.md). A normal run is:
 
 ```powershell
 
-swarm run allenai/OLMoE-1B-7B-0125-Instruct `
-  --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
-  --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea `
+swarm run <hugging-face-model-or-local-model> `
   --mode speed `
+  --require-distributed `
+  --dry-run `
+  --explain-plan `
   --prompt "Explain distributed inference."
 ```
 
-The revision is mandatory and immutable. `swarm run` refreshes capabilities and network
-evidence, selects a benchmark-approved common dtype, performs bounded planning, builds and
-transfers stage-owned artifacts, deploys transactionally, verifies routes/peers, and streams the
-request through the canonical runtime.
+Remove `--dry-run --explain-plan` to execute the accepted plan. For a mutable Hugging Face
+reference, the resolver pins the resolved commit before deployment. `swarm run` refreshes
+capabilities and network evidence, preflights engine/model compatibility, performs bounded
+planning, builds and transfers stage-owned artifacts, deploys transactionally, verifies
+routes/peers, and streams through the canonical runtime.
 
 Useful plan controls:
 

@@ -8,7 +8,12 @@ from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
 from swarm_inference.cluster.artifacts import load_artifact_manifest
-from swarm_inference.engines.interfaces import Deployment, ExecutionEngine, InferenceEvent
+from swarm_inference.engines.interfaces import (
+    Deployment,
+    ExecutionEngine,
+    ExecutionPlan,
+    InferenceEvent,
+)
 from swarm_inference.protocol.engine_worker import (
     EngineActionResponse,
     EngineControlAction,
@@ -47,9 +52,9 @@ class PersistentEngineRuntime:
         for engine in engines:
             self.register(engine)
         self._deployments: dict[str, tuple[ExecutionEngine, Deployment]] = {}
-        self._responses: OrderedDict[
-            str, EngineActionResponse | EngineInferenceResponse
-        ] = OrderedDict()
+        self._responses: OrderedDict[str, EngineActionResponse | EngineInferenceResponse] = (
+            OrderedDict()
+        )
         self._nonce_cache = BoundedNonceCache(capacity=nonce_cache_capacity)
         self._coordinator_public_key: str | None = None
         self._coordinator_fingerprint: str | None = None
@@ -83,9 +88,7 @@ class PersistentEngineRuntime:
         self._coordinator_public_key = coordinator_public_key
         self._coordinator_fingerprint = actual
 
-    def _cached(
-        self, request_id: str
-    ) -> EngineActionResponse | EngineInferenceResponse | None:
+    def _cached(self, request_id: str) -> EngineActionResponse | EngineInferenceResponse | None:
         response = self._responses.get(request_id)
         if response is not None:
             self._responses.move_to_end(request_id)
@@ -127,7 +130,7 @@ class PersistentEngineRuntime:
         )
         self._nonce_cache.add(lease.nonce)
 
-    def _worker_plan(self, request: PrepareEngineRequest):
+    def _worker_plan(self, request: PrepareEngineRequest) -> ExecutionPlan:
         plan = request.plan
         if not request.artifact_ids:
             return plan
@@ -139,7 +142,9 @@ class PersistentEngineRuntime:
             manifest = load_artifact_manifest(root)
             if manifest.model_fingerprint != plan.model_fingerprint:
                 raise RuntimeError("engine artifact model identity differs from the plan")
-            model_paths.extend(str((root / item.relative_path).resolve()) for item in manifest.files)
+            model_paths.extend(
+                str((root / item.relative_path).resolve()) for item in manifest.files
+            )
         parameters = {**plan.engine_parameters, "model_paths": model_paths}
         return plan.model_copy(update={"engine_parameters": parameters})
 
@@ -158,9 +163,7 @@ class PersistentEngineRuntime:
         try:
             engine = self._engines[request.plan.engine_id]
         except KeyError as exc:
-            raise RuntimeError(
-                f"worker does not own engine {request.plan.engine_id!r}"
-            ) from exc
+            raise RuntimeError(f"worker does not own engine {request.plan.engine_id!r}") from exc
         async with self._lock:
             existing = self._deployments.get(request.deployment_id)
             if existing is not None:

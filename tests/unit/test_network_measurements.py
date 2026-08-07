@@ -36,6 +36,38 @@ from swarm_inference.protocol.cluster import (
     NetworkProbeControlRequest,
 )
 from swarm_inference.security.identity import CoordinatorIdentity, WorkerIdentity
+from swarm_inference.security.tls import (
+    WORKER_TLS_NAME,
+    TlsCertificatePaths,
+    TlsClientConfig,
+    TlsServerConfig,
+    create_cluster_ca_certificate,
+    identity_tls_public_key_pem,
+    issue_node_certificate,
+    materialize_tls_identity,
+)
+
+
+def _tls_material(
+    root: Path,
+    *,
+    identity: WorkerIdentity,
+    certificate: str,
+    ca_certificate: str,
+) -> TlsCertificatePaths:
+    paths = TlsCertificatePaths(
+        certificate=root / "certificate.pem",
+        private_key=root / "private-key.pem",
+        ca_certificate=root / "ca.pem",
+    )
+    materialize_tls_identity(
+        identity=identity,
+        certificate_pem=certificate,
+        certificate_path=paths.certificate,
+        private_key_path=paths.private_key,
+    )
+    paths.ca_certificate.write_text(ca_certificate, encoding="ascii")
+    return paths
 
 
 def _metadata(
@@ -116,6 +148,33 @@ async def test_authenticated_directed_network_measurement_is_persisted(tmp_path:
     source_identity = WorkerIdentity.generate()
     destination_identity = WorkerIdentity.generate()
     cluster = _cluster(coordinator_identity, now)
+    ca_certificate = create_cluster_ca_certificate(
+        coordinator_identity,
+        cluster_id=cluster.cluster_id,
+    )
+
+    def issue(identity: WorkerIdentity) -> str:
+        return issue_node_certificate(
+            coordinator_identity,
+            ca_certificate_pem=ca_certificate,
+            cluster_id=cluster.cluster_id,
+            node_public_key_b64=identity.public_key_b64,
+            node_fingerprint=identity.public_key_fingerprint,
+            node_tls_public_key_pem=identity_tls_public_key_pem(identity),
+        )
+
+    source_tls = _tls_material(
+        tmp_path / "source-tls",
+        identity=source_identity,
+        certificate=issue(source_identity),
+        ca_certificate=ca_certificate,
+    )
+    destination_tls = _tls_material(
+        tmp_path / "destination-tls",
+        identity=destination_identity,
+        certificate=issue(destination_identity),
+        ca_certificate=ca_certificate,
+    )
     state.save_cluster(cluster)
     source_node_id = node_id_from_fingerprint(source_identity.public_key_fingerprint)
     destination_node_id = node_id_from_fingerprint(destination_identity.public_key_fingerprint)
@@ -127,6 +186,10 @@ async def test_authenticated_directed_network_measurement_is_persisted(tmp_path:
         identity=destination_identity,
         node_id=destination_node_id,
         worker_id=destination_worker_id,
+        tls_server=TlsServerConfig(
+            destination_tls,
+            allowed_peer_fingerprints=frozenset({source_identity.public_key_fingerprint}),
+        ),
     )
     await server.start("127.0.0.1:0")
     assert server.bound_endpoint is not None
@@ -175,6 +238,11 @@ async def test_authenticated_directed_network_measurement_is_persisted(tmp_path:
             worker_id=source_worker_id,
             source_interface="Ethernet",
             source_mtu=1500,
+            tls_client=TlsClientConfig(
+                source_tls,
+                WORKER_TLS_NAME,
+                expected_peer_fingerprint=destination_identity.public_key_fingerprint,
+            ),
         )
         measurement = await measurer.measure(ticket)
 

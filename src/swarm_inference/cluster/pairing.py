@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from swarm_inference.cluster.models import (
+    SECURE_WAN_SECURITY_CLASSIFICATION,
     ArtifactCacheDocument,
     ClusterAuditEvent,
     ClusterMetadata,
@@ -69,6 +70,11 @@ from swarm_inference.security.identity import (
     public_key_fingerprint,
 )
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
+from swarm_inference.security.tls import (
+    certificate_sha256,
+    issue_node_certificate,
+    validate_certificate_binding,
+)
 from swarm_inference.security.trust_store import WorkerTrustStore
 
 PAIRING_URI_SCHEME: Final = "swarm"
@@ -188,6 +194,7 @@ class PairingInvitation:
     session_id: str
     pairing_secret: bytes
     coordinator_ephemeral_public_key: bytes
+    coordinator_certificate_pem: str | None = None
 
     def __post_init__(self) -> None:
         if len(self.pairing_secret) < PAIRING_MINIMUM_SECRET_BYTES:
@@ -203,14 +210,16 @@ class PairingInvitation:
         )
 
     def uri(self) -> str:
-        invitation_data = canonical_json_bytes(
-            {
-                "key": _url_b64(self.coordinator_ephemeral_public_key),
-                "secret": _url_b64(self.pairing_secret),
-                "session": self.session_id,
-                "version": 1,
-            }
-        )
+        payload: dict[str, Any] = {
+            "key": _url_b64(self.coordinator_ephemeral_public_key),
+            "secret": _url_b64(self.pairing_secret),
+            "session": self.session_id,
+            "version": 1,
+        }
+        if self.coordinator_certificate_pem is not None:
+            payload["ca"] = _url_b64(self.coordinator_certificate_pem.encode("ascii"))
+            payload["version"] = 2
+        invitation_data = canonical_json_bytes(payload)
         return (
             f"{PAIRING_URI_SCHEME}://{self.coordinator_endpoint}/join/{_url_b64(invitation_data)}"
         )
@@ -233,20 +242,24 @@ class PairingInvitation:
                 payload = json.loads(_url_unb64(encoded))
             except (UnicodeDecodeError, json.JSONDecodeError, PairingError) as exc:
                 raise PairingError("pairing URI invitation data is malformed") from exc
-            if not isinstance(payload, dict) or set(payload) != {
-                "version",
-                "session",
-                "secret",
-                "key",
-            }:
+            if not isinstance(payload, dict):
                 raise PairingError("pairing URI invitation data is malformed")
-            if payload["version"] != 1 or not all(
-                isinstance(payload[name], str) for name in ("session", "secret", "key")
+            version = payload.get("version")
+            expected_fields = (
+                {"version", "session", "secret", "key", "ca"}
+                if version == 2
+                else {"version", "session", "secret", "key"}
+            )
+            if (
+                set(payload) != expected_fields
+                or version not in {1, 2}
+                or not all(isinstance(payload[name], str) for name in ("session", "secret", "key"))
             ):
                 raise PairingError("pairing URI invitation data is malformed")
             session_id = payload["session"]
             secret = _url_unb64(payload["secret"])
             key = _url_unb64(payload["key"])
+            certificate_pem = _url_unb64(payload["ca"]).decode("ascii") if version == 2 else None
         elif parsed.scheme == LEGACY_PAIRING_URI_SCHEME and parsed.path == "/join":
             query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
             if set(query) != {"session", "secret", "key"} or any(
@@ -256,6 +269,7 @@ class PairingInvitation:
             session_id = query["session"][0]
             secret = _url_unb64(query["secret"][0])
             key = _url_unb64(query["key"][0])
+            certificate_pem = None
         else:
             raise PairingError("pairing URI has an unsupported scheme or path")
         return cls(
@@ -263,6 +277,7 @@ class PairingInvitation:
             session_id=session_id,
             pairing_secret=secret,
             coordinator_ephemeral_public_key=key,
+            coordinator_certificate_pem=certificate_pem,
         )
 
 
@@ -453,6 +468,7 @@ class PairingManager:
                 session_id=session_id,
                 pairing_secret=secret,
                 coordinator_ephemeral_public_key=ephemeral_public,
+                coordinator_certificate_pem=self.cluster.coordinator_certificate_pem,
             )
 
     async def create_authenticated_session(
@@ -712,6 +728,33 @@ class PairingManager:
                     "revocation_reason": None,
                 }
             )
+            ca_certificate = self.cluster.coordinator_certificate_pem
+            if (
+                ca_certificate is None
+                and self.cluster.security_classification == SECURE_WAN_SECURITY_CLASSIFICATION
+            ):
+                raise PairingError(
+                    "cluster has no pinned TLS certificate; rotate the coordinator "
+                    "transport credentials before accepting WAN peers"
+                )
+            if ca_certificate is not None:
+                if metadata.tls_public_key_pem is None:
+                    raise PairingError("node did not provide a signed P-256 TLS public key")
+                node_certificate = issue_node_certificate(
+                    self.coordinator_identity,
+                    ca_certificate_pem=ca_certificate,
+                    cluster_id=self.cluster.cluster_id,
+                    node_public_key_b64=metadata.public_key,
+                    node_fingerprint=metadata.fingerprint,
+                    node_tls_public_key_pem=metadata.tls_public_key_pem,
+                )
+                metadata = metadata.model_copy(
+                    update={
+                        "tls_certificate_pem": node_certificate,
+                        "tls_certificate_sha256": certificate_sha256(node_certificate),
+                    }
+                )
+            metadata.verify_identity_binding()
             membership = NodeMembership(
                 cluster_id=self.cluster.cluster_id,
                 node_id=metadata.node_id,
@@ -728,6 +771,7 @@ class PairingManager:
                     {
                         "cluster": self.cluster.model_dump(mode="json"),
                         "membership": membership.model_dump(mode="json"),
+                        "node_metadata": metadata.model_dump(mode="json"),
                     }
                 )
             ).hexdigest()
@@ -750,6 +794,7 @@ class PairingManager:
                 coordinator_signature=final_signature,
                 cluster=self.cluster,
                 membership=membership,
+                node_metadata=metadata,
             )
             response_nonce = self.random_bytes(PAIRING_AES_NONCE_BYTES)
             encrypted_response = _encrypt_json(
@@ -1203,11 +1248,38 @@ class PairingClient:
             or result.membership.node_fingerprint != node_metadata.fingerprint
         ):
             raise PairingError("coordinator completion returned another node membership")
+        issued_metadata = result.node_metadata or node_metadata
+        secure_cluster = (
+            result.cluster.security_classification == SECURE_WAN_SECURITY_CLASSIFICATION
+        )
+        if secure_cluster and issued_metadata.tls_certificate_pem is None:
+            raise PairingError("coordinator completion did not provision node TLS credentials")
+        issued_metadata.verify_identity_binding()
+        if (
+            issued_metadata.node_id != node_metadata.node_id
+            or issued_metadata.public_key != self.identity.public_key_b64
+        ):
+            raise PairingError("coordinator TLS certificate belongs to another node")
+        ca_certificate = result.cluster.coordinator_certificate_pem
+        if secure_cluster and ca_certificate is None:
+            raise PairingError("cluster completion has no pinned TLS certificate")
+        if ca_certificate is not None and issued_metadata.tls_certificate_pem is not None:
+            try:
+                validate_certificate_binding(
+                    issued_metadata.tls_certificate_pem,
+                    ca_certificate_pem=ca_certificate,
+                    cluster_id=result.cluster.cluster_id,
+                    role="worker",
+                    expected_identity_fingerprint=self.identity.public_key_fingerprint,
+                )
+            except IntegrityError as exc:
+                raise PairingError("coordinator issued an invalid node TLS certificate") from exc
         binding = hashlib.sha256(
             canonical_json_bytes(
                 {
                     "cluster": result.cluster.model_dump(mode="json"),
                     "membership": result.membership.model_dump(mode="json"),
+                    "node_metadata": issued_metadata.model_dump(mode="json"),
                 }
             )
         ).hexdigest()
@@ -1231,8 +1303,18 @@ class PairingClient:
         # document has validated successfully.
         self.state.save_cluster(result.cluster)
         self.state.save_membership(result.membership)
-        self.state.save_node(node_metadata)
-        return PairingResult(cluster=result.cluster, membership=result.membership)
+        if ca_certificate is not None and issued_metadata.tls_certificate_pem is not None:
+            self.state.materialize_node_tls(
+                self.identity,
+                certificate_pem=issued_metadata.tls_certificate_pem,
+                ca_certificate_pem=ca_certificate,
+            )
+        self.state.save_node(issued_metadata)
+        return PairingResult(
+            cluster=result.cluster,
+            membership=result.membership,
+            node_metadata=issued_metadata,
+        )
 
 
 __all__ = [

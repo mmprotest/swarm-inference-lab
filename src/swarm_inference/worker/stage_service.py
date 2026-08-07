@@ -6,6 +6,7 @@ import asyncio
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
+from swarm_inference.security.tls import TlsServerConfig
 from swarm_inference.transport.grpc_transport import WorkerRpcServer
 from swarm_inference.transport.stage_ring_server import StageRingServer
 from swarm_inference.worker.agent import WorkerAgent
@@ -34,6 +35,7 @@ class PersistentStageWorkerService:
         data_read_timeout_s: float = 30.0,
         data_write_timeout_s: float = 30.0,
         data_idle_timeout_s: float = 120.0,
+        tls_server_config: TlsServerConfig | None = None,
     ) -> None:
         self.agent = agent
         self.stage_runtime = stage_runtime
@@ -45,6 +47,7 @@ class PersistentStageWorkerService:
             engine_runtime=engine_runtime,
             artifact_manager=artifact_manager,
             trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
+            tls=tls_server_config,
         )
         self.data_server = (
             StageRingServer(
@@ -55,6 +58,7 @@ class PersistentStageWorkerService:
                 write_timeout_s=data_write_timeout_s,
                 idle_timeout_s=data_idle_timeout_s,
                 require_peer_authentication=lambda: stage_runtime.require_authenticated_peers,
+                tls=tls_server_config,
             )
             if stage_runtime is not None
             else None

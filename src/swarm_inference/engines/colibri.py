@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import AsyncIterator, Callable
-from typing import Protocol
+from typing import Protocol, TypeVar
 from uuid import uuid4
 
 from swarm_inference.backends.colibri.backend import ColibriBackend
@@ -17,12 +17,15 @@ from swarm_inference.engines.interfaces import (
     EngineSupportStatus,
     ExecutionEngineCapability,
     ExecutionPlan,
+    ExecutionProfileCapability,
     ExecutionRequest,
     InferenceEvent,
     InferenceRequest,
     MechanismEvidence,
     PhasePlan,
+    WorkerExecutionCapability,
 )
+from swarm_inference.model.architecture import normalize_model_architecture
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.worker.abi import (
     GenerationParameters,
@@ -33,25 +36,21 @@ from swarm_inference.worker.abi import (
 )
 
 
-def _normalise_identifier(value: str) -> str:
-    return "".join(character for character in value.casefold() if character.isalnum())
-
-
 def _adapter_for_model(
     model: ResolvedModelDescriptor,
     capability: ExecutionEngineCapability,
 ) -> str | None:
     """Match an advertised backend adapter without embedding model-family policy."""
 
-    signals = _normalise_identifier(" ".join((model.architecture or "", model.model_id)))
+    architecture = normalize_model_architecture(model.architecture)
     matches = [
         adapter
         for adapter in capability.adapters
-        if (normalised := _normalise_identifier(adapter)) and normalised in signals
+        if normalize_model_architecture(adapter) == architecture
     ]
     if not matches:
         return None
-    return sorted(matches, key=lambda item: (-len(_normalise_identifier(item)), item))[0]
+    return sorted(matches)[0]
 
 
 class ColibriLifecycle(Protocol):
@@ -162,7 +161,10 @@ class LocalColibriLifecycle:
             await backend.shutdown()
 
 
-async def asyncio_to_thread(function: Callable[[], object]) -> object:
+_T = TypeVar("_T")
+
+
+async def asyncio_to_thread(function: Callable[[], _T]) -> _T:
     import asyncio
 
     return await asyncio.to_thread(function)
@@ -179,9 +181,9 @@ class ColibriExecutionEngine:
         model: ResolvedModelDescriptor,
         cluster: ClusterCapabilities,
     ) -> EngineSupportReport:
-        runtime_workers = []
-        architecture_workers: list[tuple[object, str]] = []
-        workers: list[tuple[object, str]] = []
+        runtime_workers: list[WorkerExecutionCapability] = []
+        architecture_workers: list[tuple[WorkerExecutionCapability, str]] = []
+        workers: list[tuple[WorkerExecutionCapability, str]] = []
         broken: list[str] = []
         for worker in cluster.workers_for_engine(self.engine_id):
             capability = worker.engine(self.engine_id)
@@ -209,12 +211,18 @@ class ColibriExecutionEngine:
                     if broken
                     else "no worker advertises a pinned Colibri runtime"
                 ),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned Colibri runtime",
             )
         if not architecture_workers:
             return EngineSupportReport(
                 engine_id=self.engine_id,
                 status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
                 reason="no Colibri runtime advertises an adapter matching the model",
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned Colibri runtime with a matching model adapter",
             )
         if not workers:
             return EngineSupportReport(
@@ -222,8 +230,11 @@ class ColibriExecutionEngine:
                 status=EngineSupportStatus.UNSUPPORTED_FORMAT,
                 reason=f"Colibri adapters do not consume model format {model.format!r}",
                 adapter_id=architecture_workers[0][1],
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned Colibri runtime",
             )
-        feasible = []
+        feasible: list[tuple[WorkerExecutionCapability, str]] = []
         for worker, adapter_id in workers:
             capability = worker.engine(self.engine_id)
             assert capability is not None
@@ -237,6 +248,9 @@ class ColibriExecutionEngine:
                 reason="no complete-model Colibri worker passes memory admission",
                 supported_worker_ids=tuple(item.worker_id for item, _adapter in workers),
                 adapter_id=selected_adapter,
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned Colibri runtime with complete-model memory",
             )
         return EngineSupportReport(
             engine_id=self.engine_id,
@@ -244,7 +258,17 @@ class ColibriExecutionEngine:
             reason=f"pinned Colibri runtime supports adapter {selected_adapter}",
             supported_worker_ids=tuple(item.worker_id for item, _adapter in feasible),
             adapter_id=selected_adapter,
+            model_architecture=model.architecture,
+            model_format=model.format,
+            required_runtime="pinned Colibri runtime",
         )
+
+    def probe_model_support(
+        self,
+        model: ResolvedModelDescriptor,
+        cluster: ClusterCapabilities,
+    ) -> EngineSupportReport:
+        return self.probe(model, cluster)
 
     async def candidate_plans(
         self,
@@ -294,6 +318,11 @@ class ColibriExecutionEngine:
                 artifact_transfer_bytes=model.weight_bytes,
                 concurrency=request.concurrency,
                 request_priority=request.priority,
+                network_latency_ms=0.0,
+                network_jitter_ms=0.0,
+                messages_per_token=0.0,
+                bytes_per_token=0.0,
+                serial_waits_per_token=0.0,
             )
             utility = score_costs(costs, objective=request.objective)
             roles = {worker.worker_id: "critical_path_stage"}
@@ -306,7 +335,9 @@ class ColibriExecutionEngine:
                 and item.exactness_passed
                 and item.measured_utility > 0
             )
-            policy_candidates = [("backend-native", None)]
+            policy_candidates: list[tuple[str, ExecutionProfileCapability | None]] = [
+                ("backend-native", None)
+            ]
             if "routing-aware-placement" in capability.fast_paths:
                 policy_candidates.extend(
                     ("routing-aware-placement", profile) for profile in routing_profiles
@@ -326,9 +357,7 @@ class ColibriExecutionEngine:
                     sort_keys=True,
                     separators=(",", ":"),
                 )
-                identity = "sha256:" + hashlib.sha256(
-                    identity_payload.encode("utf-8")
-                ).hexdigest()
+                identity = "sha256:" + hashlib.sha256(identity_payload.encode("utf-8")).hexdigest()
                 plan_identity = {
                     "execution_identity": identity,
                     "objective": request.objective,
@@ -366,9 +395,7 @@ class ColibriExecutionEngine:
                                     mechanism="routing_aware_placement",
                                     exactness_passed=routing_profile.exactness_passed,
                                     measured_utility=routing_profile.measured_utility,
-                                    evidence_fingerprint=(
-                                        routing_profile.evidence_fingerprint
-                                    ),
+                                    evidence_fingerprint=(routing_profile.evidence_fingerprint),
                                     runtime_fingerprint=identity,
                                 ),
                             )
@@ -380,6 +407,14 @@ class ColibriExecutionEngine:
                         predicted_ttft_ms=utility.predicted_ttft_ms,
                         predicted_decode_tokens_s=utility.predicted_decode_tokens_s,
                         predicted_aggregate_tokens_s=utility.predicted_aggregate_tokens_s,
+                        predicted_network_bytes=0,
+                        predicted_messages_per_token=0.0,
+                        predicted_bytes_per_token=0.0,
+                        predicted_serial_waits_per_token=0.0,
+                        number_of_wan_stage_boundaries=0,
+                        persistent_connections=False,
+                        network_cost_confidence="measured",
+                        network_cost_provenance="complete model executes on one worker",
                         required_memory_bytes=model.weight_bytes,
                         score=utility.score,
                         explanation=(

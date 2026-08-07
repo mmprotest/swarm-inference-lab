@@ -1,6 +1,9 @@
 # Physical Gate A: Windows RTX 5090 plus CPU-only laptop
 
-This gate requires two distinct physical Windows machines on the same trusted private network:
+This first gate requires two distinct physical Windows machines with mutually reachable
+endpoints. A routed LAN or private overlay is the simplest initial topology; repeat the same
+workflow over the real WAN path for WAN performance evidence. The initial topology is not the
+product boundary:
 
 - Machine A: RTX 5090 PC, coordinator and CUDA worker;
 - Machine B: CPU-only laptop, joined worker.
@@ -45,7 +48,7 @@ write the secret URI into retained evidence.
 Machine B, paste the command printed by Machine A:
 
 ```powershell
-swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+swarm node join "swarm://<reachable-address>:<port>/join/<single-use-data>"
 ```
 
 Do not run identity, trust, coordinator, worker, inspect, plan, deploy, or submit commands. Save

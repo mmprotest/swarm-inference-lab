@@ -62,12 +62,19 @@ class ExecutionEngineRegistry:
         reports: list[EngineSupportReport] = []
         for engine in self.engines():
             try:
-                report = engine.probe(model, cluster)
+                capability_probe = getattr(engine, "probe_model_support", None)
+                report = (
+                    capability_probe(model, cluster)
+                    if callable(capability_probe)
+                    else engine.probe(model, cluster)
+                )
             except Exception as exc:
                 report = EngineSupportReport(
                     engine_id=engine.engine_id,
                     status=EngineSupportStatus.BROKEN_RUNTIME,
                     reason=f"capability probe failed: {type(exc).__name__}: {exc}",
+                    model_architecture=model.architecture,
+                    model_format=model.format,
                 )
             if report.engine_id != engine.engine_id:
                 raise ValueError("engine support report identifies a different engine")
@@ -90,7 +97,7 @@ class ExecutionEngineRegistry:
                     f"forced engine {engine.engine_id!r} is unavailable: "
                     f"{report.status.value}: {report.reason}"
                 )
-            selected_engines = (engine,)
+            selected_engines: tuple[ExecutionEngine, ...] = (engine,)
         else:
             selected_engines = tuple(
                 engine for engine in self.engines() if by_id[engine.engine_id].supported
@@ -103,7 +110,8 @@ class ExecutionEngineRegistry:
         plan_groups = await asyncio.gather(
             *(engine.candidate_plans(model, cluster, request) for engine in selected_engines)
         )
-        plans = tuple(plan for group in plan_groups for plan in group)
+        raw_plans = tuple(plan for group in plan_groups for plan in group)
+        plans = tuple(self._with_network_competition_score(plan) for plan in raw_plans)
         if not plans:
             raise RuntimeError("supported execution engines returned no feasible plan")
         worker_nodes = {worker.worker_id: worker.node_id for worker in cluster.workers}
@@ -122,7 +130,7 @@ class ExecutionEngineRegistry:
         selected = max(
             compatible,
             key=lambda plan: (
-                plan.score,
+                float(plan.engine_parameters["competition_score"]),
                 plan.predicted_decode_tokens_s,
                 -plan.predicted_ttft_ms,
                 plan.engine_id,
@@ -133,6 +141,53 @@ class ExecutionEngineRegistry:
         # never accidentally re-admit a local candidate after this physical
         # distributed gate has rejected it.
         return EngineCompetitionResult(selected, tuple(compatible), reports)
+
+    @staticmethod
+    def _with_network_competition_score(plan: ExecutionPlan) -> ExecutionPlan:
+        confidence_multiplier = {
+            "measured": 1.0,
+            "estimated": 0.96,
+            "unmeasured": 0.88,
+        }[plan.network_cost_confidence]
+        boundary_count = plan.number_of_wan_stage_boundaries
+        boundary_multiplier = 0.94**boundary_count if boundary_count is not None else 0.92
+        observability_multiplier = (
+            1.0
+            if plan.predicted_bytes_per_token is not None
+            and plan.predicted_messages_per_token is not None
+            else 0.94
+        )
+        competition_score = (
+            plan.score * confidence_multiplier * boundary_multiplier * observability_multiplier
+        )
+        parameters = dict(plan.engine_parameters)
+        parameters.update(
+            {
+                "engine_score": plan.score,
+                "competition_score": competition_score,
+                "network_competition_factors": {
+                    "confidence": plan.network_cost_confidence,
+                    "confidence_multiplier": confidence_multiplier,
+                    "wan_boundaries": boundary_count,
+                    "boundary_multiplier": boundary_multiplier,
+                    "communication_observed_or_estimated": (
+                        plan.predicted_bytes_per_token is not None
+                        and plan.predicted_messages_per_token is not None
+                    ),
+                    "observability_multiplier": observability_multiplier,
+                },
+            }
+        )
+        return plan.model_copy(
+            update={
+                "engine_parameters": parameters,
+                "explanation": (
+                    *plan.explanation,
+                    "engine competition score includes network confidence, WAN "
+                    "boundaries, and communication observability",
+                ),
+            }
+        )
 
 
 def default_engine_registry() -> ExecutionEngineRegistry:

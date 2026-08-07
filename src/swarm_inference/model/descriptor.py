@@ -32,14 +32,24 @@ class ResolvedModelDescriptor(StrictModel):
     source_type: Literal["huggingface", "local"]
     format: Literal["safetensors", "gguf", "pytorch", "unknown"]
     architecture: str | None = None
+    architecture_raw: str | None = None
+    architecture_source: Literal[
+        "config.architectures",
+        "config.model_type",
+        "gguf.general.architecture",
+        "unknown",
+    ] = "unknown"
     files: tuple[ModelFileDescriptor, ...]
     variant: str | None = None
     quantization: str | None = None
     weight_bytes: NonNegativeInt
     layer_count: int | None = Field(default=None, ge=0)
+    hidden_size: int | None = Field(default=None, gt=0)
+    activation_dtype_bytes: int | None = Field(default=None, gt=0)
     parameter_count: int | None = Field(default=None, ge=0)
     tokenizer_identity: str | None = None
     modalities: tuple[str, ...] = ("text",)
+    features: tuple[str, ...] = ()
     local_paths: tuple[str, ...] = ()
 
     @property

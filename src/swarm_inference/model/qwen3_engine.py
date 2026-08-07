@@ -1086,7 +1086,7 @@ def load_qwen3_fast_engine(
     model_revision: str,
     model_path: Path,
     options: Qwen3EngineOptions,
-    device: str = "cuda:0",
+    device: str = "cuda",
     dtype_name: str = "bfloat16",
 ) -> LoadedFastEngine:
     import torch

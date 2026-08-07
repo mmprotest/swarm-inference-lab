@@ -84,6 +84,9 @@ class WorkerRuntimeConfig(StrictModel):
     validation_detail: str = "no retained validation evidence"
     llamacpp_runtime_manifest: Path | None = None
     colibri_runtime_manifest: Path | None = None
+    tls_certificate_path: Path | None = None
+    tls_private_key_path: Path | None = None
+    tls_ca_certificate_path: Path | None = None
 
 
 class WorkerRuntimeStatus(StrictModel):
@@ -210,6 +213,9 @@ class WorkerRuntime:
             "validation_detail": config.validation_detail,
             "llamacpp_runtime_manifest": config.llamacpp_runtime_manifest,
             "colibri_runtime_manifest": config.colibri_runtime_manifest,
+            "tls_certificate_path": config.tls_certificate_path,
+            "tls_private_key_path": config.tls_private_key_path,
+            "tls_ca_certificate_path": config.tls_ca_certificate_path,
         }
 
     async def _run(

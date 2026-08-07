@@ -63,8 +63,11 @@ def test_documented_product_command_tree_and_options_are_real() -> None:
         "--tokenizer-revision",
         "--prompt",
         "--mode",
+        "--engine",
+        "--quant",
         "--dry-run",
         "--explain-plan",
+        "--require-distributed",
         "--require-node",
         "--exclude-node",
         "--json",
@@ -144,16 +147,19 @@ def test_primary_documentation_states_current_boundaries_without_overclaiming() 
     physical = Path("docs/physical-two-machine-acceptance.md").read_text(encoding="utf-8")
     normalized_readme = " ".join(readme.lower().split())
     normalized_physical = " ".join(physical.lower().split())
+    normalized_security = " ".join(security.lower().split())
 
-    assert "trusted lan or private network" in normalized_readme
-    assert "inference data-plane payloads are not encrypted" in normalized_readme
-    assert "absent from steady-state hidden-state forwarding" in normalized_readme
-    assert "not continuous tensor batching" in normalized_readme
-    assert "restart-and-replay, not seamless failover" in normalized_readme
-    assert "physical multi-machine product performance has not been proven" in normalized_readme
-    assert "experiment 011 remains the latest completed experiment" in normalized_readme
+    assert "global wan" in normalized_readme
+    assert "wan control and data channels use tls 1.3" in normalized_readme
+    assert "plaintext remote peers" in normalized_readme
+    assert "coordinator does not relay hidden states" in normalized_readme
+    assert "restart-and-replay" in normalized_readme
+    assert "physical multi-machine performance validation remains ongoing" in normalized_readme
+    assert "qwen3 moe" in normalized_readme
+    assert "llama.cpp rpc" in normalized_readme
     assert "coordinator is not on the steady-state hidden-state forwarding path" in architecture
-    assert "Neither mechanism supplies inference payload confidentiality" in security
+    assert "canonical non-loopback control and data transports use tls 1.3" in normalized_security
+    assert "verification of computation returned by a malicious worker" in normalized_security
     assert "There is no KV checkpoint transfer" in recovery
     assert "can never be used as physical evidence" in normalized_physical
 

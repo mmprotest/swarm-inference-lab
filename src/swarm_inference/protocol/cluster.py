@@ -180,12 +180,14 @@ class PairingCoordinatorCompletionPayload(StrictModel):
     coordinator_signature: str
     cluster: ClusterMetadata
     membership: NodeMembership
+    node_metadata: NodeMetadata | None = None
 
 
 class PairingResult(StrictModel):
     schema_version: Literal[1] = CLUSTER_RPC_SCHEMA_VERSION
     cluster: ClusterMetadata
     membership: NodeMembership
+    node_metadata: NodeMetadata | None = None
 
 
 class ClusterRequestAuthentication(StrictModel):

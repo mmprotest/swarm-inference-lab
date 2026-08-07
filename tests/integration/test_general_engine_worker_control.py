@@ -242,9 +242,7 @@ async def test_general_engine_artifact_and_lifecycle_are_worker_owned(tmp_path: 
         agent=agent,
         engine_runtime=engine_runtime,
         artifact_manager=worker_manager,
-        trusted_coordinator_fingerprint=(
-            core.coordinator_identity.public_key_fingerprint
-        ),
+        trusted_coordinator_fingerprint=(core.coordinator_identity.public_key_fingerprint),
     )
     worker_server.configure_engine_trust(
         coordinator_public_key=core.coordinator_identity.public_key_b64,

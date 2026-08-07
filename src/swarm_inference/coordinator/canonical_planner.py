@@ -236,8 +236,7 @@ class CanonicalPlanner:
                 eligible.append((plan, evidence))
         if not eligible:
             detail = "; ".join(
-                f"{plan_id}: {', '.join(reasons)}"
-                for plan_id, reasons in sorted(rejected.items())
+                f"{plan_id}: {', '.join(reasons)}" for plan_id, reasons in sorted(rejected.items())
             )
             raise RuntimeError(f"all composed plans violate experiment policy: {detail}")
         selected, _selected_evidence = max(

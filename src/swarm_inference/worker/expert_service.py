@@ -21,6 +21,7 @@ from swarm_inference.execution.microshard import (
     MicroshardRange,
     validate_resident_microshard,
 )
+from swarm_inference.host import format_endpoint
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.expert import (
     ExpertExecutionMetadata,
@@ -36,6 +37,7 @@ from swarm_inference.protocol.expert import (
 from swarm_inference.protocol.routes import BoundedNonceCache
 from swarm_inference.security.identity import WorkerIdentity, public_key_fingerprint
 from swarm_inference.security.signatures import canonical_json_bytes
+from swarm_inference.security.tls import TlsServerConfig, require_tls_for_endpoint
 from swarm_inference.transport.expert import (
     ExpertPacket,
     decode_packet,
@@ -556,10 +558,20 @@ class ExpertWorkerRuntime:
 class ExpertWorkerServer:
     """Bounded SWARMEX1 server colocated with the persistent worker."""
 
-    def __init__(self, runtime: ExpertWorkerRuntime, *, host: str, port: int) -> None:
+    def __init__(
+        self,
+        runtime: ExpertWorkerRuntime,
+        *,
+        host: str,
+        port: int,
+        tls: TlsServerConfig | None = None,
+        allow_plaintext_loopback: bool = True,
+    ) -> None:
         self.runtime = runtime
         self.host = host
         self.port = port
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self.server: asyncio.Server | None = None
 
     @property
@@ -570,7 +582,18 @@ class ExpertWorkerServer:
         return str(address[0]), int(address[1])
 
     async def start(self) -> tuple[str, int]:
-        self.server = await asyncio.start_server(self._connection, self.host, self.port)
+        require_tls_for_endpoint(
+            format_endpoint(self.host, self.port),
+            tls_configured=self.tls is not None,
+            allow_plaintext_loopback=self.allow_plaintext_loopback,
+            transport_name="expert data plane",
+        )
+        self.server = await asyncio.start_server(
+            self._connection,
+            self.host,
+            self.port,
+            ssl=self.tls.ssl_context() if self.tls is not None else None,
+        )
         return self.endpoint
 
     async def close(self) -> None:
@@ -581,6 +604,10 @@ class ExpertWorkerServer:
     async def _connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         accepted_ns = time.perf_counter_ns()
         try:
+            if self.tls is not None:
+                tls_object = writer.get_extra_info("ssl_object")
+                peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+                self.tls.validate_peer_der(peer_der)
             payload = await read_length_frame(reader)
             packet = decode_packet(payload)
             if packet.kind == "request":

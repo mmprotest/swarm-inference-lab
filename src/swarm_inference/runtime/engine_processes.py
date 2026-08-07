@@ -29,8 +29,10 @@ def require_private_bind_host(host: str) -> str:
         address = ipaddress.ip_address(host)
     except ValueError as exc:
         raise ValueError("engine bind host must be an explicit IP address") from exc
-    if address.is_unspecified or address.is_multicast or not (
-        address.is_private or address.is_loopback or address.is_link_local
+    if (
+        address.is_unspecified
+        or address.is_multicast
+        or not (address.is_private or address.is_loopback or address.is_link_local)
     ):
         raise ValueError("engine protocol must bind a private, loopback, or link-local address")
     return str(address)

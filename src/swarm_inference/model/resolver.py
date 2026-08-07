@@ -12,6 +12,11 @@ from typing import Any, Literal
 
 import psutil
 
+from swarm_inference.model.architecture import (
+    ArchitectureIdentity,
+    architecture_from_config,
+    architecture_from_gguf,
+)
 from swarm_inference.model.descriptor import ModelFileDescriptor, ResolvedModelDescriptor
 from swarm_inference.model.gguf import GGUFParseError, inspect_gguf
 from swarm_inference.model.source import ModelSourceReference, parse_model_source
@@ -89,34 +94,68 @@ def _fingerprint(model_id: str, revision: str, files: tuple[ModelFileDescriptor,
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
-def _config_facts(config: dict[str, Any]) -> tuple[str | None, int | None, int | None]:
-    architectures = config.get("architectures")
-    architecture = (
-        str(architectures[0])
-        if isinstance(architectures, list) and architectures
-        else str(config["model_type"])
-        if config.get("model_type")
-        else None
-    )
+def _config_facts(
+    config: dict[str, Any],
+) -> tuple[ArchitectureIdentity, int | None, int | None]:
+    architecture = architecture_from_config(config)
+    text_config = config.get("text_config")
+    candidates = (config, text_config) if isinstance(text_config, dict) else (config,)
     layer_count = next(
         (
-            int(config[key])
+            int(candidate[key])
+            for candidate in candidates
             for key in ("num_hidden_layers", "n_layer", "num_layers")
-            if isinstance(config.get(key), int)
+            if isinstance(candidate.get(key), int)
         ),
         None,
     )
-    parameters = config.get("num_parameters")
+    parameters = next(
+        (
+            candidate["num_parameters"]
+            for candidate in candidates
+            if isinstance(candidate.get("num_parameters"), int)
+        ),
+        None,
+    )
     return architecture, layer_count, int(parameters) if isinstance(parameters, int) else None
+
+
+def _activation_facts(config: dict[str, Any]) -> tuple[int | None, int | None]:
+    text_config = config.get("text_config")
+    candidates = (config, text_config) if isinstance(text_config, dict) else (config,)
+    hidden = next(
+        (
+            int(candidate[key])
+            for candidate in candidates
+            for key in ("hidden_size", "n_embd", "d_model")
+            if isinstance(candidate.get(key), int) and int(candidate[key]) > 0
+        ),
+        None,
+    )
+    dtype = next(
+        (
+            str(candidate.get("torch_dtype") or candidate.get("dtype")).casefold()
+            for candidate in candidates
+            if candidate.get("torch_dtype") or candidate.get("dtype")
+        ),
+        "",
+    )
+    dtype_bytes = {
+        "bfloat16": 2,
+        "bf16": 2,
+        "float16": 2,
+        "fp16": 2,
+        "float32": 4,
+        "fp32": 4,
+        "float64": 8,
+        "fp64": 8,
+    }.get(dtype)
+    return hidden, dtype_bytes
 
 
 def _tokenizer_identity(files: tuple[ModelFileDescriptor, ...]) -> str | None:
     tokenizer_json = next(
-        (
-            item
-            for item in files
-            if item.relative_path.rsplit("/", 1)[-1] == "tokenizer.json"
-        ),
+        (item for item in files if item.relative_path.rsplit("/", 1)[-1] == "tokenizer.json"),
         None,
     )
     if tokenizer_json is not None and tokenizer_json.sha256 is not None:
@@ -231,7 +270,13 @@ class ModelSourceResolver:
         quantization: str | None,
         objective: Literal["speed", "throughput", "capacity", "balanced"],
         resources: ResolutionResources,
-    ) -> tuple[tuple[ModelFileDescriptor, ...], tuple[ModelVariant, ...], tuple[VariantCandidate, ...], str | None, str | None]:
+    ) -> tuple[
+        tuple[ModelFileDescriptor, ...],
+        tuple[ModelVariant, ...],
+        tuple[VariantCandidate, ...],
+        str | None,
+        str | None,
+    ]:
         variants = discover_gguf_variants(files)
         if not variants:
             metadata = tuple(
@@ -249,16 +294,9 @@ class ModelSourceResolver:
             )
             weights = next(
                 (
-                    tuple(
-                        item
-                        for item in files
-                        if item.relative_path.lower().endswith(suffixes)
-                    )
+                    tuple(item for item in files if item.relative_path.lower().endswith(suffixes))
                     for suffixes in weight_suffixes
-                    if any(
-                        item.relative_path.lower().endswith(suffixes)
-                        for item in files
-                    )
+                    if any(item.relative_path.lower().endswith(suffixes) for item in files)
                 ),
                 (),
             )
@@ -278,15 +316,12 @@ class ModelSourceResolver:
             requested_quantization=quantization,
         )
         metadata = tuple(
-            item
-            for item in files
-            if item.relative_path.rsplit("/", 1)[-1] in _METADATA_NAMES
+            item for item in files if item.relative_path.rsplit("/", 1)[-1] in _METADATA_NAMES
         )
         selected_files = tuple(
             sorted(
                 {
-                    item.relative_path: item
-                    for item in (*selection.selected.files, *metadata)
+                    item.relative_path: item for item in (*selection.selected.files, *metadata)
                 }.values(),
                 key=lambda item: (
                     not item.relative_path.lower().endswith(".gguf"),
@@ -339,6 +374,7 @@ class ModelSourceResolver:
             if isinstance(raw, dict):
                 config = raw
         architecture, layers, parameters = _config_facts(config)
+        hidden_size, activation_dtype_bytes = _activation_facts(config)
         if model_format == "gguf":
             first_descriptor = next(
                 item for item in selected if item.relative_path.lower().endswith(".gguf")
@@ -348,7 +384,9 @@ class ModelSourceResolver:
                 inventory = inspect_gguf(first)
             except GGUFParseError:
                 raise
-            architecture = str(inventory.metadata.get("general.architecture") or architecture or "") or None
+            architecture = architecture_from_gguf(
+                inventory.metadata.get("general.architecture"), fallback=architecture
+            )
             layers = next(
                 (
                     int(value)
@@ -356,6 +394,14 @@ class ModelSourceResolver:
                     if key.endswith("block_count")
                 ),
                 layers,
+            )
+            hidden_size = next(
+                (
+                    int(value)
+                    for key, value in inventory.metadata.items()
+                    if key.endswith("embedding_length") and isinstance(value, int) and value > 0
+                ),
+                hidden_size,
             )
         provisional_revision = reference.requested_revision or "local"
         fingerprint = _fingerprint(reference.model_id, provisional_revision, selected)
@@ -368,7 +414,9 @@ class ModelSourceResolver:
             content_fingerprint=_fingerprint(reference.model_id, resolved_revision, selected),
             source_type="local",
             format=model_format,
-            architecture=architecture,
+            architecture=architecture.canonical,
+            architecture_raw=architecture.raw,
+            architecture_source=architecture.source,
             files=selected,
             variant=selected_variant,
             quantization=selected_quant,
@@ -380,6 +428,8 @@ class ModelSourceResolver:
                 )
             ),
             layer_count=layers,
+            hidden_size=hidden_size,
+            activation_dtype_bytes=activation_dtype_bytes,
             parameter_count=parameters,
             tokenizer_identity=_tokenizer_identity(files),
             local_paths=local_paths,
@@ -425,13 +475,25 @@ class ModelSourceResolver:
         config = getattr(info, "config", None)
         config = config if isinstance(config, dict) else {}
         architecture, layers, parameters = _config_facts(config)
+        hidden_size, activation_dtype_bytes = _activation_facts(config)
+        if model_format == "gguf":
+            gguf_metadata = getattr(info, "gguf", None)
+            gguf_architecture = (
+                gguf_metadata.get("architecture") if isinstance(gguf_metadata, dict) else None
+            )
+            architecture = architecture_from_gguf(
+                gguf_architecture,
+                fallback=architecture,
+            )
         descriptor = ResolvedModelDescriptor(
             model_id=reference.model_id,
             revision=revision.lower(),
             content_fingerprint=_fingerprint(reference.model_id, revision.lower(), selected),
             source_type="huggingface",
             format=model_format,
-            architecture=architecture,
+            architecture=architecture.canonical,
+            architecture_raw=architecture.raw,
+            architecture_source=architecture.source,
             files=selected,
             variant=selected_variant,
             quantization=selected_quant,
@@ -443,6 +505,8 @@ class ModelSourceResolver:
                 )
             ),
             layer_count=layers,
+            hidden_size=hidden_size,
+            activation_dtype_bytes=activation_dtype_bytes,
             parameter_count=parameters,
             tokenizer_identity=_tokenizer_identity(files),
         )
@@ -452,10 +516,12 @@ class ModelSourceResolver:
         """Acquire exactly the resolved files and verify every available digest."""
 
         if descriptor.source_type == "local":
-            paths = tuple(Path(item) for item in descriptor.local_paths)
-            if len(paths) != len(descriptor.files) or not all(item.is_file() for item in paths):
+            local_paths = tuple(Path(item) for item in descriptor.local_paths)
+            if len(local_paths) != len(descriptor.files) or not all(
+                item.is_file() for item in local_paths
+            ):
                 raise FileNotFoundError("one or more resolved local model files disappeared")
-            return paths
+            return local_paths
         from huggingface_hub import hf_hub_download
 
         paths: list[Path] = []

@@ -14,12 +14,11 @@
 - Canonical native distributed execution uses persistent direct stage-to-stage
   transport; the coordinator remains a control-plane and token-commit
   dependency and never relays steady-state hidden activations.
-- Channel confidentiality is not implemented by the initial insecure gRPC
-  deployment; envelope signatures do not provide privacy.
-- Product route leases and stage-ring peer handshakes authenticate
-  participation, but product stage-ring TCP payloads are not encrypted. The
-  supported deployment boundary is a trusted LAN or private network; untrusted
-  Internet participation remains unsupported.
+- Canonical remote product transports use authenticated TLS 1.3, but a legitimate worker can
+  inspect the weights, activations, and KV/cache state assigned to it.
+- TLS does not provide NAT traversal, denial-of-service resistance, computation verification,
+  or privacy from an admitted node. Routing and least-privilege firewall exposure remain
+  operator responsibilities.
 - Microbatch grouping is intentionally conservative and does not yet implement
   every backend-specific cache layout.
 - `Qwen/Qwen3-0.6B` correctness has been validated in native Windows CPU and
@@ -34,8 +33,8 @@
   `not-run` on a clean machine until exact retained evidence is attached.
 - Physical LAN/WAN artifacts require another actual machine and have not yet
   been produced in this repository build.
-- Pairing protects onboarding, not inference payload confidentiality. It does
-  not add NAT traversal or public-Internet participation.
+- Pairing is only onboarding; durable cluster certificates protect subsequent traffic. It does
+  not add NAT traversal or anonymous public participation.
 - JSON/NDJSON never contains the pairing URI. Automation must protect and later retire the
   invitation file; a user-scoped ACL fallback can be weaker than an explicit Windows SID ACL and
   is reported as a limitation in the delivery receipt.
@@ -47,8 +46,10 @@
   on the source node; participating stage nodes receive only owned artifacts.
 - Stale or unmeasured links are excluded from automatic distributed plans and
   are never labeled measured throughput.
-- Qwen3 MoE execution is not yet implemented. Synthetic MoE-like routing is a
-  scheduler/fan-out proxy only.
+- Native Qwen3 MoE execution supports the Transformers `qwen3_moe` safetensors
+  representation. Newer Qwen3.5/Qwen3.6 hybrid representations are rejected by the native
+  adapter; their compatible GGUF forms require an installed llama.cpp build that proves the
+  exact loader architecture during preflight.
 - Kimi K3 support is absent until independently validated. Index analysis is
   not model execution support.
 - The system does not provide prompt privacy, activation privacy, protection

@@ -34,6 +34,10 @@ from swarm_inference.model.adapter import (
     partition_metadata_from_description,
     validate_dense_stage_assignment,
 )
+from swarm_inference.model.architecture import (
+    ModelArchitecture,
+    normalize_model_architecture,
+)
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import ModelPartitionMetadata, StageAssignment
 from swarm_inference.model.qwen3_cache import StaticStageKVCache
@@ -257,8 +261,8 @@ class Qwen3Adapter:
                 AdapterSupportStatus.UNSUPPORTED_FORMAT,
                 "dense native execution requires safetensors",
             )
-        architecture = (model.architecture or "").lower()
-        if "qwen3" not in architecture or "moe" in architecture:
+        architecture = normalize_model_architecture(model.architecture)
+        if architecture != ModelArchitecture.QWEN3_DENSE:
             return AdapterSupportReport(
                 self.adapter_id,
                 AdapterSupportStatus.UNSUPPORTED_ARCHITECTURE,
@@ -486,7 +490,7 @@ class Qwen3Adapter:
 
 
 class Qwen3StageModule:
-    """A torch module containing one contiguous Qwen3 layer interval."""
+    """A torch module containing one contiguous Qwen3 family layer interval."""
 
     def __init__(
         self,
@@ -498,19 +502,46 @@ class Qwen3StageModule:
         engine_options: Qwen3EngineOptions | None = None,
     ) -> None:
         import torch
-        from transformers import Qwen3Config
-        from transformers.models.qwen3.modeling_qwen3 import (
-            Qwen3DecoderLayer,
-            Qwen3RMSNorm,
-            Qwen3RotaryEmbedding,
-        )
 
-        if isinstance(config, dict):
-            config = Qwen3Config.from_dict(config)
-        if getattr(config, "model_type", None) != "qwen3":
+        model_type = (
+            str(config.get("model_type", ""))
+            if isinstance(config, dict)
+            else str(getattr(config, "model_type", ""))
+        ).lower()
+        StageConfig: Any
+        StageDecoderLayer: Any
+        StageRMSNorm: Any
+        StageRotaryEmbedding: Any
+        if model_type == "qwen3":
+            from transformers import Qwen3Config
+            from transformers.models.qwen3.modeling_qwen3 import (
+                Qwen3DecoderLayer,
+                Qwen3RMSNorm,
+                Qwen3RotaryEmbedding,
+            )
+
+            StageConfig = Qwen3Config
+            StageDecoderLayer = Qwen3DecoderLayer
+            StageRMSNorm = Qwen3RMSNorm
+            StageRotaryEmbedding = Qwen3RotaryEmbedding
+        elif model_type == "qwen3_moe":
+            from transformers import Qwen3MoeConfig
+            from transformers.models.qwen3_moe.modeling_qwen3_moe import (
+                Qwen3MoeDecoderLayer,
+                Qwen3MoeRMSNorm,
+                Qwen3MoeRotaryEmbedding,
+            )
+
+            StageConfig = Qwen3MoeConfig
+            StageDecoderLayer = Qwen3MoeDecoderLayer
+            StageRMSNorm = Qwen3MoeRMSNorm
+            StageRotaryEmbedding = Qwen3MoeRotaryEmbedding
+        else:
             raise UnsupportedArchitectureError(
                 f"Qwen3StageModule received model_type={getattr(config, 'model_type', None)!r}"
             )
+        if isinstance(config, dict):
+            config = StageConfig.from_dict(config)
         self.engine_options = engine_options or Qwen3EngineOptions.from_values(
             max_sequence_length=min(
                 4096,
@@ -588,7 +619,7 @@ class Qwen3StageModule:
         )
         self.layers = torch.nn.ModuleDict(
             {
-                str(layer_index): Qwen3DecoderLayer(config, layer_index).to(
+                str(layer_index): StageDecoderLayer(config, layer_index).to(
                     device=self.device, dtype=dtype
                 )
                 for layer_index in range(stage.layer_start, stage.layer_end)
@@ -610,7 +641,7 @@ class Qwen3StageModule:
             )
         )
         self.norm = (
-            Qwen3RMSNorm(config.hidden_size, eps=config.rms_norm_eps).to(
+            StageRMSNorm(config.hidden_size, eps=config.rms_norm_eps).to(
                 device=self.device, dtype=dtype
             )
             if stage.owns_final_norm
@@ -640,7 +671,7 @@ class Qwen3StageModule:
         # CUDA construction changes two float32 inv_freq values for Qwen3-0.6B by
         # one ULP, which phase-amplifies on 512-token prompts and breaks boundary
         # validation even though short prompts and greedy tokens still agree.
-        self.rotary_emb = Qwen3RotaryEmbedding(config=config).to(self.device)
+        self.rotary_emb = StageRotaryEmbedding(config=config).to(self.device)
         maximum_positions = int(getattr(config, "max_position_embeddings", 4096))
         if self.engine_options.max_sequence_length > maximum_positions:
             raise ValueError(
@@ -1345,9 +1376,7 @@ class Qwen3StageModule:
         cache.fixed_shape = True
         if self._graph_position is None:
             self._graph_batch_size = metadata.batch_size
-            self._graph_position = self.torch.empty(
-                (1,), dtype=self.torch.long, device=self.device
-            )
+            self._graph_position = self.torch.empty((1,), dtype=self.torch.long, device=self.device)
             self._graph_position_ids = self._graph_position.view(1, 1).expand(
                 metadata.batch_size, 1
             )
@@ -1949,8 +1978,7 @@ class Qwen3StageModule:
         ]
         if len(matched) != 1:
             raise KeyError(
-                f"expected one retained CUDA graph cache for {request_id!r}; "
-                f"found {len(matched)}"
+                f"expected one retained CUDA graph cache for {request_id!r}; found {len(matched)}"
             )
         cache = matched[0]
         used_bytes = cache.used_bytes

@@ -19,6 +19,7 @@ from swarm_inference.engines.llamacpp_rpc import (
     LlamaCppRuntimeManifest,
     LocalLlamaCppLifecycle,
 )
+from swarm_inference.host import split_endpoint
 
 
 class _Processes:
@@ -119,17 +120,19 @@ async def test_llamacpp_workers_start_rpc_before_private_submission_owner(
         worker_id="owner",
         bind_host="127.0.0.1",
     )
-    owner_deployment = await owner.prepare(
-        _plan(model_path=model, rpc_endpoint=rpc_endpoint)
-    )
+    owner_deployment = await owner.prepare(_plan(model_path=model, rpc_endpoint=rpc_endpoint))
     owner_start = owner_processes.starts[0]
     arguments = owner_start["arguments"]
     assert owner_start["executable"] == manifest.server_binary
     assert arguments[arguments.index("--host") + 1] == "127.0.0.1"
-    assert arguments[arguments.index("--rpc") + 1] == rpc_endpoint
+    metered_endpoint = arguments[arguments.index("--rpc") + 1]
+    assert metered_endpoint != rpc_endpoint
+    assert split_endpoint(metered_endpoint)[0] == "127.0.0.1"
     assert arguments[arguments.index("--tensor-split") + 1] == "0.4,0.6"
     assert arguments[arguments.index("--n-gpu-layers") + 1] == "999"
     assert owner_deployment.metadata["rpc_endpoints"] == {"compute": rpc_endpoint}
+    assert owner_deployment.metadata["network_boundary"] == "swarm-managed-tls-proxy"
+    assert owner_deployment.metadata["network_metering"]["message_count"] is None
 
     await owner.unload(owner_deployment)
     await compute.unload(compute_deployment)
@@ -219,6 +222,16 @@ async def test_llamacpp_completion_is_forwarded_as_real_sse_tokens(tmp_path: Pat
     assert [event.token_id for event in events[1:3]] == [7, 8]
     assert "".join(event.text for event in events) == "ab"
     assert events[-1].telemetry["timings"]["predicted_per_second"] == 42
+    network = events[-1].telemetry["network"]
+    assert network["bytes_sent"] == 0
+    assert network["bytes_received"] == 0
+    assert network["connection_count"] == 0
+    assert network["transfer_count"] == 0
+    assert network["message_count"] is None
+    assert network["runtime_duration_s"] >= 0
+    assert network["generated_token_count"] == 2
+    assert network["bytes_per_generated_token"] == 0.0
+    assert network["provenance"] == "byte-transparent Swarm TCP metering proxy"
     assert received["stream"] is True
     assert received["return_tokens"] is True
     assert received["cache_prompt"] is False

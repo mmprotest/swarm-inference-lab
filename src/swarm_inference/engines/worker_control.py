@@ -19,6 +19,7 @@ from swarm_inference.engines.interfaces import (
     InferenceRequest,
 )
 from swarm_inference.protocol.cluster import (
+    ClusterRequestAuthentication,
     EngineArtifactLeaseRequest,
     EngineArtifactLeaseResponse,
     EngineLeaseRequest,
@@ -26,6 +27,7 @@ from swarm_inference.protocol.cluster import (
 )
 from swarm_inference.protocol.engine_worker import (
     EngineActionResponse,
+    EngineDeploymentLease,
     EngineInferenceChunk,
     PrepareEngineRequest,
     SubmitEngineRequest,
@@ -33,6 +35,7 @@ from swarm_inference.protocol.engine_worker import (
     execution_plan_hash,
 )
 from swarm_inference.protocol.stage_worker import (
+    ArtifactTransferLease,
     ArtifactTransferResponse,
     CompleteArtifactRequest,
     PrepareArtifactRequest,
@@ -124,9 +127,11 @@ class CoordinatorAuthorizedEngineLifecycle:
         try:
             return self.worker_endpoints[worker_id]
         except KeyError as exc:
-            raise RuntimeError(f"selected engine worker {worker_id!r} has no control endpoint") from exc
+            raise RuntimeError(
+                f"selected engine worker {worker_id!r} has no control endpoint"
+            ) from exc
 
-    def _authentication(self, *, action: str, body: dict[str, Any]):
+    def _authentication(self, *, action: str, body: dict[str, Any]) -> ClusterRequestAuthentication:
         return create_cluster_authentication(
             identity=self.identity,
             node_id=self.node_id,
@@ -141,7 +146,7 @@ class CoordinatorAuthorizedEngineLifecycle:
         worker_id: str,
         deployment_id: str,
         plan: ExecutionPlan,
-    ):
+    ) -> EngineDeploymentLease:
         body = {
             "action": action,
             "worker_id": worker_id,
@@ -165,7 +170,7 @@ class CoordinatorAuthorizedEngineLifecycle:
         worker_id: str,
         deployment_id: str,
         plan: ExecutionPlan,
-    ):
+    ) -> ArtifactTransferLease:
         manifest = self.artifact_manifest
         body = {
             "worker_id": worker_id,
@@ -197,8 +202,7 @@ class CoordinatorAuthorizedEngineLifecycle:
         manifest = self.artifact_manifest
         source = self.artifact_manager.resolve(manifest.artifact_id)
         chunks_total = sum(
-            math.ceil(item.size_bytes / self.artifact_chunk_size_bytes)
-            for item in manifest.files
+            math.ceil(item.size_bytes / self.artifact_chunk_size_bytes) for item in manifest.files
         )
         lease = await self._artifact_lease(
             worker_id=worker_id,
@@ -404,7 +408,9 @@ class CoordinatorAuthorizedEngineLifecycle:
         try:
             resident = self._deployments[deployment.deployment_id]
         except KeyError as exc:
-            raise RuntimeError("worker engine deployment is not controlled by this lifecycle") from exc
+            raise RuntimeError(
+                "worker engine deployment is not controlled by this lifecycle"
+            ) from exc
         worker_id = resident.owner_worker_id
         plan = resident.worker_plans[worker_id]
         lease = await self._engine_lease(

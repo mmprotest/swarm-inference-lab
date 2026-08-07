@@ -102,5 +102,8 @@ membership remain outside application runtime slots.
 
 ## Public networking
 
-NAT traversal and public-Internet participation are unsupported. Use a trusted routed LAN or
-private VPN. Pairing is not a substitute for inference-payload encryption.
+Swarm accepts mutually authenticated TLS traffic over any reachable routed address, including a
+public address or private overlay. It does not yet provide NAT traversal, relay discovery, or
+automatic port forwarding. The owned firewall automation deliberately stays scoped to RFC1918
+sources; a directly public endpoint therefore needs an explicit least-privilege operator rule.
+Pairing provisions identity and credentials but does not make an unreachable address reachable.

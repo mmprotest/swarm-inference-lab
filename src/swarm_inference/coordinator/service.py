@@ -153,6 +153,12 @@ from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tenso
 from swarm_inference.runtime.telemetry import ProductTelemetry
 from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
+from swarm_inference.security.tls import (
+    TlsBootstrapClientConfig,
+    TlsClientConfig,
+    TlsServerConfig,
+    require_tls_for_endpoint,
+)
 from swarm_inference.security.trust_store import WorkerTrustStore
 from swarm_inference.simulation.model import build_synthetic_stages
 from swarm_inference.transport.base import ActivationTransport
@@ -236,6 +242,7 @@ class CoordinatorCore:
         worker_stage_affinity: dict[str, int] | None = None,
         after_token_hook: (Callable[[dict[str, Any]], Awaitable[RoutePlan | None]] | None) = None,
         coordinator_identity_path: str | Path | None = None,
+        stage_ring_tls: TlsClientConfig | None = None,
     ) -> None:
         if config is None and product_config is None:
             raise ValueError("coordinator requires an experiment or product configuration")
@@ -271,6 +278,7 @@ class CoordinatorCore:
         self.tokenizer = tokenizer
         self.worker_stage_affinity = dict(worker_stage_affinity or {})
         self.after_token_hook = after_token_hook
+        self.stage_ring_tls = stage_ring_tls
         if model_manifest is None:
             self.stages = build_synthetic_stages(self.config.model)
             self.runtime_model_id = self.config.model_id
@@ -407,6 +415,7 @@ class CoordinatorCore:
                 coordinator_id=product_config.coordinator_id,
                 telemetry=self.product_telemetry,
                 worker_trust_checker=self.is_worker_trusted,
+                expert_tls=stage_ring_tls,
             )
             self.session_controller = ProductSessionController(
                 deployments=self.deployment_manager,
@@ -419,6 +428,7 @@ class CoordinatorCore:
                 cleanup_timeout_s=product_config.cleanup_timeout_s,
                 recovery_timeout_s=product_config.recovery_timeout_s,
                 maximum_recovery_attempts=product_config.maximum_recovery_attempts,
+                data_tls=stage_ring_tls,
             )
 
     @staticmethod
@@ -833,7 +843,9 @@ class CoordinatorCore:
                     from swarm_inference.transport.expert import ExpertTransportClient
 
                     expert_client = ExpertTransportClient(
-                        capability.expert_data_plane_endpoint, timeout_s=2.0
+                        capability.expert_data_plane_endpoint,
+                        timeout_s=2.0,
+                        tls=self.stage_ring_tls,
                     )
                     expert_response = await asyncio.to_thread(expert_client.control, "status")
                     live_status = expert_response.get("status")
@@ -2535,11 +2547,15 @@ class CoordinatorRpcServer:
         *,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         shutdown_timeout_s: float = 10.0,
+        tls: TlsServerConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if shutdown_timeout_s <= 0:
             raise ValueError("coordinator gRPC shutdown timeout must be positive")
         self.core = core
         self.shutdown_timeout_s = shutdown_timeout_s
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self.server = grpc.aio.server(
             options=[
                 ("grpc.max_send_message_length", maximum_message_bytes),
@@ -2704,7 +2720,17 @@ class CoordinatorRpcServer:
             if self._closed:
                 raise RuntimeError("coordinator gRPC server cannot restart after shutdown")
             self._stopping = False
-            self.bound_port = self.server.add_insecure_port(endpoint)
+            require_tls_for_endpoint(
+                endpoint,
+                tls_configured=self.tls is not None,
+                allow_plaintext_loopback=self.allow_plaintext_loopback,
+                transport_name="coordinator gRPC server",
+            )
+            self.bound_port = (
+                self.server.add_secure_port(endpoint, self.tls.grpc_credentials())
+                if self.tls is not None
+                else self.server.add_insecure_port(endpoint)
+            )
             if self.bound_port == 0:
                 raise TransportError(f"could not bind coordinator endpoint {endpoint}")
             host = endpoint.rsplit(":", 1)[0].strip("[]")
@@ -2913,15 +2939,39 @@ class CoordinatorRpcServer:
                 host, port = split_endpoint(endpoint)
                 writer: asyncio.StreamWriter | None = None
                 try:
+                    tls = self.core.stage_ring_tls
+                    require_tls_for_endpoint(
+                        endpoint,
+                        tls_configured=tls is not None,
+                        allow_plaintext_loopback=True,
+                        transport_name="coordinator reachability probe",
+                    )
+                    connection = (
+                        asyncio.open_connection(
+                            host,
+                            port,
+                            ssl=tls.ssl_context(),
+                            server_hostname=tls.expected_server_name,
+                        )
+                        if tls is not None
+                        else asyncio.open_connection(host, port)
+                    )
                     _, opened_writer = await asyncio.wait_for(
-                        asyncio.open_connection(host, port),
+                        connection,
                         timeout=min(request.timeout_ms, 10_000) / 1000,
                     )
                     writer = opened_writer
+                    if tls is not None:
+                        tls_object = writer.get_extra_info("ssl_object")
+                        peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+                        if tls.validate_peer_der(peer_der) != membership.node_fingerprint:
+                            raise TransportError(
+                                "reachability endpoint certificate does not match node membership"
+                            )
                     socket_name = opened_writer.get_extra_info("sockname")
                     source = str(socket_name[0]) if socket_name else None
                     return True, source, None
-                except (OSError, TimeoutError) as exc:
+                except (OSError, TimeoutError, TransportError) as exc:
                     return False, None, str(exc)
                 finally:
                     if writer is not None:
@@ -3365,15 +3415,29 @@ class CoordinatorClient:
         *,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         timeout_s: float = 120.0,
+        tls: TlsClientConfig | TlsBootstrapClientConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         self.endpoint = endpoint
         self.timeout_s = timeout_s
-        self.channel = grpc.aio.insecure_channel(
+        options = [
+            ("grpc.max_send_message_length", maximum_message_bytes),
+            ("grpc.max_receive_message_length", maximum_message_bytes),
+        ]
+        require_tls_for_endpoint(
             endpoint,
-            options=[
-                ("grpc.max_send_message_length", maximum_message_bytes),
-                ("grpc.max_receive_message_length", maximum_message_bytes),
-            ],
+            tls_configured=tls is not None,
+            allow_plaintext_loopback=allow_plaintext_loopback,
+            transport_name="coordinator gRPC client",
+        )
+        self.channel = (
+            grpc.aio.secure_channel(
+                endpoint,
+                tls.grpc_credentials(),
+                options=[*options, *tls.grpc_options()],
+            )
+            if tls is not None
+            else grpc.aio.insecure_channel(endpoint, options=options)
         )
         self._closed = False
 

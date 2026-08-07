@@ -141,7 +141,9 @@ class Qwen3CudaFastPath:
         runner = kwargs.get("runner")
         if not callable(runner):
             raise ValueError("Qwen3 fast-path preparation requires a stage-aware prepare runner")
-        implementation = runner(measurement.candidate_mode, self.options(measurement.candidate_mode))
+        implementation = runner(
+            measurement.candidate_mode, self.options(measurement.candidate_mode)
+        )
         return PreparedFastPath(
             fast_path_id=self.fast_path_id,
             candidate_mode=measurement.candidate_mode,

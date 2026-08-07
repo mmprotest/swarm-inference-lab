@@ -92,9 +92,7 @@ class _Engine:
     ) -> AsyncIterator[InferenceEvent]:
         del deployment, request
         if False:
-            yield InferenceEvent(
-                event_type="completed", request_id="never", sequence_number=0
-            )
+            yield InferenceEvent(event_type="completed", request_id="never", sequence_number=0)
 
     async def unload(self, deployment: Deployment) -> None:
         raise AssertionError(deployment)
@@ -278,9 +276,7 @@ async def test_colibri_routing_policy_is_a_separate_evidence_gated_candidate() -
     assert automatic.selected.engine_parameters["routing_profile_id"] == "olmoe-hot-v1"
     assert not automatic.rejected_plans
 
-    routing = next(
-        item for item in first if item.optional_mechanisms["routing_aware_placement"]
-    )
+    routing = next(item for item in first if item.optional_mechanisms["routing_aware_placement"])
     rejected = await planner.plan(
         model,
         cluster,
@@ -367,7 +363,9 @@ async def test_native_identity_uses_only_selected_stage_runtime_facts() -> None:
         ClusterCapabilities(workers=(fast, slow)),
         ExecutionRequest(objective="speed"),
     )
-    fast_plan = next(item for item in first if item.worker_roles == {fast.worker_id: "critical_path_stage"})
+    fast_plan = next(
+        item for item in first if item.worker_roles == {fast.worker_id: "critical_path_stage"}
+    )
     assert fast_plan.fast_paths[fast.worker_id] == "eager"
 
     unused = _native_worker(

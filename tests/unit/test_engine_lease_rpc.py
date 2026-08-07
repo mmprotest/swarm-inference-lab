@@ -132,9 +132,7 @@ async def test_coordinator_issues_plan_bound_engine_lease(tmp_path: Path) -> Non
             execution_identity=plan.execution_identity,
             plan=plan,
             trusted_coordinator_public_key=core.coordinator_identity.public_key_b64,
-            trusted_coordinator_fingerprint=(
-                core.coordinator_identity.public_key_fingerprint
-            ),
+            trusted_coordinator_fingerprint=(core.coordinator_identity.public_key_fingerprint),
         )
         assert control.calls == [
             (

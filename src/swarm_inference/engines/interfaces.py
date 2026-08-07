@@ -6,9 +6,10 @@ from collections.abc import AsyncIterator
 from enum import StrEnum
 from typing import Any, Literal, Protocol, runtime_checkable
 
-from pydantic import ConfigDict, Field, NonNegativeInt, PositiveInt
+from pydantic import ConfigDict, Field, NonNegativeInt, PositiveInt, model_validator
 
 from swarm_inference.config.models import StrictModel
+from swarm_inference.engines.topology import NetworkLinkProfile
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 
 
@@ -74,6 +75,9 @@ class ExecutionEngineCapability(StrictModel):
     formats: tuple[str, ...] = ()
     devices: tuple[ExecutionDevice, ...] = ()
     adapters: tuple[str, ...] = ()
+    model_architectures: tuple[str, ...] = ()
+    required_features: tuple[str, ...] = ()
+    unsupported_features: tuple[str, ...] = ()
     fast_paths: tuple[str, ...] = ()
     adapter_fast_paths: tuple[AdapterFastPathCapability, ...] = ()
     execution_profiles: tuple[ExecutionProfileCapability, ...] = ()
@@ -91,11 +95,27 @@ class WorkerExecutionCapability(StrictModel):
     reliability: float = Field(default=1.0, ge=0, le=1)
     network_latency_ms: dict[str, float] = Field(default_factory=dict)
     network_bandwidth_bytes_s: dict[str, float] = Field(default_factory=dict)
+    network_links: dict[str, NetworkLinkProfile] = Field(default_factory=dict)
     resident_model_fingerprints: tuple[str, ...] = ()
     storage_available_bytes: NonNegativeInt = 0
 
     def engine(self, engine_id: str) -> ExecutionEngineCapability | None:
         return next((item for item in self.engines if item.engine_id == engine_id), None)
+
+    def link_to(self, worker_id: str) -> NetworkLinkProfile:
+        profile = self.network_links.get(worker_id)
+        if profile is not None:
+            return profile
+        return NetworkLinkProfile(
+            rtt_ms=self.network_latency_ms.get(worker_id),
+            bandwidth_bytes_s=self.network_bandwidth_bytes_s.get(worker_id),
+            provenance=(
+                "legacy-worker-measurements"
+                if worker_id in self.network_latency_ms
+                or worker_id in self.network_bandwidth_bytes_s
+                else "unmeasured"
+            ),
+        )
 
 
 class ClusterCapabilities(StrictModel):
@@ -140,6 +160,26 @@ class EngineSupportReport(StrictModel):
     adapter_id: str | None = None
     conversion: dict[str, Any] | None = None
     runtime_identity: dict[str, Any] = Field(default_factory=dict)
+    compatibility: Literal["supported", "unsupported", "conditionally_supported"] | None = None
+    model_architecture: str | None = None
+    model_format: str | None = None
+    required_runtime: str | None = None
+    required_features: tuple[str, ...] = ()
+    unsupported_features: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def derive_compatibility(self) -> EngineSupportReport:
+        if self.compatibility is not None:
+            return self
+        value: Literal["supported", "unsupported", "conditionally_supported"]
+        if self.status == EngineSupportStatus.SUPPORTED:
+            value = "supported"
+        elif self.status == EngineSupportStatus.CONVERSION_AVAILABLE:
+            value = "conditionally_supported"
+        else:
+            value = "unsupported"
+        object.__setattr__(self, "compatibility", value)
+        return self
 
     @property
     def supported(self) -> bool:
@@ -204,10 +244,14 @@ class ExecutionPlan(StrictModel):
     predicted_ttft_ms: float = Field(ge=0)
     predicted_decode_tokens_s: float = Field(ge=0)
     predicted_aggregate_tokens_s: float = Field(ge=0)
-    predicted_network_bytes: NonNegativeInt = 0
-    predicted_messages_per_token: float = Field(default=0, ge=0)
-    predicted_bytes_per_token: float = Field(default=0, ge=0)
-    predicted_serial_waits_per_token: float = Field(default=0, ge=0)
+    predicted_network_bytes: NonNegativeInt | None = None
+    predicted_messages_per_token: float | None = Field(default=None, ge=0)
+    predicted_bytes_per_token: float | None = Field(default=None, ge=0)
+    predicted_serial_waits_per_token: float | None = Field(default=None, ge=0)
+    number_of_wan_stage_boundaries: NonNegativeInt | None = None
+    persistent_connections: bool | None = None
+    network_cost_confidence: Literal["measured", "estimated", "unmeasured"] = "unmeasured"
+    network_cost_provenance: str = "unmeasured"
     startup_cost_ms: float = Field(default=0, ge=0)
     required_memory_bytes: NonNegativeInt = 0
     score: float
@@ -255,6 +299,12 @@ class ExecutionEngine(Protocol):
     engine_id: str
 
     def probe(
+        self,
+        model: ResolvedModelDescriptor,
+        cluster: ClusterCapabilities,
+    ) -> EngineSupportReport: ...
+
+    def probe_model_support(
         self,
         model: ResolvedModelDescriptor,
         cluster: ClusterCapabilities,

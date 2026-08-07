@@ -39,9 +39,7 @@ class _Resolver:
     def inspect(self, *_args: Any, **_kwargs: Any) -> ModelResolution:
         return ModelResolution(descriptor=self.descriptor)
 
-    async def acquire_async(
-        self, _descriptor: ResolvedModelDescriptor
-    ) -> tuple[Path, ...]:
+    async def acquire_async(self, _descriptor: ResolvedModelDescriptor) -> tuple[Path, ...]:
         self.acquire_count += 1
         return (self.acquired_path,)
 
@@ -298,9 +296,7 @@ class _HarnessOrchestrator(ClusterOrchestrator):
     async def _wait_for_fresh_links(self, _client: Any, _workers: Any) -> None:
         return None
 
-    async def _execution_capabilities(
-        self, _client: Any, _workers: Any
-    ) -> ClusterCapabilities:
+    async def _execution_capabilities(self, _client: Any, _workers: Any) -> ClusterCapabilities:
         return self._test_capabilities
 
     async def _build_model_artifact(

@@ -23,6 +23,7 @@ from swarm_inference.config.models import ModelManifest, StrictModel
 from swarm_inference.config.product import load_product_config
 from swarm_inference.coordinator.service import CoordinatorCore, CoordinatorRpcServer
 from swarm_inference.host import format_endpoint, split_endpoint
+from swarm_inference.security.tls import TlsServerConfig
 
 CoordinatorRuntimeState = Literal[
     "starting",
@@ -74,6 +75,7 @@ class CoordinatorRuntime:
         service_mode: str = "foreground",
         shutdown_timeout_s: float = 12.0,
         server_factory: ServerFactory | None = None,
+        tls_server_config: TlsServerConfig | None = None,
     ) -> None:
         if shutdown_timeout_s <= 0:
             raise ValueError("coordinator runtime shutdown timeout must be positive")
@@ -81,7 +83,11 @@ class CoordinatorRuntime:
         self.listen_endpoint = listen_endpoint
         self.advertised_endpoint = advertised_endpoint
         self.shutdown_timeout_s = shutdown_timeout_s
-        self._server = (server_factory or CoordinatorRpcServer)(core)
+        self._server = (
+            server_factory(core)
+            if server_factory is not None
+            else CoordinatorRpcServer(core, tls=tls_server_config)
+        )
         self._lifecycle_lock = asyncio.Lock()
         self._started = False
         coordinator_id = core.product_config.coordinator_id if core.product_config else None

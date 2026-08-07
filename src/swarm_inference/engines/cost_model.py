@@ -35,13 +35,13 @@ class PlanCostInputs(StrictModel):
     required_memory_bytes: NonNegativeInt = 0
     resident_model_bytes: NonNegativeInt = 0
     artifact_transfer_bytes: NonNegativeInt = 0
-    network_latency_ms: float = Field(default=0, ge=0)
+    network_latency_ms: float | None = Field(default=None, ge=0)
     network_bandwidth_bytes_s: float | None = Field(default=None, gt=0)
-    network_jitter_ms: float = Field(default=0, ge=0)
+    network_jitter_ms: float | None = Field(default=None, ge=0)
     serialization_ms_per_token: float = Field(default=0, ge=0)
-    messages_per_token: float = Field(default=0, ge=0)
-    bytes_per_token: float = Field(default=0, ge=0)
-    serial_waits_per_token: float = Field(default=0, ge=0)
+    messages_per_token: float | None = Field(default=None, ge=0)
+    bytes_per_token: float | None = Field(default=None, ge=0)
+    serial_waits_per_token: float | None = Field(default=None, ge=0)
     cache_hit_rate: float | None = Field(default=None, ge=0, le=1)
     cache_miss_cost_ms: float = Field(default=0, ge=0)
     expert_reduction_ms: float = Field(default=0, ge=0)
@@ -60,8 +60,7 @@ class PlanCostInputs(StrictModel):
             return 0.0
         return max(
             0.0,
-            (self.usable_memory_bytes - self.required_memory_bytes)
-            / self.usable_memory_bytes,
+            (self.usable_memory_bytes - self.required_memory_bytes) / self.usable_memory_bytes,
         )
 
     @property
@@ -107,10 +106,24 @@ def score_costs(
         prefill_rate = decode_rate
         unmeasured.append("prefill_rate")
     base_token_ms = 1000 / max(decode_rate, 1e-9)
+    network_latency_ms = inputs.network_latency_ms
+    if network_latency_ms is None:
+        network_latency_ms = 0.0
+        unmeasured.append("network_latency")
+    network_jitter_ms = inputs.network_jitter_ms
+    if network_jitter_ms is None:
+        network_jitter_ms = 0.0
+        unmeasured.append("network_jitter")
+    if inputs.messages_per_token is None:
+        unmeasured.append("network_operations_per_token")
+    if inputs.bytes_per_token is None:
+        unmeasured.append("network_bytes_per_token")
+    if inputs.serial_waits_per_token is None:
+        unmeasured.append("network_serial_waits_per_token")
     per_token_ms = (
         base_token_ms * (1 + inputs.queue_depth)
-        + inputs.network_latency_ms
-        + inputs.network_jitter_ms
+        + network_latency_ms
+        + network_jitter_ms
         + inputs.serialization_ms_per_token
         + inputs.cache_penalty_ms
         + inputs.expert_reduction_ms
@@ -118,15 +131,9 @@ def score_costs(
     ) / max(inputs.reliability, 1e-9)
     predicted_decode = 1000 / max(per_token_ms, 1e-9)
     aggregate = (
-        predicted_decode
-        * min(inputs.concurrency, inputs.replica_count)
-        * inputs.batching_factor
+        predicted_decode * min(inputs.concurrency, inputs.replica_count) * inputs.batching_factor
     )
-    cold_costs = (
-        inputs.startup_cost_ms
-        + inputs.compile_cost_ms
-        + inputs.graph_capture_cost_ms
-    )
+    cold_costs = inputs.startup_cost_ms + inputs.compile_cost_ms + inputs.graph_capture_cost_ms
     acquisition = inputs.acquisition_ms
     if acquisition == float("inf"):
         unmeasured.append("acquisition_bandwidth")

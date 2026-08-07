@@ -438,11 +438,7 @@ def measure_capabilities(
             Backend.TORCH_CUDA: "cuda",
             Backend.TORCH_MPS: "mps",
         }.get(backend, "cpu")
-        usable_memory = (
-            available_vram
-            if device_type in {"cuda", "mps"}
-            else memory.available
-        )
+        usable_memory = available_vram if device_type in {"cuda", "mps"} else memory.available
         if memory_limit_bytes is not None:
             usable_memory = min(usable_memory, memory_limit_bytes)
         execution_engines.append(
@@ -500,9 +496,7 @@ def measure_capabilities(
             else None
         ),
     )
-    execution_engines.extend(
-        item.model_dump(mode="json") for item in general_capabilities
-    )
+    execution_engines.extend(item.model_dump(mode="json") for item in general_capabilities)
     return WorkerCapability(
         worker_id=selected_worker_id,
         node_id=selected_node_id,

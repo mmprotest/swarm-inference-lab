@@ -94,9 +94,7 @@ def test_all_production_modules_import_zero_experiment_packages() -> None:
                 if module == "swarm_inference.experiments" or module.startswith(
                     "swarm_inference.experiments."
                 ):
-                    violations.append(
-                        (path.relative_to(SOURCE_ROOT).as_posix(), module)
-                    )
+                    violations.append((path.relative_to(SOURCE_ROOT).as_posix(), module))
     assert not violations, f"production modules import experiments: {violations}"
 
 

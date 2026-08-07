@@ -41,6 +41,7 @@ from swarm_inference.protocol.stage_worker import (
 )
 from swarm_inference.runtime.telemetry import ProductTelemetry
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
+from swarm_inference.security.tls import TlsClientConfig
 from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
 from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
 
@@ -111,6 +112,7 @@ class ProductSessionController:
         cleanup_timeout_s: float,
         recovery_timeout_s: float,
         maximum_recovery_attempts: int,
+        data_tls: TlsClientConfig | None = None,
     ) -> None:
         self.deployments = deployments
         self.transport = transport
@@ -125,6 +127,7 @@ class ProductSessionController:
             queue_capacity=data_queue_capacity,
             read_timeout_s=request_timeout_s,
             write_timeout_s=min(30.0, request_timeout_s),
+            tls=data_tls,
         )
         self._active: dict[str, _ProductRequestState] = {}
         self._terminal = self.state.load_requests()

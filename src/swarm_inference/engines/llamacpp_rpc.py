@@ -10,7 +10,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from contextlib import suppress
 from pathlib import Path
 from typing import Any, Protocol
@@ -31,13 +31,31 @@ from swarm_inference.engines.interfaces import (
     InferenceEvent,
     InferenceRequest,
     PhasePlan,
+    WorkerExecutionCapability,
 )
+from swarm_inference.engines.topology import TopologyDomain, summarize_network_path
+from swarm_inference.host import format_endpoint
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.runtime.engine_processes import (
     EngineProcessManager,
     require_private_bind_host,
     sha256_file,
 )
+from swarm_inference.security.tls import TlsClientConfig, TlsServerConfig
+from swarm_inference.transport.tcp_meter import TcpMeteringProxy
+
+
+def _snapshot_int(snapshot: Mapping[str, int | float | None], key: str) -> int:
+    value = snapshot.get(key)
+    if value is None:
+        return 0
+    return int(value)
+
+
+def _llama_capability(worker: WorkerExecutionCapability) -> ExecutionEngineCapability:
+    capability = worker.engine("llamacpp-rpc")
+    assert capability is not None
+    return capability
 
 
 class LlamaCppRuntimeManifest(StrictModel):
@@ -52,17 +70,15 @@ class LlamaCppRuntimeManifest(StrictModel):
     rpc_server_sha256: str
     build_flags: dict[str, bool | str] = Field(default_factory=dict)
     device_support: tuple[str, ...] = ()
+    supported_features: tuple[str, ...] = ("text-generation",)
+    unsupported_features: tuple[str, ...] = ()
 
     @property
     def rpc_enabled(self) -> bool:
         """Whether the pinned build positively records GGML RPC support."""
 
         value = next(
-            (
-                item
-                for key, item in self.build_flags.items()
-                if key.casefold() == "ggml_rpc"
-            ),
+            (item for key, item in self.build_flags.items() if key.casefold() == "ggml_rpc"),
             False,
         )
         if isinstance(value, bool):
@@ -81,13 +97,85 @@ class LlamaCppRuntimeManifest(StrictModel):
                 raise RuntimeError(f"pinned llama.cpp binary hash mismatch: {resolved}")
 
 
+class LlamaCppArchitectureProbe(StrictModel):
+    """Evidence that one pinned executable contains a GGUF architecture ID."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    supported_identifiers: tuple[str, ...]
+    inspected_binary: Path
+    binary_sha256: str
+    mechanism: str = "bounded-binary-identifier-scan"
+
+
+def _contains_identifier(path: Path, identifier: str, *, chunk_size: int = 1 << 20) -> bool:
+    """Scan a binary with bounded memory and token-boundary checks."""
+
+    needle = identifier.casefold().encode("ascii")
+    if not needle or len(needle) > 128:
+        return False
+    overlap = len(needle) + 1
+    tail = b""
+    with path.open("rb") as handle:
+        while True:
+            block = handle.read(chunk_size)
+            data = (tail + block).lower()
+            eof = not block
+            scan_limit = len(data) if eof else max(0, len(data) - overlap)
+            start = 0
+            while (index := data.find(needle, start)) >= 0:
+                if index >= scan_limit:
+                    break
+                before = data[index - 1 : index] if index else b""
+                after_index = index + len(needle)
+                after = data[after_index : after_index + 1]
+                identifier_chars = b"abcdefghijklmnopqrstuvwxyz0123456789_"
+                if (not before or before[0] not in identifier_chars) and (
+                    not after or after[0] not in identifier_chars
+                ):
+                    return True
+                start = index + 1
+            if eof:
+                break
+            tail = data[-overlap:]
+    return False
+
+
+def probe_llamacpp_architectures(
+    manifest: LlamaCppRuntimeManifest,
+    identifiers: tuple[str, ...],
+) -> LlamaCppArchitectureProbe:
+    """Prove architecture support from the hash-verified llama-server binary.
+
+    llama.cpp compiles its GGUF architecture dispatch identifiers into the
+    model loader.  Scanning the pinned executable is deterministic, bounded,
+    and avoids opening a many-gigabyte model merely to discover an unsupported
+    architecture.
+    """
+
+    manifest.verify()
+    binary = manifest.server_binary.expanduser().resolve()
+    supported = tuple(
+        sorted(
+            {
+                identifier.casefold()
+                for identifier in identifiers
+                if _contains_identifier(binary, identifier)
+            }
+        )
+    )
+    return LlamaCppArchitectureProbe(
+        supported_identifiers=supported,
+        inspected_binary=binary,
+        binary_sha256="sha256:" + sha256_file(binary),
+    )
+
+
 def load_llamacpp_runtime_manifest(path: Path) -> LlamaCppRuntimeManifest:
     """Load a pinned manifest with binary paths relative to the manifest."""
 
     resolved = path.expanduser().resolve()
-    manifest = LlamaCppRuntimeManifest.model_validate_json(
-        resolved.read_text(encoding="utf-8")
-    )
+    manifest = LlamaCppRuntimeManifest.model_validate_json(resolved.read_text(encoding="utf-8"))
     manifest = manifest.model_copy(
         update={
             "server_binary": (
@@ -117,7 +205,8 @@ class LlamaCppLifecycle(Protocol):
 
 
 def _free_port(host: str) -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+    family = socket.AF_INET6 if ":" in host else socket.AF_INET
+    with socket.socket(family, socket.SOCK_STREAM) as listener:
         listener.bind((host, 0))
         return int(listener.getsockname()[1])
 
@@ -306,12 +395,34 @@ class LocalLlamaCppLifecycle:
         processes: EngineProcessManager,
         worker_id: str,
         bind_host: str = "127.0.0.1",
+        tls_server: TlsServerConfig | None = None,
+        tls_client: TlsClientConfig | None = None,
     ) -> None:
         self.manifest = manifest
         self.processes = processes
         self.worker_id = worker_id
         self.bind_host = require_private_bind_host(bind_host)
+        self.tls_server = tls_server
+        self.tls_client = tls_client
+        self._metering_proxies: dict[str, list[TcpMeteringProxy]] = {}
         self.manifest.verify()
+
+    def _meter_snapshot(self, deployment_id: str) -> dict[str, int | float | None]:
+        snapshots = [proxy.snapshot() for proxy in self._metering_proxies.get(deployment_id, [])]
+        return {
+            "bytes_sent": sum(_snapshot_int(item, "bytes_sent") for item in snapshots),
+            "bytes_received": sum(_snapshot_int(item, "bytes_received") for item in snapshots),
+            "connection_count": sum(_snapshot_int(item, "connection_count") for item in snapshots),
+            "transfer_count": sum(_snapshot_int(item, "transfer_count") for item in snapshots),
+            "connection_failures": sum(
+                _snapshot_int(item, "connection_failures") for item in snapshots
+            ),
+            "runtime_duration_s": max(
+                (float(item["runtime_duration_s"] or 0.0) for item in snapshots),
+                default=0.0,
+            ),
+            "message_count": None,
+        }
 
     async def prepare(self, plan: ExecutionPlan) -> Deployment:
         try:
@@ -322,18 +433,30 @@ class LocalLlamaCppLifecycle:
         if role == "tensor_rpc_compute":
             if not self.manifest.rpc_enabled:
                 raise RuntimeError("pinned llama.cpp runtime was not built with GGML_RPC")
-            port = _free_port(self.bind_host)
-            endpoint = f"{self.bind_host}:{port}"
-            arguments = ("-H", self.bind_host, "-p", str(port))
+            engine_host = "127.0.0.1"
+            port = _free_port(engine_host)
+            engine_endpoint = format_endpoint(engine_host, port)
+            rpc_arguments = ("-H", engine_host, "-p", str(port))
             managed = await asyncio.to_thread(
                 self.processes.start,
                 deployment_id=deployment_id,
                 role="tensor-rpc-server",
                 executable=self.manifest.rpc_server_binary,
                 expected_sha256=self.manifest.rpc_server_sha256,
-                arguments=arguments,
-                ready=lambda process: _wait_tcp(self.bind_host, port, process),
+                arguments=rpc_arguments,
+                ready=lambda process: _wait_tcp(engine_host, port, process),
             )
+            proxy = TcpMeteringProxy(
+                listen_endpoint=format_endpoint(self.bind_host, 0),
+                upstream_endpoint=engine_endpoint,
+                inbound_tls=self.tls_server,
+            )
+            try:
+                endpoint = await proxy.start()
+            except BaseException:
+                await asyncio.to_thread(self.processes.stop_deployment, deployment_id)
+                raise
+            self._metering_proxies[deployment_id] = [proxy]
             return Deployment(
                 deployment_id=deployment_id,
                 engine_id=plan.engine_id,
@@ -346,8 +469,10 @@ class LocalLlamaCppLifecycle:
                     "runtime_commit": self.manifest.commit,
                     "rpc_server_sha256": self.manifest.rpc_server_sha256,
                     "role": role,
-                    "transport_confidentiality": False,
-                    "network_boundary": "trusted-private-swarm-network",
+                    "transport_confidentiality": self.tls_server is not None,
+                    "transport_authentication": self.tls_server is not None,
+                    "network_metering": self._meter_snapshot(deployment_id),
+                    "network_boundary": "swarm-managed-tls-proxy",
                 },
             )
         if role in {"idle", "background_replica", "storage_cache", "verification"}:
@@ -375,6 +500,7 @@ class LocalLlamaCppLifecycle:
             str(plan.engine_parameters.get("parallel", 1)),
         )
         rpc_endpoints = plan.engine_parameters.get("rpc_endpoints", {})
+        metering_proxies: list[TcpMeteringProxy] = []
         if rpc_endpoints:
             if not isinstance(rpc_endpoints, dict) or not all(
                 isinstance(key, str) and isinstance(value, str)
@@ -384,9 +510,26 @@ class LocalLlamaCppLifecycle:
             split_values = plan.engine_parameters.get("tensor_split_values", [])
             if not isinstance(split_values, list) or len(split_values) != len(rpc_endpoints) + 1:
                 raise ValueError("llama.cpp distributed plan has an invalid tensor split")
+            metered_rpc_endpoints: dict[str, str] = {}
+            try:
+                for worker_id, remote_endpoint in rpc_endpoints.items():
+                    proxy = TcpMeteringProxy(
+                        listen_endpoint="127.0.0.1:0",
+                        upstream_endpoint=remote_endpoint,
+                        outbound_tls=self.tls_client,
+                    )
+                    metered_rpc_endpoints[worker_id] = await proxy.start()
+                    metering_proxies.append(proxy)
+            except BaseException:
+                await asyncio.gather(
+                    *(proxy.close() for proxy in metering_proxies),
+                    return_exceptions=True,
+                )
+                raise
+            self._metering_proxies[deployment_id] = metering_proxies
             arguments += (
                 "--rpc",
-                ",".join(str(value) for value in rpc_endpoints.values()),
+                ",".join(str(value) for value in metered_rpc_endpoints.values()),
                 "--split-mode",
                 "layer",
                 "--tensor-split",
@@ -394,15 +537,23 @@ class LocalLlamaCppLifecycle:
                 "--n-gpu-layers",
                 "999",
             )
-        managed = await asyncio.to_thread(
-            self.processes.start,
-            deployment_id=deployment_id,
-            role="model-server",
-            executable=self.manifest.server_binary,
-            expected_sha256=self.manifest.server_sha256,
-            arguments=arguments,
-            ready=lambda process: _wait_http(endpoint, process),
-        )
+        try:
+            managed = await asyncio.to_thread(
+                self.processes.start,
+                deployment_id=deployment_id,
+                role="model-server",
+                executable=self.manifest.server_binary,
+                expected_sha256=self.manifest.server_sha256,
+                arguments=arguments,
+                ready=lambda process: _wait_http(endpoint, process),
+            )
+        except BaseException:
+            self._metering_proxies.pop(deployment_id, None)
+            await asyncio.gather(
+                *(proxy.close() for proxy in metering_proxies),
+                return_exceptions=True,
+            )
+            raise
         return Deployment(
             deployment_id=deployment_id,
             engine_id=plan.engine_id,
@@ -414,8 +565,12 @@ class LocalLlamaCppLifecycle:
             metadata={
                 "runtime_commit": self.manifest.commit,
                 "server_sha256": self.manifest.server_sha256,
-                "transport_confidentiality": False,
-                "network_boundary": "trusted-private-swarm-network",
+                "transport_confidentiality": bool(rpc_endpoints) and self.tls_client is not None,
+                "transport_authentication": bool(rpc_endpoints) and self.tls_client is not None,
+                "network_metering": self._meter_snapshot(deployment_id),
+                "network_boundary": (
+                    "swarm-managed-tls-proxy" if rpc_endpoints else "process-local"
+                ),
                 "rpc_endpoints": dict(rpc_endpoints),
             },
         )
@@ -427,6 +582,8 @@ class LocalLlamaCppLifecycle:
     ) -> AsyncIterator[InferenceEvent]:
         endpoint = next(iter(deployment.endpoints.values()))
         yield InferenceEvent(event_type="started", request_id=request.request_id, sequence_number=0)
+        meter_before = self._meter_snapshot(deployment.deployment_id)
+        request_started = time.monotonic()
         sequence_number = 0
         terminal: dict[str, Any] | None = None
         async for result in _post_json_sse(
@@ -463,14 +620,43 @@ class LocalLlamaCppLifecycle:
                 terminal = result
         if terminal is None:
             raise RuntimeError("llama.cpp stream ended without a verified terminal event")
+        meter_after = self._meter_snapshot(deployment.deployment_id)
+        bytes_sent = _snapshot_int(meter_after, "bytes_sent") - _snapshot_int(
+            meter_before, "bytes_sent"
+        )
+        bytes_received = _snapshot_int(meter_after, "bytes_received") - _snapshot_int(
+            meter_before, "bytes_received"
+        )
+        generated_tokens = sequence_number
         yield InferenceEvent(
             event_type="completed",
             request_id=request.request_id,
             sequence_number=sequence_number + 1,
-            telemetry={"timings": terminal.get("timings", {})},
+            telemetry={
+                "timings": terminal.get("timings", {}),
+                "network": {
+                    "bytes_sent": bytes_sent,
+                    "bytes_received": bytes_received,
+                    "connection_count": _snapshot_int(meter_after, "connection_count")
+                    - _snapshot_int(meter_before, "connection_count"),
+                    "transfer_count": _snapshot_int(meter_after, "transfer_count")
+                    - _snapshot_int(meter_before, "transfer_count"),
+                    "message_count": None,
+                    "runtime_duration_s": time.monotonic() - request_started,
+                    "generated_token_count": generated_tokens,
+                    "bytes_per_generated_token": (
+                        (bytes_sent + bytes_received) / generated_tokens
+                        if generated_tokens
+                        else None
+                    ),
+                    "provenance": "byte-transparent Swarm TCP metering proxy",
+                },
+            },
         )
 
     async def unload(self, deployment: Deployment) -> None:
+        proxies = self._metering_proxies.pop(deployment.deployment_id, [])
+        await asyncio.gather(*(proxy.close() for proxy in proxies), return_exceptions=True)
         await asyncio.to_thread(self.processes.stop_deployment, deployment.deployment_id)
 
 
@@ -548,17 +734,87 @@ class LlamaCppRpcEngine:
                 engine_id=self.engine_id,
                 status=EngineSupportStatus.UNSUPPORTED_FORMAT,
                 reason="llama.cpp compatibility execution consumes GGUF artifacts",
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned llama.cpp with GGML RPC",
             )
+        if not (model.architecture_raw or model.architecture):
+            return EngineSupportReport(
+                engine_id=self.engine_id,
+                status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                reason=(
+                    "GGUF architecture metadata is missing; the runtime cannot prove "
+                    "which model loader is required"
+                ),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned llama.cpp with an advertised GGUF architecture",
+            )
+        if model.architecture_source != "gguf.general.architecture":
+            return EngineSupportReport(
+                engine_id=self.engine_id,
+                status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                reason=(
+                    "exact GGUF general.architecture metadata was not available; "
+                    "source-model configuration is insufficient to prove the loader "
+                    "required by the selected GGUF artifact"
+                ),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned llama.cpp with an exact GGUF architecture loader",
+                required_features=("gguf.general.architecture",),
+            )
+        # Engine compatibility is exact even when the product registry groups
+        # several upstream identifiers into one architecture family.
+        required_architectures = {(model.architecture_raw or "").strip().casefold()}
         workers = []
         broken = []
+        architecture_rejected: list[str] = []
+        feature_rejected: dict[str, tuple[str, ...]] = {}
         for worker in cluster.workers_for_engine(self.engine_id):
             capability = worker.engine(self.engine_id)
             assert capability is not None
             if not capability.runtime_revision or not capability.binary_hashes:
                 broken.append(worker.worker_id)
+            elif not required_architectures.intersection(
+                item.casefold() for item in capability.model_architectures
+            ):
+                architecture_rejected.append(worker.worker_id)
+            elif rejected := tuple(
+                sorted(set(model.features).intersection(capability.unsupported_features))
+            ):
+                feature_rejected[worker.worker_id] = rejected
             elif "gguf" in {item.lower() for item in capability.formats}:
                 workers.append(worker)
         if not workers:
+            if architecture_rejected:
+                return EngineSupportReport(
+                    engine_id=self.engine_id,
+                    status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                    reason=(
+                        "the installed pinned llama.cpp runtime did not advertise any "
+                        "of the required GGUF loader identifiers: "
+                        + ", ".join(sorted(required_architectures))
+                    ),
+                    model_architecture=model.architecture,
+                    model_format=model.format,
+                    required_runtime="pinned llama.cpp architecture loader",
+                    required_features=tuple(sorted(required_architectures)),
+                )
+            if feature_rejected:
+                unsupported = tuple(
+                    sorted({item for values in feature_rejected.values() for item in values})
+                )
+                return EngineSupportReport(
+                    engine_id=self.engine_id,
+                    status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                    reason="the GGUF requires features rejected by the pinned runtime: "
+                    + ", ".join(unsupported),
+                    model_architecture=model.architecture,
+                    model_format=model.format,
+                    required_runtime="pinned llama.cpp architecture loader",
+                    unsupported_features=unsupported,
+                )
             return EngineSupportReport(
                 engine_id=self.engine_id,
                 status=(
@@ -571,35 +827,38 @@ class LlamaCppRpcEngine:
                     if broken
                     else "no worker advertises a pinned GGUF-compatible llama.cpp runtime"
                 ),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned llama.cpp with GGML RPC",
             )
         required = int(model.weight_bytes * 1.05)
         owners = [
             worker
             for worker in workers
-            if "critical_path_stage" in set(worker.engine(self.engine_id).roles)  # type: ignore[union-attr]
+            if "critical_path_stage" in set(_llama_capability(worker).roles)
         ]
         if not owners:
             return EngineSupportReport(
                 engine_id=self.engine_id,
                 status=EngineSupportStatus.MISSING_DEVICE_CAPABILITY,
                 reason="no llama.cpp worker advertises the model-server owner role",
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned llama.cpp with a model-server role",
             )
         rpc_workers = [
             worker
             for worker in workers
-            if "tensor_rpc_compute" in set(worker.engine(self.engine_id).roles)  # type: ignore[union-attr]
+            if "tensor_rpc_compute" in set(_llama_capability(worker).roles)
         ]
         memory_by_worker = {
             worker.worker_id: sum(
-                device.usable_memory_bytes
-                for device in worker.engine(self.engine_id).devices  # type: ignore[union-attr]
+                device.usable_memory_bytes for device in _llama_capability(worker).devices
             )
             for worker in workers
         }
         feasible_ids: set[str] = {
-            owner.worker_id
-            for owner in owners
-            if memory_by_worker[owner.worker_id] >= required
+            owner.worker_id for owner in owners if memory_by_worker[owner.worker_id] >= required
         }
         for owner in owners:
             cumulative = memory_by_worker[owner.worker_id]
@@ -623,13 +882,34 @@ class LlamaCppRpcEngine:
                     "the selected GGUF with runtime headroom"
                 ),
                 supported_worker_ids=tuple(item.worker_id for item in workers),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                required_runtime="pinned llama.cpp with sufficient aggregate memory",
             )
+        proven = sorted(
+            required_architectures.intersection(
+                identifier.casefold()
+                for worker in workers
+                for identifier in worker.engine(self.engine_id).model_architectures  # type: ignore[union-attr]
+            )
+        )
         return EngineSupportReport(
             engine_id=self.engine_id,
             status=EngineSupportStatus.SUPPORTED,
-            reason="pinned llama.cpp workers support the selected immutable GGUF",
+            reason=("pinned llama.cpp runtime supports " + ", ".join(proven) + " GGUF models"),
             supported_worker_ids=tuple(sorted(feasible_ids)),
+            model_architecture=model.architecture,
+            model_format=model.format,
+            required_runtime="pinned llama.cpp with GGML RPC",
+            required_features=tuple(proven),
         )
+
+    def probe_model_support(
+        self,
+        model: ResolvedModelDescriptor,
+        cluster: ClusterCapabilities,
+    ) -> EngineSupportReport:
+        return self.probe(model, cluster)
 
     async def candidate_plans(
         self,
@@ -650,7 +930,7 @@ class LlamaCppRpcEngine:
             key=lambda worker: (
                 -max(
                     (device.measured_decode_tokens_s or 0)
-                    for device in worker.engine(self.engine_id).devices  # type: ignore[union-attr]
+                    for device in _llama_capability(worker).devices
                 ),
                 worker.queue_depth,
                 worker.worker_id,
@@ -659,14 +939,12 @@ class LlamaCppRpcEngine:
         owner_workers = [
             worker
             for worker in workers
-            if "critical_path_stage"
-            in set(worker.engine(self.engine_id).roles)  # type: ignore[union-attr]
+            if "critical_path_stage" in set(_llama_capability(worker).roles)
         ]
         rpc_workers = [
             worker
             for worker in workers
-            if "tensor_rpc_compute"
-            in set(worker.engine(self.engine_id).roles)  # type: ignore[union-attr]
+            if "tensor_rpc_compute" in set(_llama_capability(worker).roles)
         ]
         required = int(model.weight_bytes * 1.05)
         plans: list[ExecutionPlan] = []
@@ -712,6 +990,11 @@ class LlamaCppRpcEngine:
                     ),
                     concurrency=request.concurrency,
                     request_priority=request.priority,
+                    network_latency_ms=0.0,
+                    network_jitter_ms=0.0,
+                    messages_per_token=0.0,
+                    bytes_per_token=0.0,
+                    serial_waits_per_token=0.0,
                 ),
                 objective=request.objective,
             )
@@ -743,6 +1026,14 @@ class LlamaCppRpcEngine:
                     predicted_ttft_ms=costs.predicted_ttft_ms,
                     predicted_decode_tokens_s=costs.predicted_decode_tokens_s,
                     predicted_aggregate_tokens_s=costs.predicted_aggregate_tokens_s,
+                    predicted_network_bytes=0,
+                    predicted_messages_per_token=0.0,
+                    predicted_bytes_per_token=0.0,
+                    predicted_serial_waits_per_token=0.0,
+                    number_of_wan_stage_boundaries=0,
+                    persistent_connections=False,
+                    network_cost_confidence="measured",
+                    network_cost_provenance="no network boundary",
                     required_memory_bytes=required,
                     score=costs.score,
                     explanation=("one managed llama.cpp process owns the complete GGUF",),
@@ -762,9 +1053,7 @@ class LlamaCppRpcEngine:
         for owner in owner_workers:
             owner_capability = owner.engine(self.engine_id)
             assert owner_capability is not None
-            owner_memory = sum(
-                device.usable_memory_bytes for device in owner_capability.devices
-            )
+            owner_memory = sum(device.usable_memory_bytes for device in owner_capability.devices)
             if owner_memory <= 0:
                 continue
             selected = [(owner, owner_capability, owner_memory)]
@@ -790,10 +1079,8 @@ class LlamaCppRpcEngine:
                 max((device.measured_decode_tokens_s or 1.0) for device in capability.devices)
                 for _, capability, _ in selected
             ]
-            network_ms = sum(
-                float(selected[0][0].network_latency_ms.get(worker.worker_id, 0.0))
-                for worker, _, _ in selected[1:]
-            )
+            links = tuple(selected[0][0].link_to(worker.worker_id) for worker, _, _ in selected[1:])
+            network = summarize_network_path(links)
             fractions = {worker.worker_id: memory / cumulative for worker, _, memory in selected}
             identity = _runtime_identity(
                 model,
@@ -816,12 +1103,21 @@ class LlamaCppRpcEngine:
                 for fraction, rate in zip(fractions.values(), rates, strict=True)
             )
             raw_distributed_rate = 1000 / max(parallel_compute_ms, 1e-9)
-            distributed_rate = 1000 / (1000 / max(raw_distributed_rate, 0.001) + network_ms)
+            distributed_rate = (
+                1000
+                / (
+                    1000 / max(raw_distributed_rate, 0.001)
+                    + float(network.aggregate_rtt_ms)
+                    + float(network.aggregate_jitter_ms or 0.0)
+                )
+                if network.aggregate_rtt_ms is not None
+                else None
+            )
             best_local = max(local_rates.values(), default=0.0)
             if (
                 request.require_distributed
                 or request.objective == "capacity"
-                or distributed_rate > best_local
+                or (distributed_rate is not None and distributed_rate > best_local)
             ):
                 roles = {selected[0][0].worker_id: "critical_path_stage"}
                 roles.update(
@@ -834,9 +1130,11 @@ class LlamaCppRpcEngine:
                         reliability=min(worker.reliability for worker, _, _ in selected),
                         usable_memory_bytes=cumulative,
                         required_memory_bytes=required,
-                        network_latency_ms=network_ms,
-                        messages_per_token=float(max(1, len(selected) - 1)),
-                        serial_waits_per_token=float(max(1, len(selected) - 1)),
+                        network_latency_ms=network.aggregate_rtt_ms,
+                        network_jitter_ms=network.aggregate_jitter_ms,
+                        messages_per_token=None,
+                        bytes_per_token=None,
+                        serial_waits_per_token=None,
                         concurrency=request.concurrency,
                         request_priority=request.priority,
                     ),
@@ -870,15 +1168,33 @@ class LlamaCppRpcEngine:
                         predicted_ttft_ms=costs.predicted_ttft_ms,
                         predicted_decode_tokens_s=costs.predicted_decode_tokens_s,
                         predicted_aggregate_tokens_s=costs.predicted_aggregate_tokens_s,
-                        predicted_network_bytes=0,
-                        predicted_messages_per_token=max(1, len(selected) - 1),
-                        predicted_serial_waits_per_token=max(1, len(selected) - 1),
+                        predicted_network_bytes=None,
+                        predicted_messages_per_token=None,
+                        predicted_bytes_per_token=None,
+                        predicted_serial_waits_per_token=None,
+                        number_of_wan_stage_boundaries=network.wan_boundaries,
+                        persistent_connections=True,
+                        network_cost_confidence=network.confidence.value,
+                        network_cost_provenance=(
+                            "llama.cpp protocol volume unmeasured; link metrics: "
+                            + network.provenance
+                        ),
                         required_memory_bytes=required,
                         score=costs.score,
                         explanation=(
                             "each selected host owns a non-zero tensor share and performs required compute",
                             "RPC lifecycle is owned by authenticated Swarm workers",
-                            "RPC binds only the trusted private cluster interface",
+                            "llama.cpp private-protocol operation and byte counts remain "
+                            "unmeasured until the metering transport observes execution",
+                            "network domains: " + ", ".join(item.value for item in network.domains),
+                            *(
+                                (
+                                    "fine-grained tensor RPC crosses a WAN link and is "
+                                    "admitted only for required/capacity execution",
+                                )
+                                if TopologyDomain.WAN in network.domains
+                                else ()
+                            ),
                         ),
                         engine_parameters={
                             "tensor_split": fractions,
@@ -890,6 +1206,8 @@ class LlamaCppRpcEngine:
                             "parallel": request.concurrency,
                             "quantization": model.quantization,
                             "network_estimate_status": "unmeasured-engine-protocol-bytes",
+                            "network_links": [item.model_dump(mode="json") for item in links],
+                            "topology_domains": [item.value for item in network.domains],
                             "cost_components": costs.components,
                             "unmeasured_inputs": costs.unmeasured_inputs,
                         },
@@ -921,9 +1239,11 @@ class LlamaCppRpcEngine:
 
 
 __all__ = [
+    "LlamaCppArchitectureProbe",
     "LlamaCppLifecycle",
     "LlamaCppRpcEngine",
     "LlamaCppRuntimeManifest",
     "LocalLlamaCppLifecycle",
     "load_llamacpp_runtime_manifest",
+    "probe_llamacpp_architectures",
 ]

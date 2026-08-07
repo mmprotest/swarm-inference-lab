@@ -85,9 +85,7 @@ def _stage_cuda_graph_required_bytes(module: Qwen3StageModule) -> int:
         * module.engine_options.max_sequence_length
         * dtype_bytes
     )
-    output_width = (
-        int(config.vocab_size) if module.lm_head is not None else int(config.hidden_size)
-    )
+    output_width = int(config.vocab_size) if module.lm_head is not None else int(config.hidden_size)
     retained_output_bytes = output_width * dtype_bytes
     # CUDA graph private pools retain intermediate allocations.  Keep a fixed
     # runtime reserve plus a layer/hidden-size projection, then admit against
@@ -98,10 +96,7 @@ def _stage_cuda_graph_required_bytes(module: Qwen3StageModule) -> int:
     )
     runtime_reserve_bytes = 256 * 1024 * 1024
     return (
-        static_cache_bytes
-        + retained_output_bytes
-        + retained_hidden_bytes
-        + runtime_reserve_bytes
+        static_cache_bytes + retained_output_bytes + retained_hidden_bytes + runtime_reserve_bytes
     )
 
 
@@ -157,9 +152,7 @@ def _capture_stage_cuda_graph(
     with torch.cuda.graph(graph, pool=selected_pool):
         output_buffer = module.decode_cuda(input_buffer, metadata_item)
         sampled_token_ids = (
-            torch.argmax(output_buffer[:, -1, :], dim=-1)
-            if module.lm_head is not None
-            else None
+            torch.argmax(output_buffer[:, -1, :], dim=-1) if module.lm_head is not None else None
         )
     torch.cuda.current_stream(module.device).synchronize()
     with torch.inference_mode():
@@ -262,9 +255,7 @@ def _stage_definition(
         owns_final_norm=request.assignment.owns_final_norm,
         owns_output_head=request.assignment.owns_output_projection,
         required_memory_bytes=max(1, request.assignment.weight_bytes),
-        estimated_execution_ms={
-            "default": request.assignment.estimated_compute_ns / 1_000_000
-        },
+        estimated_execution_ms={"default": request.assignment.estimated_compute_ns / 1_000_000},
         input_spec=TensorSpec(
             dtype="int64" if request.assignment.owns_embeddings else request.dtype,
             shape=["batch", "sequence", hidden_size],
@@ -315,12 +306,16 @@ def _probe_input(
 ) -> torch.Tensor:
     if module.embed_tokens is not None:
         vocabulary = int(module.config.vocab_size)
-        return torch.arange(
-            1,
-            sequence_length + 1,
-            dtype=torch.long,
-            device=module.device,
-        ).remainder(max(2, vocabulary)).unsqueeze(0)
+        return (
+            torch.arange(
+                1,
+                sequence_length + 1,
+                dtype=torch.long,
+                device=module.device,
+            )
+            .remainder(max(2, vocabulary))
+            .unsqueeze(0)
+        )
     hidden = int(module.config.hidden_size)
     values = torch.arange(
         sequence_length * hidden,
@@ -458,14 +453,10 @@ def _exactness(
 ) -> tuple[bool, dict[str, Any]]:
     if len(reference) != len(candidate):
         return False, {"reason": "probe result length differs"}
-    token_exact = all(
-        left[0] == right[0]
-        for left, right in zip(reference, candidate, strict=True)
-    )
+    token_exact = all(left[0] == right[0] for left, right in zip(reference, candidate, strict=True))
     if final_stage:
         boundary_exact = all(
-            torch.equal(left[1], right[1])
-            for left, right in zip(reference, candidate, strict=True)
+            torch.equal(left[1], right[1]) for left, right in zip(reference, candidate, strict=True)
         )
         logits_close = all(
             torch.allclose(left[1].float(), right[1].float(), atol=1e-4, rtol=1e-4)
@@ -477,8 +468,7 @@ def _exactness(
             "diagnostic_logits_close": logits_close,
         }
     boundary_exact = all(
-        torch.equal(left[1], right[1])
-        for left, right in zip(reference, candidate, strict=True)
+        torch.equal(left[1], right[1]) for left, right in zip(reference, candidate, strict=True)
     )
     return boundary_exact, {
         "token_ids_exact": token_exact,
@@ -517,9 +507,7 @@ def _descriptor_for_stage(
     )
     fingerprint = request.model_content_fingerprint or (
         "sha256:"
-        + hashlib.sha256(
-            f"{request.model_id}@{request.model_revision}".encode()
-        ).hexdigest()
+        + hashlib.sha256(f"{request.model_id}@{request.model_revision}".encode()).hexdigest()
     )
     return ResolvedModelDescriptor(
         model_id=request.model_id,
@@ -598,9 +586,10 @@ class Qwen3StageExecutor:
         if not isinstance(config_value, dict):
             raise ValueError("Qwen3 checkpoint config must be a JSON object")
         requested_mode = request.fast_path_mode.strip().lower()
-        auto_cuda = requested_mode in {"", "auto", "auto-exact"} and torch.device(
-            request.device
-        ).type == "cuda"
+        auto_cuda = (
+            requested_mode in {"", "auto", "auto-exact"}
+            and torch.device(request.device).type == "cuda"
+        )
         if auto_cuda and fast_path_profile_store is not None:
             descriptor = _descriptor_for_stage(request, config_value)
             device = _cuda_device()
@@ -612,9 +601,7 @@ class Qwen3StageExecutor:
                 ),
             )
             batch_bucket = request.fast_path_batch_bucket
-            reference_signatures: (
-                tuple[tuple[tuple[int, ...], torch.Tensor], ...] | None
-            ) = None
+            reference_signatures: tuple[tuple[tuple[int, ...], torch.Tensor], ...] | None = None
 
             def configured(options: Qwen3EngineOptions) -> Qwen3EngineOptions:
                 return replace(
@@ -686,11 +673,9 @@ class Qwen3StageExecutor:
                     candidate_mode=candidate,
                     exactness_passed=exact,
                     prefill_tokens_s=(
-                        min(8, request.fast_path_context_bucket)
-                        / max(prefill_ms / 1000, 1e-9)
+                        min(8, request.fast_path_context_bucket) / max(prefill_ms / 1000, 1e-9)
                     ),
-                    decode_tokens_s=len(decode_ms)
-                    / max(sum(decode_ms) / 1000, 1e-9),
+                    decode_tokens_s=len(decode_ms) / max(sum(decode_ms) / 1000, 1e-9),
                     ttft_ms=prefill_ms,
                     memory_bytes=memory_bytes,
                     prepare_seconds=prepare_seconds,
@@ -725,7 +710,7 @@ class Qwen3StageExecutor:
                 runtime_version=device.runtime_version,
                 dtype=request.dtype,
                 quantization=request.quantization,
-                stage_ownership=request.assignment.model_dump(mode="json"),
+                stage_ownership=request.assignment.to_dict(),
                 batch_bucket=batch_bucket,
                 context_bucket=request.fast_path_context_bucket,
             )
@@ -758,9 +743,7 @@ class Qwen3StageExecutor:
                 selected = prepared.candidate_mode
                 fallback = None
                 request = request.model_copy(
-                    update={
-                        "fast_path_profile_fingerprint": prepared.profile_fingerprint
-                    }
+                    update={"fast_path_profile_fingerprint": prepared.profile_fingerprint}
                 )
             except FastPathAdmissionError as exc:
                 options, selected, _ = _engine_options(
@@ -813,8 +796,7 @@ class Qwen3StageExecutor:
         )
         if available is None and self._graph_capture_failure_reason is None:
             slot_id = (
-                f"cuda-graph-stage-{self.request.assignment.stage_id}-"
-                f"slot-{len(self._graph_slots)}"
+                f"cuda-graph-stage-{self.request.assignment.stage_id}-slot-{len(self._graph_slots)}"
             )
             try:
                 available = _capture_stage_cuda_graph(
@@ -933,9 +915,7 @@ class Qwen3StageExecutor:
             expert_metrics={
                 "fast_path": actual_fast_path,
                 "fast_path_requested": self.request.fast_path_mode,
-                "fast_path_fallback": (
-                    graph_fallback or self.fast_path_fallback_reason or "none"
-                ),
+                "fast_path_fallback": (graph_fallback or self.fast_path_fallback_reason or "none"),
                 "cuda_graph_replays": graph_slot.replay_count if graph_slot else 0,
                 "cuda_graph_capture_ms": graph_slot.capture_ms if graph_slot else 0.0,
             },
@@ -975,8 +955,7 @@ class Qwen3StageExecutor:
         cache_id = graph_slot.slot_id if graph_slot is not None else session_id
         summaries = self.module.inspect_cache(cache_id)
         return sum(
-            int(item.get("reserved_bytes", item.get("cache_bytes", 0)))
-            for item in summaries
+            int(item.get("reserved_bytes", item.get("cache_bytes", 0))) for item in summaries
         )
 
     def close_session(self, session_id: str) -> int:

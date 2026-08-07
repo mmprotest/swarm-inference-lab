@@ -1,9 +1,10 @@
 # Product runtime operations
 
-The OLMoE product uses coordinator-managed persistent stages, direct worker-to-worker
-activations, bounded streaming, transactional deployment, and restart-and-replay recovery. The
-cluster product configures and owns those canonical components; it does not wrap or duplicate a
-second inference runtime.
+The product runtime uses coordinator-managed persistent stages, direct worker-to-worker
+activations, bounded streaming, transactional deployment, and restart-and-replay recovery.
+OLMoE is one model adapter alongside Qwen3 dense and supported Qwen3 MoE representations; it is
+not the product boundary. The cluster product configures and owns the canonical components and
+does not wrap or duplicate a second inference runtime.
 
 ## Normal lifecycle
 
@@ -11,17 +12,18 @@ second inference runtime.
 swarm cluster create --name <name>
 swarm node join <pairing-uri>
 swarm cluster status
-swarm run <olmoe-model> --revision <immutable-commit> \
-  --tokenizer-revision <immutable-identity> --mode speed --prompt <text>
+swarm run <hugging-face-model-or-local-model> --mode speed --prompt <text>
 ```
 
 The node agent calls `CoordinatorRuntime` and `WorkerRuntime`, which own the existing coordinator
 core, RPC server, registration, stage execution, deployment, transport, and recovery paths.
 Starts/stops are idempotent, partial startup rolls back, and shutdown has a hard bound.
 
-`swarm run` performs immutable source validation, capability/memory refresh, stale directed-link
-collection, common dtype selection, bounded N-stage planning, stage-artifact preparation and
-transfer, canonical transactional deployment, route/peer verification, and streaming submission.
+`swarm run` resolves immutable model identity and architecture, preflights every candidate
+engine, refreshes capability/memory and directed-link evidence, performs bounded N-stage
+planning, prepares stage artifacts, deploys transactionally, verifies routes/peers, and streams
+the request. An explicit engine cannot fall back to another engine, and
+`--require-distributed` cannot fall back to a coordinator-only plan.
 
 ## State layout and versions
 
@@ -100,5 +102,8 @@ events cover all cluster, network, artifact, plan, deployment, and update transi
 and prompts are omitted.
 
 Signed membership requests, route leases, artifact transfer leases, and peer handshakes
-authenticate authority. Stage-ring activation/token payloads are plaintext TCP. Deploy only on a
-trusted LAN or private network. See [security boundary](security-boundary.md).
+authenticate authority. TLS 1.3 protects remote coordinator/worker control, direct stage-ring,
+peer, token/result, and Swarm-managed llama.cpp RPC paths. Certificates are bound to durable
+node fingerprints established during pairing; remote plaintext is rejected. Loopback plaintext
+is an explicitly isolated development/test transport. See
+[security boundary](security-boundary.md).

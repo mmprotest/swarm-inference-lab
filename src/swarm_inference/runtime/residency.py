@@ -132,9 +132,7 @@ class ResidencyTracker:
                 record = self._records[allocation_id]
             except KeyError as exc:
                 raise KeyError(f"unknown residency allocation {allocation_id!r}") from exc
-            self._records[allocation_id] = record.model_copy(
-                update={"last_accessed_unix_ns": now}
-            )
+            self._records[allocation_id] = record.model_copy(update={"last_accessed_unix_ns": now})
 
     def release(self, allocation_id: str) -> ResidencyRecord | None:
         with self._lock:
@@ -173,12 +171,8 @@ class ResidencyTracker:
                 misses=current.misses + int(hit is False),
                 bytes_loaded=current.bytes_loaded + bytes_loaded,
                 bytes_evicted=current.bytes_evicted + bytes_evicted,
-                prefetch_useful_bytes=(
-                    current.prefetch_useful_bytes + prefetch_useful_bytes
-                ),
-                prefetch_wasted_bytes=(
-                    current.prefetch_wasted_bytes + prefetch_wasted_bytes
-                ),
+                prefetch_useful_bytes=(current.prefetch_useful_bytes + prefetch_useful_bytes),
+                prefetch_wasted_bytes=(current.prefetch_wasted_bytes + prefetch_wasted_bytes),
                 stall_ns=current.stall_ns + stall_ns,
             )
 

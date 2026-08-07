@@ -21,6 +21,7 @@ from swarm_inference.engines.interfaces import (
     WorkerExecutionCapability,
 )
 from swarm_inference.model.adapter import default_native_adapter_registry
+from swarm_inference.model.architecture import GGUF_ARCHITECTURE_IDENTIFIERS
 
 
 def _native_capability() -> ExecutionEngineCapability:
@@ -40,9 +41,7 @@ def _native_capability() -> ExecutionEngineCapability:
         AdapterFastPathCapability(
             adapter_id=adapter.adapter_id,
             fast_path_id=path.fast_path_id,
-            candidate_modes=tuple(
-                getattr(path, "candidate_modes", (path.fast_path_id,))
-            ),
+            candidate_modes=tuple(getattr(path, "candidate_modes", (path.fast_path_id,))),
         )
         for adapter in adapters
         for path in adapter.fast_paths()
@@ -101,7 +100,15 @@ def _native_capability() -> ExecutionEngineCapability:
         adapters=adapter_ids,
         fast_paths=fast_paths,
         adapter_fast_paths=adapter_fast_paths,
-        roles=("stage", "whole-expert", "microshard", "background", "verification", "storage", "idle"),
+        roles=(
+            "stage",
+            "whole-expert",
+            "microshard",
+            "background",
+            "verification",
+            "storage",
+            "idle",
+        ),
         detail=detail,
     )
 
@@ -114,7 +121,10 @@ def _llamacpp_capability(path: Path | None) -> ExecutionEngineCapability:
             formats=("gguf",),
             detail="no installer-owned llama.cpp runtime manifest is configured",
         )
-    from swarm_inference.engines.llamacpp_rpc import load_llamacpp_runtime_manifest
+    from swarm_inference.engines.llamacpp_rpc import (
+        load_llamacpp_runtime_manifest,
+        probe_llamacpp_architectures,
+    )
 
     try:
         manifest = load_llamacpp_runtime_manifest(path)
@@ -165,6 +175,18 @@ def _llamacpp_capability(path: Path | None) -> ExecutionEngineCapability:
     ]
     if manifest.rpc_enabled:
         roles.insert(1, "tensor_rpc_compute")
+    architecture_probe = probe_llamacpp_architectures(
+        manifest,
+        tuple(
+            sorted(
+                {
+                    identifier
+                    for identifiers in GGUF_ARCHITECTURE_IDENTIFIERS.values()
+                    for identifier in identifiers
+                }
+            )
+        ),
+    )
     return ExecutionEngineCapability(
         engine_id="llamacpp-rpc",
         enabled=True,
@@ -174,9 +196,15 @@ def _llamacpp_capability(path: Path | None) -> ExecutionEngineCapability:
             "ggml-rpc-server": manifest.rpc_server_sha256,
         },
         formats=("gguf",),
+        model_architectures=architecture_probe.supported_identifiers,
+        required_features=("gguf-model-loader",),
+        unsupported_features=manifest.unsupported_features,
         devices=tuple(devices),
         roles=tuple(roles),
-        detail=f"installer-owned pinned build {manifest.build_id}",
+        detail=(
+            f"installer-owned pinned build {manifest.build_id}; architecture probe="
+            f"{architecture_probe.mechanism}:" + ",".join(architecture_probe.supported_identifiers)
+        ),
     )
 
 
@@ -274,7 +302,7 @@ def discover_local_cluster_capabilities(
                 node_id="local",
                 engines=engines,
                 reliability=1.0,
-                storage_available_bytes=int(psutil.disk_usage(Path.cwd()).free),
+                storage_available_bytes=int(psutil.disk_usage(str(Path.cwd())).free),
             ),
         )
     )

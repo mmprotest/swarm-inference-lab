@@ -57,9 +57,11 @@ limits, an Ed25519 public key, and measured capacity. Deployment assigns a conti
 loads it once. The loaded stage, weights, queues, and service processes persist across requests;
 session-local KV state is opened and released independently.
 
-The first proven product adapter is OLMoE. Stage zero owns embeddings and input token handling;
-intermediate stages own contiguous decoder layers; the last stage owns final normalization and
-the output projection. Exact ownership is part of the signed route.
+The native adapter registry includes OLMoE, Qwen3 dense, and the supported Qwen3 MoE
+representation. Stage zero owns embeddings and input token handling; intermediate stages own
+contiguous decoder layers; the last stage owns final normalization and the output projection.
+For sparse models, each router and its experts remain with the layer-owning stage. Exact
+ownership is part of the signed route.
 
 Whole-expert and native microshard execution are optional, canonical backends within a stage.
 They use coordinator-planned expert ownership and direct expert transport, but do not introduce a
@@ -77,7 +79,16 @@ tokenizer revisions, assignments, generation, and nonce. Workers pin the coordin
 and verify the lease. Direct peers then authenticate the expected worker identity before using a
 connection. Old-generation frames and publications are rejected after replacement.
 
-Authentication does not encrypt payloads. See [Security boundary](security-boundary.md).
+Canonical remote stage connections use mutually authenticated TLS 1.3 in addition to signed
+leases and peer handshakes. See [Security boundary](security-boundary.md).
+
+## Topology domains
+
+Planning classifies measured directed links from RTT, bandwidth, jitter, and connection
+stability. Low-latency domains may admit more stage boundaries, whole-expert work, or
+microshards. WAN domains prefer persistent contiguous stages and minimize synchronous
+crossings; fine-grained expert RPC is not placed across a WAN boundary. Unknown communication
+cost remains `unknown`, never zero.
 
 ## Session interleaving
 

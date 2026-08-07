@@ -1,4 +1,4 @@
-"""Length-prefixed JSON network service for the Universal Worker ABI."""
+"""Legacy experiment-only Universal Worker ABI with fail-closed remote TLS."""
 
 from __future__ import annotations
 
@@ -14,7 +14,13 @@ from uuid import uuid4
 from pydantic import Field
 
 from swarm_inference.config.models import StrictModel
+from swarm_inference.host import format_endpoint
 from swarm_inference.protocol.checksums import sha256_file
+from swarm_inference.security.tls import (
+    TlsClientConfig,
+    TlsServerConfig,
+    require_tls_for_endpoint,
+)
 from swarm_inference.worker.abi import (
     BackendAdapter,
     WorkerBenchmarkProfile,
@@ -86,6 +92,8 @@ class UniversalWorkerServer:
         identity: WorkerIdentity,
         host: str = "127.0.0.1",
         port: int = 0,
+        tls: TlsServerConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if identity.backend_id != adapter.backend_id:
             raise ValueError("worker identity backend_id must match its adapter")
@@ -93,6 +101,8 @@ class UniversalWorkerServer:
         self.identity = identity
         self.host = host
         self.port = port
+        self.tls = tls
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self._server: asyncio.Server | None = None
         self._closed = asyncio.Event()
         self._jobs: dict[str, asyncio.Task[WorkerJobResult]] = {}
@@ -110,7 +120,18 @@ class UniversalWorkerServer:
     async def start(self) -> tuple[str, int]:
         if self._server is not None:
             return self.endpoint
-        self._server = await asyncio.start_server(self._handle_connection, self.host, self.port)
+        require_tls_for_endpoint(
+            format_endpoint(self.host, self.port),
+            tls_configured=self.tls is not None,
+            allow_plaintext_loopback=self.allow_plaintext_loopback,
+            transport_name="legacy Universal Worker experiment transport",
+        )
+        self._server = await asyncio.start_server(
+            self._handle_connection,
+            self.host,
+            self.port,
+            ssl=self.tls.ssl_context() if self.tls is not None else None,
+        )
         return self.endpoint
 
     async def serve_until_shutdown(self) -> None:
@@ -136,6 +157,10 @@ class UniversalWorkerServer:
         writer: asyncio.StreamWriter,
     ) -> None:
         try:
+            if self.tls is not None:
+                tls_object = writer.get_extra_info("ssl_object")
+                peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+                self.tls.validate_peer_der(peer_der)
             while not reader.at_eof():
                 try:
                     raw = await _read_frame(reader)
@@ -251,18 +276,42 @@ class UniversalWorkerServer:
 class UniversalWorkerClient:
     """Reconnectable client; each call uses an independent TCP connection."""
 
-    def __init__(self, host: str, port: int, *, timeout_seconds: float = 60.0) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        *,
+        timeout_seconds: float = 60.0,
+        tls: TlsClientConfig | None = None,
+        allow_plaintext_loopback: bool = True,
+    ) -> None:
         self.host = host
         self.port = port
         self.timeout_seconds = timeout_seconds
+        self.tls = tls
+        require_tls_for_endpoint(
+            format_endpoint(host, port),
+            tls_configured=tls is not None,
+            allow_plaintext_loopback=allow_plaintext_loopback,
+            transport_name="legacy Universal Worker experiment transport",
+        )
 
     async def call(self, method: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         request = UniversalWorkerRequest(method=method, payload=payload or {})
         reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(self.host, self.port),
+            asyncio.open_connection(
+                self.host,
+                self.port,
+                ssl=self.tls.ssl_context() if self.tls is not None else None,
+                server_hostname=(self.tls.expected_server_name if self.tls is not None else None),
+            ),
             timeout=self.timeout_seconds,
         )
         try:
+            if self.tls is not None:
+                tls_object = writer.get_extra_info("ssl_object")
+                peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+                self.tls.validate_peer_der(peer_der)
             await asyncio.wait_for(
                 _write_frame(writer, _encode_model(request)),
                 timeout=self.timeout_seconds,

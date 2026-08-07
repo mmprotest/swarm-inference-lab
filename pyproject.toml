@@ -58,6 +58,7 @@ builtin = "swarm_inference.experiments.cli_exports:get_export"
 [project.entry-points."swarm_inference.native_adapters"]
 olmoe = "swarm_inference.model.olmoe_adapter:OlmoeAdapter"
 qwen3_dense = "swarm_inference.model.qwen3:Qwen3Adapter"
+qwen3_moe = "swarm_inference.model.qwen3_moe:Qwen3MoeAdapter"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/swarm_inference"]

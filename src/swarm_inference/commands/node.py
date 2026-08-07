@@ -42,6 +42,10 @@ from swarm_inference.runtime.shutdown import (
     install_shutdown_signal_handlers,
     wait_for_service_shutdown,
 )
+from swarm_inference.security.tls import (
+    TlsBootstrapClientConfig,
+    tls_public_key_pem,
+)
 
 node_app = typer.Typer(
     name="node",
@@ -85,7 +89,12 @@ def _parse_bytes(value: str | None) -> int | None:
     return result
 
 
-def _pending_metadata(state: ClusterStateStore, invitation: PairingInvitation) -> NodeMetadata:
+def _pending_metadata(
+    state: ClusterStateStore,
+    invitation: PairingInvitation,
+    *,
+    rotate_transport_key: bool = False,
+) -> NodeMetadata:
     del invitation
     identity = state.load_or_create_node_identity()
     node_id = node_id_from_fingerprint(identity.public_key_fingerprint)
@@ -109,6 +118,9 @@ def _pending_metadata(state: ClusterStateStore, invitation: PairingInvitation) -
         service_mode=platform.service_mode,
         implementation_status=platform_identity.implementation_status,
         implementation_reason=platform_identity.implementation_reason,
+        tls_public_key_pem=tls_public_key_pem(
+            state.prepare_node_tls_private_key(rotate=rotate_transport_key)
+        ),
     )
 
 
@@ -118,7 +130,18 @@ async def _pair(
     metadata: NodeMetadata,
 ) -> Any:
     invitation = PairingInvitation.parse(pairing_uri)
-    client = CoordinatorClient(invitation.coordinator_endpoint, timeout_s=20.0)
+    pairing_tls = (
+        TlsBootstrapClientConfig(
+            ca_certificate=state.materialize_pairing_ca(invitation.coordinator_certificate_pem)
+        )
+        if invitation.coordinator_certificate_pem is not None
+        else None
+    )
+    client = CoordinatorClient(
+        invitation.coordinator_endpoint,
+        timeout_s=20.0,
+        tls=pairing_tls,
+    )
     pairing = PairingClient(
         state=state,
         identity=state.load_or_create_node_identity(),
@@ -171,6 +194,13 @@ def join_command(
     json_output: Annotated[bool, typer.Option("--json")] = False,
     ndjson: Annotated[bool, typer.Option("--ndjson")] = False,
     yes: Annotated[bool, typer.Option("--yes")] = False,
+    rotate_transport_key: Annotated[
+        bool,
+        typer.Option(
+            "--rotate-transport-key",
+            help="Issue a new TLS key/certificate while retaining the durable node identity.",
+        ),
+    ] = False,
 ) -> None:
     """Pair once, auto-configure the worker, and start its persistent agent."""
 
@@ -183,7 +213,15 @@ def join_command(
         )
         invitation = PairingInvitation.parse(pairing_uri)
         state, platform, runtime, services = build_context(state_root)
-        metadata = _pending_metadata(state, invitation)
+        metadata = (
+            _pending_metadata(
+                state,
+                invitation,
+                rotate_transport_key=True,
+            )
+            if rotate_transport_key
+            else _pending_metadata(state, invitation)
+        )
         result = asyncio.run(_pair(state, pairing_uri, metadata))
         configuration = runtime.prepare_configuration(
             node_id=metadata.node_id,
@@ -463,7 +501,11 @@ def leave_command(
         firewall = _owned_firewall(state)
 
         async def leave() -> Any:
-            client = CoordinatorClient(cluster.coordinator_endpoint, timeout_s=15.0)
+            client = CoordinatorClient(
+                cluster.coordinator_endpoint,
+                timeout_s=15.0,
+                tls=state.coordinator_tls_client_config(),
+            )
             try:
                 response = await client.node_leave(request)
             finally:

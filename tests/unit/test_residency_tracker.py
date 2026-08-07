@@ -57,4 +57,3 @@ def test_residency_tracks_physical_bytes_movement_and_cache_effects() -> None:
     assert snapshot.cache.prefetch_useful_bytes == 80
     assert snapshot.cache.prefetch_wasted_bytes == 20
     assert snapshot.recent_movements[0].reason == "model acquisition"
-

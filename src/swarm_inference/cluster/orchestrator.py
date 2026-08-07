@@ -44,12 +44,14 @@ from swarm_inference.engines.registry import (
     ExecutionEngineRegistry,
     default_engine_registry,
 )
+from swarm_inference.engines.topology import NetworkLinkProfile
 from swarm_inference.engines.worker_control import CoordinatorAuthorizedEngineLifecycle
 from swarm_inference.exceptions import IntegrityError
 from swarm_inference.model.adapter import (
     NativeModelAdapterRegistry,
     default_native_adapter_registry,
 )
+from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.product import ModelResolutionPolicy, ProductModelReference
 from swarm_inference.model.resolver import (
     ModelResolution,
@@ -102,13 +104,19 @@ class ClusterRunSummary(StrictModel):
     mode: Literal["speed", "throughput", "capacity", "balanced"]
     plan: ProductStagePlan | ExecutionPlan
     model_fingerprint: str = ""
+    model_architecture: str | None = None
+    model_architecture_source: str = "unknown"
     model_format: str = "unknown"
+    total_model_size_bytes: NonNegativeInt = 0
     variant: str | None = None
     quantization: str | None = None
     engine_id: str = "native-stage"
+    requested_engine: str | None = None
     engine_revision: str | None = None
     engine_runtime_revisions: dict[str, str] = Field(default_factory=dict)
     execution_identity: str = ""
+    distributed_execution_required: bool = False
+    distributed_execution_achieved: bool = False
     engine_support: tuple[EngineSupportReport, ...] = ()
     canonical_decision: CanonicalPlanningDecision | None = None
     artifact_ids: list[str] = Field(default_factory=list)
@@ -153,12 +161,9 @@ StreamSink = Callable[[SubmitStreamEvent], None]
 
 def validate_immutable_reference(model_revision: str, tokenizer_revision: str) -> None:
     if not (
-        _IMMUTABLE_REVISION.fullmatch(model_revision)
-        or _TOKENIZER_HASH.fullmatch(model_revision)
+        _IMMUTABLE_REVISION.fullmatch(model_revision) or _TOKENIZER_HASH.fullmatch(model_revision)
     ):
-        raise ValueError(
-            "model revision must be an immutable commit or sha256:<digest> identity"
-        )
+        raise ValueError("model revision must be an immutable commit or sha256:<digest> identity")
     if not (
         _IMMUTABLE_REVISION.fullmatch(tokenizer_revision)
         or _TOKENIZER_HASH.fullmatch(tokenizer_revision)
@@ -219,14 +224,14 @@ class ClusterOrchestrator:
         self,
         *,
         state: ClusterStateStore,
-        client_factory: Callable[[str], CoordinatorClient] = CoordinatorClient,
+        client_factory: Callable[[str], CoordinatorClient] | None = None,
         source_resolver: SourceResolver | None = None,
         model_source_resolver: ModelSourceResolver | None = None,
         adapter_registry: NativeModelAdapterRegistry | None = None,
         engine_registry: ExecutionEngineRegistry | None = None,
         canonical_planner: CanonicalPlanner | None = None,
         worker_engine_lifecycle_factory: Callable[..., WorkerEngineLifecycle] | None = None,
-        worker_transport_factory: Callable[[], GrpcTransport] = GrpcTransport,
+        worker_transport_factory: Callable[[], GrpcTransport] | None = None,
         product_telemetry: ProductTelemetry | None = None,
         progress_sink: ProgressSink | None = None,
         stream_sink: StreamSink | None = None,
@@ -247,7 +252,12 @@ class ClusterOrchestrator:
         if not 0 <= maximum_engine_recovery_attempts <= 10:
             raise ValueError("engine recovery attempts must be in [0, 10]")
         self.state = state
-        self.client_factory = client_factory
+        self.client_factory = client_factory or (
+            lambda endpoint: CoordinatorClient(
+                endpoint,
+                tls=state.coordinator_tls_client_config(),
+            )
+        )
         self.source_resolver = source_resolver
         self.model_source_resolver = model_source_resolver or ModelSourceResolver(
             cache_directory=self.state.paths.artifacts / "source-cache"
@@ -258,7 +268,13 @@ class ClusterOrchestrator:
         self.worker_engine_lifecycle_factory = (
             worker_engine_lifecycle_factory or CoordinatorAuthorizedEngineLifecycle
         )
-        self.worker_transport_factory = worker_transport_factory
+        if worker_transport_factory is not None:
+            self.worker_transport_factory = worker_transport_factory
+        else:
+            worker_tls_factory = getattr(state, "worker_tls_client_config", None)
+            self.worker_transport_factory = lambda: GrpcTransport(
+                tls=worker_tls_factory() if callable(worker_tls_factory) else None
+            )
         self.product_telemetry = product_telemetry or ProductTelemetry(
             self.state.paths.logs / "product-events.jsonl"
         )
@@ -392,23 +408,42 @@ class ClusterOrchestrator:
         )
         latency: dict[str, dict[str, float]] = {}
         bandwidth: dict[str, dict[str, float]] = {}
+        network_links: dict[str, dict[str, NetworkLinkProfile]] = {}
         for link in status.network_links:
             if not (link.measured and link.authentication_verified):
                 continue
-            latency.setdefault(link.source_worker_id, {})[
-                link.destination_worker_id
-            ] = float(
+            latency.setdefault(link.source_worker_id, {})[link.destination_worker_id] = float(
                 link.one_way_estimate_ms
                 if link.one_way_estimate_ms is not None
                 else link.round_trip_latency_ms / 2
             )
-            bandwidth.setdefault(link.source_worker_id, {})[
-                link.destination_worker_id
-            ] = float(link.upload_bytes_per_s)
+            bandwidth.setdefault(link.source_worker_id, {})[link.destination_worker_id] = float(
+                link.upload_bytes_per_s
+            )
+            network_links.setdefault(link.source_worker_id, {})[link.destination_worker_id] = (
+                NetworkLinkProfile(
+                    rtt_ms=float(link.round_trip_latency_ms),
+                    bandwidth_bytes_s=float(
+                        min(link.upload_bytes_per_s, link.download_bytes_per_s)
+                    ),
+                    jitter_ms=(float(link.jitter_ms) if link.jitter_ms is not None else None),
+                    stability=(
+                        float(link.connection_stability)
+                        if link.connection_stability is not None
+                        else None
+                    ),
+                    sample_count=int(link.sample_count),
+                    authenticated=bool(link.authentication_verified),
+                    provenance=(
+                        f"authenticated-direct-probe:{link.probe_ticket_id or 'unknown-ticket'}"
+                    ),
+                )
+            )
         return cluster_execution_capabilities(
             [item.capability for item in registrations],
             latency_by_worker=latency,
             bandwidth_by_worker=bandwidth,
+            network_links_by_worker=network_links,
         )
 
     async def _inspect_resolution(
@@ -480,7 +515,9 @@ class ClusterOrchestrator:
             timeout=self.source_timeout_seconds,
         )
         descriptor = resolution.descriptor
-        selected_tokenizer = tokenizer_revision or descriptor.tokenizer_identity or descriptor.revision
+        selected_tokenizer = (
+            tokenizer_revision or descriptor.tokenizer_identity or descriptor.revision
+        )
         validate_immutable_reference(descriptor.revision, selected_tokenizer)
         selected_bytes = sum(item.size_bytes for item in descriptor.files)
         if selected_bytes > self.maximum_source_bytes:
@@ -555,7 +592,9 @@ class ClusterOrchestrator:
                 quantization=plan.model.quantization or "none",
                 model_fingerprint=plan.model.model_fingerprint or None,
                 adapter_id=plan.model.adapter_id,
-                before_publish=lambda manifest: manager.evict_to_fit(manifest.total_size_bytes),
+                before_publish=lambda manifest: manager.evict_to_fit(
+                    _required_artifact_size(manifest)
+                ),
             )
             manager.register(manifest.artifact_id)
             manifests.append(manifest)
@@ -572,7 +611,7 @@ class ClusterOrchestrator:
 
     async def _build_model_artifact(
         self,
-        descriptor: object,
+        descriptor: ResolvedModelDescriptor,
         *,
         engine_id: str,
         node_id: str,
@@ -592,7 +631,7 @@ class ClusterOrchestrator:
             builder.build,
             descriptor,
             engine_id=engine_id,
-            before_publish=lambda item: manager.evict_to_fit(item.total_size_bytes or 0),
+            before_publish=lambda item: manager.evict_to_fit(_required_artifact_size(item)),
         )
         manager.register(manifest.artifact_id)
         return manager, manifest
@@ -697,9 +736,7 @@ class ClusterOrchestrator:
                 variant=variant,
                 quantization=quantization,
                 mode=mode,
-                aggregate_usable_memory_bytes=(
-                    cluster_capabilities.aggregate_usable_memory_bytes
-                ),
+                aggregate_usable_memory_bytes=(cluster_capabilities.aggregate_usable_memory_bytes),
                 local_fast_memory_bytes=local_fast_memory,
             )
             descriptor = resolution.descriptor
@@ -729,15 +766,33 @@ class ClusterOrchestrator:
                 planning_request,
             )
             selected = decision.selected
+            worker_nodes = {
+                worker.worker_id: worker.node_id for worker in cluster_capabilities.workers
+            }
+            non_required_roles = {
+                "idle",
+                "background_replica",
+                "storage_cache",
+                "verification",
+            }
+            participating_nodes = {
+                worker_nodes[worker_id]
+                for worker_id, role in selected.worker_roles.items()
+                if worker_id in worker_nodes and role not in non_required_roles
+            }
+            distributed_execution_achieved = len(participating_nodes) >= 2
+            if require_distributed and not distributed_execution_achieved:
+                raise RuntimeError(
+                    "distributed execution was required, but the selected plan does not "
+                    "place required computation on at least two physical hosts"
+                )
             runtime_revisions = execution_runtime_revisions(
                 cluster_capabilities,
                 selected,
             )
             unique_runtime_revisions = sorted(set(runtime_revisions.values()))
             engine_revision = (
-                unique_runtime_revisions[0]
-                if len(unique_runtime_revisions) == 1
-                else None
+                unique_runtime_revisions[0] if len(unique_runtime_revisions) == 1 else None
             )
             self._progress(
                 "plan-completed",
@@ -783,9 +838,7 @@ class ClusterOrchestrator:
                         stage_count=selected_stage_count,
                         mode=mode,
                         require_distributed=require_distributed,
-                        required_node_ids=sorted(
-                            set(required_node_ids or []) | selected_nodes
-                        ),
+                        required_node_ids=sorted(set(required_node_ids or []) | selected_nodes),
                         excluded_node_ids=sorted(set(excluded_node_ids or [])),
                         allow_artifact_provisioning=True,
                         max_sequence_tokens=max_context_tokens,
@@ -811,13 +864,19 @@ class ClusterOrchestrator:
                     model_revision=model_revision,
                     tokenizer_revision=tokenizer_revision,
                     model_fingerprint=descriptor.content_fingerprint,
+                    model_architecture=descriptor.architecture,
+                    model_architecture_source=descriptor.architecture_source,
                     model_format=descriptor.format,
+                    total_model_size_bytes=descriptor.weight_bytes,
                     variant=descriptor.variant,
                     quantization=descriptor.quantization,
                     engine_id=selected.engine_id,
+                    requested_engine=requested_engine,
                     engine_revision=engine_revision,
                     engine_runtime_revisions=runtime_revisions,
                     execution_identity=selected.execution_identity,
+                    distributed_execution_required=require_distributed,
+                    distributed_execution_achieved=distributed_execution_achieved,
                     engine_support=decision.engine_support,
                     canonical_decision=decision,
                     mode=mode,
@@ -986,61 +1045,62 @@ class ClusterOrchestrator:
                         replay_position = 0
                         terminal_completed = False
                         try:
-                            async for event in lifecycle.submit(
+                            async for engine_event in lifecycle.submit(
                                 deployment,
                                 inference_request,
                             ):
                                 events += 1
-                                if event.telemetry:
-                                    terminal_engine_metrics.update(event.telemetry)
-                                if event.event_type == "token" and event.token_id is not None:
+                                if engine_event.telemetry:
+                                    terminal_engine_metrics.update(engine_event.telemetry)
+                                if (
+                                    engine_event.event_type == "token"
+                                    and engine_event.token_id is not None
+                                ):
                                     if replay_position < len(replay_prefix):
                                         expected = replay_prefix[replay_position]
-                                        if event.token_id != expected:
+                                        if engine_event.token_id != expected:
                                             raise IntegrityError(
                                                 "restart-and-replay token divergence at "
                                                 f"position {replay_position}: expected {expected}, "
-                                                f"received {event.token_id}"
+                                                f"received {engine_event.token_id}"
                                             )
                                         replay_position += 1
                                         continue
-                                    output_tokens.append(event.token_id)
-                                    decoded.append(event.text)
+                                    output_tokens.append(engine_event.token_id)
+                                    decoded.append(engine_event.text)
                                     token_monotonic_s.append(time.monotonic())
                                     if self.stream_sink is not None:
                                         self.stream_sink(
                                             SubmitStreamEvent(
                                                 event_type=StreamEventType.TOKEN_GENERATED,
                                                 request_id=inference_request.request_id,
-                                                sequence_number=event.sequence_number,
+                                                sequence_number=engine_event.sequence_number,
                                                 monotonic_timestamp_ns=time.monotonic_ns(),
                                                 topology_id=selected.topology,
                                                 model_revision=model_revision,
                                                 token_position=len(output_tokens) - 1,
-                                                token_id=event.token_id,
-                                                decoded_text_fragment=event.text,
+                                                token_id=engine_event.token_id,
+                                                decoded_text_fragment=engine_event.text,
                                             )
                                         )
-                                elif event.event_type == "completed":
+                                elif engine_event.event_type == "completed":
                                     if replay_position != len(replay_prefix):
                                         raise IntegrityError(
                                             "restart-and-replay completed before every accepted "
                                             "token was verified"
                                         )
                                     status = "completed"
-                                    detail = event.detail
+                                    detail = engine_event.detail
                                     terminal_completed = True
-                                    if event.text and not any(decoded):
-                                        decoded.append(event.text)
+                                    if engine_event.text and not any(decoded):
+                                        decoded.append(engine_event.text)
                                     break
-                                elif event.event_type == "failed":
+                                elif engine_event.event_type == "failed":
                                     raise RuntimeError(
-                                        event.detail or "execution engine reported failure"
+                                        engine_event.detail or "execution engine reported failure"
                                     )
                             if not terminal_completed:
-                                raise RuntimeError(
-                                    "engine stream ended without a terminal event"
-                                )
+                                raise RuntimeError("engine stream ended without a terminal event")
                             if recoveries:
                                 terminal_engine_metrics["restart_replay"] = {
                                     "recovery_count": recoveries,
@@ -1080,8 +1140,7 @@ class ClusterOrchestrator:
                                 if (
                                     not replacement.ready
                                     or replacement.engine_id != selected.engine_id
-                                    or replacement.execution_identity
-                                    != selected.execution_identity
+                                    or replacement.execution_identity != selected.execution_identity
                                 ):
                                     raise IntegrityError(
                                         "recovery deployment changed execution identity"
@@ -1134,13 +1193,19 @@ class ClusterOrchestrator:
                 model_revision=model_revision,
                 tokenizer_revision=tokenizer_revision,
                 model_fingerprint=descriptor.content_fingerprint,
+                model_architecture=descriptor.architecture,
+                model_architecture_source=descriptor.architecture_source,
                 model_format=descriptor.format,
+                total_model_size_bytes=descriptor.weight_bytes,
                 variant=descriptor.variant,
                 quantization=descriptor.quantization,
                 engine_id=selected.engine_id,
+                requested_engine=requested_engine,
                 engine_revision=telemetry_record.engine_revision,
                 engine_runtime_revisions=telemetry_record.engine_runtime_revisions,
                 execution_identity=selected.execution_identity,
+                distributed_execution_required=require_distributed,
+                distributed_execution_achieved=distributed_execution_achieved,
                 engine_support=decision.engine_support,
                 canonical_decision=decision,
                 mode=mode,
@@ -1172,3 +1237,9 @@ __all__ = [
     "resolve_upstream_source",
     "validate_immutable_reference",
 ]
+
+
+def _required_artifact_size(manifest: ArtifactManifest) -> int:
+    if manifest.total_size_bytes is None:
+        raise IntegrityError("artifact manifest does not declare its total byte size")
+    return manifest.total_size_bytes

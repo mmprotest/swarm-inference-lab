@@ -14,13 +14,14 @@ Acceptance option: `--physical-config <configuration.json>`.
 
 ## Linux x86-64 CPU
 
-Use two distinct Linux x86-64 machines on a trusted LAN.
+Use two distinct Linux x86-64 machines with reachable authenticated cluster endpoints. A LAN is
+a useful first physical topology, but is not the product boundary.
 
 1. Build the wheel elsewhere; copy the wheel and `install.sh`, not the repository.
 2. Install with `sh install.sh --source-wheel <wheel> --json`.
 3. Create on one host and join the second using the URI.
 4. Verify both `systemd --user` services persist after terminal closure and reconnect.
-5. Capture CPU backend/dtype/memory, private endpoints, both directed measurements, artifact
+5. Capture CPU backend/dtype/memory, authenticated reachable endpoints, both directed measurements, artifact
    transfer, exact tokens, and speed/capacity decisions.
 6. Produce evidence schema 2 and validate with
    `--linux-x86-physical-config <configuration.json>`.
@@ -29,7 +30,7 @@ If two Linux x86-64 machines are unavailable, status is `NOT_RUN`.
 
 ## macOS ARM64 MPS
 
-Use an Apple Silicon Mac and a distinct trusted-LAN peer. The Mac must pass an operational MPS
+Use an Apple Silicon Mac and a distinct authenticated peer. The Mac must pass an operational MPS
 tensor and benchmark probe; hardware/OS identity alone is insufficient. Install with the POSIX
 wheel installer, verify LaunchAgent persistence, capture MPS memory budgeting and direct link
 evidence, then validate with `--macos-arm64-physical-config <configuration.json>`.

@@ -80,7 +80,7 @@ Status and cleanup target only that resource. Repeated configuration reconciles 
 ports/profile/scope instead of duplicating rules. Broader unrelated rules are reported but never
 adopted or removed. The agent never silently elevates; Linux and macOS provide exact bounded
 administrator remediation, and Windows requires an already elevated process. Until advertised
-private endpoints are reachable, the node remains `blocked`.
+endpoints are reachable, the node remains `blocked`.
 
 ## State locations
 

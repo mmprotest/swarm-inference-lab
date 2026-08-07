@@ -34,7 +34,13 @@ from swarm_inference.engines.installed import discover_installed_engine_manifest
 from swarm_inference.exceptions import BackendIncompatibleError, ConfigurationError
 from swarm_inference.host import format_endpoint, is_loopback_host, is_wildcard_host, split_endpoint
 from swarm_inference.platforms.base import BackendProbeResult, PlatformAdapter
+from swarm_inference.security.tls import (
+    WORKER_TLS_NAME,
+    TlsClientConfig,
+    TlsServerConfig,
+)
 from swarm_inference.security.trust_store import WorkerTrustStore
+from swarm_inference.transport.grpc_transport import GrpcTransport
 from swarm_inference.worker.runtime import WorkerRuntime, WorkerRuntimeConfig
 
 _DYNAMIC_PORT_START = 49152
@@ -60,6 +66,18 @@ def _network_fingerprint(addresses: Sequence[object], source_address: str) -> st
     rows = sorted(str(value) for value in addresses)
     payload = "\n".join([source_address, *rows]).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def _listen_host_for_advertised(host: str) -> str:
+    """Keep loopback development services local; otherwise bind the address family."""
+
+    if is_loopback_host(host):
+        return host
+    try:
+        address = ipaddress.ip_address(host.split("%", 1)[0])
+    except ValueError:
+        return "0.0.0.0"
+    return "::" if address.version == 6 else "0.0.0.0"
 
 
 class RuntimeManager:
@@ -293,14 +311,11 @@ class RuntimeManager:
             candidates = [
                 item
                 for item in addresses
-                if item.interface == interface_override
-                and item.is_up
-                and not item.is_loopback
-                and item.is_private
+                if item.interface == interface_override and item.is_up and not item.is_loopback
             ]
             if not candidates:
                 raise ConfigurationError(
-                    f"interface override {interface_override!r} has no up private address"
+                    f"interface override {interface_override!r} has no up non-loopback address"
                 )
             selected_address = sorted(
                 candidates,
@@ -357,11 +372,15 @@ class RuntimeManager:
         )
         fingerprint = _network_fingerprint(addresses, source_address)
         return EndpointSelection(
-            control_listen_endpoint=format_endpoint("0.0.0.0", control_port),
+            control_listen_endpoint=format_endpoint(
+                _listen_host_for_advertised(control_host), control_port
+            ),
             control_advertised_endpoint=format_endpoint(control_host, control_port),
-            data_listen_endpoint=format_endpoint("0.0.0.0", data_port),
+            data_listen_endpoint=format_endpoint(_listen_host_for_advertised(data_host), data_port),
             data_advertised_endpoint=format_endpoint(data_host, data_port),
-            probe_listen_endpoint=format_endpoint("0.0.0.0", probe_port),
+            probe_listen_endpoint=format_endpoint(
+                _listen_host_for_advertised(source_address), probe_port
+            ),
             probe_advertised_endpoint=format_endpoint(source_address, probe_port),
             source_address=source_address,
             interface_name=interface_name,
@@ -380,7 +399,7 @@ class RuntimeManager:
         node_id: str,
         override: str | None = None,
     ) -> str:
-        """Choose a stable private coordinator address and an available port."""
+        """Choose a stable routed coordinator address and an available port."""
 
         if override is not None:
             host, port = self._explicit_endpoint(
@@ -398,13 +417,18 @@ class RuntimeManager:
                 (
                     item
                     for item in self.platform.interface_addresses()
-                    if item.is_up and item.is_private and not item.is_loopback
+                    if item.is_up and not item.is_loopback
                 ),
-                key=lambda item: (":" in item.address, item.interface, item.address),
+                key=lambda item: (
+                    not item.is_private,
+                    ":" in item.address,
+                    item.interface,
+                    item.address,
+                ),
             )
             if not candidates:
                 raise ConfigurationError(
-                    "no up private interface can advertise the coordinator"
+                    "no up non-loopback interface can advertise the coordinator"
                 ) from None
             host = candidates[0].address
             self._validate_advertised_host(host)
@@ -423,10 +447,7 @@ class RuntimeManager:
                 (
                     item.address
                     for item in addresses
-                    if item.interface == interface_override
-                    and item.is_up
-                    and item.is_private
-                    and not item.is_loopback
+                    if item.interface == interface_override and item.is_up and not item.is_loopback
                 ),
                 None,
             )
@@ -608,6 +629,21 @@ class RuntimeManager:
                 validation_detail=validation_detail,
                 llamacpp_runtime_manifest=engine_manifests.llamacpp,
                 colibri_runtime_manifest=engine_manifests.colibri,
+                tls_certificate_path=(
+                    self.state.paths.node_tls_certificate
+                    if self.state.paths.node_tls_certificate.is_file()
+                    else None
+                ),
+                tls_private_key_path=(
+                    self.state.paths.node_tls_private_key
+                    if self.state.paths.node_tls_private_key.is_file()
+                    else None
+                ),
+                tls_ca_certificate_path=(
+                    self.state.paths.cluster_ca_certificate
+                    if self.state.paths.cluster_ca_certificate.is_file()
+                    else None
+                ),
             ),
             artifact_manager=self.artifact_manager,
         )
@@ -634,10 +670,29 @@ class RuntimeManager:
                 ),
                 clock_ns=self.clock_ns,
             )
+        coordinator_tls_material = self.state.coordinator_tls_paths()
+        tls_available = all(
+            path.is_file()
+            for path in (
+                coordinator_tls_material.certificate,
+                coordinator_tls_material.private_key,
+                coordinator_tls_material.ca_certificate,
+            )
+        )
+        worker_tls = (
+            TlsClientConfig(
+                material=coordinator_tls_material,
+                expected_server_name=WORKER_TLS_NAME,
+            )
+            if tls_available
+            else None
+        )
         core = CoordinatorCore(
             product_config=product_config,
             state_directory=self.state.paths.coordinator_runtime_directory,
             coordinator_identity_path=self.state.paths.coordinator_identity,
+            transport=GrpcTransport(tls=worker_tls),
+            stage_ring_tls=worker_tls,
         )
         assert core.coordinator_identity is not None
         control = PairingManager(
@@ -670,6 +725,14 @@ class RuntimeManager:
             listen_endpoint=listen_endpoint,
             advertised_endpoint=advertised_endpoint,
             service_mode="agent",
+            tls_server_config=(
+                TlsServerConfig(
+                    material=coordinator_tls_material,
+                    require_client_certificate=False,
+                )
+                if tls_available
+                else None
+            ),
         )
 
 

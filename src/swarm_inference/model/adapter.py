@@ -110,6 +110,10 @@ class NativeModelAdapter(Protocol):
     adapter_id: str
     adapter_version: str
 
+    def supports(self, config: Any) -> bool: ...
+
+    def map_tensor_to_component(self, tensor_name: str) -> ComponentRef: ...
+
     def probe_model(self, model: ResolvedModelDescriptor) -> AdapterSupportReport: ...
 
     def inspect(self, model: ResolvedModelDescriptor) -> NativeModelDescription: ...
@@ -148,9 +152,7 @@ class NativeModelAdapterRegistry:
     def adapters(self) -> tuple[NativeModelAdapter, ...]:
         return tuple(self._adapters[key] for key in sorted(self._adapters))
 
-    def probe_all(
-        self, model: ResolvedModelDescriptor
-    ) -> tuple[AdapterSupportReport, ...]:
+    def probe_all(self, model: ResolvedModelDescriptor) -> tuple[AdapterSupportReport, ...]:
         return tuple(adapter.probe_model(model) for adapter in self.adapters())
 
     def resolve(self, model: ResolvedModelDescriptor) -> NativeModelAdapter:
@@ -189,9 +191,7 @@ def default_native_adapter_registry() -> NativeModelAdapterRegistry:
     """
 
     targets: dict[str, str] = {}
-    for entry_point in importlib.metadata.entry_points(
-        group="swarm_inference.native_adapters"
-    ):
+    for entry_point in importlib.metadata.entry_points(group="swarm_inference.native_adapters"):
         targets[entry_point.name] = entry_point.value
 
     for parent in Path(__file__).resolve().parents:
@@ -212,17 +212,13 @@ def default_native_adapter_registry() -> NativeModelAdapterRegistry:
     for name, target in sorted(targets.items()):
         module_name, separator, attribute_name = target.partition(":")
         if not separator or not module_name or not attribute_name:
-            raise RuntimeError(
-                f"native adapter entry point {name!r} has invalid target {target!r}"
-            )
+            raise RuntimeError(f"native adapter entry point {name!r} has invalid target {target!r}")
         factory: Any = importlib.import_module(module_name)
         for attribute in attribute_name.split("."):
             factory = getattr(factory, attribute)
         adapter = factory()
         if not isinstance(adapter, NativeModelAdapter):
-            raise TypeError(
-                f"native adapter entry point {name!r} does not satisfy the protocol"
-            )
+            raise TypeError(f"native adapter entry point {name!r} does not satisfy the protocol")
         adapters.append(adapter)
     return NativeModelAdapterRegistry(tuple(adapters))
 
@@ -307,9 +303,9 @@ def partition_metadata_from_description(
         model_fingerprint="sha256:" + digest,
         quantization_fingerprint="sha256:"
         + hashlib.sha256(
-            json.dumps(
-                config.get("quantization_config"), sort_keys=True, default=str
-            ).encode("utf-8")
+            json.dumps(config.get("quantization_config"), sort_keys=True, default=str).encode(
+                "utf-8"
+            )
         ).hexdigest(),
     )
 

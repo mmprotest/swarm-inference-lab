@@ -54,6 +54,7 @@ from swarm_inference.protocol.stage_worker import (
 )
 from swarm_inference.runtime.telemetry import ProductTelemetry
 from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
+from swarm_inference.security.tls import TlsClientConfig
 from swarm_inference.transport.expert import ExpertTransportClient
 
 
@@ -305,6 +306,7 @@ class DeploymentManager:
         telemetry: ProductTelemetry | None = None,
         worker_trust_checker: Callable[[str], bool] | None = None,
         artifact_coordinator: DeploymentArtifactCoordinator | None = None,
+        expert_tls: TlsClientConfig | None = None,
     ) -> None:
         self.registry = registry
         self.transport = transport
@@ -316,6 +318,7 @@ class DeploymentManager:
         self.telemetry = telemetry
         self.worker_trust_checker = worker_trust_checker
         self.artifact_coordinator = artifact_coordinator
+        self.expert_tls = expert_tls
         self._lock = asyncio.Lock()
         self._reserved_workers: set[str] = set()
         self._deployments: dict[str, DeploymentStatus] = {}
@@ -559,7 +562,11 @@ class DeploymentManager:
             endpoint = capability.expert_data_plane_endpoint
             if endpoint is None:
                 raise RuntimeError(f"expert worker {worker_id} has no data endpoint")
-            client = ExpertTransportClient(endpoint, timeout_s=self.control_timeout_s)
+            client = ExpertTransportClient(
+                endpoint,
+                timeout_s=self.control_timeout_s,
+                tls=self.expert_tls,
+            )
             await asyncio.to_thread(
                 client.control,
                 "install_route",
@@ -580,7 +587,11 @@ class DeploymentManager:
             endpoint = capability.expert_data_plane_endpoint
             if endpoint is None:
                 return
-            client = ExpertTransportClient(endpoint, timeout_s=self.control_timeout_s)
+            client = ExpertTransportClient(
+                endpoint,
+                timeout_s=self.control_timeout_s,
+                tls=self.expert_tls,
+            )
             await asyncio.to_thread(
                 client.control,
                 "remove_route",
@@ -743,17 +754,15 @@ class DeploymentManager:
                         stage_count=plan.stage_count,
                         assignment=item.assignment,
                         adapter_id=plan.model.adapter_id,
-                          fast_path_id=item.fast_path_id,
-                          fast_path_mode=item.fast_path_mode,
-                          fast_path_profile_fingerprint=item.fast_path_profile_fingerprint,
-                          model_content_fingerprint=(
-                              plan.model.model_fingerprint or None
-                          ),
-                          model_format=plan.model.model_format,
-                          quantization=plan.model.quantization,
-                          fast_path_objective=plan.report.objective_mode,
-                          fast_path_batch_bucket=1,
-                          fast_path_context_bucket=plan.max_sequence_tokens,
+                        fast_path_id=item.fast_path_id,
+                        fast_path_mode=item.fast_path_mode,
+                        fast_path_profile_fingerprint=item.fast_path_profile_fingerprint,
+                        model_content_fingerprint=(plan.model.model_fingerprint or None),
+                        model_format=plan.model.model_format,
+                        quantization=plan.model.quantization,
+                        fast_path_objective=plan.report.objective_mode,
+                        fast_path_batch_bucket=1,
+                        fast_path_context_bucket=plan.max_sequence_tokens,
                         device=item.device,
                         dtype=plan.model.dtype,
                         artifact_id=item.artifact_id,
@@ -1146,21 +1155,17 @@ class DeploymentManager:
                                     adapter_id=new_plan.model.adapter_id,
                                     fast_path_id=item.fast_path_id,
                                     fast_path_mode=item.fast_path_mode,
-                                      fast_path_profile_fingerprint=(
-                                          item.fast_path_profile_fingerprint
-                                      ),
-                                      model_content_fingerprint=(
-                                          new_plan.model.model_fingerprint or None
-                                      ),
-                                      model_format=new_plan.model.model_format,
-                                      quantization=new_plan.model.quantization,
-                                      fast_path_objective=(
-                                          new_plan.report.objective_mode
-                                      ),
-                                      fast_path_batch_bucket=1,
-                                      fast_path_context_bucket=(
-                                          new_plan.max_sequence_tokens
-                                      ),
+                                    fast_path_profile_fingerprint=(
+                                        item.fast_path_profile_fingerprint
+                                    ),
+                                    model_content_fingerprint=(
+                                        new_plan.model.model_fingerprint or None
+                                    ),
+                                    model_format=new_plan.model.model_format,
+                                    quantization=new_plan.model.quantization,
+                                    fast_path_objective=(new_plan.report.objective_mode),
+                                    fast_path_batch_bucket=1,
+                                    fast_path_context_bucket=(new_plan.max_sequence_tokens),
                                     device=item.device,
                                     dtype=new_plan.model.dtype,
                                     allow_download=(

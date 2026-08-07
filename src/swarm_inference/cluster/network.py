@@ -44,6 +44,11 @@ from swarm_inference.protocol.cluster import (
 from swarm_inference.protocol.routes import BoundedNonceCache
 from swarm_inference.security.identity import CoordinatorIdentity, WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes, verify_signature
+from swarm_inference.security.tls import (
+    TlsClientConfig,
+    TlsServerConfig,
+    require_tls_for_endpoint,
+)
 
 NETWORK_PROBE_PROTOCOL_VERSION = 1
 DEFAULT_NETWORK_MEASUREMENT_TTL_SECONDS = 900
@@ -174,6 +179,8 @@ class DirectNetworkProbeServer:
         authentication_skew_seconds: float = 60.0,
         nonce_cache_capacity: int = 4096,
         clock_ns: Callable[[], int] = time.time_ns,
+        tls_server: TlsServerConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if not 1024 <= maximum_bytes <= 256 * 1024 * 1024:
             raise ValueError("network probe maximum bytes must be in [1 KiB, 256 MiB]")
@@ -192,6 +199,8 @@ class DirectNetworkProbeServer:
         self.shutdown_timeout_seconds = shutdown_timeout_seconds
         self.authentication_skew_ns = int(authentication_skew_seconds * 1_000_000_000)
         self.clock_ns = clock_ns
+        self.tls_server = tls_server
+        self.allow_plaintext_loopback = allow_plaintext_loopback
         self.nonce_cache = BoundedNonceCache(capacity=nonce_cache_capacity)
         self._server: asyncio.Server | None = None
         self._connections: set[asyncio.StreamWriter] = set()
@@ -209,7 +218,18 @@ class DirectNetworkProbeServer:
                 return int(existing_sockets[0].getsockname()[1])
             host, port = split_endpoint(endpoint)
             self._closed.clear()
-            server = await asyncio.start_server(self._handle_connection, host, port)
+            require_tls_for_endpoint(
+                endpoint,
+                tls_configured=self.tls_server is not None,
+                allow_plaintext_loopback=self.allow_plaintext_loopback,
+                transport_name="direct network probe",
+            )
+            server = await asyncio.start_server(
+                self._handle_connection,
+                host,
+                port,
+                ssl=self.tls_server.ssl_context() if self.tls_server is not None else None,
+            )
             bound_sockets = server.sockets
             if not bound_sockets:
                 server.close()
@@ -304,12 +324,24 @@ class DirectNetworkProbeServer:
         if task is not None:
             self._connection_tasks.add(task)
         try:
+            tls_peer_fingerprint: str | None = None
+            if self.tls_server is not None:
+                tls_object = writer.get_extra_info("ssl_object")
+                peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+                tls_peer_fingerprint = self.tls_server.validate_peer_der(peer_der)
             request = await _read_model(
                 reader,
                 DirectNetworkProbeRequest,
                 timeout_seconds=self.timeout_seconds,
             )
             self._verify_request(request)
+            if (
+                tls_peer_fingerprint is not None
+                and tls_peer_fingerprint != request.ticket.source_fingerprint
+            ):
+                raise IntegrityError(
+                    "network probe TLS peer differs from the ticket source identity"
+                )
             payload = await asyncio.wait_for(
                 reader.readexactly(request.payload_size),
                 timeout=self.timeout_seconds,
@@ -377,6 +409,8 @@ class DirectedNetworkMeasurer:
         clock_ns: Callable[[], int] = time.time_ns,
         monotonic: Callable[[], float] = time.monotonic,
         random_bytes: Callable[[int], bytes] = os.urandom,
+        tls_client: TlsClientConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         if timeout_seconds <= 0 or timeout_seconds > 60:
             raise ValueError("network measurement timeout must be in (0, 60] seconds")
@@ -391,6 +425,8 @@ class DirectedNetworkMeasurer:
         self.clock_ns = clock_ns
         self.monotonic = monotonic
         self.random_bytes = random_bytes
+        self.tls_client = tls_client
+        self.allow_plaintext_loopback = allow_plaintext_loopback
 
     def _verify_ticket_source(self, ticket: NetworkProbeTicket) -> None:
         verify_probe_ticket(ticket, self.cluster, now_unix_ns=self.clock_ns())
@@ -420,6 +456,12 @@ class DirectedNetworkMeasurer:
 
     async def measure(self, ticket: NetworkProbeTicket) -> NetworkLinkMeasurement:
         self._verify_ticket_source(ticket)
+        require_tls_for_endpoint(
+            ticket.destination_endpoint,
+            tls_configured=self.tls_client is not None,
+            allow_plaintext_loopback=self.allow_plaintext_loopback,
+            transport_name="direct network probe",
+        )
         destination_host, destination_port = split_endpoint(ticket.destination_endpoint)
         upload_rates: list[float] = []
         download_rates: list[float] = []
@@ -447,7 +489,20 @@ class DirectedNetworkMeasurer:
                 connect_started = self.monotonic()
                 try:
                     reader, writer = await asyncio.wait_for(
-                        asyncio.open_connection(destination_host, destination_port),
+                        asyncio.open_connection(
+                            destination_host,
+                            destination_port,
+                            ssl=(
+                                self.tls_client.ssl_context()
+                                if self.tls_client is not None
+                                else None
+                            ),
+                            server_hostname=(
+                                self.tls_client.expected_server_name
+                                if self.tls_client is not None
+                                else None
+                            ),
+                        ),
                         timeout=self.timeout_seconds,
                     )
                 except (OSError, TimeoutError) as exc:
@@ -455,6 +510,14 @@ class DirectedNetworkMeasurer:
                         f"could not reach peer probe endpoint {ticket.destination_endpoint}: {exc}"
                     ) from exc
                 connect_timings_ms.append((self.monotonic() - connect_started) * 1000)
+                if self.tls_client is not None:
+                    tls_object = writer.get_extra_info("ssl_object")
+                    peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
+                    tls_peer_fingerprint = self.tls_client.validate_peer_der(peer_der)
+                    if tls_peer_fingerprint != ticket.destination_fingerprint:
+                        raise IntegrityError(
+                            "network probe TLS peer differs from the ticket destination identity"
+                        )
                 source_endpoint = _endpoint(writer.get_extra_info("sockname")) or source_endpoint
                 try:
                     transfer_started = self.monotonic()
@@ -513,6 +576,8 @@ class DirectedNetworkMeasurer:
             payload_sizes=list(ticket.payload_sizes),
             sample_count=len(transfer_timings_ms),
             p95_transfer_ms=_percentile(transfer_timings_ms, 95),
+            jitter_ms=statistics.pstdev(connect_timings_ms),
+            connection_stability=(len(transfer_timings_ms) / max(1, int(ticket.sample_count))),
             source_endpoint=source_endpoint,
             destination_endpoint=ticket.destination_endpoint,
             source_interface=self.source_interface,

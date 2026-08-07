@@ -21,6 +21,7 @@ from swarm_inference.protocol.expert import (
     TransportCodec,
 )
 from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tensor, encode_tensor
+from swarm_inference.security.tls import TlsClientConfig, require_tls_for_endpoint
 
 MAGIC = b"SWARMEX1"
 _HEADER = struct.Struct(">II")
@@ -574,8 +575,17 @@ class ExpertTransportClient:
         *,
         data_plane: DataPlane | str = DataPlane.DIRECT_TCP,
         timeout_s: float = 30.0,
+        tls: TlsClientConfig | None = None,
+        allow_plaintext_loopback: bool = True,
     ) -> None:
         self.endpoint = endpoint
+        self.tls = tls
+        require_tls_for_endpoint(
+            endpoint,
+            tls_configured=tls is not None,
+            allow_plaintext_loopback=allow_plaintext_loopback,
+            transport_name="expert data plane",
+        )
         self.data_plane = DataPlane(data_plane)
         if self.data_plane not in {DataPlane.DIRECT_TCP, DataPlane.RELAYED_TCP}:
             raise ValueError("product expert client requires a TCP data plane")
@@ -592,10 +602,23 @@ class ExpertTransportClient:
             raise TimeoutError("expert request deadline elapsed before socket transport")
         started = time.perf_counter_ns()
         socket_started = time.perf_counter_ns()
-        with socket.create_connection((host, port), timeout=timeout) as connection:
+        raw_connection = socket.create_connection((host, port), timeout=timeout)
+        connection: socket.socket = raw_connection
+        try:
+            if self.tls is not None:
+                secure_connection = self.tls.ssl_context().wrap_socket(
+                    raw_connection,
+                    server_hostname=self.tls.expected_server_name,
+                )
+                self.tls.validate_peer_der(secure_connection.getpeercert(binary_form=True))
+                connection = secure_connection
             connection.settimeout(timeout)
             connection.sendall(framed)
             response = _recv_frame(connection)
+        finally:
+            connection.close()
+            if connection is not raw_connection:
+                raw_connection.close()
         self.metrics.socket_ns += time.perf_counter_ns() - socket_started
         self.metrics.messages_sent += 1
         self.metrics.messages_received += 1

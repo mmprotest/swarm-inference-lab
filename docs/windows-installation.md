@@ -68,7 +68,7 @@ swarm cluster create --name villani-home
 Paste the single command it prints into the independently installed CPU laptop:
 
 ```powershell
-swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+swarm node join "swarm://<reachable-address>:<port>/join/<single-use-data>"
 ```
 
 Then, on the PC:

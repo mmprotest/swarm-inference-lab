@@ -149,13 +149,13 @@ route generation are rejected after recovery.
 
 ## Security boundary
 
-Routes and direct peers are authenticated. Payload confidentiality is **not**
-provided: version 1 is plain TCP, without TLS or application-layer encryption.
-The supported boundary is a trusted LAN or private network. Operation across
-the untrusted public Internet is unsupported, and prompts, activations, and KV
-state must not be treated as private from participating workers.
+The frame format is transport-independent. Canonical non-loopback stage-ring connections run
+inside mutually authenticated TLS 1.3 with cluster-CA validation and a durable node-fingerprint
+pin. Remote plaintext is rejected before a `HELLO` or tensor frame is accepted. Address changes
+do not alter the stable identity name or fingerprint pin.
 
-The frame SHA-256 value remains only an unkeyed accidental-corruption check.
-It is not malicious tamper resistance and must not be described as one. Peer
-signatures authenticate the connection setup and route participation; they do
-not encrypt subsequent tensor payloads.
+The frame SHA-256 value remains an unkeyed accidental-corruption check, not malicious tamper
+resistance. TLS supplies in-transit confidentiality and integrity; signed route leases and peer
+handshakes bind authorization to the deployed topology. Neither proves that a participating
+worker computed the requested neural operation correctly, and a legitimate stage owner can
+inspect the state assigned to it.

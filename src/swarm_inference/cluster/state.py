@@ -45,6 +45,13 @@ from swarm_inference.exceptions import IntegrityError
 from swarm_inference.filesystem import replace_atomically
 from swarm_inference.platforms import default_state_directory
 from swarm_inference.security.identity import CoordinatorIdentity, WorkerIdentity
+from swarm_inference.security.tls import (
+    COORDINATOR_TLS_NAME,
+    WORKER_TLS_NAME,
+    TlsCertificatePaths,
+    TlsClientConfig,
+    materialize_tls_identity,
+)
 
 DocumentT = TypeVar("DocumentT", bound=StrictModel)
 Migration = Callable[[dict[str, Any]], dict[str, Any]]
@@ -69,6 +76,13 @@ class ClusterStatePaths:
     artifact_cache: Path
     coordinator_identity: Path
     node_identity: Path
+    cluster_ca_certificate: Path
+    coordinator_tls_certificate: Path
+    coordinator_tls_private_key: Path
+    node_tls_certificate: Path
+    node_tls_private_key: Path
+    pending_node_tls_private_key: Path
+    pending_pairing_ca_certificate: Path
     node_configuration: Path
     audit_log: Path
     node_runtime_directory: Path
@@ -99,6 +113,13 @@ class ClusterStatePaths:
             artifact_cache=runtime / "artifact-cache.json",
             coordinator_identity=security / "coordinator-identity.json",
             node_identity=security / "node-identity.json",
+            cluster_ca_certificate=security / "cluster-ca.pem",
+            coordinator_tls_certificate=security / "coordinator-tls.pem",
+            coordinator_tls_private_key=security / "coordinator-tls-key.pem",
+            node_tls_certificate=security / "node-tls.pem",
+            node_tls_private_key=security / "node-tls-key.pem",
+            pending_node_tls_private_key=runtime / "pending-node-tls-key.pem",
+            pending_pairing_ca_certificate=runtime / "pending-pairing-ca.pem",
             node_configuration=security / "node-configuration.json",
             audit_log=logs / "cluster-audit.jsonl",
             node_runtime_directory=runtime / "nodes",
@@ -699,6 +720,126 @@ class ClusterStateStore:
 
     def load_or_create_node_identity(self) -> WorkerIdentity:
         return WorkerIdentity.load_or_create(self.paths.node_identity)
+
+    def coordinator_tls_paths(self) -> TlsCertificatePaths:
+        return TlsCertificatePaths(
+            certificate=self.paths.coordinator_tls_certificate,
+            private_key=self.paths.coordinator_tls_private_key,
+            ca_certificate=self.paths.cluster_ca_certificate,
+        )
+
+    def node_tls_paths(self) -> TlsCertificatePaths:
+        return TlsCertificatePaths(
+            certificate=self.paths.node_tls_certificate,
+            private_key=self.paths.node_tls_private_key,
+            ca_certificate=self.paths.cluster_ca_certificate,
+        )
+
+    def prepare_node_tls_private_key(self, *, rotate: bool = False) -> bytes:
+        """Prepare local-only TLS key material for initial pairing or rotation."""
+
+        from swarm_inference.security.tls import generate_tls_private_key_pem
+
+        pending = self.paths.pending_node_tls_private_key
+        current = self.paths.node_tls_private_key
+        if not rotate:
+            if pending.is_file():
+                return pending.read_bytes()
+            if current.is_file():
+                return current.read_bytes()
+        private_key = generate_tls_private_key_pem()
+        _atomic_write(pending, private_key, private=True)
+        return private_key
+
+    def coordinator_tls_client_config(self) -> TlsClientConfig | None:
+        material = self.node_tls_paths()
+        if not all(
+            path.is_file()
+            for path in (material.certificate, material.private_key, material.ca_certificate)
+        ):
+            return None
+        cluster = self.load_cluster()
+        return TlsClientConfig(
+            material=material,
+            expected_server_name=COORDINATOR_TLS_NAME,
+            expected_peer_fingerprint=(
+                cluster.coordinator_fingerprint if cluster is not None else None
+            ),
+        )
+
+    def worker_tls_client_config(self) -> TlsClientConfig | None:
+        material = self.node_tls_paths()
+        if not all(
+            path.is_file()
+            for path in (material.certificate, material.private_key, material.ca_certificate)
+        ):
+            return None
+        return TlsClientConfig(
+            material=material,
+            expected_server_name=WORKER_TLS_NAME,
+        )
+
+    def materialize_coordinator_tls(
+        self,
+        identity: CoordinatorIdentity,
+        certificate_pem: str,
+    ) -> TlsCertificatePaths:
+        _atomic_write(
+            self.paths.cluster_ca_certificate,
+            certificate_pem.encode("ascii"),
+            private=False,
+        )
+        materialize_tls_identity(
+            identity=identity,
+            certificate_pem=certificate_pem,
+            certificate_path=self.paths.coordinator_tls_certificate,
+            private_key_path=self.paths.coordinator_tls_private_key,
+            expected_fingerprint=identity.public_key_fingerprint,
+        )
+        return self.coordinator_tls_paths()
+
+    def materialize_node_tls(
+        self,
+        identity: WorkerIdentity,
+        *,
+        certificate_pem: str,
+        ca_certificate_pem: str,
+    ) -> TlsCertificatePaths:
+        _atomic_write(
+            self.paths.cluster_ca_certificate,
+            ca_certificate_pem.encode("ascii"),
+            private=False,
+        )
+        pending_key = self.paths.pending_node_tls_private_key
+        current_key = self.paths.node_tls_private_key
+        private_key_pem = (
+            pending_key.read_bytes()
+            if pending_key.is_file()
+            else current_key.read_bytes()
+            if current_key.is_file()
+            else None
+        )
+        materialize_tls_identity(
+            identity=identity,
+            certificate_pem=certificate_pem,
+            certificate_path=self.paths.node_tls_certificate,
+            private_key_path=self.paths.node_tls_private_key,
+            expected_fingerprint=identity.public_key_fingerprint,
+            private_key_pem=private_key_pem,
+        )
+        if pending_key.is_file():
+            pending_key.unlink()
+        return self.node_tls_paths()
+
+    def materialize_pairing_ca(self, certificate_pem: str) -> Path:
+        """Write a public invitation CA separately from durable trusted state."""
+
+        _atomic_write(
+            self.paths.pending_pairing_ca_certificate,
+            certificate_pem.encode("ascii"),
+            private=False,
+        )
+        return self.paths.pending_pairing_ca_certificate
 
     def save_node_configuration(self, configuration: NodeConfiguration) -> None:
         with self._lock:

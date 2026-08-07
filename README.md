@@ -1,279 +1,388 @@
 # Swarm Inference Lab
 
-**Run one model across the hardware already on your private network.**
+Swarm Inference Lab is an experimental runtime for distributing LLM inference across
+heterogeneous machines connected over real networks, including WAN links. It explores how
+NVIDIA GPUs, Apple Silicon, CPUs, and other consumer hardware can cooperate to run models that
+would otherwise require larger centralized machines.
 
-Swarm Inference Lab turns a mix of CPU and GPU machines into a self-configuring inference
-cluster. Install the same release on each machine, create a cluster, paste one join command, and
-run a model. Swarm measures the available hardware and network links, chooses a placement for the
-requested goal, prepares only the model stages each node needs, and streams the result back to
-the terminal.
+Its product objective is general-purpose global WAN distributed inference across heterogeneous
+hardware, model families, operating systems, and execution engines.
 
-The first supported product model family is
-[OLMoE](https://huggingface.co/allenai/OLMoE-1B-7B-0125-Instruct). Swarm is currently a release
-candidate and is best suited to evaluation on hardware you control.
+The core thesis is simple: slow links need coarse, persistent execution boundaries. Across a
+WAN, Swarm moves activations between contiguous model stages instead of turning every layer or
+expert into an RPC. Inside a measured low-latency domain, the planner may use finer mechanisms
+such as whole experts or microshards when they have positive utility.
 
-> [!IMPORTANT]
-> Swarm is designed for a **trusted LAN or private network**. Pairing authenticates nodes and
-> pins their identities, but **inference data-plane payloads are not encrypted**. Do not expose
-> Swarm ports to the public Internet or use untrusted nodes for sensitive prompts or weights.
+> [!NOTE]
+> Swarm Inference Lab is active experimental systems software, not a production service.
+> The canonical runtime implements heterogeneous worker discovery, multiple inference engines,
+> topology-aware planning, authenticated encrypted WAN transport, and persistent stage
+> execution. Physical multi-machine performance validation remains ongoing.
 
-## What you get
+## What exists today
 
-- **One user workflow:** `swarm cluster create`, `swarm node join`, and `swarm run` cover normal
-  setup and inference without hand-written topology files.
-- **Hardware-aware planning:** CPU, CUDA, and Apple MPS probes, usable memory, and directed
-  network measurements inform every plan.
-- **A goal that matches the job:** optimize interactive speed or aggregate throughput, pool
-  memory for model fit, or balance speed, headroom, reliability, and node participation.
-- **Stage-owned model storage:** participating nodes receive only the tensors and metadata owned
-  by their stage, not a complete model snapshot.
-- **Persistent serving:** node agents, model stages, connections, and queues stay alive across
-  requests instead of being rebuilt for every prompt.
-- **Inspectable decisions:** preview a plan before downloading or deploying anything, and use
-  JSON or NDJSON output for automation.
+- One product workflow: `swarm cluster create`, `swarm node join`, and `swarm run`.
+- A model resolver for immutable Hugging Face revisions and local checkpoints, including GGUF
+  variant discovery and worker-managed artifacts.
+- Extensible architecture and adapter registries with native OLMoE, Qwen3 dense, and supported
+  Qwen3 MoE representations.
+- Three canonical engines: native stage, Colibri, and llama.cpp RPC.
+- CPU, CUDA, and MPS capability detection with explicit RAM/VRAM admission.
+- Measured topology domains based on RTT, bandwidth, jitter, and connection stability.
+- Direct persistent stage-to-stage data flow; the coordinator does not relay hidden states.
+- TLS 1.3 transport bound to durable cluster identities, plus signed control messages and
+  fail-closed peer validation.
+- Exact byte and connection telemetry around Swarm-managed llama.cpp RPC links.
+- Explainable automatic selection and strict `--engine` / `--require-distributed` semantics.
 
-## Before you start
+Adding a node does not guarantee lower latency. In `speed` mode a weak node may remain idle;
+`capacity` mode can include it when its memory is necessary.
 
-For the normal two-machine path you need:
+## Install
 
-- two machines on the same routable private network;
-- the same Swarm release installed on both machines;
-- Windows 11 x86-64 for the native installer workflow below; and
-- enough combined memory and storage for the selected OLMoE revision.
+A participating node installs a release; it does not need a repository clone.
 
-Swarm can leave a slow node idle when that produces a better plan. Adding a machine does not
-guarantee lower latency.
+- **Windows 11 x86-64:** install `SwarmInferenceSetup-x64.exe` from the project’s
+  [GitHub Releases](https://github.com/mmprotest/swarm-inference-lab/releases). The per-user
+  installer contains the application, locked dependency profile, and pinned engine artifacts.
+- **Linux and macOS:** install the released wheel/package with the release `install.sh`. The
+  script provisions a managed Python environment and selects CPU, CUDA, or MPS after an
+  operational probe.
 
-## Install on Windows
+After installation:
 
-You do not need Git, Python, `uv`, a repository checkout, or an administrator terminal.
-
-1. Open [GitHub Releases](https://github.com/mmprotest/swarm-inference-lab/releases).
-2. Download `SwarmInferenceSetup-x64.exe` from the release you want to use.
-3. Double-click the installer and complete the per-user setup.
-4. Open a new PowerShell or Command Prompt window.
-5. Verify the installation:
-
-```powershell
+```bash
 swarm --version
 swarm node doctor
 ```
 
-The installer selects CUDA only after the installed runtime passes a real CUDA tensor check. If
-automatic CUDA validation fails, setup falls back transactionally to the locked CPU profile.
-Setup does not create a cluster service until you create or join a cluster.
+Windows, Linux x86-64/ARM64, and macOS ARM64 runtime adapters exist. Backend detection is not a
+physical performance claim; the acceptance report keeps software and hardware evidence
+separate.
 
-See [Windows installation](docs/windows-installation.md) for repair, update, silent-install, and
-uninstall behavior.
+### Developer, CI and offline recovery installation
+
+Offline/recovery workflows can pass a downloaded wheel to `install.ps1 -SourceWheel ...` or
+`install.sh --source-wheel ...`. These repository scripts are for development, CI, and recovery;
+normal Windows nodes use the signed release installer above.
 
 ## Cluster quick start
 
-Run these commands with private, routable addresses. Swarm chooses identities, ports, backend,
-dtype, memory limits, and storage budgets automatically.
+On the coordinator:
 
-### 1. Create a cluster
-
-On the machine that will coordinate the cluster:
-
-```powershell
-swarm cluster create --name villani-home
+```bash
+swarm cluster create --name my-swarm
 ```
 
-The command prints one complete, single-use join command. Treat it like a short-lived password:
-do not save it in logs or screenshots.
+The command prints a short-lived, single-use pairing URI. On another independently installed
+node:
 
-### 2. Join another machine
-
-Paste the printed command into a terminal on the second machine:
-
-```powershell
-swarm node join "swarm://<private-address>:<port>/join/<single-use-data>"
+```bash
+swarm node join "<pairing-uri>"
 ```
 
-Joining verifies both identities, starts the user-scoped node service, checks bidirectional
-reachability, benchmarks the selected device and dtype, and measures the links between nodes.
+Inspect readiness, then use the general model interface:
 
-### 3. Check readiness
-
-Back on the coordinator:
-
-```powershell
+```bash
 swarm cluster status
-```
 
-A node that cannot be reached remains `blocked` and is not silently treated as ready. Run
-`swarm node doctor` on a node for local backend diagnostics.
-
-### 4. Preview the placement
-
-Planning can be inspected without artifact preparation or deployment:
-
-```powershell
-swarm run allenai/OLMoE-1B-7B-0125-Instruct `
-  --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
-  --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea `
-  --mode speed `
-  --prompt "Explain distributed inference." `
-  --dry-run --explain-plan
-```
-
-Model and tokenizer revisions are explicit and immutable so that artifact identity, deployment,
-and recovery all refer to the same inputs.
-
-### 5. Run inference
-
-Remove the preview flags when the plan looks right:
-
-```powershell
-swarm run allenai/OLMoE-1B-7B-0125-Instruct `
-  --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
-  --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea `
-  --mode speed `
+swarm run <hugging-face-model-or-local-model> \
+  --mode speed \
   --prompt "Explain distributed inference."
 ```
 
-The first run may need to acquire the immutable model revision and prepare stage artifacts.
-Verified artifacts and loaded stages are reused by later requests.
+Inspect a genuinely distributed plan before acquisition or deployment:
 
-### Choose a planning mode
+```bash
+swarm run <model> \
+  --require-distributed \
+  --dry-run \
+  --explain-plan \
+  --prompt "Hello"
+```
 
-| Mode | Use it when | Planner behavior |
-|---|---|---|
-| `speed` | You want the lowest predicted latency | Compares distributed candidates with the fastest feasible local route; slower joined nodes may remain idle. |
-| `throughput` | You expect concurrent requests | Favors the route with the highest predicted aggregate token throughput. |
-| `capacity` | The model does not fit on the best single node | Uses collectively available memory to find a feasible route. |
-| `balanced` | You want a tunable compromise | Weighs throughput, memory headroom, reliability, and useful participation. |
+Explicit engine requests fail if that engine does not pass model/runtime/hardware preflight:
 
-Use `--require-node <node-id>` or `--exclude-node <node-id>` when placement must include or avoid
-a particular node. See the full [cluster quick start](docs/cluster-quickstart.md) and
-[troubleshooting guide](docs/cluster-troubleshooting.md) for firewall and readiness help.
+```bash
+swarm run <model> --engine native-stage --prompt "Hello"
+swarm run <model> --engine colibri --prompt "Hello"
+swarm run <model> --engine llamacpp-rpc --prompt "Hello"
+```
+
+Only automatic selection (omit `--engine`) may choose among compatible engines. Likewise,
+`--require-distributed` fails unless required computation is placed on at least two physical
+hosts; it never silently runs the complete model on the coordinator.
 
 ## Product architecture
 
-Swarm separates coordination from model-data movement:
-
 ```mermaid
-flowchart LR
-    CLI[swarm CLI] --> C[Coordinator control plane]
-    C --> P[Measured bounded planner]
-    C --> D[Transactional deployment]
-    D -. signed route .-> S0[Persistent stage 0]
-    D -. signed route .-> S1[Persistent stage 1]
-    D -. signed route .-> SN[Persistent stage N]
-    S0 -->|activation| S1
-    S1 -->|activation| SN
-    SN -->|next token step| S0
-    SN -. ordered token publication .-> C
-    C --> CLI
+flowchart TB
+    C[Coordinator<br/>identity, planning, admission, recovery]
+
+    subgraph M[Melbourne topology domain]
+        M0[Stage 0<br/>GPU + RAM]
+        ML[Local experts / microshards<br/>low-latency workers]
+        ML <--> M0
+    end
+
+    subgraph T[Tokyo topology domain]
+        T1[Stage 1<br/>GPU + CPU]
+        TL[Colibri / local experts<br/>low-latency workers]
+        TL <--> T1
+    end
+
+    N[Stage N<br/>persistent owner + KV state]
+
+    C -. encrypted control .-> M0
+    C -. encrypted control .-> T1
+    C -. encrypted control .-> N
+    M0 == "encrypted persistent WAN activation" ==> T1
+    T1 == "encrypted persistent stage boundary" ==> N
+    N == "next decode step" ==> M0
+    N -. ordered token result .-> C
 ```
 
-The coordinator owns membership, health, planning, deployment, session admission, recovery, and
-ordered token publication. Once a request is admitted, hidden-state activations travel directly
-between the assigned stages. The coordinator is absent from steady-state hidden-state
-forwarding.
+The coordinator owns membership, capability collection, engine competition, deployment,
+session admission, and ordered result publication. Persistent workers own their model stages
+and KV state. Once admitted, activations travel directly through the stage ring; the coordinator
+is outside the steady-state activation path.
 
-### Key architectural decisions
-
-| Decision | Why it was chosen | User-visible consequence |
-|---|---|---|
-| Separate coordinator control plane from the direct stage-ring data plane | Keep centralized policy and durable request state without relaying every activation through one process. | Coordinator and stage traffic use separate endpoints and failure domains; the coordinator is still required for admission and token commit. |
-| Keep node agents, stages, and peer connections persistent | Model loading and connection setup are expensive compared with a request. | Warm artifacts and stages are reused, reducing repeated setup work. Services run in the current user's session rather than as cluster-wide system services. |
-| Plan from measured capabilities with a deterministic bounded search | Heterogeneous clusters cannot be placed well from device labels alone, while factorial worker permutations do not scale. | Hardware probes, memory budgets, and fresh directed-link measurements feed explainable `speed`, `throughput`, `capacity`, and `balanced` plans. |
-| Assign contiguous stages and build content-addressed, stage-owned artifacts | Make ownership verifiable and avoid requiring every participant to retain the whole model. | A stage receives only its assigned tensors plus required metadata; incomplete or hash-mismatched transfers are never loaded. |
-| Deploy transactionally using signed, immutable route generations | A partially loaded or ambiguous topology is unsafe to serve. | Reservations, artifact verification, loads, routes, and peer checks must all succeed before a route becomes ready; failed deployment rolls back. |
-| Recover by retiring the failed generation and replaying verified history | Moving live KV caches across heterogeneous workers is complex and not yet supported. | Recovery is **restart-and-replay, not seamless failover**. It recomputes the prompt and accepted greedy-token prefix and fails closed on divergence. |
-| Interleave bounded per-session work without merging request tensors | Preserve isolated KV state and predictable queue bounds across different stages and backends. | Multiple sessions can make progress concurrently, but this is **not continuous tensor batching**. |
-| Authenticate membership and routes while keeping a trusted-network boundary | Strong onboarding and route integrity can be provided independently of a fully encrypted data plane. | Pairing, signed leases, and peer handshakes reject unknown or stale participants, but prompts and activations still require a network you trust. |
-
-For protocol and component detail, see [Architecture](docs/architecture.md),
-[Pairing](docs/pairing.md), [Model artifacts](docs/model-artifacts.md), and
-[Recovery](docs/recovery.md).
-
-## Everyday operation
+The adapter registry is separate from engine selection:
 
 ```text
-swarm cluster status             # cluster membership and readiness
-swarm node status                # this node's service and membership state
-swarm node doctor                # backend and environment diagnostics
-swarm run ... --dry-run --explain-plan
-swarm update                     # check and install a verified Windows release
+Model resolver -> architecture detection -> native adapter registry
+                                           | OLMoE
+                                           | Qwen3 dense
+                                           | Qwen3 MoE (supported representations)
+                                           ` future adapters
+
+Resolved model + worker capabilities + topology -> execution engine registry
+                                                   | native-stage
+                                                   | colibri
+                                                   ` llamacpp-rpc
 ```
 
-Use `--json` for a final machine-readable document and `--ndjson` for progress or token streams.
-Machine-readable output excludes pairing secrets and prompt contents. For automation, pairing
-invitations are written atomically to an owner-protected file rather than returned in JSON.
-Non-interactive administrative mutations require `--yes` and fail before changing state when it
-is absent.
+OLMoE is one adapter, not the identity of the product. Product code does not import experiment
+implementations; experiments remain evidence and research workloads.
 
-Advanced diagnostic and acceptance commands remain available under `swarm coordinator`,
-`swarm worker`, `swarm identity`, `swarm model`, `swarm submit`, `swarm status`, `swarm workers`,
-`swarm topology`, `swarm sessions`, and `swarm cancel`. They are not required for normal cluster
-bootstrap. Their contracts are documented in [Product runtime](docs/product-runtime.md).
+## Execution engines
 
-## Support and current limits
+### Native stage runtime
 
-| Platform | Product implementation | Normal installation path |
-|---|---|---|
-| Windows 11 x86-64 | Implemented for CPU and operational CUDA | Native per-user setup executable |
-| Linux x86-64 / ARM64 | Runtime and service adapters implemented | Repository/developer installation |
-| macOS ARM64 | Runtime and service adapters implemented for MPS or CPU | Repository/developer installation |
-| Windows ARM64, macOS Intel, 32-bit systems | Unsupported | None |
+The native engine partitions supported safetensors checkpoints into persistent contiguous
+stages. It builds stage-owned artifacts, keeps KV caches isolated per request and stage, and uses
+direct stage-to-stage connections. This is the Experiment 011-derived WAN-efficient path.
 
-Implementation is not the same as validation. A successful device probe selects an operational
-backend; it does not manufacture retained software or physical evidence. **Physical
-multi-machine product performance has not been proven** in this repository state. Loopback,
-simulation, and CI results are useful engineering evidence but do not demonstrate real network
-scaling.
+The installed adapter registry currently contains:
 
-Other important limits:
+- `olmoe`
+- `qwen3_dense`
+- `qwen3_moe` for the Transformers `qwen3_moe` safetensors representation
 
-- OLMoE is the only supported product model family for this milestone.
-- The coordinator is a control-plane and token-commit dependency and is not highly available.
-- Recovery supports verified greedy-token replay; it does not migrate KV caches.
-- Nodes and network observers can inspect the plaintext inference data available to them.
-- Slow devices can reduce single-request performance or contribute no useful work.
-- Experiment 011 remains the latest completed experiment. Later model-family work and retained
-  experiment paths are research inputs, not product support claims.
+Dense Qwen3 retains its optimized CUDA execution path. Sparse Qwen3 layers keep their router and
+all experts with the layer-owning stage. The current native adapter does **not** claim the newer
+Qwen3.5/Qwen3.6 hybrid `qwen3_5_moe` representation; that representation fails native preflight
+with an actionable error rather than being forced through an incompatible Python path.
 
-See [Platform support](docs/platform-support.md), [Security boundary](docs/security-boundary.md),
-and [Limitations](docs/limitations.md) before using Swarm with valuable data or hardware.
+### Colibri
 
-## Developer, CI and offline recovery installation
+Colibri is the canonical optimized engine promoted from the Experiment 009 work. It is
+registered alongside the other engines, reachable from normal `swarm run`, and selected only
+when a pinned Colibri runtime advertises an exact model adapter, format, device, and memory fit.
+The currently verified Colibri model-family profile is OLMoE. Routing-aware placement remains
+evidence-gated; Experiment 009 modules are not runtime dependencies.
 
-The cross-platform shell installers are intended for repository development, CI, offline wheel
-recovery, and platforms without the native Windows setup. They are not the normal Windows user
-path:
+### llama.cpp RPC
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 `
-  -SourceWheel .\dist\swarm_inference_lab-0.1.0rc11-py3-none-any.whl -Json
-```
+llama.cpp RPC is the broad GGUF compatibility/capacity engine. Workers advertise a hash-bound,
+pinned llama.cpp build. Before deployment, Swarm checks the resolved GGUF architecture against
+loader identifiers actually present in or advertised by that build. This is an engine
+capability probe, not a filename or Hugging Face repository allowlist.
+
+llama.cpp RPC may perform finer tensor RPC than the native stage path, so the planner includes
+its network behavior explicitly. WAN tensor-RPC plans are penalized and admitted for capacity or
+an explicit distributed requirement when appropriate; they are not presented as equivalent to
+the coarse native stage ring. Swarm’s transparent TLS metering links record exact bytes,
+connections, transfers, duration, and bytes per generated token without modifying the llama.cpp
+protocol. Private-protocol message counts remain `unknown` unless observable.
+
+## Model support matrix
+
+This table reflects the registered adapters and current verified engine manifests, not an
+aspirational model list.
+
+| Model family / format | Native stage | Colibri | llama.cpp RPC |
+| --- | --- | --- | --- |
+| OLMoE safetensors | Yes | Yes, with the verified `olmoe` manifest | No for safetensors; GGUF only if the pinned build advertises `olmoe` |
+| Qwen3 dense safetensors | Yes | No current verified adapter | No for safetensors; compatible GGUF is runtime-probed |
+| Qwen3 MoE (`qwen3_moe`) safetensors | Yes | No current verified adapter | No for safetensors; compatible GGUF is runtime-probed |
+| Qwen3.5/Qwen3.6 MoE GGUF (`qwen35moe`) | No native GGUF path | No | Yes only when the pinned build proves `qwen35moe` support |
+| Other GGUF | No native adapter | No | Only when exact architecture/feature support is advertised by the pinned runtime |
+
+Unknown architecture, missing GGUF metadata, unsupported features, incompatible representation,
+or insufficient memory all fail during preflight. File extension and executable presence alone
+never establish compatibility.
+
+## Qwen3.6 GGUF example
+
+The motivating repository is
+[`unsloth/Qwen3.6-35B-A3B-GGUF`](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF).
+Its `UD-Q4_K_M` variant is approximately 22 GB, so choose a quantization that actually fits the
+participating workers.
+
+First inspect the exact plan. GGUF uses `llamacpp-rpc`, not the native Python stage adapter:
 
 ```bash
-sh ./scripts/install.sh \
-  --source-wheel ./dist/swarm_inference_lab-0.1.0rc11-py3-none-any.whl \
-  --json
+swarm run unsloth/Qwen3.6-35B-A3B-GGUF \
+  --quant UD-Q4_K_M \
+  --engine llamacpp-rpc \
+  --mode capacity \
+  --require-distributed \
+  --dry-run \
+  --explain-plan \
+  --prompt "Hello"
 ```
 
-The supported repository validation workflow is documented in
-[Physical two-machine acceptance](docs/physical-two-machine-acceptance.md) and the release
-process in [Releasing](docs/releasing.md).
+Preflight reports the immutable revision, selected GGUF files, `qwen3_moe` product family and
+raw `qwen35moe` loader identity where available, the pinned llama.cpp runtime evidence, every
+participating/excluded worker, tensor ownership, topology, and measured versus unknown network
+costs. If the installed llama.cpp build does not support `qwen35moe`, the command stops here.
 
-## Documentation
+Run after reviewing the plan:
 
-- [Cluster quick start](docs/cluster-quickstart.md)
-- [Windows installation](docs/windows-installation.md)
-- [Cluster troubleshooting](docs/cluster-troubleshooting.md)
-- [Node agent](docs/node-agent.md)
-- [Platform support](docs/platform-support.md)
-- [Product runtime](docs/product-runtime.md)
-- [Architecture](docs/architecture.md)
-- [Pairing and identity](docs/pairing.md)
-- [Security boundary](docs/security-boundary.md)
-- [Model artifacts](docs/model-artifacts.md)
-- [Recovery](docs/recovery.md)
-- [Limitations](docs/limitations.md)
+```bash
+swarm run unsloth/Qwen3.6-35B-A3B-GGUF \
+  --quant UD-Q4_K_M \
+  --engine llamacpp-rpc \
+  --mode capacity \
+  --require-distributed \
+  --prompt "Explain why WAN inference needs coarse boundaries."
+```
 
-## License
+The real 35B download and hardware execution are intentionally opt-in; ordinary CI uses small
+metadata and model fixtures.
 
-Apache-2.0. See [LICENSE](LICENSE).
+## WAN behavior
+
+Swarm classifies directed worker relationships from measured RTT, bandwidth, jitter, and
+stability, rather than geography.
+
+- Low-latency domains may consider more boundaries, expert parallelism, and microshards.
+- WAN domains favor contiguous stages, persistent connections, and few serial crossings.
+- `speed` compares a distributed route with the best feasible local route and can exclude a
+  slow node.
+- `capacity` can accept a slower node when collective memory is required.
+- Communication estimates include bytes/token, operations/token, WAN boundaries, persistent
+  connection use, and confidence/provenance. `unknown` is never encoded as zero.
+
+Experiment 010 established useful whole-expert and microshard mechanisms, but also showed why
+fine-grained synchronous RPC cannot be spread blindly over slow links. Experiment 011 moved the
+WAN abstraction to persistent contiguous stages and removed the coordinator from hidden-state
+forwarding. The canonical runtime preserves that transition.
+
+Swarm does not currently provide automatic NAT traversal or a relay service. Operators must
+provide routable endpoints (directly or through their chosen network overlay) and configure
+firewalls for the selected ports.
+
+## Security and trust model
+
+Pairing uses a short-lived, single-use invitation only for onboarding. Each worker node creates
+and retains its own durable Ed25519 identity and independently rotatable TLS private key;
+private keys are never sent to another node. The coordinator issues cluster-scoped certificates
+whose TLS public keys are cryptographically bound to trusted node identity fingerprints.
+
+WAN control and data channels use TLS 1.3. Stage-ring, expert, network-probe, worker-control,
+peer, token/result, and Swarm-managed llama.cpp RPC connections validate the cluster CA and
+expected durable peer identity. Long-lived coordinator requests also carry signed
+identity-bound authentication.
+Unknown, revoked, expired, wrongly certified, tampered, or plaintext remote peers are rejected
+before inference traffic is accepted. Loopback plaintext is available only as an explicit
+development/test transport. Certificates are replaceable without recreating the cluster;
+rotation policy is separate from the one-time pairing credential.
+
+To rotate a worker transport key without changing its durable cluster identity, create a fresh
+single-use pairing URI on the coordinator and rejoin with
+`swarm node join "<pairing-uri>" --rotate-transport-key`. The new key remains on that worker;
+only its public key and replacement certificate cross the network.
+
+This protects traffic in transit and blocks trivial network MITM attacks. It does **not** solve:
+
+- malicious participating workers returning incorrect computation;
+- Byzantine consensus or malicious-compute verification;
+- privacy from a trusted node that legitimately owns a model stage and sees its inputs;
+- anonymity or permissionless public compute.
+
+Use only nodes whose operators and software you trust for the model data assigned to them.
+
+## Planning and operation
+
+Planning modes are:
+
+| Mode | Objective |
+| --- | --- |
+| `speed` | Lowest predicted interactive latency; excludes negative-utility nodes |
+| `throughput` | Highest predicted aggregate service rate for concurrent requests |
+| `capacity` | Feasible collective memory, accepting latency tradeoffs explicitly |
+| `balanced` | Weighted speed, headroom, reliability, and useful participation |
+
+`swarm run --dry-run --explain-plan` reports model identity/size, architecture source, every
+engine compatibility result, selection reason, worker inclusion/exclusion, stage and model-byte
+ownership, device/memory estimates, topology, WAN boundaries, communication estimates with
+provenance, and whether a required distributed plan was actually achieved.
+
+Useful commands:
+
+```text
+swarm cluster status
+swarm node status
+swarm node doctor
+swarm run ... --dry-run --explain-plan
+swarm update
+```
+
+Use `--json` for one final machine document and `--ndjson` for progress/token streams. Pairing
+secrets and prompts are excluded from status and normal machine output.
+
+## Pre-physical acceptance
+
+From a development checkout, run the software-only gate immediately before using real hosts:
+
+```powershell
+uv run python scripts/run_pre_physical_acceptance.py
+```
+
+It validates model/engine preflight, Qwen3 MoE staging, registry preservation, architecture
+boundaries, no silent fallback, WAN-aware planning, network telemetry, secure control/data
+paths, README commands, and wheel installation. It reports real hardware and network gates as
+`NOT_RUN`; it never promotes loopback or fixture results to physical evidence.
+
+Normal repository validation also includes:
+
+```powershell
+uv run ruff format src tests
+uv run ruff check src tests
+uv run mypy
+uv run pytest tests/unit
+uv run pytest tests/integration
+uv run pytest tests/failure
+```
+
+## Current limitations
+
+- This is experimental software; physical heterogeneous and WAN performance validation is still
+  operator work.
+- The coordinator is a control-plane/token-commit dependency and is not highly available.
+- Recovery is verified restart-and-replay for greedy decoding; live KV migration is not
+  implemented.
+- Fine-grained expert/microshard execution is restricted to suitable topology domains and exact
+  model/quantization identity.
+- Native Qwen3 MoE currently supports the Transformers `qwen3_moe` representation, not the newer
+  Qwen3.5/Qwen3.6 hybrid architecture.
+- llama.cpp compatibility is limited to loader/features proven by the installed pinned build.
+- No claim is made that adding nodes improves latency, or that Swarm outperforms centralized
+  inference for every model/topology.
+
+Further detail: [architecture](docs/architecture.md), [security boundary](docs/security-boundary.md),
+[model artifacts](docs/model-artifacts.md), [recovery](docs/recovery.md),
+[platform support](docs/platform-support.md), and
+[physical two-machine acceptance](docs/physical-two-machine-acceptance.md).

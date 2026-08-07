@@ -13,7 +13,7 @@ from swarm_inference.backends.colibri.runtime_manifest import (
 from swarm_inference.cluster.artifacts import ArtifactManager
 from swarm_inference.engines.colibri import ColibriExecutionEngine, LocalColibriLifecycle
 from swarm_inference.engines.installed import discover_installed_engine_manifests
-from swarm_inference.engines.interfaces import ExecutionPlan
+from swarm_inference.engines.interfaces import ExecutionEngine, ExecutionPlan
 from swarm_inference.engines.llamacpp_rpc import (
     LlamaCppRpcEngine,
     LocalLlamaCppLifecycle,
@@ -21,6 +21,7 @@ from swarm_inference.engines.llamacpp_rpc import (
 )
 from swarm_inference.host import split_endpoint
 from swarm_inference.runtime.engine_processes import EngineProcessManager
+from swarm_inference.security.tls import TlsClientConfig, TlsServerConfig
 from swarm_inference.worker.engine_runtime import PersistentEngineRuntime
 
 
@@ -80,10 +81,12 @@ def build_worker_engine_runtime(
     artifact_manager: ArtifactManager | None,
     llamacpp_runtime_manifest: str | Path | None,
     colibri_runtime_manifest: str | Path | None,
+    llamacpp_tls_server: TlsServerConfig | None = None,
+    llamacpp_tls_client: TlsClientConfig | None = None,
 ) -> PersistentEngineRuntime | None:
     """Instantiate only hash-checked engines explicitly installed on this worker."""
 
-    engines = []
+    engines: list[ExecutionEngine] = []
     bind_host, _ = split_endpoint(advertised_endpoint)
     manifests = discover_installed_engine_manifests(
         llamacpp=(
@@ -98,9 +101,7 @@ def build_worker_engine_runtime(
         ),
     )
     if manifests.llamacpp is not None:
-        manifest = load_llamacpp_runtime_manifest(
-            manifests.llamacpp
-        )
+        manifest = load_llamacpp_runtime_manifest(manifests.llamacpp)
         processes = EngineProcessManager(identity_directory / "engine-logs" / "llamacpp")
         engines.append(
             LlamaCppRpcEngine(
@@ -109,15 +110,15 @@ def build_worker_engine_runtime(
                     processes=processes,
                     worker_id=worker_id,
                     bind_host=bind_host,
+                    tls_server=llamacpp_tls_server,
+                    tls_client=llamacpp_tls_client,
                 )
             )
         )
     if manifests.colibri is not None:
         manifest_path = manifests.colibri
         engines.append(
-            ColibriExecutionEngine(
-                lifecycle=LocalColibriLifecycle(_colibri_factory(manifest_path))
-            )
+            ColibriExecutionEngine(lifecycle=LocalColibriLifecycle(_colibri_factory(manifest_path)))
         )
     if not engines:
         return None

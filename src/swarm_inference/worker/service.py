@@ -22,6 +22,13 @@ from swarm_inference.runtime.shutdown import (
 from swarm_inference.runtime.telemetry import lifecycle_observer
 from swarm_inference.security.identity import WorkerIdentity
 from swarm_inference.security.signatures import canonical_json_bytes
+from swarm_inference.security.tls import (
+    COORDINATOR_TLS_NAME,
+    WORKER_TLS_NAME,
+    TlsCertificatePaths,
+    TlsClientConfig,
+    TlsServerConfig,
+)
 from swarm_inference.transport.stage_tensor import unpack_tensor
 from swarm_inference.worker.agent import WorkerAgent
 from swarm_inference.worker.capabilities import (
@@ -89,9 +96,49 @@ async def run_worker(
     validation_detail: str = "no retained validation evidence",
     llamacpp_runtime_manifest: str | Path | None = None,
     colibri_runtime_manifest: str | Path | None = None,
+    tls_certificate_path: str | Path | None = None,
+    tls_private_key_path: str | Path | None = None,
+    tls_ca_certificate_path: str | Path | None = None,
 ) -> None:
     from swarm_inference.engines.installed import discover_installed_engine_manifests
 
+    tls_values = (
+        tls_certificate_path,
+        tls_private_key_path,
+        tls_ca_certificate_path,
+    )
+    if any(value is not None for value in tls_values) and not all(
+        value is not None for value in tls_values
+    ):
+        raise ValueError("worker TLS certificate, private key, and CA must be configured together")
+    tls_material = (
+        TlsCertificatePaths(
+            certificate=Path(tls_certificate_path).expanduser().resolve(),
+            private_key=Path(tls_private_key_path).expanduser().resolve(),
+            ca_certificate=Path(tls_ca_certificate_path).expanduser().resolve(),
+        )
+        if tls_certificate_path is not None
+        and tls_private_key_path is not None
+        and tls_ca_certificate_path is not None
+        else None
+    )
+    if tls_material is not None:
+        tls_material.verify_files()
+    coordinator_tls = (
+        TlsClientConfig(
+            material=tls_material,
+            expected_server_name=COORDINATOR_TLS_NAME,
+            expected_peer_fingerprint=trusted_coordinator_fingerprint,
+        )
+        if tls_material is not None
+        else None
+    )
+    peer_tls = (
+        TlsClientConfig(material=tls_material, expected_server_name=WORKER_TLS_NAME)
+        if tls_material is not None
+        else None
+    )
+    server_tls = TlsServerConfig(material=tls_material) if tls_material is not None else None
     installed_engines = discover_installed_engine_manifests(
         llamacpp=(
             Path(llamacpp_runtime_manifest).expanduser().resolve()
@@ -225,8 +272,10 @@ async def run_worker(
         reconnect_attempts=reconnect_attempts,
         reconnect_initial_backoff_ms=reconnect_initial_backoff_ms,
         reconnect_max_backoff_ms=reconnect_max_backoff_ms,
+        peer_tls=peer_tls,
+        coordinator_tls=coordinator_tls,
     )
-    client = CoordinatorClient(coordinator_endpoint)
+    client = CoordinatorClient(coordinator_endpoint, tls=coordinator_tls)
     expert_runtime = None
     expert_server = None
     if expert_roles:
@@ -302,7 +351,10 @@ async def run_worker(
         )
         expert_listen_host, expert_listen_port = split_endpoint(expert_data_listen_endpoint)
         expert_server = ExpertWorkerServer(
-            expert_runtime, host=expert_listen_host, port=expert_listen_port
+            expert_runtime,
+            host=expert_listen_host,
+            port=expert_listen_port,
+            tls=server_tls,
         )
         await expert_server.start()
         capability.expert_data_plane_endpoint = expert_data_advertised_endpoint
@@ -419,8 +471,7 @@ async def run_worker(
                 artifact_manager.release if artifact_manager is not None else None
             ),
             fast_path_profile_store=FastPathProfileStore(
-                Path(identity_path).expanduser().resolve().parent
-                / "fast-path-profiles.json"
+                Path(identity_path).expanduser().resolve().parent / "fast-path-profiles.json"
             ),
         )
     from swarm_inference.worker.engine_factory import build_worker_engine_runtime
@@ -432,6 +483,8 @@ async def run_worker(
         artifact_manager=artifact_manager,
         llamacpp_runtime_manifest=llamacpp_runtime_manifest,
         colibri_runtime_manifest=colibri_runtime_manifest,
+        llamacpp_tls_server=server_tls,
+        llamacpp_tls_client=peer_tls,
     )
     service = PersistentStageWorkerService(
         agent=agent,
@@ -441,6 +494,7 @@ async def run_worker(
         trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
         model_shard_root=str(model_shard_root) if model_shard_root else None,
         data_queue_capacity=stage_execution_queue_capacity,
+        tls_server_config=server_tls,
     )
     try:
         await service.start(

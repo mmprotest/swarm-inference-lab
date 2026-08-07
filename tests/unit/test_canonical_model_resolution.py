@@ -34,12 +34,8 @@ def test_model_source_accepts_every_public_reference_shape() -> None:
 
 def test_multipart_gguf_is_atomic_and_uses_a_user_facing_variant_id() -> None:
     files = (
-        ModelFileDescriptor(
-            relative_path="model-UD-Q4_K_M-00001-of-00002.gguf", size_bytes=10
-        ),
-        ModelFileDescriptor(
-            relative_path="model-UD-Q4_K_M-00002-of-00002.gguf", size_bytes=11
-        ),
+        ModelFileDescriptor(relative_path="model-UD-Q4_K_M-00001-of-00002.gguf", size_bytes=10),
+        ModelFileDescriptor(relative_path="model-UD-Q4_K_M-00002-of-00002.gguf", size_bytes=11),
         # This incomplete split must never become runnable.
         ModelFileDescriptor(relative_path="model-Q8_0-00001-of-00002.gguf", size_bytes=20),
     )
@@ -82,6 +78,7 @@ class _FakeHubApi:
             sha="a" * 40,
             siblings=siblings,
             config={"architectures": ["Qwen3MoeForCausalLM"]},
+            gguf={"architecture": "qwen3moe"},
         )
 
 
@@ -103,18 +100,54 @@ class _MixedNativeHubApi:
                 lfs={"size": 210, "sha256": "2" * 64},
                 blob_id="bin",
             ),
-            SimpleNamespace(
-                rfilename="config.json", size=20, lfs=None, blob_id="config"
-            ),
-            SimpleNamespace(
-                rfilename="tokenizer.json", size=30, lfs=None, blob_id="tokenizer"
-            ),
+            SimpleNamespace(rfilename="config.json", size=20, lfs=None, blob_id="config"),
+            SimpleNamespace(rfilename="tokenizer.json", size=30, lfs=None, blob_id="tokenizer"),
         ]
         return SimpleNamespace(
             sha="b" * 40,
             siblings=siblings,
             config={"architectures": ["Qwen3ForCausalLM"], "num_hidden_layers": 4},
         )
+
+
+class _NestedQwen36HubApi:
+    def model_info(self, model_id: str, *, revision: str | None, files_metadata: bool):
+        assert model_id == "org/qwen36-gguf"
+        assert revision is None
+        assert files_metadata
+        return SimpleNamespace(
+            sha="c" * 40,
+            siblings=[
+                SimpleNamespace(
+                    rfilename="Qwen3.6-UD-Q4_K_M.gguf",
+                    size=220,
+                    lfs=None,
+                    blob_id="qwen36-gguf",
+                )
+            ],
+            config={
+                "architectures": ["Qwen3_5MoeForConditionalGeneration"],
+                "model_type": "qwen3_5_moe",
+                "text_config": {
+                    "model_type": "qwen3_5_moe_text",
+                    "num_hidden_layers": 40,
+                    "hidden_size": 2048,
+                    "torch_dtype": "bfloat16",
+                },
+            },
+            gguf={"architecture": "qwen35moe"},
+        )
+
+
+def test_remote_qwen36_uses_exact_gguf_architecture_and_nested_text_facts() -> None:
+    descriptor = ModelSourceResolver(api=_NestedQwen36HubApi()).resolve("org/qwen36-gguf:UD-Q4_K_M")
+
+    assert descriptor.architecture == "qwen3_moe"
+    assert descriptor.architecture_raw == "qwen35moe"
+    assert descriptor.architecture_source == "gguf.general.architecture"
+    assert descriptor.layer_count == 40
+    assert descriptor.hidden_size == 2048
+    assert descriptor.activation_dtype_bytes == 2
 
 
 def test_native_resolution_prefers_safetensors_without_acquiring_duplicate_weights(
@@ -149,6 +182,9 @@ def test_hub_resolution_selects_and_downloads_only_one_complete_variant(
     assert descriptor.revision == "a" * 40
     assert descriptor.variant == "UD-Q4_K_M"
     assert descriptor.quantization == "UD-Q4_K_M"
+    assert descriptor.architecture == "qwen3_moe"
+    assert descriptor.architecture_raw == "qwen3moe"
+    assert descriptor.architecture_source == "gguf.general.architecture"
     assert descriptor.weight_bytes == 200
     assert len(descriptor.files) == 2
     assert not any(item.relative_path == "README.md" for item in descriptor.files)
