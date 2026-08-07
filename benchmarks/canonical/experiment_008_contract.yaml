@@ -1,0 +1,25 @@
+contract_version: 1
+source_experiment: "008"
+status: COMPLETED_MIXED
+evidence_bundle_identity: artifacts/runs/experiment-008-20260801T233500-sydney
+promoted_mechanisms:
+  - streaming_gguf_metadata_inspection
+  - tensor_inventory
+  - cpu_gpu_storage_capacity_measurement
+  - critical_path_cost_model
+  - phase_specific_planning
+  - bounded_candidate_search
+  - cache_budget_model
+  - prefetch_model
+  - positive_utility_admission
+rejected_mechanisms:
+  - aggressive_paging_default
+  - blind_prefetch
+  - adaptive_cache_policy_default
+  - failed_exact_mixed_service_configuration
+reference_models: [over-vram-gguf]
+reference_hardware_class: asymmetric-cpu-gpu-storage
+correctness_gates: [exact_mixed_service_output]
+performance_gates: [adaptive_candidate_must_beat_matched_stock]
+planner_gates: [separate_prefill_decode_facts, all_optional_mechanisms_rejectable]
+required_telemetry: [tier_residency, bytes_moved, stalls, useful_prefetch_bytes, wasted_prefetch_bytes]

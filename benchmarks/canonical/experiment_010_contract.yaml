@@ -1,0 +1,28 @@
+contract_version: 1
+source_experiment: "010"
+status: COMPLETED_ALL_17_GATES
+evidence_bundle_identity: artifacts/runs/20260802T054926Z-3e41e54f-experiment-010
+promoted_mechanisms:
+  - whole_expert_remote_execution
+  - native_expert_microshards
+  - hybrid_local_remote_experts
+  - direct_tcp_expert_data_plane
+  - coalesced_expert_protocol
+  - capacity_isolation
+  - exact_fixed_order_reduction
+  - remote_result_consumption
+  - restart_and_replay
+  - incorrect_result_detection
+  - worker_quarantine
+  - expert_cache_budgets
+  - positive_utility_expert_planning
+  - calibrated_topology_simulator
+rejected_mechanisms:
+  - global_per_expert_rpc_graph
+  - distributed_speed_when_local_is_faster
+reference_models: [allenai/OLMoE-1B-7B-0125-Instruct, over-vram-moe-capacity-fixture]
+reference_hardware_class: physical-whole-expert-and-microshard-workers
+correctness_gates: [exact_tokens, no_forbidden_local_expert_load, no_silent_fallback, deterministic_reduction, corruption_detected]
+performance_gates: [capacity_path_feasible, local_speed_candidate_retained]
+planner_gates: [expert_distribution_inside_stage, capacity_isolation, hierarchical_planning]
+required_telemetry: [expert_assignments, microshard_assignments, remote_calls, reduction_mode, quarantine, recovery]

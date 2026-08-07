@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json;
 
 namespace SwarmBootstrap;
@@ -411,6 +412,7 @@ internal sealed class RuntimeInstaller
             environment,
             "embedded application wheel installation",
             cancellationToken).ConfigureAwait(false);
+        InstallLlamaCppRuntime(manifest, backend, staging);
         return await ValidateRuntimeAsync(
                 manifest,
                 backend,
@@ -419,6 +421,156 @@ internal sealed class RuntimeInstaller
                 environment,
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private void InstallLlamaCppRuntime(
+        ReleaseManifest manifest,
+        BackendProfile backend,
+        string staging)
+    {
+        LlamaCppRuntimeProfile profile = backend == BackendProfile.Cuda
+            ? manifest.EngineRuntimes.LlamaCpp.Profiles.Cuda
+            : manifest.EngineRuntimes.LlamaCpp.Profiles.Cpu;
+        string runtimeRoot = Path.Combine(staging, "engines", "llamacpp");
+        if (Directory.Exists(runtimeRoot))
+        {
+            throw new ManifestException("llama.cpp runtime destination already exists");
+        }
+
+        Directory.CreateDirectory(runtimeRoot);
+        HashSet<string> extractedFiles = new(StringComparer.OrdinalIgnoreCase);
+        long totalExtractedBytes = 0;
+        foreach (FileAsset archive in profile.Archives)
+        {
+            string archivePath = Path.Combine(_payloadDirectory, archive.Filename);
+            HashVerifier.Verify(archivePath, archive);
+            ExtractEngineArchive(
+                archivePath,
+                runtimeRoot,
+                extractedFiles,
+                ref totalExtractedBytes);
+        }
+
+        InstalledLlamaCppRuntimeManifest installed = new()
+        {
+            Commit = manifest.EngineRuntimes.LlamaCpp.RuntimeRevision,
+            BuildId = manifest.EngineRuntimes.LlamaCpp.ReleaseTag,
+            Platform = profile.Platform,
+            ServerBinary = profile.ServerBinary,
+            ServerSha256 = profile.ServerSha256,
+            RpcServerBinary = profile.RpcServerBinary,
+            RpcServerSha256 = profile.RpcServerSha256,
+            BuildFlags = profile.BuildFlags,
+            DeviceSupport = profile.DeviceSupport,
+        };
+        string runtimeManifest = Path.Combine(runtimeRoot, "runtime-manifest.json");
+        AtomicFile.WriteAllBytes(
+            runtimeManifest,
+            JsonSerializer.SerializeToUtf8Bytes(installed, JsonDefaults.Strict));
+        VerifyInstalledLlamaCppRuntime(runtimeRoot, installed);
+        _logger.Info(
+            $"installed pinned llama.cpp {installed.BuildId} ({backend.ToString().ToLowerInvariant()}) "
+            + $"from {profile.Archives.Count} verified archive(s)");
+    }
+
+    internal static void ExtractEngineArchive(
+        string archivePath,
+        string destinationRoot,
+        HashSet<string> extractedFiles,
+        ref long totalExtractedBytes)
+    {
+        const long MaximumExtractedBytes = 2L * 1024 * 1024 * 1024;
+        string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(destinationRoot));
+        string rootPrefix = root + Path.DirectorySeparatorChar;
+        using ZipArchive archive = ZipFile.OpenRead(archivePath);
+        foreach (ZipArchiveEntry entry in archive.Entries)
+        {
+            string relative = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
+            bool directory = entry.FullName.EndsWith("/", StringComparison.Ordinal)
+                || entry.FullName.EndsWith('\\');
+            int unixFileType = (entry.ExternalAttributes >> 16) & 0xF000;
+            bool reparsePoint = (entry.ExternalAttributes & (int)FileAttributes.ReparsePoint) != 0;
+            if (string.IsNullOrWhiteSpace(relative)
+                || Path.IsPathRooted(relative)
+                || relative.Contains(':')
+                || unixFileType == 0xA000
+                || reparsePoint)
+            {
+                throw new ManifestException(
+                    $"llama.cpp archive contains an unsafe member: {entry.FullName}");
+            }
+
+            string target = Path.GetFullPath(Path.Combine(root, relative));
+            if (!target.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ManifestException(
+                    $"llama.cpp archive member escapes the runtime root: {entry.FullName}");
+            }
+
+            if (directory)
+            {
+                if (File.Exists(target))
+                {
+                    throw new ManifestException(
+                        $"llama.cpp archive directory collides with a file: {entry.FullName}");
+                }
+                Directory.CreateDirectory(target);
+                continue;
+            }
+
+            string normalized = Path.GetRelativePath(root, target);
+            if (normalized.Equals("runtime-manifest.json", StringComparison.OrdinalIgnoreCase)
+                || !extractedFiles.Add(normalized)
+                || File.Exists(target)
+                || Directory.Exists(target))
+            {
+                throw new ManifestException(
+                    $"llama.cpp archives contain a duplicate or reserved member: {entry.FullName}");
+            }
+
+            checked
+            {
+                totalExtractedBytes += entry.Length;
+            }
+            if (entry.Length < 0 || totalExtractedBytes > MaximumExtractedBytes)
+            {
+                throw new ManifestException("llama.cpp runtime exceeds the extraction size limit");
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            using Stream input = entry.Open();
+            using FileStream output = new(target, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            input.CopyTo(output);
+        }
+    }
+
+    private static void VerifyInstalledLlamaCppRuntime(
+        string runtimeRoot,
+        InstalledLlamaCppRuntimeManifest manifest)
+    {
+        foreach ((string binary, string expected) in new[]
+                 {
+                     (manifest.ServerBinary, manifest.ServerSha256),
+                     (manifest.RpcServerBinary, manifest.RpcServerSha256),
+                 })
+        {
+            if (Path.GetFileName(binary) != binary
+                || binary.Contains('/')
+                || binary.Contains('\\'))
+            {
+                throw new ManifestException("llama.cpp runtime manifest contains an unsafe binary path");
+            }
+            string path = Path.Combine(runtimeRoot, binary);
+            if (!File.Exists(path)
+                || !string.Equals(
+                    HashVerifier.ComputeSha256(path),
+                    expected,
+                    StringComparison.Ordinal))
+            {
+                throw new HashMismatchException(
+                    $"installed llama.cpp binary hash mismatch: {binary}");
+            }
+        }
     }
 
     private async Task<CandidateRuntime> RebindPublishedRuntimeAsync(
@@ -633,6 +785,8 @@ internal sealed class RuntimeInstaller
             manifest.Wheel,
             manifest.RuntimeProfiles.Cpu,
             manifest.RuntimeProfiles.Cuda,
+            .. manifest.EngineRuntimes.LlamaCpp.Profiles.Cpu.Archives,
+            .. manifest.EngineRuntimes.LlamaCpp.Profiles.Cuda.Archives,
             manifest.Bootstrapper,
             .. manifest.Payload,
         ];

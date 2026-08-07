@@ -41,19 +41,46 @@ def _safe_stream_event(event: SubmitStreamEvent) -> dict[str, object]:
 
 
 def run_command(
-    model: Annotated[str, typer.Argument(help="OLMoE model ID or verified local snapshot.")],
-    revision: Annotated[
+    model: Annotated[
         str,
-        typer.Option(help="Mandatory immutable 40- or 64-character model revision."),
-    ],
-    tokenizer_revision: Annotated[
-        str,
-        typer.Option(help="Immutable tokenizer commit or sha256:<digest> tokenizer identity."),
+        typer.Argument(help="Hugging Face model ID/URL or local model path."),
     ],
     prompt: Annotated[str, typer.Option(help="Prompt; never included in status or logs.")],
+    revision: Annotated[
+        str | None,
+        typer.Option(help="Advanced revision override; mutable references are pinned automatically."),
+    ] = None,
+    tokenizer_revision: Annotated[
+        str | None,
+        typer.Option(help="Advanced immutable tokenizer identity override."),
+    ] = None,
+    variant: Annotated[
+        str | None,
+        typer.Option(help="Advanced model-file variant override."),
+    ] = None,
+    quantization: Annotated[
+        str | None,
+        typer.Option("--quant", help="Advanced quantization override."),
+    ] = None,
+    engine: Annotated[
+        str | None,
+        typer.Option(help="Force one registered engine; unsupported engines fail closed."),
+    ] = None,
+    require_distributed: Annotated[
+        bool,
+        typer.Option(help="Require real required computation on at least two physical hosts."),
+    ] = False,
+    concurrency: Annotated[
+        int,
+        typer.Option(min=1, max=4096, help="Expected concurrent request count."),
+    ] = 1,
+    context_tokens: Annotated[
+        int,
+        typer.Option(min=1, help="Required context capacity for variant and topology planning."),
+    ] = 2048,
     mode: Annotated[
         str,
-        typer.Option(help="Planning objective: speed, capacity, or balanced."),
+        typer.Option(help="Planning objective: speed, throughput, capacity, or balanced."),
     ] = "speed",
     dry_run: Annotated[
         bool,
@@ -100,9 +127,9 @@ def run_command(
 
     if json_output and ndjson:
         fail("arguments", ValueError("--json and --ndjson are mutually exclusive"))
-    if mode not in {"speed", "capacity", "balanced"}:
-        fail("arguments", ValueError("mode must be speed, capacity, or balanced"))
-    objective = cast(Literal["speed", "capacity", "balanced"], mode)
+    if mode not in {"speed", "throughput", "capacity", "balanced"}:
+        fail("arguments", ValueError("mode must be speed, throughput, capacity, or balanced"))
+    objective = cast(Literal["speed", "throughput", "capacity", "balanced"], mode)
 
     def progress(item: RunProgress) -> None:
         if ndjson:
@@ -128,6 +155,12 @@ def run_command(
                 model_id=model,
                 model_revision=revision,
                 tokenizer_revision=tokenizer_revision,
+                variant=variant,
+                quantization=quantization,
+                requested_engine=engine,
+                require_distributed=require_distributed,
+                concurrency=concurrency,
+                max_context_tokens=context_tokens,
                 prompt=prompt,
                 mode=objective,
                 dry_run=dry_run,
@@ -146,14 +179,26 @@ def run_command(
         plan = cast(dict[str, object], payload["plan"])
         plan.pop("report", None)
     if not json_output and not ndjson:
+        plan_topology = getattr(
+            summary.plan,
+            "topology_id",
+            getattr(summary.plan, "topology", "unavailable"),
+        )
         typer.echo()
         typer.echo(
             f"run={summary.run_id} status={summary.status} "
-            f"topology={summary.topology_id or summary.plan.topology_id}"
+            f"topology={summary.topology_id or plan_topology}"
         )
         typer.echo(f"token_ids={json.dumps(summary.output_token_ids)}")
         if explain_plan:
-            typer.echo(summary.plan.report.model_dump_json(indent=2))
+            decision = getattr(summary, "canonical_decision", None)
+            report = getattr(summary.plan, "report", None)
+            if decision is not None:
+                typer.echo(decision.model_dump_json(indent=2))
+            elif report is not None:
+                typer.echo(report.model_dump_json(indent=2))
+            else:
+                typer.echo(summary.plan.model_dump_json(indent=2))
         return
     emit_document(payload, json_output=json_output, ndjson=ndjson)
 

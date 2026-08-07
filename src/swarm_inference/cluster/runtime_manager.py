@@ -30,6 +30,7 @@ from swarm_inference.config.product import ProductCoordinatorConfig
 from swarm_inference.coordinator.deployment import TransportArtifactCoordinator
 from swarm_inference.coordinator.runtime import CoordinatorRuntime
 from swarm_inference.coordinator.service import CoordinatorCore
+from swarm_inference.engines.installed import discover_installed_engine_manifests
 from swarm_inference.exceptions import BackendIncompatibleError, ConfigurationError
 from swarm_inference.host import format_endpoint, is_loopback_host, is_wildcard_host, split_endpoint
 from swarm_inference.platforms.base import BackendProbeResult, PlatformAdapter
@@ -578,6 +579,7 @@ class RuntimeManager:
             if scoped_records
             else "no retained validation evidence for the selected platform/backend scope"
         )
+        engine_manifests = discover_installed_engine_manifests()
         return WorkerRuntime(
             config=WorkerRuntimeConfig(
                 coordinator_endpoint=configuration.coordinator_endpoint,
@@ -604,6 +606,8 @@ class RuntimeManager:
                 validation_evidence_ids=evidence_ids,
                 latest_validation_unix_ns=max(timestamps) if timestamps else None,
                 validation_detail=validation_detail,
+                llamacpp_runtime_manifest=engine_manifests.llamacpp,
+                colibri_runtime_manifest=engine_manifests.colibri,
             ),
             artifact_manager=self.artifact_manager,
         )

@@ -15,6 +15,17 @@ from swarm_inference.config.models import StrictModel
 from swarm_inference.model.partition import LayerCost, ModelPartitionMetadata
 
 
+def _legacy_default_adapter_id() -> str:
+    """Backward-read product v1 references that predate adapter discovery."""
+
+    from swarm_inference.model.adapter import default_native_adapter_registry
+
+    adapters = default_native_adapter_registry().adapters()
+    if not adapters:
+        raise RuntimeError("native adapter registry is empty")
+    return adapters[0].adapter_id
+
+
 class ModelResolutionPolicy(StrEnum):
     LOCAL_ONLY = "local-only"
     ALLOW_DOWNLOAD = "allow-download"
@@ -28,8 +39,11 @@ class ProductModelReference(StrictModel):
     model_id: str = Field(min_length=1)
     model_revision: str = Field(min_length=1)
     tokenizer_revision: str = Field(min_length=1)
-    adapter_id: str = Field(default="olmoe", min_length=1)
+    adapter_id: str = Field(default_factory=_legacy_default_adapter_id, min_length=1)
     dtype: str = Field(default="bfloat16", min_length=1)
+    model_fingerprint: str = ""
+    model_format: str = "safetensors"
+    quantization: str | None = None
     resolution_policy: ModelResolutionPolicy = ModelResolutionPolicy.LOCAL_ONLY
 
 
@@ -111,6 +125,10 @@ class ProductModelSpec(StrictModel):
     layer_count: PositiveInt
     hidden_size: PositiveInt
     metadata_hash: str = Field(min_length=1)
+    model_fingerprint: str = ""
+    model_format: str = "safetensors"
+    quantization: str | None = None
+    quantization_fingerprint: str = ""
     resolution_policy: ModelResolutionPolicy
 
     @classmethod
@@ -128,6 +146,12 @@ class ProductModelSpec(StrictModel):
             layer_count=len(metadata.layer_costs),
             hidden_size=metadata.hidden_size,
             metadata_hash=metadata.metadata_hash,
+            model_fingerprint=(
+                reference.model_fingerprint or metadata.model_fingerprint
+            ),
+            model_format=reference.model_format,
+            quantization=reference.quantization,
+            quantization_fingerprint=metadata.quantization_fingerprint,
             resolution_policy=reference.resolution_policy,
         )
 

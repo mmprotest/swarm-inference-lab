@@ -64,6 +64,10 @@ class PlanWorkerAssignment(StrictModel):
     effective_memory_bytes: int = Field(gt=0)
     required_memory_bytes: int = Field(gt=0)
     assignment: StageAssignment
+    fast_path_id: str | None = None
+    fast_path_mode: str = "auto"
+    fast_path_profile_fingerprint: str | None = None
+    worker_role: str = "critical_path_stage"
     artifact_id: str | None = None
     artifact_manifest: ArtifactManifest | None = None
 
@@ -124,7 +128,7 @@ class PlanCandidateReport(StrictModel):
     expected_critical_path_waits_ms: dict[str, float] = Field(default_factory=dict)
     expected_critical_path_ms: float | None = Field(default=None, ge=0)
     expected_utility_tokens_s: float | None = Field(default=None, ge=0)
-    objective_mode: Literal["speed", "capacity", "balanced"] = "speed"
+    objective_mode: Literal["speed", "throughput", "capacity", "balanced"] = "speed"
     objective_score: float | None = None
     local_baseline_throughput_tokens_s: float | None = Field(default=None, ge=0)
     distributed_expected_throughput_tokens_s: float | None = Field(default=None, ge=0)
@@ -151,7 +155,7 @@ class StagePlanReport(StrictModel):
     reason_for_selection: str
     candidates: list[PlanCandidateReport]
     worker_eligibility: list[WorkerEligibilityReport]
-    objective_mode: Literal["speed", "capacity", "balanced"] = "speed"
+    objective_mode: Literal["speed", "throughput", "capacity", "balanced"] = "speed"
     local_baseline_throughput_tokens_s: float | None = Field(default=None, ge=0)
     distributed_expected_throughput_tokens_s: float | None = Field(default=None, ge=0)
     throughput_delta_tokens_s: float | None = None
@@ -279,6 +283,8 @@ class ProductStagePlan(StrictModel):
     generation: PositiveInt = 1
     created_monotonic_ns: PositiveInt
     model: ProductModelSpec
+    engine_id: str = "native-stage"
+    engine_revision: str | None = None
     stage_count: PositiveInt
     partition_method: Literal["equal", "balanced"]
     max_sequence_tokens: PositiveInt
@@ -286,6 +292,10 @@ class ProductStagePlan(StrictModel):
     expert_plans: list[ProductStageExpertPlan] = Field(default_factory=list)
     expert_model_fingerprint: str = ""
     expert_quantization_fingerprint: str = ""
+    optional_mechanisms: dict[str, bool] = Field(default_factory=dict)
+    prefill_parameters: dict[str, Any] = Field(default_factory=dict)
+    decode_parameters: dict[str, Any] = Field(default_factory=dict)
+    idle_workers: dict[str, str] = Field(default_factory=dict)
     report: StagePlanReport
 
     @model_validator(mode="after")
@@ -333,7 +343,7 @@ class ModelPlanRequest(StrictModel):
     reference: ProductModelReference
     stage_count: int | None = Field(default=None, ge=1, le=128)
     partition_method: Literal["auto", "equal", "balanced"] = "auto"
-    mode: Literal["speed", "capacity", "balanced"] = "speed"
+    mode: Literal["speed", "throughput", "capacity", "balanced"] = "speed"
     require_distributed: bool = False
     required_node_ids: list[str] = Field(default_factory=list)
     excluded_node_ids: list[str] = Field(default_factory=list)

@@ -1,0 +1,24 @@
+contract_version: 1
+source_experiment: "009"
+status: PASS_STRONG
+evidence_bundle_identity: artifacts/runs/20260802T013951Z-confirmed-experiment-009
+promoted_mechanisms:
+  - colibri_execution_engine
+  - native_quantization_metadata
+  - expert_bank
+  - route_traces
+  - tier_residency
+  - cache_events
+  - usage_history
+  - resource_plan_translation
+  - routing_aware_placement
+rejected_mechanisms:
+  - rejected_prefetch_variants
+  - infer_cuda_from_backend_presence
+  - infer_microshards_from_backend_presence
+reference_models: [allenai/OLMoE-1B-7B-0125-Instruct]
+reference_hardware_class: pinned-windows-colibri-build
+correctness_gates: [exact_tokens, exact_router_selection, exact_router_weights]
+performance_gates: [adapter_overhead_budget, routing_aware_candidate_evaluated]
+planner_gates: [physical_capability_probe_required, rejected_prefetch_disabled]
+required_telemetry: [residency, cache, storage, route_trace, placement_policy]

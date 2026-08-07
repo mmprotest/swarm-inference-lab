@@ -32,9 +32,13 @@ tensor operation passes. If an automatic CUDA candidate fails, setup discards it
 locked CPU profile. `/BACKEND=cuda` is strict and fails instead of falling back;
 `/BACKEND=cpu` is the troubleshooting and CPU-acceptance override.
 
-The online installer downloads only artifacts named and hashed by its release-generated lock.
-The Swarm application wheel, pinned `uv.exe`, bootstrapper, profiles, and release manifest are
-inside setup and verified before use.
+The release builder acquires only the exact llama.cpp archives and tools pinned by URL, size,
+and digest in `installer/windows/toolchain.json`. The setup embeds those archives together with
+the Swarm application wheel, pinned `uv.exe`, bootstrapper, profiles, and release manifest.
+During installation, the selected CPU or CUDA llama.cpp profile is safely extracted under the
+transactional application runtime and its `llama-server.exe` and `rpc-server.exe` hashes are
+reverified. Swarm never discovers a general engine from `PATH`, and users do not launch RPC
+processes manually.
 
 ## Files and state
 

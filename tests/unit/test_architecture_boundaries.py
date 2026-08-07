@@ -77,6 +77,62 @@ def test_core_packages_do_not_gain_experiment_dependencies() -> None:
     assert not stale, f"remove resolved imports from the temporary allowlist: {sorted(stale)}"
 
 
+def test_all_production_modules_import_zero_experiment_packages() -> None:
+    violations: list[tuple[str, str]] = []
+    package_root = SOURCE_ROOT / "swarm_inference"
+    for path in package_root.rglob("*.py"):
+        if "experiments" in path.relative_to(package_root).parts:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            modules: list[str] = []
+            if isinstance(node, ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                modules.append(_resolve_from_import(path, node))
+            for module in modules:
+                if module == "swarm_inference.experiments" or module.startswith(
+                    "swarm_inference.experiments."
+                ):
+                    violations.append(
+                        (path.relative_to(SOURCE_ROOT).as_posix(), module)
+                    )
+    assert not violations, f"production modules import experiments: {violations}"
+
+
+def test_generic_runtime_has_no_model_specific_orchestration_coupling() -> None:
+    generic_files = (
+        "cluster/models.py",
+        "cluster/artifacts.py",
+        "cluster/orchestrator.py",
+        "config/product.py",
+        "worker/stage_runtime.py",
+        "worker/capabilities.py",
+        "coordinator/stage_planner.py",
+        "coordinator/expert_planner.py",
+        "coordinator/canonical_planner.py",
+        "engines/registry.py",
+        "engines/native_stage.py",
+        "commands/run.py",
+        "cli.py",
+    )
+    forbidden = (
+        'Literal["olmoe"]',
+        'adapter_id="olmoe"',
+        "_load_olmoe",
+        'model_type == "olmoe"',
+        "ContiguousOlmoeStage",
+    )
+    violations: list[tuple[str, str]] = []
+    package_root = SOURCE_ROOT / "swarm_inference"
+    for relative in generic_files:
+        source = (package_root / relative).read_text(encoding="utf-8")
+        for marker in forbidden:
+            if marker in source:
+                violations.append((relative, marker))
+    assert not violations, f"generic runtime contains model-specific coupling: {violations}"
+
+
 def test_product_commands_do_not_import_or_name_experiment_011_controller() -> None:
     product_sources = [
         SOURCE_ROOT / "swarm_inference" / "cli.py",

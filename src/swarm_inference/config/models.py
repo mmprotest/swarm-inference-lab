@@ -63,9 +63,14 @@ class Backend(StrEnum):
 
 class WorkerRole(StrEnum):
     CONTIGUOUS_STAGE = "contiguous-stage"
+    CRITICAL_PATH_STAGE = "critical_path_stage"
     WHOLE_EXPERT = "whole-expert"
     EXPERT_MICROSHARD = "expert-microshard"
     REDUCER = "reducer"
+    BACKGROUND_REPLICA = "background_replica"
+    VERIFICATION = "verification"
+    STORAGE_CACHE = "storage_cache"
+    IDLE = "idle"
 
 
 class WorkloadClass(StrEnum):
@@ -248,6 +253,7 @@ class WorkerCapability(StrictModel):
     stage_ring_protocol_version: PositiveInt | None = None
     supported_model_adapters: list[str] = Field(default_factory=list)
     supported_stage_execution_backends: list[str] = Field(default_factory=list)
+    execution_engines: list[dict[str, Any]] = Field(default_factory=list)
     supported_activation_dtypes: list[str] = Field(default_factory=list)
     configured_memory_limit_bytes: PositiveInt | None = None
     currently_loaded_model_revisions: list[str] = Field(default_factory=list)

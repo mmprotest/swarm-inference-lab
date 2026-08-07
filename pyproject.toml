@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "swarm-inference-lab"
 version = "0.1.0rc11"
-description = "A self-configuring cross-platform cluster runtime for heterogeneous OLMoE inference"
+description = "A self-configuring cross-platform runtime for heterogeneous model inference"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "Apache-2.0" }
@@ -51,6 +51,13 @@ dev = [
 
 [project.scripts]
 swarm = "swarm_inference.cli:app"
+
+[project.entry-points."swarm_inference.research"]
+builtin = "swarm_inference.experiments.cli_exports:get_export"
+
+[project.entry-points."swarm_inference.native_adapters"]
+olmoe = "swarm_inference.model.olmoe_adapter:OlmoeAdapter"
+qwen3_dense = "swarm_inference.model.qwen3:Qwen3Adapter"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/swarm_inference"]

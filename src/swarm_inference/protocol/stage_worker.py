@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hmac
 import time
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
 
@@ -180,6 +180,23 @@ class LoadStageRequest(_StageControlModel):
     route_generation: NonNegativeInt = 0
     stage_count: PositiveInt = 1
     assignment: StageAssignment
+    # ``None`` is retained only for backward-reading v1 control messages.  A
+    # v2 deployment always records the adapter selected by the native engine;
+    # workers can still discover it from immutable checkpoint metadata when
+    # replaying an older message.
+    adapter_id: str | None = None
+    fast_path_id: str | None = None
+    fast_path_mode: str = "auto"
+    fast_path_profile_fingerprint: str | None = None
+    # Optional only for backward-reading stage-control messages emitted before
+    # artifact manifest v2. Canonical deployments always send the immutable
+    # descriptor fingerprint.
+    model_content_fingerprint: str | None = None
+    model_format: str = "safetensors"
+    quantization: str | None = None
+    fast_path_objective: Literal["speed", "throughput", "capacity", "balanced"] = "speed"
+    fast_path_batch_bucket: PositiveInt = 1
+    fast_path_context_bucket: PositiveInt = 2048
     device: str
     dtype: str
     artifact_id: str | None = None

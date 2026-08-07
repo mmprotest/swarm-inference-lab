@@ -26,5 +26,63 @@
     "compiler_sha256": "sha256:0ff6140d641f84b64204a2c4d52207c6fc437c9f4db8779c83083d84f7e3d70d",
     "publisher_subject": "CN=Pyrsys B.V., O=Pyrsys B.V., S=Noord-Holland, C=NL",
     "publisher_thumbprint": "E0AB19C8D38CBF9C44709925122A7A02F8C70CB7"
+  },
+  "llamacpp": {
+    "repository": "ggml-org/llama.cpp",
+    "release_tag": "b9637",
+    "runtime_revision": "aedb2a5e9ca3d4064148bbb919e0ddc0c1b70ab3",
+    "profiles": {
+      "windows-x64-cpu": {
+        "platform": "windows-x64",
+        "archives": [
+          {
+            "filename": "llama-b9637-bin-win-cpu-x64.zip",
+            "url": "https://github.com/ggml-org/llama.cpp/releases/download/b9637/llama-b9637-bin-win-cpu-x64.zip",
+            "sha256": "sha256:f7783c2b8c007f95e710ac40f26a24861a80b603b0b739fc54d7c926a4716c1e",
+            "size_bytes": 16906751
+          }
+        ],
+        "server_binary": "llama-server.exe",
+        "server_sha256": "sha256:06444801bb1dc38a848bb5a527728c4ea14ad2aa45ce7e81a29a5fb5d2560eaf",
+        "rpc_server_binary": "rpc-server.exe",
+        "rpc_server_sha256": "sha256:481cb34fb02863fb1a7b5dfeb61dc8be9e1c11f76fab711b8f0900dd29c52c04",
+        "build_flags": {
+          "GGML_CUDA": false,
+          "GGML_RPC": true
+        },
+        "device_support": [
+          "CPU"
+        ]
+      },
+      "windows-x64-cuda": {
+        "platform": "windows-x64",
+        "archives": [
+          {
+            "filename": "llama-b9637-bin-win-cuda-13.3-x64.zip",
+            "url": "https://github.com/ggml-org/llama.cpp/releases/download/b9637/llama-b9637-bin-win-cuda-13.3-x64.zip",
+            "sha256": "sha256:8667e76077b40db57fc680577c6d8b48b8aa3f58e34fc23a70bcc668a69c97e9",
+            "size_bytes": 159029255
+          },
+          {
+            "filename": "cudart-llama-bin-win-cuda-13.3-x64.zip",
+            "url": "https://github.com/ggml-org/llama.cpp/releases/download/b9637/cudart-llama-bin-win-cuda-13.3-x64.zip",
+            "sha256": "sha256:1462a050eb4c684921ba51dcc4cc488a036674c3e73e9945ee705b854808d03e",
+            "size_bytes": 390970417
+          }
+        ],
+        "server_binary": "llama-server.exe",
+        "server_sha256": "sha256:06444801bb1dc38a848bb5a527728c4ea14ad2aa45ce7e81a29a5fb5d2560eaf",
+        "rpc_server_binary": "rpc-server.exe",
+        "rpc_server_sha256": "sha256:481cb34fb02863fb1a7b5dfeb61dc8be9e1c11f76fab711b8f0900dd29c52c04",
+        "build_flags": {
+          "GGML_CUDA": true,
+          "GGML_RPC": true
+        },
+        "device_support": [
+          "CPU",
+          "CUDA"
+        ]
+      }
+    }
   }
 }

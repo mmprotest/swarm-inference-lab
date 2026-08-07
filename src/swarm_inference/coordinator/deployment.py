@@ -170,6 +170,7 @@ class TransportArtifactCoordinator:
             coordinator_identity=self.coordinator_id,
             coordinator_public_key=self.identity.public_key_b64,
             coordinator_fingerprint=self.identity.public_key_fingerprint,
+            signature="pending",
         )
         lease = sign_artifact_transfer_lease(unsigned, self.identity)
         self._leases[key] = lease
@@ -741,6 +742,18 @@ class DeploymentManager:
                         route_generation=plan.generation,
                         stage_count=plan.stage_count,
                         assignment=item.assignment,
+                        adapter_id=plan.model.adapter_id,
+                          fast_path_id=item.fast_path_id,
+                          fast_path_mode=item.fast_path_mode,
+                          fast_path_profile_fingerprint=item.fast_path_profile_fingerprint,
+                          model_content_fingerprint=(
+                              plan.model.model_fingerprint or None
+                          ),
+                          model_format=plan.model.model_format,
+                          quantization=plan.model.quantization,
+                          fast_path_objective=plan.report.objective_mode,
+                          fast_path_batch_bucket=1,
+                          fast_path_context_bucket=plan.max_sequence_tokens,
                         device=item.device,
                         dtype=plan.model.dtype,
                         artifact_id=item.artifact_id,
@@ -1130,6 +1143,24 @@ class DeploymentManager:
                                     route_generation=generation,
                                     stage_count=new_plan.stage_count,
                                     assignment=item.assignment,
+                                    adapter_id=new_plan.model.adapter_id,
+                                    fast_path_id=item.fast_path_id,
+                                    fast_path_mode=item.fast_path_mode,
+                                      fast_path_profile_fingerprint=(
+                                          item.fast_path_profile_fingerprint
+                                      ),
+                                      model_content_fingerprint=(
+                                          new_plan.model.model_fingerprint or None
+                                      ),
+                                      model_format=new_plan.model.model_format,
+                                      quantization=new_plan.model.quantization,
+                                      fast_path_objective=(
+                                          new_plan.report.objective_mode
+                                      ),
+                                      fast_path_batch_bucket=1,
+                                      fast_path_context_bucket=(
+                                          new_plan.max_sequence_tokens
+                                      ),
                                     device=item.device,
                                     dtype=new_plan.model.dtype,
                                     allow_download=(

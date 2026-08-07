@@ -26,11 +26,11 @@ from swarm_inference.exceptions import (
     TransportError,
 )
 from swarm_inference.execution.interfaces import StageExecutionResult, StageExecutor
-from swarm_inference.execution.olmoe_stage import ContiguousOlmoeStage
 from swarm_inference.host import is_wildcard_host, split_endpoint
-from swarm_inference.model.olmoe import (
-    inspect_olmoe_partition_metadata,
-    validate_olmoe_stage_assignment,
+from swarm_inference.model.adapter import (
+    NativeModelAdapter,
+    NativeModelAdapterRegistry,
+    default_native_adapter_registry,
 )
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.model.product import (
@@ -83,6 +83,7 @@ from swarm_inference.protocol.stage_worker import (
     UnloadStageRequest,
     VerifyStageRouteRequest,
 )
+from swarm_inference.runtime.performance_profiles import FastPathProfileStore
 from swarm_inference.security.identity import WorkerIdentity, public_key_fingerprint
 from swarm_inference.transport.stage_ring_connection import StageRingConnectionPool
 from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
@@ -224,6 +225,7 @@ class PersistentStageRuntime:
         configured_model_path: str | Path | None = None,
         allow_model_download: bool = False,
         capability: WorkerCapability | None = None,
+        adapter_registry: NativeModelAdapterRegistry | None = None,
         loader: StageLoader | None = None,
         token_publisher: TokenPublisher | None = None,
         connection_pool: StageRingConnectionPool | None = None,
@@ -235,6 +237,7 @@ class PersistentStageRuntime:
         artifact_resolver: Callable[[str], Path] | None = None,
         artifact_lease_acquirer: Callable[[str, str], str] | None = None,
         artifact_lease_releaser: Callable[[str], bool] | None = None,
+        fast_path_profile_store: FastPathProfileStore | None = None,
     ) -> None:
         if not worker_id:
             raise ValueError("stage runtime worker ID cannot be empty")
@@ -257,11 +260,13 @@ class PersistentStageRuntime:
             else None
         )
         self.allow_model_download = allow_model_download
+        self.fast_path_profile_store = fast_path_profile_store
         self._artifact_resolver = artifact_resolver
         self._artifact_lease_acquirer = artifact_lease_acquirer
         self._artifact_lease_releaser = artifact_lease_releaser
         self._loaded_artifact_lease_id: str | None = None
         self.capability = capability
+        self._adapters = adapter_registry or default_native_adapter_registry()
         self.identity = identity
         self._trusted_coordinators = dict(trusted_coordinators or {})
         self.require_authenticated_routes = require_authenticated_routes
@@ -283,7 +288,7 @@ class PersistentStageRuntime:
         self._token_queue: asyncio.Queue[TokenPublication] = asyncio.Queue(
             maxsize=token_queue_capacity
         )
-        self._loader = loader or self._load_olmoe
+        self._loader = loader or self._load_native_stage
         self._custom_loader = loader is not None
         self._token_publisher = token_publisher
         self.connection_pool = connection_pool or StageRingConnectionPool(
@@ -454,17 +459,31 @@ class PersistentStageRuntime:
         requested_model_revision: str,
         requested_tokenizer_revision: str,
         model_path: Path,
+        requested_adapter_id: str | None = None,
         artifact_tokenizer_revision: str | None = None,
-    ) -> None:
+    ) -> NativeModelAdapter:
         config_path = model_path / "config.json"
         index_path = model_path / "model.safetensors.index.json"
-        if not config_path.is_file() or not index_path.is_file():
-            raise IntegrityError("resolved OLMoE checkpoint is missing config or tensor index")
+        tensor_files = tuple(model_path.glob("*.safetensors"))
+        if not config_path.is_file() or (not index_path.is_file() and not tensor_files):
+            raise IntegrityError("resolved native checkpoint is missing config or tensors")
         config_value = json.loads(config_path.read_text(encoding="utf-8"))
-        if not isinstance(config_value, dict) or config_value.get("model_type") != "olmoe":
-            raise IntegrityError("resolved checkpoint is not an OLMoE model")
+        if not isinstance(config_value, dict):
+            raise IntegrityError("resolved checkpoint config is not a JSON object")
+        try:
+            adapter = self._adapters.resolve_config(config_value)
+        except LookupError as exc:
+            raise IntegrityError("resolved checkpoint has no unambiguous native adapter") from exc
+        if requested_adapter_id is not None and adapter.adapter_id != requested_adapter_id:
+            raise IntegrityError(
+                f"native adapter mismatch: resolved={adapter.adapter_id!r} "
+                f"requested={requested_adapter_id!r}"
+            )
+        revision_files = ["config.json"]
+        if index_path.is_file():
+            revision_files.append(index_path.name)
         resolved_model_revision = self._metadata_revision(
-            model_path, ("config.json", "model.safetensors.index.json")
+            model_path, tuple(revision_files)
         )
         config_revision = config_value.get("_commit_hash")
         if resolved_model_revision is None and isinstance(config_revision, str):
@@ -511,8 +530,11 @@ class PersistentStageRuntime:
             identity = json.loads(identity_path.read_text(encoding="utf-8"))
             if not isinstance(identity, dict) or identity.get("model_id") != model_id:
                 raise IntegrityError("resolved checkpoint model ID does not match the request")
+        return adapter
 
-    def _verify_model_identity(self, request: LoadStageRequest, model_path: Path) -> None:
+    def _verify_model_identity(
+        self, request: LoadStageRequest, model_path: Path
+    ) -> NativeModelAdapter:
         artifact_tokenizer_revision: str | None = None
         if request.artifact_id is not None:
             from swarm_inference.cluster.artifacts import verify_artifact_directory
@@ -531,154 +553,47 @@ class PersistentStageRuntime:
                 or manifest.owns_embeddings != assignment.owns_embeddings
                 or manifest.owns_final_norm != assignment.owns_final_norm
                 or manifest.owns_output_projection != assignment.owns_output_projection
+                or (
+                    request.adapter_id is not None
+                    and manifest.adapter_id != request.adapter_id
+                )
             ):
                 raise IntegrityError("artifact identity or ownership differs from the load request")
             artifact_tokenizer_revision = manifest.tokenizer_revision
-        self._verify_model_identity_values(
+        return self._verify_model_identity_values(
             model_id=request.model_id,
             requested_model_revision=request.model_revision,
             requested_tokenizer_revision=request.tokenizer_revision,
             model_path=model_path,
+            requested_adapter_id=request.adapter_id,
             artifact_tokenizer_revision=artifact_tokenizer_revision,
         )
 
-    def _load_olmoe(
+    def _load_native_stage(
         self,
         request: LoadStageRequest,
         resolved_model_path: Path | None,
     ) -> StageExecutor:
         if resolved_model_path is None:
-            raise FileNotFoundError("OLMoE stage loading requires a resolved local checkpoint")
-        dtype = _DTYPES[_normalise_dtype(request.dtype)]
-        expert_plan = (
-            ProductStageExpertPlan.model_validate(request.expert_plan)
-            if request.expert_plan is not None
-            else None
+            raise FileNotFoundError("native stage loading requires a resolved local checkpoint")
+        config_value = json.loads(
+            (resolved_model_path / "config.json").read_text(encoding="utf-8")
         )
-        remote_placements = (
-            [item for item in expert_plan.placements if item.strategy != "local"]
-            if expert_plan is not None
-            else []
+        adapter = (
+            self._adapters.get(request.adapter_id)
+            if request.adapter_id is not None
+            else self._adapters.resolve_config(config_value)
         )
-        remote_experts = {
-            (item.layer_id, item.expert_id)
-            for item in remote_placements
-            if not item.local_fallback_permitted
-        }
-        backend_factory = None
-        if remote_placements:
-            assert expert_plan is not None
-            from swarm_inference.execution.microshard import MicroshardRange
-            from swarm_inference.execution.moe import (
-                HybridMoeBackend,
-                LocalMoeBackend,
-                MicroshardRemoteBackend,
-                MicroshardTarget,
-                WholeExpertRemoteBackend,
-                WholeExpertTarget,
+        executor = adapter.create_stage_executor(
+            request=request,
+            resolved_model_path=resolved_model_path,
+            fast_path_profile_store=self.fast_path_profile_store,
+        )
+        if not isinstance(executor, StageExecutor):
+            raise TypeError(
+                f"native adapter {adapter.adapter_id!r} returned an invalid stage executor"
             )
-            from swarm_inference.transport.expert import ExpertTransportClient
-
-            clients: dict[str, ExpertTransportClient] = {}
-            whole_targets: dict[tuple[int, int], WholeExpertTarget] = {}
-            micro_targets: dict[tuple[int, int], list[MicroshardTarget]] = {}
-            placement: dict[tuple[int, int], str] = {}
-            for item in expert_plan.placements:
-                key = (item.layer_id, item.expert_id)
-                placement[key] = item.strategy
-                for worker_id, endpoint in item.worker_endpoints.items():
-                    if not endpoint:
-                        raise ValueError("remote expert placement has no reachable endpoint")
-                    clients.setdefault(worker_id, ExpertTransportClient(endpoint))
-                if item.strategy == "whole-remote":
-                    if len(item.worker_ids) != 1:
-                        raise ValueError("whole-expert placement requires exactly one owner")
-                    worker_id = item.worker_ids[0]
-                    whole_targets[key] = WholeExpertTarget(
-                        worker_id=worker_id,
-                        client=clients[worker_id],
-                        expert_hash=item.expert_hashes.get(worker_id, ""),
-                    )
-                elif item.strategy == "microshard-remote":
-                    targets: list[MicroshardTarget] = []
-                    for shard in item.microshards:
-                        worker_id = str(shard["worker_id"])
-                        targets.append(
-                            MicroshardTarget(
-                                ownership=MicroshardRange(
-                                    worker_id=worker_id,
-                                    layer_id=item.layer_id,
-                                    expert_id=item.expert_id,
-                                    hidden_start=int(shard["hidden_start"]),
-                                    hidden_end=int(shard["hidden_end"]),
-                                    logical_intermediate_dimension=int(
-                                        shard["logical_intermediate_dimension"]
-                                    ),
-                                    content_hash=str(shard["content_hash"]),
-                                    quantization_group_size=(
-                                        int(shard["quantization_group_size"])
-                                        if shard.get("quantization_group_size") is not None
-                                        else None
-                                    ),
-                                ),
-                                client=clients[worker_id],
-                            )
-                        )
-                    micro_targets[key] = targets
-
-            def make_backend(
-                local_modules: dict[tuple[int, int], torch.nn.Module],
-            ) -> HybridMoeBackend:
-                local = LocalMoeBackend(local_modules)
-                whole = (
-                    WholeExpertRemoteBackend(
-                        targets=whole_targets,
-                        model_id=request.model_id,
-                        model_revision=request.model_revision,
-                        model_fingerprint=request.expert_model_fingerprint or "",
-                        quantization_fingerprint=request.expert_quantization_fingerprint or "",
-                        topology_id=request.topology_id,
-                        route_generation=request.route_generation,
-                    )
-                    if whole_targets
-                    else None
-                )
-                micro = (
-                    MicroshardRemoteBackend(
-                        targets=micro_targets,
-                        model_id=request.model_id,
-                        model_revision=request.model_revision,
-                        model_fingerprint=request.expert_model_fingerprint or "",
-                        quantization_fingerprint=request.expert_quantization_fingerprint or "",
-                        topology_id=request.topology_id,
-                        route_generation=request.route_generation,
-                    )
-                    if micro_targets
-                    else None
-                )
-                return HybridMoeBackend(
-                    local=local,
-                    whole_remote=whole,
-                    microshard_remote=micro,
-                    placement=placement,
-                    fallback_placements={
-                        (item.layer_id, item.expert_id)
-                        for item in remote_placements
-                        if item.local_fallback_permitted
-                    },
-                    require_remote=expert_plan.require_remote_experts,
-                )
-
-            backend_factory = make_backend
-        return ContiguousOlmoeStage(
-            model_path=resolved_model_path,
-            assignment=request.assignment,
-            stage_count=request.stage_count,
-            device=request.device,
-            dtype=dtype,
-            moe_backend_factory=backend_factory,
-            remote_experts=remote_experts,
-        )
+        return executor
 
     def _memory_snapshot(self) -> ProcessMemorySnapshot:
         rss = int(psutil.Process().memory_info().rss)
@@ -738,13 +653,18 @@ class PersistentStageRuntime:
             if not self._custom_loader:
                 if resolved_path is None:
                     raise FileNotFoundError("product stage has no resolved model source")
-                self._verify_model_identity(request, resolved_path)
+                adapter = self._verify_model_identity(request, resolved_path)
                 expert_plan = (
                     ProductStageExpertPlan.model_validate(request.expert_plan)
                     if request.expert_plan is not None
                     else None
                 )
-                validate_olmoe_stage_assignment(
+                validate_assignment = getattr(adapter, "validate_stage_assignment", None)
+                if not callable(validate_assignment):
+                    raise IntegrityError(
+                        f"native adapter {adapter.adapter_id!r} cannot validate stage ownership"
+                    )
+                validate_assignment(
                     resolved_path,
                     assignment=request.assignment,
                     stage_count=request.stage_count,
@@ -1045,9 +965,12 @@ class PersistentStageRuntime:
                 != (loaded.request.expert_quantization_fingerprint or "")
             ):
                 raise IntegrityError("expert route lease model or topology identity mismatch")
-            if not isinstance(loaded.executor, ContiguousOlmoeStage):
-                raise IntegrityError("remote expert routes require the canonical OLMoE executor")
-            loaded.executor.install_expert_route(
+            install_expert_route = getattr(loaded.executor, "install_expert_route", None)
+            if not callable(install_expert_route):
+                raise IntegrityError(
+                    "selected native stage executor does not support remote expert routes"
+                )
+            install_expert_route(
                 expert_lease,
                 identity=self.identity,
                 worker_id=self.worker_id,
@@ -1517,12 +1440,14 @@ class PersistentStageRuntime:
         self,
         request: WorkerModelProbeRequest,
     ) -> WorkerModelProbeResponse:
-        """Resolve and inspect an exact OLMoE identity without loading weights."""
+        """Resolve and inspect an exact native model identity without loading weights."""
 
         self._check_worker(request.worker_id)
         self._check_deadline(request.deadline_unix_ns)
         reference = request.reference
-        if reference.adapter_id != "olmoe":
+        try:
+            requested_adapter = self._adapters.get(reference.adapter_id)
+        except KeyError:
             return WorkerModelProbeResponse(
                 worker_id=self.worker_id,
                 request_id=request.request_id,
@@ -1551,15 +1476,21 @@ class PersistentStageRuntime:
                 model_path=None,
                 allow_download=allow_download,
             )
-            await asyncio.to_thread(
+            resolved_adapter = await asyncio.to_thread(
                 self._verify_model_identity_values,
                 model_id=reference.model_id,
                 requested_model_revision=reference.model_revision,
                 requested_tokenizer_revision=reference.tokenizer_revision,
                 model_path=model_path,
+                requested_adapter_id=requested_adapter.adapter_id,
             )
+            inspect_partition = getattr(resolved_adapter, "inspect_partition_metadata", None)
+            if not callable(inspect_partition):
+                raise IntegrityError(
+                    f"native adapter {resolved_adapter.adapter_id!r} cannot inspect partitions"
+                )
             partition = await asyncio.to_thread(
-                inspect_olmoe_partition_metadata,
+                inspect_partition,
                 model_path,
                 model_revision=reference.model_revision,
                 tokenizer_revision=reference.tokenizer_revision,
@@ -1643,8 +1574,9 @@ class PersistentStageRuntime:
             token_queue_capacity=self.token_queue_capacity,
             dropped_token_publications=self._dropped_token_publications,
             expert_status=(
-                loaded.executor.expert_status()
-                if loaded is not None and isinstance(loaded.executor, ContiguousOlmoeStage)
+                status()
+                if loaded is not None
+                and callable(status := getattr(loaded.executor, "expert_status", None))
                 else {}
             ),
         )
@@ -2156,12 +2088,15 @@ class PersistentStageRuntime:
                 cache_position_start=cache_position,
             )
             expert_context: dict[str, Any] = {}
-            if isinstance(loaded.executor, ContiguousOlmoeStage):
-                expert_context = {
-                    "request_id": message.request_id,
-                    "token_position": message.token_position,
-                    "deadline_ns": deadline_ns,
-                }
+            context_factory = getattr(loaded.executor, "execution_context", None)
+            if callable(context_factory):
+                expert_context = context_factory(
+                    request_id=message.request_id,
+                    token_position=message.token_position,
+                    deadline_ns=deadline_ns,
+                )
+                if not isinstance(expert_context, dict):
+                    raise TypeError("stage execution context must be a dictionary")
             if loaded.request.assignment.owns_embeddings:
                 result = await asyncio.to_thread(
                     loaded.executor.execute_prefill,

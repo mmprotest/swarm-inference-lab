@@ -1,4 +1,4 @@
-"""Content-addressed, stage-owned OLMoE artifacts and bounded transfers."""
+"""Content-addressed native-stage artifacts and bounded transfers."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import threading
 import time
 from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
@@ -32,7 +32,13 @@ from swarm_inference.cluster.state import ClusterStateStore
 from swarm_inference.config.models import StrictModel
 from swarm_inference.exceptions import IntegrityError
 from swarm_inference.filesystem import replace_atomically
-from swarm_inference.model.olmoe import validate_olmoe_stage_assignment
+from swarm_inference.model.adapter import (
+    ComponentKind,
+    NativeModelAdapter,
+    NativeModelAdapterRegistry,
+    default_native_adapter_registry,
+)
+from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.protocol.cluster import (
     ArtifactOperationRequest,
@@ -128,6 +134,16 @@ def _manifest_content_payload(manifest: ArtifactManifest) -> bytes:
             for item in sorted(manifest.files, key=lambda value: value.relative_path)
         ],
     }
+    if manifest.artifact_format_version >= 2:
+        payload.update(
+            {
+                "model_fingerprint": manifest.model_fingerprint,
+                "engine_id": manifest.engine_id,
+                "model_format": manifest.model_format,
+                "artifact_kind": manifest.artifact_kind,
+                "total_bytes": manifest.total_bytes,
+            }
+        )
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
@@ -216,9 +232,9 @@ def _source_revision_evidence(source: Path, model_revision: str) -> None:
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise IntegrityError("OLMoE source config is unavailable or invalid") from exc
-    if not isinstance(config, dict) or config.get("model_type") != "olmoe":
-        raise IntegrityError("stage artifacts can only be built from an OLMoE checkpoint")
+        raise IntegrityError("native source config is unavailable or invalid") from exc
+    if not isinstance(config, dict):
+        raise IntegrityError("native source config must be a JSON object")
     reported = config.get("_commit_hash")
     snapshot_revision = source.name if source.parent.name == "snapshots" else None
     identity_path = source / _IDENTITY_NAME
@@ -260,17 +276,19 @@ def _tokenizer_revision_evidence(source: Path, tokenizer_revision: str) -> None:
 
 
 class StageArtifactBuilder:
-    """Build validated OLMoE stage directories without constructing the model."""
+    """Build adapter-validated stage directories without constructing the model."""
 
     def __init__(
         self,
         *,
         artifact_root: Path,
         temporary_root: Path,
+        adapter_registry: NativeModelAdapterRegistry | None = None,
         clock_ns: Callable[[], int] = time.time_ns,
     ) -> None:
         self.artifact_root = artifact_root.expanduser().resolve()
         self.temporary_root = temporary_root.expanduser().resolve()
+        self.adapter_registry = adapter_registry or default_native_adapter_registry()
         self.clock_ns = clock_ns
         self.artifact_root.mkdir(parents=True, exist_ok=True)
         self.temporary_root.mkdir(parents=True, exist_ok=True)
@@ -279,33 +297,40 @@ class StageArtifactBuilder:
     def _selected_tensor_names(
         weight_map: dict[str, str],
         assignment: StageAssignment,
+        adapter: NativeModelAdapter,
     ) -> tuple[list[str], list[list[str]], tuple[str, str] | None]:
         selected: list[str] = []
+        embedding_names: list[str] = []
+        output_names: list[str] = []
         for name in sorted(weight_map):
-            if name.startswith("model.layers."):
-                components = name.split(".")
-                if len(components) < 4:
-                    raise IntegrityError(f"invalid OLMoE layer tensor name: {name}")
-                try:
-                    layer_id = int(components[2])
-                except ValueError as exc:
-                    raise IntegrityError(f"invalid OLMoE layer tensor name: {name}") from exc
-                if assignment.layer_start <= layer_id < assignment.layer_end:
+            component = adapter.map_tensor_to_component(name)
+            if component.kind == ComponentKind.EMBEDDING:
+                embedding_names.append(name)
+                if assignment.owns_embeddings:
                     selected.append(name)
-            elif (
-                (name.startswith("model.embed_tokens.") and assignment.owns_embeddings)
-                or (name.startswith("model.norm.") and assignment.owns_final_norm)
-                or (name.startswith("lm_head.") and assignment.owns_output_projection)
-            ):
+            elif component.kind == ComponentKind.DECODER_LAYER:
+                if component.layer_index is None:
+                    raise IntegrityError(f"decoder tensor has no layer identity: {name}")
+                if assignment.layer_start <= component.layer_index < assignment.layer_end:
+                    selected.append(name)
+            elif component.kind == ComponentKind.FINAL_NORM and assignment.owns_final_norm:
                 selected.append(name)
+            elif component.kind == ComponentKind.OUTPUT_HEAD:
+                output_names.append(name)
+                if assignment.owns_output_projection:
+                    selected.append(name)
         tied_groups: list[list[str]] = []
         tied_alias: tuple[str, str] | None = None
-        if assignment.owns_output_projection and "lm_head.weight" not in weight_map:
-            source_name = "model.embed_tokens.weight"
-            if source_name not in weight_map:
+        if assignment.owns_output_projection and not output_names:
+            source_name = next(
+                (name for name in embedding_names if name.endswith(".weight")),
+                None,
+            )
+            if source_name is None:
                 raise IntegrityError("output stage has no LM-head tensor or tied embedding tensor")
-            tied_alias = (source_name, "lm_head.weight")
-            tied_groups.append([source_name, "lm_head.weight"])
+            alias_name = "lm_head.weight"
+            tied_alias = (source_name, alias_name)
+            tied_groups.append([source_name, alias_name])
         if not selected and tied_alias is None:
             raise IntegrityError("stage assignment selected no checkpoint tensors")
         return selected, tied_groups, tied_alias
@@ -335,6 +360,8 @@ class StageArtifactBuilder:
         stage_count: int,
         dtype: str,
         quantization: str = "none",
+        model_fingerprint: str | None = None,
+        adapter_id: str | None = None,
         before_publish: Callable[[ArtifactManifest], object] | None = None,
     ) -> ArtifactManifest:
         source = source_model_path.expanduser().resolve()
@@ -344,7 +371,22 @@ class StageArtifactBuilder:
             raise ValueError("stage assignment lies outside the requested topology")
         _source_revision_evidence(source, model_revision)
         _tokenizer_revision_evidence(source, tokenizer_revision)
-        validate_olmoe_stage_assignment(
+        config = json.loads((source / "config.json").read_text(encoding="utf-8"))
+        adapter = (
+            self.adapter_registry.get(adapter_id)
+            if adapter_id is not None
+            else self.adapter_registry.resolve_config(config)
+        )
+        if not adapter.supports(config):
+            raise IntegrityError(
+                f"native adapter {adapter.adapter_id!r} rejected the checkpoint config"
+            )
+        validate_assignment = getattr(adapter, "validate_stage_assignment", None)
+        if not callable(validate_assignment):
+            raise IntegrityError(
+                f"native adapter {adapter.adapter_id!r} cannot validate stage assignments"
+            )
+        validate_assignment(
             source,
             assignment=assignment,
             stage_count=stage_count,
@@ -355,12 +397,14 @@ class StageArtifactBuilder:
         try:
             raw_index = json.loads(index_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            raise IntegrityError("source OLMoE safetensors index is invalid") from exc
+            raise IntegrityError("source native safetensors index is invalid") from exc
         raw_weight_map = raw_index.get("weight_map") if isinstance(raw_index, dict) else None
         if not isinstance(raw_weight_map, dict) or not raw_weight_map:
-            raise IntegrityError("source OLMoE safetensors index has no weight map")
+            raise IntegrityError("source native safetensors index has no weight map")
         weight_map = {str(name): str(shard) for name, shard in raw_weight_map.items()}
-        selected, tied_groups, tied_alias = self._selected_tensor_names(weight_map, assignment)
+        selected, tied_groups, tied_alias = self._selected_tensor_names(
+            weight_map, assignment, adapter
+        )
         selected_set = set(selected)
         temporary = self.temporary_root / f"artifact-{uuid4().hex}.partial"
         temporary.mkdir(parents=False, exist_ok=False)
@@ -409,10 +453,16 @@ class StageArtifactBuilder:
                 tensor_names_by_file[output_name] = [alias_name]
                 del tensor
             for name in output_weight_map:
-                if name.startswith("model.layers."):
-                    layer_id = int(name.split(".")[2])
-                    if not assignment.layer_start <= layer_id < assignment.layer_end:
-                        raise IntegrityError("unassigned layer tensor entered the stage artifact")
+                component = adapter.map_tensor_to_component(name)
+                if component.kind == ComponentKind.DECODER_LAYER and (
+                    component.layer_index is None
+                    or not (
+                        assignment.layer_start
+                        <= component.layer_index
+                        < assignment.layer_end
+                    )
+                ):
+                    raise IntegrityError("unassigned layer tensor entered the stage artifact")
             if not selected_set.issubset(output_weight_map):
                 raise IntegrityError("stage artifact omitted an assigned tensor")
             _atomic_json(
@@ -432,7 +482,7 @@ class StageArtifactBuilder:
                 "model_id": model_id,
                 "model_revision": model_revision,
                 "tokenizer_revision": tokenizer_revision,
-                "adapter_id": "olmoe",
+                "adapter_id": adapter.adapter_id,
                 "stage_assignment_id": _assignment_identity(assignment, stage_count=stage_count),
                 "source_hashes": dict(sorted(source_hashes.items())),
             }
@@ -456,11 +506,29 @@ class StageArtifactBuilder:
                             tensor_names=tensor_names_by_file.get(relative, []),
                         )
                     )
+            fingerprint_payload = json.dumps(
+                {
+                    "model_id": model_id,
+                    "model_revision": model_revision,
+                    "source_hashes": dict(sorted(source_hashes.items())),
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            resolved_model_fingerprint = model_fingerprint or (
+                "sha256:" + hashlib.sha256(fingerprint_payload).hexdigest()
+            )
+            total_bytes = sum(item.size_bytes for item in files)
             provisional = ArtifactManifest(
                 artifact_id="0" * 64,
                 model_id=model_id,
                 model_revision=model_revision,
+                model_fingerprint=resolved_model_fingerprint,
                 tokenizer_revision=tokenizer_revision,
+                engine_id="native-stage",
+                model_format="safetensors",
+                artifact_kind="native-stage",
+                adapter_id=adapter.adapter_id,
                 source_hashes=dict(sorted(source_hashes.items())),
                 stage_assignment_id=_assignment_identity(assignment, stage_count=stage_count),
                 dtype=dtype,
@@ -473,7 +541,8 @@ class StageArtifactBuilder:
                 owns_output_projection=assignment.owns_output_projection,
                 tied_tensor_groups=tied_groups,
                 files=files,
-                total_size_bytes=sum(item.size_bytes for item in files),
+                total_size_bytes=total_bytes,
+                total_bytes=total_bytes,
                 created_at_unix_ns=self.clock_ns(),
             )
             content_hash = calculate_manifest_content_hash(provisional)
@@ -495,6 +564,153 @@ class StageArtifactBuilder:
         finally:
             if temporary.exists():
                 shutil.rmtree(temporary)
+
+
+class ModelArtifactBuilder:
+    """Publish selected immutable model files as one engine-neutral artifact."""
+
+    def __init__(self, *, artifact_root: Path, temporary_root: Path) -> None:
+        self.artifact_root = artifact_root.expanduser().resolve()
+        self.temporary_root = temporary_root.expanduser().resolve()
+        self.artifact_root.mkdir(parents=True, exist_ok=True)
+        self.temporary_root.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _media_type(path: Path) -> str:
+        if path.suffix.lower() == ".gguf":
+            return "application/x-gguf"
+        if path.suffix.lower() == ".safetensors":
+            return "application/x-safetensors"
+        if path.suffix.lower() == ".json":
+            return "application/json"
+        return "application/octet-stream"
+
+    def build(
+        self,
+        descriptor: ResolvedModelDescriptor,
+        *,
+        engine_id: str,
+        before_publish: Callable[[ArtifactManifest], object] | None = None,
+    ) -> ArtifactManifest:
+        if not descriptor.local_paths:
+            raise FileNotFoundError("model files have not been acquired")
+        if len(descriptor.files) != len(descriptor.local_paths):
+            raise IntegrityError("model descriptor file/path counts differ")
+        artifact_kind: Literal["gguf", "converted-model"] = (
+            "gguf" if descriptor.format == "gguf" else "converted-model"
+        )
+        temporary = self.temporary_root / f"artifact-{uuid4().hex}.partial"
+        temporary.mkdir(parents=False, exist_ok=False)
+        try:
+            files: list[ArtifactFile] = []
+            source_hashes: dict[str, str] = {}
+            for selected, raw_path in zip(
+                descriptor.files,
+                descriptor.local_paths,
+                strict=True,
+            ):
+                source = Path(raw_path).expanduser().resolve()
+                if not source.is_file() or source.stat().st_size != selected.size_bytes:
+                    raise IntegrityError(
+                        f"acquired model file size differs from metadata: {selected.relative_path}"
+                    )
+                destination = _safe_child(temporary, selected.relative_path)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    os.link(source, destination)
+                except OSError:
+                    shutil.copy2(source, destination)
+                actual_hash = _sha256_path(destination)
+                if (
+                    selected.sha256 is not None
+                    and actual_hash != selected.sha256.removeprefix("sha256:").lower()
+                ):
+                    raise IntegrityError(
+                        f"acquired model file hash differs from metadata: {selected.relative_path}"
+                    )
+                source_hashes[selected.relative_path] = actual_hash
+                files.append(
+                    ArtifactFile(
+                        relative_path=selected.relative_path,
+                        size_bytes=selected.size_bytes,
+                        sha256=actual_hash,
+                        media_type=self._media_type(destination),
+                    )
+                )
+            files.sort(
+                key=lambda item: (
+                    0 if item.relative_path.lower().endswith(".gguf") else 1,
+                    item.relative_path,
+                )
+            )
+            total_bytes = sum(item.size_bytes for item in files)
+            provisional = ArtifactManifest(
+                artifact_id="0" * 64,
+                model_id=descriptor.model_id,
+                model_revision=descriptor.revision,
+                model_fingerprint=descriptor.content_fingerprint,
+                tokenizer_revision=descriptor.tokenizer_identity,
+                engine_id=engine_id,
+                model_format=descriptor.format,
+                artifact_kind=artifact_kind,
+                source_hashes=dict(sorted(source_hashes.items())),
+                quantization=descriptor.quantization,
+                content_hash="0" * 64,
+                files=files,
+                total_size_bytes=total_bytes,
+                total_bytes=total_bytes,
+            )
+            content_hash = calculate_manifest_content_hash(provisional)
+            manifest = provisional.model_copy(
+                update={"artifact_id": content_hash, "content_hash": content_hash}
+            )
+            _atomic_json(temporary / _MANIFEST_NAME, manifest)
+            verify_artifact_directory(temporary, expected_artifact_id=content_hash)
+            destination = self.artifact_root / content_hash
+            if destination.exists():
+                verify_artifact_directory(destination, expected_artifact_id=content_hash)
+                shutil.rmtree(temporary)
+            else:
+                if before_publish is not None:
+                    before_publish(manifest)
+                os.replace(temporary, destination)
+                verify_artifact_directory(destination, expected_artifact_id=content_hash)
+            return manifest
+        finally:
+            if temporary.exists():
+                shutil.rmtree(temporary)
+
+
+def build_native_stage_artifact(
+    adapter: NativeModelAdapter,
+    *args: Any,
+    builder: StageArtifactBuilder | None = None,
+    **kwargs: Any,
+) -> ArtifactManifest:
+    """Adapter entry point for the one canonical stage-artifact builder."""
+
+    remaining = list(args)
+    selected_builder = builder
+    if selected_builder is None and remaining and isinstance(remaining[0], StageArtifactBuilder):
+        selected_builder = remaining.pop(0)
+    if selected_builder is None:
+        try:
+            artifact_root = Path(kwargs.pop("artifact_root"))
+            temporary_root = Path(kwargs.pop("temporary_root"))
+        except KeyError as exc:
+            raise TypeError(
+                "native artifact construction requires a builder or artifact/temporary roots"
+            ) from exc
+        selected_builder = StageArtifactBuilder(
+            artifact_root=artifact_root,
+            temporary_root=temporary_root,
+            adapter_registry=NativeModelAdapterRegistry((adapter,)),
+        )
+    return selected_builder.build(
+        *remaining,
+        adapter_id=adapter.adapter_id,
+        **kwargs,
+    )
 
 
 class ArtifactTransferResume(StrictModel):
@@ -1254,8 +1470,10 @@ __all__ = [
     "ArtifactManager",
     "ArtifactOperationCoordinator",
     "ArtifactTransferResume",
+    "ModelArtifactBuilder",
     "StageArtifactBuilder",
     "artifact_chunks",
+    "build_native_stage_artifact",
     "calculate_manifest_content_hash",
     "load_artifact_manifest",
     "resolve_verified_artifact",

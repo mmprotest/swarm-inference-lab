@@ -443,6 +443,21 @@ class ContiguousOlmoeStage(nn.Module):
             deadline_ns=deadline_ns,
         )
 
+    @staticmethod
+    def execution_context(
+        *,
+        request_id: str,
+        token_position: int,
+        deadline_ns: int,
+    ) -> dict[str, int | str]:
+        """Return adapter-owned MoE routing metadata for a stage invocation."""
+
+        return {
+            "request_id": request_id,
+            "token_position": token_position,
+            "deadline_ns": deadline_ns,
+        }
+
     def execute_decode(
         self,
         *,

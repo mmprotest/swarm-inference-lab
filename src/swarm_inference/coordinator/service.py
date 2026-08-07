@@ -67,6 +67,10 @@ from swarm_inference.protocol.cluster import (
     ClusterRevokeResponse,
     ClusterStatusRequest,
     ClusterStatusResponse,
+    EngineArtifactLeaseRequest,
+    EngineArtifactLeaseResponse,
+    EngineLeaseRequest,
+    EngineLeaseResponse,
     NetworkProbeControlRequest,
     NetworkProbeControlResponse,
     NodeLeaveRequest,
@@ -81,6 +85,11 @@ from swarm_inference.protocol.cluster import (
     PairingHello,
     ReachabilityCheckRequest,
     ReachabilityCheckResponse,
+)
+from swarm_inference.protocol.engine_worker import (
+    EngineDeploymentLease,
+    execution_plan_hash,
+    sign_engine_deployment_lease,
 )
 from swarm_inference.protocol.messages import (
     Ack,
@@ -135,7 +144,11 @@ from swarm_inference.protocol.routes import (
     sign_route_plan,
     verify_final_result,
 )
-from swarm_inference.protocol.stage_worker import GetStageStatusRequest
+from swarm_inference.protocol.stage_worker import (
+    ArtifactTransferLease,
+    GetStageStatusRequest,
+    sign_artifact_transfer_lease,
+)
 from swarm_inference.protocol.tensor_codec import ActivationTensor, decode_tensor, encode_tensor
 from swarm_inference.runtime.telemetry import ProductTelemetry
 from swarm_inference.security.identity import CoordinatorIdentity, public_key_fingerprint
@@ -2659,6 +2672,16 @@ class CoordinatorRpcServer:
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
+            "EngineLease": grpc.unary_unary_rpc_method_handler(
+                self._engine_lease,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "EngineArtifactLease": grpc.unary_unary_rpc_method_handler(
+                self._engine_artifact_lease,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
         }
         self.server.add_generic_rpc_handlers(
             (grpc.method_handlers_generic_handler("swarm.v1.Coordinator", handlers),)
@@ -2999,6 +3022,163 @@ class CoordinatorRpcServer:
             if request.source_node_id is not None and request.source_node_id != actor.node_id:
                 raise IntegrityError("artifact source node must match the authenticated member")
             return serialize_message(await handler(request))
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _engine_lease(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        identity = self.core.coordinator_identity
+        product_config = self.core.product_config
+        if control is None or identity is None or product_config is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "authenticated engine control is not configured",
+            )
+            raise RuntimeError("unreachable")
+        request = parse_message(data, EngineLeaseRequest)
+        body = request.model_dump(
+            mode="json",
+            exclude={"authentication", "schema_version"},
+        )
+        try:
+            control.verify_authentication(
+                request.authentication,
+                action="engine-lease",
+                body=body,
+            )
+            assigned_role = request.plan.worker_roles.get(request.worker_id)
+            if assigned_role is None or assigned_role == "idle":
+                raise IntegrityError("engine plan does not assign the target worker")
+            if request.plan.engine_id == "native-stage":
+                raise IntegrityError("native stages use the stage deployment lease protocol")
+            capability = self.core.registry.capability(request.worker_id)
+            healthy, _ = self.core.registry.registration_health(request.worker_id)
+            if not healthy:
+                raise IntegrityError("engine worker is not healthy and participation eligible")
+            if not self.core.is_worker_trusted(request.worker_id):
+                raise IntegrityError("engine worker is not trusted")
+            advertised_engine = next(
+                (
+                    item
+                    for item in capability.execution_engines
+                    if item.get("engine_id") == request.plan.engine_id
+                ),
+                None,
+            )
+            if advertised_engine is None or not advertised_engine.get("enabled", False):
+                raise IntegrityError(
+                    f"worker does not advertise enabled engine {request.plan.engine_id!r}"
+                )
+            now = time.time_ns()
+            ttl_seconds = min(
+                int(request.ttl_seconds),
+                int(product_config.engine_action_lease_seconds),
+            )
+            unsigned = EngineDeploymentLease(
+                action=request.action,
+                worker_id=request.worker_id,
+                deployment_id=request.deployment_id,
+                engine_id=request.plan.engine_id,
+                execution_identity=request.plan.execution_identity,
+                plan_hash=execution_plan_hash(request.plan),
+                issued_at_unix_ns=now,
+                expires_at_unix_ns=now + ttl_seconds * 1_000_000_000,
+                nonce=uuid4().hex,
+                coordinator_identity=product_config.coordinator_id,
+                coordinator_public_key=identity.public_key_b64,
+                coordinator_fingerprint=identity.public_key_fingerprint,
+                signature="pending",
+            )
+            return serialize_message(
+                EngineLeaseResponse(
+                    lease=sign_engine_deployment_lease(unsigned, identity),
+                )
+            )
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+
+    async def _engine_artifact_lease(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        control = self.core.cluster_control
+        identity = self.core.coordinator_identity
+        product_config = self.core.product_config
+        if control is None or identity is None or product_config is None:
+            await context.abort(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                "authenticated engine artifact control is not configured",
+            )
+            raise RuntimeError("unreachable")
+        request = parse_message(data, EngineArtifactLeaseRequest)
+        body = request.model_dump(
+            mode="json",
+            exclude={"authentication", "schema_version"},
+        )
+        try:
+            actor = control.verify_authentication(
+                request.authentication,
+                action="engine-artifact-lease",
+                body=body,
+            )
+            role = request.plan.worker_roles.get(request.worker_id)
+            if role is None or role == "idle":
+                raise IntegrityError("engine plan does not assign the artifact target worker")
+            if request.plan.engine_id == "native-stage":
+                raise IntegrityError("native stages use transactional stage artifact deployment")
+            manifest = request.manifest
+            if (
+                manifest.engine_id != request.plan.engine_id
+                or manifest.model_fingerprint != request.plan.model_fingerprint
+            ):
+                raise IntegrityError("engine artifact identity differs from its execution plan")
+            capability = self.core.registry.capability(request.worker_id)
+            healthy, _ = self.core.registry.registration_health(request.worker_id)
+            if not healthy:
+                raise IntegrityError("engine artifact worker is not healthy")
+            if not self.core.is_worker_trusted(request.worker_id):
+                raise IntegrityError("engine artifact worker is not trusted")
+            advertised_engine = next(
+                (
+                    item
+                    for item in capability.execution_engines
+                    if item.get("engine_id") == request.plan.engine_id
+                ),
+                None,
+            )
+            if advertised_engine is None or not advertised_engine.get("enabled", False):
+                raise IntegrityError(
+                    f"worker does not advertise enabled engine {request.plan.engine_id!r}"
+                )
+            now = time.time_ns()
+            ttl_seconds = min(
+                int(request.ttl_seconds),
+                int(product_config.engine_action_lease_seconds),
+            )
+            unsigned = ArtifactTransferLease(
+                artifact_id=manifest.artifact_id,
+                destination_worker_id=request.worker_id,
+                source_node_id=actor.node_id,
+                issued_at_unix_ns=now,
+                expires_at_unix_ns=now + ttl_seconds * 1_000_000_000,
+                nonce=uuid4().hex,
+                coordinator_identity=product_config.coordinator_id,
+                coordinator_public_key=identity.public_key_b64,
+                coordinator_fingerprint=identity.public_key_fingerprint,
+                signature="pending",
+            )
+            return serialize_message(
+                EngineArtifactLeaseResponse(
+                    lease=sign_artifact_transfer_lease(unsigned, identity),
+                )
+            )
         except Exception as exc:
             await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
             raise
@@ -3407,6 +3587,23 @@ class CoordinatorClient:
             "/swarm.v1.Coordinator/ArtifactOperation",
             request,
             ArtifactOperationResponse,
+        )
+
+    async def engine_lease(self, request: EngineLeaseRequest) -> EngineLeaseResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/EngineLease",
+            request,
+            EngineLeaseResponse,
+        )
+
+    async def engine_artifact_lease(
+        self,
+        request: EngineArtifactLeaseRequest,
+    ) -> EngineArtifactLeaseResponse:
+        return await self._call(
+            "/swarm.v1.Coordinator/EngineArtifactLease",
+            request,
+            EngineArtifactLeaseResponse,
         )
 
     async def close(self) -> None:

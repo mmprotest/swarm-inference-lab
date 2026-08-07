@@ -1,0 +1,19 @@
+contract_version: 1
+source_experiment: "003"
+status: COMPLETED
+evidence_bundle_identity: archived-worker-fanout
+promoted_mechanisms:
+  - persistent_worker_lifecycle
+  - cold_start_accounting
+  - warm_model_reuse
+  - worker_fanout_limits
+  - acquisition_cost
+  - concurrency_aware_replica_selection
+rejected_mechanisms:
+  - maximum_worker_count_as_default
+reference_models: [Qwen/Qwen3-0.6B]
+reference_hardware_class: up-to-28-logical-workers
+correctness_gates: [immutable_artifact_reuse]
+performance_gates: [cold_and_warm_reported_separately]
+planner_gates: [one_worker_candidate, two_replica_concurrency_candidate, unused_workers_allowed]
+required_telemetry: [worker_start_cost, model_load_cost, residency, queue_depth, concurrency]

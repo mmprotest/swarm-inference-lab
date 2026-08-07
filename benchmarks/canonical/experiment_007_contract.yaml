@@ -1,0 +1,22 @@
+contract_version: 1
+source_experiment: "007-corrected"
+status: COMPLETED_CORRECTED
+evidence_bundle_identity: archived-experiment-007-corrections
+promoted_mechanisms:
+  - heterogeneous_worker_capability_model
+  - cpu_execution_roles
+  - background_inference
+  - held_out_planner_evaluation
+  - idle_worker_role
+  - matched_executor_benchmarking
+  - fixed_window_service_throughput
+  - interference_measurement
+rejected_mechanisms:
+  - synchronous_cpu_expert_speed
+  - superseded_original_cpu_speed_headline
+reference_models: [held-out-mixed-service-corpus]
+reference_hardware_class: interactive-gpu-plus-cpu-background-worker
+correctness_gates: [exact_background_output, corrected_evidence_only]
+performance_gates: [fixed_window_aggregate_throughput, interactive_interference_budget]
+planner_gates: [idle_always_considered, cpu_synchronous_speed_off, background_role_positive_utility]
+required_telemetry: [worker_role, service_window_tokens, interference, planner_regret]

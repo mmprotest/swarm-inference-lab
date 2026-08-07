@@ -12,6 +12,7 @@ from swarm_inference.worker.agent import WorkerAgent
 
 if TYPE_CHECKING:
     from swarm_inference.cluster.artifacts import ArtifactManager
+    from swarm_inference.worker.engine_runtime import PersistentEngineRuntime
     from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 
@@ -23,6 +24,7 @@ class PersistentStageWorkerService:
         *,
         agent: WorkerAgent,
         stage_runtime: PersistentStageRuntime | None,
+        engine_runtime: PersistentEngineRuntime | None = None,
         artifact_manager: ArtifactManager | None = None,
         trusted_coordinator_fingerprint: str | None = None,
         model_shard_root: str | None = None,
@@ -40,6 +42,7 @@ class PersistentStageWorkerService:
             model_shard_root=model_shard_root,
             maximum_message_bytes=maximum_message_bytes,
             stage_runtime=stage_runtime,
+            engine_runtime=engine_runtime,
             artifact_manager=artifact_manager,
             trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
         )
@@ -69,6 +72,17 @@ class PersistentStageWorkerService:
         self.control_server.configure_artifact_trust(
             coordinator_public_key=coordinator_public_key,
             coordinator_fingerprint=coordinator_fingerprint,
+        )
+
+    def configure_engine_trust(
+        self,
+        *,
+        coordinator_public_key: str,
+        expected_fingerprint: str | None,
+    ) -> None:
+        self.control_server.configure_engine_trust(
+            coordinator_public_key=coordinator_public_key,
+            expected_fingerprint=expected_fingerprint,
         )
 
     async def start(

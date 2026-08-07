@@ -48,6 +48,9 @@ FINAL_FILENAMES = (
     "uv.exe",
     "windows-x64-cpu.requirements.lock",
     "windows-x64-cuda.requirements.lock",
+    "llama-b9637-bin-win-cpu-x64.zip",
+    "llama-b9637-bin-win-cuda-13.3-x64.zip",
+    "cudart-llama-bin-win-cuda-13.3-x64.zip",
     "LICENSE",
     "swarm.ico",
     "wizard-small.bmp",
@@ -385,6 +388,32 @@ def _copy_payload_inputs(payload: Path, wheel: Path, uv: Path, bootstrapper: Pat
         shutil.copyfile(source, destination)
 
 
+def _stage_llamacpp_archives(toolchain: dict[str, Any], payload: Path) -> None:
+    metadata = toolchain.get("llamacpp")
+    if not isinstance(metadata, dict) or not isinstance(metadata.get("profiles"), dict):
+        raise ReleaseError("llama.cpp toolchain metadata is malformed")
+    staged: set[str] = set()
+    cache = ROOT / "build" / "toolchain-downloads"
+    for profile_id in ("windows-x64-cpu", "windows-x64-cuda"):
+        profile = metadata["profiles"].get(profile_id)
+        if not isinstance(profile, dict) or not isinstance(profile.get("archives"), list):
+            raise ReleaseError(f"llama.cpp {profile_id} toolchain profile is malformed")
+        for archive in profile["archives"]:
+            if not isinstance(archive, dict):
+                raise ReleaseError(f"llama.cpp {profile_id} archive pin is malformed")
+            filename = str(archive["filename"])
+            if filename in staged:
+                continue
+            source = cache / filename
+            if not source.is_file():
+                _download(str(archive["url"]), source, str(archive["sha256"]))
+            _verify(source, str(archive["sha256"]))
+            if source.stat().st_size != int(archive["size_bytes"]):
+                raise ReleaseError(f"pinned size mismatch for {filename}")
+            shutil.copyfile(source, payload / filename)
+            staged.add(filename)
+
+
 def _acceptance_zip(path: Path, supplied: Path | None, build_identity: dict[str, Any]) -> None:
     if supplied is not None:
         if not supplied.is_file() or not zipfile.is_zipfile(supplied):
@@ -460,6 +489,7 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         publisher = str(signature["subject"])
         bootstrapper_status = "signed"
     _copy_payload_inputs(payload, wheel, uv, bootstrapper)
+    _stage_llamacpp_archives(toolchain, payload)
     generate_profiles(uv=uv, output_directory=payload)
     built_at = utc_now()
     embedded = build_manifest(
@@ -509,6 +539,9 @@ def build(arguments: argparse.Namespace) -> dict[str, Any]:
         "uv.exe",
         "windows-x64-cpu.requirements.lock",
         "windows-x64-cuda.requirements.lock",
+        "llama-b9637-bin-win-cpu-x64.zip",
+        "llama-b9637-bin-win-cuda-13.3-x64.zip",
+        "cudart-llama-bin-win-cuda-13.3-x64.zip",
         "LICENSE",
         "swarm.ico",
         "wizard-small.bmp",

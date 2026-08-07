@@ -35,6 +35,52 @@ PROFILE_FILENAMES = {
 PAYLOAD_FILENAMES = ("LICENSE", "swarm.ico", "wizard-small.bmp", "wizard-large.bmp")
 
 
+def _engine_runtime_manifest(
+    payload_directory: Path,
+    metadata: dict[str, Any],
+) -> dict[str, Any]:
+    profiles = metadata.get("profiles")
+    if not isinstance(profiles, dict):
+        raise ReleaseError("llama.cpp toolchain profiles are malformed")
+    manifest_profiles: dict[str, Any] = {}
+    for profile_id in ("windows-x64-cpu", "windows-x64-cuda"):
+        profile = profiles.get(profile_id)
+        if not isinstance(profile, dict) or not isinstance(profile.get("archives"), list):
+            raise ReleaseError(f"llama.cpp toolchain profile {profile_id} is malformed")
+        archives: list[dict[str, Any]] = []
+        for expected in profile["archives"]:
+            if not isinstance(expected, dict):
+                raise ReleaseError(f"llama.cpp {profile_id} archive metadata is malformed")
+            entry = file_entry(payload_directory / str(expected["filename"]))
+            if (
+                entry["sha256"] != expected["sha256"]
+                or entry["size_bytes"] != expected["size_bytes"]
+            ):
+                raise ReleaseError(
+                    f"llama.cpp source archive {entry['filename']} does not match its immutable pin"
+                )
+            archives.append(entry)
+        manifest_profiles[profile_id] = {
+            key: profile[key]
+            for key in (
+                "platform",
+                "server_binary",
+                "server_sha256",
+                "rpc_server_binary",
+                "rpc_server_sha256",
+                "build_flags",
+                "device_support",
+            )
+        }
+        manifest_profiles[profile_id]["archives"] = archives
+    return {
+        "repository": metadata["repository"],
+        "release_tag": metadata["release_tag"],
+        "runtime_revision": metadata["runtime_revision"],
+        "profiles": manifest_profiles,
+    }
+
+
 def _wheel_version(path: Path) -> str:
     if not zipfile.is_zipfile(path):
         raise ReleaseError(f"application wheel is not a valid ZIP archive: {path}")
@@ -102,8 +148,13 @@ def build_manifest(
     toolchain = load_toolchain()
     python = toolchain["python"]
     uv_metadata = toolchain["uv"]
-    if not isinstance(python, dict) or not isinstance(uv_metadata, dict):
-        raise ReleaseError("toolchain Python or uv metadata is malformed")
+    llamacpp_metadata = toolchain["llamacpp"]
+    if (
+        not isinstance(python, dict)
+        or not isinstance(uv_metadata, dict)
+        or not isinstance(llamacpp_metadata, dict)
+    ):
+        raise ReleaseError("toolchain Python, uv, or llama.cpp metadata is malformed")
     wheel_name = f"swarm_inference_lab-{version}-py3-none-any.whl"
     wheel_path = payload_directory / wheel_name
     if _wheel_version(wheel_path) != version:
@@ -136,6 +187,9 @@ def build_manifest(
         },
         "wheel": file_entry(wheel_path),
         "runtime_profiles": profile_entries,
+        "engine_runtimes": {
+            "llamacpp": _engine_runtime_manifest(payload_directory, llamacpp_metadata),
+        },
         "bootstrapper": _signed_entry(
             bootstrapper_path,
             filename="SwarmBootstrap.exe",
@@ -178,6 +232,23 @@ def generate_sbom(
         }
         for name, package_version in sorted(requirements)
     ]
+    llamacpp = load_toolchain()["llamacpp"]
+    if not isinstance(llamacpp, dict):
+        raise ReleaseError("llama.cpp toolchain metadata is malformed")
+    runtime_revision = str(llamacpp["runtime_revision"])
+    components.append(
+        {
+            "type": "application",
+            "bom-ref": f"pkg:github/ggml-org/llama.cpp@{runtime_revision}",
+            "name": "llama.cpp",
+            "version": str(llamacpp["release_tag"]),
+            "purl": f"pkg:github/ggml-org/llama.cpp@{runtime_revision}",
+            "properties": [
+                {"name": "swarm:runtime_revision", "value": runtime_revision},
+                {"name": "swarm:release_tag", "value": str(llamacpp["release_tag"])},
+            ],
+        }
+    )
     namespace = uuid.UUID("94b6963c-df15-45ec-b5f6-89b0f68f1e40")
     serial = uuid.uuid5(namespace, f"{PRODUCT}:{version}:{commit}")
     return {

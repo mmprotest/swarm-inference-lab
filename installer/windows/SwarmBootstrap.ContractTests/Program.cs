@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using SwarmBootstrap;
@@ -41,6 +42,8 @@ internal static class Program
             ("process-tree-termination", TestProcessTreeTerminationAsync),
             ("strict-manifest-parsing", TestStrictManifestParsingAsync),
             ("hash-mismatch-rejection", TestHashMismatchAsync),
+            ("engine-runtime-safe-extraction", TestEngineRuntimeExtractionAsync),
+            ("engine-runtime-traversal-rejection", TestEngineRuntimeTraversalAsync),
             ("external-manifest-setup-binding", TestExternalManifestBindingAsync),
             ("external-manifest-redirect-policy", TestReleaseManifestRedirectPolicyAsync),
             ("atomic-install", TestAtomicInstallAsync),
@@ -194,6 +197,57 @@ internal static class Program
             SizeBytes = new FileInfo(file).Length,
         };
         Throws<HashMismatchException>(() => HashVerifier.Verify(file, asset));
+    }
+
+    private static Task TestEngineRuntimeExtractionAsync()
+    {
+        using TestArea area = new();
+        string archivePath = area.Path("runtime.zip");
+        using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+        {
+            using (StreamWriter server = new(archive.CreateEntry("llama-server.exe").Open()))
+            {
+                server.Write("server");
+            }
+            using (StreamWriter rpc = new(archive.CreateEntry("rpc-server.exe").Open()))
+            {
+                rpc.Write("rpc");
+            }
+        }
+        string destination = area.Path("runtime");
+        Directory.CreateDirectory(destination);
+        HashSet<string> files = new(StringComparer.OrdinalIgnoreCase);
+        long bytes = 0;
+        RuntimeInstaller.ExtractEngineArchive(archivePath, destination, files, ref bytes);
+        True(File.Exists(Path.Combine(destination, "llama-server.exe")),
+            "llama.cpp server was not extracted");
+        True(File.Exists(Path.Combine(destination, "rpc-server.exe")),
+            "llama.cpp RPC server was not extracted");
+        Equal(9L, bytes, "llama.cpp extracted byte accounting is wrong");
+        return Task.CompletedTask;
+    }
+
+    private static Task TestEngineRuntimeTraversalAsync()
+    {
+        using TestArea area = new();
+        string archivePath = area.Path("unsafe.zip");
+        using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+        {
+            using StreamWriter writer = new(archive.CreateEntry("../escape.exe").Open());
+            writer.Write("unsafe");
+        }
+        string destination = area.Path("runtime");
+        Directory.CreateDirectory(destination);
+        HashSet<string> files = new(StringComparer.OrdinalIgnoreCase);
+        long bytes = 0;
+        Throws<ManifestException>(() =>
+            RuntimeInstaller.ExtractEngineArchive(
+                archivePath,
+                destination,
+                files,
+                ref bytes));
+        True(!File.Exists(area.Path("escape.exe")), "unsafe ZIP member escaped the runtime root");
+        return Task.CompletedTask;
     }
 
     private static async Task TestExternalManifestBindingAsync()
@@ -436,6 +490,23 @@ internal static class Program
             Sha256 = hash,
             SizeBytes = 1,
         };
+        LlamaCppRuntimeProfile LlamaProfile(bool cuda) => new()
+        {
+            Platform = "windows-x64",
+            Archives = cuda
+                ? [Asset("llama-cuda.zip"), Asset("cudart.zip")]
+                : [Asset("llama-cpu.zip")],
+            ServerBinary = "llama-server.exe",
+            ServerSha256 = hash,
+            RpcServerBinary = "rpc-server.exe",
+            RpcServerSha256 = hash,
+            BuildFlags = new Dictionary<string, bool>
+            {
+                ["GGML_CUDA"] = cuda,
+                ["GGML_RPC"] = true,
+            },
+            DeviceSupport = cuda ? ["CPU", "CUDA"] : ["CPU"],
+        };
         SignedAsset bootstrapper = new()
         {
             Filename = "SwarmBootstrap.exe",
@@ -479,6 +550,20 @@ internal static class Program
             {
                 Cpu = Asset("cpu.lock"),
                 Cuda = Asset("cuda.lock"),
+            },
+            EngineRuntimes = new EngineRuntimes
+            {
+                LlamaCpp = new LlamaCppRuntimeSet
+                {
+                    Repository = "ggml-org/llama.cpp",
+                    ReleaseTag = "b9637",
+                    RuntimeRevision = new string('b', 40),
+                    Profiles = new LlamaCppRuntimeProfiles
+                    {
+                        Cpu = LlamaProfile(cuda: false),
+                        Cuda = LlamaProfile(cuda: true),
+                    },
+                },
             },
             Bootstrapper = bootstrapper,
             Installer = installer,

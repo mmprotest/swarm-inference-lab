@@ -74,6 +74,8 @@ class ColibriBackend(BackendAdapter):
         log_directory: str | Path | None = None,
         cap: int | None = None,
         environment: dict[str, str] | None = None,
+        execution_profile_id: str | None = None,
+        execution_profile_fingerprint: str | None = None,
         ram_safety_reserve_bytes: int = 8 * 1024**3,
     ) -> None:
         self.engine_directory = Path(engine_directory).expanduser().resolve()
@@ -95,6 +97,8 @@ class ColibriBackend(BackendAdapter):
         )
         self.cap = cap
         self.environment = dict(environment or {})
+        self.execution_profile_id = execution_profile_id
+        self.execution_profile_fingerprint = execution_profile_fingerprint
         self.ram_safety_reserve_bytes = ram_safety_reserve_bytes
         self.probe = ColibriCapabilityProbe(
             self.engine_directory,
@@ -109,6 +113,47 @@ class ColibriBackend(BackendAdapter):
             model_revision=model_revision, model_load_seconds=0, warmup_seconds=0
         )
         self._inventory_cache: tuple[Any, Any, Any, Any] | None = None
+        self._tokenizer: Any | None = None
+
+    def _local_tokenizer(self) -> Any:
+        if self._tokenizer is None:
+            from transformers import AutoTokenizer
+
+            self._tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+                self.model_path,
+                local_files_only=True,
+            )
+        return self._tokenizer
+
+    def prompt_payload(
+        self,
+        prompt: str,
+        *,
+        tokenizer_hash: str | None = None,
+    ) -> TokenPayload:
+        """Create the backend-native prompt payload from the immutable local snapshot."""
+
+        family = resolve_model_family(self._config(), self.model_family)
+        if family != "olmoe":
+            return TokenPayload(token_ids=[], text=prompt, tokenizer_hash=tokenizer_hash)
+        encoded = self._local_tokenizer()(
+            prompt,
+            add_special_tokens=True,
+            return_tensors=None,
+        )
+        token_ids = [int(value) for value in encoded["input_ids"]]
+        if not token_ids:
+            raise ValueError("Colibri prompt tokenization produced no token IDs")
+        return TokenPayload(
+            token_ids=token_ids,
+            text=prompt,
+            tokenizer_hash=tokenizer_hash,
+        )
+
+    def decode_tokens(self, token_ids: list[int]) -> str:
+        if not token_ids:
+            return ""
+        return str(self._local_tokenizer().decode(token_ids, skip_special_tokens=False))
 
     def capabilities(self) -> WorkerCapabilities:
         report = self.probe.probe()
@@ -519,12 +564,21 @@ class ColibriBackend(BackendAdapter):
         detail: str = "",
         metrics: dict[str, Any] | None = None,
     ) -> WorkerJobResult:
+        recorded_metrics = dict(metrics or {})
+        if self.execution_profile_id is not None:
+            recorded_metrics.update(
+                {
+                    "execution_profile_id": self.execution_profile_id,
+                    "execution_profile_fingerprint": self.execution_profile_fingerprint,
+                    "routing_aware_placement": True,
+                }
+            )
         return WorkerJobResult(
             job_id=job.job_id,
             request_id=job.request_id,
             status=status,
             output_payload=output,
             detail=detail,
-            metrics=metrics or {},
+            metrics=recorded_metrics,
             classification=self._classification() if status == WorkerJobStatus.ACCEPTED else None,
         )

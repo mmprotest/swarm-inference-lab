@@ -29,6 +29,20 @@ def _signed(filename: str) -> dict[str, Any]:
     }
 
 
+def _llamacpp_profile(*, cuda: bool) -> dict[str, Any]:
+    archives = [_file("llama-cuda.zip"), _file("cudart.zip")] if cuda else [_file("llama-cpu.zip")]
+    return {
+        "platform": "windows-x64",
+        "archives": archives,
+        "server_binary": "llama-server.exe",
+        "server_sha256": HASH,
+        "rpc_server_binary": "rpc-server.exe",
+        "rpc_server_sha256": HASH,
+        "build_flags": {"GGML_CUDA": cuda, "GGML_RPC": True},
+        "device_support": ["CPU", "CUDA"] if cuda else ["CPU"],
+    }
+
+
 def _manifest() -> dict[str, Any]:
     return {
         "schema_version": 1,
@@ -47,6 +61,17 @@ def _manifest() -> dict[str, Any]:
         "runtime_profiles": {
             "windows-x64-cpu": _file("windows-x64-cpu.requirements.lock"),
             "windows-x64-cuda": _file("windows-x64-cuda.requirements.lock"),
+        },
+        "engine_runtimes": {
+            "llamacpp": {
+                "repository": "ggml-org/llama.cpp",
+                "release_tag": "b9637",
+                "runtime_revision": "b" * 40,
+                "profiles": {
+                    "windows-x64-cpu": _llamacpp_profile(cuda=False),
+                    "windows-x64-cuda": _llamacpp_profile(cuda=True),
+                },
+            }
         },
         "bootstrapper": _signed("SwarmBootstrap.exe"),
         "installer": _signed("SwarmInferenceSetup-x64.exe"),

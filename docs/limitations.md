@@ -11,9 +11,9 @@
 - Slow devices may have zero or negligible useful contribution and can remain
   idle.
 - Single-request speed can decline while aggregate throughput rises.
-- Legacy execution paths still relay activations through the coordinator. The
-  OLMoE product stage ring sends intermediate activations directly between
-  workers.
+- Canonical native distributed execution uses persistent direct stage-to-stage
+  transport; the coordinator remains a control-plane and token-commit
+  dependency and never relays steady-state hidden activations.
 - Channel confidentiality is not implemented by the initial insecure gRPC
   deployment; envelope signatures do not provide privacy.
 - Product route leases and stage-ring peer handshakes authenticate

@@ -74,6 +74,8 @@ internal static partial class HashVerifier
             manifest.Wheel,
             manifest.RuntimeProfiles.Cpu,
             manifest.RuntimeProfiles.Cuda,
+            .. manifest.EngineRuntimes.LlamaCpp.Profiles.Cpu.Archives,
+            .. manifest.EngineRuntimes.LlamaCpp.Profiles.Cuda.Archives,
             manifest.Bootstrapper,
             .. manifest.Payload,
         ];
@@ -189,6 +191,8 @@ internal static partial class HashVerifier
             throw new ManifestException("release manifest runtime version pin is invalid");
         }
 
+        ValidateLlamaCpp(manifest.EngineRuntimes.LlamaCpp);
+
         foreach (FileAsset asset in EnumerateAssets(manifest))
         {
             if (Path.GetFileName(asset.Filename) != asset.Filename
@@ -244,6 +248,7 @@ internal static partial class HashVerifier
             && SameAsset(embedded.Wheel, release.Wheel)
             && SameAsset(embedded.RuntimeProfiles.Cpu, release.RuntimeProfiles.Cpu)
             && SameAsset(embedded.RuntimeProfiles.Cuda, release.RuntimeProfiles.Cuda)
+            && SameLlamaCpp(embedded.EngineRuntimes.LlamaCpp, release.EngineRuntimes.LlamaCpp)
             && SameSignedAsset(embedded.Bootstrapper, release.Bootstrapper)
             && embedded.Installer.SignatureStatus == release.Installer.SignatureStatus
             && embedded.Installer.SignatureVerification == release.Installer.SignatureVerification
@@ -271,17 +276,86 @@ internal static partial class HashVerifier
         && left.SignatureVerification == right.SignatureVerification
         && left.PublisherSubject == right.PublisherSubject;
 
+    private static bool SameLlamaCpp(LlamaCppRuntimeSet left, LlamaCppRuntimeSet right) =>
+        left.Repository == right.Repository
+        && left.ReleaseTag == right.ReleaseTag
+        && left.RuntimeRevision == right.RuntimeRevision
+        && SameLlamaCppProfile(left.Profiles.Cpu, right.Profiles.Cpu)
+        && SameLlamaCppProfile(left.Profiles.Cuda, right.Profiles.Cuda);
+
+    private static bool SameLlamaCppProfile(
+        LlamaCppRuntimeProfile left,
+        LlamaCppRuntimeProfile right) =>
+        left.Platform == right.Platform
+        && left.ServerBinary == right.ServerBinary
+        && left.ServerSha256 == right.ServerSha256
+        && left.RpcServerBinary == right.RpcServerBinary
+        && left.RpcServerSha256 == right.RpcServerSha256
+        && left.DeviceSupport.SequenceEqual(right.DeviceSupport, StringComparer.Ordinal)
+        && left.BuildFlags.Count == right.BuildFlags.Count
+        && left.BuildFlags.All(item =>
+            right.BuildFlags.TryGetValue(item.Key, out bool value) && value == item.Value)
+        && left.Archives.Count == right.Archives.Count
+        && left.Archives.Zip(right.Archives, SameAsset).All(matches => matches);
+
     private static IEnumerable<FileAsset> EnumerateAssets(ReleaseManifest manifest)
     {
         yield return manifest.Uv;
         yield return manifest.Wheel;
         yield return manifest.RuntimeProfiles.Cpu;
         yield return manifest.RuntimeProfiles.Cuda;
+        foreach (FileAsset archive in manifest.EngineRuntimes.LlamaCpp.Profiles.Cpu.Archives)
+        {
+            yield return archive;
+        }
+        foreach (FileAsset archive in manifest.EngineRuntimes.LlamaCpp.Profiles.Cuda.Archives)
+        {
+            yield return archive;
+        }
         yield return manifest.Bootstrapper;
         yield return manifest.Installer;
         foreach (FileAsset asset in manifest.Payload)
         {
             yield return asset;
+        }
+    }
+
+    private static void ValidateLlamaCpp(LlamaCppRuntimeSet runtime)
+    {
+        if (runtime.Repository != "ggml-org/llama.cpp"
+            || string.IsNullOrWhiteSpace(runtime.ReleaseTag)
+            || !CommitPattern().IsMatch(runtime.RuntimeRevision))
+        {
+            throw new ManifestException("llama.cpp runtime identity is invalid");
+        }
+
+        ValidateLlamaCppProfile(runtime.Profiles.Cpu, cuda: false);
+        ValidateLlamaCppProfile(runtime.Profiles.Cuda, cuda: true);
+    }
+
+    private static void ValidateLlamaCppProfile(LlamaCppRuntimeProfile profile, bool cuda)
+    {
+        bool SafeBasename(string value) =>
+            !string.IsNullOrWhiteSpace(value)
+            && Path.GetFileName(value) == value
+            && !value.Contains('/')
+            && !value.Contains('\\');
+        if (profile.Platform != "windows-x64"
+            || profile.Archives.Count == 0
+            || !SafeBasename(profile.ServerBinary)
+            || !SafeBasename(profile.RpcServerBinary)
+            || !Sha256Pattern().IsMatch(profile.ServerSha256)
+            || !Sha256Pattern().IsMatch(profile.RpcServerSha256)
+            || !profile.BuildFlags.TryGetValue("GGML_RPC", out bool rpc)
+            || !rpc
+            || !profile.BuildFlags.TryGetValue("GGML_CUDA", out bool compiledCuda)
+            || compiledCuda != cuda
+            || !profile.DeviceSupport.Contains("CPU", StringComparer.Ordinal)
+            || profile.DeviceSupport.Contains("CUDA", StringComparer.Ordinal) != cuda
+            || profile.DeviceSupport.Count != profile.DeviceSupport.Distinct(
+                StringComparer.OrdinalIgnoreCase).Count())
+        {
+            throw new ManifestException("llama.cpp runtime profile is invalid");
         }
     }
 

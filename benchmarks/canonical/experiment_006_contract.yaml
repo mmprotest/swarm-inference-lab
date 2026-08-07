@@ -1,0 +1,20 @@
+contract_version: 1
+source_experiment: "006"
+status: COMPLETED
+evidence_bundle_identity: archived-microsharding-b73f8ee8
+promoted_mechanisms:
+  - intra_layer_partition_representation
+  - tensor_level_ownership
+  - matched_projection_slicing
+  - quantization_aligned_boundaries
+  - collective_reduction_contracts
+  - sublayer_memory_accounting
+  - expert_parallel_ownership
+rejected_mechanisms:
+  - batch1_tp8_speed_default
+reference_models: [Qwen/Qwen3-0.6B, 28-layer-capacity-model]
+reference_hardware_class: logical-tp8-modelled-and-validated-local
+correctness_gates: [exact_greedy_tokens, gap_free_tensor_union, fixed_order_reduction]
+performance_gates: [largest_matrix_allocation_reduction]
+planner_gates: [capacity_first, speed_requires_physical_positive_utility]
+required_telemetry: [microshard_geometry, memory_per_shard, reduction_cost]

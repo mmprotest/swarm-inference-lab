@@ -25,11 +25,17 @@ from swarm_inference.exceptions import (
     UnsupportedCacheFormatError,
 )
 from swarm_inference.model.adapter import (
+    AdapterSupportReport,
+    AdapterSupportStatus,
     ComponentKind,
     ComponentRef,
     ModelDescription,
     TensorInfo,
+    partition_metadata_from_description,
+    validate_dense_stage_assignment,
 )
+from swarm_inference.model.descriptor import ResolvedModelDescriptor
+from swarm_inference.model.partition import ModelPartitionMetadata, StageAssignment
 from swarm_inference.model.qwen3_cache import StaticStageKVCache
 from swarm_inference.model.qwen3_runtime import (
     AttentionBackend,
@@ -228,6 +234,8 @@ def _weight_map(model_path: Path) -> dict[str, str]:
 
 
 class Qwen3Adapter:
+    adapter_id = "qwen3_dense"
+    adapter_version = "3"
     supported_model_types: ClassVar[frozenset[str]] = frozenset({"qwen3"})
     supported_architectures: ClassVar[frozenset[str]] = frozenset({"Qwen3ForCausalLM"})
 
@@ -241,6 +249,114 @@ class Qwen3Adapter:
         return model_type in self.supported_model_types and (
             not architectures or bool(architectures & self.supported_architectures)
         )
+
+    def probe_model(self, model: ResolvedModelDescriptor) -> AdapterSupportReport:
+        if model.format != "safetensors":
+            return AdapterSupportReport(
+                self.adapter_id,
+                AdapterSupportStatus.UNSUPPORTED_FORMAT,
+                "dense native execution requires safetensors",
+            )
+        architecture = (model.architecture or "").lower()
+        if "qwen3" not in architecture or "moe" in architecture:
+            return AdapterSupportReport(
+                self.adapter_id,
+                AdapterSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                f"architecture {model.architecture!r} is not dense Qwen3",
+            )
+        return AdapterSupportReport(
+            self.adapter_id,
+            AdapterSupportStatus.SUPPORTED,
+            "dense Qwen3 safetensors checkpoint is supported",
+        )
+
+    def inspect(self, model: ResolvedModelDescriptor) -> ModelDescription:
+        if not model.local_paths:
+            raise FileNotFoundError("native Qwen3 inspection requires acquired local files")
+        roots = {str(Path(item).resolve().parent) for item in model.local_paths}
+        if len(roots) != 1:
+            raise IntegrityError("native Qwen3 files do not share one checkpoint directory")
+        return self.describe(
+            Path(next(iter(roots))),
+            model_id=model.model_id,
+            model_revision=model.revision,
+        )
+
+    def build_stage_artifact(self, *args: Any, **kwargs: Any) -> Any:
+        from swarm_inference.cluster.artifacts import build_native_stage_artifact
+
+        return build_native_stage_artifact(self, *args, **kwargs)
+
+    def create_stage_executor(self, *args: Any, **kwargs: Any) -> Any:
+        request = kwargs.pop("request", None)
+        resolved_model_path = kwargs.pop("resolved_model_path", None)
+        fast_path_profile_store = kwargs.pop("fast_path_profile_store", None)
+        if request is not None:
+            from swarm_inference.execution.qwen3_stage import Qwen3StageExecutor
+
+            return Qwen3StageExecutor.from_load_request(
+                request,
+                resolved_model_path,
+                fast_path_profile_store=fast_path_profile_store,
+            )
+        return Qwen3StageModule(*args, **kwargs)
+
+    def inspect_partition_metadata(
+        self,
+        model_path: Path,
+        *,
+        model_revision: str,
+        tokenizer_revision: str,
+    ) -> ModelPartitionMetadata:
+        description = self.describe(
+            model_path,
+            model_id=str(model_path),
+            model_revision=model_revision,
+        )
+        return partition_metadata_from_description(
+            description,
+            tokenizer_revision=tokenizer_revision,
+        )
+
+    def validate_stage_assignment(
+        self,
+        model_path: Path,
+        *,
+        assignment: StageAssignment,
+        stage_count: int,
+        model_revision: str,
+        tokenizer_revision: str,
+        remote_experts: set[tuple[int, int]] | None = None,
+    ) -> ModelPartitionMetadata:
+        if remote_experts:
+            raise ValueError("dense Qwen3 stages cannot own routed expert placements")
+        metadata = self.inspect_partition_metadata(
+            model_path,
+            model_revision=model_revision,
+            tokenizer_revision=tokenizer_revision,
+        )
+        validate_dense_stage_assignment(
+            metadata,
+            assignment=assignment,
+            stage_count=stage_count,
+        )
+        return metadata
+
+    def reference_executor(self, model: ResolvedModelDescriptor, **kwargs: Any) -> Any:
+        from transformers import AutoModelForCausalLM
+
+        source = Path(model.local_paths[0]).parent if model.local_paths else model.model_id
+        return AutoModelForCausalLM.from_pretrained(
+            source,
+            revision=None if model.local_paths else model.revision,
+            local_files_only=bool(model.local_paths),
+            **kwargs,
+        )
+
+    def fast_paths(self) -> tuple[Any, ...]:
+        from swarm_inference.model.qwen3_fast_path import Qwen3CudaFastPath
+
+        return (Qwen3CudaFastPath(),)
 
     def map_tensor_to_component(self, tensor_name: str) -> ComponentRef:
         if tensor_name.startswith("model.embed_tokens."):
@@ -1210,7 +1326,14 @@ class Qwen3StageModule:
         self,
         metadata: BatchExecutionMetadata,
     ) -> StaticStageKVCache:
-        """Install stable position/mask buffers used by an actual CUDA graph."""
+        """Install stable position/mask buffers used by an actual CUDA graph.
+
+        The buffers belong to the resident stage, rather than to one request.
+        Captured graph slots may therefore share them while retaining separate
+        static KV allocations.  Stage execution is serialised by the worker's
+        bounded execution queue, so updating the buffers immediately before a
+        replay cannot race another slot.
+        """
 
         if self.engine_options.compile_mode != Qwen3CompileMode.MANUAL_CUDA_GRAPH:
             raise RuntimeError("CUDA graph setup requires manual_cuda_graph mode")
@@ -1220,20 +1343,29 @@ class Qwen3StageModule:
             raise ValueError("CUDA graph decode captures exactly one token")
         cache = self._get_static_cache(metadata)
         cache.fixed_shape = True
-        self._graph_batch_size = metadata.batch_size
-        self._graph_position = self.torch.empty((1,), dtype=self.torch.long, device=self.device)
-        self._graph_position.fill_(metadata.token_position)
-        self._graph_position_ids = self._graph_position.view(1, 1).expand(metadata.batch_size, 1)
-        self._graph_attention_mask = self.torch.empty(
-            (
-                metadata.batch_size,
-                1,
-                1,
-                self.engine_options.max_sequence_length,
-            ),
-            dtype=self.torch.bool,
-            device=self.device,
-        )
+        if self._graph_position is None:
+            self._graph_batch_size = metadata.batch_size
+            self._graph_position = self.torch.empty(
+                (1,), dtype=self.torch.long, device=self.device
+            )
+            self._graph_position_ids = self._graph_position.view(1, 1).expand(
+                metadata.batch_size, 1
+            )
+            self._graph_attention_mask = self.torch.empty(
+                (
+                    metadata.batch_size,
+                    1,
+                    1,
+                    self.engine_options.max_sequence_length,
+                ),
+                dtype=self.torch.bool,
+                device=self.device,
+            )
+        elif metadata.batch_size != self._graph_batch_size:
+            raise ValueError(
+                "resident CUDA graph slots must use one homogeneous batch bucket: "
+                f"configured={self._graph_batch_size} requested={metadata.batch_size}"
+            )
         self.update_cuda_graph_position(metadata.token_position)
         return cache
 
@@ -1809,6 +1941,33 @@ class Qwen3StageModule:
             )
         return removed
 
+    def reset_cuda_graph_slot(self, request_id: str) -> int:
+        """Scrub one retained graph slot without invalidating captured pointers."""
+
+        matched = [
+            cache for cache in self._static_caches.values() if request_id in cache.request_ids
+        ]
+        if len(matched) != 1:
+            raise KeyError(
+                f"expected one retained CUDA graph cache for {request_id!r}; "
+                f"found {len(matched)}"
+            )
+        cache = matched[0]
+        used_bytes = cache.used_bytes
+        cache.rollback(0)
+        self._sampling_state.delete(request_id)
+        self._boundary_records.pop(request_id, None)
+        self._cache_history.append(
+            {
+                **cache.summary(),
+                "event": "cuda-graph-slot-reset",
+                "released_logical_bytes": used_bytes,
+                "allocation_retained": True,
+                "stale_after_operation": False,
+            }
+        )
+        return used_bytes
+
     def inspect_cache(self, request_id: str | None = None) -> list[dict[str, Any]]:
         dynamic = [
             record.summary()
@@ -1836,6 +1995,8 @@ class Qwen3StageModule:
             "dynamic_cache_memory_fallback_group_count": len(self._dynamic_cache_fallback_groups),
             "cache_dtype": self.engine_options.cache_dtype.value,
             "compile_mode": self.engine_options.compile_mode.value,
+            "cuda_graph_buffers_ready": self._graph_position is not None,
+            "cuda_graph_batch_size": self._graph_batch_size,
             "compile_diagnostics": self._compile_diagnostics.payload(),
             "matmul_accumulation": "fp32",
             "allow_bf16_reduced_precision_reduction": bool(
@@ -1940,6 +2101,97 @@ class Qwen3StageModule:
                 {f"lm_head.{name}": value for name, value in self.lm_head.named_parameters()}
             )
         return parameters
+
+    def load_owned_weights(
+        self,
+        shard_path: Path,
+        *,
+        model_revision: str,
+    ) -> list[str]:
+        """Load a canonical stage artifact without the experiment manifest type.
+
+        Stage artifacts contain only tensors assigned by the native adapter.
+        The loader therefore validates ownership against the module itself and
+        rejects both missing and surplus tensors.  Tied embeddings are mapped
+        to the output projection on a final-only stage and to both endpoint
+        names for a one-stage deployment.
+        """
+
+        from safetensors import safe_open
+
+        root = shard_path.expanduser().resolve()
+        files = [root] if root.is_file() else sorted(root.glob("*.safetensors"))
+        if not files:
+            raise IntegrityError(f"no stage safetensors found under {root}")
+        parameters = self._parameters()
+        loaded_parameters: set[str] = set()
+        loaded_sources: list[str] = []
+
+        def targets(source_name: str) -> list[str]:
+            result: list[str] = []
+            if source_name.startswith("model.embed_tokens."):
+                suffix = source_name.removeprefix("model.embed_tokens.")
+                if self.embed_tokens is not None:
+                    result.append(f"embed_tokens.{suffix}")
+                if self.lm_head is not None and (
+                    self.embed_tokens is None
+                    or bool(getattr(self.config, "tie_word_embeddings", False))
+                ):
+                    result.append(f"lm_head.{suffix}")
+            match = _LAYER_PATTERN.match(source_name)
+            if match is not None:
+                layer_index = int(match.group(1))
+                if self.stage.layer_start <= layer_index < self.stage.layer_end:
+                    result.append(source_name.removeprefix("model."))
+            if source_name.startswith("model.norm.") and self.norm is not None:
+                result.append(source_name.removeprefix("model."))
+            if source_name.startswith("lm_head.") and self.lm_head is not None:
+                result.append(source_name)
+            return list(dict.fromkeys(result))
+
+        with self.torch.no_grad():
+            for file in files:
+                with safe_open(file, framework="pt", device="cpu") as handle:
+                    for source_name in handle.keys():  # noqa: SIM118
+                        if source_name in loaded_sources:
+                            raise IntegrityError(
+                                f"stage {self.stage_id} repeats tensor {source_name}"
+                            )
+                        target_names = targets(source_name)
+                        if not target_names:
+                            raise IntegrityError(
+                                f"stage {self.stage_id} artifact contains unowned tensor "
+                                f"{source_name}"
+                            )
+                        value = handle.get_tensor(source_name)
+                        for target_name in target_names:
+                            try:
+                                parameter = parameters[target_name]
+                            except KeyError as exc:
+                                raise IntegrityError(
+                                    f"no stage parameter {target_name} for source {source_name}"
+                                ) from exc
+                            if tuple(value.shape) != tuple(parameter.shape):
+                                raise IntegrityError(
+                                    f"shape mismatch for {source_name}: "
+                                    f"artifact={tuple(value.shape)} "
+                                    f"module={tuple(parameter.shape)}"
+                                )
+                            parameter.copy_(value.to(device=self.device, dtype=self.dtype))
+                            loaded_parameters.add(target_name)
+                        loaded_sources.append(source_name)
+        if self.device.type == "cuda":
+            self.torch.cuda.synchronize(self.device)
+        missing = sorted(set(parameters) - loaded_parameters)
+        if missing:
+            raise IntegrityError(
+                f"stage {self.stage_id} is missing parameters after artifact load: {missing}"
+            )
+        self.model_revision = model_revision
+        self.loaded_source_tensors = sorted(loaded_sources)
+        self._autotune_attention_backend()
+        self._configure_compile()
+        return self.loaded_source_tensors
 
     def load_weights(
         self,

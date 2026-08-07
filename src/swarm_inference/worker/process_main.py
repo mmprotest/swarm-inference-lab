@@ -122,6 +122,8 @@ def main() -> None:
     parser.add_argument("--model-cache-dir")
     parser.add_argument("--allow-model-download", action="store_true")
     parser.add_argument("--max-stage-sessions", type=int, default=256)
+    parser.add_argument("--llamacpp-runtime-manifest")
+    parser.add_argument("--colibri-runtime-manifest")
     arguments = parser.parse_args()
     if arguments.stage_runtime and (
         not arguments.data_listen or not arguments.data_advertise or not arguments.device
@@ -261,6 +263,8 @@ def main() -> None:
                 allow_model_download=arguments.allow_model_download,
                 max_stage_sessions=arguments.max_stage_sessions,
                 trusted_coordinator_fingerprint=arguments.trusted_coordinator_fingerprint,
+                llamacpp_runtime_manifest=arguments.llamacpp_runtime_manifest,
+                colibri_runtime_manifest=arguments.colibri_runtime_manifest,
             )
         finally:
             if shutdown_watcher is not None:

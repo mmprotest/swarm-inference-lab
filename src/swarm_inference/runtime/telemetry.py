@@ -11,8 +11,18 @@ from collections import Counter, defaultdict
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from itertools import pairwise
 from pathlib import Path
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
+
+from pydantic import ConfigDict, Field, NonNegativeInt
+
+from swarm_inference.config.models import StrictModel
+
+if TYPE_CHECKING:
+    from swarm_inference.engines.interfaces import ClusterCapabilities, ExecutionPlan
+    from swarm_inference.model.descriptor import ResolvedModelDescriptor
+    from swarm_inference.protocol.product import ProductStagePlan
 
 PRODUCT_EVENT_NAMES = frozenset(
     {
@@ -33,8 +43,465 @@ PRODUCT_EVENT_NAMES = frozenset(
         "session_cancelled",
         "session_closed",
         "stage_unloaded",
+        "engine_process_started",
+        "engine_process_stopped",
+        "fast_path_profiled",
+        "inference_recorded",
     }
 )
+
+
+class DeviceResidencyRecord(StrictModel):
+    """One immutable snapshot of where an execution allocation resides."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    worker_id: str
+    device_id: str
+    category: Literal[
+        "weights",
+        "kv-cache",
+        "expert-cache",
+        "cuda-graph",
+        "compile-artifact",
+        "gguf-rpc-cache",
+    ]
+    tier: Literal["vram", "ram", "mapped", "storage"]
+    bytes: NonNegativeInt
+    identity: str = ""
+
+
+class DataMovementRecord(StrictModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source: str
+    destination: str
+    bytes: NonNegativeInt
+    elapsed_ms: float = Field(ge=0)
+    reason: str
+
+
+class InferenceTelemetryRecord(StrictModel):
+    """Complete engine-neutral product record for one terminal inference."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[1] = 1
+    request_id: str
+    model_id: str
+    model_revision: str
+    model_fingerprint: str
+    model_format: str
+    quantization: str | None = None
+    tokenizer_identity: str | None = None
+    engine_id: str
+    engine_revision: str | None = None
+    engine_runtime_revisions: dict[str, str] = Field(default_factory=dict)
+    execution_identity: str
+    adapter_id: str | None = None
+    fast_paths: dict[str, str] = Field(default_factory=dict)
+    topology: str
+    workers: tuple[str, ...]
+    worker_roles: dict[str, str]
+    stage_assignments: tuple[dict[str, Any], ...] = ()
+    expert_assignments: tuple[dict[str, Any], ...] = ()
+    microshard_assignments: tuple[dict[str, Any], ...] = ()
+    residency: tuple[DeviceResidencyRecord, ...] = ()
+    movement: tuple[DataMovementRecord, ...] = ()
+    generated_tokens: NonNegativeInt = 0
+    ttft_ms: float | None = Field(default=None, ge=0)
+    prefill_tokens_s: float | None = Field(default=None, ge=0)
+    decode_tokens_s: float | None = Field(default=None, ge=0)
+    aggregate_tokens_s: float | None = Field(default=None, ge=0)
+    inter_token_latency_ms: tuple[float, ...] = ()
+    serial_waits_per_token: float | None = Field(default=None, ge=0)
+    messages_per_token: float | None = Field(default=None, ge=0)
+    payload_bytes_per_token: float | None = Field(default=None, ge=0)
+    network_bytes: NonNegativeInt | None = None
+    queue_time_ms: float | None = Field(default=None, ge=0)
+    compute_time_ms: float | None = Field(default=None, ge=0)
+    serialization_time_ms: float | None = Field(default=None, ge=0)
+    cache_hits: NonNegativeInt | None = None
+    cache_misses: NonNegativeInt | None = None
+    bytes_loaded: NonNegativeInt | None = None
+    bytes_evicted: NonNegativeInt | None = None
+    prefetch_useful_bytes: NonNegativeInt | None = None
+    prefetch_wasted_bytes: NonNegativeInt | None = None
+    cache_stall_time_ms: float | None = Field(default=None, ge=0)
+    fallbacks: tuple[str, ...] = ()
+    recoveries: NonNegativeInt = 0
+    exactness_verified: bool = False
+    metric_sources: dict[str, str] = Field(default_factory=dict)
+    engine_metrics: dict[str, Any] = Field(default_factory=dict)
+    status: Literal["completed", "failed", "cancelled"]
+    recorded_at_unix_ns: NonNegativeInt = Field(default_factory=time.time_ns)
+
+
+def _nonnegative_float(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    result = float(value)
+    return result if result >= 0 else None
+
+
+def _nonnegative_int(value: object) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    result = int(value)
+    return result if result >= 0 else None
+
+
+def _metric(mapping: Mapping[str, Any], *path: str) -> object:
+    value: object = mapping
+    for component in path:
+        if not isinstance(value, Mapping):
+            return None
+        value = value.get(component)
+    return value
+
+
+def _first_float(mapping: Mapping[str, Any], paths: Sequence[tuple[str, ...]]) -> float | None:
+    for path in paths:
+        value = _nonnegative_float(_metric(mapping, *path))
+        if value is not None:
+            return value
+    return None
+
+
+def _first_int(mapping: Mapping[str, Any], paths: Sequence[tuple[str, ...]]) -> int | None:
+    for path in paths:
+        value = _nonnegative_int(_metric(mapping, *path))
+        if value is not None:
+            return value
+    return None
+
+
+def _json_metrics(metrics: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Return a durable JSON representation without losing terminal evidence."""
+
+    if not metrics:
+        return {}
+    return json.loads(json.dumps(dict(metrics), sort_keys=True, default=str))
+
+
+def execution_runtime_revisions(
+    cluster: ClusterCapabilities,
+    plan: ExecutionPlan,
+) -> dict[str, str]:
+    active = {
+        worker_id
+        for worker_id, role in plan.worker_roles.items()
+        if role not in {"idle", "storage_cache"}
+    }
+    revisions: dict[str, str] = {}
+    for worker in cluster.workers:
+        if worker.worker_id not in active:
+            continue
+        capability = worker.engine(plan.engine_id)
+        if capability is not None and capability.runtime_revision:
+            revisions[worker.worker_id] = capability.runtime_revision
+    return dict(sorted(revisions.items()))
+
+
+def _execution_layout(
+    execution_plan: ExecutionPlan,
+    deployed_plan: ExecutionPlan | ProductStagePlan,
+) -> tuple[
+    dict[str, str],
+    dict[str, str],
+    tuple[dict[str, Any], ...],
+    tuple[dict[str, Any], ...],
+    tuple[dict[str, Any], ...],
+]:
+    roles = dict(execution_plan.worker_roles)
+    fast_paths = dict(execution_plan.fast_paths)
+    stages: list[dict[str, Any]] = []
+    experts: list[dict[str, Any]] = []
+    microshards: list[dict[str, Any]] = []
+    assignments = getattr(deployed_plan, "assignments", None)
+    if assignments is not None:
+        for item in assignments:
+            roles[item.worker_id] = item.worker_role
+            if item.fast_path_id:
+                fast_paths[item.worker_id] = item.fast_path_id
+            stages.append(
+                {
+                    "stage_id": item.stage_id,
+                    "worker_id": item.worker_id,
+                    "device": item.device,
+                    "layer_start": item.assignment.layer_start,
+                    "layer_end": item.assignment.layer_end,
+                    "owns_embeddings": item.assignment.owns_embeddings,
+                    "owns_final_norm": item.assignment.owns_final_norm,
+                    "owns_output_projection": item.assignment.owns_output_projection,
+                    "fast_path_id": item.fast_path_id,
+                    "fast_path_mode": item.fast_path_mode,
+                    "fast_path_profile_fingerprint": item.fast_path_profile_fingerprint,
+                }
+            )
+        for stage in getattr(deployed_plan, "expert_plans", ()):
+            for placement in stage.placements:
+                row = {
+                    "stage_id": stage.stage_id,
+                    **placement.model_dump(mode="json", exclude={"worker_endpoints", "microshards"}),
+                }
+                experts.append(row)
+                role = (
+                    "whole_expert"
+                    if placement.strategy == "whole-remote"
+                    else "expert_microshard"
+                )
+                if placement.strategy != "local":
+                    for worker_id in placement.worker_ids:
+                        roles.setdefault(worker_id, role)
+                for shard in placement.microshards:
+                    microshards.append({"stage_id": stage.stage_id, **dict(shard)})
+        idle_workers = getattr(deployed_plan, "idle_workers", {})
+    else:
+        stages.extend(dict(item) for item in execution_plan.stage_assignments)
+        idle_workers = execution_plan.idle_workers
+    for worker_id in idle_workers:
+        roles.setdefault(worker_id, "idle")
+    return (
+        dict(sorted(roles.items())),
+        dict(sorted(fast_paths.items())),
+        tuple(stages),
+        tuple(experts),
+        tuple(microshards),
+    )
+
+
+def build_inference_telemetry_record(
+    *,
+    request_id: str,
+    model: ResolvedModelDescriptor,
+    execution_plan: ExecutionPlan,
+    deployed_plan: ExecutionPlan | ProductStagePlan,
+    cluster: ClusterCapabilities,
+    status: Literal["completed", "failed", "cancelled"],
+    submitted_monotonic_s: float,
+    completed_monotonic_s: float,
+    token_monotonic_s: Sequence[float],
+    terminal_metrics: Mapping[str, Any] | None = None,
+    terminal_timing_metrics: Mapping[str, float] | None = None,
+    per_token_expert_metrics: Sequence[Mapping[str, Any]] = (),
+    recoveries: int = 0,
+) -> InferenceTelemetryRecord:
+    """Build one honest, engine-neutral record from observed terminal facts.
+
+    Planner predictions are deliberately excluded. Metrics that were not
+    observed or reported remain ``None`` instead of being represented as zero.
+    Raw engine evidence is retained so new normalizers need not change the
+    execution engines or discard historical measurements.
+    """
+
+    engine_metrics = _json_metrics(terminal_metrics)
+    timing_metrics = _json_metrics(terminal_timing_metrics)
+    if timing_metrics:
+        engine_metrics = {**engine_metrics, "coordinator_timing": timing_metrics}
+    roles, fast_paths, stages, experts, microshards = _execution_layout(
+        execution_plan,
+        deployed_plan,
+    )
+    runtime_revisions = execution_runtime_revisions(cluster, execution_plan)
+    unique_revisions = sorted(set(runtime_revisions.values()))
+    engine_revision = unique_revisions[0] if len(unique_revisions) == 1 else None
+
+    observed_tokens = tuple(float(item) for item in token_monotonic_s)
+    elapsed_s = max(0.0, completed_monotonic_s - submitted_monotonic_s)
+    ttft_ms = (
+        max(0.0, observed_tokens[0] - submitted_monotonic_s) * 1000
+        if observed_tokens
+        else None
+    )
+    inter_token_ms = tuple(
+        max(0.0, right - left) * 1000
+        for left, right in pairwise(observed_tokens)
+    )
+    decode_tokens_s = (
+        (len(observed_tokens) - 1) / (observed_tokens[-1] - observed_tokens[0])
+        if len(observed_tokens) > 1 and observed_tokens[-1] > observed_tokens[0]
+        else None
+    )
+    aggregate_tokens_s = len(observed_tokens) / elapsed_s if elapsed_s > 0 else None
+    sources: dict[str, str] = {}
+    if ttft_ms is not None:
+        sources["ttft_ms"] = "client-observed"
+    if decode_tokens_s is not None:
+        sources["decode_tokens_s"] = "client-observed"
+    if aggregate_tokens_s is not None:
+        sources["aggregate_tokens_s"] = "client-observed"
+    if inter_token_ms:
+        sources["inter_token_latency_ms"] = "client-observed"
+
+    prefill_tokens_s = _first_float(
+        engine_metrics,
+        (
+            ("prefill_tokens_s",),
+            ("prompt_tokens_per_second",),
+            ("timings", "prompt_per_second"),
+        ),
+    )
+    if prefill_tokens_s is not None:
+        sources["prefill_tokens_s"] = "engine-reported"
+    reported_decode = _first_float(
+        engine_metrics,
+        (
+            ("decode_tokens_per_second",),
+            ("decode_tokens_s",),
+            ("timings", "predicted_per_second"),
+        ),
+    )
+    if decode_tokens_s is None and reported_decode is not None:
+        decode_tokens_s = reported_decode
+        sources["decode_tokens_s"] = "engine-reported"
+
+    integer_metrics = {
+        "network_bytes": (
+            ("network_bytes",),
+            ("bytes_transferred",),
+        ),
+        "cache_hits": (
+            ("cache_hits",),
+            ("expert_cache_hits",),
+            ("telemetry_summary", "expert_cache_hits"),
+        ),
+        "cache_misses": (
+            ("cache_misses",),
+            ("expert_cache_misses",),
+            ("telemetry_summary", "expert_cache_misses"),
+        ),
+        "bytes_loaded": (
+            ("bytes_loaded",),
+            ("storage_read_bytes",),
+            ("telemetry_summary", "storage_read_bytes"),
+        ),
+        "bytes_evicted": (("bytes_evicted",),),
+        "prefetch_useful_bytes": (("prefetch_useful_bytes",),),
+        "prefetch_wasted_bytes": (("prefetch_wasted_bytes",),),
+    }
+    measured_ints = {
+        name: _first_int(engine_metrics, paths) for name, paths in integer_metrics.items()
+    }
+    expert_network_bytes = sum(
+        value
+        for metrics in per_token_expert_metrics
+        if (value := _nonnegative_int(metrics.get("bytes_transferred"))) is not None
+    )
+    if expert_network_bytes:
+        measured_ints["network_bytes"] = (measured_ints["network_bytes"] or 0) + expert_network_bytes
+        sources["network_bytes"] = "coordinator-verified-expert-trace"
+    for name, value in measured_ints.items():
+        if value is not None and name not in sources:
+            sources[name] = "engine-reported"
+
+    float_metrics = {
+        "serial_waits_per_token": (("serial_waits_per_token",),),
+        "messages_per_token": (("messages_per_token",),),
+        "payload_bytes_per_token": (("payload_bytes_per_token",),),
+        "queue_time_ms": (("queue_time_ms",),),
+        "compute_time_ms": (
+            ("compute_time_ms",),
+            ("cpu_compute_duration_ms",),
+        ),
+        "serialization_time_ms": (("serialization_time_ms",),),
+        "cache_stall_time_ms": (("cache_stall_time_ms",),),
+    }
+    measured_floats = {
+        name: _first_float(engine_metrics, paths) for name, paths in float_metrics.items()
+    }
+    for name, value in measured_floats.items():
+        if value is not None:
+            sources[name] = "engine-reported"
+
+    fallbacks: list[str] = []
+    reported_fallbacks = engine_metrics.get("fallbacks")
+    if isinstance(reported_fallbacks, list):
+        fallbacks.extend(str(item) for item in reported_fallbacks)
+    expert_fallbacks = sum(
+        value
+        for metrics in per_token_expert_metrics
+        if (value := _nonnegative_int(metrics.get("fallbacks"))) is not None
+    )
+    if expert_fallbacks:
+        fallbacks.append(f"expert-local-fallback:{expert_fallbacks}")
+
+    exactness_verified = any(
+        engine_metrics.get(name) is True
+        for name in ("exactness_verified", "exactness_passed", "correctness_passed")
+    )
+    if exactness_verified:
+        sources["exactness_verified"] = "engine-reported"
+
+    residency: list[DeviceResidencyRecord] = []
+    raw_residency = engine_metrics.get("residency", [])
+    if isinstance(raw_residency, list):
+        for item in raw_residency:
+            if isinstance(item, Mapping):
+                residency.append(DeviceResidencyRecord.model_validate(item))
+    movement: list[DataMovementRecord] = []
+    raw_movement = engine_metrics.get("movement", [])
+    if isinstance(raw_movement, list):
+        for item in raw_movement:
+            if isinstance(item, Mapping):
+                movement.append(DataMovementRecord.model_validate(item))
+
+    adapter = execution_plan.engine_parameters.get("adapter_id")
+    if adapter is None:
+        adapter = execution_plan.engine_parameters.get("model_family")
+    return InferenceTelemetryRecord(
+        request_id=request_id,
+        model_id=model.model_id,
+        model_revision=model.revision,
+        model_fingerprint=model.content_fingerprint,
+        model_format=model.format,
+        quantization=model.quantization,
+        tokenizer_identity=model.tokenizer_identity,
+        engine_id=execution_plan.engine_id,
+        engine_revision=engine_revision,
+        engine_runtime_revisions=runtime_revisions,
+        execution_identity=execution_plan.execution_identity,
+        adapter_id=str(adapter) if adapter is not None else None,
+        fast_paths=fast_paths,
+        topology=(
+            deployed_plan.topology_id
+            if hasattr(deployed_plan, "topology_id")
+            else execution_plan.topology
+        ),
+        workers=tuple(sorted(roles)),
+        worker_roles=roles,
+        stage_assignments=stages,
+        expert_assignments=experts,
+        microshard_assignments=microshards,
+        residency=tuple(residency),
+        movement=tuple(movement),
+        generated_tokens=len(observed_tokens),
+        ttft_ms=ttft_ms,
+        prefill_tokens_s=prefill_tokens_s,
+        decode_tokens_s=decode_tokens_s,
+        aggregate_tokens_s=aggregate_tokens_s,
+        inter_token_latency_ms=inter_token_ms,
+        serial_waits_per_token=measured_floats["serial_waits_per_token"],
+        messages_per_token=measured_floats["messages_per_token"],
+        payload_bytes_per_token=measured_floats["payload_bytes_per_token"],
+        network_bytes=measured_ints["network_bytes"],
+        queue_time_ms=measured_floats["queue_time_ms"],
+        compute_time_ms=measured_floats["compute_time_ms"],
+        serialization_time_ms=measured_floats["serialization_time_ms"],
+        cache_hits=measured_ints["cache_hits"],
+        cache_misses=measured_ints["cache_misses"],
+        bytes_loaded=measured_ints["bytes_loaded"],
+        bytes_evicted=measured_ints["bytes_evicted"],
+        prefetch_useful_bytes=measured_ints["prefetch_useful_bytes"],
+        prefetch_wasted_bytes=measured_ints["prefetch_wasted_bytes"],
+        cache_stall_time_ms=measured_floats["cache_stall_time_ms"],
+        fallbacks=tuple(fallbacks),
+        recoveries=recoveries,
+        exactness_verified=exactness_verified,
+        metric_sources=dict(sorted(sources.items())),
+        engine_metrics=engine_metrics,
+        status=status,
+    )
 
 
 class ProductTelemetry:
@@ -65,6 +532,11 @@ class ProductTelemetry:
                     handle.flush()
                     os.fsync(handle.fileno())
         return row
+
+    def record_inference(self, record: InferenceTelemetryRecord) -> dict[str, Any]:
+        """Persist a terminal record without importing any experiment recorder."""
+
+        return self.emit("inference_recorded", **record.model_dump(mode="json"))
 
 
 class LifecycleObserver(Protocol):
@@ -433,12 +905,17 @@ def reconstruct_critical_path(
 
 __all__ = [
     "PRODUCT_EVENT_NAMES",
+    "DataMovementRecord",
+    "DeviceResidencyRecord",
+    "InferenceTelemetryRecord",
     "JsonlLifecycleObserver",
     "LifecycleObserver",
     "ProductTelemetry",
     "TraceContext",
     "TraceWriter",
+    "build_inference_telemetry_record",
     "configure_lifecycle_observer",
+    "execution_runtime_revisions",
     "lifecycle_observer",
     "lifecycle_observer_from_environment",
     "merge_traces",

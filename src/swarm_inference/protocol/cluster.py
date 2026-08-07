@@ -22,6 +22,12 @@ from swarm_inference.cluster.models import (
     VersionCompatibility,
 )
 from swarm_inference.config.models import StrictModel
+from swarm_inference.engines.interfaces import ExecutionPlan
+from swarm_inference.protocol.engine_worker import (
+    EngineControlAction,
+    EngineDeploymentLease,
+)
+from swarm_inference.protocol.stage_worker import ArtifactTransferLease
 from swarm_inference.security.identity import public_key_fingerprint
 from swarm_inference.security.trust_store import normalize_fingerprint
 
@@ -447,6 +453,40 @@ class ArtifactOperationResponse(StrictModel):
     detail: str | None = None
 
 
+class EngineLeaseRequest(StrictModel):
+    """Ask the coordinator to authorize one worker engine action."""
+
+    schema_version: Literal[1] = CLUSTER_RPC_SCHEMA_VERSION
+    authentication: ClusterRequestAuthentication
+    action: EngineControlAction
+    worker_id: str
+    deployment_id: str
+    plan: ExecutionPlan
+    ttl_seconds: PositiveInt = Field(default=300, le=3600)
+
+
+class EngineLeaseResponse(StrictModel):
+    schema_version: Literal[1] = CLUSTER_RPC_SCHEMA_VERSION
+    lease: EngineDeploymentLease
+
+
+class EngineArtifactLeaseRequest(StrictModel):
+    """Ask the coordinator to authorize transfer of one plan-bound artifact."""
+
+    schema_version: Literal[1] = CLUSTER_RPC_SCHEMA_VERSION
+    authentication: ClusterRequestAuthentication
+    worker_id: str
+    deployment_id: str
+    plan: ExecutionPlan
+    manifest: ArtifactManifest
+    ttl_seconds: PositiveInt = Field(default=300, le=3600)
+
+
+class EngineArtifactLeaseResponse(StrictModel):
+    schema_version: Literal[1] = CLUSTER_RPC_SCHEMA_VERSION
+    lease: ArtifactTransferLease
+
+
 class VersionCompatibilityRequest(StrictModel):
     schema_version: Literal[1] = CLUSTER_RPC_SCHEMA_VERSION
     authentication: ClusterRequestAuthentication | None = None
@@ -483,6 +523,10 @@ __all__ = [
     "DirectNetworkProbeAck",
     "DirectNetworkProbeRequest",
     "DirectNetworkProbeResponse",
+    "EngineArtifactLeaseRequest",
+    "EngineArtifactLeaseResponse",
+    "EngineLeaseRequest",
+    "EngineLeaseResponse",
     "NetworkProbeControlRequest",
     "NetworkProbeControlResponse",
     "NetworkProbeTicket",

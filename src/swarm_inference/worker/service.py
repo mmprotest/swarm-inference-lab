@@ -14,6 +14,7 @@ from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
 from swarm_inference.protocol.product import ProductTokenPublication
+from swarm_inference.runtime.performance_profiles import FastPathProfileStore
 from swarm_inference.runtime.shutdown import (
     install_shutdown_signal_handlers,
     wait_for_service_shutdown,
@@ -86,7 +87,25 @@ async def run_worker(
     validation_evidence_ids: list[str] | None = None,
     latest_validation_unix_ns: int | None = None,
     validation_detail: str = "no retained validation evidence",
+    llamacpp_runtime_manifest: str | Path | None = None,
+    colibri_runtime_manifest: str | Path | None = None,
 ) -> None:
+    from swarm_inference.engines.installed import discover_installed_engine_manifests
+
+    installed_engines = discover_installed_engine_manifests(
+        llamacpp=(
+            Path(llamacpp_runtime_manifest).expanduser().resolve()
+            if llamacpp_runtime_manifest is not None
+            else None
+        ),
+        colibri=(
+            Path(colibri_runtime_manifest).expanduser().resolve()
+            if colibri_runtime_manifest is not None
+            else None
+        ),
+    )
+    llamacpp_runtime_manifest = installed_engines.llamacpp
+    colibri_runtime_manifest = installed_engines.colibri
     roles = set(worker_roles or ({WorkerRole.CONTIGUOUS_STAGE} if stage_runtime_enabled else set()))
     expert_roles = roles & {
         WorkerRole.WHOLE_EXPERT,
@@ -95,6 +114,12 @@ async def run_worker(
     }
     if WorkerRole.CONTIGUOUS_STAGE in roles:
         stage_runtime_enabled = True
+    if (
+        llamacpp_runtime_manifest is not None or colibri_runtime_manifest is not None
+    ) and trusted_coordinator_fingerprint is None:
+        raise ValueError(
+            "managed execution engines require an explicitly pinned coordinator fingerprint"
+        )
     stage_memory_limit_bytes = memory_limit_bytes
     if expert_roles:
         if trusted_coordinator_fingerprint is None:
@@ -158,6 +183,8 @@ async def run_worker(
         validation_evidence_ids=validation_evidence_ids,
         latest_validation_unix_ns=latest_validation_unix_ns,
         validation_detail=validation_detail,
+        llamacpp_runtime_manifest=llamacpp_runtime_manifest,
+        colibri_runtime_manifest=colibri_runtime_manifest,
     )
     capability.roles = sorted(roles, key=lambda item: item.value)
     if stage_runtime_enabled and expert_roles:
@@ -391,10 +418,25 @@ async def run_worker(
             artifact_lease_releaser=(
                 artifact_manager.release if artifact_manager is not None else None
             ),
+            fast_path_profile_store=FastPathProfileStore(
+                Path(identity_path).expanduser().resolve().parent
+                / "fast-path-profiles.json"
+            ),
         )
+    from swarm_inference.worker.engine_factory import build_worker_engine_runtime
+
+    engine_runtime = build_worker_engine_runtime(
+        worker_id=capability.worker_id,
+        advertised_endpoint=advertised_endpoint,
+        identity_directory=Path(identity_path).expanduser().resolve().parent,
+        artifact_manager=artifact_manager,
+        llamacpp_runtime_manifest=llamacpp_runtime_manifest,
+        colibri_runtime_manifest=colibri_runtime_manifest,
+    )
     service = PersistentStageWorkerService(
         agent=agent,
         stage_runtime=stage_runtime,
+        engine_runtime=engine_runtime,
         artifact_manager=artifact_manager,
         trusted_coordinator_fingerprint=trusted_coordinator_fingerprint,
         model_shard_root=str(model_shard_root) if model_shard_root else None,
@@ -471,6 +513,20 @@ async def run_worker(
         service.configure_artifact_trust(
             coordinator_public_key=response.coordinator_public_key,
             coordinator_fingerprint=response.coordinator_public_key_fingerprint,
+        )
+    if engine_runtime is not None:
+        if (
+            response.coordinator_public_key is None
+            or response.coordinator_public_key_fingerprint is None
+        ):
+            await service.stop()
+            await client.close()
+            if expert_server is not None:
+                await expert_server.close()
+            raise RuntimeError("coordinator did not provide an authenticated engine identity")
+        service.configure_engine_trust(
+            coordinator_public_key=response.coordinator_public_key,
+            expected_fingerprint=trusted_coordinator_fingerprint,
         )
     if expert_runtime is not None:
         if (

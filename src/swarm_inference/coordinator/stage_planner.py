@@ -19,6 +19,7 @@ from swarm_inference.coordinator.expert_planner import (
     ExpertUtilityPlanner,
 )
 from swarm_inference.coordinator.model_catalog import InspectedProductModel
+from swarm_inference.engines.interfaces import ExecutionEngineCapability
 from swarm_inference.model.partition import (
     ModelPartitionMetadata,
     PartitionMethod,
@@ -66,6 +67,39 @@ def _normalised_device(worker: WorkerCapability) -> str:
     if worker.device_identifier is None:
         raise ValueError(f"worker {worker.worker_id} has no stage device")
     return worker.device_identifier
+
+
+def _stage_fast_path(
+    worker: WorkerCapability,
+    *,
+    adapter_id: str,
+) -> tuple[str | None, str, str | None]:
+    """Choose only an adapter-advertised mode; exact admission stays worker-local.
+
+    The coordinator deliberately knows neither architecture names nor kernel
+    implementations.  A CUDA worker receives ``auto-exact`` so its persistent
+    profile store can benchmark (once), verify, and reuse the best candidate.
+    CPU and non-CUDA workers use the reference eager path.
+    """
+
+    for raw in worker.execution_engines:
+        try:
+            capability = ExecutionEngineCapability.model_validate(raw)
+        except ValueError:
+            continue
+        if capability.engine_id != "native-stage" or not capability.enabled:
+            continue
+        matching = tuple(
+            item for item in capability.adapter_fast_paths if item.adapter_id == adapter_id
+        )
+        if not matching:
+            return None, "eager", None
+        device_types = {item.device_type for item in capability.devices}
+        selected = sorted(matching, key=lambda item: item.fast_path_id)[0]
+        if "cuda" not in device_types:
+            return None, "eager", None
+        return selected.fast_path_id, "auto-exact", None
+    return None, "eager", None
 
 
 def _measured_compute_ms(
@@ -596,6 +630,25 @@ class ProductStagePlanner:
         digest = hashlib.sha256(
             json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
+        participating_workers = {item.worker_id for item in final_assignments}
+        participating_workers.update(
+            worker_id
+            for expert_plan in expert_plans
+            for placement in expert_plan.placements
+            for worker_id in placement.worker_ids
+        )
+        utility_by_worker = {item.worker_id: item for item in utility_rows}
+        idle_workers = {
+            worker_id: (
+                utility_by_worker[worker_id].reason
+                if worker_id in utility_by_worker
+                else selected_report.excluded_workers.get(
+                    worker_id, "no positive utility in the selected plan"
+                )
+            )
+            for worker_id in sorted(inspected.all_capabilities or inspected.capabilities)
+            if worker_id not in participating_workers
+        }
         return ProductStagePlan(
             plan_id=f"plan-{digest[:20]}",
             topology_id=f"topology-{digest[:20]}",
@@ -609,6 +662,14 @@ class ProductStagePlanner:
             expert_plans=list(expert_plans),
             expert_model_fingerprint=inspected.metadata.model_fingerprint,
             expert_quantization_fingerprint=inspected.metadata.quantization_fingerprint,
+            optional_mechanisms={
+                "lossless_activation_compression": False,
+                "prefetch": False,
+                "speculation": False,
+            },
+            prefill_parameters={"topology": selected_report.topology},
+            decode_parameters={"topology": selected_report.topology},
+            idle_workers=idle_workers,
             report=plan_report,
         )
 
@@ -846,6 +907,10 @@ class ProductStagePlanner:
                         memory = dict(state.memory)
                         memory[key] = required
                         headroom = worker.effective_memory_bytes - required
+                        fast_path_id, fast_path_mode, profile_fingerprint = _stage_fast_path(
+                            worker,
+                            adapter_id=inspected.spec.adapter_id,
+                        )
                         assignment_record = PlanWorkerAssignment(
                             stage_id=stage_id,
                             worker_id=worker.worker_id,
@@ -855,6 +920,9 @@ class ProductStagePlanner:
                             effective_memory_bytes=worker.effective_memory_bytes,
                             required_memory_bytes=required,
                             assignment=assignment,
+                            fast_path_id=fast_path_id,
+                            fast_path_mode=fast_path_mode,
+                            fast_path_profile_fingerprint=profile_fingerprint,
                         )
                         expanded.append(
                             _SearchState(

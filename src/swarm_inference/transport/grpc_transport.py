@@ -15,6 +15,14 @@ import grpc
 from swarm_inference.config.models import StrictModel, SyntheticModelConfig
 from swarm_inference.exceptions import MemoryLimitExceededError, TransportError
 from swarm_inference.protocol.checksums import sha256_bytes
+from swarm_inference.protocol.engine_worker import (
+    EngineActionResponse,
+    EngineInferenceChunk,
+    EngineInferenceResponse,
+    PrepareEngineRequest,
+    SubmitEngineRequest,
+    UnloadEngineRequest,
+)
 from swarm_inference.protocol.messages import (
     Ack,
     ActivationRequest,
@@ -65,6 +73,7 @@ from swarm_inference.worker.agent import WorkerAgent
 
 if TYPE_CHECKING:
     from swarm_inference.cluster.artifacts import ArtifactManager
+    from swarm_inference.worker.engine_runtime import PersistentEngineRuntime
     from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
@@ -365,6 +374,73 @@ class GrpcTransport:
             ArtifactTransferResponse,
         )
 
+    async def prepare_engine(
+        self, endpoint: str, request: PrepareEngineRequest
+    ) -> EngineActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/PrepareEngine",
+            request,
+            EngineActionResponse,
+        )
+
+    async def submit_engine(
+        self, endpoint: str, request: SubmitEngineRequest
+    ) -> EngineInferenceResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/SubmitEngine",
+            request,
+            EngineInferenceResponse,
+        )
+
+    async def submit_engine_stream(
+        self, endpoint: str, request: SubmitEngineRequest
+    ) -> AsyncIterator[EngineInferenceChunk]:
+        call = self._channel(endpoint).unary_stream(
+            "/swarm.v1.Worker/SubmitEngineStream",
+            request_serializer=lambda value: value,
+            response_deserializer=lambda value: value,
+        )
+        serialization_started = time.perf_counter_ns()
+        serialized = serialize_message(request)
+        self.metrics.serialisation_time_ms += (
+            time.perf_counter_ns() - serialization_started
+        ) / 1_000_000
+        self.metrics.messages_sent += 1
+        self.metrics.payload_bytes_sent += len(serialized)
+        self.metrics.streams_created += 1
+        call_started = time.perf_counter_ns()
+        try:
+            responses = call(serialized, timeout=self.timeout_s)
+            async for raw in responses:
+                self.metrics.messages_received += 1
+                self.metrics.payload_bytes_received += len(raw)
+                deserialization_started = time.perf_counter_ns()
+                chunk = parse_message(raw, EngineInferenceChunk)
+                self.metrics.deserialisation_time_ms += (
+                    time.perf_counter_ns() - deserialization_started
+                ) / 1_000_000
+                yield chunk
+            self.metrics.call_time_ms += (
+                time.perf_counter_ns() - call_started
+            ) / 1_000_000
+        except grpc.aio.AioRpcError as exc:
+            raise TransportError(
+                "streaming gRPC engine submission to "
+                f"{endpoint} failed ({exc.code().name}): {exc.details()}"
+            ) from exc
+
+    async def unload_engine(
+        self, endpoint: str, request: UnloadEngineRequest
+    ) -> EngineActionResponse:
+        return await self._unary(
+            endpoint,
+            "/swarm.v1.Worker/UnloadEngine",
+            request,
+            EngineActionResponse,
+        )
+
     async def load_stage(self, endpoint: str, request: LoadStageRequest) -> StageActionResponse:
         return await self._unary(
             endpoint, "/swarm.v1.Worker/LoadStage", request, StageActionResponse
@@ -482,6 +558,7 @@ class WorkerRpcServer:
         model_shard_root: str | None = None,
         maximum_message_bytes: int = 4 * 1024 * 1024,
         stage_runtime: PersistentStageRuntime | None = None,
+        engine_runtime: PersistentEngineRuntime | None = None,
         artifact_manager: ArtifactManager | None = None,
         trusted_coordinator_fingerprint: str | None = None,
         maximum_active_artifact_transfers: int = 128,
@@ -496,6 +573,7 @@ class WorkerRpcServer:
         self.model_shard_root = model_shard_root
         self.maximum_message_bytes = maximum_message_bytes
         self.stage_runtime = stage_runtime
+        self.engine_runtime = engine_runtime
         self.artifact_manager = artifact_manager
         self.trusted_coordinator_fingerprint = trusted_coordinator_fingerprint
         self._artifact_coordinator_public_key: str | None = None
@@ -581,6 +659,26 @@ class WorkerRpcServer:
             ),
             "VerifyArtifact": grpc.unary_unary_rpc_method_handler(
                 self._verify_artifact,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "PrepareEngine": grpc.unary_unary_rpc_method_handler(
+                self._prepare_engine,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "SubmitEngine": grpc.unary_unary_rpc_method_handler(
+                self._submit_engine,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "SubmitEngineStream": grpc.unary_stream_rpc_method_handler(
+                self._submit_engine_stream,
+                request_deserializer=lambda value: value,
+                response_serializer=lambda value: value,
+            ),
+            "UnloadEngine": grpc.unary_unary_rpc_method_handler(
+                self._unload_engine,
                 request_deserializer=lambda value: value,
                 response_serializer=lambda value: value,
             ),
@@ -689,8 +787,12 @@ class WorkerRpcServer:
                 try:
                     await self.agent.stop()
                 finally:
-                    if self.stage_runtime is not None:
-                        await self.stage_runtime.close()
+                    try:
+                        if self.stage_runtime is not None:
+                            await self.stage_runtime.close()
+                    finally:
+                        if self.engine_runtime is not None:
+                            await self.engine_runtime.close()
             self.bound_port = None
             self._started = False
             self._closed = True
@@ -1293,4 +1395,90 @@ class WorkerRpcServer:
             return serialize_message(response)
         except Exception as exc:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+            raise
+
+    def configure_engine_trust(
+        self,
+        *,
+        coordinator_public_key: str,
+        expected_fingerprint: str | None,
+    ) -> None:
+        if self.engine_runtime is None:
+            return
+        self.engine_runtime.configure_trust(
+            coordinator_public_key=coordinator_public_key,
+            expected_fingerprint=expected_fingerprint,
+        )
+
+    def _require_engine_runtime(self) -> PersistentEngineRuntime:
+        if self.engine_runtime is None:
+            raise RuntimeError("worker engine runtime is disabled")
+        return self.engine_runtime
+
+    async def _prepare_engine(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, PrepareEngineRequest)
+            return serialize_message(await self._require_engine_runtime().prepare(request))
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _submit_engine(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, SubmitEngineRequest)
+            return serialize_message(await self._require_engine_runtime().submit(request))
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _submit_engine_stream(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> AsyncIterator[bytes]:
+        try:
+            request = parse_message(data, SubmitEngineRequest)
+            async for event in self._require_engine_runtime().stream(request):
+                yield serialize_message(
+                    EngineInferenceChunk(
+                        worker_id=request.worker_id,
+                        request_id=request.request_id,
+                        deployment_id=request.deployment_id,
+                        event=event,
+                    )
+                )
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
+            raise
+
+    async def _unload_engine(
+        self,
+        data: bytes,
+        context: grpc.aio.ServicerContext[Any, Any],
+    ) -> bytes:
+        try:
+            request = parse_message(data, UnloadEngineRequest)
+            return serialize_message(await self._require_engine_runtime().unload(request))
+        except PermissionError as exc:
+            await context.abort(grpc.StatusCode.PERMISSION_DENIED, str(exc))
+            raise
+        except Exception as exc:
+            await context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(exc))
             raise

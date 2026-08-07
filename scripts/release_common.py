@@ -201,9 +201,14 @@ def read_json_object(path: Path) -> dict[str, Any]:
 
 def load_toolchain(path: Path = ROOT / "installer/windows/toolchain.json") -> dict[str, Any]:
     document = read_json_object(path)
-    _require_keys(document, {"schema_version", "python", "uv", "dotnet", "inno_setup"}, "toolchain")
+    _require_keys(
+        document,
+        {"schema_version", "python", "uv", "dotnet", "inno_setup", "llamacpp"},
+        "toolchain",
+    )
     if document["schema_version"] != 1:
         raise ReleaseError("unsupported toolchain schema version")
+    _validate_llamacpp_toolchain(document["llamacpp"])
     return document
 
 
@@ -221,6 +226,135 @@ def _require_sha256(value: object, label: str, *, allow_zero: bool = False) -> s
     if not allow_zero and value == ZERO_SHA256:
         raise ReleaseError(f"{label} cannot use the embedded-manifest placeholder hash")
     return value
+
+
+def _safe_basename(value: object, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or Path(value).name != value
+        or "/" in value
+        or "\\" in value
+    ):
+        raise ReleaseError(f"{label} must be one safe basename")
+    return value
+
+
+def _validate_llamacpp_profile(
+    value: object,
+    label: str,
+    *,
+    source_archives: bool,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ReleaseError(f"{label} must be an object")
+    _require_keys(
+        value,
+        {
+            "platform",
+            "archives",
+            "server_binary",
+            "server_sha256",
+            "rpc_server_binary",
+            "rpc_server_sha256",
+            "build_flags",
+            "device_support",
+        },
+        label,
+    )
+    if value["platform"] != "windows-x64":
+        raise ReleaseError(f"{label}.platform must be windows-x64")
+    _safe_basename(value["server_binary"], f"{label}.server_binary")
+    _safe_basename(value["rpc_server_binary"], f"{label}.rpc_server_binary")
+    _require_sha256(value["server_sha256"], f"{label}.server_sha256")
+    _require_sha256(value["rpc_server_sha256"], f"{label}.rpc_server_sha256")
+    archives = value["archives"]
+    if not isinstance(archives, list) or not archives:
+        raise ReleaseError(f"{label}.archives must be a non-empty array")
+    for index, archive in enumerate(archives):
+        archive_label = f"{label}.archives[{index}]"
+        if not isinstance(archive, dict):
+            raise ReleaseError(f"{archive_label} must be an object")
+        if source_archives:
+            _require_keys(
+                archive,
+                {"filename", "url", "sha256", "size_bytes"},
+                archive_label,
+            )
+            url = archive["url"]
+            if not isinstance(url, str) or not url.startswith(
+                "https://github.com/ggml-org/llama.cpp/releases/download/"
+            ):
+                raise ReleaseError(f"{archive_label}.url is not an official HTTPS release asset")
+            plain = {key: archive[key] for key in ("filename", "sha256", "size_bytes")}
+        else:
+            plain = archive
+        _validate_plain_file(plain, archive_label, require_size=True)
+    flags = value["build_flags"]
+    if (
+        not isinstance(flags, dict)
+        or not flags
+        or any(
+            not isinstance(key, str) or not isinstance(item, bool) for key, item in flags.items()
+        )
+        or flags.get("GGML_RPC") is not True
+    ):
+        raise ReleaseError(f"{label}.build_flags must prove GGML_RPC and contain booleans")
+    devices = value["device_support"]
+    if (
+        not isinstance(devices, list)
+        or not devices
+        or any(not isinstance(item, str) or not item for item in devices)
+        or len({item.casefold() for item in devices}) != len(devices)
+        or "CPU" not in devices
+    ):
+        raise ReleaseError(f"{label}.device_support is invalid")
+    return value
+
+
+def _validate_llamacpp_identity(value: object, label: str, *, source_archives: bool) -> None:
+    if not isinstance(value, dict):
+        raise ReleaseError(f"{label} must be an object")
+    _require_keys(
+        value,
+        {"repository", "release_tag", "runtime_revision", "profiles"},
+        label,
+    )
+    if value["repository"] != "ggml-org/llama.cpp":
+        raise ReleaseError(f"{label}.repository is invalid")
+    if not isinstance(value["release_tag"], str) or not value["release_tag"]:
+        raise ReleaseError(f"{label}.release_tag is invalid")
+    if (
+        not isinstance(value["runtime_revision"], str)
+        or _COMMIT.fullmatch(value["runtime_revision"]) is None
+    ):
+        raise ReleaseError(f"{label}.runtime_revision must be an immutable commit")
+    profiles = value["profiles"]
+    if not isinstance(profiles, dict):
+        raise ReleaseError(f"{label}.profiles must be an object")
+    _require_keys(
+        profiles,
+        {"windows-x64-cpu", "windows-x64-cuda"},
+        f"{label}.profiles",
+    )
+    cpu = _validate_llamacpp_profile(
+        profiles["windows-x64-cpu"],
+        f"{label}.profiles.windows-x64-cpu",
+        source_archives=source_archives,
+    )
+    cuda = _validate_llamacpp_profile(
+        profiles["windows-x64-cuda"],
+        f"{label}.profiles.windows-x64-cuda",
+        source_archives=source_archives,
+    )
+    if cpu["build_flags"].get("GGML_CUDA") is not False or "CUDA" in cpu["device_support"]:
+        raise ReleaseError(f"{label} CPU profile may not claim CUDA")
+    if cuda["build_flags"].get("GGML_CUDA") is not True or "CUDA" not in cuda["device_support"]:
+        raise ReleaseError(f"{label} CUDA profile must prove CUDA support")
+
+
+def _validate_llamacpp_toolchain(value: object) -> None:
+    _validate_llamacpp_identity(value, "llamacpp toolchain", source_archives=True)
 
 
 def _validate_plain_file(
@@ -304,6 +438,7 @@ def validate_manifest(document: Mapping[str, Any]) -> dict[str, Any]:
         "uv",
         "wheel",
         "runtime_profiles",
+        "engine_runtimes",
         "bootstrapper",
         "installer",
         "payload",
@@ -364,6 +499,15 @@ def validate_manifest(document: Mapping[str, Any]) -> dict[str, Any]:
     _require_keys(profiles, {"windows-x64-cpu", "windows-x64-cuda"}, "runtime_profiles")
     _validate_plain_file(profiles["windows-x64-cpu"], "CPU profile", require_size=True)
     _validate_plain_file(profiles["windows-x64-cuda"], "CUDA profile", require_size=True)
+    engine_runtimes = document["engine_runtimes"]
+    if not isinstance(engine_runtimes, dict):
+        raise ReleaseError("engine_runtimes must be an object")
+    _require_keys(engine_runtimes, {"llamacpp"}, "engine_runtimes")
+    _validate_llamacpp_identity(
+        engine_runtimes["llamacpp"],
+        "engine_runtimes.llamacpp",
+        source_archives=False,
+    )
     _validate_signed_file(document["bootstrapper"], "bootstrapper", allow_zero_hash=False)
     _validate_signed_file(
         document["installer"], "installer", allow_zero_hash=scope == "embedded-payload"
@@ -394,8 +538,13 @@ def validate_manifest(document: Mapping[str, Any]) -> dict[str, Any]:
 
 def manifest_file_entries(document: Mapping[str, Any]) -> list[dict[str, Any]]:
     profiles = document["runtime_profiles"]
+    engine_runtimes = document["engine_runtimes"]
     payload = document["payload"]
-    if not isinstance(profiles, Mapping) or not isinstance(payload, list):
+    if (
+        not isinstance(profiles, Mapping)
+        or not isinstance(engine_runtimes, Mapping)
+        or not isinstance(payload, list)
+    ):
         raise ReleaseError("release manifest file collections are malformed")
     entries: list[dict[str, Any]] = []
     for key in ("uv", "wheel", "bootstrapper", "installer"):
@@ -408,6 +557,18 @@ def manifest_file_entries(document: Mapping[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(value, dict):
             raise ReleaseError(f"release manifest {key} entry is malformed")
         entries.append(value)
+    llamacpp = engine_runtimes.get("llamacpp")
+    if not isinstance(llamacpp, Mapping) or not isinstance(llamacpp.get("profiles"), Mapping):
+        raise ReleaseError("release manifest llama.cpp engine runtimes are malformed")
+    engine_profiles = llamacpp["profiles"]
+    for key in ("windows-x64-cpu", "windows-x64-cuda"):
+        profile = engine_profiles.get(key)
+        if not isinstance(profile, Mapping) or not isinstance(profile.get("archives"), list):
+            raise ReleaseError(f"release manifest llama.cpp {key} profile is malformed")
+        for value in profile["archives"]:
+            if not isinstance(value, dict):
+                raise ReleaseError(f"release manifest llama.cpp {key} archive is malformed")
+            entries.append(value)
     for value in payload:
         if not isinstance(value, dict):
             raise ReleaseError("release manifest payload entry is malformed")

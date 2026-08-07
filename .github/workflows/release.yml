@@ -42,6 +42,35 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Prove immutable remote tag checkout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          $remoteTag = (git ls-remote --exit-code origin "refs/tags/$env:RELEASE_TAG").Trim()
+          $remotePeeled = (git ls-remote origin "refs/tags/$env:RELEASE_TAG^{}").Trim()
+          $headCommit = (git rev-parse HEAD).Trim().ToLowerInvariant()
+          $tagCommit = (git rev-parse "$env:RELEASE_TAG^{}").Trim().ToLowerInvariant()
+          $remoteCommit = if ($remotePeeled) {
+            ($remotePeeled -split "\s+")[0].ToLowerInvariant()
+          } else {
+            ($remoteTag -split "\s+")[0].ToLowerInvariant()
+          }
+          Write-Host "checked_out_commit=$headCommit"
+          Write-Host "peeled_tag_commit=$tagCommit"
+          Write-Host "remote_tag_commit=$remoteCommit"
+          if ($headCommit -ne $tagCommit -or $headCommit -ne $remoteCommit) {
+            throw "checked-out commit, local tag, and remote tag do not identify one commit"
+          }
+          [ordered]@{
+            schema_version = 1
+            release_tag = $env:RELEASE_TAG
+            checked_out_commit = $headCommit
+            local_tag_commit = $tagCommit
+            remote_tag_commit = $remoteCommit
+          } | ConvertTo-Json | Set-Content artifacts/release-checkout.json -Encoding utf8
+
       - name: Install exact build Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
@@ -50,6 +79,7 @@ jobs:
       - name: Download and verify pinned uv
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           python scripts/prepare_windows_toolchain.py --tools uv
           "PINNED_UV=$((Resolve-Path build/toolchain/uv-0.12.0/uv.exe).Path)" | Out-File $env:GITHUB_ENV -Append
@@ -61,6 +91,7 @@ jobs:
       - name: Synchronise source lock and verify source dependency
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV sync --locked --python 3.11 --extra cpu --extra dev
           & $env:PINNED_UV run --python 3.11 python scripts/verify_colibri_source.py
@@ -68,6 +99,7 @@ jobs:
       - name: Formatting, lint, and types
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 ruff format --check src tests scripts
           & $env:PINNED_UV run --python 3.11 ruff check src tests scripts
@@ -76,6 +108,7 @@ jobs:
       - name: Unit, installer, integration, and failure tests
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 pytest tests/unit -q
           & $env:PINNED_UV run --python 3.11 pytest tests/installer -q
@@ -84,6 +117,7 @@ jobs:
       - name: Build wheel and test isolated installation
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV build --wheel
           & $env:PINNED_UV run --python 3.11 python scripts/test_wheel_install.py --uv $env:PINNED_UV --python 3.11 --extra cpu --output artifacts/wheel-isolation.json
@@ -91,6 +125,7 @@ jobs:
       - name: Productization software acceptance
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 python scripts/run_productization_acceptance.py run --run-repeatability --repeatability-timeout-seconds 600 --output artifacts/acceptance
           Compress-Archive -Path artifacts/acceptance/* -DestinationPath artifacts/productization-acceptance.zip -Force
@@ -118,6 +153,7 @@ jobs:
       - name: Verify signatures and complete release payload
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 python scripts/verify_release_manifest.py release/generated/release-manifest.json
           & $env:PINNED_UV run --python 3.11 python scripts/verify_release_payload.py --manifest release/generated/release-manifest.json --payload-dir release/generated --checksums release/generated/SHA256SUMS
@@ -125,6 +161,7 @@ jobs:
       - name: Clean and silent setup acceptance
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & scripts/test_windows_installer.ps1 -SetupPath release/generated/SwarmInferenceSetup-x64.exe -Label release-clean -EvidencePath artifacts/release-clean.json
           & scripts/test_windows_installer.ps1 -SetupPath release/generated/SwarmInferenceSetup-x64.exe -Label release-silent -EvidencePath artifacts/release-silent.json
@@ -132,6 +169,7 @@ jobs:
       - name: Build upgrade and rollback fixtures
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc12 --output-dir release/fixtures/version-b
           & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc13 --fixture-doctor-failure --output-dir release/fixtures/broken
@@ -139,6 +177,7 @@ jobs:
       - name: Upgrade, rollback, and uninstall acceptance
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           & scripts/test_windows_upgrade.ps1 -SetupA release/generated/SwarmInferenceSetup-x64.exe -SetupB release/fixtures/version-b/SwarmInferenceSetup-x64.exe -BrokenSetup release/fixtures/broken/SwarmInferenceSetup-x64.exe -EvidencePath artifacts/release-upgrade.json
           & scripts/test_windows_uninstall.ps1 -SetupPath release/generated/SwarmInferenceSetup-x64.exe -EvidencePath artifacts/release-uninstall.json

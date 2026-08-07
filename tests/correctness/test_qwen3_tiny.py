@@ -94,6 +94,61 @@ def test_stage_created_from_serialised_config_selects_eager_attention(tiny_qwen)
     assert module.config._attn_implementation == "eager"
 
 
+def test_manual_graph_slots_reuse_position_buffers_and_retain_scrubbed_kv(
+    tiny_qwen,
+) -> None:
+    _, config, _, manifest = tiny_qwen
+    options = Qwen3EngineOptions.from_values(
+        profile="qwen3_fast",
+        attention_backend="sdpa",
+        cache_backend="static",
+        compile_mode="manual_cuda_graph",
+        max_sequence_length=16,
+        max_batch_size=1,
+    )
+    module = Qwen3StageModule(
+        config=config,
+        stage=manifest.stages[0],
+        device=torch.device("cpu"),
+        dtype=torch.bfloat16,
+        engine_options=options,
+    )
+    module.model_revision = "immutable-test-revision"
+    first = BatchExecutionMetadata(
+        requests=(
+            StageExecutionMetadata(
+                request_id="graph-slot-a",
+                token_position=0,
+                sequence_length=1,
+            ),
+        )
+    )
+    second = BatchExecutionMetadata(
+        requests=(
+            StageExecutionMetadata(
+                request_id="graph-slot-b",
+                token_position=0,
+                sequence_length=1,
+            ),
+        )
+    )
+
+    first_cache = module.begin_cuda_graph_decode(first)
+    position_pointer = module._graph_position.data_ptr()
+    second_cache = module.begin_cuda_graph_decode(second)
+
+    assert first_cache is not second_cache
+    assert module._graph_position.data_ptr() == position_pointer
+    first_cache.prepare_append(token_position=0, query_length=1)
+    first_cache.commit_append()
+    logical_bytes = first_cache.used_bytes
+    assert logical_bytes > 0
+    assert module.reset_cuda_graph_slot("graph-slot-a") == logical_bytes
+    assert first_cache.sequence_length == 0
+    assert first_cache.deleted is False
+    assert module.inspect_cache("graph-slot-a")[0]["reserved_bytes"] > 0
+
+
 def test_stage_rotary_frequencies_follow_reference_cpu_initialisation(
     tiny_qwen, monkeypatch
 ) -> None:

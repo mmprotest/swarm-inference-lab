@@ -75,6 +75,9 @@ Source: "{#PayloadDir}\uv.exe"; Flags: dontcopy
 Source: "{#PayloadDir}\{#WheelFilename}"; Flags: dontcopy
 Source: "{#PayloadDir}\windows-x64-cpu.requirements.lock"; Flags: dontcopy
 Source: "{#PayloadDir}\windows-x64-cuda.requirements.lock"; Flags: dontcopy
+Source: "{#PayloadDir}\llama-b9637-bin-win-cpu-x64.zip"; Flags: dontcopy
+Source: "{#PayloadDir}\llama-b9637-bin-win-cuda-13.3-x64.zip"; Flags: dontcopy
+Source: "{#PayloadDir}\cudart-llama-bin-win-cuda-13.3-x64.zip"; Flags: dontcopy
 Source: "{#PayloadDir}\release-manifest.json"; Flags: dontcopy
 Source: "{#PayloadDir}\LICENSE"; Flags: dontcopy
 Source: "{#PayloadDir}\swarm.ico"; Flags: dontcopy
@@ -184,6 +187,9 @@ begin
   CopyPayloadFile('{#WheelFilename}', Payload + '\{#WheelFilename}');
   CopyPayloadFile('windows-x64-cpu.requirements.lock', Payload + '\windows-x64-cpu.requirements.lock');
   CopyPayloadFile('windows-x64-cuda.requirements.lock', Payload + '\windows-x64-cuda.requirements.lock');
+  CopyPayloadFile('llama-b9637-bin-win-cpu-x64.zip', Payload + '\llama-b9637-bin-win-cpu-x64.zip');
+  CopyPayloadFile('llama-b9637-bin-win-cuda-13.3-x64.zip', Payload + '\llama-b9637-bin-win-cuda-13.3-x64.zip');
+  CopyPayloadFile('cudart-llama-bin-win-cuda-13.3-x64.zip', Payload + '\cudart-llama-bin-win-cuda-13.3-x64.zip');
   CopyPayloadFile('release-manifest.json', Payload + '\release-manifest.json');
   CopyPayloadFile('LICENSE', Payload + '\LICENSE');
   CopyPayloadFile('swarm.ico', Payload + '\swarm.ico');

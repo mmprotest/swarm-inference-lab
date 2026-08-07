@@ -33,6 +33,7 @@ from swarm_inference.model.shard_builder import (
     resolve_model,
     shard_model,
 )
+from swarm_inference.runtime.extensions import research_export
 from swarm_inference.runtime.shutdown import (
     install_shutdown_signal_handlers,
     wait_for_service_shutdown,
@@ -569,7 +570,7 @@ def simulate_command(
 ) -> None:
     """Run a deterministic event-queue simulation and write a complete report."""
 
-    from swarm_inference.experiments.runner import run_experiment
+    run_experiment = research_export("run_experiment")
 
     experiment = load_experiment_config(config)
     if experiment.execution_mode != ExecutionMode.SIMULATION:
@@ -650,12 +651,10 @@ def experiment_command(
 
     if ctx.invoked_subcommand is not None:
         return
-    from swarm_inference.experiments.loopback import (
-        run_loopback_experiment,
-        run_physical_experiment,
-    )
-    from swarm_inference.experiments.loopback_matrix import run_loopback_matrix
-    from swarm_inference.experiments.runner import run_experiment
+    run_loopback_experiment = research_export("run_loopback_experiment")
+    run_physical_experiment = research_export("run_physical_experiment")
+    run_loopback_matrix = research_export("run_loopback_matrix")
+    run_experiment = research_export("run_experiment")
 
     if config is None:
         _fail("experiment requires --config, or use a named subcommand")
@@ -799,10 +798,9 @@ def microsharding_command(
     """Run Experiment 006 intra-layer tensor and expert microsharding."""
 
     from swarm_inference.config.microsharding import load_microsharding_config
-    from swarm_inference.experiments.microsharding import (
-        MicroshardingOptions,
-        run_microsharding_experiment,
-    )
+
+    MicroshardingOptions = research_export("MicroshardingOptions")
+    run_microsharding_experiment = research_export("run_microsharding_experiment")
 
     try:
         experiment = load_microsharding_config(config)
@@ -860,9 +858,8 @@ def engine_performance_command(
     from swarm_inference.config.engine_performance import (
         load_engine_performance_config,
     )
-    from swarm_inference.experiments.engine_performance import (
-        run_engine_performance_experiment,
-    )
+
+    run_engine_performance_experiment = research_export("run_engine_performance_experiment")
 
     try:
         experiment = load_engine_performance_config(config)
@@ -919,10 +916,9 @@ def heterogeneous_node_utility_command(
     """Run Experiment 007 with real CUDA, x86 CPU, and isolated backends."""
 
     from swarm_inference.config.heterogeneous import load_heterogeneous_config
-    from swarm_inference.experiments.heterogeneous_node_utility import (
-        HeterogeneousOptions,
-        run_heterogeneous_node_experiment,
-    )
+
+    HeterogeneousOptions = research_export("HeterogeneousOptions")
+    run_heterogeneous_node_experiment = research_export("run_heterogeneous_node_experiment")
 
     try:
         experiment = load_heterogeneous_config(config)
@@ -979,10 +975,9 @@ def experiment_007_corrections_command(
     from swarm_inference.config.experiment_007_corrections import (
         load_experiment_007_corrections_config,
     )
-    from swarm_inference.experiments.experiment_007_corrections import (
-        Experiment007CorrectionOptions,
-        run_experiment_007_corrections,
-    )
+
+    Experiment007CorrectionOptions = research_export("Experiment007CorrectionOptions")
+    run_experiment_007_corrections = research_export("run_experiment_007_corrections")
 
     try:
         experiment = load_experiment_007_corrections_config(config)
@@ -1062,10 +1057,8 @@ def adaptive_moe_saturation_command(
 ) -> None:
     """Run Experiment 008 single-host adaptive sparse-MoE saturation."""
 
-    from swarm_inference.experiments.experiment_008.runner import (
-        Experiment008Options,
-        run_experiment_008,
-    )
+    Experiment008Options = research_export("Experiment008Options")
+    run_experiment_008 = research_export("run_experiment_008")
 
     selected = configuration.upper() if configuration else None
     if selected is not None and selected not in set("ABCDEFG"):
@@ -1162,10 +1155,8 @@ def colibri_adaptive_runtime_command(
 ) -> None:
     """Run Experiment 009's Colibri-backed adaptive expert runtime."""
 
-    from swarm_inference.experiments.experiment_009.runner import (
-        Experiment009Options,
-        run_experiment_009,
-    )
+    Experiment009Options = research_export("Experiment009Options")
+    run_experiment_009 = research_export("run_experiment_009")
 
     selected = configuration.upper() if configuration else None
     if selected is not None and selected not in set("ABCDE"):
@@ -1252,9 +1243,7 @@ def worker_fanout_command(
             _fail(f"--worker-counts must be comma-separated integers: {exc}")
         if not parsed_counts:
             _fail("--worker-counts cannot be empty")
-    from swarm_inference.experiments.worker_fanout import (
-        run_worker_fanout_experiment,
-    )
+    run_worker_fanout_experiment = research_export("run_worker_fanout_experiment")
 
     try:
         run = run_worker_fanout_experiment(
@@ -1297,7 +1286,6 @@ def _product_reference(
         model_id=model_id,
         model_revision=revision,
         tokenizer_revision=tokenizer_revision or revision,
-        adapter_id="olmoe",
         dtype=dtype,
         resolution_policy=(
             ModelResolutionPolicy.ALLOW_DOWNLOAD
@@ -1309,22 +1297,93 @@ def _product_reference(
 
 @model_app.command("inspect")
 def product_model_inspect_command(
-    coordinator: Annotated[str, typer.Option(help="Coordinator host:port.")],
-    model_id: Annotated[str, typer.Option("--model-id")],
-    revision: Annotated[str, typer.Option(help="Exact immutable model revision.")],
+    model: Annotated[
+        str | None,
+        typer.Argument(help="Hugging Face model ID/URL or local model path."),
+    ] = None,
+    coordinator: Annotated[
+        str | None,
+        typer.Option(help="Legacy native-stage coordinator host:port."),
+    ] = None,
+    model_id: Annotated[str | None, typer.Option("--model-id")] = None,
+    revision: Annotated[
+        str | None,
+        typer.Option(help="Advanced immutable revision override."),
+    ] = None,
     tokenizer_revision: Annotated[str | None, typer.Option()] = None,
     dtype: Annotated[str, typer.Option()] = "bfloat16",
+    variant: Annotated[str | None, typer.Option()] = None,
+    quantization: Annotated[str | None, typer.Option("--quant")] = None,
+    mode: Annotated[
+        str,
+        typer.Option(help="Variant objective: speed, throughput, capacity, or balanced."),
+    ] = "balanced",
     allow_download: Annotated[
         bool,
         typer.Option(help="Request download resolution only on workers that explicitly allow it."),
     ] = False,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Inspect exact OLMoE metadata across registered workers without loading weights."""
+    """Resolve immutable model facts and show every registered engine probe."""
+
+    if mode not in {"speed", "throughput", "capacity", "balanced"}:
+        _fail("--mode must be speed, throughput, capacity, or balanced")
+    if model is not None:
+        if model_id is not None:
+            _fail("use either positional MODEL or --model-id, not both")
+        from typing import cast
+
+        from swarm_inference.engines.local_capabilities import (
+            discover_local_cluster_capabilities,
+        )
+        from swarm_inference.model.resolver import ModelSourceResolver
+        from swarm_inference.runtime.canonical import CanonicalRuntime
+
+        try:
+            runtime = CanonicalRuntime(resolver=ModelSourceResolver())
+            _, inspection = runtime.inspect(
+                model,
+                discover_local_cluster_capabilities(),
+                revision=revision,
+                variant=variant,
+                quantization=quantization,
+                objective=cast(Any, mode),
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            _fail(f"model inspect failed: {exc}")
+        if json_output:
+            typer.echo(inspection.model_dump_json(indent=2))
+            return
+        typer.echo("Model")
+        typer.echo(f"  ID: {inspection.model.model_id}")
+        typer.echo(f"  Revision: {inspection.model.revision}")
+        typer.echo(f"  Fingerprint: {inspection.model.content_fingerprint}")
+        typer.echo(f"  Format: {inspection.model.format.upper()}")
+        typer.echo(f"  Architecture: {inspection.model.architecture or 'unknown'}")
+        if inspection.variants:
+            typer.echo("\nVariants")
+            for item in inspection.variants:
+                state = "feasible" if item.feasible else f"not feasible: {item.reason}"
+                marker = " (selected)" if item.selected else ""
+                typer.echo(f"  {item.variant:<24} {item.quantization:<12} {state}{marker}")
+        typer.echo("\nExecution engines")
+        for support in inspection.engine_support:
+            state = "supported" if support.supported else support.status.value.lower()
+            typer.echo(f"  {support.engine_id:<20} {state}: {support.reason}")
+        typer.echo("\nAutomatic choice")
+        typer.echo(f"  variant: {inspection.automatic_variant or 'native checkpoint'}")
+        typer.echo(f"  engine: {inspection.automatic_engine or 'requires measured competition'}")
+        typer.echo(f"  download bytes: {inspection.download_bytes}")
+        return
+
+    if coordinator is None or model_id is None or revision is None:
+        _fail("MODEL is required, or supply legacy --coordinator, --model-id, and --revision")
 
     from swarm_inference.coordinator.service import CoordinatorClient
     from swarm_inference.protocol.product import ModelInspectRequest
 
     async def run() -> Any:
+        assert coordinator is not None and model_id is not None and revision is not None
         client = CoordinatorClient(coordinator)
         try:
             return await client.inspect_model(
@@ -1357,7 +1416,10 @@ def product_model_plan_command(
     dtype: Annotated[str, typer.Option()] = "bfloat16",
     stage_count: Annotated[int | None, typer.Option(min=1, max=128)] = None,
     partition: Annotated[str, typer.Option(help="auto, equal, or balanced.")] = "auto",
-    mode: Annotated[str, typer.Option(help="speed, capacity, or balanced.")] = "speed",
+    mode: Annotated[
+        str,
+        typer.Option(help="speed, throughput, capacity, or balanced."),
+    ] = "speed",
     require_node: Annotated[list[str] | None, typer.Option("--require-node")] = None,
     exclude_node: Annotated[list[str] | None, typer.Option("--exclude-node")] = None,
     max_sequence_tokens: Annotated[int, typer.Option(min=1)] = 2048,
@@ -1379,12 +1441,12 @@ def product_model_plan_command(
     allow_download: Annotated[bool, typer.Option()] = False,
     output: Annotated[Path | None, typer.Option(help="Plan JSON path.")] = None,
 ) -> None:
-    """Build a measured, memory-aware contiguous OLMoE stage plan."""
+    """Build a measured, memory-aware contiguous native-stage plan."""
 
     if partition not in {"auto", "equal", "balanced"}:
         _fail("--partition must be auto, equal, or balanced")
-    if mode not in {"speed", "capacity", "balanced"}:
-        _fail("--mode must be speed, capacity, or balanced")
+    if mode not in {"speed", "throughput", "capacity", "balanced"}:
+        _fail("--mode must be speed, throughput, capacity, or balanced")
     if expert_policy not in {
         "auto",
         "local",
@@ -1816,7 +1878,7 @@ def worker_command(
     ] = None,
     dtype: Annotated[
         str,
-        typer.Option(help="Resident OLMoE stage execution dtype."),
+        typer.Option(help="Resident native-stage execution dtype."),
     ] = "bfloat16",
     model_cache_dir: Annotated[
         Path | None,
@@ -1853,7 +1915,7 @@ def worker_command(
         bool,
         typer.Option(
             "--stage-runtime/--no-stage-runtime",
-            help="Enable the persistent OLMoE stage runtime and direct TCP data plane.",
+            help="Enable the persistent native-stage runtime and direct TCP data plane.",
         ),
     ] = False,
     roles: Annotated[
@@ -1893,6 +1955,22 @@ def worker_command(
         int,
         typer.Option(min=1, help="Bounded expert request queue capacity."),
     ] = 64,
+    llamacpp_runtime_manifest: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Installer-owned pinned llama.cpp runtime manifest.",
+        ),
+    ] = None,
+    colibri_runtime_manifest: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Installer-owned pinned Colibri runtime manifest.",
+        ),
+    ] = None,
 ) -> None:
     """Start a physical or loopback worker using the same transport and agent."""
 
@@ -2015,6 +2093,8 @@ def worker_command(
             expert_residency_budget_bytes=int(expert_residency_budget_gb * 1024**3),
             expert_cache_budget_bytes=int(expert_cache_budget_gb * 1024**3),
             expert_queue_capacity=expert_queue_capacity,
+            llamacpp_runtime_manifest=llamacpp_runtime_manifest,
+            colibri_runtime_manifest=colibri_runtime_manifest,
         )
     )
 
@@ -2193,7 +2273,8 @@ def validate_model_command(
                     "validate-model distributed workers require torch-cpu, torch-cuda, or torch-mps"
                 )
             from swarm_inference.config.models import ModelManifest
-            from swarm_inference.experiments.real_model import run_qwen3_process_loopback
+
+            run_qwen3_process_loopback = research_export("run_qwen3_process_loopback")
 
             manifest = ModelManifest.model_validate_json(
                 (shards / "manifest.json").read_text(encoding="utf-8")
@@ -2290,7 +2371,7 @@ def real_experiment_command(
 ) -> None:
     """Run the complete process-isolated real Qwen3 Experiment 002."""
 
-    from swarm_inference.experiments.experiment_002 import run_experiment_002
+    run_experiment_002 = research_export("run_experiment_002")
 
     try:
         run = run_experiment_002(
@@ -2352,7 +2433,7 @@ def report_command(
 ) -> None:
     """Regenerate the self-contained HTML report from a run directory."""
 
-    from swarm_inference.experiments.reporting import render_html_report
+    render_html_report = research_export("render_html_report")
 
     summary = json.loads((run / "summary.json").read_text(encoding="utf-8"))
     requests = [
@@ -2377,7 +2458,7 @@ def validate_run_command(
 ) -> None:
     """Verify the required artifact set and recorded SHA-256 hashes."""
 
-    from swarm_inference.experiments.runner import validate_run
+    validate_run = research_export("validate_run")
 
     errors = validate_run(run)
     if errors:

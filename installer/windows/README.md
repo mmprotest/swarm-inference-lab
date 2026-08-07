@@ -2,15 +2,17 @@
 
 `SwarmInferenceSetup-x64.exe` is a per-user Inno Setup package. It embeds the
 self-contained `SwarmBootstrap.exe`, the exact application wheel, pinned `uv.exe`,
-two hash-locked runtime profiles, and the release manifest. The normal installation
-path never invokes `scripts/install.ps1` and does not require Python, Git, `uv`, or
-.NET on the target machine.
+two hash-locked Python runtime profiles, the pinned llama.cpp CPU/CUDA release
+archives, and the release manifest. The normal installation path never invokes
+`scripts/install.ps1`, consults an arbitrary `llama-server` on `PATH`, or requires
+Python, Git, `uv`, .NET, or a manual RPC launch on the target machine.
 
 The application lives under `%LOCALAPPDATA%\Programs\SwarmInference`; durable
 cluster identity and state remain separate under `%LOCALAPPDATA%\SwarmInference`.
 Inno Setup owns Apps & Features, shortcuts, and uninstall registration. The compiled
-bootstrapper owns verified dependency installation, backend validation, PATH, runtime
-transactions, service restoration, rollback, and state-preserving removal.
+bootstrapper owns verified dependency and engine installation, safe archive extraction,
+backend validation, PATH, runtime transactions, service restoration, rollback, and
+state-preserving removal.
 
 Build from the repository root:
 

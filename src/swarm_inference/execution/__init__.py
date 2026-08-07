@@ -13,10 +13,8 @@ from swarm_inference.execution.moe import (
     MoeExecutionResult,
     WholeExpertRemoteBackend,
 )
-from swarm_inference.execution.olmoe_stage import ContiguousOlmoeStage
 
 __all__ = [
-    "ContiguousOlmoeStage",
     "HybridMoeBackend",
     "LocalMoeBackend",
     "MicroshardRemoteBackend",

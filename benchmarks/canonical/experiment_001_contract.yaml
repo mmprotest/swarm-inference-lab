@@ -1,0 +1,20 @@
+contract_version: 1
+source_experiment: "001"
+status: COMPLETED
+evidence_bundle_identity: archived-experiment-001-direct-path
+promoted_mechanisms:
+  - direct_peer_data_plane
+  - persistent_peer_connections
+  - connection_reuse
+  - replica_aware_scheduling
+  - bounded_reservations
+  - worker_utilisation_measurement
+  - critical_path_capacity_model
+rejected_mechanisms:
+  - worker_count_as_unconditional_speed_proxy
+reference_models: [synthetic-controlled-workload]
+reference_hardware_class: controlled-loopback-replica-cluster
+correctness_gates: [zero_coordinator_activation_relay]
+performance_gates: [persistent_stream_reuse, positive_replica_scaling_when_concurrent]
+planner_gates: [replica_count_is_a_decision, idle_is_eligible]
+required_telemetry: [worker_utilisation, queue_depth, connection_reuse, coordinator_activation_edges]

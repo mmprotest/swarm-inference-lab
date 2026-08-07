@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 from pathlib import Path
 from typing import Any, Literal, Self
 
@@ -26,7 +27,7 @@ NODE_METADATA_DOCUMENT_VERSION: Literal[2] = 2
 NODE_REGISTRY_SCHEMA_VERSION: Literal[2] = 2
 PRODUCT_PROTOCOL_MAJOR = 1
 PRODUCT_PROTOCOL_MINOR = 0
-ARTIFACT_FORMAT_VERSION = 1
+ARTIFACT_FORMAT_VERSION = 2
 TRUSTED_LAN_SECURITY_CLASSIFICATION: Literal[
     "trusted-lan-private-network-unencrypted-data-plane"
 ] = "trusted-lan-private-network-unencrypted-data-plane"
@@ -57,7 +58,7 @@ class VersionCompatibility(StrictModel):
     minimum_product_protocol_minor: NonNegativeInt = PRODUCT_PROTOCOL_MINOR
     maximum_product_protocol_minor: NonNegativeInt = PRODUCT_PROTOCOL_MINOR
     artifact_format_versions: list[PositiveInt] = Field(
-        default_factory=lambda: [ARTIFACT_FORMAT_VERSION]
+        default_factory=lambda: [1, ARTIFACT_FORMAT_VERSION]
     )
 
     @model_validator(mode="after")
@@ -276,7 +277,7 @@ class NodeMetadata(StrictModel):
     product_protocol_major: PositiveInt = PRODUCT_PROTOCOL_MAJOR
     product_protocol_minor: NonNegativeInt = PRODUCT_PROTOCOL_MINOR
     artifact_format_versions: list[PositiveInt] = Field(
-        default_factory=lambda: [ARTIFACT_FORMAT_VERSION]
+        default_factory=lambda: [1, ARTIFACT_FORMAT_VERSION]
     )
     selected_backend: Backend | None = None
     selected_device: str | None = None
@@ -630,26 +631,58 @@ class ArtifactFile(StrictModel):
 class ArtifactManifest(StrictModel):
     schema_version: Literal[1] = CLUSTER_SCHEMA_VERSION
     document_version: Literal[1] = CLUSTER_DOCUMENT_VERSION
-    artifact_format_version: PositiveInt = ARTIFACT_FORMAT_VERSION
+    artifact_format_version: Literal[1, 2] = ARTIFACT_FORMAT_VERSION
+    format_version: Literal[1, 2] = ARTIFACT_FORMAT_VERSION
     artifact_id: str
     model_id: str
     model_revision: str
-    tokenizer_revision: str
-    adapter_id: Literal["olmoe"] = "olmoe"
-    source_hashes: dict[str, str]
-    stage_assignment_id: str
-    dtype: str
-    quantization: str = "none"
+    model_fingerprint: str = ""
+    tokenizer_revision: str | None = None
+    engine_id: str = "native-stage"
+    model_format: str = "safetensors"
+    artifact_kind: Literal[
+        "native-stage",
+        "gguf",
+        "tokenizer",
+        "converted-model",
+        "engine-runtime",
+        "expert-bank",
+        "microshard-bank",
+    ] = "native-stage"
+    adapter_id: str | None = None
+    source_hashes: dict[str, str] = Field(default_factory=dict)
+    stage_assignment_id: str | None = None
+    dtype: str | None = None
+    quantization: str | None = None
     content_hash: str
-    layer_start: NonNegativeInt
-    layer_end: PositiveInt
-    owns_embeddings: bool
-    owns_final_norm: bool
-    owns_output_projection: bool
+    layer_start: NonNegativeInt | None = None
+    layer_end: PositiveInt | None = None
+    owns_embeddings: bool = False
+    owns_final_norm: bool = False
+    owns_output_projection: bool = False
     tied_tensor_groups: list[list[str]] = Field(default_factory=list)
     files: list[ArtifactFile]
-    total_size_bytes: NonNegativeInt
-    created_at_unix_ns: PositiveInt
+    total_size_bytes: NonNegativeInt | None = None
+    total_bytes: NonNegativeInt | None = None
+    created_at_unix_ns: PositiveInt = Field(default_factory=time.time_ns)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_v1_manifest(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        migrated = dict(value)
+        stored_version = int(migrated.get("artifact_format_version", 1))
+        migrated.setdefault("format_version", stored_version)
+        migrated.setdefault("artifact_format_version", stored_version)
+        migrated.setdefault("engine_id", "native-stage")
+        migrated.setdefault("model_format", "safetensors")
+        migrated.setdefault("artifact_kind", "native-stage")
+        migrated.setdefault("model_fingerprint", migrated.get("content_hash", ""))
+        migrated.setdefault("total_bytes", migrated.get("total_size_bytes"))
+        migrated.setdefault("total_size_bytes", migrated.get("total_bytes"))
+        migrated.setdefault("content_hash", str(migrated.get("artifact_id", "")).removeprefix("sha256:"))
+        return migrated
 
     @field_validator("content_hash")
     @classmethod
@@ -663,14 +696,37 @@ class ArtifactManifest(StrictModel):
 
     @model_validator(mode="after")
     def validate_manifest_totals(self) -> Self:
-        if self.layer_end <= self.layer_start:
-            raise ValueError("artifact layer range must be non-empty")
+        if self.artifact_format_version not in {1, ARTIFACT_FORMAT_VERSION}:
+            raise ValueError("unsupported artifact format version")
+        if self.format_version != self.artifact_format_version:
+            raise ValueError("artifact format version fields disagree")
         if len({item.relative_path for item in self.files}) != len(self.files):
             raise ValueError("artifact file paths must be unique")
-        if sum(item.size_bytes for item in self.files) != self.total_size_bytes:
+        calculated_bytes = sum(item.size_bytes for item in self.files)
+        if self.total_size_bytes is None or self.total_size_bytes != calculated_bytes:
             raise ValueError("artifact total size does not match its files")
+        if self.total_bytes is None or self.total_bytes != calculated_bytes:
+            raise ValueError("artifact v2 total bytes does not match its files")
         if self.artifact_id not in {self.content_hash, f"sha256:{self.content_hash}"}:
             raise ValueError("artifact ID must be its complete content hash")
+        if self.artifact_format_version == 2 and not self.model_fingerprint:
+            raise ValueError("artifact v2 requires an immutable model fingerprint")
+        if self.artifact_kind == "native-stage":
+            if self.adapter_id is None:
+                raise ValueError("native-stage artifacts require an adapter ID")
+            if self.tokenizer_revision is None:
+                raise ValueError("native-stage artifacts require a tokenizer identity")
+            if self.stage_assignment_id is None or self.dtype is None:
+                raise ValueError("native-stage artifacts require stage and dtype identity")
+            if self.layer_start is None or self.layer_end is None:
+                raise ValueError("native-stage artifacts require a layer range")
+            if self.layer_end <= self.layer_start:
+                raise ValueError("artifact layer range must be non-empty")
+        elif any(
+            value is not None
+            for value in (self.stage_assignment_id, self.layer_start, self.layer_end)
+        ):
+            raise ValueError("non-stage artifacts cannot declare native stage ownership")
         return self
 
 

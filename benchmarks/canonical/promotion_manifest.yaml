@@ -1,0 +1,146 @@
+schema_version: 1
+allowed_dispositions: [REQUIRED, AVAILABLE_CONDITIONAL, REJECTED_DEFAULT, EVIDENCE_ONLY]
+experiments:
+  "001": {status: COMPLETED, contract: experiment_001_contract.yaml}
+  "002": {status: COMPLETED, contract: experiment_002_contract.yaml}
+  "003": {status: COMPLETED, contract: experiment_003_contract.yaml}
+  "004": {status: COMPLETED, contract: experiment_004_contract.yaml}
+  "005": {status: NO_COMPLETED_EXPERIMENT, contract: experiment_005_contract.yaml}
+  "006": {status: COMPLETED, contract: experiment_006_contract.yaml}
+  "007": {status: COMPLETED_CORRECTED, contract: experiment_007_contract.yaml}
+  "008": {status: COMPLETED_MIXED, contract: experiment_008_contract.yaml}
+  "009": {status: PASS_STRONG, contract: experiment_009_contract.yaml}
+  "010": {status: COMPLETED_ALL_17_GATES, contract: experiment_010_contract.yaml}
+  "011": {status: COMPLETED, contract: experiment_011_contract.yaml}
+mechanisms:
+  - {experiment: "001", mechanism: direct_peer_data_plane, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_ring_connection, release_gate: experiment_011_critical_path}
+  - {experiment: "001", mechanism: persistent_peer_connections, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_ring_connection, release_gate: connection_reuse}
+  - {experiment: "001", mechanism: connection_reuse, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_ring_connection, release_gate: connection_reuse}
+  - {experiment: "001", mechanism: replica_aware_scheduling, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner}
+  - {experiment: "001", mechanism: bounded_reservations, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.reservations, release_gate: bounded_admission}
+  - {experiment: "001", mechanism: worker_utilisation_measurement, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.telemetry, release_gate: telemetry_schema}
+  - {experiment: "001", mechanism: critical_path_capacity_model, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner}
+  - {experiment: "001", mechanism: worker_count_as_unconditional_speed_proxy, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: speed_can_reject_node, reason: more workers did not imply lower single-request latency, planner_effect: idle must remain eligible}
+
+  - {experiment: "002", mechanism: real_model_partitioning, disposition: REQUIRED, canonical_owner: swarm_inference.model.adapter, release_gate: qwen3_native}
+  - {experiment: "002", mechanism: process_isolated_stages, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_runtime, release_gate: qwen3_distributed_exactness}
+  - {experiment: "002", mechanism: stage_local_weight_ownership, disposition: REQUIRED, canonical_owner: swarm_inference.execution.interfaces, release_gate: stage_ownership}
+  - {experiment: "002", mechanism: direct_bf16_activation_transport, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_tensor, release_gate: qwen3_distributed_exactness}
+  - {experiment: "002", mechanism: stage_local_kv_cache, disposition: REQUIRED, canonical_owner: swarm_inference.execution.interfaces, release_gate: stage_cache_identity}
+  - {experiment: "002", mechanism: exact_distributed_greedy_execution, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_runtime, release_gate: qwen3_distributed_exactness}
+  - {experiment: "002", mechanism: immutable_model_identity, disposition: REQUIRED, canonical_owner: swarm_inference.model.descriptor, release_gate: immutable_identity}
+
+  - {experiment: "003", mechanism: persistent_worker_lifecycle, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_runtime, release_gate: warm_reuse}
+  - {experiment: "003", mechanism: cold_start_accounting, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.telemetry, release_gate: telemetry_schema}
+  - {experiment: "003", mechanism: warm_model_reuse, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.canonical, release_gate: warm_reuse}
+  - {experiment: "003", mechanism: worker_fanout_limits, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: bounded_candidate_search}
+  - {experiment: "003", mechanism: acquisition_cost, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: acquisition_cost}
+  - {experiment: "003", mechanism: concurrency_aware_replica_selection, disposition: REQUIRED, canonical_owner: swarm_inference.engines.native_stage, release_gate: background_throughput}
+  - {experiment: "003", mechanism: maximum_worker_count_as_default, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: speed_can_reject_node, reason: one worker won latency while two won concurrency-four throughput, planner_effect: compare request concurrency and idle}
+
+  - {experiment: "004", mechanism: gpu_resident_execution, disposition: REQUIRED, canonical_owner: swarm_inference.execution.qwen3_stage, release_gate: experiment_004_fast_path}
+  - {experiment: "004", mechanism: gpu_native_dynamic_cache, disposition: REQUIRED, canonical_owner: swarm_inference.model.qwen3, release_gate: experiment_004_fast_path}
+  - {experiment: "004", mechanism: static_kv_cache, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.model.qwen3_cache, release_gate: exact_fast_path_admission, reason: correct but not universally faster, planner_effect: select only from exact measured profiles}
+  - {experiment: "004", mechanism: manual_cuda_graph_decode, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.model.qwen3_engine, release_gate: experiment_004_fast_path, reason: highest measured rate on supported shapes and hardware, planner_effect: require memory and exactness admission}
+  - {experiment: "004", mechanism: torch_compile_candidates, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.model.qwen3_runtime, release_gate: exact_fast_path_admission, reason: mode utility varies, planner_effect: benchmark rather than assume}
+  - {experiment: "004", mechanism: automatic_attention_kernel_selection, disposition: REQUIRED, canonical_owner: swarm_inference.model.qwen3, release_gate: exact_fast_path_admission}
+  - {experiment: "004", mechanism: compact_final_worker_sampling, disposition: REQUIRED, canonical_owner: swarm_inference.execution.qwen3_stage, release_gate: compact_token_return}
+  - {experiment: "004", mechanism: real_batched_execution, disposition: REQUIRED, canonical_owner: swarm_inference.model.qwen3_engine, release_gate: native_batching}
+  - {experiment: "004", mechanism: cuda_memory_admission_before_capture, disposition: REQUIRED, canonical_owner: swarm_inference.model.qwen3_engine, release_gate: cuda_graph_memory_admission}
+  - {experiment: "004", mechanism: warmup_compile_lifecycle, disposition: REQUIRED, canonical_owner: swarm_inference.execution.fast_path_registry, release_gate: warm_reuse}
+  - {experiment: "004", mechanism: exact_token_optimization_admission, disposition: REQUIRED, canonical_owner: swarm_inference.execution.fast_path_registry, release_gate: exact_fast_path_admission}
+  - {experiment: "004", mechanism: assume_torch_compile_is_faster, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.execution.fast_path_registry, release_gate: exact_fast_path_admission, reason: experiment measured mode-dependent utility, planner_effect: never rank without a matching profile}
+  - {experiment: "004", mechanism: assume_static_cache_is_faster, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.execution.fast_path_registry, release_gate: exact_fast_path_admission, reason: experiment measured mode-dependent utility, planner_effect: never rank without a matching profile}
+  - {experiment: "004", mechanism: universal_cuda_graph_default, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.execution.fast_path_registry, release_gate: cuda_graph_memory_admission, reason: graph support is model device and shape specific, planner_effect: require complete profile fingerprint}
+
+  - {experiment: "005", mechanism: no_completed_experiment, disposition: EVIDENCE_ONLY, canonical_owner: benchmarks.canonical.experiment_005_contract, release_gate: no_experiment_005_claims, reason: experiment was not started, planner_effect: none}
+
+  - {experiment: "006", mechanism: intra_layer_partition_representation, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.execution.microshard, release_gate: microshard_capacity}
+  - {experiment: "006", mechanism: tensor_level_ownership, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.execution.microshard, release_gate: microshard_capacity}
+  - {experiment: "006", mechanism: matched_projection_slicing, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.execution.microshard, release_gate: microshard_exactness}
+  - {experiment: "006", mechanism: quantization_aligned_boundaries, disposition: REQUIRED, canonical_owner: swarm_inference.execution.microshard, release_gate: microshard_exactness}
+  - {experiment: "006", mechanism: collective_reduction_contracts, disposition: REQUIRED, canonical_owner: swarm_inference.execution.microshard, release_gate: deterministic_reduction}
+  - {experiment: "006", mechanism: sublayer_memory_accounting, disposition: REQUIRED, canonical_owner: swarm_inference.execution.microshard, release_gate: microshard_capacity}
+  - {experiment: "006", mechanism: expert_parallel_ownership, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.execution.moe, release_gate: expert_microshards}
+  - {experiment: "006", mechanism: batch1_tp8_speed_default, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner, reason: TP8 was not latency-beneficial even in the zero-latency model, planner_effect: capacity-first unless physical speed utility is positive}
+
+  - {experiment: "007", mechanism: heterogeneous_worker_capability_model, disposition: REQUIRED, canonical_owner: swarm_inference.engines.interfaces, release_gate: worker_capability_model}
+  - {experiment: "007", mechanism: cpu_execution_roles, disposition: REQUIRED, canonical_owner: swarm_inference.engines.interfaces, release_gate: background_throughput}
+  - {experiment: "007", mechanism: background_inference, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.engines.native_stage, release_gate: background_throughput, reason: positive fixed-window service utility, planner_effect: use without joining interactive critical path}
+  - {experiment: "007", mechanism: held_out_planner_evaluation, disposition: REQUIRED, canonical_owner: benchmarks.canonical.experiment_007_contract, release_gate: positive_utility_planner}
+  - {experiment: "007", mechanism: idle_worker_role, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: speed_can_reject_node}
+  - {experiment: "007", mechanism: matched_executor_benchmarking, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.performance_profiles, release_gate: exact_fast_path_admission}
+  - {experiment: "007", mechanism: fixed_window_service_throughput, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.telemetry, release_gate: background_throughput}
+  - {experiment: "007", mechanism: interference_measurement, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.telemetry, release_gate: background_throughput}
+  - {experiment: "007", mechanism: synchronous_cpu_expert_speed, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner, reason: corrected matched benchmark classified it NOT_USEFUL, planner_effect: never select for speed without new positive measurement}
+  - {experiment: "007", mechanism: superseded_original_cpu_speed_headline, disposition: EVIDENCE_ONLY, canonical_owner: benchmarks.canonical.experiment_007_contract, release_gate: corrected_evidence_only, reason: superseded by matched-executor correction, planner_effect: none}
+
+  - {experiment: "008", mechanism: streaming_gguf_metadata_inspection, disposition: REQUIRED, canonical_owner: swarm_inference.model.gguf, release_gate: selective_gguf_acquisition}
+  - {experiment: "008", mechanism: tensor_inventory, disposition: REQUIRED, canonical_owner: swarm_inference.model.gguf, release_gate: model_inspection}
+  - {experiment: "008", mechanism: cpu_gpu_storage_capacity_measurement, disposition: REQUIRED, canonical_owner: swarm_inference.engines.interfaces, release_gate: worker_capability_model}
+  - {experiment: "008", mechanism: critical_path_cost_model, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: explainable_plan}
+  - {experiment: "008", mechanism: phase_specific_planning, disposition: REQUIRED, canonical_owner: swarm_inference.engines.interfaces, release_gate: phase_specific_plan}
+  - {experiment: "008", mechanism: bounded_candidate_search, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: bounded_candidate_search}
+  - {experiment: "008", mechanism: cache_budget_model, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.residency, release_gate: residency_telemetry}
+  - {experiment: "008", mechanism: prefetch_model, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner, reason: mixed measured result, planner_effect: exact positive matched evidence required}
+  - {experiment: "008", mechanism: positive_utility_admission, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner}
+  - {experiment: "008", mechanism: aggressive_paging_default, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner, reason: adaptive path did not consistently beat stock, planner_effect: off unless explicitly forced for testing}
+  - {experiment: "008", mechanism: blind_prefetch, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner, reason: prefetch can waste bandwidth and add stalls, planner_effect: exact positive matched evidence required}
+  - {experiment: "008", mechanism: adaptive_cache_policy_default, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: positive_utility_planner, reason: mixed result, planner_effect: stock remains a candidate}
+  - {experiment: "008", mechanism: failed_exact_mixed_service_configuration, disposition: EVIDENCE_ONLY, canonical_owner: benchmarks.canonical.experiment_008_contract, release_gate: exactness, reason: failed exact output, planner_effect: performance data is ineligible}
+
+  - {experiment: "009", mechanism: colibri_execution_engine, disposition: REQUIRED, canonical_owner: swarm_inference.engines.colibri, release_gate: colibri_product_engine}
+  - {experiment: "009", mechanism: native_quantization_metadata, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri, release_gate: colibri_regression}
+  - {experiment: "009", mechanism: expert_bank, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.expert_bank, release_gate: colibri_regression}
+  - {experiment: "009", mechanism: route_traces, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.telemetry, release_gate: colibri_regression}
+  - {experiment: "009", mechanism: tier_residency, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.storage, release_gate: residency_telemetry}
+  - {experiment: "009", mechanism: cache_events, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.telemetry, release_gate: cache_telemetry}
+  - {experiment: "009", mechanism: usage_history, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.telemetry, release_gate: cache_telemetry}
+  - {experiment: "009", mechanism: resource_plan_translation, disposition: REQUIRED, canonical_owner: swarm_inference.engines.colibri, release_gate: colibri_product_engine}
+  - {experiment: "009", mechanism: routing_aware_placement, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.backends.colibri.placement, release_gate: colibri_regression, reason: reverse-confirmed positive gain, planner_effect: evaluate against matched alternatives}
+  - {experiment: "009", mechanism: rejected_prefetch_variants, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.engines.colibri, release_gate: colibri_regression, reason: experiment rejected the variants, planner_effect: disabled until new positive evidence}
+  - {experiment: "009", mechanism: infer_cuda_from_backend_presence, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.engines.colibri, release_gate: worker_capability_model, reason: pinned Windows build was CPU-only, planner_effect: require physical device advertisement}
+  - {experiment: "009", mechanism: infer_microshards_from_backend_presence, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.engines.colibri, release_gate: worker_capability_model, reason: pinned runtime lacked real tensor microshards, planner_effect: require explicit physical capability}
+
+  - {experiment: "010", mechanism: whole_expert_remote_execution, disposition: REQUIRED, canonical_owner: swarm_inference.execution.moe, release_gate: whole_expert_execution}
+  - {experiment: "010", mechanism: native_expert_microshards, disposition: REQUIRED, canonical_owner: swarm_inference.execution.microshard, release_gate: expert_microshards}
+  - {experiment: "010", mechanism: hybrid_local_remote_experts, disposition: REQUIRED, canonical_owner: swarm_inference.execution.moe, release_gate: hybrid_expert_placement}
+  - {experiment: "010", mechanism: direct_tcp_expert_data_plane, disposition: REQUIRED, canonical_owner: swarm_inference.execution.moe, release_gate: expert_direct_transport}
+  - {experiment: "010", mechanism: coalesced_expert_protocol, disposition: REQUIRED, canonical_owner: swarm_inference.protocol.expert, release_gate: expert_direct_transport}
+  - {experiment: "010", mechanism: capacity_isolation, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.expert_planner, release_gate: expert_capacity_isolation}
+  - {experiment: "010", mechanism: exact_fixed_order_reduction, disposition: REQUIRED, canonical_owner: swarm_inference.execution.microshard, release_gate: deterministic_reduction}
+  - {experiment: "010", mechanism: remote_result_consumption, disposition: REQUIRED, canonical_owner: swarm_inference.execution.moe, release_gate: whole_expert_execution}
+  - {experiment: "010", mechanism: restart_and_replay, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.session_controller, release_gate: recovery}
+  - {experiment: "010", mechanism: incorrect_result_detection, disposition: REQUIRED, canonical_owner: swarm_inference.execution.moe, release_gate: corruption_detection}
+  - {experiment: "010", mechanism: worker_quarantine, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.session_controller, release_gate: corruption_detection}
+  - {experiment: "010", mechanism: expert_cache_budgets, disposition: REQUIRED, canonical_owner: swarm_inference.execution.moe, release_gate: expert_capacity_isolation}
+  - {experiment: "010", mechanism: positive_utility_expert_planning, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.expert_planner, release_gate: positive_utility_planner}
+  - {experiment: "010", mechanism: calibrated_topology_simulator, disposition: EVIDENCE_ONLY, canonical_owner: benchmarks.canonical.experiment_010_contract, release_gate: simulator_calibration, reason: planning evidence not an execution path, planner_effect: calibrated estimates only}
+  - {experiment: "010", mechanism: global_per_expert_rpc_graph, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: experiment_011_critical_path, reason: expert distribution belongs within a stage, planner_effect: never replace stage ring}
+  - {experiment: "010", mechanism: distributed_speed_when_local_is_faster, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: speed_can_reject_node, reason: local monolithic won speed, planner_effect: local is always a candidate}
+
+  - {experiment: "011", mechanism: contiguous_stage_ownership, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.stage_planner, release_gate: experiment_011_critical_path}
+  - {experiment: "011", mechanism: persistent_stage_processes, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_runtime, release_gate: warm_reuse}
+  - {experiment: "011", mechanism: persistent_direct_connections, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_ring_connection, release_gate: connection_reuse}
+  - {experiment: "011", mechanism: stage_local_kv_cache, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_sessions, release_gate: stage_cache_identity}
+  - {experiment: "011", mechanism: direct_activation_transfer, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_ring_connection, release_gate: experiment_011_critical_path}
+  - {experiment: "011", mechanism: compact_token_return, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_runtime, release_gate: compact_token_return}
+  - {experiment: "011", mechanism: coordinator_outside_data_path, disposition: REQUIRED, canonical_owner: swarm_inference.protocol.stage_ring, release_gate: zero_coordinator_activation_edges}
+  - {experiment: "011", mechanism: bounded_buffer_reuse, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_tensor, release_gate: bounded_admission}
+  - {experiment: "011", mechanism: binary_tensor_transport, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_tensor, release_gate: experiment_011_critical_path}
+  - {experiment: "011", mechanism: exact_stage_boundaries, disposition: REQUIRED, canonical_owner: swarm_inference.execution.interfaces, release_gate: stage_boundary_exactness}
+  - {experiment: "011", mechanism: critical_path_telemetry, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.telemetry, release_gate: experiment_011_critical_path}
+  - {experiment: "011", mechanism: balanced_contiguous_partitions, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.stage_planner, release_gate: experiment_011_critical_path}
+  - {experiment: "011", mechanism: lossless_activation_compression, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.transport.stage_tensor, release_gate: compression_positive_utility, reason: exact but negative utility on selected topology, planner_effect: enable only with exact positive utility}
+  - {experiment: "011", mechanism: exact_speculation, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: speculation_positive_utility, reason: exact but negative utility on selected topology, planner_effect: enable only with exact positive utility}
+  - {experiment: "011", mechanism: session_interleaving, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_sessions, release_gate: bounded_concurrency}
+  - {experiment: "011", mechanism: bounded_queues, disposition: REQUIRED, canonical_owner: swarm_inference.worker.stage_runtime, release_gate: bounded_concurrency}
+  - {experiment: "011", mechanism: lossless_activation_compression_default_on, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: compression_positive_utility, reason: negative measured utility, planner_effect: default auto-off}
+  - {experiment: "011", mechanism: speculation_default_on, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: speculation_positive_utility, reason: negative measured utility, planner_effect: default auto-off}
+  - {experiment: "011", mechanism: coordinator_activation_relay, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.protocol.stage_ring, release_gate: zero_coordinator_activation_edges, reason: violates direct stage data plane, planner_effect: no candidate may contain such an edge}
+  - {experiment: "011", mechanism: per_layer_or_per_expert_stage_rpc, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: experiment_011_critical_path, reason: recreates Experiment 010 communication curve, planner_effect: reject topology}
+  - {experiment: "011", mechanism: session_interleaving_called_continuous_batching, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.runtime.telemetry, release_gate: capability_truthfulness, reason: interleaving is not batching, planner_effect: advertise batching only when engine implements it}
+
+  - {experiment: cross-cutting, mechanism: simulation_reports_and_charts, disposition: EVIDENCE_ONLY, canonical_owner: swarm_inference.experiments, release_gate: experiment_separation, reason: analysis tooling is not an execution path, planner_effect: none}
+  - {experiment: cross-cutting, mechanism: synthetic_fixtures, disposition: EVIDENCE_ONLY, canonical_owner: swarm_inference.experiments, release_gate: real_model_acceptance, reason: fixtures cannot satisfy physical gates, planner_effect: none}
+  - {experiment: cross-cutting, mechanism: fault_injection, disposition: EVIDENCE_ONLY, canonical_owner: swarm_inference.experiments, release_gate: recovery, reason: release test input only, planner_effect: none}

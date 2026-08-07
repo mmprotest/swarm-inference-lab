@@ -57,6 +57,9 @@ internal sealed record ReleaseManifest
     [JsonPropertyName("runtime_profiles")]
     public required RuntimeProfiles RuntimeProfiles { get; init; }
 
+    [JsonPropertyName("engine_runtimes")]
+    public required EngineRuntimes EngineRuntimes { get; init; }
+
     [JsonPropertyName("bootstrapper")]
     public required SignedAsset Bootstrapper { get; init; }
 
@@ -110,6 +113,93 @@ internal sealed record RuntimeProfiles
 
     [JsonPropertyName("windows-x64-cuda")]
     public required FileAsset Cuda { get; init; }
+}
+
+internal sealed record EngineRuntimes
+{
+    [JsonPropertyName("llamacpp")]
+    public required LlamaCppRuntimeSet LlamaCpp { get; init; }
+}
+
+internal sealed record LlamaCppRuntimeSet
+{
+    [JsonPropertyName("repository")]
+    public required string Repository { get; init; }
+
+    [JsonPropertyName("release_tag")]
+    public required string ReleaseTag { get; init; }
+
+    [JsonPropertyName("runtime_revision")]
+    public required string RuntimeRevision { get; init; }
+
+    [JsonPropertyName("profiles")]
+    public required LlamaCppRuntimeProfiles Profiles { get; init; }
+}
+
+internal sealed record LlamaCppRuntimeProfiles
+{
+    [JsonPropertyName("windows-x64-cpu")]
+    public required LlamaCppRuntimeProfile Cpu { get; init; }
+
+    [JsonPropertyName("windows-x64-cuda")]
+    public required LlamaCppRuntimeProfile Cuda { get; init; }
+}
+
+internal sealed record LlamaCppRuntimeProfile
+{
+    [JsonPropertyName("platform")]
+    public required string Platform { get; init; }
+
+    [JsonPropertyName("archives")]
+    public required IReadOnlyList<FileAsset> Archives { get; init; }
+
+    [JsonPropertyName("server_binary")]
+    public required string ServerBinary { get; init; }
+
+    [JsonPropertyName("server_sha256")]
+    public required string ServerSha256 { get; init; }
+
+    [JsonPropertyName("rpc_server_binary")]
+    public required string RpcServerBinary { get; init; }
+
+    [JsonPropertyName("rpc_server_sha256")]
+    public required string RpcServerSha256 { get; init; }
+
+    [JsonPropertyName("build_flags")]
+    public required IReadOnlyDictionary<string, bool> BuildFlags { get; init; }
+
+    [JsonPropertyName("device_support")]
+    public required IReadOnlyList<string> DeviceSupport { get; init; }
+}
+
+internal sealed record InstalledLlamaCppRuntimeManifest
+{
+    [JsonPropertyName("commit")]
+    public required string Commit { get; init; }
+
+    [JsonPropertyName("build_id")]
+    public required string BuildId { get; init; }
+
+    [JsonPropertyName("platform")]
+    public required string Platform { get; init; }
+
+    [JsonPropertyName("server_binary")]
+    public required string ServerBinary { get; init; }
+
+    [JsonPropertyName("server_sha256")]
+    public required string ServerSha256 { get; init; }
+
+    [JsonPropertyName("rpc_server_binary")]
+    public required string RpcServerBinary { get; init; }
+
+    [JsonPropertyName("rpc_server_sha256")]
+    public required string RpcServerSha256 { get; init; }
+
+    [JsonPropertyName("build_flags")]
+    public required IReadOnlyDictionary<string, bool> BuildFlags { get; init; }
+
+    [JsonPropertyName("device_support")]
+    public required IReadOnlyList<string> DeviceSupport { get; init; }
 }
 
 internal enum BackendProfile

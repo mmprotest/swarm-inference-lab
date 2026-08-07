@@ -82,6 +82,8 @@ class WorkerRuntimeConfig(StrictModel):
     validation_evidence_ids: list[str] = Field(default_factory=list)
     latest_validation_unix_ns: PositiveInt | None = None
     validation_detail: str = "no retained validation evidence"
+    llamacpp_runtime_manifest: Path | None = None
+    colibri_runtime_manifest: Path | None = None
 
 
 class WorkerRuntimeStatus(StrictModel):
@@ -206,6 +208,8 @@ class WorkerRuntime:
             "validation_evidence_ids": config.validation_evidence_ids,
             "latest_validation_unix_ns": config.latest_validation_unix_ns,
             "validation_detail": config.validation_detail,
+            "llamacpp_runtime_manifest": config.llamacpp_runtime_manifest,
+            "colibri_runtime_manifest": config.colibri_runtime_manifest,
         }
 
     async def _run(

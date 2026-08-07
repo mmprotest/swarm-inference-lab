@@ -1,0 +1,26 @@
+contract_version: 1
+source_experiment: "004"
+status: COMPLETED
+evidence_bundle_identity: artifacts/runs-final/20260731T012349Z-engine-performance-a75f18be
+promoted_mechanisms:
+  - gpu_resident_execution
+  - gpu_native_dynamic_cache
+  - static_kv_cache
+  - manual_cuda_graph_decode
+  - torch_compile_candidates
+  - automatic_attention_kernel_selection
+  - compact_final_worker_sampling
+  - real_batched_execution
+  - cuda_memory_admission_before_capture
+  - warmup_compile_lifecycle
+  - exact_token_optimization_admission
+rejected_mechanisms:
+  - assume_torch_compile_is_faster
+  - assume_static_cache_is_faster
+  - universal_cuda_graph_default
+reference_models: [Qwen/Qwen3-0.6B]
+reference_hardware_class: supported-nvidia-cuda
+correctness_gates: [exact_greedy_token_identity, exact_reference_runtime_identity]
+performance_gates: [within_10_percent_of_frozen_custom_fast_reference, minimum_5_repeats, coefficient_of_variation_reported]
+planner_gates: [all_supported_modes_are_candidates, only_exact_candidates_are_eligible]
+required_telemetry: [fast_path, prefill_tokens_s, decode_tokens_s, ttft, memory_bytes, compile_cost, capture_cost]

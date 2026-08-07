@@ -7,6 +7,7 @@ import os
 import platform
 import socket
 import time
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -14,6 +15,7 @@ import numpy as np
 import psutil
 
 from swarm_inference import __version__
+from swarm_inference.cluster.models import ARTIFACT_FORMAT_VERSION
 from swarm_inference.config.models import (
     Backend,
     OperationKind,
@@ -22,6 +24,7 @@ from swarm_inference.config.models import (
 )
 from swarm_inference.exceptions import BackendIncompatibleError
 from swarm_inference.host import detect_host_runtime, split_endpoint
+from swarm_inference.model.adapter import default_native_adapter_registry
 from swarm_inference.protocol.stage_ring import STAGE_RING_PROTOCOL_VERSION
 from swarm_inference.security.identity import WorkerIdentity
 
@@ -361,6 +364,8 @@ def measure_capabilities(
     validation_evidence_ids: list[str] | None = None,
     latest_validation_unix_ns: int | None = None,
     validation_detail: str = "no retained validation evidence",
+    llamacpp_runtime_manifest: str | Path | None = None,
+    colibri_runtime_manifest: str | Path | None = None,
 ) -> WorkerCapability:
     memory = psutil.virtual_memory()
     host = detect_host_runtime()
@@ -408,6 +413,96 @@ def measure_capabilities(
         os.environ.get("SWARM_PACKAGE_LOCK_HASH")
         or hashlib.sha256(f"{__version__}:{build_id}".encode()).hexdigest()
     )
+    processor_name = platform.processor() or "unknown"
+    adapter_ids: list[str] = []
+    fast_paths: list[str] = []
+    adapter_fast_paths: list[dict[str, Any]] = []
+    execution_engines: list[dict[str, Any]] = []
+    if stage_runtime_enabled:
+        adapters = default_native_adapter_registry().adapters()
+        adapter_ids = sorted(adapter.adapter_id for adapter in adapters)
+        for adapter in adapters:
+            for fast_path in adapter.fast_paths():
+                candidate_modes = tuple(
+                    getattr(fast_path, "candidate_modes", (fast_path.fast_path_id,))
+                )
+                fast_paths.extend(candidate_modes)
+                adapter_fast_paths.append(
+                    {
+                        "adapter_id": adapter.adapter_id,
+                        "fast_path_id": fast_path.fast_path_id,
+                        "candidate_modes": list(candidate_modes),
+                    }
+                )
+        device_type = {
+            Backend.TORCH_CUDA: "cuda",
+            Backend.TORCH_MPS: "mps",
+        }.get(backend, "cpu")
+        usable_memory = (
+            available_vram
+            if device_type in {"cuda", "mps"}
+            else memory.available
+        )
+        if memory_limit_bytes is not None:
+            usable_memory = min(usable_memory, memory_limit_bytes)
+        execution_engines.append(
+            {
+                "engine_id": "native-stage",
+                "enabled": True,
+                "runtime_revision": __version__,
+                "binary_hashes": {},
+                "formats": ["safetensors"],
+                "devices": [
+                    {
+                        "device_id": device_identifier or device_type,
+                        "device_type": device_type,
+                        "name": gpu_model or processor_name,
+                        "total_memory_bytes": (
+                            total_vram if device_type in {"cuda", "mps"} else memory.total
+                        ),
+                        "usable_memory_bytes": usable_memory,
+                        "measured_prefill_tokens_s": None,
+                        "measured_decode_tokens_s": (
+                            1000.0 / benchmark.median_ms
+                            if benchmark.median_ms is not None and benchmark.median_ms > 0
+                            else None
+                        ),
+                        "features": sorted(set(fast_paths)),
+                    }
+                ],
+                "adapters": adapter_ids,
+                "fast_paths": sorted(set(fast_paths)),
+                "adapter_fast_paths": adapter_fast_paths,
+                "roles": [
+                    "stage",
+                    "whole-expert",
+                    "microshard",
+                    "background",
+                    "verification",
+                    "storage",
+                    "idle",
+                ],
+            }
+        )
+    from swarm_inference.engines.local_capabilities import (
+        discover_configured_general_engine_capabilities,
+    )
+
+    general_capabilities = discover_configured_general_engine_capabilities(
+        llamacpp_manifest=(
+            Path(llamacpp_runtime_manifest).expanduser().resolve()
+            if llamacpp_runtime_manifest is not None
+            else None
+        ),
+        colibri_manifest=(
+            Path(colibri_runtime_manifest).expanduser().resolve()
+            if colibri_runtime_manifest is not None
+            else None
+        ),
+    )
+    execution_engines.extend(
+        item.model_dump(mode="json") for item in general_capabilities
+    )
     return WorkerCapability(
         worker_id=selected_worker_id,
         node_id=selected_node_id,
@@ -416,7 +511,7 @@ def measure_capabilities(
         operating_system=f"{host.system} {host.release}",
         architecture=host.machine,
         backend=backend,
-        cpu_model=platform.processor() or "unknown",
+        cpu_model=processor_name,
         logical_cpu_count=logical,
         physical_cpu_count=physical,
         total_ram_bytes=memory.total,
@@ -441,10 +536,11 @@ def measure_capabilities(
         stage_ring_protocol_version=(
             STAGE_RING_PROTOCOL_VERSION if stage_runtime_enabled else None
         ),
-        supported_model_adapters=["olmoe"] if stage_runtime_enabled else [],
+        supported_model_adapters=adapter_ids,
         supported_stage_execution_backends=(
-            ["canonical-contiguous-olmoe"] if stage_runtime_enabled else []
+            ["canonical-native-stage"] if stage_runtime_enabled else []
         ),
+        execution_engines=execution_engines,
         supported_activation_dtypes=(list(measured_dtypes) if stage_runtime_enabled else []),
         configured_memory_limit_bytes=memory_limit_bytes,
         stage_runtime_enabled=stage_runtime_enabled,
@@ -454,7 +550,7 @@ def measure_capabilities(
         package_lock_hash=package_lock_hash,
         product_protocol_major=1,
         product_protocol_minor=0,
-        artifact_format_versions=[1],
+        artifact_format_versions=[1, ARTIFACT_FORMAT_VERSION],
         service_mode=service_mode,
         platform_implementation_status=platform_implementation_status,
         software_validation_status=software_validation_status,

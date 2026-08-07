@@ -35,7 +35,9 @@ _ALLOWED_DOWNLOAD_HOSTS = frozenset(
 _SHA256 = re.compile(r"^sha256:([0-9a-f]{64})$")
 _TAG = re.compile(r"^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?$")
 _MAX_METADATA_BYTES = 8 * 1024 * 1024
-_MAX_INSTALLER_BYTES = 512 * 1024 * 1024
+# The setup embeds both pinned CPU and CUDA llama.cpp runtime archives so a
+# normal installation never depends on PATH or a post-install engine download.
+_MAX_INSTALLER_BYTES = 1024 * 1024 * 1024
 
 
 @dataclass(frozen=True)

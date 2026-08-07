@@ -1,0 +1,19 @@
+contract_version: 1
+source_experiment: "002"
+status: COMPLETED
+evidence_bundle_identity: archived-qwen3-real-loopback
+promoted_mechanisms:
+  - real_model_partitioning
+  - process_isolated_stages
+  - stage_local_weight_ownership
+  - direct_bf16_activation_transport
+  - stage_local_kv_cache
+  - exact_distributed_greedy_execution
+  - immutable_model_identity
+rejected_mechanisms: []
+reference_models: [Qwen/Qwen3-0.6B]
+reference_hardware_class: four-isolated-stage-workers
+correctness_gates: [exact_greedy_token_identity, exact_stage_ownership, stage_local_kv_identity]
+performance_gates: [direct_activation_transport]
+planner_gates: [contiguous_stage_ownership]
+required_telemetry: [model_revision, tokenizer_identity, stage_assignments, cache_residency]
