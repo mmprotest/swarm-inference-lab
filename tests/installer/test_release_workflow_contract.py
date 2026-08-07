@@ -74,6 +74,19 @@ def test_windows_workflows_pin_available_build_python_separately_from_runtime(
     assert toolchain["python"]["version"] == "3.11.15"
 
 
+def test_windows_workflows_use_portable_hosted_cpu_and_fail_fast(
+    repository_root: Path,
+) -> None:
+    for name in ("installer.yml", "release.yml"):
+        workflow = (repository_root / ".github/workflows" / name).read_text(encoding="utf-8")
+        assert "ATEN_CPU_CAPABILITY: default" in workflow
+        assert "$PSNativeCommandUseErrorActionPreference = $true" in workflow
+    productization = (repository_root / ".github/workflows/productization.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "Select portable CPU kernels on hosted Windows" in productization
+
+
 def test_normal_readme_does_not_use_powershell_script_installation(repository_root: Path) -> None:
     readme = (repository_root / "README.md").read_text(encoding="utf-8")
     normal = readme.split("Developer, CI and offline recovery installation", maxsplit=1)[0]

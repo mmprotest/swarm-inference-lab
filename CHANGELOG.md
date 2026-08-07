@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.1.0rc11 - 2026-08-06
+
+- Make Windows release workflows fail immediately on any non-zero native command instead of
+  allowing a later command to mask the failure.
+- Select portable ATen CPU kernels on hosted Windows validation guests, which can migrate between
+  CPU models, while leaving native physical-hardware performance validation unchanged.
+- Ignore branch refs such as `main` when deriving the development-only release tag.
+
+## 0.1.0rc10 - 2026-08-06
+
+- Add a deterministic signed-file certificate extraction fallback for Windows images where
+  `Get-AuthenticodeSignature` returns no object. The pinned build-tool hash and exact signer
+  thumbprint remain mandatory, while public stable product signatures still require `Valid`.
+
+## 0.1.0rc9 - 2026-08-06
+
+- Keep pinned Inno Setup publisher verification deterministic across Windows trust-cache states:
+  verify the complete installer/compiler hashes first, require the exact signer-certificate
+  thumbprint and signer subject, and reject missing, damaged, or unsupported signature formats.
+
+## 0.1.0rc8 - 2026-08-06
+
+- Make fresh hosted Windows checkouts hermetic by creating the ignored runtime-profile temporary
+  parent before use and replacing the developer-installer's batch-file fake with a compiled
+  executable whose process exit code is stable under Windows PowerShell and PowerShell 7.
+
+## 0.1.0rc7 - 2026-08-06
+
+- Make the multi-process stage-ring harness renew worker liveness with the same signed heartbeat
+  protocol as the product worker, so a slower hosted runner cannot misclassify healthy synthetic
+  workers as stale during the 100-session persistent-connection stress test.
+
+## 0.1.0rc6 - 2026-08-06
+
+- Keep the real multi-process stage-ring integration assertions intact while giving bounded
+  control, token-publication, cleanup, and recovery operations enough time on contended Windows
+  CI runners; failed unary and streaming assertions now retain structured response diagnostics.
+
 ## 0.1.0rc5 - 2026-08-06
 
 - Make the cross-platform validation matrix portable on macOS: treat unavailable CPU affinity

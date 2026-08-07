@@ -158,6 +158,28 @@ def _verified_dotnet(toolchain: dict[str, Any], explicit: Path | None) -> Path:
     return executable
 
 
+def _verify_pinned_publisher_identity(
+    information: dict[str, Any],
+    metadata: dict[str, Any],
+    *,
+    label: str,
+) -> None:
+    status = str(information.get("status") or "")
+    subject = str(information.get("subject") or "")
+    thumbprint = str(information.get("thumbprint") or "").replace(" ", "").upper()
+    expected_thumbprint = str(metadata["publisher_thumbprint"]).replace(" ", "").upper()
+    # Get-AuthenticodeSignature's chain status depends on the runner's root and
+    # revocation caches. The executable hash is verified immediately before this
+    # check, so pin the actual signer certificate identity and reject statuses
+    # that indicate missing or damaged signature bytes.
+    accepted_statuses = {"Valid", "UnknownError", "NotTrusted", "CertificateOnly"}
+    if status not in accepted_statuses or not subject or thumbprint != expected_thumbprint:
+        raise ReleaseError(
+            f"{label} publisher verification failed "
+            f"(status={status!r}, subject={subject!r}, thumbprint={thumbprint!r})"
+        )
+
+
 def _verified_iscc(toolchain: dict[str, Any], explicit: Path | None) -> Path:
     metadata = toolchain["inno_setup"]
     if not isinstance(metadata, dict):
@@ -173,12 +195,11 @@ def _verified_iscc(toolchain: dict[str, Any], explicit: Path | None) -> Path:
                 _download(metadata["url"], installer, metadata["sha256"])
             _verify(installer, metadata["sha256"])
             installer_signature = authenticode_info(installer)
-            if (
-                installer_signature.get("status") != "Valid"
-                or installer_signature.get("subject") != metadata["publisher_subject"]
-                or installer_signature.get("thumbprint") != metadata["publisher_thumbprint"]
-            ):
-                raise ReleaseError("Inno Setup installer publisher verification failed")
+            _verify_pinned_publisher_identity(
+                installer_signature,
+                metadata,
+                label="Inno Setup installer",
+            )
             run_captured(
                 [
                     str(installer),
@@ -192,12 +213,11 @@ def _verified_iscc(toolchain: dict[str, Any], explicit: Path | None) -> Path:
             )
     _verify(compiler, metadata["compiler_sha256"])
     compiler_signature = authenticode_info(compiler)
-    if (
-        compiler_signature.get("status") != "Valid"
-        or compiler_signature.get("subject") != metadata["publisher_subject"]
-        or compiler_signature.get("thumbprint") != metadata["publisher_thumbprint"]
-    ):
-        raise ReleaseError("Inno Setup compiler publisher verification failed")
+    _verify_pinned_publisher_identity(
+        compiler_signature,
+        metadata,
+        label="Inno Setup compiler",
+    )
     return compiler
 
 

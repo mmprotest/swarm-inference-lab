@@ -106,11 +106,11 @@ user path:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 `
-  -SourceWheel .\dist\swarm_inference_lab-0.1.0rc5-py3-none-any.whl -Json
+  -SourceWheel .\dist\swarm_inference_lab-0.1.0rc11-py3-none-any.whl -Json
 ```
 
 ```bash
-sh ./scripts/install.sh --source-wheel ./dist/swarm_inference_lab-0.1.0rc5-py3-none-any.whl --json
+sh ./scripts/install.sh --source-wheel ./dist/swarm_inference_lab-0.1.0rc11-py3-none-any.whl --json
 ```
 
 For a native Windows installation, `swarm update` downloads and verifies a GitHub Release setup

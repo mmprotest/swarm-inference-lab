@@ -41,6 +41,12 @@ DEVELOPMENT_PACKAGES = {
 }
 
 
+def _runtime_profile_temporary_parent() -> Path:
+    parent = ROOT / ".tmp"
+    parent.mkdir(parents=True, exist_ok=True)
+    return parent
+
+
 def _normalise_export(raw: str, backend: str) -> str:
     lines = raw.replace("\r\n", "\n").splitlines()
     body = [
@@ -125,7 +131,8 @@ def generate_profiles(*, uv: Path, output_directory: Path) -> dict[str, dict[str
     )
     summary: dict[str, dict[str, object]] = {}
     with tempfile.TemporaryDirectory(
-        prefix="swarm-runtime-profiles-", dir=ROOT / ".tmp"
+        prefix="swarm-runtime-profiles-",
+        dir=_runtime_profile_temporary_parent(),
     ) as raw_root:
         temporary_root = Path(raw_root)
         for backend, filename in PROFILE_NAMES.items():

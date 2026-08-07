@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 import release_common
+import verify_release_version
 from release_common import (
     ReleaseError,
     git_tag_to_pep440,
@@ -14,7 +15,7 @@ from release_common import (
 
 
 def test_current_version_is_single_sourced_from_pyproject(repository_root: Path) -> None:
-    assert read_pyproject_version(repository_root / "pyproject.toml") == "0.1.0rc5"
+    assert read_pyproject_version(repository_root / "pyproject.toml") == "0.1.0rc11"
     source = (repository_root / "src/swarm_inference/__init__.py").read_text(encoding="utf-8")
     assert 'version("swarm-inference-lab")' in source
     assert '__version__ = "0.1.0' not in source
@@ -54,3 +55,12 @@ def test_release_identity_rejects_mismatch_dirty_tree_and_moved_tag(
 def test_unsupported_version_spellings_are_rejected(value: str) -> None:
     with pytest.raises(ReleaseError):
         pep440_to_git_tag(value)
+
+
+def test_development_tag_default_ignores_branch_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    assert verify_release_version.default_release_tag("0.1.0rc11") == "v0.1.0-rc.11"
+    monkeypatch.setenv("GITHUB_REF_NAME", "v0.1.0-rc.11")
+    assert verify_release_version.default_release_tag("0.1.0rc11") == "v0.1.0-rc.11"

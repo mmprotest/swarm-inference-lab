@@ -34,6 +34,10 @@ jobs:
   windows-installer:
     runs-on: windows-latest
     timeout-minutes: 180
+    env:
+      # Hosted Windows guests can migrate across CPU models. Use portable ATen
+      # kernels for software acceptance; physical gates measure native hardware.
+      ATEN_CPU_CAPABILITY: default
     steps:
       - name: Checkout recursively
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -49,6 +53,7 @@ jobs:
       - name: Download and verify pinned uv
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           python scripts/prepare_windows_toolchain.py --tools uv
           "PINNED_UV=$((Resolve-Path build/toolchain/uv-0.12.0/uv.exe).Path)" | Out-File $env:GITHUB_ENV -Append
 
@@ -59,12 +64,14 @@ jobs:
       - name: Validate development version mapping and release tests
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 python scripts/verify_release_version.py --allow-dirty --allow-untagged
           & $env:PINNED_UV run --python 3.11 pytest tests/installer -q
 
       - name: Static analysis
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 ruff format --check src tests scripts
           & $env:PINNED_UV run --python 3.11 ruff check src tests scripts
           & $env:PINNED_UV run --python 3.11 mypy
@@ -72,12 +79,14 @@ jobs:
       - name: Unit and non-GPU integration tests
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 pytest tests/unit -q
           & $env:PINNED_UV run --python 3.11 pytest tests/integration tests/failure -m "not gpu" -q
 
       - name: Build wheel and prove checkout isolation
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV build --wheel
           & $env:PINNED_UV run --python 3.11 python scripts/test_wheel_install.py --uv $env:PINNED_UV --python 3.11 --extra cpu --output artifacts/wheel-isolation.json
 
@@ -96,6 +105,7 @@ jobs:
       - name: Productization software acceptance
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           & $env:PINNED_UV run --python 3.11 python scripts/run_productization_acceptance.py run --run-repeatability --repeatability-timeout-seconds 600 --output artifacts/acceptance
           Compress-Archive -Path artifacts/acceptance/* -DestinationPath artifacts/productization-acceptance.zip -Force
 
@@ -118,8 +128,9 @@ jobs:
       - name: Build deterministic lifecycle fixtures
         shell: pwsh
         run: |
-          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc6 --output-dir release/fixtures/version-b
-          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc7 --fixture-doctor-failure --output-dir release/fixtures/broken
+          $PSNativeCommandUseErrorActionPreference = $true
+          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc12 --output-dir release/fixtures/version-b
+          & $env:PINNED_UV run --python 3.11 python scripts/build_windows_installer.py --fixture-version 0.1.0rc13 --fixture-doctor-failure --output-dir release/fixtures/broken
 
       - name: Upgrade, downgrade, and rollback acceptance
         shell: pwsh
