@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from artifact_test_support import MODEL_ID, MODEL_REVISION, tiny_olmoe_snapshot
+from artifact_test_support import MODEL_ID, MODEL_REVISION, tiny_native_snapshot
 
 from swarm_inference.cluster.artifacts import (
     StageArtifactBuilder,
@@ -15,7 +15,7 @@ from swarm_inference.cluster.artifacts import (
 def test_stage_artifact_builder_excludes_unowned_layers_and_publishes_atomically(
     tmp_path: Path,
 ) -> None:
-    snapshot, tokenizer_revision, plan = tiny_olmoe_snapshot(tmp_path)
+    snapshot, tokenizer_revision, plan = tiny_native_snapshot(tmp_path)
     artifacts = tmp_path / "state" / "artifacts"
     builder = StageArtifactBuilder(
         artifact_root=artifacts,
@@ -52,7 +52,7 @@ def test_stage_artifact_builder_excludes_unowned_layers_and_publishes_atomically
 
 
 def test_first_and_final_artifacts_receive_their_required_shared_assets(tmp_path: Path) -> None:
-    snapshot, tokenizer_revision, plan = tiny_olmoe_snapshot(tmp_path)
+    snapshot, tokenizer_revision, plan = tiny_native_snapshot(tmp_path)
     builder = StageArtifactBuilder(
         artifact_root=tmp_path / "artifacts",
         temporary_root=tmp_path / "downloads",
@@ -84,7 +84,7 @@ def test_first_and_final_artifacts_receive_their_required_shared_assets(tmp_path
 def test_stage_artifact_is_not_published_when_storage_reservation_fails(
     tmp_path: Path,
 ) -> None:
-    snapshot, tokenizer_revision, plan = tiny_olmoe_snapshot(tmp_path)
+    snapshot, tokenizer_revision, plan = tiny_native_snapshot(tmp_path)
     artifacts = tmp_path / "artifacts"
     downloads = tmp_path / "downloads"
     builder = StageArtifactBuilder(

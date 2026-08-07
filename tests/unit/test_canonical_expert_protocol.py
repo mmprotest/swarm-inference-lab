@@ -44,7 +44,7 @@ def _signed_lease(
     unsigned = SignedExpertRouteLease(
         topology_id="expert-topology",
         route_generation=route_generation,
-        model_id="test/olmoe",
+        model_id="test/sparse-moe",
         model_revision="model-revision",
         model_fingerprint="model-fingerprint",
         quantization_fingerprint="quantization-fingerprint",
@@ -196,7 +196,7 @@ async def test_authenticated_tcp_whole_expert_result_is_verified_and_consumed() 
     runtime = ExpertWorkerRuntime(
         worker_id="expert-worker",
         identity=expert_identity,
-        model_id="test/olmoe",
+        model_id="test/sparse-moe",
         model_revision="model-revision",
         model_fingerprint="model-fingerprint",
         quantization_fingerprint="quantization-fingerprint",
@@ -221,7 +221,7 @@ async def test_authenticated_tcp_whole_expert_result_is_verified_and_consumed() 
                 expert_hash=weights.content_hash,
             )
         },
-        model_id="test/olmoe",
+        model_id="test/sparse-moe",
         model_revision="model-revision",
         model_fingerprint="model-fingerprint",
         quantization_fingerprint="quantization-fingerprint",

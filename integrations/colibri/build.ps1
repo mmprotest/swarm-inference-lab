@@ -81,7 +81,12 @@ if ($ApplyBridgePatches) {
     # The canonical SWARMEX1 implementation belongs to this repository rather
     # than the downstream Colibri patch series. Copy the exact audited adapter
     # into the exported tree after every patch has applied and before compile.
-    foreach ($adapterName in @('swarm_expert_wire.h', 'swarm_expert_wire.c')) {
+    foreach ($adapterName in @(
+        'swarm_expert_wire.h',
+        'swarm_expert_wire.c',
+        'swarm_moe_runtime.h',
+        'swarm_moe_runtime.c'
+    )) {
         $adapterSource = Join-Path $PSScriptRoot "adapter\$adapterName"
         if (-not (Test-Path -LiteralPath $adapterSource -PathType Leaf)) {
             throw "missing canonical C wire adapter: $adapterSource"
@@ -105,6 +110,8 @@ $buildPathParts += $previousPath
 $env:PATH = $buildPathParts -join ';'
 $targetNames = @('colibri.exe', 'olmoe.exe', 'olmoe_expert_worker.exe', 'inkling.exe', 'kimi_k3.exe')
 $adapterBinaryNames = @('coli_kimi_mxfp4.dll')
+$genericMoeTarget = if ($ApplyBridgePatches) { 'coli_swarm_moe.dll' } else { $null }
+if ($genericMoeTarget) { $adapterBinaryNames += $genericMoeTarget }
 $nativeTestTargets = if ($ApplyBridgePatches) {
     @(
         'tests/test_olmoe_expert_runtime.exe',
@@ -114,6 +121,7 @@ $nativeTestTargets = if ($ApplyBridgePatches) {
     )
 } else { @() }
 $allBuildTargets = @($targetNames) + @($nativeTestTargets)
+if ($genericMoeTarget) { $allBuildTargets += $genericMoeTarget }
 $cudaBuild = $null
 if ($BuildCuda) {
     if (-not $IsWindows -and $env:OS -ne 'Windows_NT') {
@@ -197,6 +205,7 @@ try {
         # latter is required for real native-int8 expert execution in both the
         # coordinator and isolated C worker.
         $cpuTargets = @('inkling.exe', 'kimi_k3.exe') + @($nativeTestTargets)
+        if ($genericMoeTarget) { $cpuTargets += $genericMoeTarget }
         & $make -C (Join-Path $source 'c') -j4 @cpuTargets 'ARCH=native' 'CUDA_DLL=0'
         $makeExit = $LASTEXITCODE
         if ($makeExit -eq 0) {
@@ -262,7 +271,13 @@ $patchManifest = [ordered]@{
     bridge_enabled = [bool]$ApplyBridgePatches
     patches = $patchRows
     wire_adapter = if ($ApplyBridgePatches) {
-        @('swarm_expert_wire.h', 'swarm_expert_wire.c', 'kimi_mxfp4_runtime.c') | ForEach-Object {
+        @(
+            'swarm_expert_wire.h',
+            'swarm_expert_wire.c',
+            'kimi_mxfp4_runtime.c',
+            'swarm_moe_runtime.h',
+            'swarm_moe_runtime.c'
+        ) | ForEach-Object {
             $adapter = Join-Path $PSScriptRoot "adapter\$_"
             [ordered]@{
                 name = $_

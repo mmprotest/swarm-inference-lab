@@ -150,14 +150,23 @@ def _tensor_storage(shape: tuple[int, ...], ggml_type: int) -> tuple[int, str, s
     return blocks * storage_bytes, dtype, quantization
 
 
-def inspect_gguf(path: Path) -> GGUFInventory:
-    """Read GGUF headers and tensor descriptors without loading tensor contents."""
+def inspect_gguf_stream(
+    handle: BinaryIO,
+    *,
+    file_size: int,
+    source: Path | str = "<stream>",
+) -> GGUFInventory:
+    """Inspect a seekable local or range-backed GGUF stream.
 
-    resolved = path.expanduser().resolve()
-    if not resolved.is_file():
-        raise FileNotFoundError(resolved)
-    file_size = resolved.stat().st_size
-    with resolved.open("rb") as handle:
+    Only the metadata and tensor descriptor table are read. ``file_size`` is
+    supplied by the immutable artifact manifest so tensor ranges can be
+    validated without seeking into, or downloading, the weight payload.
+    """
+
+    if file_size < 0:
+        raise ValueError("GGUF file size cannot be negative")
+    inventory_path = source if isinstance(source, Path) else Path(source)
+    try:
         if _read_exact(handle, 4) != b"GGUF":
             raise GGUFParseError("file does not begin with GGUF magic")
         version = int(_unpack(handle, "<I"))
@@ -191,6 +200,8 @@ def inspect_gguf(path: Path) -> GGUFInventory:
         if alignment <= 0 or alignment & (alignment - 1):
             raise GGUFParseError("GGUF alignment must be a positive power of two")
         data_offset = (handle.tell() + alignment - 1) // alignment * alignment
+    except (OSError, EOFError) as exc:
+        raise GGUFParseError("could not read GGUF metadata stream") from exc
     tensors: list[GGUFTensorInfo] = []
     for name, shape, ggml_type, offset in raw_tensors:
         byte_size, dtype, quantization = _tensor_storage(shape, ggml_type)
@@ -200,7 +211,7 @@ def inspect_gguf(path: Path) -> GGUFInventory:
             GGUFTensorInfo(name, shape, ggml_type, offset, byte_size, dtype, quantization)
         )
     return GGUFInventory(
-        path=resolved,
+        path=inventory_path,
         version=version,
         metadata=metadata,
         tensors=tuple(tensors),
@@ -209,4 +220,24 @@ def inspect_gguf(path: Path) -> GGUFInventory:
     )
 
 
-__all__ = ["GGUFInventory", "GGUFParseError", "GGUFTensorInfo", "inspect_gguf"]
+def inspect_gguf(path: Path) -> GGUFInventory:
+    """Read local GGUF headers and descriptors without loading tensor contents."""
+
+    resolved = path.expanduser().resolve()
+    if not resolved.is_file():
+        raise FileNotFoundError(resolved)
+    with resolved.open("rb") as handle:
+        return inspect_gguf_stream(
+            handle,
+            file_size=resolved.stat().st_size,
+            source=resolved,
+        )
+
+
+__all__ = [
+    "GGUFInventory",
+    "GGUFParseError",
+    "GGUFTensorInfo",
+    "inspect_gguf",
+    "inspect_gguf_stream",
+]

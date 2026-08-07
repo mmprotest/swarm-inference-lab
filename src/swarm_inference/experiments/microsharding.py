@@ -69,7 +69,7 @@ from swarm_inference.microsharding.reporting import (
 )
 from swarm_inference.microsharding.schemas import ModelPartitionPlan, build_dense_partition_plan
 from swarm_inference.microsharding.sequence_parallel import sequence_parallel_rms_norm
-from swarm_inference.model.shard_builder import inspect_qwen3_model, resolve_model
+from swarm_inference.model.shard_builder import inspect_native_model, resolve_model
 
 PRIMARY_MODEL_ID = "Qwen/Qwen3-0.6B"
 PRIMARY_MODEL_REVISION = "c1899de289a04d12100db370d81485cdf75e47ca"
@@ -1992,7 +1992,7 @@ def _secondary_model_check(
         return {"status": "SKIPPED", "model_id": model_id, "reason": "CLI override"}
     try:
         resolved = resolve_model(model_id, revision=revision, allow_download=True)
-        description = inspect_qwen3_model(resolved)
+        description = inspect_native_model(resolved)
         config = description.config
         plan = build_dense_partition_plan(
             model_id=model_id,
@@ -2315,7 +2315,7 @@ def _run_microsharding_impl(
         raise RuntimeError(
             f"dense revision changed: requested {dense_revision}, resolved {resolved.revision}"
         )
-    description = inspect_qwen3_model(resolved)
+    description = inspect_native_model(resolved)
     layer_count = int(description.config["num_hidden_layers"])
     hidden_size = int(description.config["hidden_size"])
     if dense_model == PRIMARY_MODEL_ID and (

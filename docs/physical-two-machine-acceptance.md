@@ -83,15 +83,15 @@ Both nodes must reconnect with unchanged identities and without pairing again.
 Machine A:
 
 ```powershell
-swarm run allenai/OLMoE-1B-7B-0125-Instruct `
-  --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
-  --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea `
+swarm run Qwen/Qwen3-0.6B `
+  --revision <immutable-qwen-commit> `
+  --tokenizer-revision sha256:<tokenizer-sha256> `
   --mode speed --prompt "Write a Python function that merges two sorted lists." --ndjson `
   | Tee-Object .\speed.ndjson
 
-swarm run allenai/OLMoE-1B-7B-0125-Instruct `
-  --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e `
-  --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea `
+swarm run Qwen/Qwen3-0.6B `
+  --revision <immutable-qwen-commit> `
+  --tokenizer-revision sha256:<tokenizer-sha256> `
   --mode capacity --require-node <laptop-node-id> `
   --prompt "Write a Python function that merges two sorted lists." --ndjson `
   | Tee-Object .\capacity.ndjson

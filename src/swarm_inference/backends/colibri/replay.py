@@ -19,6 +19,7 @@ from typing import Any, Literal
 import psutil
 from pydantic import Field, model_validator
 
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
 from swarm_inference.backends.colibri.model import resolve_model_family
 from swarm_inference.backends.colibri.process import ColibriProcess
 from swarm_inference.backends.colibri.schemas import ColibriGenerationResult, TuningSample
@@ -155,6 +156,7 @@ class ColibriReplayRunner:
         self.model_path = Path(model_path).expanduser().resolve()
         config = json.loads((self.model_path / "config.json").read_text(encoding="utf-8"))
         self.family = resolve_model_family(config, model_family)
+        self.adapter = default_colibri_adapter_registry().get(self.family)
         self.model_id = model_id
         self.model_revision = model_revision
         self.cap = cap
@@ -165,12 +167,7 @@ class ColibriReplayRunner:
 
     @property
     def engine(self) -> Path:
-        basename = {
-            "glm-5.2": "colibri",
-            "inkling": "inkling",
-            "kimi-k3": "kimi_k3",
-            "olmoe": "olmoe",
-        }[self.family]
+        basename = self.adapter.engine_basename
         for candidate in (
             self.engine_directory / basename,
             self.engine_directory / f"{basename}.exe",
@@ -189,22 +186,21 @@ class ColibriReplayRunner:
     ) -> ReplayTokenSequence:
         """Generate one deterministic continuation and capture its exact IDs."""
 
-        if self.family != "glm-5.2":
+        if not self.adapter.supports_text_calibration:
             raise NotImplementedError(
-                "text-to-fixed-token calibration is executable only for the GLM engine at this pin; "
-                "supply a ReplayTokenSequence for other families"
+                f"adapter {self.adapter.adapter_id!r} has no text calibration invocation; "
+                "supply a ReplayTokenSequence"
             )
         env = self._environment(environment)
-        env.update(
-            {
-                "SNAP": str(self.model_path),
-                "PROMPT": prompt,
-                "NGEN": str(continuation_tokens),
-                "TOKENS": "1",
-                "PROF": "1",
-            }
+        invocation = self.adapter.calibration_invocation(
+            engine=self.engine,
+            model_path=self.model_path,
+            cap=self.cap,
+            prompt=prompt,
+            continuation_tokens=continuation_tokens,
         )
-        completed = self._run([str(self.engine), str(self.cap)], env)
+        env.update(invocation.environment)
+        completed = self._run(list(invocation.command), env)
         output = completed.stdout + "\n" + completed.stderr
         if completed.returncode:
             raise RuntimeError(
@@ -256,29 +252,19 @@ class ColibriReplayRunner:
             reference.write_text(
                 json.dumps(replay.engine_reference(), sort_keys=True), encoding="utf-8"
             )
-            if self.family == "glm-5.2":
-                env.update({"REF": str(reference), "REF_FORCE": "1", "REPLAY": "1"})
-                command = [str(self.engine), str(self.cap)]
-                exact_replay = True
-            elif self.family == "olmoe":
-                env["PPL"] = "1"
-                command = [str(self.engine), str(self.cap), str(self.quant_bits), str(reference)]
-                exact_replay = True
-            elif self.family == "inkling":
-                command = [str(self.engine), str(self.cap), str(self.quant_bits), str(reference)]
-                exact_replay = False
-            elif self.family == "kimi-k3":
-                command = [
-                    str(self.engine),
-                    str(self.model_path),
-                    "--ids",
-                    " ".join(str(value) for value in replay.prompt_ids),
-                    "--ngen",
-                    str(len(replay.continuation_ids)),
-                ]
-                exact_replay = False
-            else:  # pragma: no cover - resolver makes this unreachable
-                raise ValueError(f"unsupported Colibri family {self.family}")
+            invocation = self.adapter.replay_invocation(
+                engine=self.engine,
+                model_path=self.model_path,
+                cap=self.cap,
+                quant_bits=self.quant_bits,
+                reference=reference,
+                prompt_ids=tuple(replay.prompt_ids),
+                completion_tokens=len(replay.continuation_ids),
+                teacher_forced=True,
+            )
+            env.update(invocation.environment)
+            command = list(invocation.command)
+            exact_replay = invocation.exact_replay
             started = time.perf_counter()
             try:
                 completed = self._run(command, env)
@@ -346,12 +332,14 @@ class ColibriReplayRunner:
         route_trace_path: str | Path | None = None,
         invocation_started_ns: int | None = None,
     ) -> ReplayExecution:
-        """Run the OLMoE one-shot generator and return its actual greedy token IDs."""
+        """Run an adapter-declared one-shot generator and return actual token IDs."""
 
         invocation_started_ns = invocation_started_ns or time.time_ns()
         bridge_offset = self._bridge_offset()
-        if self.family != "olmoe":
-            raise NotImplementedError("token-ID one-shot generation is currently an OLMoE path")
+        if self.adapter.launch_mode != "one-shot":
+            raise NotImplementedError(
+                f"adapter {self.adapter.adapter_id!r} uses its persistent gateway"
+            )
         if not prompt_ids or completion_tokens < 1:
             raise ValueError("one-shot generation requires prompt IDs and a positive token count")
         supplied = settings or {}
@@ -384,7 +372,18 @@ class ColibriReplayRunner:
                 ),
                 encoding="utf-8",
             )
-            command = [str(self.engine), str(self.cap), str(self.quant_bits), str(reference)]
+            invocation = self.adapter.replay_invocation(
+                engine=self.engine,
+                model_path=self.model_path,
+                cap=self.cap,
+                quant_bits=self.quant_bits,
+                reference=reference,
+                prompt_ids=tuple(prompt_ids),
+                completion_tokens=completion_tokens,
+                teacher_forced=False,
+            )
+            env.update(invocation.environment)
+            command = list(invocation.command)
             started = time.perf_counter()
             try:
                 completed = self._run(command, env)

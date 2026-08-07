@@ -64,7 +64,7 @@ from swarm_inference.experiments.runner import write_artifact_manifest
 from swarm_inference.model.manifest import load_manifest, verify_manifest_shards
 from swarm_inference.model.reference import run_reference_suite_subprocess
 from swarm_inference.model.shard_builder import (
-    inspect_qwen3_model,
+    inspect_native_model,
     model_inspection_payload,
     resolve_model,
     shard_model,
@@ -1311,7 +1311,7 @@ def run_worker_fanout_experiment(
             raise IntegrityError(
                 f"model resolved to {resolved.revision}, expected {IMMUTABLE_QWEN3_REVISION}"
             )
-        description = inspect_qwen3_model(resolved)
+        description = inspect_native_model(resolved)
         inspection = model_inspection_payload(description)
         _write_json(run_dir / "model_inspection.json", inspection)
         architecture_config = json.loads(

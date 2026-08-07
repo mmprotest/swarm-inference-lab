@@ -1,4 +1,4 @@
-"""Prepare canonical whole-expert and native-microshard OLMoE manifests."""
+"""Prepare historical Experiment 010 OLMoE exact-byte regression manifests."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from pathlib import Path
 
 import numpy as np
 
-from swarm_inference.acceptance.productization import REAL_MODEL_ID, REAL_MODEL_REVISION
 from swarm_inference.execution.expert import (
     ExpertWeights,
     safetensors_expert_loader,
@@ -17,6 +16,11 @@ from swarm_inference.execution.expert import (
 )
 from swarm_inference.model.olmoe import inspect_olmoe_partition_metadata
 from swarm_inference.model.partition import ModelPartitionMetadata
+
+# Historical Experiment 010 regression fixture.  Product acceptance is now
+# architecture-neutral and does not import or default to this model.
+REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
+REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 
 
 def _parser() -> argparse.ArgumentParser:

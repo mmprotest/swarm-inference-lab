@@ -28,6 +28,7 @@ from swarm_inference.exceptions import (
 from swarm_inference.execution.interfaces import StageExecutionResult, StageExecutor
 from swarm_inference.host import is_wildcard_host, split_endpoint
 from swarm_inference.model.adapter import (
+    ComponentKind,
     NativeModelAdapter,
     NativeModelAdapterRegistry,
     default_native_adapter_registry,
@@ -568,6 +569,57 @@ class PersistentStageRuntime:
             artifact_tokenizer_revision=artifact_tokenizer_revision,
         )
 
+    @staticmethod
+    def _validate_artifact_tensor_ownership(
+        adapter: NativeModelAdapter,
+        model_path: Path,
+        assignment: StageAssignment,
+    ) -> None:
+        """Revalidate a stage artifact without pretending it is a full checkpoint."""
+
+        index_path = model_path / "model.safetensors.index.json"
+        try:
+            payload = json.loads(index_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise IntegrityError("stage artifact Safetensors index is invalid") from exc
+        weight_map = payload.get("weight_map") if isinstance(payload, dict) else None
+        if not isinstance(weight_map, dict) or not weight_map:
+            raise IntegrityError("stage artifact Safetensors index has no weight map")
+        layer_ids: set[int] = set()
+        endpoint_kinds: set[ComponentKind] = set()
+        for tensor_name in weight_map:
+            if not isinstance(tensor_name, str) or not tensor_name:
+                raise IntegrityError("stage artifact index contains an invalid tensor name")
+            component = adapter.map_tensor_to_component(tensor_name)
+            if component.kind == ComponentKind.DECODER_LAYER:
+                layer = component.layer_index
+                if layer is None or not assignment.layer_start <= layer < assignment.layer_end:
+                    raise IntegrityError("stage artifact contains a tensor outside its layer range")
+                layer_ids.add(layer)
+                continue
+            endpoint_kinds.add(component.kind)
+            allowed = {
+                ComponentKind.EMBEDDING: assignment.owns_embeddings,
+                ComponentKind.FINAL_NORM: assignment.owns_final_norm,
+                ComponentKind.OUTPUT_HEAD: assignment.owns_output_projection,
+            }.get(component.kind, False)
+            if not allowed:
+                raise IntegrityError("stage artifact contains an unowned endpoint tensor")
+        expected_layers = set(range(assignment.layer_start, assignment.layer_end))
+        if layer_ids != expected_layers:
+            raise IntegrityError("stage artifact does not cover every assigned decoder layer")
+        required_endpoints = {
+            kind
+            for kind, required in (
+                (ComponentKind.EMBEDDING, assignment.owns_embeddings),
+                (ComponentKind.FINAL_NORM, assignment.owns_final_norm),
+                (ComponentKind.OUTPUT_HEAD, assignment.owns_output_projection),
+            )
+            if required
+        }
+        if not required_endpoints.issubset(endpoint_kinds):
+            raise IntegrityError("stage artifact omits an assigned endpoint tensor")
+
     def _load_native_stage(
         self,
         request: LoadStageRequest,
@@ -657,27 +709,34 @@ class PersistentStageRuntime:
                     if request.expert_plan is not None
                     else None
                 )
-                validate_assignment = getattr(adapter, "validate_stage_assignment", None)
-                if not callable(validate_assignment):
-                    raise IntegrityError(
-                        f"native adapter {adapter.adapter_id!r} cannot validate stage ownership"
+                if request.artifact_id is not None:
+                    self._validate_artifact_tensor_ownership(
+                        adapter,
+                        resolved_path,
+                        request.assignment,
                     )
-                validate_assignment(
-                    resolved_path,
-                    assignment=request.assignment,
-                    stage_count=request.stage_count,
-                    model_revision=request.model_revision,
-                    tokenizer_revision=request.tokenizer_revision,
-                    remote_experts=(
-                        {
-                            (item.layer_id, item.expert_id)
-                            for item in expert_plan.placements
-                            if item.strategy != "local" and not item.local_fallback_permitted
-                        }
-                        if expert_plan is not None
-                        else None
-                    ),
-                )
+                else:
+                    validate_assignment = getattr(adapter, "validate_stage_assignment", None)
+                    if not callable(validate_assignment):
+                        raise IntegrityError(
+                            f"native adapter {adapter.adapter_id!r} cannot validate stage ownership"
+                        )
+                    validate_assignment(
+                        resolved_path,
+                        assignment=request.assignment,
+                        stage_count=request.stage_count,
+                        model_revision=request.model_revision,
+                        tokenizer_revision=request.tokenizer_revision,
+                        remote_experts=(
+                            {
+                                (item.layer_id, item.expert_id)
+                                for item in expert_plan.placements
+                                if item.strategy != "local" and not item.local_fallback_permitted
+                            }
+                            if expert_plan is not None
+                            else None
+                        ),
+                    )
             artifact_lease_id: str | None = None
             if request.artifact_id is not None and self._artifact_lease_acquirer is not None:
                 artifact_lease_id = self._artifact_lease_acquirer(
@@ -1444,7 +1503,11 @@ class PersistentStageRuntime:
         self._check_deadline(request.deadline_unix_ns)
         reference = request.reference
         try:
-            requested_adapter = self._adapters.get(reference.adapter_id)
+            requested_adapter = (
+                self._adapters.get(reference.adapter_id)
+                if reference.adapter_id is not None
+                else None
+            )
         except KeyError:
             return WorkerModelProbeResponse(
                 worker_id=self.worker_id,
@@ -1480,7 +1543,9 @@ class PersistentStageRuntime:
                 requested_model_revision=reference.model_revision,
                 requested_tokenizer_revision=reference.tokenizer_revision,
                 model_path=model_path,
-                requested_adapter_id=requested_adapter.adapter_id,
+                requested_adapter_id=(
+                    requested_adapter.adapter_id if requested_adapter is not None else None
+                ),
             )
             inspect_partition = getattr(resolved_adapter, "inspect_partition_metadata", None)
             if not callable(inspect_partition):
@@ -1507,6 +1572,7 @@ class PersistentStageRuntime:
                 expert_intermediate_size=partition.expert_intermediate_size,
                 model_fingerprint=partition.model_fingerprint,
                 quantization_fingerprint=partition.quantization_fingerprint,
+                adapter_id=resolved_adapter.adapter_id,
             )
             spec = ProductModelSpec.resolved(reference, metadata)
             return WorkerModelProbeResponse(

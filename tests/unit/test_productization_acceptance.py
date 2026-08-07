@@ -430,17 +430,15 @@ def test_three_plus_five_clean_runs_permit_software_acceptance(tmp_path: Path) -
     assert overall == OverallStatus.SOFTWARE_ACCEPTANCE_PASS
 
 
-def test_real_model_baseline_and_recovery_are_distinct_gates() -> None:
+def test_real_model_gates_are_architecture_neutral_and_distinct() -> None:
     gates = {spec.name: spec for spec in REAL_MODEL_GATES}
-    baseline = gates["two_stage_olmoe_baseline"]
-    recovery = gates["restart_and_replay_olmoe"]
+    baseline = gates["real_model_baseline"]
+    recovery = gates["real_model_restart_and_replay"]
     assert baseline.tests != recovery.tests
-    assert "test_exact_two_stage_olmoe_cuda_baseline" in baseline.tests[0]
-    assert "restart_and_replay_recovery" in recovery.tests[0]
-
-    source = Path("tests/integration/test_product_stage_ring.py").read_text(encoding="utf-8")
-    assert '"failure_injected": False' in source
-    assert '"failure_injected": True' in source
+    assert "test_real_model_baseline_evidence" in baseline.tests[0]
+    assert "test_real_model_restart_and_replay_evidence" in recovery.tests[0]
+    assert all("olmoe" not in spec.name.casefold() for spec in REAL_MODEL_GATES)
+    assert all("olmoe" not in test.casefold() for spec in REAL_MODEL_GATES for test in spec.tests)
 
 
 def test_real_model_pytest_skip_is_never_classified_as_pass(tmp_path: Path) -> None:

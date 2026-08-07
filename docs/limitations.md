@@ -46,12 +46,25 @@
   on the source node; participating stage nodes receive only owned artifacts.
 - Stale or unmeasured links are excluded from automatic distributed plans and
   are never labeled measured throughput.
-- Native Qwen3 MoE execution supports the Transformers `qwen3_moe` safetensors
-  representation. Newer Qwen3.5/Qwen3.6 hybrid representations are rejected by the native
-  adapter; their compatible GGUF forms require an installed llama.cpp build that proves the
-  exact loader architecture during preflight.
-- Kimi K3 support is absent until independently validated. Index analysis is
-  not model execution support.
+- Native Qwen3 MoE execution supports the Transformers `qwen3_moe` Safetensors representation.
+  Qwen3.5/Qwen3.6 hybrid Safetensors have an architecture profile and Colibri routed-expert
+  component but no complete hybrid attention/KV execution plan yet. Compatible GGUF artifacts
+  require an installed llama.cpp build that proves the exact loader and quantization.
+- Kimi K3 and current GLM MoE have complete pinned-Colibri adapter paths, but heavyweight
+  real-model and physical-distributed validation remains `NOT_TESTED` on a clean checkout.
+- Kimi K2, DeepSeek V3/V3.x/R1, MiniMax MoE, Mixtral, Llama 4 MoE, and newer Mistral MoE layouts
+  have software-validated architecture/routing/expert descriptions and generic Colibri expert
+  components. Their complete Safetensors hybrid plans are still integration gaps.
+- Dense Llama, Mistral, and Gemma Safetensors are profileable but do not yet have a generic
+  native-stage executor. Runtime-probed GGUF through llama.cpp is the current complete path where
+  the installed build and hardware qualify.
+- The generic Colibri SwiGLU component supports BF16/F16, adapter-described FP8, and exact
+  symmetric INT4-G32 projection decoding when the adapter proves compressed-tensors packing and
+  scales. Other packed int4/int8 layouts are rejected until an exact quantization-specific
+  kernel is installed; they are not silently dequantized through an unreported fallback.
+- Architecture/profile fixtures and numerical expert tests are software evidence, not real-model
+  validation. Opt-in gates cannot pass without an executed, immutable, runtime-hash-bound
+  evidence bundle.
 - The system does not provide prompt privacy, activation privacy, protection
   against colluding malicious workers, Byzantine fault tolerance, or
   cryptographic proof of correct neural computation.

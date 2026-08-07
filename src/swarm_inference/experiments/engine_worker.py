@@ -256,7 +256,7 @@ def _build_custom_correctness_stage(job: dict[str, Any]) -> tuple[Any, float]:
     from swarm_inference.model.shard_builder import (
         ResolvedModel,
         build_manifest,
-        inspect_qwen3_model,
+        inspect_native_model,
     )
 
     started = time.perf_counter()
@@ -267,7 +267,7 @@ def _build_custom_correctness_stage(job: dict[str, Any]) -> tuple[Any, float]:
         path=path,
         downloaded=False,
     )
-    description = inspect_qwen3_model(resolved)
+    description = inspect_native_model(resolved)
     maximum = sum(item.bytes for item in description.tensors) * 2
     manifest = build_manifest(
         description,

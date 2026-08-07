@@ -111,15 +111,17 @@ def _make_model(
             "num_experts_per_tok": 1,
         }
         engine = "colibri.exe"
-    elif family == "olmoe":
+    elif family == "qwen3-moe":
         config = {
-            "model_type": "olmoe",
+            "architectures": ["Qwen3MoeForCausalLM"],
+            "model_type": "qwen3_moe",
             "num_hidden_layers": 1,
+            "hidden_size": 4,
+            "moe_intermediate_size": 3,
             "num_experts": 8,
             "num_experts_per_tok": 2,
-            "n_shared_experts": 1,
         }
-        engine = "olmoe.exe"
+        engine = "swarm_moe.exe"
     elif family == "kimi-k3":
         config = {
             "model_type": "kimi_k3",
@@ -132,6 +134,9 @@ def _make_model(
                 "num_shared_experts": 2,
                 "routed_expert_hidden_size": 64,
                 "moe_intermediate_size": 32,
+                "first_k_dense_replace": 0,
+                "attn_res_block_size": 1,
+                "linear_attn_config": {"kda_layers": []},
                 "quantization_config": {"format": "mxfp4-pack-quantized"},
             },
         }
@@ -268,6 +273,7 @@ def test_colibri_commit_pin() -> None:
         "0006-olmoe-external-expert-dispatch.patch",
         "0007-olmoe-native-microshards.patch",
         "0008-olmoe-memory-residency-telemetry.patch",
+        "0009-generic-sparse-moe-component.patch",
     ]
     bridge_patch = (
         REPOSITORY_ROOT
@@ -490,53 +496,65 @@ def test_colibri_bridge_event_schema(tmp_path: Path) -> None:
 
 
 def test_colibri_model_inventory(tmp_path: Path) -> None:
-    model, engines = _make_model(tmp_path, family="olmoe")
+    model, engines = _make_model(tmp_path, family="qwen3-moe")
     _write_safetensors(
         model / "model.safetensors",
         [
             ("model.embed_tokens.weight", "F32", [2, 2], b"\0" * 16),
-            ("model.layers.0.mlp.experts.7.merged_weight", "U8", [3, 4], b"\1" * 12),
-            ("model.layers.0.mlp.experts.2.merged_weight", "U8", [3, 4], b"\2" * 12),
+            ("model.layers.0.mlp.experts.7.gate_proj.weight", "F32", [3, 4], b"1" * 48),
+            ("model.layers.0.mlp.experts.7.up_proj.weight", "F32", [3, 4], b"2" * 48),
+            ("model.layers.0.mlp.experts.7.down_proj.weight", "F32", [4, 3], b"3" * 48),
+            ("model.layers.0.mlp.experts.2.gate_proj.weight", "F32", [3, 4], b"4" * 48),
+            ("model.layers.0.mlp.experts.2.up_proj.weight", "F32", [3, 4], b"5" * 48),
+            ("model.layers.0.mlp.experts.2.down_proj.weight", "F32", [4, 3], b"6" * 48),
         ],
     )
     inventory, tensors, experts, formats = ColibriModelInspector(engines).inspect(model)
-    assert inventory.model_family == "olmoe"
-    assert inventory.tensor_count == len(tensors) == 3
+    assert inventory.model_family == "qwen3-moe"
+    assert inventory.tensor_count == len(tensors) == 7
     assert inventory.expert_count == len(experts) == 2
-    assert inventory.expert_geometry["shared_experts"] == 1
-    assert {item.format_name for item in formats} >= {"f32", "int8_rowwise"}
+    assert inventory.expert_geometry["shared_experts"] == 0
+    assert {item.format_name for item in formats} == {"f32"}
 
 
 def test_colibri_tensor_inventory(tmp_path: Path) -> None:
-    model, engines = _make_model(tmp_path, family="olmoe")
+    model, engines = _make_model(tmp_path, family="qwen3-moe")
     file_path = model / "model.safetensors"
     _write_safetensors(
         file_path,
-        [("model.layers.0.mlp.experts.3.merged_weight", "U8", [3, 4], b"x" * 12)],
+        [
+            ("model.layers.0.mlp.experts.3.gate_proj.weight", "F32", [3, 4], b"g" * 48),
+            ("model.layers.0.mlp.experts.3.up_proj.weight", "F32", [3, 4], b"u" * 48),
+            ("model.layers.0.mlp.experts.3.down_proj.weight", "F32", [4, 3], b"d" * 48),
+        ],
     )
     _, tensors, _, _ = ColibriModelInspector(engines).inspect(model, content_hash_mode="full")
     tensor = tensors[0]
     assert tensor.layer_id == 0 and tensor.expert_id == 3
-    assert tensor.tensor_role == "routed_expert_merged_weight"
+    assert tensor.tensor_role == "routed_expert_gate_projection"
     assert tensor.storage_offset >= 8
     assert tensor.storage_offset + tensor.storage_length <= file_path.stat().st_size
     assert tensor.content_hash.startswith("sha256:")
 
 
 def test_colibri_expert_inventory(tmp_path: Path) -> None:
-    model, engines = _make_model(tmp_path, family="olmoe")
+    model, engines = _make_model(tmp_path, family="qwen3-moe")
     _write_safetensors(
         model / "model.safetensors",
         [
-            ("model.layers.0.mlp.experts.7.merged_weight", "U8", [2, 2], b"7" * 4),
-            ("model.layers.0.mlp.experts.2.merged_weight", "U8", [2, 2], b"2" * 4),
+            ("model.layers.0.mlp.experts.7.gate_proj.weight", "F32", [3, 4], b"1" * 48),
+            ("model.layers.0.mlp.experts.7.up_proj.weight", "F32", [3, 4], b"2" * 48),
+            ("model.layers.0.mlp.experts.7.down_proj.weight", "F32", [4, 3], b"3" * 48),
+            ("model.layers.0.mlp.experts.2.gate_proj.weight", "F32", [3, 4], b"4" * 48),
+            ("model.layers.0.mlp.experts.2.up_proj.weight", "F32", [3, 4], b"5" * 48),
+            ("model.layers.0.mlp.experts.2.down_proj.weight", "F32", [4, 3], b"6" * 48),
         ],
     )
     _, _, experts, _ = ColibriModelInspector(engines).inspect(model)
     assert [expert.expert_id for expert in experts] == [7, 2]
     assert [expert.physical_storage_order for expert in experts] == [0, 1]
-    assert all(expert.total_bytes == 4 for expert in experts)
-    assert all(expert.native_format == "int8_rowwise" for expert in experts)
+    assert all(expert.total_bytes == 144 for expert in experts)
+    assert all(expert.native_format == "f32" for expert in experts)
 
 
 def test_colibri_native_mxfp4_metadata(tmp_path: Path) -> None:

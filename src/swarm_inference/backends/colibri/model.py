@@ -4,26 +4,22 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import struct
-from collections import defaultdict
 from pathlib import Path
 from typing import Any, Literal
 
-from swarm_inference.backends.colibri.constants import MODEL_FAMILY_ENGINES
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
 from swarm_inference.backends.colibri.schemas import (
     ExpertInventoryEntry,
     ModelInventory,
     NativeQuantizationMetadata,
     TensorInventoryEntry,
 )
+from swarm_inference.model.architecture import architecture_from_config
+from swarm_inference.model.descriptor import ModelFileDescriptor, ResolvedModelDescriptor
 from swarm_inference.protocol.checksums import sha256_file
 
 _SAFETENSORS_HEADER = struct.Struct("<Q")
-_LAYER_RE = re.compile(r"(?:^|\.)layers?\.(\d+)(?:\.|$)")
-_EXPERT_RE = re.compile(r"(?:^|\.)experts?\.(\d+)(?:\.|$)")
-_PROJECTION_RE = re.compile(r"(?:^|\.)(gate_proj|up_proj|down_proj|merged_weight|qs)(?:\.|$)")
-_KIMI_EXPERT_TENSOR_RE = re.compile(r"(?:^|\.)(w1|w2|w3)\.weight_(packed|scale)(?:\.|$)")
 
 
 def _canonical_json_hash(payload: Any) -> str:
@@ -56,198 +52,29 @@ def _range_hash(path: Path, offset: int, length: int) -> str:
 
 
 def resolve_model_family(config: dict[str, Any], explicit: str | None = None) -> str:
-    """Resolve only families that Colibri v1.4.0 has a real engine for."""
+    """Resolve an adapter from exact root/nested architecture metadata."""
 
-    model_type = str(config.get("model_type", "")).lower().replace("_", "-")
-    architecture_values = config.get("architectures")
-    if not isinstance(architecture_values, list):
-        architecture_values = []
-    architectures = " ".join(str(item).lower() for item in architecture_values)
-    raw_text_config = config.get("text_config")
-    text: dict[str, Any] = raw_text_config if isinstance(raw_text_config, dict) else {}
-    nested_type = str(text.get("model_type", "")).lower().replace("_", "-")
-    signals = " ".join((model_type, nested_type, architectures))
-    if "kimi" in signals:
-        detected = "kimi-k3"
-    elif "inkling" in signals:
-        detected = "inkling"
-    elif "olmoe" in signals or "olmoe" in str(config.get("_name_or_path", "")).lower():
-        detected = "olmoe"
-    elif "glm-moe-dsa" in signals or "glm" in signals:
-        detected = "glm-5.2"
-    else:
-        raise ValueError(
-            "unsupported model family; Colibri adapter will not fall back to another model engine"
-        )
-    if explicit is not None:
-        normalized = explicit.strip().lower().replace("_", "-")
-        aliases = {"glm": "glm-5.2", "kimi": "kimi-k3", "olmoe": "olmoe", "inkling": "inkling"}
-        requested = aliases.get(normalized, normalized)
-        if requested != detected:
-            raise ValueError(
-                f"requested model family {requested!r} does not match detected {detected!r}"
+    try:
+        return (
+            default_colibri_adapter_registry()
+            .resolve_config(
+                config,
+                explicit_adapter_id=explicit,
             )
-    return detected
+            .adapter_id
+        )
+    except LookupError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def _engine_path(engine_directory: Path, family: str) -> Path:
-    basename = MODEL_FAMILY_ENGINES[family]
+    basename = default_colibri_adapter_registry().get(family).engine_basename
     candidates = [engine_directory / basename, engine_directory / f"{basename}.exe"]
     for candidate in candidates:
         if candidate.is_file():
             return candidate.resolve()
     raise FileNotFoundError(
         f"Colibri {family} engine is missing; tried {', '.join(str(item) for item in candidates)}"
-    )
-
-
-def _tensor_role(name: str, expert_id: int | None) -> str:
-    kimi_tensor = _KIMI_EXPERT_TENSOR_RE.search(name)
-    if expert_id is not None and kimi_tensor:
-        projection, storage_kind = kimi_tensor.groups()
-        if storage_kind == "scale":
-            return "routed_expert_scale"
-        # Colibri's Kimi engine evaluates w1 as the gate projection, w3 as
-        # the up projection, and w2 as the down projection.  Preserve that
-        # semantic mapping instead of treating the checkpoint names as
-        # arbitrary byte blobs.
-        return {
-            "w1": "routed_expert_gate_projection",
-            "w2": "routed_expert_down_projection",
-            "w3": "routed_expert_up_projection",
-        }[projection]
-    projection = _PROJECTION_RE.search(name)
-    if expert_id is not None and projection:
-        return {
-            "gate_proj": "routed_expert_gate_projection",
-            "up_proj": "routed_expert_up_projection",
-            "down_proj": "routed_expert_down_projection",
-            "merged_weight": "routed_expert_merged_weight",
-            "qs": "routed_expert_scale",
-        }[projection.group(1)]
-    lowered = name.lower()
-    if "shared_expert" in lowered:
-        return "shared_expert"
-    if "router" in lowered or lowered.endswith("mlp.gate.weight"):
-        return "router"
-    if "embed" in lowered:
-        return "embedding"
-    if "lm_head" in lowered or lowered.endswith("output.weight"):
-        return "output_head"
-    if "norm" in lowered:
-        return "normalization"
-    if any(item in lowered for item in ("self_attn", "attention", "q_proj", "k_proj", "v_proj")):
-        return "attention"
-    return "dense_parameter"
-
-
-def _effective_config(config: dict[str, Any]) -> dict[str, Any]:
-    nested = config.get("text_config")
-    return nested if isinstance(nested, dict) else config
-
-
-def _format_hint(config: dict[str, Any], family: str) -> str | None:
-    effective = _effective_config(config)
-    quant = effective.get("quantization_config")
-    if not isinstance(quant, dict):
-        quant = config.get("quantization_config")
-    if isinstance(quant, dict):
-        rendered = json.dumps(quant, sort_keys=True).lower()
-        if "mxfp4" in rendered:
-            return "mxfp4"
-        if "int4" in rendered or '"num_bits": 4' in rendered:
-            return "int4"
-        if "fp8" in rendered:
-            return "fp8"
-    if family == "olmoe":
-        return "int8_rowwise"
-    return None
-
-
-def _logical_projection_shape(
-    *, role: str, packed_shape: list[int], config: dict[str, Any], native_format: str
-) -> list[int]:
-    if native_format != "mxfp4":
-        return packed_shape
-    effective = _effective_config(config)
-    # Kimi's routed experts operate in the latent dimension, not the model's
-    # full hidden width.  The GLU intermediate dimension is the separate
-    # moe_intermediate_size field.
-    hidden = int(
-        effective.get("routed_expert_hidden_size", 0) or effective.get("hidden_size", 0) or 0
-    )
-    intermediate = int(
-        effective.get("moe_intermediate_size", 0) or effective.get("intermediate_size", 0) or 0
-    )
-    if hidden and intermediate:
-        if role.endswith(("gate_projection", "up_projection")):
-            return [intermediate, hidden]
-        if role.endswith("down_projection"):
-            return [hidden, intermediate]
-    return packed_shape
-
-
-def _quantization(
-    *, dtype: str, shape: list[int], role: str, byte_size: int, config: dict[str, Any], family: str
-) -> NativeQuantizationMetadata:
-    hint = _format_hint(config, family)
-    is_routed = role.startswith("routed_expert_") and role != "routed_expert_scale"
-    native_kimi_mxfp4 = family == "kimi-k3" and role.startswith("routed_expert_")
-    if native_kimi_mxfp4 and role == "routed_expert_scale":
-        return NativeQuantizationMetadata(
-            format_name="ue8m0",
-            packing="one_scale_per_group",
-            scale_format="ue8m0",
-            scale_group_size=32,
-            quantization_aware_trained=True,
-            reencoding_allowed=False,
-            backend_requirements=["colibri-kimi-k3-native-mxfp4"],
-            logical_shape=shape,
-            packed_shape=shape,
-            byte_size=byte_size,
-        )
-    if (hint == "mxfp4" or native_kimi_mxfp4) and is_routed:
-        logical = _logical_projection_shape(
-            role=role, packed_shape=shape, config=config, native_format="mxfp4"
-        )
-        return NativeQuantizationMetadata(
-            format_name="mxfp4",
-            packing="e2m1_two_nibbles",
-            scale_format="ue8m0",
-            scale_group_size=32,
-            quantization_aware_trained=True,
-            reencoding_allowed=False,
-            backend_requirements=["colibri-kimi-k3-native-mxfp4"],
-            logical_shape=logical,
-            packed_shape=shape,
-            byte_size=byte_size,
-        )
-    if family == "olmoe" and role == "routed_expert_merged_weight":
-        return NativeQuantizationMetadata(
-            format_name="int8_rowwise",
-            packing="three_projections_flattened",
-            scale_format="float32_per_row",
-            scale_group_size=None,
-            quantization_aware_trained=False,
-            reencoding_allowed=False,
-            backend_requirements=["colibri-olmoe-merged-expert"],
-            logical_shape=shape,
-            packed_shape=shape,
-            byte_size=byte_size,
-        )
-    normalized = dtype.lower()
-    format_name = hint if hint and is_routed else normalized
-    return NativeQuantizationMetadata(
-        format_name=format_name,
-        packing="safetensors_native",
-        scale_format="none" if role != "routed_expert_scale" else "float32_per_row",
-        scale_group_size=None,
-        quantization_aware_trained=hint == "mxfp4",
-        reencoding_allowed=normalized in {"f32", "f16", "bf16"},
-        backend_requirements=[f"colibri-{family}"],
-        logical_shape=shape,
-        packed_shape=shape,
-        byte_size=byte_size,
     )
 
 
@@ -323,6 +150,7 @@ class ColibriModelInspector:
         if not isinstance(config, dict):
             raise ValueError("model config must contain a JSON object")
         family = resolve_model_family(config, model_family)
+        adapter = default_colibri_adapter_registry().get(family)
         engine = _engine_path(self.engine_directory, family)
         config_hash = sha256_file(config_path)
         resolved_model_id = model_id or root.name
@@ -356,23 +184,43 @@ class ColibriModelInspector:
                 raw_entries.append(item)
 
         raw_entries.sort(key=lambda item: (int(item["file_index"]), int(item["offset"])))
+        mappings = adapter.map_tensor_names(
+            tuple(
+                (
+                    str(item["name"]),
+                    tuple(int(value) for value in item["shape"]),
+                    str(item["dtype"]),
+                    int(item["length"]),
+                )
+                for item in raw_entries
+            ),
+            config=config,
+        )
+        mapping_by_name = {item.tensor_name: item for item in mappings}
+        if len(mapping_by_name) != len(raw_entries):
+            raise ValueError("Colibri adapter did not map every checkpoint tensor exactly once")
         tensors: list[TensorInventoryEntry] = []
         for physical_order, item in enumerate(raw_entries):
             name = str(item["name"])
-            layer_match = _LAYER_RE.search(name)
-            expert_match = _EXPERT_RE.search(name)
-            layer_id = int(layer_match.group(1)) if layer_match else -1
-            expert_id = int(expert_match.group(1)) if expert_match else None
-            role = _tensor_role(name, expert_id)
-            shape = [int(value) for value in item["shape"]]
+            mapping = mapping_by_name[name]
+            layer_id = mapping.layer_index
+            expert_id = mapping.expert_index
+            role = mapping.tensor_role
             byte_size = int(item["length"])
-            quant = _quantization(
-                dtype=str(item["dtype"]),
-                shape=shape,
-                role=role,
+            quant = NativeQuantizationMetadata(
+                format_name=mapping.quantization_format,
+                packing=mapping.packing,
+                scale_format=mapping.scale_format,
+                scale_group_size=mapping.scale_group_size,
+                quantization_aware_trained=mapping.quantization_aware_trained,
+                reencoding_allowed=mapping.reencoding_allowed,
+                backend_requirements=[
+                    f"colibri-adapter:{adapter.adapter_id}",
+                    adapter.engine_basename,
+                ],
+                logical_shape=list(mapping.logical_shape),
+                packed_shape=list(mapping.packed_shape),
                 byte_size=byte_size,
-                config=config,
-                family=family,
             )
             identity = {
                 "model_id": resolved_model_id,
@@ -413,17 +261,56 @@ class ColibriModelInspector:
                 )
             )
 
-        grouped: dict[tuple[int, int], list[TensorInventoryEntry]] = defaultdict(list)
-        for tensor in tensors:
-            if tensor.expert_id is not None and tensor.layer_id >= 0:
-                grouped[(tensor.layer_id, tensor.expert_id)].append(tensor)
-        expert_order = sorted(
-            grouped,
-            key=lambda key: min(item.physical_storage_order for item in grouped[key]),
+        architecture = architecture_from_config(config)
+        inspection_model = ResolvedModelDescriptor(
+            model_id=resolved_model_id,
+            revision=resolved_revision,
+            content_fingerprint="sha256:" + config_hash,
+            source_type="local",
+            format="safetensors",
+            architecture=architecture.canonical,
+            architecture_raw=architecture.raw,
+            architecture_source=architecture.source,
+            files=tuple(
+                ModelFileDescriptor(
+                    relative_path=str(item["relative_path"]),
+                    size_bytes=int(item["byte_size"]),
+                    sha256=item["sha256"],
+                )
+                for item in model_files
+            ),
+            weight_bytes=sum(int(item["byte_size"]) for item in model_files),
+            tokenizer_identity=tokenizer_hash,
+            local_paths=tuple(str(path) for path in safetensors),
+            configuration=config,
         )
+        adapter.validate_model_identity(
+            inspection_model,
+            tensor_names=tuple(item.tensor_name for item in mappings),
+        )
+        profile = adapter.inspect_model(inspection_model)
+        expert_descriptors = adapter.describe_experts(mappings, profile)
+        inventory_by_name = {item.tensor_name: item for item in tensors}
         experts: list[ExpertInventoryEntry] = []
-        for physical_order, key in enumerate(expert_order):
-            items = sorted(grouped[key], key=lambda item: item.physical_storage_order)
+        ordered_descriptors = sorted(
+            expert_descriptors,
+            key=lambda descriptor: (
+                min(
+                    inventory_by_name[name].physical_storage_order
+                    for group in descriptor.tensor_groups
+                    for name in group.tensor_names
+                ),
+                descriptor.layer_index,
+                descriptor.expert_type,
+                descriptor.expert_index,
+            ),
+        )
+        for physical_order, descriptor in enumerate(ordered_descriptors):
+            names = tuple(name for group in descriptor.tensor_groups for name in group.tensor_names)
+            items = sorted(
+                (inventory_by_name[name] for name in names),
+                key=lambda item: item.physical_storage_order,
+            )
             formats = sorted({item.quantization.format_name for item in items})
             native_format = "+".join(formats)
             if "mxfp4" in formats and set(formats).issubset({"mxfp4", "ue8m0"}):
@@ -432,10 +319,11 @@ class ColibriModelInspector:
                 native_format = "mxfp4"
             experts.append(
                 ExpertInventoryEntry(
-                    layer_id=key[0],
-                    expert_id=key[1],
+                    layer_id=descriptor.layer_index,
+                    expert_id=descriptor.expert_index,
+                    expert_type=descriptor.expert_type,
                     tensor_ids=[item.tensor_id for item in items],
-                    total_bytes=sum(item.byte_size for item in items),
+                    total_bytes=descriptor.memory_bytes,
                     native_format=native_format,
                     storage_location={
                         "segments": [
@@ -445,37 +333,25 @@ class ColibriModelInspector:
                                 "length": item.storage_length,
                             }
                             for item in items
-                        ]
+                        ],
+                        "tensor_slices": descriptor.routing_metadata.get("tensor_slices", {}),
                     },
                     current_tier="nvme",
                     physical_storage_order=physical_order,
+                    routing_metadata=descriptor.routing_metadata,
                 )
             )
 
-        effective = _effective_config(config)
         geometry = {
-            "layers": int(effective.get("num_hidden_layers", 0) or 0),
-            "experts_per_layer": int(
-                effective.get("num_experts", 0) or effective.get("n_routed_experts", 0) or 0
-            ),
-            "experts_selected_per_token": int(
-                effective.get("num_experts_per_token", 0)
-                or effective.get("num_experts_per_tok", 0)
-                or 0
-            ),
-            "shared_experts": int(
-                effective.get("num_shared_experts", 0) or effective.get("n_shared_experts", 0) or 0
-            ),
-            "routed_expert_hidden_size": int(
-                effective.get("routed_expert_hidden_size", 0)
-                or effective.get("moe_intermediate_size", 0)
-                or 0
-            ),
-            "expert_intermediate_size": int(
-                effective.get("moe_intermediate_size", 0)
-                or effective.get("intermediate_size", 0)
-                or 0
-            ),
+            "layers": profile.layer_count or 0,
+            "hidden_size": profile.hidden_size or 0,
+            "experts_per_layer": profile.expert_count or 0,
+            "experts_selected_per_token": profile.experts_per_token or 0,
+            "shared_experts": profile.shared_expert_count,
+            "expert_intermediate_size": profile.expert_intermediate_size or 0,
+            "routing_kind": profile.routing_kind,
+            "checkpoint_layout": profile.checkpoint_layout,
+            **profile.architecture_metadata,
         }
         quant_formats = sorted({tensor.quantization.format_name for tensor in tensors})
         inventory = ModelInventory(

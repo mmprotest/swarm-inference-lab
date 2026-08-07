@@ -1,0 +1,24 @@
+diff --git a/c/Makefile b/c/Makefile
+index 4dd38a2..18d871f 100644
+--- a/c/Makefile
++++ b/c/Makefile
+@@ -470,5 +470,19 @@ kimi_k3$(EXE): kimi_k3.c st.h json.h tok.h tok_unicode.h tok_unicode_o200k.h co
+ 	$(CC) $(CFLAGS) kimi_k3.c $(VK_OBJ) -o kimi_k3$(EXE) $(LDFLAGS)
+ 
++# Swarm-owned architecture-neutral routed-expert component.  The two source
++# files are copied from the versioned integration adapter after this patch is
++# applied, keeping family metadata and tensor interpretation outside Colibri.
++ifneq ($(IS_WIN),)
++SWARM_MOE_SHARED = coli_swarm_moe.dll
++SWARM_MOE_PIC =
++else
++SWARM_MOE_SHARED = libcoli_swarm_moe.so
++SWARM_MOE_PIC = -fPIC
++endif
++
++$(SWARM_MOE_SHARED): swarm_moe_runtime.c swarm_moe_runtime.h
++	$(CC) $(CFLAGS) $(SWARM_MOE_PIC) -shared swarm_moe_runtime.c -o $(SWARM_MOE_SHARED) $(LDFLAGS)
++
+ # Use a baseline that matches the compiler target. macOS already targets a
+ # portable baseline when ARCH is empty; forcing the x86 value there breaks
+ # Apple Silicon. Unknown targets use native rather than an invalid x86 flag.

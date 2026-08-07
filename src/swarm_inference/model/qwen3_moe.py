@@ -10,10 +10,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from swarm_inference.model.adapter import AdapterSupportReport, AdapterSupportStatus
-from swarm_inference.model.architecture import (
-    ModelArchitecture,
-    normalize_model_architecture,
-)
+from swarm_inference.model.architecture import normalize_model_architecture
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import ModelPartitionMetadata, StageAssignment
 from swarm_inference.model.qwen3 import Qwen3Adapter
@@ -38,7 +35,7 @@ class Qwen3MoeAdapter(Qwen3Adapter):
                 "native Qwen3 MoE execution requires a safetensors checkpoint; "
                 "GGUF belongs to an engine that opens GGUF natively",
             )
-        if normalize_model_architecture(model.architecture) != ModelArchitecture.QWEN3_MOE:
+        if normalize_model_architecture(model.architecture) != "qwen3_moe":
             return AdapterSupportReport(
                 self.adapter_id,
                 AdapterSupportStatus.UNSUPPORTED_ARCHITECTURE,

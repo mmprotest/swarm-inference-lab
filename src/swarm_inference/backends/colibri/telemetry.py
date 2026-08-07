@@ -15,7 +15,6 @@ from swarm_inference.backends.colibri.schemas import BridgeEvent, RouteSelection
 _IKU1 = b"IKU1"
 _U32 = struct.Struct("<I")
 _IKU1_HEADER = struct.Struct("<III")
-_ENGINE_NAMES = ("glm_moe_dsa", "inkling", "olmoe", "kimi_k3")
 
 
 def _fnv1a32(value: str) -> int:
@@ -413,9 +412,9 @@ class ColibriUsageHistoryReader:
         if engine_id is not None and expected_engine is not None:
             expected_id = _fnv1a32(expected_engine)
             if engine_id != expected_id and not allow_cross_engine:
-                writer = next((name for name in _ENGINE_NAMES if _fnv1a32(name) == engine_id), None)
                 raise ValueError(
-                    f"usage history was written by {writer or hex(engine_id)}, not {expected_engine}"
+                    "usage history engine identity mismatch: "
+                    f"{hex(engine_id)} != {expected_engine} ({hex(expected_id)})"
                 )
 
     def _read_text(

@@ -15,17 +15,6 @@ from swarm_inference.config.models import StrictModel
 from swarm_inference.model.partition import LayerCost, ModelPartitionMetadata
 
 
-def _legacy_default_adapter_id() -> str:
-    """Backward-read product v1 references that predate adapter discovery."""
-
-    from swarm_inference.model.adapter import default_native_adapter_registry
-
-    adapters = default_native_adapter_registry().adapters()
-    if not adapters:
-        raise RuntimeError("native adapter registry is empty")
-    return adapters[0].adapter_id
-
-
 class ModelResolutionPolicy(StrEnum):
     LOCAL_ONLY = "local-only"
     ALLOW_DOWNLOAD = "allow-download"
@@ -39,7 +28,7 @@ class ProductModelReference(StrictModel):
     model_id: str = Field(min_length=1)
     model_revision: str = Field(min_length=1)
     tokenizer_revision: str = Field(min_length=1)
-    adapter_id: str = Field(default_factory=_legacy_default_adapter_id, min_length=1)
+    adapter_id: str | None = Field(default=None, min_length=1)
     dtype: str = Field(default="bfloat16", min_length=1)
     model_fingerprint: str = ""
     model_format: str = "safetensors"
@@ -80,6 +69,7 @@ class ProductModelMetadata(StrictModel):
     expert_intermediate_size: int = Field(default=0, ge=0)
     model_fingerprint: str = ""
     quantization_fingerprint: str = ""
+    adapter_id: str | None = None
 
     @model_validator(mode="after")
     def validate_layers(self) -> ProductModelMetadata:
@@ -137,11 +127,14 @@ class ProductModelSpec(StrictModel):
         reference: ProductModelReference,
         metadata: ProductModelMetadata,
     ) -> ProductModelSpec:
+        adapter_id = metadata.adapter_id or reference.adapter_id
+        if adapter_id is None:
+            raise ValueError("resolved product metadata did not identify a native adapter")
         return cls(
             model_id=reference.model_id,
             model_revision=reference.model_revision,
             tokenizer_revision=reference.tokenizer_revision,
-            adapter_id=reference.adapter_id,
+            adapter_id=adapter_id,
             dtype=reference.dtype,
             layer_count=len(metadata.layer_costs),
             hidden_size=metadata.hidden_size,

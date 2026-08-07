@@ -1,3 +1,10 @@
+"""Adapter-local regression for the original Experiment 010 OLMoE execution seam.
+
+Universal acceptance uses architecture-neutral fixtures. This retained tiny checkpoint proves
+that the legacy adapter still reaches canonical whole-expert and microshard machinery; it does
+not give OLMoE product or planner status.
+"""
+
 from __future__ import annotations
 
 import asyncio

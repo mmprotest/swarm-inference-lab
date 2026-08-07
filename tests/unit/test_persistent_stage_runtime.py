@@ -14,6 +14,7 @@ from swarm_inference.config.models import Backend, WorkerCapability
 from swarm_inference.exceptions import BackpressureError, IntegrityError, MemoryLimitExceededError
 from swarm_inference.execution.interfaces import StageExecutionResult, WeightOwnership
 from swarm_inference.model.partition import StageAssignment
+from swarm_inference.model.qwen3 import Qwen3Adapter
 from swarm_inference.protocol.routes import (
     RouteLeaseParticipant,
     SignedRouteLease,
@@ -56,6 +57,22 @@ def assignment(*, weight_bytes: int = 1024) -> StageAssignment:
         owns_final_norm=True,
         owns_output_projection=True,
     )
+
+
+def test_stage_artifact_tensor_ownership_rejects_an_out_of_range_layer(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "model.safetensors.index.json").write_text(
+        '{"weight_map":{"model.layers.1.self_attn.q_proj.weight":"weights.safetensors"}}',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(IntegrityError, match="outside its layer range"):
+        PersistentStageRuntime._validate_artifact_tensor_ownership(
+            Qwen3Adapter(),
+            tmp_path,
+            assignment(),
+        )
 
 
 class FakeStageExecutor:
@@ -204,7 +221,7 @@ def load_request(*, request_id: str = "load", owned: StageAssignment | None = No
     return LoadStageRequest(
         worker_id="worker-a",
         request_id=request_id,
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="model-revision",
         tokenizer_revision="tokenizer-revision",
         topology_id="topology-a",
@@ -220,7 +237,7 @@ def route_request(*, generation: int = 1, replace_route: bool = False):
     return InstallStageRouteRequest(
         worker_id="worker-a",
         request_id=f"route-{generation}",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="model-revision",
         tokenizer_revision="tokenizer-revision",
         topology_id="topology-a",
@@ -246,7 +263,7 @@ def session_request(
     return OpenStageSessionRequest(
         worker_id="worker-a",
         request_id=request_id or f"open-{session_id}",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="model-revision",
         tokenizer_revision="tokenizer-revision",
         topology_id="topology-a",
@@ -288,7 +305,7 @@ def data_message(
         compression_mode=packed.compression_mode,
         payload=packed.payload,
         attributes={
-            "model_id": "test/olmoe",
+            "model_id": "test/model",
             "route_generation": route_generation,
             "request_generation": request_generation,
             "replay_only": False,
@@ -408,7 +425,7 @@ async def test_load_route_identity_memory_and_ownership_rejections() -> None:
         remove = RemoveStageRouteRequest(
             worker_id="worker-a",
             request_id="remove",
-            model_id="test/olmoe",
+            model_id="test/model",
             model_revision="model-revision",
             tokenizer_revision="tokenizer-revision",
             topology_id="topology-a",
@@ -565,10 +582,10 @@ async def test_runtime_requires_and_records_coordinator_authenticated_route_leas
         SignedRouteLease(
             topology_id="topology-a",
             route_generation=1,
-            model_id="test/olmoe",
+            model_id="test/model",
             model_revision="model-revision",
             tokenizer_revision="tokenizer-revision",
-            adapter_id="olmoe",
+            adapter_id="test-adapter",
             dtype="float32",
             participants=[participant],
             lease_issued_unix_ns=time.time_ns(),
@@ -611,7 +628,7 @@ async def test_unload_is_idempotent_and_shutdown_releases_sessions_and_model() -
     request = UnloadStageRequest(
         worker_id="worker-a",
         request_id="unload",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="model-revision",
         tokenizer_revision="tokenizer-revision",
         topology_id="topology-a",
@@ -744,7 +761,7 @@ async def test_two_stage_ring_validates_and_reuses_both_direct_connections() -> 
     route_zero = InstallStageRouteRequest(
         worker_id="worker-zero",
         request_id="route-zero",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="model-revision",
         tokenizer_revision="tokenizer-revision",
         topology_id="topology-a",
@@ -765,7 +782,7 @@ async def test_two_stage_ring_validates_and_reuses_both_direct_connections() -> 
     route_one = InstallStageRouteRequest(
         worker_id="worker-one",
         request_id="route-one",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="model-revision",
         tokenizer_revision="tokenizer-revision",
         topology_id="topology-a",
@@ -864,7 +881,10 @@ async def test_local_checkpoint_model_and_tokenizer_revisions_are_verified(
     model_path = tmp_path / "model"
     metadata_path = model_path / ".cache" / "huggingface" / "download"
     metadata_path.mkdir(parents=True)
-    (model_path / "config.json").write_text('{"model_type":"olmoe"}', encoding="utf-8")
+    (model_path / "config.json").write_text(
+        '{"model_type":"qwen3","architectures":["Qwen3ForCausalLM"]}',
+        encoding="utf-8",
+    )
     (model_path / "model.safetensors.index.json").write_text("{}", encoding="utf-8")
     (model_path / "tokenizer.json").write_text("{}", encoding="utf-8")
     (metadata_path / "config.json.metadata").write_text("actual-model\netag\n0\n", encoding="utf-8")

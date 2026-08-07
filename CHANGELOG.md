@@ -91,6 +91,24 @@
 
 ## Unreleased
 
+- Replace the closed model enum with metadata-driven architecture profiles and entry-point
+  adapters for current Kimi, Qwen, GLM, DeepSeek, MiniMax, Llama, Mistral/Mixtral, and Gemma
+  layout families. Repository names are no longer execution dispatch inputs.
+- Separate architecture, artifact format, quantization, engine support, and validation evidence;
+  add structured capability probes, a probe-generated compatibility registry, full explain-plan
+  diagnostics, and bounded metadata-only current-model discovery.
+- Generalize artifacts, tied weights, routed/shared/always-on expert descriptors, residency,
+  tensor roles, and microshard/reduction semantics behind architecture adapters.
+- Add a Swarm-owned generic sparse-MoE Colibri component for adapter-described Qwen, Kimi K2,
+  DeepSeek, MiniMax, Mixtral, Llama 4, and Mistral 4 expert layouts while retaining the pinned
+  complete GLM and Kimi K3 paths. Add exact symmetric INT4-G32 projection decoding to the Python
+  reference and versioned C ABI; other packed integer layouts remain fail-closed.
+- Validate sharded Safetensors indexes as immutable tensor-to-shard maps, select only referenced
+  weight shards, and reject missing, escaping, or malformed index targets without treating stray
+  training-state Safetensors as model weights.
+- Remove the experiment checkpoint from product defaults, quick starts, product configuration,
+  and mandatory real-model acceptance. Opt-in real-model gates now consume architecture-neutral,
+  hash-bound execution evidence.
 - Correct release-candidate pairing output so `cluster create --json` and `cluster pair --json`
   each emit one non-secret document, with atomic protected invitation-file delivery for
   automation and one-time URI display for humans.
@@ -110,7 +128,7 @@
   Experiment 007 artifact audits are explicitly outside the product selection. The
   two-physical-machine gate remains `NOT_RUN` until executed on distinct hosts.
 
-- Productize the canonical OLMoE runtime as a self-configuring cross-platform cluster with
+- Productize the canonical distributed runtime as a self-configuring cross-platform cluster with
   `swarm cluster`, `swarm node`, and one-shot `swarm run` commands.
 - Add reusable idempotent coordinator/worker lifecycle classes and a persistent bounded node
   agent using Task Scheduler, `systemd --user`, or LaunchAgent service adapters.
@@ -120,8 +138,8 @@
   and authenticated directed peer-network measurements with TTL evidence.
 - Replace factorial two-stage planning with deterministic bounded N-stage beam search and speed,
   capacity, and balanced node-utility reports.
-- Add stage-owned content-addressed OLMoE artifacts, resumable verified transfers, leases/LRU,
-  and canonical transactional deployment phases.
+- Add architecture-owned, content-addressed stage artifacts, resumable verified transfers,
+  leases/LRU, and canonical transactional deployment phases.
 - Add wheel-first Windows/POSIX installers, explicit update/rollback, multi-platform CI, expanded
   software/physical acceptance gates, and trusted-LAN documentation.
 

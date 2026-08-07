@@ -69,14 +69,30 @@ def _plan_explanation(summary: ClusterRunSummary) -> dict[str, object]:
         ]
 
     compatible_engines: list[dict[str, object]] = []
+    component_engines: list[dict[str, object]] = []
     rejected_engines: list[dict[str, object]] = []
     candidate_engine_ids = {getattr(candidate, "engine_id", "unknown") for candidate in candidates}
     for report in summary.engine_support:
         item: dict[str, object] = {
             "engine": report.engine_id,
+            "status": report.status.value,
             "compatibility": report.compatibility,
             "reason": report.reason,
             "adapter": report.adapter_id,
+            "support_scope": report.support_scope,
+            "architecture_supported": report.architecture_supported,
+            "format_supported": report.format_supported,
+            "quantization_supported": report.quantization_supported,
+            "hardware_supported": report.hardware_supported,
+            "capabilities": list(report.capabilities),
+            "limitations": list(report.limitations),
+            "rejection_reasons": list(report.rejection_reasons),
+            "expected_compute_cost": report.expected_compute_cost,
+            "expected_network_cost": report.expected_network_cost,
+            "expected_memory_cost": report.expected_memory_cost,
+            "confidence": report.confidence,
+            "validation_status": report.validation_status.value,
+            "supported_workers": list(report.supported_worker_ids),
             "required_runtime": report.required_runtime,
             "required_features": list(report.required_features),
             "unsupported_features": list(report.unsupported_features),
@@ -85,6 +101,8 @@ def _plan_explanation(summary: ClusterRunSummary) -> dict[str, object]:
         }
         if report.supported:
             compatible_engines.append(item)
+        elif report.support_scope == "component":
+            component_engines.append(item)
         else:
             rejected_engines.append(item)
 
@@ -158,6 +176,8 @@ def _plan_explanation(summary: ClusterRunSummary) -> dict[str, object]:
         {"plan_id": plan_id, "reasons": list(reasons)}
         for plan_id, reasons in sorted(rejected_plans.items())
     ]
+    profile = summary.model_profile
+    selected_parameters = dict(getattr(selected, "engine_parameters", {}))
     return {
         "model": {
             "id": summary.model_id,
@@ -168,6 +188,19 @@ def _plan_explanation(summary: ClusterRunSummary) -> dict[str, object]:
             "quantization": summary.quantization or "none",
             "variant": summary.variant or "default",
             "total_model_size_bytes": summary.total_model_size_bytes,
+            "dense_or_moe": profile.dense_or_moe if profile is not None else "unknown",
+            "total_parameters": profile.total_parameters if profile is not None else None,
+            "active_parameters": profile.active_parameters if profile is not None else None,
+            "layers": profile.layer_count if profile is not None else None,
+            "hidden_size": profile.hidden_size if profile is not None else None,
+            "experts": profile.expert_count if profile is not None else None,
+            "active_experts": profile.experts_per_token if profile is not None else None,
+            "shared_experts": profile.shared_expert_count if profile is not None else None,
+            "attention_architecture": profile.attention_type if profile is not None else "unknown",
+            "attention_metadata": profile.attention_metadata if profile is not None else {},
+            "tensor_layout": profile.tensor_layout if profile is not None else "unknown",
+            "multimodal": profile.multimodal if profile is not None else False,
+            "capabilities": sorted(profile.capabilities) if profile is not None else [],
         },
         "selected_engine": {
             "engine": selected_engine_id,
@@ -175,6 +208,7 @@ def _plan_explanation(summary: ClusterRunSummary) -> dict[str, object]:
             "why_selected": why_selected,
         },
         "compatible_engines": compatible_engines,
+        "component_engines": component_engines,
         "rejected_engines": rejected_engines,
         "rejected_candidate_plans": rejected_candidates,
         "participating_workers": participating_workers,
@@ -182,6 +216,21 @@ def _plan_explanation(summary: ClusterRunSummary) -> dict[str, object]:
         "stage_ownership": stage_ownership,
         "worker_memory_and_devices": memory_and_device,
         "network_topology": network,
+        "selected_plan": {
+            "engine": selected_engine_id,
+            "components": selected_parameters.get("components", [selected_engine_id]),
+            "topology": topology,
+            "workers": participating_workers,
+            "shards": selected_parameters.get("tensor_split", {}),
+            "stages": stage_ownership,
+            "experts": getattr(selected, "expert_strategy", {}),
+            "microshards": selected_parameters.get("microshards", []),
+            "predicted_ttft_ms": getattr(selected, "predicted_ttft_ms", None),
+            "predicted_decode_tokens_s": getattr(selected, "predicted_decode_tokens_s", None),
+            "predicted_aggregate_tokens_s": getattr(selected, "predicted_aggregate_tokens_s", None),
+            "predicted_network_bytes": getattr(selected, "predicted_network_bytes", None),
+            "reason": why_selected,
+        },
         "distributed_execution_required": summary.distributed_execution_required,
         "distributed_execution_achieved_by_plan": summary.distributed_execution_achieved,
     }

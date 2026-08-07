@@ -256,7 +256,7 @@ class ExecutionEngine:
                 "execution_profile": getattr(
                     module,
                     "execution_profile",
-                    "qwen3_correctness",
+                    "native_stage_correctness",
                 ),
                 "request_id": request.metadata.request_id,
                 "operation": request.metadata.operation.value,
@@ -293,7 +293,7 @@ class ExecutionEngine:
                 "execution_profile": getattr(
                     module,
                     "execution_profile",
-                    "qwen3_correctness",
+                    "native_stage_correctness",
                 ),
                 "request_id": request.metadata.request_id,
                 "operation": request.metadata.operation.value,

@@ -21,6 +21,9 @@ class MicroshardRange:
     logical_intermediate_dimension: int
     content_hash: str
     quantization_group_size: int | None = None
+    shard_dimension: str = "intermediate"
+    reduction_semantics: str = "sum"
+    tensor_group_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.layer_id < 0 or self.expert_id < 0:
@@ -31,8 +34,10 @@ class MicroshardRange:
             or self.hidden_end > self.logical_intermediate_dimension
         ):
             raise ValueError("microshard range is outside the logical expert")
-        if not self.worker_id or not self.content_hash:
+        if not self.worker_id or not self.content_hash or not self.shard_dimension:
             raise ValueError("microshard worker identity and content hash are required")
+        if not self.reduction_semantics:
+            raise ValueError("microshard reduction semantics are required")
         group = self.quantization_group_size
         if group is not None:
             if group <= 0:
@@ -45,6 +50,18 @@ class MicroshardRange:
     @property
     def width(self) -> int:
         return self.hidden_end - self.hidden_start
+
+    @property
+    def shard_start(self) -> int:
+        return self.hidden_start
+
+    @property
+    def shard_end(self) -> int:
+        return self.hidden_end
+
+    @property
+    def logical_shard_extent(self) -> int:
+        return self.logical_intermediate_dimension
 
     @property
     def owns_full_expert(self) -> bool:
@@ -60,7 +77,16 @@ def physical_microshard_ownership(
 
     if not ownership:
         raise ValueError("at least one microshard is required")
-    identities = {(item.layer_id, item.expert_id) for item in ownership}
+    identities = {
+        (
+            item.layer_id,
+            item.expert_id,
+            item.shard_dimension,
+            item.reduction_semantics,
+            item.tensor_group_ids,
+        )
+        for item in ownership
+    }
     logical_widths = {item.logical_intermediate_dimension for item in ownership}
     if len(identities) != 1 or len(logical_widths) != 1:
         raise ValueError("microshards must describe exactly one logical expert")
@@ -87,6 +113,9 @@ def physical_microshard_ownership(
         "layer_id": ordered[0].layer_id,
         "expert_id": ordered[0].expert_id,
         "logical_intermediate_dimension": logical_width,
+        "shard_dimension": ordered[0].shard_dimension,
+        "reduction_semantics": ordered[0].reduction_semantics,
+        "tensor_group_ids": list(ordered[0].tensor_group_ids),
         "worker_count": len(by_worker),
         "shard_count": len(ordered),
         "worker_hidden_units": by_worker,

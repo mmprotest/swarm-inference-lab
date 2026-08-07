@@ -1,38 +1,74 @@
-# Cluster-owned OLMoE model artifacts
+# Architecture-neutral model artifacts
 
 Nodes do not need complete model snapshots. `swarm run` resolves one exact immutable source,
-uses existing OLMoE inspection and contiguous partition identity checks, and builds a separate
-content-addressed artifact for each planned stage.
+inspects it through an architecture adapter, and builds content-addressed artifacts for the
+selected execution plan. Generic artifact code owns identity, checksums, caching, transfer,
+leases, verification, persistence, and eviction. It never interprets a family name or assumes a
+tensor spelling.
 
-## Artifact format version 1
+Architecture adapters own tensor meaning: embeddings, attention and router tensors, layer
+groups, routed/shared/always-on experts, final normalization, output heads, tied weights, tensor
+slices, and reduction semantics. Execution engines may add engine-specific containers, but they
+remain bound to the same immutable model and architecture profile.
 
-The identity covers model ID, immutable model revision, tokenizer revision, adapter (`olmoe`),
-source-file hashes, format version, exact stage assignment, dtype/quantization, and complete
-manifest content hash. The artifact ID is the SHA-256 content identity.
+## Artifact identity
 
-An artifact contains only:
+The identity covers model ID, immutable model and tokenizer revisions, model fingerprint,
+architecture adapter, engine, artifact kind/format, source-file hashes, exact stage or expert
+ownership, dtype/quantization, total bytes, and complete manifest content. The artifact ID is a
+SHA-256 content identity.
+
+A native-stage artifact contains only:
 
 - required configuration and small metadata;
-- safetensors owned by the stage's contiguous layer range;
-- a rewritten safetensors index containing only owned tensor names;
-- the versioned artifact manifest and immutable source evidence;
-- tokenizer assets for stage 0 and the final stage; and
-- final normalization/LM-head ownership on the final stage.
+- Safetensors owned by the stage's contiguous layer range;
+- a rewritten index containing only owned tensor names;
+- the versioned manifest and immutable source evidence;
+- tokenizer assets for stages that tokenize or decode; and
+- adapter-proved embedding, final-normalization, and output-head ownership.
 
-Tied embedding/LM-head ownership is made explicit. Validation fails if an unassigned layer tensor
-enters the artifact or an assigned tensor is omitted. Source safetensors are read shard by shard
-on CPU; the full model is never instantiated on an accelerator. Publication uses a temporary
-directory and atomic replacement after complete verification.
+Tied output weights are derived by the architecture adapter and recorded as an explicit alias;
+generic code does not assume `lm_head` or a particular embedding name. Source Safetensors are
+read shard by shard on CPU and the complete model is never instantiated merely to construct an
+artifact. Publication uses a temporary directory and atomic replacement after verification.
 
-## Acquisition and transfer
+When a checkpoint contains `*.safetensors.index.json`, that index is the authoritative immutable
+tensor-to-shard map. Resolution validates every repository-relative target, records the canonical
+mapping digest and tensor/shard counts, and includes only referenced shards. A missing shard or an
+escaping/malformed target is fatal; an unreferenced Safetensors file is not guessed to be a model
+weight. Unindexed local checkpoints are header-inspected and duplicate tensor names fail closed.
 
-Source order is verified local cache, authenticated cluster peer with the exact content, then an
+## Routed computation inventory
+
+Experts and related routed units use one `ExpertDescriptor` representation containing layer,
+unit index/type, tensor groups, parameter/memory size, input/output shapes, routing metadata,
+and adapter-proved shard semantics. It represents routed, shared, always-on, latent, grouped,
+and fused-expert-axis layouts without teaching caches, transfers, or planners Qwen/Kimi/GLM/
+DeepSeek tensor names.
+
+Generic residency retains the promoted bounded LRU, hot-expert cache, content-hash verification,
+movement accounting, and storage-backed loading mechanisms. The older exact-byte experiment
+container remains an isolated compatibility fixture; new adapters use the descriptor boundary.
+
+## Microshards
+
+`RoutedComputationMicroshardDescriptor` records matched logical tensor slices, native
+quantization metadata, shard dimension, required accumulator, and deterministic reduction.
+Architecture adapters prove which axes may be sliced and whether reconstruction is concatenate,
+gather, sum, or all-reduce-sum. Generic microshard orchestration owns worker assignment,
+transport, exact union validation, failure, stable reduction order, and telemetry.
+
+The compatibility ABI for three-projection SiLU experts remains available for Experiment 010
+regression evidence. It is not the universal tensor model.
+
+## Acquisition, transfer, and lifecycle
+
+Source order is verified local cache, authenticated cluster peer with exact content, then an
 immutable upstream revision when downloads are permitted. Transfers use bounded chunks, a hash
-for every chunk, a full content hash, strict relative paths, finite signed transfer leases,
-bounded RPC payloads/timeouts, and restart-safe resume documents. Partial artifacts are never
-loaded.
+for every chunk, a full content hash, strict relative paths, finite signed leases, bounded RPC
+payloads/timeouts, and restart-safe resume documents. Partial artifacts are never loaded.
 
-The canonical transactional deployment exposes:
+The transactional deployment phases are:
 
 ```text
 reserving
@@ -46,15 +82,10 @@ verifying-peers
 ready
 ```
 
-Artifact preparation is part of the existing deployment transaction. Failure rolls back loaded
-stages/routes and releases leases; it does not create a parallel deployment system.
-
-## Cache and eviction
-
-Each node has a configured storage budget and a deterministic LRU document. Pinned artifacts,
-loaded-stage/deployment leases, and in-progress transfers cannot be evicted. Eviction and cache
-documents are strict, versioned, and atomically replaced. Transfer progress survives agent
-restart and exact verified content is reused across plans.
+Failure rolls back loaded stages/routes and releases leases. Each node has a bounded,
+deterministic LRU cache. Pinned artifacts, active deployment/stage/expert leases, and in-progress
+transfers cannot be evicted. Cache and transfer state are strict, versioned, and atomically
+replaced.
 
 `model_path` remains a deprecated advanced override on low-level load requests. Normal product
-runs use artifact identities.
+runs use immutable artifact identities.

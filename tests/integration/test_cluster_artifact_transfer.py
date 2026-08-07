@@ -6,32 +6,34 @@ from pathlib import Path
 
 import pytest
 import torch
-from transformers import OlmoeConfig, OlmoeForCausalLM
+from transformers import Qwen3Config, Qwen3ForCausalLM
 
 from swarm_inference.cluster.artifacts import ArtifactManager, StageArtifactBuilder
 from swarm_inference.cluster.state import ClusterStateStore
-from swarm_inference.model.olmoe import inspect_olmoe_partition_metadata
+from swarm_inference.model.adapter import partition_metadata_from_description
 from swarm_inference.model.partition import build_stage_plan
+from swarm_inference.model.shard_builder import ResolvedModel, inspect_native_model
 from swarm_inference.protocol.stage_worker import LoadStageRequest
 from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
-_MODEL_ID = "test/tiny-cluster-olmoe"
+_MODEL_ID = "test/tiny-cluster-model"
 _MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 
 
 def _snapshot(tmp_path: Path) -> tuple[Path, str]:
     torch.manual_seed(6006)
-    model = OlmoeForCausalLM(
-        OlmoeConfig(
+    model = Qwen3ForCausalLM(
+        Qwen3Config(
             vocab_size=32,
             hidden_size=8,
             intermediate_size=12,
             num_hidden_layers=2,
             num_attention_heads=2,
             num_key_value_heads=1,
+            head_dim=4,
             max_position_embeddings=32,
-            num_experts_per_tok=2,
-            num_experts=4,
+            tie_word_embeddings=False,
+            attention_dropout=0,
             pad_token_id=0,
             eos_token_id=31,
         )
@@ -53,9 +55,16 @@ async def test_transferred_stage_artifact_loads_through_canonical_runtime(
     tmp_path: Path,
 ) -> None:
     snapshot, tokenizer_revision = _snapshot(tmp_path)
-    metadata = inspect_olmoe_partition_metadata(
-        snapshot,
-        model_revision=_MODEL_REVISION,
+    description = inspect_native_model(
+        ResolvedModel(
+            model_id=_MODEL_ID,
+            revision=_MODEL_REVISION,
+            path=snapshot,
+            downloaded=False,
+        )
+    )
+    metadata = partition_metadata_from_description(
+        description,
         tokenizer_revision=tokenizer_revision,
     )
     plan = build_stage_plan(

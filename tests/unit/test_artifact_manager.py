@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from artifact_test_support import MODEL_ID, MODEL_REVISION, tiny_olmoe_snapshot
+from artifact_test_support import MODEL_ID, MODEL_REVISION, tiny_native_snapshot
 
 from swarm_inference.cluster.artifacts import (
     ArtifactManager,
@@ -30,7 +30,7 @@ def _authentication() -> ClusterRequestAuthentication:
 
 
 def _built_artifact(tmp_path: Path) -> tuple[Path, int]:
-    snapshot, tokenizer_revision, plan = tiny_olmoe_snapshot(tmp_path, stage_count=2)
+    snapshot, tokenizer_revision, plan = tiny_native_snapshot(tmp_path, stage_count=2)
     builder = StageArtifactBuilder(
         artifact_root=tmp_path / "source-artifacts",
         temporary_root=tmp_path / "source-downloads",

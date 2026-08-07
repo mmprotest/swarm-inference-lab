@@ -31,7 +31,6 @@ from swarm_inference.engines.registry import ExecutionEngineRegistry, default_en
 from swarm_inference.engines.topology import NetworkLinkProfile, TopologyDomain
 from swarm_inference.model.adapter import NativeModelAdapterRegistry
 from swarm_inference.model.architecture import (
-    ModelArchitecture,
     architecture_from_config,
     architecture_from_gguf,
     normalize_model_architecture,
@@ -44,15 +43,14 @@ from swarm_inference.model.resolver import ModelSourceResolver
 @pytest.mark.parametrize(
     ("raw", "canonical"),
     [
-        ("OlmoeForCausalLM", ModelArchitecture.OLMOE),
-        ("Qwen3ForCausalLM", ModelArchitecture.QWEN3_DENSE),
-        ("qwen3_moe", ModelArchitecture.QWEN3_MOE),
-        ("qwen3moe", ModelArchitecture.QWEN3_MOE),
-        ("Qwen3MoeForCausalLM", ModelArchitecture.QWEN3_MOE),
-        ("qwen35moe", ModelArchitecture.QWEN3_MOE),
-        ("qwen3_5_moe", ModelArchitecture.QWEN3_MOE),
-        ("qwen3_5_moe_text", ModelArchitecture.QWEN3_MOE),
-        ("Qwen3_5MoeForConditionalGeneration", ModelArchitecture.QWEN3_MOE),
+        ("Qwen3ForCausalLM", "qwen3_dense"),
+        ("qwen3_moe", "qwen3_moe"),
+        ("qwen3moe", "qwen3_moe"),
+        ("Qwen3MoeForCausalLM", "qwen3_moe"),
+        ("qwen35moe", "qwen3_5_moe"),
+        ("qwen3_5_moe", "qwen3_5_moe"),
+        ("qwen3_5_moe_text", "qwen3_5_moe"),
+        ("Qwen3_5MoeForConditionalGeneration", "qwen3_5_moe"),
         ("FutureForCausalLM", "FutureForCausalLM"),
     ],
 )
@@ -66,12 +64,39 @@ def test_hugging_face_and_gguf_architecture_sources_are_retained() -> None:
     )
     gguf = architecture_from_gguf("qwen3moe", fallback=hugging_face)
 
-    assert hugging_face.canonical == ModelArchitecture.QWEN3_MOE
+    assert hugging_face.canonical == "qwen3_moe"
     assert hugging_face.raw == "Qwen3MoeForCausalLM"
     assert hugging_face.source == "config.architectures"
-    assert gguf.canonical == ModelArchitecture.QWEN3_MOE
+    assert gguf.canonical == "qwen3_moe"
     assert gguf.raw == "qwen3moe"
     assert gguf.source == "gguf.general.architecture"
+
+
+@pytest.mark.parametrize(
+    ("model_type", "architecture"),
+    [
+        ("deepseek_v3", "DeepseekV3ForCausalLM"),
+        ("deepseek_v32", "DeepseekV32ForCausalLM"),
+    ],
+)
+def test_deepseek_v3_profile_is_detected_from_structural_metadata(
+    model_type: str, architecture: str
+) -> None:
+    identity = architecture_from_config(
+        {
+            "architectures": [architecture],
+            "model_type": model_type,
+            "hidden_size": 7168,
+            "num_hidden_layers": 61,
+            "n_routed_experts": 256,
+            "num_experts_per_tok": 8,
+            "n_shared_experts": 1,
+            "kv_lora_rank": 512,
+        }
+    )
+
+    assert identity.canonical == "deepseek_v3_moe"
+    assert identity.source == "config.architectures"
 
 
 def _gguf_string(value: str) -> bytes:
@@ -100,7 +125,7 @@ def test_local_gguf_metadata_drives_qwen3_moe_detection(tmp_path: Path) -> None:
 
     descriptor = ModelSourceResolver(cache_directory=tmp_path / "cache").resolve(str(model))
 
-    assert descriptor.architecture == ModelArchitecture.QWEN3_MOE
+    assert descriptor.architecture == "qwen3_moe"
     assert descriptor.architecture_raw == "qwen3moe"
     assert descriptor.architecture_source == "gguf.general.architecture"
     assert descriptor.layer_count == 2
@@ -169,7 +194,7 @@ def test_native_qwen3_moe_capability_and_unsupported_representation() -> None:
 
     supported = engine.probe_model_support(
         _model(
-            architecture=ModelArchitecture.QWEN3_MOE,
+            architecture="qwen3_moe",
             model_format="safetensors",
             raw="Qwen3MoeForCausalLM",
         ),
@@ -177,7 +202,7 @@ def test_native_qwen3_moe_capability_and_unsupported_representation() -> None:
     )
     unsupported = engine.probe_model_support(
         _model(
-            architecture=ModelArchitecture.QWEN3_MOE,
+            architecture="qwen3_moe",
             model_format="safetensors",
             raw="qwen35moe",
         ),
@@ -191,33 +216,37 @@ def test_native_qwen3_moe_capability_and_unsupported_representation() -> None:
     assert "Transformers qwen3_moe representation only" in unsupported.reason
 
 
-def test_colibri_remains_selectable_and_rejects_unadvertised_architecture() -> None:
+def test_colibri_is_adapter_driven_and_reports_an_uninstalled_adapter() -> None:
     capability = ExecutionEngineCapability(
         engine_id="colibri",
         enabled=True,
         runtime_revision="colibri-v1",
         binary_hashes={"colibri": "sha256:runtime"},
         formats=("safetensors",),
-        adapters=("olmoe",),
+        adapters=("glm-5.2",),
         devices=(_device(),),
         roles=("complete-model",),
     )
     engine = ColibriExecutionEngine()
     cluster = ClusterCapabilities(workers=(_worker(capability),))
-    olmoe = _model(architecture=ModelArchitecture.OLMOE, model_format="safetensors")
+    glm = _model(
+        architecture="glm_moe",
+        model_format="safetensors",
+        raw="glm_moe_dsa",
+    )
     qwen = _model(
-        architecture=ModelArchitecture.QWEN3_MOE,
+        architecture="qwen3_moe",
         model_format="safetensors",
         raw="Qwen3MoeForCausalLM",
     )
 
-    report = engine.probe_model_support(olmoe, cluster)
+    report = engine.probe_model_support(glm, cluster)
     rejected = engine.probe_model_support(qwen, cluster)
 
     assert report.status == EngineSupportStatus.SUPPORTED
-    assert report.adapter_id == "olmoe"
-    assert rejected.status == EngineSupportStatus.UNSUPPORTED_ARCHITECTURE
-    assert "matching" in rejected.reason
+    assert report.adapter_id == "glm-5.2"
+    assert rejected.status == EngineSupportStatus.MISSING_RUNTIME
+    assert "qwen3-moe" in rejected.reason
 
 
 @pytest.mark.asyncio
@@ -228,7 +257,7 @@ async def test_automatic_registry_selection_can_select_colibri() -> None:
         runtime_revision="colibri-v1",
         binary_hashes={"colibri": "sha256:runtime"},
         formats=("safetensors",),
-        adapters=("olmoe",),
+        adapters=("glm-5.2",),
         devices=(_device(),),
         roles=("complete-model",),
     )
@@ -236,7 +265,7 @@ async def test_automatic_registry_selection_can_select_colibri() -> None:
     registry = ExecutionEngineRegistry((ColibriExecutionEngine(),))
 
     result = await registry.compete(
-        _model(architecture=ModelArchitecture.OLMOE, model_format="safetensors"),
+        _model(architecture="glm_moe", model_format="safetensors", raw="glm_moe_dsa"),
         cluster,
         ExecutionRequest(),
     )
@@ -276,7 +305,7 @@ def _llama_capability(
 
 def test_llamacpp_capability_is_architecture_and_feature_exact() -> None:
     model = _model(
-        architecture=ModelArchitecture.QWEN3_MOE,
+        architecture="qwen3_moe",
         model_format="gguf",
         raw="qwen3moe",
     )
@@ -398,7 +427,7 @@ def test_fine_grained_expert_execution_is_local_domain_only() -> None:
 @pytest.mark.asyncio
 async def test_speed_excludes_a_weak_stage_but_capacity_can_include_it() -> None:
     model = _model(
-        architecture=ModelArchitecture.QWEN3_MOE,
+        architecture="qwen3_moe",
         model_format="safetensors",
         raw="Qwen3MoeForCausalLM",
     )
@@ -440,7 +469,7 @@ async def test_speed_excludes_a_weak_stage_but_capacity_can_include_it() -> None
 @pytest.mark.asyncio
 async def test_qwen3_moe_synthetic_distributed_dry_run_uses_contiguous_wan_stages() -> None:
     model = _model(
-        architecture=ModelArchitecture.QWEN3_MOE,
+        architecture="qwen3_moe",
         model_format="safetensors",
         raw="Qwen3MoeForCausalLM",
     )

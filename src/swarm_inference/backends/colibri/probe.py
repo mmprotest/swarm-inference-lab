@@ -14,11 +14,11 @@ from typing import Any
 
 import psutil
 
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
 from swarm_inference.backends.colibri.constants import (
     COLIBRI_BRIDGE_VERSION,
     COLIBRI_COMMIT,
     COLIBRI_RELEASE,
-    MODEL_FAMILY_ENGINES,
 )
 from swarm_inference.backends.colibri.schemas import ColibriCapabilityReport
 
@@ -160,11 +160,12 @@ class ColibriCapabilityProbe:
             manifest = json.loads(self.build_manifest.read_text(encoding="utf-8-sig"))
             if manifest.get("commit") != COLIBRI_COMMIT:
                 raise ValueError("Colibri build manifest is not pinned to Experiment 009 commit")
-        built_families = [
-            family
-            for family, basename in MODEL_FAMILY_ENGINES.items()
-            if _binary(self.engine_directory, basename) is not None
-        ]
+        built_adapters = tuple(
+            adapter
+            for adapter in default_colibri_adapter_registry().adapters()
+            if _binary(self.engine_directory, adapter.engine_basename) is not None
+        )
+        built_families = [adapter.adapter_id for adapter in built_adapters]
         flags = self._build_flags()
         cuda_dll = self.engine_directory / "coli_cuda.dll"
         cuda_build_present = flags.get("CUDA") == "1" or (
@@ -219,10 +220,14 @@ class ColibriCapabilityProbe:
             supports_usage_history=bool(built_families),
             supports_expert_prefetch=bool(built_families),
             supports_dynamic_reconfiguration=False,
-            supports_native_mxfp4="kimi-k3" in built_families,
-            supports_tensor_microshards=False,
+            supports_native_mxfp4=any(
+                adapter.native_quantization == "mxfp4" for adapter in built_adapters
+            ),
+            supports_tensor_microshards=any(
+                adapter.tensor_microshards for adapter in built_adapters
+            ),
             supports_full_expert_placement=bool(built_families),
-            supports_exact_replay="glm-5.2" in built_families,
+            supports_exact_replay=any(adapter.exact_replay for adapter in built_adapters),
             supports_prefill_decode_separation=bool(built_families),
             storage_tiers=tiers,
             gpu_devices=gpu_devices,
@@ -243,30 +248,12 @@ class ColibriCapabilityProbe:
     def supported_tuning_settings(
         report: ColibriCapabilityReport, *, model_family: str | None = None
     ) -> set[str]:
-        if model_family == "olmoe":
-            return {
-                "OMP_NUM_THREADS",
-                "PILOT",
-                "HOT",
-                "WIDE",
-                "SMOOTH",
-                "CONF_LIMIT",
-                "PILOT_EVICT_GUARD",
-                "EXPERT_DROP",
-                "COLI_USAGE_PATH",
-                "COLI_HOT_PIN_PATH",
-            }
-        settings = {
-            "OMP_NUM_THREADS",
-            "COLI_NUMA",
-            "PIPE",
-            "DIRECT",
-            "LOADERS",
-            "RAM_GB",
-            "PILOT_REAL",
-            "PREFETCH",
-            "CHUNK",
-        }
+        registry = default_colibri_adapter_registry()
+        settings = set(
+            registry.get(model_family).tuning_settings
+            if model_family is not None
+            else next(iter(registry.adapters())).tuning_settings
+        )
         if report.supports_cuda:
             settings.update({"COLI_CUDA_PIPE", "COLI_CUDA_ASYNC", "CUDA_EXPERT_GB", "PIN_GB"})
         return settings

@@ -107,6 +107,19 @@ def test_explain_plan_is_complete_and_preserves_unknown_network_cost() -> None:
         "quantization": "UD-Q4_K_M",
         "variant": "UD-Q4_K_M",
         "total_model_size_bytes": 100,
+        "dense_or_moe": "unknown",
+        "total_parameters": None,
+        "active_parameters": None,
+        "layers": None,
+        "hidden_size": None,
+        "experts": None,
+        "active_experts": None,
+        "shared_experts": None,
+        "attention_architecture": "unknown",
+        "attention_metadata": {},
+        "tensor_layout": "unknown",
+        "multimodal": False,
+        "capabilities": [],
     }
     network = explanation["network_topology"]
     assert network["estimated_bytes_per_token"] is None

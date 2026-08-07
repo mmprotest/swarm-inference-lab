@@ -1,8 +1,12 @@
-"""Canonical exact-byte worker banks for native Colibri OLMoE experts.
+"""Legacy Experiment 010 exact-byte banks for the OLMoE Colibri adapter.
 
 The converter deliberately operates on safetensors byte ranges.  Whole expert
 tensors are copied verbatim.  Native microshards copy gate/up rows and down
 columns without dequantizing or recomputing the original F32 row scales.
+
+This module preserves byte-compatible historical evidence. New architecture
+support uses adapter-described ``ExpertDescriptor`` records and the generic
+Colibri sparse-MoE component; this container is not a product-wide tensor model.
 """
 
 from __future__ import annotations
@@ -173,7 +177,7 @@ def _load_config(root: Path) -> dict[str, Any]:
     if not isinstance(value, dict) or any(
         not isinstance(value.get(name), int) or value[name] <= 0 for name in required
     ):
-        raise ValueError("Colibri config does not contain valid OLMoE dimensions")
+        raise ValueError("legacy Experiment 010 container lacks valid OLMoE dimensions")
     return value
 
 

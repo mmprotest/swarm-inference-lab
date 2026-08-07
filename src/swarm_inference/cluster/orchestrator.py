@@ -51,6 +51,7 @@ from swarm_inference.model.adapter import (
     NativeModelAdapterRegistry,
     default_native_adapter_registry,
 )
+from swarm_inference.model.architecture import ModelArchitectureProfile
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.product import ModelResolutionPolicy, ProductModelReference
 from swarm_inference.model.resolver import (
@@ -105,6 +106,7 @@ class ClusterRunSummary(StrictModel):
     plan: ProductStagePlan | ExecutionPlan
     model_fingerprint: str = ""
     model_architecture: str | None = None
+    model_profile: ModelArchitectureProfile | None = None
     model_architecture_source: str = "unknown"
     model_format: str = "unknown"
     total_model_size_bytes: NonNegativeInt = 0
@@ -865,6 +867,7 @@ class ClusterOrchestrator:
                     tokenizer_revision=tokenizer_revision,
                     model_fingerprint=descriptor.content_fingerprint,
                     model_architecture=descriptor.architecture,
+                    model_profile=descriptor.architecture_profile,
                     model_architecture_source=descriptor.architecture_source,
                     model_format=descriptor.format,
                     total_model_size_bytes=descriptor.weight_bytes,
@@ -1194,6 +1197,7 @@ class ClusterOrchestrator:
                 tokenizer_revision=tokenizer_revision,
                 model_fingerprint=descriptor.content_fingerprint,
                 model_architecture=descriptor.architecture,
+                model_profile=descriptor.architecture_profile,
                 model_architecture_source=descriptor.architecture_source,
                 model_format=descriptor.format,
                 total_model_size_bytes=descriptor.weight_bytes,

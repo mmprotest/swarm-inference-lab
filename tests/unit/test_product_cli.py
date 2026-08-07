@@ -68,7 +68,7 @@ def test_product_model_plan_validates_partition_before_network_access() -> None:
             "--coordinator",
             "127.0.0.1:1",
             "--model-id",
-            "test/olmoe",
+            "test/qwen3",
             "--revision",
             "exact-commit",
             "--partition",
@@ -117,7 +117,7 @@ def test_product_model_plan_forwards_forced_expert_policy(monkeypatch, tmp_path:
             "--coordinator",
             "127.0.0.1:50051",
             "--model-id",
-            "test/olmoe",
+            "test/qwen3",
             "--revision",
             "exact-commit",
             "--expert-policy",
@@ -136,11 +136,11 @@ def test_product_model_plan_forwards_forced_expert_policy(monkeypatch, tmp_path:
 
 
 def test_product_configuration_is_non_experiment_and_local_only_by_default() -> None:
-    path = Path("configs/product/olmoe-stage-ring.yaml")
+    path = Path("configs/product/universal-stage-ring.yaml")
     configuration = load_product_config(path)
 
     assert configuration.kind == "product-stage-ring"
-    assert configuration.default_adapter_id == "olmoe"
+    assert configuration.default_adapter_id is None
     assert configuration.local_only_by_default
 
 

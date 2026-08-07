@@ -57,11 +57,14 @@ limits, an Ed25519 public key, and measured capacity. Deployment assigns a conti
 loads it once. The loaded stage, weights, queues, and service processes persist across requests;
 session-local KV state is opened and released independently.
 
-The native adapter registry includes OLMoE, Qwen3 dense, and the supported Qwen3 MoE
-representation. Stage zero owns embeddings and input token handling; intermediate stages own
-contiguous decoder layers; the last stage owns final normalization and the output projection.
-For sparse models, each router and its experts remain with the layer-owning stage. Exact
-ownership is part of the signed route.
+Architecture profiles are resolved independently from the engine registry. The native-stage
+registry currently provides complete Qwen3 dense and Qwen3 MoE stage implementations; other
+families may use complete Colibri or runtime-probed GGUF plans, while component-only results are
+retained for future hybrid composition. Stage zero owns adapter-described embeddings and input
+token handling; intermediate stages own contiguous decoder layers; the last stage owns
+adapter-described final normalization and output projection. For sparse models, routed/shared
+expert ownership comes from `ExpertDescriptor` records. Exact ownership is part of the signed
+route.
 
 Whole-expert and native microshard execution are optional, canonical backends within a stage.
 They use coordinator-planned expert ownership and direct expert transport, but do not introduce a
@@ -118,6 +121,13 @@ canonical modules; its retained historical coordinator/worker implementation is 
 
 Historical coordinator-relayed activation paths remain useful as comparison baselines. They are
 not the product diagram above and must not be used to describe product steady state.
+
+Remaining OLMoE-named files are deliberately limited to historical Experiment 009/010 evidence,
+the byte-compatible pinned-Colibri patch lineage, and an adapter-local compatibility
+implementation. The resolver, coordinator, planner, cluster lifecycle, artifact manager,
+generic Colibri engine, routed-computation representation, microsharder, deployment path, and
+worker lifecycle contain no OLMoE dispatch. The retained legacy names are not acceptance defaults
+and are never used to identify a model by repository name.
 
 ## Evidence boundary
 

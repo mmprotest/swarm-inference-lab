@@ -139,7 +139,30 @@ class NativeStageEngine:
         model: ResolvedModelDescriptor,
         cluster: ClusterCapabilities,
     ) -> EngineSupportReport:
-        reports = self.adapters.probe_all(model)
+        architecture_candidates = self.adapters.architecture_candidates(model)
+        if not architecture_candidates:
+            format_supported = model.format == "safetensors"
+            format_detail = (
+                ""
+                if format_supported
+                else f"; native-stage accepts safetensors, not {model.format}"
+            )
+            return EngineSupportReport(
+                engine_id=self.engine_id,
+                status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                reason=(
+                    "no registered native-stage adapter accepts architecture "
+                    f"{model.architecture!r}{format_detail}"
+                ),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                architecture_supported=False,
+                format_supported=format_supported,
+                quantization_supported=True,
+                hardware_supported=False,
+                required_runtime="PyTorch native stage runtime and a registered adapter",
+            )
+        reports = tuple(adapter.probe_model(model) for adapter in architecture_candidates)
         supported = [item for item in reports if item.supported]
         if not supported:
             status = (
@@ -156,6 +179,36 @@ class NativeStageEngine:
                 required_runtime="PyTorch native stage runtime and a registered adapter",
             )
         adapter = supported[0]
+        quantization = (model.quantization or "").strip().casefold().replace("_", "-")
+        native_float_formats = {
+            "",
+            "none",
+            "bf16",
+            "bfloat16",
+            "f16",
+            "float16",
+            "f32",
+            "float32",
+        }
+        if quantization not in native_float_formats:
+            return EngineSupportReport(
+                engine_id=self.engine_id,
+                status=EngineSupportStatus.UNSUPPORTED_QUANTIZATION,
+                reason=(
+                    "the native stage loaders preserve floating-point safetensors and do not "
+                    f"implement the declared {model.quantization!r} quantization"
+                ),
+                adapter_id=adapter.adapter_id,
+                model_architecture=model.architecture,
+                model_format=model.format,
+                architecture_supported=True,
+                format_supported=True,
+                quantization_supported=False,
+                hardware_supported=False,
+                capabilities=("contiguous-stages", "stage-local-kv", "persistent-workers"),
+                required_runtime=f"native-stage adapter {adapter.adapter_id}",
+                confidence=1.0,
+            )
         workers = [
             worker
             for worker in cluster.workers_for_engine(self.engine_id)
@@ -173,6 +226,13 @@ class NativeStageEngine:
                 model_architecture=model.architecture,
                 model_format=model.format,
                 required_runtime=f"native-stage adapter {adapter.adapter_id}",
+                architecture_supported=True,
+                format_supported=True,
+                quantization_supported=True,
+                hardware_supported=False,
+                capabilities=("contiguous-stages", "stage-local-kv", "persistent-workers"),
+                expected_memory_cost=model.weight_bytes,
+                confidence=1.0,
             )
         memory = sum(
             max(device.usable_memory_bytes for device in _engine_device(worker)[0].devices)
@@ -188,17 +248,63 @@ class NativeStageEngine:
                 model_architecture=model.architecture,
                 model_format=model.format,
                 required_runtime=f"native-stage adapter {adapter.adapter_id}",
+                architecture_supported=True,
+                format_supported=True,
+                quantization_supported=True,
+                hardware_supported=False,
+                capabilities=(
+                    "contiguous-stages",
+                    "stage-local-kv",
+                    "persistent-workers",
+                    "persistent-connections",
+                    "direct-worker-transfers",
+                ),
+                expected_memory_cost=model.weight_bytes,
+                confidence=1.0,
             )
+        measured_rates = [
+            device.measured_decode_tokens_s
+            for worker in workers
+            for device in _engine_device(worker)[0].devices
+            if device.measured_decode_tokens_s is not None
+        ]
         return EngineSupportReport(
             engine_id=self.engine_id,
             status=EngineSupportStatus.SUPPORTED,
             reason="native adapter and stage-capable workers are available",
             supported_worker_ids=tuple(worker.worker_id for worker in workers),
             adapter_id=adapter.adapter_id,
-            runtime_identity={"engine_version": self.engine_version},
+            runtime_identity={
+                "engine_version": self.engine_version,
+                "workers": {
+                    worker.worker_id: {
+                        "revision": _engine_device(worker)[0].runtime_revision,
+                        "binary_hashes": _engine_device(worker)[0].binary_hashes,
+                    }
+                    for worker in workers
+                },
+            },
             model_architecture=model.architecture,
             model_format=model.format,
             required_runtime=f"native-stage adapter {adapter.adapter_id}",
+            architecture_supported=True,
+            format_supported=True,
+            quantization_supported=True,
+            hardware_supported=True,
+            capabilities=(
+                "contiguous-stages",
+                "stage-local-kv",
+                "persistent-workers",
+                "persistent-model-state",
+                "persistent-connections",
+                "direct-worker-transfers",
+                "bounded-asynchronous-transport",
+            ),
+            expected_compute_cost=(
+                1.0 / max(measured_rates) if measured_rates and max(measured_rates) > 0 else None
+            ),
+            expected_memory_cost=model.weight_bytes,
+            confidence=0.9 if measured_rates else 0.5,
         )
 
     def probe_model_support(

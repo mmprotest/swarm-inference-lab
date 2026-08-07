@@ -86,7 +86,7 @@ def _recovery_state(*, accepted: list[int]) -> ProductRequestRecoveryState:
         request_id="request-durable",
         request_generation=1,
         session_id="session-before-restart",
-        model_id="test/olmoe",
+        model_id="test/qwen3",
         model_revision="model-commit",
         tokenizer_revision="tokenizer-commit",
         topology_id="topology-durable",
@@ -174,7 +174,7 @@ async def test_coordinator_restart_reloads_validated_state_without_live_workers(
                     prompt_token_ids=[10, 20],
                     max_new_tokens=1,
                     random_seed=1,
-                    model_id="test/olmoe",
+                    model_id="test/qwen3",
                     model_revision="model-commit",
                 )
             )

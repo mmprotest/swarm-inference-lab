@@ -108,10 +108,10 @@ def _plan() -> ProductStagePlan:
         generation=1,
         created_monotonic_ns=time.monotonic_ns(),
         model=ProductModelSpec(
-            model_id="test/olmoe",
+            model_id="test/qwen3",
             model_revision="model-commit",
             tokenizer_revision="tokenizer-commit",
-            adapter_id="olmoe",
+            adapter_id="qwen3_dense",
             dtype="float32",
             layer_count=2,
             hidden_size=4,

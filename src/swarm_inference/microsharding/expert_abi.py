@@ -12,18 +12,21 @@ from pydantic import Field, model_validator
 
 from swarm_inference.backends.colibri.schemas import NativeQuantizationMetadata
 from swarm_inference.config.models import StrictModel
+from swarm_inference.model.architecture import ShardReduction
 
 
 class ExpertProjectionSlice(StrictModel):
-    """One logical projection slice; never an arbitrary byte interval."""
+    """One adapter-described logical tensor slice; never an arbitrary byte interval."""
 
     tensor_id: str
     tensor_name: str
-    projection: Literal["up", "gate", "down"]
-    logical_axis: int = Field(ge=0, le=1)
+    projection: str = Field(min_length=1)
+    logical_axis: int = Field(ge=0, le=7)
+    reduction: ShardReduction | None = None
+    semantic_group: str = "expert-mlp"
     slice_start: int = Field(ge=0)
     slice_end: int = Field(gt=0)
-    logical_shape: list[int] = Field(min_length=2, max_length=2)
+    logical_shape: list[int] = Field(min_length=1, max_length=8)
     storage_file: str
     storage_offset: int = Field(ge=0)
     storage_length: int = Field(gt=0)
@@ -35,11 +38,9 @@ class ExpertProjectionSlice(StrictModel):
     def validate_projection(self) -> ExpertProjectionSlice:
         if self.slice_end <= self.slice_start:
             raise ValueError("projection slice must be non-empty")
-        expected_axis = 1 if self.projection == "down" else 0
-        if self.logical_axis != expected_axis:
-            raise ValueError(
-                "up/gate must slice rows and down must slice columns of the logical weight"
-            )
+        expected_axis = {"up": 0, "gate": 0, "down": 1}.get(self.projection)
+        if expected_axis is not None and self.logical_axis != expected_axis:
+            raise ValueError("legacy up/gate must slice rows and down must slice columns")
         if any(dimension <= 0 for dimension in self.logical_shape):
             raise ValueError("projection shapes must be positive")
         if self.slice_end > self.logical_shape[self.logical_axis]:
@@ -64,8 +65,103 @@ class ExpertProjectionSlice(StrictModel):
         return self
 
 
+class RoutedComputationMicroshardDescriptor(StrictModel):
+    """Architecture-neutral matched tensor slices for one routed computation."""
+
+    model_id: str
+    architecture_id: str
+    layer_id: int = Field(ge=0)
+    routed_unit_id: int = Field(ge=0)
+    routed_unit_type: Literal["routed", "shared", "always_on", "latent", "grouped"]
+    shard_id: str
+    shard_start: int = Field(ge=0)
+    shard_end: int = Field(gt=0)
+    logical_shard_extent: int = Field(gt=0)
+    tensor_slices: tuple[ExpertProjectionSlice, ...]
+    native_quantization: NativeQuantizationMetadata
+    reduction: ShardReduction
+    required_accumulator: str
+    supported_backends: tuple[str, ...] = ()
+    execution_status: Literal["supported", "unsupported"] = "unsupported"
+    content_hash: str = ""
+
+    @model_validator(mode="after")
+    def validate_adapter_slices(self) -> RoutedComputationMicroshardDescriptor:
+        if self.shard_end <= self.shard_start or self.shard_end > self.logical_shard_extent:
+            raise ValueError("routed-computation shard range is invalid")
+        if not self.tensor_slices:
+            raise ValueError("routed-computation microshards require tensor slices")
+        identities = {(item.tensor_id, item.tensor_name) for item in self.tensor_slices}
+        if len(identities) != len(self.tensor_slices):
+            raise ValueError("routed-computation microshard repeats a tensor slice")
+        if any(
+            item.slice_start != self.shard_start or item.slice_end != self.shard_end
+            for item in self.tensor_slices
+        ):
+            raise ValueError("adapter tensor slices do not preserve the logical shard range")
+        group = self.native_quantization.scale_group_size
+        if group is not None:
+            if self.shard_start % group:
+                raise ValueError("microshard start splits a native quantization group")
+            if self.shard_end != self.logical_shard_extent and self.shard_end % group:
+                raise ValueError("microshard end splits a native quantization group")
+        expected = routed_descriptor_content_hash(self)
+        if self.content_hash and self.content_hash != expected:
+            raise ValueError("routed-computation descriptor content hash is invalid")
+        object.__setattr__(self, "content_hash", expected)
+        if self.execution_status == "supported" and not self.supported_backends:
+            raise ValueError("supported microshards require an executable backend")
+        return self
+
+
+def routed_descriptor_content_hash(
+    descriptor: RoutedComputationMicroshardDescriptor,
+) -> str:
+    payload = descriptor.model_dump(mode="json", exclude={"content_hash"})
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def validate_routed_microshard_set(
+    descriptors: Iterable[RoutedComputationMicroshardDescriptor],
+) -> dict[str, int | bool | str]:
+    """Prove an adapter-described set is a complete, non-overlapping routed unit."""
+
+    shards = sorted(descriptors, key=lambda item: (item.shard_start, item.shard_end))
+    if not shards:
+        raise ValueError("at least one routed-computation microshard is required")
+    identity = {
+        (item.model_id, item.architecture_id, item.layer_id, item.routed_unit_id) for item in shards
+    }
+    if len(identity) != 1:
+        raise ValueError("microshard set contains more than one routed-computation unit")
+    if len({item.shard_id for item in shards}) != len(shards):
+        raise ValueError("microshard IDs must be unique")
+    if len({item.logical_shard_extent for item in shards}) != 1:
+        raise ValueError("microshards disagree about their logical extent")
+    cursor = 0
+    for shard in shards:
+        if shard.shard_start != cursor:
+            kind = "overlap" if shard.shard_start < cursor else "gap"
+            raise ValueError(f"routed-computation microshards contain a {kind} at {cursor}")
+        if shard.content_hash != routed_descriptor_content_hash(shard):
+            raise ValueError("microshard content hash changed after validation")
+        cursor = shard.shard_end
+    extent = shards[0].logical_shard_extent
+    if cursor != extent:
+        raise ValueError("microshards do not cover the complete routed computation")
+    return {
+        "valid": True,
+        "architecture_id": shards[0].architecture_id,
+        "layer_id": shards[0].layer_id,
+        "routed_unit_id": shards[0].routed_unit_id,
+        "shard_count": len(shards),
+        "covered_units": extent,
+    }
+
+
 class ExpertMicroshardDescriptor(StrictModel):
-    """Atomic matched up/gate/down intermediate-range descriptor."""
+    """Compatibility ABI for the promoted three-projection SiLU expert kernel."""
 
     model_id: str
     layer_id: int = Field(ge=0)

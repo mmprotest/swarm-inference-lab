@@ -33,7 +33,7 @@ from swarm_inference.model.manifest import (
 )
 from swarm_inference.model.reference import run_reference_suite_subprocess
 from swarm_inference.model.shard_builder import (
-    inspect_qwen3_model,
+    inspect_native_model,
     model_inspection_payload,
     resolve_model,
     shard_model,
@@ -1000,7 +1000,7 @@ def run_experiment_002(
             raise IntegrityError(
                 "the default Qwen3 model was changed without an explicit -ModelId selection"
             )
-        description = inspect_qwen3_model(resolved)
+        description = inspect_native_model(resolved)
         inspection = model_inspection_payload(description)
         if int(inspection["parameter_count"]) >= 1_000_000_000:
             raise IntegrityError(

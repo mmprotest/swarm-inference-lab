@@ -67,7 +67,7 @@ class _FakeOrchestrator:
 def _arguments(tmp_path: Path, *, prompt: str) -> list[str]:
     return [
         "run",
-        "allenai/OLMoE-test",
+        "Qwen/Qwen3-test",
         "--revision",
         MODEL_REVISION,
         "--tokenizer-revision",
@@ -115,7 +115,7 @@ def test_run_requires_immutable_model_revision_before_orchestration(tmp_path: Pa
         app,
         [
             "run",
-            "allenai/OLMoE-test",
+            "Qwen/Qwen3-test",
             "--revision",
             "main",
             "--tokenizer-revision",

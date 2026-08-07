@@ -33,7 +33,9 @@ if ((APPLY)); then
     git -C "$OUTPUT/source" apply --check "$ROOT/integrations/colibri/patches/$patch"
     git -C "$OUTPUT/source" apply "$ROOT/integrations/colibri/patches/$patch"
   done < "$ROOT/integrations/colibri/patches/series"
-  for adapter in swarm_expert_wire.h swarm_expert_wire.c; do
+  for adapter in \
+    swarm_expert_wire.h swarm_expert_wire.c \
+    swarm_moe_runtime.h swarm_moe_runtime.c; do
     test -f "$ROOT/integrations/colibri/adapter/$adapter" || {
       echo "missing canonical C wire adapter: $adapter" >&2
       exit 1
@@ -52,6 +54,7 @@ if ((APPLY)); then
     tests/test_olmoe_expert_shm
   )
   BUILD_TARGETS+=("${NATIVE_TESTS[@]}")
+  BUILD_TARGETS+=(libcoli_swarm_moe.so)
 fi
 make -C "$OUTPUT/source/c" -j4 "${BUILD_TARGETS[@]}" ARCH=native
 gcc -D_FILE_OFFSET_BITS=64 -O3 -march=native -fopenmp -fPIC -shared \
@@ -63,6 +66,9 @@ for binary in colibri olmoe olmoe_expert_worker inkling kimi_k3; do
   cp "$OUTPUT/source/c/$binary" "$OUTPUT/bin/$binary"
 done
 cp "$OUTPUT/source/c/libcoli_kimi_mxfp4.so" "$OUTPUT/bin/libcoli_kimi_mxfp4.so"
+if ((APPLY)); then
+  cp "$OUTPUT/source/c/libcoli_swarm_moe.so" "$OUTPUT/bin/libcoli_swarm_moe.so"
+fi
 cp "$OUTPUT/source/LICENSE" "$OUTPUT/LICENSE.colibri"
 for native_test in "${NATIVE_TESTS[@]}"; do
   "$OUTPUT/source/c/$native_test"

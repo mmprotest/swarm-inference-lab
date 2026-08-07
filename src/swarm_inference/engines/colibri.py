@@ -1,4 +1,4 @@
-"""First-class Colibri complete-model execution engine."""
+"""Colibri execution engine and sparse-MoE component capability provider."""
 
 from __future__ import annotations
 
@@ -8,6 +8,12 @@ from collections.abc import AsyncIterator, Callable
 from typing import Protocol, TypeVar
 from uuid import uuid4
 
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
+from swarm_inference.backends.colibri.architecture import (
+    ColibriArchitectureAdapter,
+    ColibriExecutionProfile,
+    ColibriRuntimeCapabilities,
+)
 from swarm_inference.backends.colibri.backend import ColibriBackend
 from swarm_inference.engines.cost_model import PlanCostInputs, score_costs, stable_plan_id
 from swarm_inference.engines.interfaces import (
@@ -25,7 +31,6 @@ from swarm_inference.engines.interfaces import (
     PhasePlan,
     WorkerExecutionCapability,
 )
-from swarm_inference.model.architecture import normalize_model_architecture
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.worker.abi import (
     GenerationParameters,
@@ -39,18 +44,39 @@ from swarm_inference.worker.abi import (
 def _adapter_for_model(
     model: ResolvedModelDescriptor,
     capability: ExecutionEngineCapability,
-) -> str | None:
-    """Match an advertised backend adapter without embedding model-family policy."""
+) -> ColibriArchitectureAdapter | None:
+    """Resolve exact checkpoint metadata, then require an installed adapter runtime."""
 
-    architecture = normalize_model_architecture(model.architecture)
-    matches = [
-        adapter
-        for adapter in capability.adapters
-        if normalize_model_architecture(adapter) == architecture
-    ]
-    if not matches:
+    try:
+        adapter = default_colibri_adapter_registry().resolve_model(model)
+    except LookupError:
         return None
-    return sorted(matches)[0]
+    if adapter is None or adapter.adapter_id not in capability.adapters:
+        return None
+    return adapter
+
+
+def _runtime_capabilities(
+    capability: ExecutionEngineCapability,
+) -> ColibriRuntimeCapabilities:
+    return ColibriRuntimeCapabilities(
+        installed=capability.enabled,
+        runtime_version=capability.runtime_revision,
+        binary_hashes=capability.binary_hashes,
+        adapters=capability.adapters,
+        formats=capability.formats,
+        quantizations=capability.quantizations,
+        device_types=tuple(sorted({item.device_type for item in capability.devices})),
+        features=tuple(
+            sorted(
+                {
+                    *capability.required_features,
+                    *capability.fast_paths,
+                    *(feature for item in capability.devices for feature in item.features),
+                }
+            )
+        ),
+    )
 
 
 class ColibriLifecycle(Protocol):
@@ -181,10 +207,112 @@ class ColibriExecutionEngine:
         model: ResolvedModelDescriptor,
         cluster: ClusterCapabilities,
     ) -> EngineSupportReport:
+        try:
+            adapter = default_colibri_adapter_registry().resolve_model(model)
+        except LookupError as exc:
+            return EngineSupportReport(
+                engine_id=self.engine_id,
+                status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                reason=str(exc),
+                model_architecture=model.architecture,
+                model_format=model.format,
+                architecture_supported=False,
+                format_supported=model.format == "safetensors",
+                quantization_supported=False,
+                hardware_supported=False,
+                required_runtime="pinned Colibri runtime with an architecture adapter",
+                confidence=1.0,
+            )
+        if adapter is None:
+            return EngineSupportReport(
+                engine_id=self.engine_id,
+                status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
+                reason="no Colibri architecture adapter validates the checkpoint metadata",
+                model_architecture=model.architecture,
+                model_format=model.format,
+                architecture_supported=False,
+                format_supported=model.format == "safetensors",
+                quantization_supported=False,
+                hardware_supported=False,
+                required_runtime="pinned Colibri runtime with an architecture adapter",
+                confidence=1.0,
+            )
+
+        # Separate the Swarm-owned adapter contract from the physical runtime
+        # inventory. This keeps format/quantization/scope facts visible even
+        # on a coordinator that has no Colibri worker installed.
+        implementation_support = adapter.supports(
+            model,
+            ColibriRuntimeCapabilities(
+                installed=True,
+                runtime_version="adapter-contract",
+                binary_hashes={"adapter-contract": adapter.adapter_version},
+                adapters=(adapter.adapter_id,),
+                formats=("safetensors",),
+                device_types=("cpu", "cuda"),
+            ),
+        )
+        implementation_profile = (
+            adapter.build_execution_profile(model, cluster)
+            if all(
+                (
+                    implementation_support.architecture_supported,
+                    implementation_support.model_format_supported,
+                    implementation_support.quantization_supported,
+                )
+            )
+            else None
+        )
+        implementation_capabilities = (
+            implementation_profile.component_capabilities
+            if implementation_profile is not None and implementation_profile.component_capabilities
+            else adapter.component_capabilities
+            or ("sparse-moe-model-execution", "expert-storage-tiering")
+        )
+        support_scope = "complete_model" if adapter.complete_model else "component"
+        if not all(
+            (
+                implementation_support.architecture_supported,
+                implementation_support.model_format_supported,
+                implementation_support.quantization_supported,
+            )
+        ):
+            status = (
+                EngineSupportStatus.UNSUPPORTED_ARCHITECTURE
+                if not implementation_support.architecture_supported
+                else EngineSupportStatus.UNSUPPORTED_FORMAT
+                if not implementation_support.model_format_supported
+                else EngineSupportStatus.UNSUPPORTED_QUANTIZATION
+            )
+            return EngineSupportReport(
+                engine_id=self.engine_id,
+                status=status,
+                reason="; ".join(implementation_support.reasons),
+                adapter_id=adapter.adapter_id,
+                model_architecture=model.architecture,
+                model_format=model.format,
+                architecture_supported=implementation_support.architecture_supported,
+                format_supported=implementation_support.model_format_supported,
+                quantization_supported=implementation_support.quantization_supported,
+                hardware_supported=False,
+                capabilities=implementation_capabilities,
+                limitations=implementation_support.limitations,
+                expected_memory_cost=(
+                    implementation_profile.required_memory_bytes
+                    if implementation_profile is not None
+                    else None
+                ),
+                required_runtime=f"pinned Colibri adapter {adapter.adapter_id}",
+                required_features=implementation_support.required_features,
+                confidence=1.0,
+                support_scope=support_scope,
+            )
+
         runtime_workers: list[WorkerExecutionCapability] = []
-        architecture_workers: list[tuple[WorkerExecutionCapability, str]] = []
-        workers: list[tuple[WorkerExecutionCapability, str]] = []
         broken: list[str] = []
+        support_results = []
+        feasible: list[tuple[WorkerExecutionCapability, ColibriExecutionProfile]] = []
+        runtime_identity: dict[str, object] = {}
         for worker in cluster.workers_for_engine(self.engine_id):
             capability = worker.engine(self.engine_id)
             assert capability is not None
@@ -192,12 +320,19 @@ class ColibriExecutionEngine:
                 broken.append(worker.worker_id)
                 continue
             runtime_workers.append(worker)
-            adapter_id = _adapter_for_model(model, capability)
-            if adapter_id is None:
+            result = adapter.supports(model, _runtime_capabilities(capability))
+            support_results.append(result)
+            if not result.supported:
                 continue
-            architecture_workers.append((worker, adapter_id))
-            if model.format.casefold() in {item.casefold() for item in capability.formats}:
-                workers.append((worker, adapter_id))
+            profile = adapter.build_execution_profile(model, cluster)
+            memory = sum(item.usable_memory_bytes for item in capability.devices)
+            if memory >= profile.required_memory_bytes:
+                feasible.append((worker, profile))
+                runtime_identity = {
+                    "revision": capability.runtime_revision,
+                    "binary_hashes": capability.binary_hashes,
+                    "adapter_version": adapter.adapter_version,
+                }
         if not runtime_workers:
             return EngineSupportReport(
                 engine_id=self.engine_id,
@@ -211,56 +346,172 @@ class ColibriExecutionEngine:
                     if broken
                     else "no worker advertises a pinned Colibri runtime"
                 ),
+                adapter_id=adapter.adapter_id,
                 model_architecture=model.architecture,
                 model_format=model.format,
+                architecture_supported=True,
+                format_supported=model.format == "safetensors",
+                quantization_supported=True,
+                hardware_supported=False,
+                capabilities=implementation_capabilities,
+                limitations=tuple(
+                    dict.fromkeys(
+                        (
+                            *implementation_support.limitations,
+                            *(
+                                implementation_profile.limitations
+                                if implementation_profile is not None
+                                else ()
+                            ),
+                        )
+                    )
+                ),
+                expected_memory_cost=(
+                    implementation_profile.required_memory_bytes
+                    if implementation_profile is not None
+                    else None
+                ),
                 required_runtime="pinned Colibri runtime",
+                required_features=implementation_support.required_features,
+                confidence=1.0,
+                support_scope=support_scope,
             )
-        if not architecture_workers:
+        if not support_results:
             return EngineSupportReport(
                 engine_id=self.engine_id,
-                status=EngineSupportStatus.UNSUPPORTED_ARCHITECTURE,
-                reason="no Colibri runtime advertises an adapter matching the model",
+                status=EngineSupportStatus.MISSING_RUNTIME,
+                reason=(
+                    f"pinned Colibri workers do not install architecture adapter "
+                    f"{adapter.adapter_id!r}"
+                ),
+                adapter_id=adapter.adapter_id,
                 model_architecture=model.architecture,
                 model_format=model.format,
-                required_runtime="pinned Colibri runtime with a matching model adapter",
+                architecture_supported=True,
+                format_supported=model.format == "safetensors",
+                quantization_supported=True,
+                hardware_supported=False,
+                capabilities=implementation_capabilities,
+                limitations=implementation_support.limitations,
+                expected_memory_cost=(
+                    implementation_profile.required_memory_bytes
+                    if implementation_profile is not None
+                    else None
+                ),
+                required_runtime=f"pinned Colibri adapter {adapter.adapter_id}",
+                required_features=(adapter.adapter_id,),
+                confidence=1.0,
+                support_scope=support_scope,
             )
-        if not workers:
+        supported_result = next((item for item in support_results if item.supported), None)
+        if supported_result is None:
+            format_supported = any(item.model_format_supported for item in support_results)
+            quantization_supported = any(item.quantization_supported for item in support_results)
+            architecture_supported = any(item.architecture_supported for item in support_results)
+            status = (
+                EngineSupportStatus.UNSUPPORTED_FORMAT
+                if not format_supported
+                else EngineSupportStatus.UNSUPPORTED_QUANTIZATION
+                if not quantization_supported
+                else EngineSupportStatus.MISSING_RUNTIME
+            )
+            reasons = tuple(
+                dict.fromkeys(reason for item in support_results for reason in item.reasons)
+            )
+            limitations = tuple(
+                dict.fromkeys(
+                    limitation for item in support_results for limitation in item.limitations
+                )
+            )
             return EngineSupportReport(
                 engine_id=self.engine_id,
-                status=EngineSupportStatus.UNSUPPORTED_FORMAT,
-                reason=f"Colibri adapters do not consume model format {model.format!r}",
-                adapter_id=architecture_workers[0][1],
+                status=status,
+                reason="; ".join(reasons),
+                adapter_id=adapter.adapter_id,
                 model_architecture=model.architecture,
                 model_format=model.format,
-                required_runtime="pinned Colibri runtime",
+                architecture_supported=architecture_supported,
+                format_supported=format_supported,
+                quantization_supported=quantization_supported,
+                hardware_supported=False,
+                limitations=limitations,
+                required_runtime=f"pinned Colibri adapter {adapter.adapter_id}",
+                required_features=tuple(
+                    dict.fromkeys(
+                        feature for item in support_results for feature in item.required_features
+                    )
+                ),
+                confidence=1.0,
             )
-        feasible: list[tuple[WorkerExecutionCapability, str]] = []
-        for worker, adapter_id in workers:
-            capability = worker.engine(self.engine_id)
-            assert capability is not None
-            if sum(item.usable_memory_bytes for item in capability.devices) >= model.weight_bytes:
-                feasible.append((worker, adapter_id))
-        selected_adapter = workers[0][1]
+        assert implementation_profile is not None
+        profile = implementation_profile
+        capabilities = profile.component_capabilities or (
+            "sparse-moe-model-execution",
+            "expert-storage-tiering",
+        )
         if not feasible:
             return EngineSupportReport(
                 engine_id=self.engine_id,
                 status=EngineSupportStatus.INSUFFICIENT_MEMORY,
-                reason="no complete-model Colibri worker passes memory admission",
-                supported_worker_ids=tuple(item.worker_id for item, _adapter in workers),
-                adapter_id=selected_adapter,
+                reason=(
+                    "no Colibri worker satisfies the adapter-derived resident working-set "
+                    f"requirement ({profile.required_memory_bytes} bytes)"
+                ),
+                supported_worker_ids=tuple(item.worker_id for item in runtime_workers),
+                adapter_id=adapter.adapter_id,
                 model_architecture=model.architecture,
                 model_format=model.format,
-                required_runtime="pinned Colibri runtime with complete-model memory",
+                architecture_supported=True,
+                format_supported=True,
+                quantization_supported=True,
+                hardware_supported=False,
+                capabilities=capabilities,
+                limitations=tuple((*supported_result.limitations, *profile.limitations)),
+                expected_memory_cost=profile.required_memory_bytes,
+                required_runtime=f"pinned Colibri adapter {adapter.adapter_id}",
+                confidence=0.9,
+                support_scope="complete_model" if profile.complete_model else "component",
             )
+        limitations = tuple(dict.fromkeys((*supported_result.limitations, *profile.limitations)))
+        measured_rates = [
+            device.measured_decode_tokens_s
+            for worker, _worker_profile in feasible
+            for device in worker.engine(self.engine_id).devices  # type: ignore[union-attr]
+            if device.measured_decode_tokens_s is not None
+        ]
         return EngineSupportReport(
             engine_id=self.engine_id,
-            status=EngineSupportStatus.SUPPORTED,
-            reason=f"pinned Colibri runtime supports adapter {selected_adapter}",
-            supported_worker_ids=tuple(item.worker_id for item, _adapter in feasible),
-            adapter_id=selected_adapter,
+            status=(
+                EngineSupportStatus.SUPPORTED
+                if profile.complete_model
+                else EngineSupportStatus.COMPONENT_SUPPORTED
+            ),
+            reason=(
+                f"pinned Colibri adapter {adapter.adapter_id} provides a complete execution path"
+                if profile.complete_model
+                else f"pinned Swarm Colibri adapter {adapter.adapter_id} provides routed-MoE "
+                "components for hybrid planning"
+            ),
+            supported_worker_ids=tuple(item.worker_id for item, _profile in feasible),
+            adapter_id=adapter.adapter_id,
+            runtime_identity=runtime_identity,
             model_architecture=model.architecture,
             model_format=model.format,
-            required_runtime="pinned Colibri runtime",
+            architecture_supported=True,
+            format_supported=True,
+            quantization_supported=True,
+            hardware_supported=True,
+            capabilities=capabilities,
+            limitations=limitations,
+            expected_compute_cost=(
+                1.0 / max(measured_rates) if measured_rates and max(measured_rates) > 0 else None
+            ),
+            expected_network_cost=0.0 if profile.complete_model else None,
+            expected_memory_cost=profile.required_memory_bytes,
+            required_runtime=f"pinned Colibri adapter {adapter.adapter_id}",
+            required_features=supported_result.required_features,
+            confidence=0.95 if measured_rates else 0.7,
+            support_scope="complete_model" if profile.complete_model else "component",
         )
 
     def probe_model_support(
@@ -276,6 +527,13 @@ class ColibriExecutionEngine:
         cluster: ClusterCapabilities,
         request: ExecutionRequest,
     ) -> list[ExecutionPlan]:
+        try:
+            architecture_adapter = default_colibri_adapter_registry().resolve_model(model)
+        except LookupError:
+            return []
+        if architecture_adapter is None:
+            return []
+
         plans: list[ExecutionPlan] = []
         for worker in cluster.workers_for_engine(self.engine_id):
             identities = {worker.worker_id, worker.node_id}
@@ -285,13 +543,20 @@ class ColibriExecutionEngine:
                 continue
             capability = worker.engine(self.engine_id)
             assert capability is not None
-            adapter_id = _adapter_for_model(model, capability)
-            if adapter_id is None or model.format.casefold() not in {
-                item.casefold() for item in capability.formats
-            }:
+            adapter = _adapter_for_model(model, capability)
+            if adapter is None:
+                continue
+            support = adapter.supports(model, _runtime_capabilities(capability))
+            if not support.supported:
+                continue
+            profile = adapter.build_execution_profile(model, cluster)
+            # Component adapters participate in hybrid planning.  They are not a
+            # valid complete-model candidate until a composable planner supplies
+            # every other required model capability.
+            if not profile.complete_model:
                 continue
             memory = sum(item.usable_memory_bytes for item in capability.devices)
-            if memory < model.weight_bytes:
+            if memory < profile.required_memory_bytes:
                 continue
             decode_rates = [
                 item.measured_decode_tokens_s
@@ -309,9 +574,9 @@ class ColibriExecutionEngine:
                 queue_depth=worker.queue_depth,
                 reliability=worker.reliability,
                 usable_memory_bytes=memory,
-                required_memory_bytes=model.weight_bytes,
+                required_memory_bytes=profile.required_memory_bytes,
                 resident_model_bytes=(
-                    model.weight_bytes
+                    profile.required_memory_bytes
                     if model.content_fingerprint in worker.resident_model_fingerprints
                     else 0
                 ),
@@ -330,7 +595,7 @@ class ColibriExecutionEngine:
                 item
                 for item in capability.execution_profiles
                 if item.mechanism == "routing_aware_placement"
-                and item.adapter_id == adapter_id
+                and item.adapter_id == adapter.adapter_id
                 and item.model_fingerprint == model.content_fingerprint
                 and item.exactness_passed
                 and item.measured_utility > 0
@@ -349,7 +614,7 @@ class ColibriExecutionEngine:
                         "model": model.content_fingerprint,
                         "runtime": capability.runtime_revision,
                         "binaries": capability.binary_hashes,
-                        "adapter": adapter_id,
+                        "adapter": adapter.adapter_id,
                         "routing_profile": (
                             routing_profile.content_fingerprint if routing_profile else None
                         ),
@@ -376,7 +641,7 @@ class ColibriExecutionEngine:
                         model_fingerprint=model.content_fingerprint,
                         execution_identity=identity,
                         objective=request.objective,
-                        topology="colibri-complete-model",
+                        topology=profile.topology,
                         worker_roles=roles,
                         idle_workers={
                             item.worker_id: "complete-model Colibri request has no positive synchronous role"
@@ -386,8 +651,10 @@ class ColibriExecutionEngine:
                         fast_paths={worker.worker_id: fast_path},
                         optional_mechanisms={
                             "routing_aware_placement": routing_aware,
-                            "prefetch": False,
-                            "tensor_microshards": False,
+                            "prefetch": profile.persistent_expert_residency,
+                            "tensor_microshards": profile.tensor_microshards,
+                            "direct_peer_model_data": profile.direct_peer_model_data,
+                            "persistent_expert_residency": (profile.persistent_expert_residency),
                         },
                         mechanism_evidence=(
                             (
@@ -412,14 +679,16 @@ class ColibriExecutionEngine:
                         predicted_bytes_per_token=0.0,
                         predicted_serial_waits_per_token=0.0,
                         number_of_wan_stage_boundaries=0,
-                        persistent_connections=False,
+                        persistent_connections=profile.persistent_worker,
                         network_cost_confidence="measured",
                         network_cost_provenance="complete model executes on one worker",
-                        required_memory_bytes=model.weight_bytes,
+                        required_memory_bytes=profile.required_memory_bytes,
                         score=utility.score,
                         explanation=(
                             "Colibri candidate is admitted only from its physical capability probe",
+                            "resident memory is adapter-derived rather than total checkpoint size",
                             "rejected prefetch variants remain disabled",
+                            *profile.limitations,
                             *(
                                 ("unmeasured inputs: " + ", ".join(utility.unmeasured_inputs),)
                                 if utility.unmeasured_inputs
@@ -429,7 +698,7 @@ class ColibriExecutionEngine:
                         engine_parameters={
                             "model_id": model.model_id,
                             "model_revision": model.revision,
-                            "model_family": adapter_id,
+                            "model_family": adapter.adapter_id,
                             "model_paths": list(model.local_paths),
                             "tokenizer_identity": model.tokenizer_identity,
                             **(

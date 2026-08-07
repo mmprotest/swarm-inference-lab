@@ -18,8 +18,11 @@ from swarm_inference.config.models import (
     SyntheticModelConfig,
 )
 from swarm_inference.exceptions import IntegrityError, MemoryLimitExceededError
+from swarm_inference.model.adapter import (
+    NativeModelAdapterRegistry,
+    default_native_adapter_registry,
+)
 from swarm_inference.model.manifest import hash_shard_directory
-from swarm_inference.model.qwen3 import Qwen3Adapter
 from swarm_inference.model.stage_module import StageModule
 from swarm_inference.model.synthetic import SyntheticStageModule
 from swarm_inference.protocol.checksums import sha256_bytes, sha256_file
@@ -69,6 +72,7 @@ class ShardManager:
         *,
         memory_limit_bytes: int,
         total_memory_limit_bytes: int | None = None,
+        adapter_registry: NativeModelAdapterRegistry | None = None,
     ) -> None:
         if memory_limit_bytes <= 0:
             raise ValueError("memory_limit_bytes must be positive")
@@ -76,6 +80,7 @@ class ShardManager:
             raise ValueError("total_memory_limit_bytes must be positive")
         self.memory_limit_bytes = memory_limit_bytes
         self.total_memory_limit_bytes = total_memory_limit_bytes
+        self.adapter_registry = adapter_registry or default_native_adapter_registry()
         self.modules: dict[int, StageModule] = {}
         self.loaded_tensor_names: dict[int, list[str]] = {}
         self.loaded_bytes: dict[int, int] = {}
@@ -134,7 +139,7 @@ class ShardManager:
                 f"shard hash mismatch for {resolved}: expected={expected_hash} actual={actual}"
             )
 
-    def load_qwen3(
+    def load_native_stage(
         self,
         *,
         config: dict[str, Any],
@@ -150,7 +155,7 @@ class ShardManager:
         self._reserve(stage)
         root = Path(shard_path).expanduser().resolve()
         if not root.is_dir():
-            raise IntegrityError(f"Qwen3 stage shard directory does not exist: {root}")
+            raise IntegrityError(f"native stage shard directory does not exist: {root}")
         recorder = lifecycle_observer()
         verification_started = time.monotonic_ns()
         if recorder is not None:
@@ -188,7 +193,7 @@ class ShardManager:
             Backend.TORCH_MPS: torch.device("mps"),
         }.get(backend)
         if device is None:
-            raise IntegrityError(f"backend {backend.value} cannot execute Qwen3")
+            raise IntegrityError(f"backend {backend.value} cannot execute native stages")
         normalised = (dtype_name or manifest.weight_dtype).lower()
         dtypes = {
             "f16": torch.float16,
@@ -201,8 +206,17 @@ class ShardManager:
         try:
             dtype = dtypes[normalised]
         except KeyError as exc:
-            raise IntegrityError(f"unsupported Qwen3 execution dtype {normalised}") from exc
-        adapter = Qwen3Adapter()
+            raise IntegrityError(f"unsupported native-stage execution dtype {normalised}") from exc
+        try:
+            adapter = self.adapter_registry.resolve_config(config)
+        except LookupError as exc:
+            raise IntegrityError(
+                "no installed native architecture adapter accepts the stage configuration"
+            ) from exc
+        if not adapter.supports(config):
+            raise IntegrityError(
+                f"native adapter {adapter.adapter_id!r} rejected the stage configuration"
+            )
         before = self._process_memory_snapshot(torch)
         if backend == Backend.TORCH_CUDA:
             torch.cuda.reset_peak_memory_stats(device)

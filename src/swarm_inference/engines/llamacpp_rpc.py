@@ -770,6 +770,7 @@ class LlamaCppRpcEngine:
         workers = []
         broken = []
         architecture_rejected: list[str] = []
+        quantization_rejected: list[str] = []
         feature_rejected: dict[str, tuple[str, ...]] = {}
         for worker in cluster.workers_for_engine(self.engine_id):
             capability = worker.engine(self.engine_id)
@@ -780,6 +781,13 @@ class LlamaCppRpcEngine:
                 item.casefold() for item in capability.model_architectures
             ):
                 architecture_rejected.append(worker.worker_id)
+            elif (
+                model.quantization
+                and capability.quantizations
+                and model.quantization.casefold().replace("_", "-")
+                not in {item.casefold().replace("_", "-") for item in capability.quantizations}
+            ):
+                quantization_rejected.append(worker.worker_id)
             elif rejected := tuple(
                 sorted(set(model.features).intersection(capability.unsupported_features))
             ):
@@ -800,6 +808,23 @@ class LlamaCppRpcEngine:
                     model_format=model.format,
                     required_runtime="pinned llama.cpp architecture loader",
                     required_features=tuple(sorted(required_architectures)),
+                )
+            if quantization_rejected:
+                return EngineSupportReport(
+                    engine_id=self.engine_id,
+                    status=EngineSupportStatus.UNSUPPORTED_QUANTIZATION,
+                    reason=(
+                        "the installed pinned llama.cpp runtime does not advertise the exact "
+                        f"GGUF quantization {model.quantization!r}"
+                    ),
+                    model_architecture=model.architecture,
+                    model_format=model.format,
+                    architecture_supported=True,
+                    format_supported=True,
+                    quantization_supported=False,
+                    hardware_supported=False,
+                    required_runtime="pinned llama.cpp quantization kernels",
+                    confidence=1.0,
                 )
             if feature_rejected:
                 unsupported = tuple(
@@ -893,6 +918,13 @@ class LlamaCppRpcEngine:
                 for identifier in worker.engine(self.engine_id).model_architectures  # type: ignore[union-attr]
             )
         )
+        feasible_workers = [worker for worker in workers if worker.worker_id in feasible_ids]
+        measured_rates = [
+            device.measured_decode_tokens_s
+            for worker in feasible_workers
+            for device in _llama_capability(worker).devices
+            if device.measured_decode_tokens_s is not None
+        ]
         return EngineSupportReport(
             engine_id=self.engine_id,
             status=EngineSupportStatus.SUPPORTED,
@@ -902,6 +934,31 @@ class LlamaCppRpcEngine:
             model_format=model.format,
             required_runtime="pinned llama.cpp with GGML RPC",
             required_features=tuple(proven),
+            runtime_identity={
+                "workers": {
+                    worker.worker_id: {
+                        "revision": _llama_capability(worker).runtime_revision,
+                        "binary_hashes": _llama_capability(worker).binary_hashes,
+                    }
+                    for worker in feasible_workers
+                }
+            },
+            architecture_supported=True,
+            format_supported=True,
+            quantization_supported=True,
+            hardware_supported=True,
+            capabilities=(
+                "gguf-model-loading",
+                "tensor-rpc",
+                "persistent-model-server",
+                "persistent-connections",
+                "hybrid-cpu-gpu",
+            ),
+            expected_compute_cost=(
+                1.0 / max(measured_rates) if measured_rates and max(measured_rates) > 0 else None
+            ),
+            expected_memory_cost=required,
+            confidence=0.9 if measured_rates else 0.6,
         )
 
     def probe_model_support(

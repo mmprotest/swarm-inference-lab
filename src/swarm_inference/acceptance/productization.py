@@ -30,8 +30,6 @@ REPEATABILITY_SCHEMA_VERSION = 2
 REPEATABILITY_TEST_COMMAND_VERSION = 3
 MACHINE_IDENTITY_VERSION = 1
 PHYSICAL_EVIDENCE_VERSION = 4
-REAL_MODEL_ID = "allenai/OLMoE-1B-7B-0125-Instruct"
-REAL_MODEL_REVISION = "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e"
 MANAGED_RESOURCE_WARNINGS = (
     "resource_tracker",
     "leaked semaphore",
@@ -319,38 +317,40 @@ SOFTWARE_GATES = (
 
 REAL_MODEL_GATES = (
     GateSpec(
-        "two_stage_olmoe_baseline",
-        ("tests/integration/test_product_stage_ring.py::test_exact_two_stage_olmoe_cuda_baseline",),
-        900,
-    ),
-    GateSpec(
-        "restart_and_replay_olmoe",
+        "real_model_baseline",
         (
-            "tests/integration/test_product_stage_ring.py::test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker",
+            "tests/integration/test_universal_real_model_acceptance.py::test_real_model_baseline_evidence",
         ),
         900,
     ),
     GateSpec(
-        "whole_expert_olmoe",
+        "real_model_restart_and_replay",
         (
-            "tests/integration/test_product_real_expert_acceptance.py::test_real_olmoe_whole_expert_product_inference",
+            "tests/integration/test_universal_real_model_acceptance.py::test_real_model_restart_and_replay_evidence",
         ),
         900,
     ),
     GateSpec(
-        "native_microshard_olmoe",
+        "real_model_whole_expert",
         (
-            "tests/integration/test_product_real_expert_acceptance.py::test_real_olmoe_native_microshard_product_inference",
+            "tests/integration/test_universal_real_model_acceptance.py::test_real_model_whole_expert_evidence",
+        ),
+        900,
+    ),
+    GateSpec(
+        "real_model_native_microshard",
+        (
+            "tests/integration/test_universal_real_model_acceptance.py::test_real_model_native_microshard_evidence",
         ),
         900,
     ),
 )
 
 REAL_MODEL_EVIDENCE_IDS = {
-    "two_stage_olmoe_baseline": "two-stage-baseline",
-    "restart_and_replay_olmoe": "two-stage-restart-and-replay",
-    "whole_expert_olmoe": "whole-remote",
-    "native_microshard_olmoe": "microshard-remote",
+    "real_model_baseline": "real-model-baseline",
+    "real_model_restart_and_replay": "real-model-restart-and-replay",
+    "real_model_whole_expert": "real-model-whole-expert",
+    "real_model_native_microshard": "real-model-native-microshard",
 }
 
 PHYSICAL_GATES = {
@@ -1257,8 +1257,16 @@ def _validate_real_gate_payload(gate: str, payload: dict[str, Any]) -> list[str]
     if payload.get("gate") != expected_gate:
         errors.append(f"real-model evidence gate must be {expected_gate!r}")
     required = (
+        "executed",
         "model_id",
         "model_revision",
+        "model_fingerprint",
+        "architecture_profile",
+        "artifact_format",
+        "engine_id",
+        "runtime_fingerprint",
+        "execution_started_at",
+        "execution_finished_at",
         "tokenizer_revision",
         "model_metadata_hash",
         "prompt",
@@ -1283,18 +1291,27 @@ def _validate_real_gate_payload(gate: str, payload: dict[str, Any]) -> list[str]
         errors.append("real-model evidence is missing fields: " + ", ".join(missing))
     if payload.get("status") != "PASS":
         errors.append("real-model evidence does not explicitly record PASS")
-    if payload.get("model_id") != REAL_MODEL_ID:
-        errors.append("real-model evidence model ID is not pinned")
-    if payload.get("model_revision") != REAL_MODEL_REVISION:
-        errors.append("real-model evidence revision is not pinned")
+    if payload.get("executed") is not True:
+        errors.append("real-model evidence does not prove an executed run")
+    if not str(payload.get("model_id", "")).strip():
+        errors.append("real-model evidence has no model ID")
+    if not str(payload.get("model_revision", "")).strip():
+        errors.append("real-model evidence has no immutable revision")
+    profile = payload.get("architecture_profile")
+    if not isinstance(profile, dict) or not str(profile.get("architecture_id", "")).strip():
+        errors.append("real-model evidence has no inspected architecture profile")
+    if not _is_sha256_identity(payload.get("model_fingerprint")):
+        errors.append("real-model evidence model fingerprint is not a SHA-256 identity")
+    if not _is_sha256_identity(payload.get("runtime_fingerprint")):
+        errors.append("real-model evidence runtime fingerprint is not a SHA-256 identity")
     if payload.get("generated_token_ids") != payload.get("expected_token_ids"):
         errors.append("real-model evidence generated token IDs do not match expected IDs")
-    if gate == "two_stage_olmoe_baseline" and payload.get("recovery_events"):
+    if gate == "real_model_baseline" and payload.get("recovery_events"):
         errors.append("baseline evidence contains a recovery event")
-    if gate == "restart_and_replay_olmoe" and not payload.get("recovery_events"):
+    if gate == "real_model_restart_and_replay" and not payload.get("recovery_events"):
         errors.append("recovery evidence contains no recovery event")
     if (
-        gate in {"whole_expert_olmoe", "native_microshard_olmoe"}
+        gate in {"real_model_whole_expert", "real_model_native_microshard"}
         and int(payload.get("fallback_count", -1)) != 0
     ):
         errors.append("forced-remote real-model evidence recorded a fallback")
@@ -1647,16 +1664,13 @@ class ProductizationAcceptanceRunner:
             )
 
     def run_real_model(self) -> None:
-        model_path = (
-            self.repository_root / "artifacts" / "models" / "colibri" / "source-b89a7c4bc24f"
-        )
-        cuda_available = bool(environment_evidence(self.repository_root)["cuda"]["available"])
-        if os.environ.get("SWARM_RUN_PRODUCT_OLMOE_CUDA") != "1":
-            reason = "SWARM_RUN_PRODUCT_OLMOE_CUDA=1 was not set"
-        elif not model_path.is_dir():
-            reason = f"pinned OLMoE snapshot is unavailable: {model_path}"
-        elif not cuda_available:
-            reason = "CUDA is unavailable"
+        evidence_root = os.environ.get("SWARM_REAL_MODEL_ACCEPTANCE_EVIDENCE")
+        if os.environ.get("SWARM_RUN_REAL_MODEL_ACCEPTANCE") != "1":
+            reason = "SWARM_RUN_REAL_MODEL_ACCEPTANCE=1 was not set"
+        elif not evidence_root:
+            reason = "SWARM_REAL_MODEL_ACCEPTANCE_EVIDENCE was not set"
+        elif not Path(evidence_root).expanduser().is_dir():
+            reason = f"real-model evidence directory is unavailable: {evidence_root}"
         else:
             reason = ""
         if reason:
@@ -1789,7 +1803,7 @@ class ProductizationAcceptanceRunner:
                     "all software gates passed; real-model and physical closure are not claimed"
                 ),
                 OverallStatus.REAL_MODEL_ACCEPTANCE_PASS.value: (
-                    "all software and four real OLMoE product gates passed"
+                    "all software and four architecture-neutral real-model gates passed"
                 ),
                 OverallStatus.PHYSICAL_ACCEPTANCE_PASS.value: (
                     "software, real-model, and distinct physical-machine gates passed"
@@ -1835,11 +1849,21 @@ class ProductizationAcceptanceRunner:
             encoding="utf-8",
         )
         executed = [record["evidence"] for record in self.model_evidence_records]
+        executed_model_ids = sorted(
+            {str(item["model_id"]) for item in executed if item.get("model_id")}
+        )
+        executed_revisions = sorted(
+            {str(item["model_revision"]) for item in executed if item.get("model_revision")}
+        )
         (self.bundle / "model.json").write_text(
             json.dumps(
                 {
-                    "model_id": REAL_MODEL_ID,
-                    "model_revision": REAL_MODEL_REVISION,
+                    "model_id": executed_model_ids[0] if len(executed_model_ids) == 1 else None,
+                    "model_revision": (
+                        executed_revisions[0] if len(executed_revisions) == 1 else None
+                    ),
+                    "model_ids": executed_model_ids,
+                    "model_revisions": executed_revisions,
                     "tokenizer_revision": next(
                         (
                             item.get("tokenizer_revision")

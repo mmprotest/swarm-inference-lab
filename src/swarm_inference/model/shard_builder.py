@@ -1,4 +1,4 @@
-"""Safetensors-index inspection and contiguous Qwen3 shard construction."""
+"""Adapter-driven Safetensors inspection and contiguous stage construction."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import math
 import shutil
 import time
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -20,9 +21,15 @@ from swarm_inference.config.models import (
     TensorSpec,
 )
 from swarm_inference.exceptions import IntegrityError, MemoryLimitExceededError
-from swarm_inference.model.adapter import ComponentKind, ModelDescription, TensorInfo
+from swarm_inference.model.adapter import (
+    ComponentKind,
+    ModelDescription,
+    NativeModelAdapterRegistry,
+    TensorInfo,
+    default_native_adapter_registry,
+)
 from swarm_inference.model.manifest import hash_shard_directory, save_manifest
-from swarm_inference.model.qwen3 import Qwen3Adapter
+from swarm_inference.model.quantization import quantization_from_config
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,19 +87,56 @@ def resolve_model(
     )
 
 
-def inspect_qwen3_model(resolved: ResolvedModel) -> ModelDescription:
-    return Qwen3Adapter().describe(
+def inspect_native_model(
+    resolved: ResolvedModel,
+    *,
+    adapters: NativeModelAdapterRegistry | None = None,
+) -> ModelDescription:
+    """Inspect an acquired checkpoint through the matching native adapter."""
+
+    config_path = resolved.path / "config.json"
+    if not config_path.is_file():
+        raise IntegrityError(f"model config is missing: {config_path}")
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise IntegrityError(f"model config is not valid UTF-8 JSON: {config_path}") from exc
+    if not isinstance(config, dict):
+        raise IntegrityError(f"model config must contain an object: {config_path}")
+    adapter = (adapters or default_native_adapter_registry()).resolve_config(config)
+    return adapter.describe(
         resolved.path,
         model_id=resolved.model_id,
         model_revision=resolved.revision,
     )
 
 
+def _positive_config_int(
+    config: Mapping[str, Any],
+    *names: str,
+    default: int | None = None,
+) -> int:
+    for name in names:
+        value = config.get(name)
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+            return value
+    if default is not None and default > 0:
+        return default
+    raise IntegrityError(f"model config lacks a positive integer for {', '.join(names)}")
+
+
 def model_inspection_payload(description: ModelDescription) -> dict[str, Any]:
-    """Build the reader-facing, header-only Qwen3 inspection evidence."""
+    """Build reader-facing, header-only evidence from adapter-mapped tensors."""
 
     config = description.config
-    layer_count = int(config["num_hidden_layers"])
+    nested = config.get("text_config")
+    effective = nested if isinstance(nested, dict) else config
+    layer_count = _positive_config_int(
+        effective,
+        "num_hidden_layers",
+        "n_layer",
+        "num_layers",
+    )
     per_layer = [0] * layer_count
     for tensor in description.tensors:
         if tensor.component.kind == ComponentKind.DECODER_LAYER:
@@ -104,13 +148,13 @@ def model_inspection_payload(description: ModelDescription) -> dict[str, Any]:
     dtype_bytes = _DTYPE_WIDTHS.get(dtypes[0])
     if dtype_bytes is None:
         raise IntegrityError(f"unsupported source weight dtype {dtypes[0]}")
-    hidden = int(config["hidden_size"])
-    heads = int(config["num_attention_heads"])
-    kv_heads = int(config.get("num_key_value_heads") or heads)
-    head_dim = int(config.get("head_dim") or hidden // heads)
+    hidden = _positive_config_int(effective, "hidden_size", "n_embd")
+    heads = _positive_config_int(effective, "num_attention_heads", "n_head")
+    kv_heads = _positive_config_int(effective, "num_key_value_heads", default=heads)
+    head_dim = _positive_config_int(effective, "head_dim", default=hidden // heads)
     embedding = _component_bytes(description.tensors, ComponentKind.EMBEDDING)
     explicit_head = _component_bytes(description.tensors, ComponentKind.OUTPUT_HEAD)
-    tied = bool(config.get("tie_word_embeddings", False))
+    tied = bool(effective.get("tie_word_embeddings", config.get("tie_word_embeddings", False)))
     output_head = explicit_head or (embedding if tied else 0)
     total = sum(tensor.bytes for tensor in description.tensors)
     activation_per_token = hidden * dtype_bytes
@@ -120,19 +164,33 @@ def model_inspection_payload(description: ModelDescription) -> dict[str, Any]:
         "requested_model_id": description.model_id,
         "resolved_revision": description.model_revision,
         "local_snapshot_path": str(description.model_path),
-        "architecture": (config.get("architectures") or [None])[0],
-        "model_type": config.get("model_type"),
+        "architecture": (config.get("architectures") or effective.get("architectures") or [None])[
+            0
+        ],
+        "model_type": effective.get("model_type") or config.get("model_type"),
         "decoder_layer_count": layer_count,
         "hidden_size": hidden,
-        "intermediate_size": int(config["intermediate_size"]),
+        "intermediate_size": (
+            int(value)
+            if (
+                value := effective.get("intermediate_size")
+                or effective.get("moe_intermediate_size")
+                or effective.get("ffn_hidden_size")
+            )
+            else None
+        ),
         "attention_head_count": heads,
         "key_value_head_count": kv_heads,
         "head_dimension": head_dim,
-        "vocabulary_size": int(config["vocab_size"]),
-        "maximum_position_embeddings": int(config["max_position_embeddings"]),
+        "vocabulary_size": int(effective["vocab_size"]),
+        "maximum_position_embeddings": (
+            int(effective["max_position_embeddings"])
+            if effective.get("max_position_embeddings") is not None
+            else None
+        ),
         "rope": {
-            "theta": config.get("rope_theta"),
-            "scaling": config.get("rope_scaling"),
+            "theta": effective.get("rope_theta"),
+            "scaling": effective.get("rope_scaling"),
         },
         "weight_dtype": dtypes[0],
         "tied_embeddings": tied,
@@ -257,10 +315,9 @@ def _partition_exact_stage_count(
 
     The minimum possible maximum stage weight is found first. Among all
     partitions at that cap, the dynamic program balances actual tensor bytes,
-    decoder execution work, and KV-cache work. Qwen3 decoder layers share the
-    same cache geometry, so both latter estimates are proportional to owned
-    layer count. Endpoint ownership is part of each candidate's actual byte
-    cost, so tied-output duplication is never hidden.
+    decoder execution work, and adapter-reported KV-cache work. Endpoint
+    ownership is part of each candidate's actual byte cost, so tied-output
+    duplication is never hidden.
     """
 
     layer_count = len(layer_bytes)
@@ -356,7 +413,9 @@ def build_manifest(
     stage_count: int | None = None,
     timings: dict[str, float] | None = None,
 ) -> ModelManifest:
-    config = description.config
+    root_config = description.config
+    nested = root_config.get("text_config")
+    config = nested if isinstance(nested, dict) else root_config
     layer_count = int(config["num_hidden_layers"])
     per_layer = [0] * layer_count
     for tensor in description.tensors:
@@ -377,7 +436,7 @@ def build_manifest(
     tied = bool(config.get("tie_word_embeddings", False))
     head = explicit_head or (embedding if tied else 0)
     if head == 0:
-        raise IntegrityError("Qwen3 model has neither lm_head weights nor tied embeddings")
+        raise IntegrityError("model has neither output-head weights nor tied embeddings")
     partition_started = time.perf_counter()
     if stage_count is None:
         ranges = _partition_ranges(
@@ -405,7 +464,7 @@ def build_manifest(
         "F32": 4,
     }.get(dtype)
     if dtype_bytes is None:
-        raise IntegrityError(f"unsupported Qwen3 manifest weight dtype {dtype}")
+        raise IntegrityError(f"unsupported native manifest weight dtype {dtype}")
     stages: list[StageDefinition] = []
     shared_tensors: dict[str, list[int]] = {}
     for stage_id, (start, end) in enumerate(ranges):
@@ -519,7 +578,10 @@ def build_manifest(
         raise IntegrityError(
             f"tensors assigned to multiple stages without shared declaration: {illegal_duplicates}"
         )
-    architecture = (config.get("architectures") or ["Qwen3ForCausalLM"])[0]
+    architecture_values = root_config.get("architectures") or config.get("architectures") or []
+    architecture = architecture_values[0] if architecture_values else config.get("model_type")
+    if not architecture:
+        raise IntegrityError("native adapter config does not declare an architecture identity")
     total_source_bytes = sum(tensor.bytes for tensor in description.tensors)
     tensor_to_stages = {
         name: [stage.stage_id for stage in stages if name in stage.tensor_names]
@@ -555,11 +617,7 @@ def build_manifest(
         ),
         vocabulary_size=int(config["vocab_size"]),
         weight_dtype=dtype,
-        quantisation_format=(
-            str(config.get("quantization_config", {}).get("quant_method"))
-            if config.get("quantization_config")
-            else None
-        ),
+        quantisation_format=quantization_from_config(root_config),
         total_weight_bytes=total_source_bytes,
         embedding_bytes=embedding,
         output_head_bytes=head,
@@ -600,7 +658,9 @@ def build_manifest(
             )
         ),
         transformers_version_requirement=(
-            str(config["transformers_version"]) if config.get("transformers_version") else None
+            str(root_config["transformers_version"])
+            if root_config.get("transformers_version")
+            else None
         ),
         supported_dtypes=[dtype.lower()],
     )

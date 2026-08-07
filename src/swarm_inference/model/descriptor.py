@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import ConfigDict, Field, NonNegativeInt
+from pydantic import ConfigDict, Field, NonNegativeInt, PositiveInt, model_validator
 
 from swarm_inference.config.models import StrictModel
+from swarm_inference.model.architecture import ArchitectureSource, ModelArchitectureProfile
 
 
 class ModelFileDescriptor(StrictModel):
@@ -21,6 +22,19 @@ class ModelFileDescriptor(StrictModel):
     multipart_count: int | None = Field(default=None, ge=1)
 
 
+class ResolvedTensorDescriptor(StrictModel):
+    """Header-only tensor fact retained without loading tensor contents."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str = Field(min_length=1)
+    shape: tuple[PositiveInt, ...]
+    dtype: str = Field(min_length=1)
+    size_bytes: NonNegativeInt
+    source_file: str = Field(min_length=1)
+    data_offset: NonNegativeInt | None = None
+
+
 class ResolvedModelDescriptor(StrictModel):
     """Facts about one immutable model artifact, with no execution decision."""
 
@@ -33,12 +47,7 @@ class ResolvedModelDescriptor(StrictModel):
     format: Literal["safetensors", "gguf", "pytorch", "unknown"]
     architecture: str | None = None
     architecture_raw: str | None = None
-    architecture_source: Literal[
-        "config.architectures",
-        "config.model_type",
-        "gguf.general.architecture",
-        "unknown",
-    ] = "unknown"
+    architecture_source: ArchitectureSource = "unknown"
     files: tuple[ModelFileDescriptor, ...]
     variant: str | None = None
     quantization: str | None = None
@@ -51,10 +60,25 @@ class ResolvedModelDescriptor(StrictModel):
     modalities: tuple[str, ...] = ("text",)
     features: tuple[str, ...] = ()
     local_paths: tuple[str, ...] = ()
+    configuration: dict[str, Any] = Field(default_factory=dict)
+    artifact_metadata: dict[str, Any] = Field(default_factory=dict)
+    tensors: tuple[ResolvedTensorDescriptor, ...] = ()
+    architecture_profile: ModelArchitectureProfile | None = None
+
+    @model_validator(mode="after")
+    def profile_matches_artifact(self) -> ResolvedModelDescriptor:
+        profile = self.architecture_profile
+        if profile is None:
+            return self
+        if self.architecture is not None and profile.architecture_id != self.architecture:
+            raise ValueError("architecture profile identity differs from the resolved descriptor")
+        if profile.checkpoint_format != self.format:
+            raise ValueError("architecture profile format differs from the resolved descriptor")
+        return self
 
     @property
     def is_local(self) -> bool:
         return self.source_type == "local"
 
 
-__all__ = ["ModelFileDescriptor", "ResolvedModelDescriptor"]
+__all__ = ["ModelFileDescriptor", "ResolvedModelDescriptor", "ResolvedTensorDescriptor"]

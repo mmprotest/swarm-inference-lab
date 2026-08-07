@@ -116,7 +116,7 @@ def test_low_level_product_commands_remain_available() -> None:
 
 
 def test_normal_quick_start_has_no_manual_provisioning() -> None:
-    config = load_product_config(Path("configs/product/olmoe-stage-ring.yaml"))
+    config = load_product_config(Path("configs/product/universal-stage-ring.yaml"))
     assert config.require_trusted_workers is True
     assert config.trust_store_path == Path(".swarm/coordinator/trusted-workers.json")
     assert config.trusted_worker_fingerprints == []

@@ -116,6 +116,7 @@ class ColibriRuntimeManifest:
     binary_hashes: dict[str, str]
     model_families: tuple[str, ...]
     formats: tuple[str, ...]
+    quantizations: tuple[str, ...]
     fast_paths: tuple[str, ...]
     engine_directory: Path | None
     source_directory: Path | None
@@ -226,6 +227,7 @@ def load_colibri_runtime_manifest(path: str | Path) -> ColibriRuntimeManifest:
     hashes = {str(key): str(value) for key, value in dict(raw["binary_hashes"]).items()}
     families = tuple(str(item) for item in raw.get("model_families", ()))
     formats = tuple(str(item) for item in raw.get("formats", ("safetensors",)))
+    quantizations = tuple(str(item) for item in raw.get("quantizations", ()))
     if not revision or not hashes or not families:
         raise ValueError("revision, binary hashes, and model families are required")
     engine_directory = _optional_path(raw.get("engine_directory"), manifest_path=manifest_path)
@@ -251,6 +253,7 @@ def load_colibri_runtime_manifest(path: str | Path) -> ColibriRuntimeManifest:
         binary_hashes=hashes,
         model_families=families,
         formats=formats,
+        quantizations=quantizations,
         fast_paths=fast_paths,
         engine_directory=engine_directory,
         source_directory=_optional_path(raw.get("source_directory"), manifest_path=manifest_path),

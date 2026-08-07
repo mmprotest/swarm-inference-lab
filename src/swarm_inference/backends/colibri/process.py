@@ -18,6 +18,7 @@ from urllib.request import Request, urlopen
 
 import psutil
 
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
 from swarm_inference.backends.colibri.model import resolve_model_family
 from swarm_inference.backends.colibri.schemas import (
     ColibriGenerationResult,
@@ -68,6 +69,7 @@ class ColibriProcess:
         self.model_revision = model_revision
         config = json.loads((self.model_path / "config.json").read_text(encoding="utf-8"))
         self.model_family = resolve_model_family(config, model_family)
+        self.adapter = default_colibri_adapter_registry().get(self.model_family)
         self.mode = mode
         self.telemetry_level = telemetry_level
         self.host = host
@@ -103,12 +105,7 @@ class ColibriProcess:
         return self.process is not None and self.process.poll() is None
 
     def _engine(self) -> Path:
-        basename = {
-            "glm-5.2": "colibri",
-            "inkling": "inkling",
-            "kimi-k3": "kimi_k3",
-            "olmoe": "olmoe",
-        }[self.model_family]
+        basename = self.adapter.engine_basename
         for name in (basename, f"{basename}.exe"):
             path = self.engine_directory / name
             if path.is_file():
@@ -180,9 +177,9 @@ class ColibriProcess:
     def start(self, *, timeout_seconds: float = 600.0) -> None:
         if self.running:
             return
-        if self.model_family == "olmoe":
+        if self.adapter.launch_mode != "persistent-gateway":
             raise NotImplementedError(
-                "Colibri v1.4.0 OLMoE has no persistent mux server; use ColibriReplayRunner"
+                f"Colibri adapter {self.adapter.adapter_id!r} is one-shot; use ColibriReplayRunner"
             )
         if psutil.virtual_memory().available < self.ram_safety_reserve_bytes:
             raise MemoryError("available RAM is below the configured Colibri safety reserve")
@@ -195,7 +192,11 @@ class ColibriProcess:
         self.telemetry_path.parent.mkdir(parents=True, exist_ok=True)
         self.stdout_handle = (self.log_directory / "gateway.stdout.log").open("ab")
         self.stderr_handle = (self.log_directory / "gateway.stderr.log").open("ab")
-        arch = {"glm-5.2": "glm", "inkling": "inkling", "kimi-k3": "kimi"}[self.model_family]
+        arch = self.adapter.gateway_architecture
+        if arch is None:
+            raise RuntimeError(
+                f"persistent adapter {self.adapter.adapter_id!r} has no gateway architecture"
+            )
         command = [
             sys.executable,
             str(self._gateway()),

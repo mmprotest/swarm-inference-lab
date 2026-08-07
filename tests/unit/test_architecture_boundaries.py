@@ -110,21 +110,21 @@ def test_generic_runtime_has_no_model_specific_orchestration_coupling() -> None:
         "coordinator/expert_planner.py",
         "coordinator/canonical_planner.py",
         "engines/registry.py",
+        "engines/colibri.py",
         "engines/native_stage.py",
         "commands/run.py",
         "cli.py",
+        "model/resolver.py",
+        "model/shard_builder.py",
+        "model/feasibility.py",
+        "execution/expert.py",
+        "execution/microshard.py",
     )
-    forbidden = (
-        'Literal["olmoe"]',
-        'adapter_id="olmoe"',
-        "_load_olmoe",
-        'model_type == "olmoe"',
-        "ContiguousOlmoeStage",
-    )
+    forbidden = ("olmoe",)
     violations: list[tuple[str, str]] = []
     package_root = SOURCE_ROOT / "swarm_inference"
     for relative in generic_files:
-        source = (package_root / relative).read_text(encoding="utf-8")
+        source = (package_root / relative).read_text(encoding="utf-8").casefold()
         for marker in forbidden:
             if marker in source:
                 violations.append((relative, marker))

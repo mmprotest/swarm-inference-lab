@@ -38,6 +38,10 @@ from swarm_inference.model.adapter import (
     NativeModelAdapterRegistry,
     default_native_adapter_registry,
 )
+from swarm_inference.model.architecture_adapters import (
+    ModelArchitectureAdapterRegistry,
+    default_architecture_adapter_registry,
+)
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.protocol.cluster import (
@@ -290,20 +294,25 @@ class StageArtifactBuilder:
         artifact_root: Path,
         temporary_root: Path,
         adapter_registry: NativeModelAdapterRegistry | None = None,
+        architecture_registry: ModelArchitectureAdapterRegistry | None = None,
         clock_ns: Callable[[], int] = time.time_ns,
     ) -> None:
         self.artifact_root = artifact_root.expanduser().resolve()
         self.temporary_root = temporary_root.expanduser().resolve()
         self.adapter_registry = adapter_registry or default_native_adapter_registry()
+        self.architecture_registry = (
+            architecture_registry or default_architecture_adapter_registry()
+        )
         self.clock_ns = clock_ns
         self.artifact_root.mkdir(parents=True, exist_ok=True)
         self.temporary_root.mkdir(parents=True, exist_ok=True)
 
-    @staticmethod
     def _selected_tensor_names(
+        self,
         weight_map: dict[str, str],
         assignment: StageAssignment,
         adapter: NativeModelAdapter,
+        config: dict[str, Any],
     ) -> tuple[list[str], list[list[str]], tuple[str, str] | None]:
         selected: list[str] = []
         embedding_names: list[str] = []
@@ -328,14 +337,26 @@ class StageArtifactBuilder:
         tied_groups: list[list[str]] = []
         tied_alias: tuple[str, str] | None = None
         if assignment.owns_output_projection and not output_names:
-            source_name = next(
-                (name for name in embedding_names if name.endswith(".weight")),
-                None,
-            )
-            if source_name is None:
-                raise IntegrityError("output stage has no LM-head tensor or tied embedding tensor")
-            alias_name = "lm_head.weight"
-            tied_alias = (source_name, alias_name)
+            architecture_adapter = self.architecture_registry.resolve_config(config)
+            if architecture_adapter is None:
+                raise IntegrityError(
+                    "output stage has no output tensor and no architecture adapter can "
+                    "validate tied-weight semantics"
+                )
+            try:
+                tied_alias = architecture_adapter.tied_weight_alias(
+                    tensor_names=tuple(weight_map), config=config
+                )
+            except ValueError as exc:
+                raise IntegrityError(str(exc)) from exc
+            if tied_alias is None:
+                raise IntegrityError(
+                    "checkpoint omits an output tensor but architecture metadata does not "
+                    "declare tied word embeddings"
+                )
+            source_name, alias_name = tied_alias
+            if source_name not in embedding_names:
+                raise IntegrityError("architecture tied-weight source is not an embedding tensor")
             tied_groups.append([source_name, alias_name])
         if not selected and tied_alias is None:
             raise IntegrityError("stage assignment selected no checkpoint tensors")
@@ -409,7 +430,7 @@ class StageArtifactBuilder:
             raise IntegrityError("source native safetensors index has no weight map")
         weight_map = {str(name): str(shard) for name, shard in raw_weight_map.items()}
         selected, tied_groups, tied_alias = self._selected_tensor_names(
-            weight_map, assignment, adapter
+            weight_map, assignment, adapter, config
         )
         selected_set = set(selected)
         temporary = self.temporary_root / f"artifact-{uuid4().hex}.partial"

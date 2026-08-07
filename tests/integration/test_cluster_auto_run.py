@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 import torch
-from transformers import OlmoeConfig, OlmoeForCausalLM
+from transformers import Qwen3Config, Qwen3ForCausalLM
 
 from swarm_inference.cluster.models import (
     ClusterMetadata,
@@ -45,17 +45,18 @@ MODEL_REVISION = "c" * 40
 
 def _snapshot(root: Path) -> tuple[Path, str]:
     torch.manual_seed(815)
-    model = OlmoeForCausalLM(
-        OlmoeConfig(
+    model = Qwen3ForCausalLM(
+        Qwen3Config(
             vocab_size=32,
             hidden_size=8,
             intermediate_size=12,
             num_hidden_layers=4,
             num_attention_heads=2,
             num_key_value_heads=1,
+            head_dim=4,
             max_position_embeddings=32,
-            num_experts_per_tok=2,
-            num_experts=4,
+            tie_word_embeddings=False,
+            attention_dropout=0,
             pad_token_id=0,
             eos_token_id=31,
         )
@@ -112,8 +113,8 @@ def _capability(worker_id: str, identity: WorkerIdentity) -> WorkerCapability:
         data_plane_endpoint="127.0.0.1:1",
         device_identifier="cpu",
         stage_ring_protocol_version=STAGE_RING_PROTOCOL_VERSION,
-        supported_model_adapters=["olmoe"],
-        supported_stage_execution_backends=["canonical-contiguous-olmoe"],
+        supported_model_adapters=["qwen3_dense"],
+        supported_stage_execution_backends=["canonical-native-stage"],
         supported_activation_dtypes=["float32"],
         configured_memory_limit_bytes=1024**3,
         stage_runtime_enabled=True,

@@ -17,11 +17,29 @@ class EngineSupportStatus(StrEnum):
     SUPPORTED = "SUPPORTED"
     UNSUPPORTED_FORMAT = "UNSUPPORTED_FORMAT"
     UNSUPPORTED_ARCHITECTURE = "UNSUPPORTED_ARCHITECTURE"
+    UNSUPPORTED_QUANTIZATION = "UNSUPPORTED_QUANTIZATION"
     MISSING_RUNTIME = "MISSING_RUNTIME"
     MISSING_DEVICE_CAPABILITY = "MISSING_DEVICE_CAPABILITY"
     INSUFFICIENT_MEMORY = "INSUFFICIENT_MEMORY"
     CONVERSION_AVAILABLE = "CONVERSION_AVAILABLE"
     BROKEN_RUNTIME = "BROKEN_RUNTIME"
+    COMPONENT_SUPPORTED = "COMPONENT_SUPPORTED"
+
+
+class CompatibilityStatus(StrEnum):
+    """Evidence-bounded status used by the generated compatibility registry."""
+
+    SUPPORTED = "SUPPORTED"
+    SUPPORTED_WITH_LIMITATIONS = "SUPPORTED_WITH_LIMITATIONS"
+    SOFTWARE_VALIDATED = "SOFTWARE_VALIDATED"
+    REAL_MODEL_VALIDATED = "REAL_MODEL_VALIDATED"
+    PHYSICAL_DISTRIBUTED_VALIDATED = "PHYSICAL_DISTRIBUTED_VALIDATED"
+    UNSUPPORTED_FORMAT = "UNSUPPORTED_FORMAT"
+    UNSUPPORTED_ARCHITECTURE = "UNSUPPORTED_ARCHITECTURE"
+    UNSUPPORTED_QUANTIZATION = "UNSUPPORTED_QUANTIZATION"
+    UNAVAILABLE_RUNTIME = "UNAVAILABLE_RUNTIME"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    NOT_TESTED = "NOT_TESTED"
 
 
 class ExecutionDevice(StrictModel):
@@ -73,6 +91,7 @@ class ExecutionEngineCapability(StrictModel):
     runtime_revision: str | None = None
     binary_hashes: dict[str, str] = Field(default_factory=dict)
     formats: tuple[str, ...] = ()
+    quantizations: tuple[str, ...] = ()
     devices: tuple[ExecutionDevice, ...] = ()
     adapters: tuple[str, ...] = ()
     model_architectures: tuple[str, ...] = ()
@@ -166,15 +185,54 @@ class EngineSupportReport(StrictModel):
     required_runtime: str | None = None
     required_features: tuple[str, ...] = ()
     unsupported_features: tuple[str, ...] = ()
+    architecture_supported: bool | None = None
+    format_supported: bool | None = None
+    quantization_supported: bool | None = None
+    hardware_supported: bool | None = None
+    capabilities: tuple[str, ...] = ()
+    rejection_reasons: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+    expected_compute_cost: float | None = Field(default=None, ge=0)
+    expected_network_cost: float | None = Field(default=None, ge=0)
+    expected_memory_cost: NonNegativeInt | None = None
+    confidence: float = Field(default=0.0, ge=0, le=1)
+    validation_status: CompatibilityStatus = CompatibilityStatus.NOT_TESTED
+    support_scope: Literal["complete_model", "hybrid", "component"] = "complete_model"
 
     @model_validator(mode="after")
     def derive_compatibility(self) -> EngineSupportReport:
+        architecture_supported = self.architecture_supported
+        format_supported = self.format_supported
+        quantization_supported = self.quantization_supported
+        hardware_supported = self.hardware_supported
+        if architecture_supported is None:
+            architecture_supported = self.status != EngineSupportStatus.UNSUPPORTED_ARCHITECTURE
+        if format_supported is None:
+            format_supported = self.status != EngineSupportStatus.UNSUPPORTED_FORMAT
+        if quantization_supported is None:
+            quantization_supported = True
+        if hardware_supported is None:
+            hardware_supported = self.status not in {
+                EngineSupportStatus.MISSING_DEVICE_CAPABILITY,
+                EngineSupportStatus.INSUFFICIENT_MEMORY,
+                EngineSupportStatus.MISSING_RUNTIME,
+                EngineSupportStatus.BROKEN_RUNTIME,
+            }
+        object.__setattr__(self, "architecture_supported", architecture_supported)
+        object.__setattr__(self, "format_supported", format_supported)
+        object.__setattr__(self, "quantization_supported", quantization_supported)
+        object.__setattr__(self, "hardware_supported", hardware_supported)
+        if not self.rejection_reasons and self.status != EngineSupportStatus.SUPPORTED:
+            object.__setattr__(self, "rejection_reasons", (self.reason,))
         if self.compatibility is not None:
             return self
         value: Literal["supported", "unsupported", "conditionally_supported"]
         if self.status == EngineSupportStatus.SUPPORTED:
             value = "supported"
-        elif self.status == EngineSupportStatus.CONVERSION_AVAILABLE:
+        elif self.status in {
+            EngineSupportStatus.CONVERSION_AVAILABLE,
+            EngineSupportStatus.COMPONENT_SUPPORTED,
+        }:
             value = "conditionally_supported"
         else:
             value = "unsupported"
@@ -331,6 +389,7 @@ class ExecutionEngine(Protocol):
 __all__ = [
     "AdapterFastPathCapability",
     "ClusterCapabilities",
+    "CompatibilityStatus",
     "DecodePlan",
     "Deployment",
     "EngineSupportReport",

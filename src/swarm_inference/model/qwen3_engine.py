@@ -21,7 +21,7 @@ from swarm_inference.model.qwen3_sampling import SamplingParameters
 from swarm_inference.model.shard_builder import (
     ResolvedModel,
     build_manifest,
-    inspect_qwen3_model,
+    inspect_native_model,
 )
 from swarm_inference.model.stage_module import (
     BatchExecutionMetadata,
@@ -1105,7 +1105,7 @@ def load_qwen3_fast_engine(
         path=model_path.resolve(),
         downloaded=False,
     )
-    description = inspect_qwen3_model(resolved)
+    description = inspect_native_model(resolved)
     maximum = sum(item.bytes for item in description.tensors) * 2
     manifest = build_manifest(
         description,

@@ -15,6 +15,7 @@ from typing import Any, Protocol, runtime_checkable
 from swarm_inference.config.models import ModelManifest, StageDefinition
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import LayerCost, ModelPartitionMetadata, StageAssignment
+from swarm_inference.model.stage_module import StageModule
 
 
 class ComponentKind(StrEnum):
@@ -112,6 +113,14 @@ class NativeModelAdapter(Protocol):
 
     def supports(self, config: Any) -> bool: ...
 
+    def describe(
+        self,
+        model_path: Path,
+        *,
+        model_id: str,
+        model_revision: str,
+    ) -> ModelDescription: ...
+
     def map_tensor_to_component(self, tensor_name: str) -> ComponentRef: ...
 
     def probe_model(self, model: ResolvedModelDescriptor) -> AdapterSupportReport: ...
@@ -121,6 +130,22 @@ class NativeModelAdapter(Protocol):
     def build_stage_artifact(self, *args: Any, **kwargs: Any) -> Any: ...
 
     def create_stage_executor(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def create_stage_module(
+        self,
+        config: Any,
+        stage: StageDefinition,
+        device: Any,
+        dtype: Any,
+    ) -> StageModule: ...
+
+    def load_stage_weights(
+        self,
+        module: Any,
+        shard_path: Path,
+        *,
+        manifest: ModelManifest,
+    ) -> list[str]: ...
 
     def reference_executor(self, model: ResolvedModelDescriptor, **kwargs: Any) -> Any: ...
 
@@ -154,6 +179,23 @@ class NativeModelAdapterRegistry:
 
     def probe_all(self, model: ResolvedModelDescriptor) -> tuple[AdapterSupportReport, ...]:
         return tuple(adapter.probe_model(model) for adapter in self.adapters())
+
+    def architecture_candidates(
+        self, model: ResolvedModelDescriptor
+    ) -> tuple[NativeModelAdapter, ...]:
+        """Return adapters matching architecture independently of artifact format."""
+
+        architecture_probe = (
+            model.model_copy(update={"architecture_raw": None})
+            if model.format == "safetensors"
+            else model.model_copy(update={"format": "safetensors", "architecture_raw": None})
+        )
+        return tuple(
+            adapter
+            for adapter in self.adapters()
+            if adapter.probe_model(architecture_probe).status
+            != AdapterSupportStatus.UNSUPPORTED_ARCHITECTURE
+        )
 
     def resolve(self, model: ResolvedModelDescriptor) -> NativeModelAdapter:
         matches = [adapter for adapter in self.adapters() if adapter.probe_model(model).supported]

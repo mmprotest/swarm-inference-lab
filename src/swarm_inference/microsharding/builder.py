@@ -22,7 +22,7 @@ from swarm_inference.microsharding.schemas import (
     validate_tensor_shard_union,
 )
 from swarm_inference.model.adapter import ComponentKind, ModelDescription, TensorInfo
-from swarm_inference.model.shard_builder import inspect_qwen3_model, resolve_model
+from swarm_inference.model.shard_builder import inspect_native_model, resolve_model
 from swarm_inference.protocol.checksums import sha256_file
 
 _DTYPE_WIDTHS = {"BF16": 2, "F16": 2, "F32": 4, "I8": 1, "U8": 1}
@@ -592,7 +592,7 @@ def build_microshards(
         allow_download=allow_download,
     )
     return build_microshards_from_description(
-        inspect_qwen3_model(resolved),
+        inspect_native_model(resolved),
         pipeline_stage_count=pipeline_stage_count,
         tensor_parallel_degree=tensor_parallel_degree,
         output=output,

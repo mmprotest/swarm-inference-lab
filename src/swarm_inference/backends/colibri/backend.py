@@ -11,7 +11,8 @@ from typing import Any
 
 import psutil
 
-from swarm_inference.backends.colibri.model import ColibriModelInspector, resolve_model_family
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
+from swarm_inference.backends.colibri.model import ColibriModelInspector
 from swarm_inference.backends.colibri.plan import ColibriPlanTranslator
 from swarm_inference.backends.colibri.probe import ColibriCapabilityProbe
 from swarm_inference.backends.colibri.process import ColibriProcess
@@ -125,6 +126,12 @@ class ColibriBackend(BackendAdapter):
             )
         return self._tokenizer
 
+    def _architecture_adapter(self) -> Any:
+        return default_colibri_adapter_registry().resolve_config(
+            self._config(),
+            explicit_adapter_id=self.model_family,
+        )
+
     def prompt_payload(
         self,
         prompt: str,
@@ -133,8 +140,8 @@ class ColibriBackend(BackendAdapter):
     ) -> TokenPayload:
         """Create the backend-native prompt payload from the immutable local snapshot."""
 
-        family = resolve_model_family(self._config(), self.model_family)
-        if family != "olmoe":
+        adapter = self._architecture_adapter()
+        if adapter.tokenizer_mode != "local-token-ids":
             return TokenPayload(token_ids=[], text=prompt, tokenizer_hash=tokenizer_hash)
         encoded = self._local_tokenizer()(
             prompt,
@@ -316,26 +323,28 @@ class ColibriBackend(BackendAdapter):
         parameters = job.generation_parameters
         if parameters is None:
             raise ValueError("Colibri generation requires generation_parameters")
-        family = resolve_model_family(self._config(), self.model_family)
-        if family == "olmoe":
-            if stream:
-                raise NotImplementedError(
-                    "Colibri v1.4.0 OLMoE has no persistent streaming mux; "
-                    "the GLM/Inkling/Kimi gateway remains the streaming path"
-                )
-            if parameters.temperature != 0 or parameters.top_p != 1:
-                raise ValueError(
-                    "OLMoE one-shot adapter generation currently supports greedy decoding only"
-                )
-            payload = job.input_payload
-            if not isinstance(payload, TokenPayload) or not payload.token_ids:
-                raise ValueError("OLMoE one-shot generation requires explicit input token IDs")
+        adapter = self._architecture_adapter()
+        if not adapter.complete_model:
+            raise RuntimeError(
+                f"Colibri adapter {adapter.adapter_id!r} provides components, not a "
+                "standalone generation path"
+            )
+        payload = job.input_payload
+        has_token_ids = isinstance(payload, TokenPayload) and bool(payload.token_ids)
+        adapter.validate_generation_request(
+            stream=stream,
+            temperature=parameters.temperature,
+            top_p=parameters.top_p,
+            has_token_ids=has_token_ids,
+        )
+        if adapter.launch_mode == "one-shot":
+            assert isinstance(payload, TokenPayload)
             runner = ColibriReplayRunner(
                 engine_directory=self.engine_directory,
                 model_path=self.model_path,
                 model_id=self.model_id,
                 model_revision=self.model_revision,
-                model_family=family,
+                model_family=adapter.adapter_id,
                 cap=self.cap or 16,
                 ram_safety_reserve_bytes=self.ram_safety_reserve_bytes,
                 timeout_seconds=max(1, job.remaining_deadline_ms / 1000),
@@ -348,14 +357,14 @@ class ColibriBackend(BackendAdapter):
                 candidate_id=str(job.metadata.get("candidate_id", "adapter_generate")),
                 settings=dict(job.metadata.get("settings", {})),
                 supported_settings=self.probe.supported_tuning_settings(
-                    report, model_family=family
+                    report, model_family=adapter.adapter_id
                 ),
                 route_trace_path=job.metadata.get("route_trace_path"),
                 invocation_started_ns=invocation_started_ns,
             )
             if execution.return_code or execution.timed_out:
                 raise RuntimeError(
-                    f"Colibri OLMoE generation failed with exit {execution.return_code}: "
+                    f"Colibri adapter generation failed with exit {execution.return_code}: "
                     f"{execution.stderr[-2000:]}"
                 )
             return self._result(

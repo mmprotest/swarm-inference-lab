@@ -79,8 +79,8 @@ def _capability(
         data_plane_endpoint=f"127.0.0.1:{51_000 + suffix}",
         device_identifier="cpu",
         stage_ring_protocol_version=STAGE_RING_PROTOCOL_VERSION,
-        supported_model_adapters=["olmoe"] if adapter else [],
-        supported_stage_execution_backends=["canonical-contiguous-olmoe"],
+        supported_model_adapters=["qwen3_dense"] if adapter else [],
+        supported_stage_execution_backends=["qwen3-transformers-eager"],
         supported_activation_dtypes=["float32"],
         configured_memory_limit_bytes=max(memory_bytes, 1),
         active_session_count=active_sessions,
@@ -111,15 +111,17 @@ def _metadata(
         dtype_bytes=4,
         hidden_size=4,
         metadata_hash=metadata_hash,
+        adapter_id="qwen3_dense",
     )
 
 
 def _reference() -> ProductModelReference:
     return ProductModelReference(
-        model_id="test/olmoe",
+        model_id="test/qwen3",
         model_revision="model-commit",
         tokenizer_revision="tokenizer-commit",
         dtype="float32",
+        adapter_id="qwen3_dense",
         resolution_policy=ModelResolutionPolicy.LOCAL_ONLY,
     )
 

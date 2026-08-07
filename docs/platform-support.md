@@ -46,6 +46,13 @@ Priority is operational CUDA on Windows/Linux, operational MPS on Apple Silicon,
 CPU. Each probe records detection, actual tensor result, supported dtypes, available memory, and
 rejection reason. These facts select a usable backend; they are not validation evidence.
 
+Execution-engine support is also scoped to the exact worker runtime. Colibri and llama.cpp
+workers must advertise an immutable revision and verified binary hashes plus architecture
+adapters/loaders, formats, quantizations, devices, and features. Native stage additionally
+requires a complete architecture adapter. A software-validated architecture profile on one OS
+does not validate an engine binary, real checkpoint, accelerator, or distributed topology on
+another OS. See [model support](model-support.md) for the independent model evidence vocabulary.
+
 Default memory budgets are bounded:
 
 - CPU: no more than 75% of currently available RAM and the configured total-RAM fraction;

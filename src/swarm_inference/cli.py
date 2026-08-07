@@ -28,7 +28,7 @@ from swarm_inference.model.manifest import (
 )
 from swarm_inference.model.reference import validate_qwen_correctness
 from swarm_inference.model.shard_builder import (
-    inspect_qwen3_model,
+    inspect_native_model,
     model_inspection_payload,
     resolve_model,
     shard_model,
@@ -418,7 +418,7 @@ def inspect_model_command(
             cache_dir=cache_dir,
             allow_download=allow_download,
         )
-        description = inspect_qwen3_model(resolved)
+        description = inspect_native_model(resolved)
     except (SwarmError, OSError, ValueError) as exc:
         _fail(f"inspect-model failed: {exc}")
     typer.echo(json.dumps(model_inspection_payload(description), indent=2, sort_keys=True))
@@ -463,7 +463,7 @@ def shard_model_command(
             cache_dir=cache_dir,
             allow_download=allow_download,
         )
-        description = inspect_qwen3_model(resolved)
+        description = inspect_native_model(resolved)
         manifest = shard_model(
             description,
             output=output,

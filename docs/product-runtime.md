@@ -2,9 +2,9 @@
 
 The product runtime uses coordinator-managed persistent stages, direct worker-to-worker
 activations, bounded streaming, transactional deployment, and restart-and-replay recovery.
-OLMoE is one model adapter alongside Qwen3 dense and supported Qwen3 MoE representations; it is
-not the product boundary. The cluster product configures and owns the canonical components and
-does not wrap or duplicate a second inference runtime.
+Model architecture is an open metadata-derived profile, not a checkpoint-name or experiment
+boundary. The cluster product configures and owns the canonical components and does not wrap or
+duplicate a second inference runtime.
 
 ## Normal lifecycle
 
@@ -19,10 +19,12 @@ The node agent calls `CoordinatorRuntime` and `WorkerRuntime`, which own the exi
 core, RPC server, registration, stage execution, deployment, transport, and recovery paths.
 Starts/stops are idempotent, partial startup rolls back, and shutdown has a hard bound.
 
-`swarm run` resolves immutable model identity and architecture, preflights every candidate
-engine, refreshes capability/memory and directed-link evidence, performs bounded N-stage
-planning, prepares stage artifacts, deploys transactionally, verifies routes/peers, and streams
-the request. An explicit engine cannot fall back to another engine, and
+`swarm run` resolves immutable model identity, architecture, artifact format, and quantization;
+asks every engine for a structured capability result; refreshes capability/memory and
+directed-link evidence; generates complete execution plans; and scores them using measured or
+explicitly estimated compute, memory, and network costs. It then prepares artifacts, deploys
+transactionally, verifies routes/peers, and streams the request. An explicit engine cannot fall
+back to another engine, and
 `--require-distributed` cannot fall back to a coordinator-only plan.
 
 ## State layout and versions
@@ -43,6 +45,12 @@ repository-local development.
 
 ## Planning
 
+The coordinator and planner contain no model-family branches. Architecture adapters interpret
+layers, attention, tensors, routed/shared experts, routing, tied weights, and mathematically
+valid shard/reduction semantics. Engines separately prove architecture, format, quantization,
+runtime, device, memory, and cluster support. Colibri component support is retained for hybrid
+composition but cannot compete as a complete model until every required capability is supplied.
+
 Automatic planning includes local monolithic execution and stage counts up to:
 
 ```text
@@ -59,6 +67,11 @@ Speed mode compares with the fastest local baseline and prefers fewer equivalent
 Capacity mode requires collective fit and then headroom/replacement capacity. Balanced mode
 reports explicit throughput, headroom, reliability, and participation components. Every healthy
 node receives a utility/inclusion or exclusion record; pairing does not require participation.
+
+`--dry-run --explain-plan` exposes the architecture profile, all engine probe axes, runtime
+identity, capabilities, limitations/rejections, component ownership, workers, stages, shards,
+experts, microshards, predicted throughput/memory/network, and the exact selection rationale in
+human and JSON forms.
 
 ## Deployment and recovery
 

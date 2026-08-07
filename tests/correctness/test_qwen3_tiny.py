@@ -6,7 +6,7 @@ from swarm_inference.model.qwen3 import Qwen3Adapter, Qwen3StageModule
 from swarm_inference.model.qwen3_runtime import Qwen3EngineOptions
 from swarm_inference.model.shard_builder import (
     ResolvedModel,
-    inspect_qwen3_model,
+    inspect_native_model,
     shard_model,
 )
 from swarm_inference.model.stage_module import (
@@ -44,7 +44,7 @@ def tiny_qwen(tmp_path, request):
         path=source,
         downloaded=False,
     )
-    description = inspect_qwen3_model(resolved)
+    description = inspect_native_model(resolved)
     average_layer = (
         sum(item.bytes for item in description.tensors if item.component.layer_index is not None)
         // 4
@@ -291,7 +291,7 @@ def test_tied_embedding_split_forward_matches_unsplit(tmp_path) -> None:
     model.tie_weights()
     source = tmp_path / "tied-source"
     model.save_pretrained(source, safe_serialization=True)
-    description = inspect_qwen3_model(
+    description = inspect_native_model(
         ResolvedModel(
             model_id="tiny-tied-qwen3",
             revision="test",

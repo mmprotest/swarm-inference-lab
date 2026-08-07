@@ -10,13 +10,6 @@ COLIBRI_LICENSE = "Apache-2.0"
 COLIBRI_BRIDGE_VERSION = "1.0"
 COLIBRI_EVENT_SCHEMA_VERSION = "1.0"
 
-MODEL_FAMILY_ENGINES = {
-    "glm-5.2": "colibri",
-    "kimi-k3": "kimi_k3",
-    "inkling": "inkling",
-    "olmoe": "olmoe",
-}
-
 BRIDGE_EVENT_TYPES = frozenset(
     {
         "engine_started",

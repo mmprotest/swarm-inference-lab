@@ -150,7 +150,7 @@ def _message(values: list[int], *, cache_position: int, sequence: int) -> StageM
         compression_mode=packed.compression_mode,
         payload=packed.payload,
         attributes={
-            "model_id": "test/olmoe",
+            "model_id": "test/model",
             "route_generation": 1,
             "request_generation": 1,
             "replay_only": False,
@@ -190,7 +190,7 @@ async def test_canonical_data_plane_runs_ordered_n_stage_ring(stage_count: int) 
                 LoadStageRequest(
                     worker_id=f"worker-{stage_id}",
                     request_id=f"load-{stage_id}",
-                    model_id="test/olmoe",
+                    model_id="test/model",
                     model_revision="model-revision",
                     tokenizer_revision="tokenizer-revision",
                     topology_id="n-stage-topology",
@@ -226,7 +226,7 @@ async def test_canonical_data_plane_runs_ordered_n_stage_ring(stage_count: int) 
                 InstallStageRouteRequest(
                     worker_id=f"worker-{stage_id}",
                     request_id=f"route-{stage_id}",
-                    model_id="test/olmoe",
+                    model_id="test/model",
                     model_revision="model-revision",
                     tokenizer_revision="tokenizer-revision",
                     topology_id="n-stage-topology",
@@ -244,7 +244,7 @@ async def test_canonical_data_plane_runs_ordered_n_stage_ring(stage_count: int) 
                 OpenStageSessionRequest(
                     worker_id=f"worker-{stage_id}",
                     request_id=f"open-{stage_id}",
-                    model_id="test/olmoe",
+                    model_id="test/model",
                     model_revision="model-revision",
                     tokenizer_revision="tokenizer-revision",
                     topology_id="n-stage-topology",
@@ -261,7 +261,7 @@ async def test_canonical_data_plane_runs_ordered_n_stage_ring(stage_count: int) 
                 VerifyStageRouteRequest(
                     worker_id=f"worker-{stage_id}",
                     request_id=f"verify-{stage_id}",
-                    model_id="test/olmoe",
+                    model_id="test/model",
                     model_revision="model-revision",
                     tokenizer_revision="tokenizer-revision",
                     topology_id="n-stage-topology",
@@ -298,7 +298,7 @@ async def test_canonical_data_plane_runs_ordered_n_stage_ring(stage_count: int) 
                 CloseStageSessionRequest(
                     worker_id=f"worker-{stage_id}",
                     request_id=f"close-{stage_id}",
-                    model_id="test/olmoe",
+                    model_id="test/model",
                     model_revision="model-revision",
                     tokenizer_revision="tokenizer-revision",
                     topology_id="n-stage-topology",

@@ -144,7 +144,7 @@ def _load() -> LoadStageRequest:
     return LoadStageRequest(
         worker_id="worker-stage",
         request_id="load",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="revision",
         tokenizer_revision="tokenizer",
         topology_id="topology",
@@ -160,7 +160,7 @@ def _route() -> InstallStageRouteRequest:
     return InstallStageRouteRequest(
         worker_id="worker-stage",
         request_id="route",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="revision",
         tokenizer_revision="tokenizer",
         topology_id="topology",
@@ -179,7 +179,7 @@ def _session(session_id: str) -> OpenStageSessionRequest:
     return OpenStageSessionRequest(
         worker_id="worker-stage",
         request_id=f"open-{session_id}",
-        model_id="test/olmoe",
+        model_id="test/model",
         model_revision="revision",
         tokenizer_revision="tokenizer",
         topology_id="topology",
@@ -212,7 +212,7 @@ def _data(session_id: str, token_id: int) -> StageMessage:
         compression_mode=packed.compression_mode,
         payload=packed.payload,
         attributes={
-            "model_id": "test/olmoe",
+            "model_id": "test/model",
             "route_generation": 1,
             "source_worker_id": "coordinator",
             "destination_worker_id": "worker-stage",

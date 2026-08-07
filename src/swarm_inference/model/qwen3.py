@@ -34,10 +34,7 @@ from swarm_inference.model.adapter import (
     partition_metadata_from_description,
     validate_dense_stage_assignment,
 )
-from swarm_inference.model.architecture import (
-    ModelArchitecture,
-    normalize_model_architecture,
-)
+from swarm_inference.model.architecture import normalize_model_architecture
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import ModelPartitionMetadata, StageAssignment
 from swarm_inference.model.qwen3_cache import StaticStageKVCache
@@ -262,7 +259,7 @@ class Qwen3Adapter:
                 "dense native execution requires safetensors",
             )
         architecture = normalize_model_architecture(model.architecture)
-        if architecture != ModelArchitecture.QWEN3_DENSE:
+        if architecture != "qwen3_dense":
             return AdapterSupportReport(
                 self.adapter_id,
                 AdapterSupportStatus.UNSUPPORTED_ARCHITECTURE,

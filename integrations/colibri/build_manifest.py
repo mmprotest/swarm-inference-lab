@@ -39,6 +39,8 @@ def tree_hash(root: Path) -> str:
         "olmoe_expert_worker.exe",
         "coli_kimi_mxfp4.dll",
         "libcoli_kimi_mxfp4.so",
+        "coli_swarm_moe.dll",
+        "libcoli_swarm_moe.so",
         "coli_cuda.dll",
         "coli_cuda.exp",
         "coli_cuda.lib",
@@ -81,7 +83,9 @@ def main() -> None:
     args = parser.parse_args()
     binaries = []
     for path in sorted(item for item in args.bin.iterdir() if item.is_file()):
-        binaries.append({"name": path.name, "byte_size": path.stat().st_size, "sha256": sha256_file(path)})
+        binaries.append(
+            {"name": path.name, "byte_size": path.stat().st_size, "sha256": sha256_file(path)}
+        )
     payload = {
         "schema_version": "experiment-010-correction-colibri-build-v1",
         "captured_at_utc": datetime.now(UTC).isoformat(),
@@ -218,6 +222,18 @@ def main() -> None:
                 for name in ("coli_kimi_mxfp4.dll", "libcoli_kimi_mxfp4.so")
             ),
         },
+        "swarm_generic_moe_extension": {
+            "abi": "swarm-colibri-moe-v2",
+            "source": "c/swarm_moe_runtime.c",
+            "header": "c/swarm_moe_runtime.h",
+            "architecture_dispatch": "Python entry-point architecture adapters",
+            "formats": ["float32", "bfloat16", "compressed-tensors-int4-g32"],
+            "binary_names": ["coli_swarm_moe.dll", "libcoli_swarm_moe.so"],
+            "present": any(
+                (args.bin / name).is_file()
+                for name in ("coli_swarm_moe.dll", "libcoli_swarm_moe.so")
+            ),
+        },
         "platform": platform.platform(),
         "compiler": command_version([os.environ.get("CC", "gcc"), "--version"]),
         "binaries": binaries,
@@ -242,6 +258,8 @@ def main() -> None:
                     "swarm_expert_wire.h",
                     "swarm_expert_wire.c",
                     "kimi_mxfp4_runtime.c",
+                    "swarm_moe_runtime.h",
+                    "swarm_moe_runtime.c",
                 )
             ]
         patch_payload = {

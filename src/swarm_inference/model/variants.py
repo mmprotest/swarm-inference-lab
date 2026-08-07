@@ -15,6 +15,10 @@ _SPLIT_GGUF = re.compile(
 _QUANT = re.compile(
     r"(?i)(UD-[IQF]\d(?:_[A-Z0-9]+)*|IQ\d(?:_[A-Z0-9]+)*|Q\d(?:_[A-Z0-9]+)*|BF16|F16|F32)"
 )
+_AUXILIARY_GGUF_COMPONENT = re.compile(
+    r"(?:^|[-_.])(?:mmproj|projector|imatrix|tokenizer|vocab)(?:[-_.]|$)",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,13 +69,24 @@ def _quality_rank(quantization: str) -> float:
     return base + suffix
 
 
+def _is_executable_gguf(relative_path: str) -> bool:
+    """Return whether a GGUF file is a runnable language-model artifact.
+
+    Projectors, conversion calibration data, and tokenizer/vocabulary GGUFs
+    can accompany weights but are not independently executable variants.
+    """
+
+    name = relative_path.rsplit("/", 1)[-1]
+    return name.casefold().endswith(".gguf") and not _AUXILIARY_GGUF_COMPONENT.search(name)
+
+
 def discover_gguf_variants(files: tuple[ModelFileDescriptor, ...]) -> tuple[ModelVariant, ...]:
     """Group split GGUF files atomically and expose one candidate per quantisation."""
 
     groups: dict[str, list[ModelFileDescriptor]] = {}
     expected_counts: dict[str, int] = {}
     for item in files:
-        if not item.relative_path.lower().endswith(".gguf"):
+        if not _is_executable_gguf(item.relative_path):
             continue
         name = item.relative_path.rsplit("/", 1)[-1]
         split = _SPLIT_GGUF.match(name)
@@ -185,6 +200,36 @@ def select_variant(
         )
     feasible = [item for item in candidates if item.feasible]
     if not feasible:
+        # An explicit artifact selection remains inspectable even when the
+        # current swarm cannot fit it.  Capacity is a plan feasibility fact,
+        # not part of model identity.  Automatic selection stays strictly
+        # positive-feasibility.
+        if requested_variant is not None or requested_quantization is not None:
+            explicitly_matched = [
+                item
+                for item in candidates
+                if (
+                    requested_variant is None
+                    or requested_variant.casefold()
+                    in {
+                        item.variant.variant_id.casefold(),
+                        item.variant.quantization.casefold(),
+                    }
+                )
+                and (
+                    requested_quantization is None
+                    or item.variant.quantization.casefold() == requested_quantization.casefold()
+                )
+            ]
+            if explicitly_matched:
+                selected = max(
+                    explicitly_matched,
+                    key=lambda item: (
+                        item.variant.quality_rank,
+                        -item.variant.total_bytes,
+                    ),
+                ).variant
+                return VariantSelection(selected=selected, candidates=tuple(candidates))
         requested = requested_variant or requested_quantization or "automatic selection"
         raise ValueError(f"no complete feasible GGUF variant satisfies {requested}")
     selected = max(

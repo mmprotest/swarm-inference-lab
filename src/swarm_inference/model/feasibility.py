@@ -8,7 +8,15 @@ import re
 from typing import Any
 
 from swarm_inference.exceptions import IntegrityError
-from swarm_inference.model.qwen3 import _DTYPE_BYTES, _normalise_dtype, _weight_map
+from swarm_inference.model.architecture import architecture_from_config
+from swarm_inference.model.architecture_adapters import default_architecture_adapter_registry
+from swarm_inference.model.quantization import quantization_from_config
+from swarm_inference.model.safetensors import (
+    SAFETENSORS_DTYPE_BYTES,
+    SafetensorsHeaderError,
+    local_safetensors_weight_map,
+    normalize_safetensors_dtype,
+)
 from swarm_inference.model.shard_builder import ResolvedModel
 
 _ANY_LAYER = re.compile(r"(?:^|\.)(?:layers|h)\.(\d+)\.")
@@ -29,7 +37,10 @@ def analyse_large_model_manifest(
     if not config_path.is_file():
         raise IntegrityError(f"model config is missing: {config_path}")
     config = json.loads(config_path.read_text(encoding="utf-8"))
-    mapping = _weight_map(resolved.path)
+    try:
+        mapping = local_safetensors_weight_map(resolved.path)
+    except SafetensorsHeaderError as exc:
+        raise IntegrityError(str(exc)) from exc
     by_file: dict[str, list[str]] = {}
     for name, file in mapping.items():
         by_file.setdefault(file, []).append(name)
@@ -46,8 +57,8 @@ def analyse_large_model_manifest(
         with safe_open(resolved.path / file, framework="pt", device="cpu") as handle:
             for name in names:
                 slice_ = handle.get_slice(name)
-                dtype = _normalise_dtype(slice_.get_dtype())
-                width = _DTYPE_BYTES.get(dtype)
+                dtype = normalize_safetensors_dtype(slice_.get_dtype())
+                width = SAFETENSORS_DTYPE_BYTES.get(dtype)
                 if width is None:
                     raise IntegrityError(f"unsupported dtype {dtype} in tensor {name}")
                 size = math.prod(int(value) for value in slice_.get_shape()) * width
@@ -78,7 +89,7 @@ def analyse_large_model_manifest(
         or config.get("text_config", {}).get("hidden_size", 0)
     )
     dominant_dtype = max(dtypes, key=lambda name: dtypes[name]) if dtypes else "unknown"
-    activation_width = _DTYPE_BYTES.get(dominant_dtype, 2)
+    activation_width = SAFETENSORS_DTYPE_BYTES.get(dominant_dtype, 2)
     activation_bytes = hidden * activation_width if hidden else None
     layers = int(
         config.get("num_hidden_layers")
@@ -107,14 +118,18 @@ def analyse_large_model_manifest(
         if kv_heads and head_dim and layers
         else None
     )
-    model_type = str(config.get("model_type", "unknown"))
+    effective = config.get("text_config")
+    effective = effective if isinstance(effective, dict) else config
+    model_type = str(effective.get("model_type") or config.get("model_type", "unknown"))
+    architecture = architecture_from_config(config)
+    architecture_adapter = default_architecture_adapter_registry().resolve_config(config)
     unsupported: list[str] = []
-    if model_type not in {"qwen3", "qwen3_moe"}:
+    if architecture_adapter is None:
         unsupported.append(
-            f"no executable adapter for model_type={model_type}; analysis is index-only"
+            "no architecture adapter validates the checkpoint metadata; analysis is index-only"
         )
     if any(
-        key in config
+        key in effective
         for key in (
             "linear_num_key_heads",
             "mamba_d_state",
@@ -122,9 +137,10 @@ def analyse_large_model_manifest(
         )
     ):
         unsupported.append("recurrent/linear-attention state semantics require backend work")
-    if config.get("quantization_config"):
+    checkpoint_quantization = quantization_from_config(config)
+    if checkpoint_quantization:
         unsupported.append(
-            "quantised stage kernels must be benchmarked for this quantisation format"
+            f"{checkpoint_quantization} kernels require an engine-specific capability probe"
         )
     projected = (
         measured_proxy_tokens_s_per_stage if measured_proxy_tokens_s_per_stage is not None else None
@@ -134,6 +150,10 @@ def analyse_large_model_manifest(
         "model_id": resolved.model_id,
         "model_revision": resolved.revision,
         "model_type": model_type,
+        "architecture": architecture.canonical,
+        "architecture_adapter": (
+            architecture_adapter.adapter_id if architecture_adapter is not None else None
+        ),
         "total_model_bytes": total_bytes,
         "largest_tensor": {
             "name": largest_tensor_name,

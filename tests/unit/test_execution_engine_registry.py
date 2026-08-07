@@ -222,7 +222,23 @@ async def test_forced_distributed_candidates_cannot_be_readmitted_by_composition
 @pytest.mark.asyncio
 async def test_colibri_routing_policy_is_a_separate_evidence_gated_candidate() -> None:
     model = _model().model_copy(
-        update={"format": "safetensors", "architecture": "OlmoeForCausalLM"}
+        update={
+            "format": "safetensors",
+            "architecture": "glm_moe",
+            "files": (ModelFileDescriptor(relative_path="model.safetensors", size_bytes=1),),
+            "quantization": "int4-g64",
+            "configuration": {
+                "model_type": "glm_moe_dsa",
+                "architectures": ["GlmMoeDsaForCausalLM"],
+                "num_hidden_layers": 4,
+                "hidden_size": 64,
+                "n_routed_experts": 8,
+                "num_experts_per_tok": 2,
+                "moe_intermediate_size": 32,
+                "n_group": 1,
+                "quantization_config": {"quant_method": "int4", "group_size": 64},
+            },
+        }
     )
     capability = ExecutionEngineCapability(
         engine_id="colibri",
@@ -230,13 +246,14 @@ async def test_colibri_routing_policy_is_a_separate_evidence_gated_candidate() -
         runtime_revision="pinned-runtime",
         binary_hashes={"colibri": "sha256:binary"},
         formats=("safetensors",),
-        adapters=("olmoe",),
+        adapters=("glm-5.2",),
+        quantizations=("int4-g64",),
         fast_paths=("routing-aware-placement",),
         execution_profiles=(
             ExecutionProfileCapability(
-                profile_id="olmoe-hot-v1",
+                profile_id="glm-hot-v1",
                 mechanism="routing_aware_placement",
-                adapter_id="olmoe",
+                adapter_id="glm-5.2",
                 model_fingerprint=model.content_fingerprint,
                 content_fingerprint="sha256:" + "4" * 64,
                 exactness_passed=True,
@@ -249,7 +266,7 @@ async def test_colibri_routing_policy_is_a_separate_evidence_gated_candidate() -
                 device_id="cpu",
                 device_type="cpu",
                 name="test-cpu",
-                usable_memory_bytes=1024,
+                usable_memory_bytes=4 * 1024**3,
                 measured_decode_tokens_s=10,
             ),
         ),
@@ -271,16 +288,17 @@ async def test_colibri_routing_policy_is_a_separate_evidence_gated_candidate() -
     }
 
     planner = CanonicalPlanner(ExecutionEngineRegistry((engine,)))
-    automatic = await planner.plan(model, cluster, ExecutionRequest())
+    request = ExecutionRequest(forced_mechanisms=("prefetch", "persistent_expert_residency"))
+    automatic = await planner.plan(model, cluster, request)
     assert automatic.selected.fast_paths["node-a/worker"] == "routing-aware-placement"
-    assert automatic.selected.engine_parameters["routing_profile_id"] == "olmoe-hot-v1"
+    assert automatic.selected.engine_parameters["routing_profile_id"] == "glm-hot-v1"
     assert not automatic.rejected_plans
 
     routing = next(item for item in first if item.optional_mechanisms["routing_aware_placement"])
     rejected = await planner.plan(
         model,
         cluster,
-        ExecutionRequest(),
+        request,
         mechanism_evidence=(
             MechanismEvidence(
                 mechanism="routing_aware_placement",

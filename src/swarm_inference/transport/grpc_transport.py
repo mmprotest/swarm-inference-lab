@@ -859,7 +859,7 @@ class WorkerRpcServer:
                     shard_path = str(
                         Path(self.model_shard_root).expanduser().resolve() / shard_path
                     )
-                self.agent.assign_qwen3(
+                self.agent.assign_native_stage(
                     config=assignment.architecture_config,
                     manifest=assignment.model_manifest,
                     stage=assignment.stage,
@@ -869,7 +869,8 @@ class WorkerRpcServer:
                 )
             else:
                 raise TransportError(
-                    "assignment supplies neither synthetic config nor Qwen3 config/manifest"
+                    "assignment supplies neither synthetic config nor native architecture "
+                    "config/manifest"
                 )
             self.agent.configure_data_plane(assignment)
             return serialize_message(Ack(accepted=True, detail="stage loaded"))

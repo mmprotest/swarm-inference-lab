@@ -14,9 +14,17 @@ pinned to the immutable revision below.
 
 The build never edits the submodule. It exports the pinned source to a build
 directory, verifies the revision, applies every patch listed in
-`patches/series`, fails on a rejected patch, builds the four model-family
-engines plus the native OLMoE expert worker, runs bridge tests, and writes
-source and binary fingerprints.
+`patches/series`, fails on a rejected patch, builds the upstream model-family
+engines plus Swarm compatibility runtimes, runs bridge tests, and writes source
+and binary fingerprints. Moving `main` is never consumed.
+
+Patches 0001-0008 retain the exact experiment-era OLMoE compatibility and evidence
+paths, including their upstream filenames, so old results remain reproducible. They are not
+generic product architecture. Patch 0009 adds the architecture-neutral `swarm_moe` component ABI:
+family identity, tensor names, routing, and shard semantics stay in Python
+architecture adapters, while the pinned C component receives validated
+projections and activations. The patch series itself is the versioned
+Swarm-owned Colibri extension set.
 
 Stock mode uses the unmodified export. Bridge mode adds dedicated NDJSON event
 channels, token-ID observations, route/history export, aggregate OLMoE counters,
@@ -90,6 +98,21 @@ fixture calls the shared native `quant.h` MXFP4 arithmetic through that DLL,
 processes every quantization group, and disables zero-group skipping. This is
 labelled `SYNTHETIC_FIXTURE` unless official checkpoint bytes are supplied; it
 is not full Kimi K3 inference.
+
+Patch 0009 emits `coli_swarm_moe.dll` or `libcoli_swarm_moe.so` with a stable
+FP32/BF16 SwiGLU ABI. It is used as a routed-expert component for compatible
+Qwen, Kimi K2, DeepSeek, MiniMax, Mixtral, Llama 4, and Mistral 4 adapters.
+FP8 is available in the exact Python reference/component path when adapter
+scales are present. Symmetric INT4-G32 is implemented by the reference path and versioned C ABI
+when the adapter proves packing, group size, shapes, and scales. Other packed int4/int8 layouts
+require an architecture/quantization kernel and are rejected rather than silently re-encoded.
+Component support is not a complete-model claim; hybrid attention/KV
+integration remains separately probed.
+
+`tests/integration/test_generic_colibri_native_component.py` loads a built generic component from
+`SWARM_COLIBRI_MOE_LIBRARY` and checks ABI identity plus FP32, BF16, and symmetric INT4-G32
+SwiGLU output against deterministic references. A skipped test means no native component was
+provided and must not be recorded as validation.
 
 ## Build
 

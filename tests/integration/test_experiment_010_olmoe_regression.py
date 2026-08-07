@@ -1,3 +1,8 @@
+"""Historical exact-byte regression for the Experiment 010 fixture.
+
+Universal product acceptance is architecture-neutral and does not select this module.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -442,18 +447,18 @@ async def _run_real_remote_expert_product_inference(
 
 @pytest.mark.gpu
 @pytest.mark.skipif(
-    os.environ.get("SWARM_RUN_PRODUCT_OLMOE_CUDA") != "1"
+    os.environ.get("SWARM_RUN_LEGACY_OLMOE_CUDA_REGRESSION") != "1"
     or not torch.cuda.is_available()
     or not REAL_MODEL_PATH.is_dir()
     or not REAL_REFERENCE_PATH.is_file()
     or not _manifest_is_real(WHOLE_MANIFEST, microshard=False),
     reason=(
         "real whole-expert acceptance requires CUDA, the pinned OLMoE snapshot, and a "
-        "canonical manifest prepared by scripts/prepare_real_olmoe_expert_acceptance.py"
+        "historical manifest prepared by scripts/prepare_experiment_010_olmoe_regression.py"
     ),
 )
 @pytest.mark.asyncio
-async def test_real_olmoe_whole_expert_product_inference(tmp_path: Path) -> None:
+async def test_legacy_fixture_whole_expert_regression(tmp_path: Path) -> None:
     await _run_real_remote_expert_product_inference(
         tmp_path,
         policy="whole-remote",
@@ -463,7 +468,7 @@ async def test_real_olmoe_whole_expert_product_inference(tmp_path: Path) -> None
 
 @pytest.mark.gpu
 @pytest.mark.skipif(
-    os.environ.get("SWARM_RUN_PRODUCT_OLMOE_CUDA") != "1"
+    os.environ.get("SWARM_RUN_LEGACY_OLMOE_CUDA_REGRESSION") != "1"
     or not torch.cuda.is_available()
     or not REAL_MODEL_PATH.is_dir()
     or not REAL_REFERENCE_PATH.is_file()
@@ -471,11 +476,11 @@ async def test_real_olmoe_whole_expert_product_inference(tmp_path: Path) -> None
     or not all(_manifest_is_real(path, microshard=True) for path in MICROSHARD_MANIFESTS),
     reason=(
         "real native-microshard acceptance requires CUDA, the pinned OLMoE snapshot, and two "
-        "physically sliced manifests prepared by scripts/prepare_real_olmoe_expert_acceptance.py"
+        "physically sliced manifests prepared by scripts/prepare_experiment_010_olmoe_regression.py"
     ),
 )
 @pytest.mark.asyncio
-async def test_real_olmoe_native_microshard_product_inference(tmp_path: Path) -> None:
+async def test_legacy_fixture_native_microshard_regression(tmp_path: Path) -> None:
     await _run_real_remote_expert_product_inference(
         tmp_path,
         policy="microshard-remote",

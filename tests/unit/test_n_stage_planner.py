@@ -27,10 +27,11 @@ from swarm_inference.protocol.stage_ring import STAGE_RING_PROTOCOL_VERSION
 
 def _reference() -> ProductModelReference:
     return ProductModelReference(
-        model_id="test/olmoe",
+        model_id="test/qwen3",
         model_revision="immutable-model-revision",
         tokenizer_revision="immutable-tokenizer-revision",
         dtype="float32",
+        adapter_id="qwen3_dense",
         resolution_policy=ModelResolutionPolicy.LOCAL_ONLY,
     )
 
@@ -54,6 +55,7 @@ def _metadata(layer_count: int, *, weight_bytes: int = 100) -> ProductModelMetad
         dtype_bytes=4,
         hidden_size=32,
         metadata_hash=f"metadata-{layer_count}-{weight_bytes}",
+        adapter_id="qwen3_dense",
     )
 
 
@@ -99,8 +101,8 @@ def _worker(index: int, *, memory: int = 10_000, mean_ms: float = 1.0) -> Worker
         data_plane_endpoint=f"127.0.0.1:{51_000 + index}",
         device_identifier="cpu",
         stage_ring_protocol_version=STAGE_RING_PROTOCOL_VERSION,
-        supported_model_adapters=["olmoe"],
-        supported_stage_execution_backends=["canonical-contiguous-olmoe"],
+        supported_model_adapters=["qwen3_dense"],
+        supported_stage_execution_backends=["qwen3-transformers-eager"],
         supported_activation_dtypes=["float32"],
         configured_memory_limit_bytes=memory,
         stage_runtime_enabled=True,

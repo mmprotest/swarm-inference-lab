@@ -17,7 +17,7 @@ from swarm_inference.microsharding.dense import (
     TensorParallelQwenModel,
     distributed_argmax,
 )
-from swarm_inference.model.shard_builder import ResolvedModel, inspect_qwen3_model
+from swarm_inference.model.shard_builder import ResolvedModel, inspect_native_model
 
 
 @pytest.fixture(scope="module")
@@ -44,7 +44,7 @@ def tiny_microshards(tmp_path_factory: pytest.TempPathFactory):
     reference.tie_weights()
     source = root / "source"
     reference.save_pretrained(source, safe_serialization=True)
-    description = inspect_qwen3_model(
+    description = inspect_native_model(
         ResolvedModel(
             model_id="tiny-qwen3-microsharding",
             revision="immutable-test",

@@ -232,6 +232,7 @@ def _colibri_capability(path: Path | None) -> ExecutionEngineCapability:
         runtime_revision=manifest.runtime_revision,
         binary_hashes=manifest.binary_hashes,
         formats=manifest.formats,
+        quantizations=manifest.quantizations,
         devices=(
             ExecutionDevice(
                 device_id="cpu",

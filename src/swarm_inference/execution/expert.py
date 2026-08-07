@@ -12,6 +12,7 @@ from typing import Any, Protocol
 
 import numpy as np
 
+from swarm_inference.model.architecture import ExpertDescriptor
 from swarm_inference.protocol.expert import (
     ExpertExecutionMode,
     ExpertExecutionRequest,
@@ -76,6 +77,176 @@ class ExpertWeights:
 
 class ExpertLoader(Protocol):
     def __call__(self, layer_id: int, expert_id: int) -> ExpertWeights: ...
+
+
+@dataclass(frozen=True, slots=True)
+class RoutedComputationWeights:
+    """Architecture-neutral resident tensors for one routed-computation unit."""
+
+    descriptor: ExpertDescriptor
+    tensors: dict[str, np.ndarray]
+    tensor_roles: dict[str, str]
+    content_hash: str
+    native_formats: tuple[str, ...] = ()
+    tensor_formats: dict[str, str] | None = None
+
+    def __post_init__(self) -> None:
+        expected = {name for group in self.descriptor.tensor_groups for name in group.tensor_names}
+        if set(self.tensors) != expected or set(self.tensor_roles) != expected:
+            raise ValueError("resident routed tensors differ from the architecture descriptor")
+        if self.tensor_formats is not None and set(self.tensor_formats) != expected:
+            raise ValueError("routed tensor format map differs from the architecture descriptor")
+        if not self.content_hash:
+            raise ValueError("routed-computation content hash is required")
+
+    @property
+    def byte_size(self) -> int:
+        return sum(int(np.asarray(value).nbytes) for value in self.tensors.values())
+
+
+class RoutedComputationLoader(Protocol):
+    def __call__(
+        self, layer_id: int, expert_id: int, expert_type: str
+    ) -> RoutedComputationWeights: ...
+
+
+class RoutedComputationKernel(Protocol):
+    """Family/backend kernel boundary; the cache never assumes an activation formula."""
+
+    def __call__(
+        self,
+        activation: np.ndarray,
+        weights: RoutedComputationWeights,
+        *,
+        routing_metadata: dict[str, Any],
+    ) -> np.ndarray: ...
+
+
+def routed_computation_content_hash(
+    tensors: dict[str, np.ndarray], tensor_roles: dict[str, str]
+) -> str:
+    digest = hashlib.sha256()
+    for name in sorted(tensors):
+        contiguous = np.ascontiguousarray(tensors[name])
+        identity = json.dumps(
+            {
+                "name": name,
+                "role": tensor_roles[name],
+                "shape": list(contiguous.shape),
+                "dtype": str(contiguous.dtype),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        digest.update(len(identity).to_bytes(4, "big"))
+        digest.update(identity)
+        digest.update(contiguous.tobytes(order="C"))
+    return "sha256:" + digest.hexdigest()
+
+
+class RoutedComputationStore:
+    """Budgeted generic expert residency using the promoted bounded LRU mechanism."""
+
+    def __init__(
+        self,
+        *,
+        descriptors: tuple[ExpertDescriptor, ...],
+        loader: RoutedComputationLoader,
+        residency_budget_bytes: int,
+        cache_budget_bytes: int,
+    ) -> None:
+        if residency_budget_bytes <= 0 or cache_budget_bytes < 0:
+            raise ValueError("routed-computation budgets must be positive/non-negative")
+        self.descriptors = {
+            (item.layer_index, item.expert_index, item.expert_type): item for item in descriptors
+        }
+        if len(self.descriptors) != len(descriptors):
+            raise ValueError("routed-computation descriptors contain duplicate identities")
+        self.loader = loader
+        self.residency_budget_bytes = residency_budget_bytes
+        self.cache_budget_bytes = min(cache_budget_bytes, residency_budget_bytes)
+        self.cache: OrderedDict[tuple[int, int, str], RoutedComputationWeights] = OrderedDict()
+        self.cache_bytes = 0
+        self.hits = 0
+        self.misses = 0
+        self.bytes_read = 0
+        self.peak_resident_bytes = 0
+
+    def get(
+        self,
+        layer_id: int,
+        expert_id: int,
+        *,
+        expert_type: str = "routed",
+        expected_hash: str = "",
+    ) -> RoutedComputationWeights:
+        key = (layer_id, expert_id, expert_type)
+        if key not in self.descriptors:
+            raise KeyError(f"worker does not own layer {layer_id} {expert_type} unit {expert_id}")
+        value = self.cache.pop(key, None)
+        if value is not None:
+            if expected_hash and value.content_hash != expected_hash:
+                raise ValueError("resident routed-computation hash differs from its route")
+            self.hits += 1
+            self.cache[key] = value
+            return value
+        self.misses += 1
+        value = self.loader(layer_id, expert_id, expert_type)
+        if value.descriptor != self.descriptors[key]:
+            raise ValueError("loader returned a different routed-computation descriptor")
+        actual = routed_computation_content_hash(value.tensors, value.tensor_roles)
+        if actual != value.content_hash or (expected_hash and actual != expected_hash):
+            raise ValueError("loaded routed-computation content hash is invalid")
+        if value.byte_size > self.residency_budget_bytes:
+            raise MemoryError("one routed-computation unit exceeds the residency budget")
+        self.bytes_read += value.byte_size
+        if self.cache_budget_bytes:
+            while self.cache and self.cache_bytes + value.byte_size > self.cache_budget_bytes:
+                _, evicted = self.cache.popitem(last=False)
+                self.cache_bytes -= evicted.byte_size
+            if value.byte_size <= self.cache_budget_bytes:
+                self.cache[key] = value
+                self.cache_bytes += value.byte_size
+                self.peak_resident_bytes = max(self.peak_resident_bytes, self.cache_bytes)
+        return value
+
+    def execute(
+        self,
+        *,
+        layer_id: int,
+        expert_id: int,
+        expert_type: str = "routed",
+        activation: np.ndarray,
+        kernel: RoutedComputationKernel,
+        routing_metadata: dict[str, Any] | None = None,
+        expected_hash: str = "",
+    ) -> np.ndarray:
+        weights = self.get(
+            layer_id,
+            expert_id,
+            expert_type=expert_type,
+            expected_hash=expected_hash,
+        )
+        return np.ascontiguousarray(
+            kernel(
+                np.ascontiguousarray(activation),
+                weights,
+                routing_metadata=routing_metadata or weights.descriptor.routing_metadata,
+            )
+        )
+
+    def status(self) -> dict[str, Any]:
+        return {
+            "owned_routed_computations": [list(item) for item in sorted(self.descriptors)],
+            "cache_residency": [list(item) for item in self.cache],
+            "cache_resident_bytes": self.cache_bytes,
+            "cache_budget_bytes": self.cache_budget_bytes,
+            "residency_budget_bytes": self.residency_budget_bytes,
+            "cache_hits": self.hits,
+            "cache_misses": self.misses,
+            "bytes_read": self.bytes_read,
+            "peak_resident_bytes": self.peak_resident_bytes,
+        }
 
 
 def expert_content_hash(up: np.ndarray, gate: np.ndarray, down: np.ndarray) -> str:
@@ -397,6 +568,90 @@ class ExpertStore:
         }
 
 
+def safetensors_routed_computation_loader(
+    model_path: Path,
+    *,
+    descriptors: tuple[ExpertDescriptor, ...],
+    tensor_file_by_name: dict[str, str] | None = None,
+) -> RoutedComputationLoader:
+    """Load adapter-described tensor groups without interpreting their names."""
+
+    root = model_path.expanduser().resolve()
+    descriptor_map: dict[tuple[int, int, str], ExpertDescriptor] = {
+        (item.layer_index, item.expert_index, item.expert_type): item for item in descriptors
+    }
+    if len(descriptor_map) != len(descriptors):
+        raise ValueError("routed-computation descriptors contain duplicate identities")
+    default_file: str | None = None
+    if tensor_file_by_name is None:
+        index_path = root / "model.safetensors.index.json"
+        if index_path.is_file():
+            raw = json.loads(index_path.read_text(encoding="utf-8"))
+            mapping = raw.get("weight_map") if isinstance(raw, dict) else None
+            if not isinstance(mapping, dict):
+                raise ValueError("Safetensors index has no weight map")
+            tensor_file_by_name = {str(name): str(path) for name, path in mapping.items()}
+        else:
+            files = sorted(root.glob("*.safetensors"))
+            if len(files) != 1:
+                raise FileNotFoundError("model needs a safetensors index or one tensor file")
+            tensor_file_by_name = {}
+            default_file = files[0].name
+
+    def load(layer_id: int, expert_id: int, expert_type: str) -> RoutedComputationWeights:
+        import torch
+        from safetensors import safe_open
+
+        try:
+            descriptor = descriptor_map[(layer_id, expert_id, expert_type)]
+        except KeyError as exc:
+            raise KeyError(
+                f"no architecture descriptor for layer {layer_id} routed unit {expert_id}"
+            ) from exc
+        tensors: dict[str, np.ndarray] = {}
+        roles: dict[str, str] = {}
+        formats: set[str] = set()
+        tensor_formats: dict[str, str] = {}
+        for group in descriptor.tensor_groups:
+            for name, role in zip(group.tensor_names, group.tensor_roles, strict=True):
+                filename = tensor_file_by_name.get(name, default_file or "")
+                if not filename:
+                    raise KeyError(f"model index has no adapter-described tensor {name}")
+                with safe_open(root / filename, framework="pt", device="cpu") as handle:
+                    native = handle.get_tensor(name).contiguous()
+                slices = descriptor.routing_metadata.get("tensor_slices", {})
+                slice_spec = slices.get(name) if isinstance(slices, dict) else None
+                if isinstance(slice_spec, dict):
+                    axis = int(slice_spec["axis"])
+                    index = int(slice_spec["index"])
+                    if axis < 0 or axis >= native.ndim or index < 0 or index >= native.shape[axis]:
+                        raise ValueError(
+                            f"adapter-described slice for tensor {name} is out of bounds"
+                        )
+                    native = native.select(axis, index).contiguous()
+                formats.add(str(native.dtype).removeprefix("torch."))
+                tensor_formats[name] = str(native.dtype).removeprefix("torch.")
+                if native.dtype == torch.bfloat16:
+                    array = native.view(torch.uint16).numpy().copy()
+                elif str(native.dtype).startswith("torch.float8"):
+                    array = native.view(torch.uint8).numpy().copy()
+                else:
+                    array = native.numpy().copy()
+                tensors[name] = np.ascontiguousarray(array)
+                roles[name] = role
+        content_hash = routed_computation_content_hash(tensors, roles)
+        return RoutedComputationWeights(
+            descriptor=descriptor,
+            tensors=tensors,
+            tensor_roles=roles,
+            content_hash=content_hash,
+            native_formats=tuple(sorted(formats)),
+            tensor_formats=tensor_formats,
+        )
+
+    return load
+
+
 def safetensors_expert_loader(
     model_path: Path, *, tensor_file_by_name: dict[str, str] | None = None
 ) -> ExpertLoader:
@@ -566,13 +821,19 @@ __all__ = [
     "ExpertLoader",
     "ExpertStore",
     "ExpertWeights",
+    "RoutedComputationKernel",
+    "RoutedComputationLoader",
+    "RoutedComputationStore",
+    "RoutedComputationWeights",
     "deterministic_expert",
     "execute_expert",
     "expert_content_hash",
     "npz_expert_loader",
     "reduce_partials",
+    "routed_computation_content_hash",
     "safetensors_expert_loader",
     "safetensors_expert_ownership_entry",
+    "safetensors_routed_computation_loader",
     "silu",
     "slice_expert_weights",
     "validate_expert_content_hash",

@@ -18,7 +18,7 @@ from swarm_inference.model.adapter import (
     ModelDescription,
     TensorInfo,
 )
-from swarm_inference.model.architecture import ModelArchitecture, normalize_model_architecture
+from swarm_inference.model.architecture import normalize_model_architecture
 from swarm_inference.model.descriptor import ResolvedModelDescriptor
 from swarm_inference.model.partition import ModelPartitionMetadata, StageAssignment
 
@@ -71,7 +71,7 @@ class OlmoeAdapter:
                 "native adapter requires a safetensors checkpoint",
             )
         architecture = normalize_model_architecture(model.architecture)
-        if architecture != ModelArchitecture.OLMOE:
+        if architecture != "olmoe_moe":
             return AdapterSupportReport(
                 self.adapter_id,
                 AdapterSupportStatus.UNSUPPORTED_ARCHITECTURE,

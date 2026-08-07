@@ -1,12 +1,13 @@
 # Swarm Inference Lab
 
-Swarm Inference Lab is an experimental runtime for distributing LLM inference across
-heterogeneous machines connected over real networks, including WAN links. It explores how
-NVIDIA GPUs, Apple Silicon, CPUs, and other consumer hardware can cooperate to run models that
-would otherwise require larger centralized machines.
+Swarm Inference Lab is a general-purpose distributed inference runtime for open-weight models.
+It resolves Hugging Face or local artifacts, inspects architecture and format metadata, probes
+the engines installed across a heterogeneous swarm, and selects a measured feasible plan. It is
+experimental systems software for NVIDIA GPUs, Apple Silicon, CPUs, and real networks including
+WAN links.
 
-Its product objective is general-purpose global WAN distributed inference across heterogeneous
-hardware, model families, operating systems, and execution engines.
+The long-term product objective is general-purpose global WAN inference across open-weight model
+families, artifact formats, operating systems, accelerators, and execution engines.
 
 The core thesis is simple: slow links need coarse, persistent execution boundaries. Across a
 WAN, Swarm moves activations between contiguous model stages instead of turning every layer or
@@ -24,8 +25,10 @@ such as whole experts or microshards when they have positive utility.
 - One product workflow: `swarm cluster create`, `swarm node join`, and `swarm run`.
 - A model resolver for immutable Hugging Face revisions and local checkpoints, including GGUF
   variant discovery and worker-managed artifacts.
-- Extensible architecture and adapter registries with native OLMoE, Qwen3 dense, and supported
-  Qwen3 MoE representations.
+- An open architecture-profile registry covering major Kimi, Qwen, GLM, DeepSeek, MiniMax,
+  Llama, Mistral/Mixtral, and Gemma layout families without repository-name dispatch.
+- Architecture-owned tensor, attention, routing, expert, tied-weight, and shard semantics;
+  engines consume the resulting profile instead of model-family branches.
 - Three canonical engines: native stage, Colibri, and llama.cpp RPC.
 - CPU, CUDA, and MPS capability detection with explicit RAM/VRAM admission.
 - Measured topology domains based on RTT, bandwidth, jitter, and connection stability.
@@ -33,7 +36,8 @@ such as whole experts or microshards when they have positive utility.
 - TLS 1.3 transport bound to durable cluster identities, plus signed control messages and
   fail-closed peer validation.
 - Exact byte and connection telemetry around Swarm-managed llama.cpp RPC links.
-- Explainable automatic selection and strict `--engine` / `--require-distributed` semantics.
+- Probe-generated compatibility records, measured engine competition, and strict `--engine` /
+  `--require-distributed` semantics.
 
 Adding a node does not guarantee lower latency. In `speed` mode a weak node may remain idle;
 `capacity` mode can include it when its memory is necessary.
@@ -147,23 +151,26 @@ session admission, and ordered result publication. Persistent workers own their 
 and KV state. Once admitted, activations travel directly through the stage ring; the coordinator
 is outside the steady-state activation path.
 
-The adapter registry is separate from engine selection:
+Architecture description is separate from engine selection:
 
 ```text
-Model resolver -> architecture detection -> native adapter registry
-                                           | OLMoE
-                                           | Qwen3 dense
-                                           | Qwen3 MoE (supported representations)
-                                           ` future adapters
+HF/local model -> immutable resolver -> architecture profile + artifact profile
+                                      | attention and layer layout
+                                      | routed/shared expert descriptors
+                                      | tensor roles and shard reductions
+                                      ` quantization and modalities
 
-Resolved model + worker capabilities + topology -> execution engine registry
-                                                   | native-stage
-                                                   | colibri
-                                                   ` llamacpp-rpc
+profile + worker capabilities + topology -> structured engine probes
+                                          | Colibri sparse-MoE/full-model paths
+                                          | native-stage contiguous paths
+                                          ` llama.cpp GGUF/RPC paths
+                                                     |
+                                             measured plan competition
 ```
 
-OLMoE is one adapter, not the identity of the product. Product code does not import experiment
-implementations; experiments remain evidence and research workloads.
+Built-in profiles cover architecture families rather than checkpoint repository names. New
+checkpoints that retain an implemented metadata/tensor contract can work without coordinator or
+planner changes. Historical experiment models remain evidence fixtures only.
 
 ## Execution engines
 
@@ -173,11 +180,11 @@ The native engine partitions supported safetensors checkpoints into persistent c
 stages. It builds stage-owned artifacts, keeps KV caches isolated per request and stage, and uses
 direct stage-to-stage connections. This is the Experiment 011-derived WAN-efficient path.
 
-The installed adapter registry currently contains:
+The complete native-stage registry currently contains:
 
-- `olmoe`
 - `qwen3_dense`
 - `qwen3_moe` for the Transformers `qwen3_moe` safetensors representation
+- an isolated compatibility adapter retained for the original experiment checkpoint
 
 Dense Qwen3 retains its optimized CUDA execution path. Sparse Qwen3 layers keep their router and
 all experts with the layer-owning stage. The current native adapter does **not** claim the newer
@@ -186,11 +193,20 @@ with an actionable error rather than being forced through an incompatible Python
 
 ### Colibri
 
-Colibri is the canonical optimized engine promoted from the Experiment 009 work. It is
-registered alongside the other engines, reachable from normal `swarm run`, and selected only
-when a pinned Colibri runtime advertises an exact model adapter, format, device, and memory fit.
-The currently verified Colibri model-family profile is OLMoE. Routing-aware placement remains
-evidence-gated; Experiment 009 modules are not runtime dependencies.
+Colibri is a high-performance execution engine used for compatible sparse-MoE computation,
+selected automatically when it provides a viable execution plan. Swarm pins Colibri v1.4.0 at
+commit `b085b48888a88d9a1c00b151a9979774b72cdbfd` and applies a reproducible patch series. Native
+complete-model adapters cover the pinned GLM and Kimi K3 paths. A Swarm-owned generic sparse-MoE
+component adds adapter-described routing, expert residency/tiering, expert placement, exact
+weighted accumulation, and microshard semantics for Qwen MoE, Kimi K2, DeepSeek, MiniMax,
+Mixtral, Llama 4 MoE, and Mistral 4 MoE layouts.
+
+A component probe is reported as such; it is not promoted to a complete plan until attention,
+KV cache, tokenization, sampling, and every other required capability are supplied. The generic
+component has an exact symmetric INT4-G32 decode/compute path for adapter-proved compressed
+tensors; other packed int4/int8 layouts are rejected until a matching quantization kernel is
+installed. Colibri is scored against other complete plans from measured throughput and resource
+costs—it is never selected merely because an adapter exists.
 
 ### llama.cpp RPC
 
@@ -208,20 +224,31 @@ protocol. Private-protocol message counts remain `unknown` unless observable.
 
 ## Model support matrix
 
-This table reflects the registered adapters and current verified engine manifests, not an
-aspirational model list.
+Support is generated from structured probes, not a model-name allowlist. The current high-level
+summary is:
 
-| Model family / format | Native stage | Colibri | llama.cpp RPC |
+| Artifact/profile | Native stage | Colibri | llama.cpp RPC |
 | --- | --- | --- | --- |
-| OLMoE safetensors | Yes | Yes, with the verified `olmoe` manifest | No for safetensors; GGUF only if the pinned build advertises `olmoe` |
-| Qwen3 dense safetensors | Yes | No current verified adapter | No for safetensors; compatible GGUF is runtime-probed |
-| Qwen3 MoE (`qwen3_moe`) safetensors | Yes | No current verified adapter | No for safetensors; compatible GGUF is runtime-probed |
-| Qwen3.5/Qwen3.6 MoE GGUF (`qwen35moe`) | No native GGUF path | No | Yes only when the pinned build proves `qwen35moe` support |
-| Other GGUF | No native adapter | No | Only when exact architecture/feature support is advertised by the pinned runtime |
+| Qwen3 dense or MoE Safetensors | Complete | MoE component where applicable | Not applicable |
+| Kimi K3 native MXFP4 Safetensors | No | Complete text path | Not applicable |
+| GLM MoE/DSA Safetensors | No | Complete | Not applicable |
+| Qwen3.5/3.6, Kimi K2, DeepSeek, MiniMax, Mixtral and newer MoE Safetensors | No complete path yet | Routed-expert component; hybrid completion pending | Not applicable |
+| Llama, Mistral, Gemma and other compatible GGUF | No | No | Complete only when the exact pinned runtime proves support |
+| Qwen3.6-35B-A3B GGUF | No | Unsupported format | Complete only when the runtime proves `qwen35moe` plus the selected quantization |
 
-Unknown architecture, missing GGUF metadata, unsupported features, incompatible representation,
-or insufficient memory all fail during preflight. File extension and executable presence alone
-never establish compatibility.
+Architecture inspection is broader than complete execution. `NOT_TESTED` is never rewritten as
+`UNSUPPORTED`, and component support is never presented as full-model validation. See the
+detailed, evidence-scoped [model support registry](docs/model-support.md).
+
+Maintainers can profile current checkpoints without acquiring their weights:
+
+```powershell
+uv run python scripts/inspect_model_compatibility.py `
+  Qwen/Qwen3.6-35B-A3B `
+  moonshotai/Kimi-K3 `
+  zai-org/GLM-5 `
+  deepseek-ai/DeepSeek-V3.2
+```
 
 ## Qwen3.6 GGUF example
 
@@ -243,7 +270,7 @@ swarm run unsloth/Qwen3.6-35B-A3B-GGUF \
   --prompt "Hello"
 ```
 
-Preflight reports the immutable revision, selected GGUF files, `qwen3_moe` product family and
+Preflight reports the immutable revision, selected GGUF files, `qwen3_5_moe` architecture and
 raw `qwen35moe` loader identity where available, the pinned llama.cpp runtime evidence, every
 participating/excluded worker, tensor ownership, topology, and measured versus unknown network
 costs. If the installed llama.cpp build does not support `qwen35moe`, the command stops here.
@@ -261,6 +288,24 @@ swarm run unsloth/Qwen3.6-35B-A3B-GGUF \
 
 The real 35B download and hardware execution are intentionally opt-in; ordinary CI uses small
 metadata and model fixtures.
+
+## Kimi, GLM, and DeepSeek examples
+
+The same interface inspects and probes current major MoE checkpoints. These examples use dry-run
+because the models are enormous and a successful plan depends on the exact installed Colibri
+runtime, quantization, memory, and worker topology:
+
+```powershell
+swarm run moonshotai/Kimi-K3 --dry-run --explain-plan --prompt "Hello"
+swarm run zai-org/GLM-5 --dry-run --explain-plan --prompt "Hello"
+swarm run deepseek-ai/DeepSeek-V3.2 --dry-run --explain-plan --prompt "Hello"
+```
+
+Kimi K3 and GLM can produce complete pinned-Colibri candidates when the matching runtime and
+artifact contract are present. DeepSeek V3.2 currently reports architecture-aware MLA,
+grouped-routing, shared-expert, and routed-expert metadata plus a Colibri component result; it
+does not claim a complete Safetensors plan until the hybrid MLA/KV path is integrated. A
+compatible DeepSeek GGUF may instead be selected through a runtime-proved llama.cpp path.
 
 ## WAN behavior
 
@@ -351,10 +396,11 @@ From a development checkout, run the software-only gate immediately before using
 uv run python scripts/run_pre_physical_acceptance.py
 ```
 
-It validates model/engine preflight, Qwen3 MoE staging, registry preservation, architecture
-boundaries, no silent fallback, WAN-aware planning, network telemetry, secure control/data
-paths, README commands, and wheel installation. It reports real hardware and network gates as
-`NOT_RUN`; it never promotes loopback or fixture results to physical evidence.
+It validates model/engine preflight, universal architecture profiles, Qwen3 staging, generic
+Colibri routing/expert computation, registry preservation, no silent fallback, WAN-aware
+planning, network telemetry, secure control/data paths, README commands, and wheel installation.
+It reports real hardware and network gates as `NOT_RUN`; it never promotes loopback or fixture
+results to physical evidence.
 
 Normal repository validation also includes:
 
@@ -376,13 +422,17 @@ uv run pytest tests/failure
   implemented.
 - Fine-grained expert/microshard execution is restricted to suitable topology domains and exact
   model/quantization identity.
-- Native Qwen3 MoE currently supports the Transformers `qwen3_moe` representation, not the newer
-  Qwen3.5/Qwen3.6 hybrid architecture.
+- Native Qwen3 MoE supports the Transformers `qwen3_moe` representation. Qwen3.5/Qwen3.6,
+  Kimi K2, DeepSeek, MiniMax, and newer Mistral-family MoE Safetensors layouts have implemented
+  profiles and Colibri routed-expert components, but several still lack a complete hybrid
+  attention/KV execution plan.
+- Dense Llama, Mistral, and Gemma Safetensors profiles are inspectable but do not yet have a
+  generic native-stage implementation; use an exact runtime-probed GGUF path where available.
 - llama.cpp compatibility is limited to loader/features proven by the installed pinned build.
 - No claim is made that adding nodes improves latency, or that Swarm outperforms centralized
   inference for every model/topology.
 
-Further detail: [architecture](docs/architecture.md), [security boundary](docs/security-boundary.md),
-[model artifacts](docs/model-artifacts.md), [recovery](docs/recovery.md),
+Further detail: [architecture](docs/architecture.md), [model support](docs/model-support.md),
+[security boundary](docs/security-boundary.md), [model artifacts](docs/model-artifacts.md), [recovery](docs/recovery.md),
 [platform support](docs/platform-support.md), and
 [physical two-machine acceptance](docs/physical-two-machine-acceptance.md).

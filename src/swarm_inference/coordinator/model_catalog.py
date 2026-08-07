@@ -89,7 +89,10 @@ class ProductModelCatalog:
             reasons.append("registration heartbeat is unhealthy")
         if not capability.stage_runtime_enabled:
             reasons.append("persistent stage runtime is disabled")
-        if reference.adapter_id not in capability.supported_model_adapters:
+        if (
+            reference.adapter_id is not None
+            and reference.adapter_id not in capability.supported_model_adapters
+        ):
             reasons.append(f"model adapter {reference.adapter_id!r} is unsupported")
         normalised_dtype = {
             "bf16": "bfloat16",

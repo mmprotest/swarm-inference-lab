@@ -201,7 +201,7 @@ class WorkerAgent:
         self.shards.load_synthetic(config=config, stage=stage, corrupt=corrupt)
         self.capability.current_shard_assignments = sorted(self.shards.modules)
 
-    def assign_qwen3(
+    def assign_native_stage(
         self,
         *,
         config: dict[str, object],
@@ -211,7 +211,7 @@ class WorkerAgent:
         shard_hash: str,
         dtype: str | None,
     ) -> None:
-        module = self.shards.load_qwen3(
+        module = self.shards.load_native_stage(
             config=config,
             manifest=manifest,
             stage=stage,

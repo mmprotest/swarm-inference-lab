@@ -1,3 +1,9 @@
+"""Architecture-neutral stage-ring tests plus isolated Experiment 011 regressions.
+
+Only tests gated by ``SWARM_RUN_LEGACY_OLMOE_CUDA_REGRESSION`` use the historical
+OLMoE checkpoint. They are not product acceptance gates.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -304,8 +310,8 @@ def _worker_capability(worker_id: str, identity: WorkerIdentity) -> WorkerCapabi
         data_plane_endpoint="127.0.0.1:1",
         device_identifier="cpu",
         stage_ring_protocol_version=STAGE_RING_PROTOCOL_VERSION,
-        supported_model_adapters=["olmoe"],
-        supported_stage_execution_backends=["canonical-contiguous-olmoe"],
+        supported_model_adapters=["qwen3_dense"],
+        supported_stage_execution_backends=["canonical-native-stage"],
         supported_activation_dtypes=["float32"],
         configured_memory_limit_bytes=1024**3,
         stage_runtime_enabled=True,
@@ -581,10 +587,10 @@ def _plan(capabilities: list[WorkerCapability]) -> ProductStagePlan:
         generation=1,
         created_monotonic_ns=time.monotonic_ns(),
         model=ProductModelSpec(
-            model_id="test/olmoe",
+            model_id="test/qwen3",
             model_revision="model-commit",
             tokenizer_revision="tokenizer-commit",
-            adapter_id="olmoe",
+            adapter_id="qwen3_dense",
             dtype="float32",
             layer_count=2,
             hidden_size=1,
@@ -1786,17 +1792,17 @@ def _real_worker_process(
 
 @pytest.mark.gpu
 @pytest.mark.skipif(
-    os.environ.get("SWARM_RUN_PRODUCT_OLMOE_CUDA") != "1"
+    os.environ.get("SWARM_RUN_LEGACY_OLMOE_CUDA_REGRESSION") != "1"
     or not torch.cuda.is_available()
     or not REAL_MODEL_PATH.is_dir()
     or not REAL_REFERENCE_PATH.is_file(),
     reason=(
-        "set SWARM_RUN_PRODUCT_OLMOE_CUDA=1 with the pinned local OLMoE snapshot "
+        "set SWARM_RUN_LEGACY_OLMOE_CUDA_REGRESSION=1 with the pinned historical snapshot "
         "for the exact product-path test"
     ),
 )
 @pytest.mark.asyncio
-async def test_exact_two_stage_olmoe_cuda_baseline(tmp_path: Path) -> None:
+async def test_legacy_fixture_exact_two_stage_cuda_baseline(tmp_path: Path) -> None:
     """Prove the unfaulted two-worker product path independently of recovery."""
 
     reference = json.loads(REAL_REFERENCE_PATH.read_text(encoding="utf-8"))
@@ -1978,17 +1984,17 @@ async def test_exact_two_stage_olmoe_cuda_baseline(tmp_path: Path) -> None:
 
 @pytest.mark.gpu
 @pytest.mark.skipif(
-    os.environ.get("SWARM_RUN_PRODUCT_OLMOE_CUDA") != "1"
+    os.environ.get("SWARM_RUN_LEGACY_OLMOE_CUDA_REGRESSION") != "1"
     or not torch.cuda.is_available()
     or not REAL_MODEL_PATH.is_dir()
     or not REAL_REFERENCE_PATH.is_file(),
     reason=(
-        "set SWARM_RUN_PRODUCT_OLMOE_CUDA=1 with the pinned local OLMoE snapshot "
+        "set SWARM_RUN_LEGACY_OLMOE_CUDA_REGRESSION=1 with the pinned historical snapshot "
         "for the exact product-path test"
     ),
 )
 @pytest.mark.asyncio
-async def test_exact_olmoe_cuda_restart_and_replay_recovery_uses_third_worker(
+async def test_legacy_fixture_cuda_restart_and_replay_uses_third_worker(
     tmp_path: Path,
 ) -> None:
     reference = json.loads(REAL_REFERENCE_PATH.read_text(encoding="utf-8"))

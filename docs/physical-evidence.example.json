@@ -10,8 +10,8 @@
     "swarm cluster create --name physical-gate-a",
     "swarm node join <redacted-pairing-uri>",
     "swarm cluster status --json",
-    "swarm run allenai/OLMoE-1B-7B-0125-Instruct --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea --mode speed --ndjson",
-    "swarm run allenai/OLMoE-1B-7B-0125-Instruct --revision b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e --tokenizer-revision sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea --mode capacity --require-node node-laptop --ndjson"
+    "swarm run Qwen/Qwen3-0.6B --revision <immutable-qwen-commit> --tokenizer-revision sha256:<tokenizer-sha256> --mode speed --ndjson",
+    "swarm run Qwen/Qwen3-0.6B --revision <immutable-qwen-commit> --tokenizer-revision sha256:<tokenizer-sha256> --mode capacity --require-node node-laptop --ndjson"
   ],
   "document_type": "swarm-physical-two-machine-evidence",
   "format_version": 4,
@@ -27,8 +27,9 @@
       "process_namespace_identity": "sha256:<namespace-b>"
     }
   },
-  "model_revision": "b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e",
-  "tokenizer_revision": "sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea",
+  "model_id": "Qwen/Qwen3-0.6B",
+  "model_revision": "<immutable-qwen-commit>",
+  "tokenizer_revision": "sha256:<tokenizer-sha256>",
   "release": {
     "git_tag": "v0.1.0-rc.11",
     "url": "https://github.com/mmprotest/swarm-inference-lab/releases/tag/v0.1.0-rc.11",

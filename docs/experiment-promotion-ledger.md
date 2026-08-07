@@ -19,6 +19,27 @@ experiment bundles remain immutable evidence; production code must not import th
 | 010 | all 17 gates | Whole experts, native expert microshards, hybrid placement, deterministic reduction, isolation, detection, quarantine, and replay remain inside stages. |
 | 011 | completed | The persistent direct contiguous stage ring is mandatory; compression and speculation are exact but auto-off without positive utility. |
 
+## Architecture-neutral promotion
+
+Promotion preserves mechanisms, not the first checkpoint used to validate them. The canonical
+runtime now represents model architecture, artifact format, quantization, tensor roles, routed
+computation, and shard/reduction semantics independently. Experiments 009/010/011 do not grant
+their fixture model any coordinator, planner, deployment, artifact, routing, or lifecycle branch.
+
+The following promoted mechanisms remain active behind generic contracts:
+
+- Colibri engine probing, persistent expert residency, hot-expert caching, routing-aware
+  placement, movement accounting, and exact replay;
+- whole-expert remote execution, adapter-described microshards, deterministic reduction,
+  content identity, direct peer transport, bounded queues, failure detection, quarantine, and
+  fallback accounting; and
+- persistent stage processes/state/connections, stage-local KV, direct worker-to-worker
+  activation flow, bounded asynchronous transport, reduced coordinator participation, and
+  utility-gated compression/speculation.
+
+Architecture-specific kernels and legacy exact-byte containers remain isolated adapters or
+historical evidence. They are not generic data models.
+
 ## Disposition semantics
 
 - `REQUIRED`: the canonical runtime owns and exercises the mechanism.

@@ -158,6 +158,7 @@ class TensorInventoryEntry(StrictModel):
 class ExpertInventoryEntry(StrictModel):
     layer_id: int = Field(ge=0)
     expert_id: int = Field(ge=0)
+    expert_type: Literal["routed", "shared", "always_on", "latent", "grouped"] = "routed"
     tensor_ids: list[str]
     total_bytes: int = Field(ge=0)
     native_format: str
@@ -168,6 +169,7 @@ class ExpertInventoryEntry(StrictModel):
     cache_hits: int = Field(default=0, ge=0)
     cache_misses: int = Field(default=0, ge=0)
     physical_storage_order: int = Field(ge=0)
+    routing_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class ModelInventory(StrictModel):
