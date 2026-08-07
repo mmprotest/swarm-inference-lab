@@ -65,7 +65,7 @@ class ArtifactTransferLease(_StageControlModel):
     coordinator_identity: str
     coordinator_public_key: str
     coordinator_fingerprint: str
-    signature: str = ""
+    signature: str | None = None
 
     @model_validator(mode="after")
     def validate_lease(self) -> ArtifactTransferLease:

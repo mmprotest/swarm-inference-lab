@@ -6,9 +6,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, ClassVar
 
+import pytest
 from typer.testing import CliRunner
 
 from swarm_inference.cli import app
+from swarm_inference.cluster.orchestrator import resolve_upstream_source
 from swarm_inference.protocol.messages import StreamEventType, SubmitStreamEvent
 
 MODEL_REVISION = "a" * 40
@@ -62,6 +64,48 @@ class _FakeOrchestrator:
             )
         )
         return _Summary()
+
+
+@pytest.mark.asyncio
+async def test_upstream_source_materializes_files_in_an_immutable_local_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeApi:
+        def model_info(self, *_args: Any, **_kwargs: Any) -> SimpleNamespace:
+            return SimpleNamespace(siblings=[SimpleNamespace(size=1)])
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        captured.update(kwargs)
+        local_dir = Path(kwargs["local_dir"])
+        local_dir.mkdir(parents=True)
+        return str(local_dir)
+
+    monkeypatch.setattr("huggingface_hub.HfApi", FakeApi)
+    monkeypatch.setattr("huggingface_hub.snapshot_download", fake_snapshot_download)
+
+    resolved = await resolve_upstream_source(
+        "allenai/OLMoE-test",
+        MODEL_REVISION,
+        TOKENIZER_REVISION,
+        tmp_path / "cache",
+        1024,
+    )
+
+    assert (
+        resolved
+        == (
+            tmp_path
+            / "cache"
+            / "materialized"
+            / "allenai--OLMoE-test"
+            / "snapshots"
+            / MODEL_REVISION
+        ).resolve()
+    )
+    assert captured["revision"] == MODEL_REVISION
 
 
 def _arguments(tmp_path: Path, *, prompt: str) -> list[str]:

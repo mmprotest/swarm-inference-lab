@@ -1,0 +1,38 @@
+schema_version: macos-mps-three-worker-loopback-v1
+name: macos-mps-three-worker-loopback
+execution_mode: single-host-loopback-real-model
+evidence_classification: software-validation
+output_root: artifacts/runs
+
+model:
+  model_id: allenai/OLMoE-1B-7B-0125-Instruct
+  revision: b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e
+  tokenizer_revision: sha256:d1e645ebd850d79567e531a3c103ac575d8e9cf45fa941420afc584b293438ea
+  layer_count: 16
+  dtype: bfloat16
+  device: mps
+
+planning:
+  stage_count: 3
+  partition: equal
+  mode: capacity
+
+additional_workers:
+  memory_limit_gib: 8
+  worker_ids: [local-mps-2, local-mps-3]
+
+generation:
+  prompt: Explain distributed inference.
+  max_new_tokens: 32
+  temperature: 0
+  seed: 1
+  expected_token_ids:
+    [187, 14178, 3567, 17032, 310, 247, 1332, 273, 16161, 2570, 17032, 3237,
+     407, 10155, 731, 1066, 715, 19554, 749, 856, 23042, 326, 476, 320, 14042,
+     10939, 285, 840, 16248, 253, 1543, 15]
+
+timeouts:
+  worker_start_seconds: 30
+  deployment_seconds: 300
+  request_seconds: 300
+  shutdown_seconds: 30
