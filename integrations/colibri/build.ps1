@@ -108,18 +108,11 @@ if (Test-Path -LiteralPath (Join-Path $gitUnixTools 'sed.exe') -PathType Leaf) {
 }
 $buildPathParts += $previousPath
 $env:PATH = $buildPathParts -join ';'
-$targetNames = @('colibri.exe', 'olmoe.exe', 'olmoe_expert_worker.exe', 'inkling.exe', 'kimi_k3.exe')
+$targetNames = @('colibri.exe', 'inkling.exe', 'kimi_k3.exe')
 $adapterBinaryNames = @('coli_kimi_mxfp4.dll')
 $genericMoeTarget = if ($ApplyBridgePatches) { 'coli_swarm_moe.dll' } else { $null }
 if ($genericMoeTarget) { $adapterBinaryNames += $genericMoeTarget }
-$nativeTestTargets = if ($ApplyBridgePatches) {
-    @(
-        'tests/test_olmoe_expert_runtime.exe',
-          'tests/test_olmoe_external_dispatch.exe',
-          'tests/test_olmoe_memory_residency.exe',
-          'tests/test_olmoe_expert_shm.exe'
-    )
-} else { @() }
+$nativeTestTargets = @()
 $allBuildTargets = @($targetNames) + @($nativeTestTargets)
 if ($genericMoeTarget) { $allBuildTargets += $genericMoeTarget }
 $cudaBuild = $null
@@ -199,17 +192,14 @@ try {
     if ($BuildCuda) {
         # CUDA_DLL defines COLI_CUDA for hosts using backend_loader.c. Inkling
         # has a distinct CUDA ABI, so applying that flag to every family creates
-        # unresolved ink_cuda_* references. Build unrelated family hosts and
-        # the portable native tests with their truthful CPU configuration, then
-        # relink the generic and OLMoE hosts against the runtime loader. The
-        # latter is required for real native-int8 expert execution in both the
-        # coordinator and isolated C worker.
+        # unresolved ink_cuda_* references. Build unrelated family hosts with
+        # their truthful CPU configuration, then relink the generic host.
         $cpuTargets = @('inkling.exe', 'kimi_k3.exe') + @($nativeTestTargets)
         if ($genericMoeTarget) { $cpuTargets += $genericMoeTarget }
         & $make -C (Join-Path $source 'c') -j4 @cpuTargets 'ARCH=native' 'CUDA_DLL=0'
         $makeExit = $LASTEXITCODE
         if ($makeExit -eq 0) {
-            & $make -C (Join-Path $source 'c') -j4 @('colibri.exe', 'olmoe.exe', 'olmoe_expert_worker.exe') 'ARCH=native' 'CUDA_DLL=1'
+            & $make -C (Join-Path $source 'c') -j4 @('colibri.exe') 'ARCH=native' 'CUDA_DLL=1'
             $makeExit = $LASTEXITCODE
         }
     }

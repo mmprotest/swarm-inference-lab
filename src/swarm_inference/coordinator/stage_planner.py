@@ -336,7 +336,7 @@ class ProductStagePlanner:
         explicit = request.stage_count is not None or request.partition_method != "auto"
         use_dense_memory_floor = (
             request.expert_policy != ExpertPolicy.LOCAL.value
-            and bool(expert_workers)
+            and (bool(expert_workers) or request.routed_expert_engine == "colibri")
             and inspected.metadata.expert_count > 0
         )
         links = self._network_links()
@@ -626,6 +626,7 @@ class ProductStagePlanner:
             "max_sequence_tokens": request.max_sequence_tokens,
             "assignments": [item.model_dump(mode="json") for item in final_assignments],
             "expert_plans": [item.model_dump(mode="json") for item in expert_plans],
+            "routed_expert_engine": request.routed_expert_engine,
         }
         digest = hashlib.sha256(
             json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -662,6 +663,17 @@ class ProductStagePlanner:
             expert_plans=list(expert_plans),
             expert_model_fingerprint=inspected.metadata.model_fingerprint,
             expert_quantization_fingerprint=inspected.metadata.quantization_fingerprint,
+            routed_expert_engine=(
+                "colibri"
+                if request.routed_expert_engine == "colibri"
+                else "remote"
+                if any(
+                    placement.strategy in {"whole-remote", "microshard-remote"}
+                    for expert_plan in expert_plans
+                    for placement in expert_plan.placements
+                )
+                else "native-stage"
+            ),
             optional_mechanisms={
                 "lossless_activation_compression": False,
                 "prefetch": False,
@@ -1098,6 +1110,69 @@ class ProductStagePlanner:
             if request.require_remote_experts:
                 raise RuntimeError("forced-remote expert validation requires MoE metadata")
             return (), assignments
+        if request.routed_expert_engine == "colibri":
+            if request.require_remote_experts:
+                raise RuntimeError("colibri-local execution cannot satisfy forced-remote planning")
+            if not use_dense_memory_floor:
+                raise RuntimeError("colibri component planning requires dense-floor accounting")
+            component_plans: list[ProductStageExpertPlan] = []
+            reserved_assignments: list[PlanWorkerAssignment] = []
+            for stage in assignments:
+                stage_expert_bytes = sum(
+                    metadata.layer_costs[layer_id].expert_weight_bytes
+                    for layer_id in stage.assignment.layer_ids
+                )
+                maximum_expert_bytes = max(
+                    (
+                        metadata.layer_costs[layer_id].expert_weight_bytes
+                        // metadata.expert_count
+                        for layer_id in stage.assignment.layer_ids
+                    ),
+                    default=0,
+                )
+                cache_budget = min(
+                    stage_expert_bytes,
+                    max(
+                        1024**3,
+                        maximum_expert_bytes * max(metadata.experts_per_token, 1) * 2,
+                    ),
+                )
+                if cache_budget <= 0:
+                    raise RuntimeError(
+                        "Colibri component planning requires positive measured expert "
+                        f"weight bytes for stage {stage.stage_id}"
+                    )
+                required = stage.required_memory_bytes + cache_budget
+                worker = inspected.capabilities[stage.worker_id]
+                if required > worker.effective_memory_bytes:
+                    raise RuntimeError(
+                        f"Colibri cache admission requires {required} bytes on "
+                        f"{stage.worker_id}, but only {worker.effective_memory_bytes} are usable"
+                    )
+                component_plans.append(
+                    ProductStageExpertPlan(
+                        stage_id=stage.stage_id,
+                        policy="hybrid",
+                        cache_budget_bytes=cache_budget,
+                        placements=[
+                            ProductExpertPlacement(
+                                layer_id=layer_id,
+                                expert_id=expert_id,
+                                strategy="colibri",
+                                explanation=[
+                                    "routed expert is delegated to the colocated persistent "
+                                    "Colibri residency engine"
+                                ],
+                            )
+                            for layer_id in stage.assignment.layer_ids
+                            for expert_id in range(metadata.expert_count)
+                        ],
+                    )
+                )
+                reserved_assignments.append(
+                    stage.model_copy(update={"required_memory_bytes": required})
+                )
+            return tuple(component_plans), tuple(reserved_assignments)
         utility_planner = ExpertUtilityPlanner()
         product_plans: list[ProductStageExpertPlan] = []
         final_assignments: list[PlanWorkerAssignment] = []

@@ -555,11 +555,153 @@ def test_remote_whole_and_microshard_backends_reconstruct_selected_experts() -> 
     torch.testing.assert_close(micro_result.output, whole_result.output, rtol=2e-6, atol=2e-8)
     assert all(item.request_bytes > 0 and item.result_hash for item in whole_result.events)
     assert all(item.request_bytes > 0 and item.result_hash for item in micro_result.events)
+    micro.close_session("session")
+    micro.close()
+    whole.close_session("session")
+    whole.close()
+
+
+class _BarrierExactClient(_ExactClient):
+    def __init__(self, weights: Any, barrier: threading.Barrier) -> None:
+        super().__init__(weights)
+        self.barrier = barrier
+        self.calls = 0
+        self.response_modes: list[ExpertResponseMode] = []
+
+    def execute(
+        self,
+        request: ExpertExecutionRequest,
+        activation: np.ndarray,
+        down_accumulators: np.ndarray | None = None,
+    ) -> tuple[Any, np.ndarray, dict[str, int]]:
+        self.calls += 1
+        self.response_modes.append(request.response_mode)
+        self.barrier.wait(timeout=2)
+        return super().execute(request, activation, down_accumulators)
+
+
+def test_microshard_fanout_is_parallel_and_reduction_is_hierarchical() -> None:
+    weights = deterministic_expert(latent_dimension=4, intermediate_dimension=8, seed=1200)
+    activation = torch.arange(8, dtype=torch.float32).reshape(2, 4) / 7
+    expected = execute_expert(activation.numpy(), weights)
+    barrier = threading.Barrier(4)
+    clients: list[_BarrierExactClient] = []
+    targets: list[MicroshardTarget] = []
+    for index in range(4):
+        start, end = index * 2, (index + 1) * 2
+        sliced = slice_expert_weights(weights, hidden_start=start, hidden_end=end)
+        client = _BarrierExactClient(sliced, barrier)
+        clients.append(client)
+        targets.append(
+            MicroshardTarget(
+                ownership=MicroshardRange(
+                    worker_id=f"parallel-{index}",
+                    layer_id=0,
+                    expert_id=0,
+                    hidden_start=start,
+                    hidden_end=end,
+                    logical_intermediate_dimension=8,
+                    content_hash=sliced.content_hash,
+                ),
+                client=client,
+            )
+        )
+    backend = MicroshardRemoteBackend(
+        targets={(0, 0): targets},
+        model_id="model",
+        model_revision="revision",
+        model_fingerprint="model-fingerprint",
+        quantization_fingerprint="quantization-fingerprint",
+        topology_id="topology",
+        route_generation=1,
+        maximum_parallel_requests=4,
+        reduction_branching_factor=2,
+    )
+    backend.open_session("session")
+    try:
+        output, event = backend.execute_expert_rows(
+            session_id="session",
+            request_id="request",
+            token_position=0,
+            layer_id=0,
+            expert_id=0,
+            activation=activation,
+            deadline_ns=time.time_ns() + 5_000_000_000,
+        )
+        np.testing.assert_allclose(output.numpy(), expected, rtol=2e-6, atol=2e-8)
+        assert [client.calls for client in clients] == [1, 1, 1, 1]
+        assert all(
+            client.response_modes == [ExpertResponseMode.PER_WORKER_FAST]
+            for client in clients
+        )
+        assert event.total_messages == 8
+        assert event.critical_path_messages == 2
+        assert event.parallel_waits == 4
+        assert event.serial_waits == 3
+        assert event.fanout_depth == 1
+        assert event.reduction_depth == 2
+        assert event.critical_path_sync_rounds == 3
+        assert event.scheduler_dispatch_ns > 0
+        assert event.reduction_ns > 0
+        assert event.root_dispatches == 4
+        assert event.coordinator_waits == 0
+        assert event.coordinator_sync_rounds == 0
+        assert event.worker_sync_rounds == 3
+        assert event.fanout_nodes == 4
+        assert event.topology_construction_ns > 0
+    finally:
+        backend.close_session("session")
+        backend.close()
 
 
 class _FailingClient:
     def execute(self, _request: Any, _activation: Any) -> Any:
         raise TimeoutError("remote worker timed out")
+
+
+@pytest.mark.parametrize(
+    ("branching_factor", "expected_depth"),
+    ((4, 5), (8, 4), (16, 3), (32, 2)),
+)
+def test_microshard_fanout_topology_bounds_root_dispatch_at_one_thousand(
+    branching_factor: int,
+    expected_depth: int,
+) -> None:
+    targets = [
+        MicroshardTarget(
+            ownership=MicroshardRange(
+                worker_id=f"logical-{index:04d}",
+                layer_id=0,
+                expert_id=0,
+                hidden_start=index,
+                hidden_end=index + 1,
+                logical_intermediate_dimension=1000,
+                content_hash=f"shard-{index:04d}",
+            ),
+            client=_FailingClient(),
+        )
+        for index in range(1000)
+    ]
+    backend = MicroshardRemoteBackend(
+        targets={(0, 0): targets},
+        model_id="model",
+        model_revision="revision",
+        model_fingerprint="fingerprint",
+        quantization_fingerprint="quant",
+        topology_id="topology",
+        route_generation=1,
+        maximum_parallel_requests=8,
+        fanout_branching_factor=branching_factor,
+        reduction_branching_factor=8,
+    )
+    try:
+        topology = backend._fanout_topologies[(0, 0)]
+        assert len(topology.root_children) <= branching_factor
+        assert topology.depth == expected_depth
+        assert topology.node_count > 1000
+        assert backend.topology_construction_ns > 0
+    finally:
+        backend.close()
 
 
 def test_forced_remote_backend_refuses_local_fallback() -> None:

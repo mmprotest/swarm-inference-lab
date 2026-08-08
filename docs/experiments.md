@@ -120,35 +120,3 @@ workload-specific stock llama.cpp search, logical tensor metadata, capability-ga
 ablations, deterministic token comparison, machine profiling, resource telemetry, and a
 resumable evidence bundle. Unsupported target-backend hooks remain null and cannot be replaced
 by fixture measurements. Only `-Full` is eligible for the official verdict.
-
-## Experiment 009: Colibri-backed adaptive expert runtime
-
-Configuration: `configs/experiments/experiment_009_colibri.yaml`
-
-Fast build, bridge, ABI, and fixture validation:
-
-```powershell
-.\experiments\009_colibri_adaptive_expert_runtime\reproduce.ps1 -Quick -ApplyBridgePatches
-```
-
-Official practical-model run:
-
-```powershell
-.\experiments\009_colibri_adaptive_expert_runtime\reproduce.ps1 -Full -ApplyBridgePatches
-```
-
-Experiment 009 pins `JustVugg/colibri` v1.4.0 at commit
-`b085b48888a88d9a1c00b151a9979774b72cdbfd` and makes it a first-class local
-worker backend. The swarm layer owns capability negotiation, inventory, plan
-translation, fixed replay, held-out policy evaluation, and evidence; Colibri
-retains model-family math, tokenization, routing, kernels, and expert loading.
-
-The 2026-08-02 full reference run used
-`allenai/OLMoE-1B-7B-0125-Instruct@b89a7c4bc24fb9e55ce2543c9458ce0ca5c4650e`.
-All ten gates passed: exact direct/adapter output and routing parity, 0.37%
-median decode regression, measured route/cache/storage/tier telemetry, and a
-5.04% reverse-confirmed held-out gain for the routing-aware configuration. The
-bounded scheduling tuner itself retained baseline; the gain belongs to the
-separate routing-placement evaluation. The exercised build was CPU-only, real
-microshard execution remains unsupported, and no distributed Kimi K3 claim is
-made.

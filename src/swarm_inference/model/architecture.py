@@ -234,7 +234,11 @@ def _first_config_identity(config: dict[str, Any]) -> tuple[str | None, Architec
     return None, "unknown"
 
 
-def normalize_model_architecture(value: str | None) -> str | None:
+def normalize_model_architecture(
+    value: str | None,
+    *,
+    dense_or_moe: DenseOrMoe | None = None,
+) -> str | None:
     """Resolve an exact metadata identifier through installed adapters."""
 
     if value is None or not value.strip():
@@ -243,7 +247,10 @@ def normalize_model_architecture(value: str | None) -> str | None:
         default_architecture_adapter_registry,
     )
 
-    resolved = default_architecture_adapter_registry().architecture_for_identifier(value)
+    resolved = default_architecture_adapter_registry().architecture_for_identifier(
+        value,
+        dense_or_moe=dense_or_moe,
+    )
     return resolved or value.strip()
 
 
@@ -278,11 +285,14 @@ def architecture_from_gguf(
     raw_value: object,
     *,
     fallback: ArchitectureIdentity | None = None,
+    dense_or_moe: DenseOrMoe | None = None,
 ) -> ArchitectureIdentity:
     if raw_value is not None and str(raw_value).strip():
         raw = str(raw_value).strip()
         return ArchitectureIdentity(
-            normalize_model_architecture(raw), raw, "gguf.general.architecture"
+            normalize_model_architecture(raw, dense_or_moe=dense_or_moe),
+            raw,
+            "gguf.general.architecture",
         )
     return fallback or ArchitectureIdentity(None, None, "unknown")
 

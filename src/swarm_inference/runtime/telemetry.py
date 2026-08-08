@@ -302,6 +302,45 @@ def build_inference_telemetry_record(
     timing_metrics = _json_metrics(terminal_timing_metrics)
     if timing_metrics:
         engine_metrics = {**engine_metrics, "coordinator_timing": timing_metrics}
+    scaling_fields = (
+        "logical_microshard_workers",
+        "total_messages",
+        "critical_path_messages",
+        "serial_waits",
+        "serial_waits_per_token",
+        "parallel_waits",
+        "critical_path_sync_rounds",
+        "root_dispatches",
+        "coordinator_waits",
+        "coordinator_sync_rounds",
+        "worker_sync_rounds",
+        "fanout_depth",
+        "reduction_depth",
+        "fanout_nodes",
+        "topology_construction_ns",
+        "scheduler_dispatch_ns",
+        "reduction_ns",
+        "communication_ns",
+        "coordinator_activation_bytes",
+        "worker_to_worker_bytes",
+        "messages_per_token",
+        "payload_bytes_per_token",
+    )
+    expert_scaling: dict[str, object] = {"token_samples": len(per_token_expert_metrics)}
+    for name in scaling_fields:
+        values = [
+            value
+            for metrics in per_token_expert_metrics
+            if (value := _nonnegative_float(metrics.get(name))) is not None
+        ]
+        if values:
+            expert_scaling[name] = {
+                "mean": statistics.fmean(values),
+                "maximum": max(values),
+                "total": sum(values),
+            }
+    if len(expert_scaling) > 1:
+        engine_metrics = {**engine_metrics, "expert_scaling": expert_scaling}
     roles, fast_paths, stages, experts, microshards = _execution_layout(
         execution_plan,
         deployed_plan,
@@ -398,9 +437,21 @@ def build_inference_telemetry_record(
             sources[name] = "engine-reported"
 
     float_metrics = {
-        "serial_waits_per_token": (("serial_waits_per_token",),),
-        "messages_per_token": (("messages_per_token",),),
-        "payload_bytes_per_token": (("payload_bytes_per_token",),),
+        "serial_waits_per_token": (
+            ("serial_waits_per_token",),
+            ("expert_scaling", "serial_waits_per_token", "mean"),
+            ("expert_scaling", "serial_waits", "mean"),
+        ),
+        "messages_per_token": (
+            ("messages_per_token",),
+            ("expert_scaling", "messages_per_token", "mean"),
+            ("expert_scaling", "total_messages", "mean"),
+        ),
+        "payload_bytes_per_token": (
+            ("payload_bytes_per_token",),
+            ("expert_scaling", "payload_bytes_per_token", "mean"),
+            ("expert_scaling", "worker_to_worker_bytes", "mean"),
+        ),
         "queue_time_ms": (("queue_time_ms",),),
         "compute_time_ms": (
             ("compute_time_ms",),

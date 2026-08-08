@@ -122,13 +122,6 @@ canonical modules; its retained historical coordinator/worker implementation is 
 Historical coordinator-relayed activation paths remain useful as comparison baselines. They are
 not the product diagram above and must not be used to describe product steady state.
 
-Remaining OLMoE-named files are deliberately limited to historical Experiment 009/010 evidence,
-the byte-compatible pinned-Colibri patch lineage, and an adapter-local compatibility
-implementation. The resolver, coordinator, planner, cluster lifecycle, artifact manager,
-generic Colibri engine, routed-computation representation, microsharder, deployment path, and
-worker lifecycle contain no OLMoE dispatch. The retained legacy names are not acceptance defaults
-and are never used to identify a model by repository name.
-
 ## Evidence boundary
 
 Single-host loopback validates process separation, transport, correctness, and recovery logic.

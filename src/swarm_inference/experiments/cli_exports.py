@@ -44,10 +44,6 @@ def get_export(name: str) -> Any:
         from swarm_inference.experiments.experiment_008 import runner
 
         return getattr(runner, name)
-    if name in {"Experiment009Options", "run_experiment_009"}:
-        from swarm_inference.experiments.experiment_009 import runner
-
-        return getattr(runner, name)
     if name == "run_worker_fanout_experiment":
         from swarm_inference.experiments.worker_fanout import run_worker_fanout_experiment
 

@@ -44,15 +44,9 @@ if ((APPLY)); then
   done
 fi
 
-BUILD_TARGETS=(colibri olmoe olmoe_expert_worker inkling kimi_k3)
+BUILD_TARGETS=(colibri inkling kimi_k3)
 NATIVE_TESTS=()
 if ((APPLY)); then
-  NATIVE_TESTS=(
-    tests/test_olmoe_expert_runtime
-    tests/test_olmoe_external_dispatch
-    tests/test_olmoe_memory_residency
-    tests/test_olmoe_expert_shm
-  )
   BUILD_TARGETS+=("${NATIVE_TESTS[@]}")
   BUILD_TARGETS+=(libcoli_swarm_moe.so)
 fi
@@ -62,7 +56,7 @@ gcc -D_FILE_OFFSET_BITS=64 -O3 -march=native -fopenmp -fPIC -shared \
   -Wno-unused-function -I "$OUTPUT/source/c" \
   "$ROOT/integrations/colibri/adapter/kimi_mxfp4_runtime.c" \
   -o "$OUTPUT/source/c/libcoli_kimi_mxfp4.so" -lm -fopenmp
-for binary in colibri olmoe olmoe_expert_worker inkling kimi_k3; do
+for binary in colibri inkling kimi_k3; do
   cp "$OUTPUT/source/c/$binary" "$OUTPUT/bin/$binary"
 done
 cp "$OUTPUT/source/c/libcoli_kimi_mxfp4.so" "$OUTPUT/bin/libcoli_kimi_mxfp4.so"

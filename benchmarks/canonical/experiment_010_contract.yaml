@@ -20,7 +20,7 @@ promoted_mechanisms:
 rejected_mechanisms:
   - global_per_expert_rpc_graph
   - distributed_speed_when_local_is_faster
-reference_models: [allenai/OLMoE-1B-7B-0125-Instruct, over-vram-moe-capacity-fixture]
+reference_models: [architecture-neutral-expert-wire-fixture, over-vram-moe-capacity-fixture]
 reference_hardware_class: physical-whole-expert-and-microshard-workers
 correctness_gates: [exact_tokens, no_forbidden_local_expert_load, no_silent_fallback, deterministic_reduction, corruption_detected]
 performance_gates: [capacity_path_feasible, local_speed_candidate_retained]

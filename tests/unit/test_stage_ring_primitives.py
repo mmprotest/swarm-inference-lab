@@ -1,18 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 import pytest
 import torch
 
 from swarm_inference.config.models import TensorSpec
-from swarm_inference.execution.interfaces import StageExecutor, WeightOwnership
-from swarm_inference.execution.olmoe_stage import (
-    ContiguousOlmoeStage,
-    StageSessionState,
-)
 from swarm_inference.model.partition import (
     LayerCost,
     ModelPartitionMetadata,
@@ -133,56 +127,3 @@ def test_stage_plan_enforces_endpoint_memory_and_converts_stage_definition(
         activation_bytes=assignment.activation_bytes,
     )
     assert replace(restored, measured_compute_ns=assignment.measured_compute_ns) == assignment
-
-
-def _bare_stage() -> ContiguousOlmoeStage:
-    stage = ContiguousOlmoeStage.__new__(ContiguousOlmoeStage)
-    torch.nn.Module.__init__(stage)
-    stage.sessions = {}
-    stage._closed = False
-    stage._ownership = WeightOwnership(
-        stage_id=1,
-        layer_start=2,
-        layer_end=4,
-        parameter_names=("model.layers.2.weight", "model.layers.3.weight"),
-        parameter_bytes=32,
-        parameter_count=8,
-        owns_embeddings=False,
-        owns_final_norm=True,
-        owns_output_projection=True,
-        ownership_hash="hash",
-    )
-    return stage
-
-
-def _cache(elements: int) -> Any:
-    layer = SimpleNamespace(
-        keys=torch.zeros(elements, dtype=torch.float32),
-        values=torch.zeros(elements, dtype=torch.float32),
-    )
-    return SimpleNamespace(layers=[layer])
-
-
-def test_olmoe_stage_ownership_and_session_kv_release_are_isolated() -> None:
-    stage = _bare_stage()
-    assert isinstance(stage, StageExecutor)
-    assert stage.ownership.layer_start == 2
-    stage.sessions["first"] = StageSessionState(cache=cast(Any, _cache(2)))
-    stage.sessions["second"] = StageSessionState(cache=cast(Any, _cache(3)))
-    assert stage.kv_cache_bytes("first") == 16
-    assert stage.kv_cache_bytes("second") == 24
-    assert stage.close_session("first") == 16
-    assert "first" not in stage.sessions
-    assert stage.kv_cache_bytes("second") == 24
-    assert stage.cancel_session("second") == 24
-    assert not stage.sessions
-
-
-def test_olmoe_stage_close_releases_every_session() -> None:
-    stage = _bare_stage()
-    stage.sessions["first"] = StageSessionState(cache=cast(Any, _cache(1)))
-    stage.sessions["second"] = StageSessionState(cache=cast(Any, _cache(1)))
-    stage.close()
-    assert not stage.sessions
-    with pytest.raises(RuntimeError, match="closed"):
-        stage.open_session("new")

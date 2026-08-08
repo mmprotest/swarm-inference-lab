@@ -378,7 +378,7 @@ def situ_glu(
     beta_one: float = 4.0,
     beta_two: float = 25.0,
 ) -> np.ndarray:
-    """Kimi K3 SiTU-GLU, not the SiLU used by OLMoE."""
+    """Kimi K3 SiTU-GLU, distinct from standard SiLU expert blocks."""
 
     gate_values = np.asarray(gate, dtype=np.float32)
     up_values = np.asarray(up, dtype=np.float32)

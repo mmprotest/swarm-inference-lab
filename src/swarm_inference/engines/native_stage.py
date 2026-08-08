@@ -9,9 +9,11 @@ from collections.abc import AsyncIterator, Mapping
 from itertools import pairwise
 from typing import Protocol
 
+from swarm_inference.engines.component_graph import sparse_outer_components
 from swarm_inference.engines.cost_model import PlanCostInputs, score_costs, stable_plan_id
 from swarm_inference.engines.interfaces import (
     ClusterCapabilities,
+    ComponentPlanFragment,
     Deployment,
     EngineSupportReport,
     EngineSupportStatus,
@@ -313,6 +315,125 @@ class NativeStageEngine:
         cluster: ClusterCapabilities,
     ) -> EngineSupportReport:
         return self.probe(model, cluster)
+
+    async def candidate_components(
+        self,
+        model: ResolvedModelDescriptor,
+        cluster: ClusterCapabilities,
+        request: ExecutionRequest,
+    ) -> list[ComponentPlanFragment]:
+        """Offer the native outer decoder around an external sparse-MoE kernel."""
+
+        try:
+            adapter = self.adapters.resolve(model)
+        except LookupError:
+            return []
+        config = model.configuration
+        nested = config.get("text_config") if isinstance(config, dict) else None
+        effective = nested if isinstance(nested, dict) else config
+        if not isinstance(effective, dict):
+            return []
+        experts = int(
+            effective.get("num_experts")
+            or effective.get("n_routed_experts")
+            or effective.get("num_local_experts")
+            or 0
+        )
+        top_k = int(effective.get("num_experts_per_tok") or 0)
+        intermediate = int(
+            effective.get("moe_intermediate_size") or effective.get("expert_intermediate_size") or 0
+        )
+        hidden = int(effective.get("hidden_size") or model.hidden_size or 0)
+        layers = int(effective.get("num_hidden_layers") or model.layer_count or 0)
+        if min(experts, top_k, intermediate, hidden, layers) <= 0:
+            return []
+        dtype_name = str(
+            effective.get("torch_dtype") or config.get("torch_dtype") or "bfloat16"
+        ).casefold()
+        dtype_bytes = 4 if dtype_name in {"float32", "f32"} else 2
+        expert_bank_bytes = layers * experts * 3 * hidden * intermediate * dtype_bytes
+        native_outer_bytes = max(1, int(model.weight_bytes) - expert_bank_bytes)
+        fragments: list[ComponentPlanFragment] = []
+        for worker in cluster.workers_for_engine(self.engine_id):
+            if not _worker_requested(worker, request):
+                continue
+            capability, device = _engine_device(worker)
+            if adapter.adapter_id not in capability.adapters or not _stage_capable(capability):
+                continue
+            if device.usable_memory_bytes < native_outer_bytes:
+                continue
+            rate = float(device.measured_decode_tokens_s or 1.0) / (1 + worker.queue_depth)
+            prefill = float(device.measured_prefill_tokens_s or rate)
+            identity = _identity(
+                model,
+                adapter_id=adapter.adapter_id,
+                adapter_version=adapter.adapter_version,
+                stages=(
+                    _stage_runtime_facts(
+                        worker,
+                        ownership={
+                            "component_scope": "non-routed model components",
+                            "required_memory_bytes": native_outer_bytes,
+                        },
+                        fast_path=_fast_path_mode(
+                            capability,
+                            adapter.adapter_id,
+                            device.device_type,
+                        ),
+                    ),
+                ),
+            )
+            components = sparse_outer_components(
+                engine_id=self.engine_id,
+                architecture_id=model.architecture or adapter.adapter_id,
+                revision=model.revision,
+                worker_id=worker.worker_id,
+                device=device.device_id,
+                hidden_size=hidden,
+                layer_count=layers,
+                experts_per_token=top_k,
+                dtype=dtype_name,
+                required_memory_bytes=native_outer_bytes,
+            )
+            fragments.append(
+                ComponentPlanFragment(
+                    fragment_id=f"native-outer:{worker.worker_id}",
+                    provider_engine_id=self.engine_id,
+                    controller_engine_id=self.engine_id,
+                    model_fingerprint=model.content_fingerprint,
+                    execution_identity=identity,
+                    components=components,
+                    worker_roles={worker.worker_id: "critical_path_native_components"},
+                    required_memory_bytes=native_outer_bytes,
+                    predicted_ttft_ms=1000.0 / max(prefill, 1e-9),
+                    predicted_decode_tokens_s=rate,
+                    predicted_aggregate_tokens_s=rate * request.concurrency,
+                    predicted_messages_per_token=0.0,
+                    predicted_bytes_per_token=0.0,
+                    predicted_serial_waits_per_token=0.0,
+                    score=rate / (1 + worker.queue_depth),
+                    optional_mechanisms={
+                        "persistent_model_state": True,
+                        "persistent_connections": True,
+                        "bounded_asynchronous_transport": True,
+                        "direct_peer_model_data": True,
+                    },
+                    engine_parameters={
+                        "model_id": model.model_id,
+                        "model_revision": model.revision,
+                        "model_paths": list(model.local_paths),
+                        "tokenizer_identity": model.tokenizer_identity,
+                        "adapter_id": adapter.adapter_id,
+                        "hybrid_outer": True,
+                        "excluded_routed_expert_bytes": expert_bank_bytes,
+                    },
+                    explanation=(
+                        "native stage owns tokenizer, attention/KV, router, norm, head, and sampling",
+                        "routed expert tensors are excluded from native resident-memory admission",
+                    ),
+                )
+            )
+        return fragments
 
     async def candidate_plans(
         self,

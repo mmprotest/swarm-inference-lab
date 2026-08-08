@@ -16,6 +16,7 @@ import psutil
 
 from swarm_inference.model.architecture import (
     ArchitectureIdentity,
+    DenseOrMoe,
     architecture_from_config,
     architecture_from_gguf,
 )
@@ -255,6 +256,15 @@ def _gguf_configuration(
             if key.endswith(suffix) and target not in derived and isinstance(value, int):
                 derived[target] = value
     return derived
+
+
+def _gguf_dense_or_moe(metadata: dict[str, Any]) -> DenseOrMoe:
+    expert_counts = (
+        value
+        for key, value in metadata.items()
+        if key.endswith("expert_count") and isinstance(value, int)
+    )
+    return "moe" if any(value > 0 for value in expert_counts) else "dense"
 
 
 def _attach_architecture_profile(model: ResolvedModelDescriptor) -> ResolvedModelDescriptor:
@@ -701,7 +711,9 @@ class ModelSourceResolver:
             except GGUFParseError:
                 raise
             architecture = architecture_from_gguf(
-                gguf_inventory.metadata.get("general.architecture"), fallback=architecture
+                gguf_inventory.metadata.get("general.architecture"),
+                fallback=architecture,
+                dense_or_moe=_gguf_dense_or_moe(gguf_inventory.metadata),
             )
             config = _gguf_configuration(config, gguf_inventory.metadata, architecture)
             layers = next(
@@ -901,6 +913,7 @@ class ModelSourceResolver:
             architecture = architecture_from_gguf(
                 gguf_architecture,
                 fallback=architecture,
+                dense_or_moe=_gguf_dense_or_moe(inventory.metadata),
             )
             config = _gguf_configuration(config, inventory.metadata, architecture)
             layers = next(

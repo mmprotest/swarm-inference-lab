@@ -56,12 +56,12 @@ swarm = "swarm_inference.cli:app"
 builtin = "swarm_inference.experiments.cli_exports:get_export"
 
 [project.entry-points."swarm_inference.native_adapters"]
-olmoe = "swarm_inference.model.olmoe_adapter:OlmoeAdapter"
 qwen3_dense = "swarm_inference.model.qwen3:Qwen3Adapter"
 qwen3_moe = "swarm_inference.model.qwen3_moe:Qwen3MoeAdapter"
 
 [project.entry-points."swarm_inference.colibri_adapters"]
 deepseek_v3_moe = "swarm_inference.backends.colibri.adapters:DeepSeekV3ColibriAdapter"
+deepseek_v4_moe = "swarm_inference.backends.colibri.adapters:DeepSeekV4ColibriAdapter"
 glm_moe = "swarm_inference.backends.colibri.adapters:Glm52ColibriAdapter"
 inkling = "swarm_inference.backends.colibri.adapters:InklingColibriAdapter"
 kimi_k2_moe = "swarm_inference.backends.colibri.adapters:KimiK2ColibriAdapter"
@@ -70,7 +70,6 @@ llama4_moe = "swarm_inference.backends.colibri.adapters:Llama4MoeColibriAdapter"
 minimax_moe = "swarm_inference.backends.colibri.adapters:MiniMaxMoeColibriAdapter"
 mistral4_moe = "swarm_inference.backends.colibri.adapters:Mistral4MoeColibriAdapter"
 mixtral_moe = "swarm_inference.backends.colibri.adapters:MixtralColibriAdapter"
-olmoe_compat = "swarm_inference.backends.colibri.adapters:OlmoeColibriAdapter"
 qwen3_5_moe = "swarm_inference.backends.colibri.adapters:Qwen35MoeColibriAdapter"
 qwen3_moe = "swarm_inference.backends.colibri.adapters:Qwen3MoeColibriAdapter"
 

@@ -140,9 +140,10 @@ class ColibriBackend(BackendAdapter):
     ) -> TokenPayload:
         """Create the backend-native prompt payload from the immutable local snapshot."""
 
-        adapter = self._architecture_adapter()
-        if adapter.tokenizer_mode != "local-token-ids":
-            return TokenPayload(token_ids=[], text=prompt, tokenizer_hash=tokenizer_hash)
+        # Tokenizer mode describes how the engine gateway consumes the prompt,
+        # not whether Swarm records its immutable token identity.  Even a text
+        # gateway receives both forms so correctness evidence always contains
+        # the exact prompt IDs produced by the pinned local tokenizer.
         encoded = self._local_tokenizer()(
             prompt,
             add_special_tokens=True,

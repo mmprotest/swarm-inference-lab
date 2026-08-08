@@ -195,6 +195,7 @@ def _request(
     policy: str = "auto",
     require_remote: bool = False,
     allow_fallback: bool = False,
+    routed_expert_engine: str = "auto",
 ) -> ModelPlanRequest:
     return ModelPlanRequest(
         reference=_reference(),
@@ -204,6 +205,7 @@ def _request(
         expert_policy=policy,
         require_remote_experts=require_remote,
         allow_expert_local_fallback=allow_fallback,
+        routed_expert_engine=routed_expert_engine,
     )
 
 
@@ -220,6 +222,31 @@ def test_hierarchical_planner_uses_whole_experts_for_capacity() -> None:
     assert all(
         item.rejected and all(row["reasons"] for row in item.rejected) for item in placements
     )
+
+
+def test_colibri_component_reserves_cache_without_a_remote_expert_worker() -> None:
+    stage = _worker("stage-0", memory_bytes=2_000)
+
+    plan = ProductStagePlanner().build_plan(
+        _request(policy="hybrid", routed_expert_engine="colibri"),
+        _inspected(stage),
+    )
+
+    assert plan.routed_expert_engine == "colibri"
+    assert len(plan.expert_plans) == 1
+    expert_plan = plan.expert_plans[0]
+    assert not expert_plan.requires_remote_route
+    assert expert_plan.cache_budget_bytes == 800
+    assert {(item.layer_id, item.expert_id) for item in expert_plan.placements} == {
+        (0, 0),
+        (0, 1),
+    }
+    assert all(item.strategy == "colibri" for item in expert_plan.placements)
+    assert all(not item.worker_ids for item in expert_plan.placements)
+    # The immutable artifact assignment owns only the non-expert weights.  The
+    # admission reservation additionally includes the bounded Colibri cache.
+    assert plan.assignments[0].assignment.weight_bytes == 270
+    assert plan.assignments[0].required_memory_bytes == 1_098
 
 
 def test_hierarchical_planner_selects_gap_free_physical_microshards() -> None:
@@ -424,6 +451,7 @@ def test_forced_remote_trace_requires_exact_workers_and_matching_metrics() -> No
         _request(policy="whole-remote", require_remote=True),
         _inspected(stage, whole),
     )
+    assert plan.expert_plans[0].requires_remote_route
     event: dict[str, object] = {
         "event": "remote_whole_expert_result_consumed",
         "session_id": "session-1",
@@ -457,6 +485,54 @@ def test_forced_remote_trace_requires_exact_workers_and_matching_metrics() -> No
     with pytest.raises(IntegrityError, match="local expert contribution"):
         ProductSessionController._validate_expert_trace(
             publication.model_copy(update={"expert_trace": [local_event]}),
+            plan,
+        )
+
+
+def test_colocated_colibri_trace_is_verified_without_remote_route_evidence() -> None:
+    stage = _worker("stage-0", memory_bytes=2_000)
+    plan = ProductStagePlanner().build_plan(
+        _request(policy="hybrid", routed_expert_engine="colibri"),
+        _inspected(stage),
+    )
+    event: dict[str, object] = {
+        "event": "colibri_expert_result_consumed",
+        "session_id": "session-1",
+        "request_id": "request-1:layer-0:expert-0",
+        "token_position": 0,
+        "layer_id": 0,
+        "expert_id": 0,
+        "worker_ids": [],
+        "request_bytes": 0,
+        "response_bytes": 0,
+        "result_hash": "sha256:result",
+    }
+    metrics = {
+        "remote_expert_calls": 0,
+        "remote_whole_expert_calls": 0,
+        "remote_microshard_calls": 0,
+        "colibri_expert_calls": 1,
+        "fallbacks": 0,
+        "bytes_transferred": 0,
+    }
+    publication = _publication(plan, event=event, metrics=metrics)
+
+    ProductSessionController._validate_expert_trace(publication, plan)
+    with pytest.raises(IntegrityError, match="Colibri call metric"):
+        ProductSessionController._validate_expert_trace(
+            publication.model_copy(update={"expert_metrics": {}}),
+            plan,
+        )
+    with pytest.raises(IntegrityError, match="names remote workers"):
+        ProductSessionController._validate_expert_trace(
+            publication.model_copy(
+                update={"expert_trace": [{**event, "worker_ids": ["remote/worker"]}]}
+            ),
+            plan,
+        )
+    with pytest.raises(IntegrityError, match="remote bytes"):
+        ProductSessionController._validate_expert_trace(
+            publication.model_copy(update={"expert_trace": [{**event, "request_bytes": 1}]}),
             plan,
         )
 

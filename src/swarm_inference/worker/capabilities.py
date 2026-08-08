@@ -23,6 +23,7 @@ from swarm_inference.config.models import (
     WorkerCapability,
 )
 from swarm_inference.exceptions import BackendIncompatibleError
+from swarm_inference.engines.interfaces import ExecutionEngineCapability
 from swarm_inference.host import detect_host_runtime, split_endpoint
 from swarm_inference.model.adapter import default_native_adapter_registry
 from swarm_inference.protocol.stage_ring import STAGE_RING_PROTOCOL_VERSION
@@ -482,6 +483,17 @@ def measure_capabilities(
         )
     from swarm_inference.engines.local_capabilities import (
         discover_configured_general_engine_capabilities,
+        embedded_colibri_component_capability,
+    )
+
+    native_capability = next(
+        (
+            item
+            for raw in execution_engines
+            if (item := ExecutionEngineCapability.model_validate(raw)).engine_id
+            == "native-stage"
+        ),
+        ExecutionEngineCapability(engine_id="native-stage", enabled=False),
     )
 
     general_capabilities = discover_configured_general_engine_capabilities(
@@ -495,6 +507,7 @@ def measure_capabilities(
             if colibri_runtime_manifest is not None
             else None
         ),
+        colibri_fallback=embedded_colibri_component_capability(native_capability),
     )
     execution_engines.extend(item.model_dump(mode="json") for item in general_capabilities)
     return WorkerCapability(

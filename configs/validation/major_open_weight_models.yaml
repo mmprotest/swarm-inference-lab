@@ -1,0 +1,189 @@
+schema_version: 1
+revision_policy: resolve-current-official-and-pin
+disk_reserve_bytes: 10737418240
+working_space_fraction: 0.05
+workloads:
+  decode:
+    max_new_tokens: 128
+    prompt: "State one reason deterministic local model validation matters."
+  prefill:
+    approximate_input_tokens: 4096
+    max_new_tokens: 32
+    seed_text: "Swarm inference validates immutable model weights, direct data paths, and deterministic token generation. "
+  practical:
+    max_new_tokens: 192
+    prompt: "Explain, in practical terms, how a distributed inference runtime can preserve correctness while moving routed experts between GPU memory, system memory, and local storage."
+targets:
+  - id: qwen3-dense
+    family: Qwen3 dense
+    publisher: Qwen
+    model_id: Qwen/Qwen3-0.6B
+    architecture_id: qwen3_dense
+    dense_or_moe: dense
+    expected_format: gguf
+    quantization: Q4_K_M
+    repetitions: 3
+    local_gguf:
+      path: artifacts/backend-environments/llamacpp/models/qwen3-0.6b-c1899de289a0-q4_k_m.gguf
+      sha256: ba9d39c17289169dc47ea92321586cdc4d6cf43c9028180dc63032c6353dea10
+      source_revision: c1899de289a04d12100db370d81485cdf75e47ca
+      quantization: Q4_K_M
+      conversion_manifest: artifacts/backend-environments/llamacpp/models/qwen3-0.6b-c1899de289a0-q4_k_m.gguf.conversion.json
+      runtime_manifest: .runtime/llama-b9637-cpu/runtime-manifest.json
+  - id: qwen3-moe
+    family: Qwen3 MoE
+    publisher: Qwen
+    model_id: Qwen/Qwen3-30B-A3B
+    architecture_id: qwen3_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 3
+    require_colibri: true
+    comparison_engines: [colibri, native-stage]
+  - id: qwen3-5-dense
+    family: Qwen3.5 dense
+    publisher: Qwen
+    model_id: Qwen/Qwen3.5-4B
+    architecture_id: qwen3_5_dense
+    dense_or_moe: dense
+    expected_format: safetensors
+    repetitions: 3
+  - id: qwen3-5-moe
+    family: Qwen3.5 MoE
+    publisher: Qwen
+    model_id: Qwen/Qwen3.5-35B-A3B
+    architecture_id: qwen3_5_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 3
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: qwen3-6-moe
+    family: Qwen3.6 MoE
+    publisher: Qwen
+    model_id: Qwen/Qwen3.6-35B-A3B
+    architecture_id: qwen3_5_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 3
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: kimi-k2
+    family: Kimi K2
+    publisher: moonshotai
+    model_id: moonshotai/Kimi-K2.6
+    architecture_id: kimi_k2_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 1
+    streaming_model: true
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: kimi-k3
+    family: Kimi K3
+    publisher: moonshotai
+    model_id: moonshotai/Kimi-K3
+    architecture_id: kimi_k3_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 1
+    streaming_model: true
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: glm-5
+    family: GLM 5.x
+    publisher: zai-org
+    model_id: zai-org/GLM-5.2
+    architecture_id: glm_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 1
+    streaming_model: true
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: deepseek-v3
+    family: DeepSeek V3.x
+    publisher: deepseek-ai
+    model_id: deepseek-ai/DeepSeek-V3.2
+    architecture_id: deepseek_v3_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 1
+    streaming_model: true
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: deepseek-r1
+    family: DeepSeek R1
+    publisher: deepseek-ai
+    model_id: deepseek-ai/DeepSeek-R1
+    architecture_id: deepseek_v3_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 1
+    streaming_model: true
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: deepseek-v4
+    family: DeepSeek V4
+    publisher: deepseek-ai
+    model_id: deepseek-ai/DeepSeek-V4-Flash
+    architecture_id: deepseek_v4_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 1
+    streaming_model: true
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: minimax
+    family: MiniMax
+    publisher: MiniMaxAI
+    model_id: MiniMaxAI/MiniMax-M3
+    architecture_id: minimax_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 1
+    streaming_model: true
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: llama
+    family: Llama
+    publisher: meta-llama
+    model_id: meta-llama/Llama-3.1-8B-Instruct
+    architecture_id: llama_dense
+    dense_or_moe: dense
+    expected_format: gguf
+    quantization: Q8_0
+    repetitions: 3
+    local_gguf:
+      path: artifacts/backend-environments/llamacpp/models/llama-3.1-8b-instruct-0e9e39f249a1-q8_0.gguf
+      sha256: 3c9ae5dee172066afbddc615dfab1be82ceb73fc706445a0a0a1d92c9e57bbde
+      source_revision: 0e9e39f249a16976918f6564b8830bc894c89659
+      quantization: Q8_0
+      conversion_manifest: artifacts/backend-environments/llamacpp/models/llama-3.1-8b-instruct-0e9e39f249a1-q8_0.gguf.conversion.json
+      runtime_manifest: .runtime/llama-b9637-cpu/runtime-manifest.json
+  - id: mistral
+    family: Mistral
+    publisher: mistralai
+    model_id: mistralai/Mistral-7B-Instruct-v0.3
+    architecture_id: mistral_dense
+    dense_or_moe: dense
+    expected_format: safetensors
+    repetitions: 3
+  - id: mixtral
+    family: Mixtral
+    publisher: mistralai
+    model_id: mistralai/Mixtral-8x7B-Instruct-v0.1
+    architecture_id: mixtral_moe
+    dense_or_moe: moe
+    expected_format: safetensors
+    repetitions: 3
+    require_colibri: true
+    comparison_engines: [colibri]
+  - id: gemma
+    family: Gemma
+    publisher: google
+    model_id: google/gemma-3-4b-it
+    architecture_id: gemma_dense
+    dense_or_moe: dense
+    expected_format: safetensors
+    repetitions: 3

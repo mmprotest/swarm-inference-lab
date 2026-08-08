@@ -50,7 +50,6 @@ from swarm_inference.coordinator.reservations import (
     AtomicRouteAllocator,
     ReservationDecision,
 )
-from swarm_inference.coordinator.session_controller import ProductSessionController
 from swarm_inference.coordinator.stage_planner import ProductStagePlanner
 from swarm_inference.exceptions import (
     IntegrityError,
@@ -163,6 +162,9 @@ from swarm_inference.security.trust_store import WorkerTrustStore
 from swarm_inference.simulation.model import build_synthetic_stages
 from swarm_inference.transport.base import ActivationTransport
 from swarm_inference.transport.grpc_transport import GrpcTransport
+
+if TYPE_CHECKING:
+    from swarm_inference.coordinator.session_controller import ProductSessionController
 
 ResponseT = TypeVar("ResponseT", bound=StrictModel)
 LOGGER = logging.getLogger(__name__)
@@ -331,6 +333,14 @@ class CoordinatorCore:
             Callable[[ArtifactOperationRequest], Awaitable[ArtifactOperationResponse]] | None
         ) = None
         if product_config is not None:
+            # The stage-ring session controller owns PyTorch activation/KV
+            # tensors.  Import it only for that runtime.  Coordinator modules
+            # are also used by independent GGUF engines and must remain
+            # importable when PyTorch is unavailable.
+            from swarm_inference.coordinator.session_controller import (
+                ProductSessionController,
+            )
+
             self.durable_state = DurableCoordinatorState(self.state_directory)
             configured_trust_store = product_config.trust_store_path
             trust_store_path = (

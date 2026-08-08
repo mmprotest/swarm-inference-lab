@@ -15,9 +15,11 @@ from swarm_inference.backends.colibri.architecture import (
     ColibriRuntimeCapabilities,
 )
 from swarm_inference.backends.colibri.backend import ColibriBackend
+from swarm_inference.engines.component_graph import routed_expert_component
 from swarm_inference.engines.cost_model import PlanCostInputs, score_costs, stable_plan_id
 from swarm_inference.engines.interfaces import (
     ClusterCapabilities,
+    ComponentPlanFragment,
     Deployment,
     EngineSupportReport,
     EngineSupportStatus,
@@ -520,6 +522,147 @@ class ColibriExecutionEngine:
         cluster: ClusterCapabilities,
     ) -> EngineSupportReport:
         return self.probe(model, cluster)
+
+    async def candidate_components(
+        self,
+        model: ResolvedModelDescriptor,
+        cluster: ClusterCapabilities,
+        request: ExecutionRequest,
+    ) -> list[ComponentPlanFragment]:
+        """Offer runnable routed-expert fragments to the canonical composer."""
+
+        try:
+            architecture_adapter = default_colibri_adapter_registry().resolve_model(model)
+        except LookupError:
+            return []
+        if architecture_adapter is None:
+            return []
+        fragments: list[ComponentPlanFragment] = []
+        for worker in cluster.workers_for_engine(self.engine_id):
+            identities = {worker.worker_id, worker.node_id}
+            if identities.intersection(request.excluded_nodes) or (
+                request.requested_nodes and not identities.intersection(request.requested_nodes)
+            ):
+                continue
+            capability = worker.engine(self.engine_id)
+            assert capability is not None
+            adapter = _adapter_for_model(model, capability)
+            if adapter is None:
+                continue
+            support = adapter.supports(model, _runtime_capabilities(capability))
+            if not support.supported:
+                continue
+            profile = adapter.build_execution_profile(model, cluster)
+            if profile.complete_model:
+                continue
+            memory = sum(item.usable_memory_bytes for item in capability.devices)
+            if memory < profile.required_memory_bytes or not capability.devices:
+                continue
+            model_profile = adapter.inspect_model(model)
+            if not all(
+                (
+                    model_profile.hidden_size,
+                    model_profile.experts_per_token,
+                    model_profile.expert_count,
+                )
+            ):
+                continue
+            device = max(
+                capability.devices,
+                key=lambda item: (
+                    item.measured_decode_tokens_s or 0,
+                    item.usable_memory_bytes,
+                    item.device_id,
+                ),
+            )
+            config = model.configuration
+            nested = config.get("text_config") if isinstance(config, dict) else None
+            effective = nested if isinstance(nested, dict) else config
+            dtype_name = (
+                str(effective.get("torch_dtype") or config.get("torch_dtype") or "bfloat16")
+                if isinstance(effective, dict) and isinstance(config, dict)
+                else "bfloat16"
+            ).casefold()
+            rate = float(device.measured_decode_tokens_s or 1.0) / (1 + worker.queue_depth)
+            prefill = float(device.measured_prefill_tokens_s or rate)
+            identity = (
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(
+                        {
+                            "model": model.content_fingerprint,
+                            "runtime": capability.runtime_revision,
+                            "binaries": capability.binary_hashes,
+                            "adapter": adapter.adapter_id,
+                            "adapter_version": adapter.adapter_version,
+                            "scope": "routed-experts",
+                            "worker": worker.worker_id,
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest()
+            )
+            component = routed_expert_component(
+                engine_id=self.engine_id,
+                architecture_id=model.architecture or adapter.adapter_id,
+                revision=model.revision,
+                worker_ids=(worker.worker_id,),
+                device=device.device_id,
+                hidden_size=int(model_profile.hidden_size or 0),
+                experts_per_token=int(model_profile.experts_per_token or 0),
+                dtype=dtype_name,
+                required_memory_bytes=profile.required_memory_bytes,
+                metadata={
+                    "adapter_id": adapter.adapter_id,
+                    "routing_mode": profile.routing_mode,
+                    "cache_policy": profile.cache_policy,
+                    "whole_expert_execution": profile.whole_expert_execution,
+                    "tensor_microshards": profile.tensor_microshards,
+                    "direct_peer_model_data": profile.direct_peer_model_data,
+                    "coordinator_activation_relay": False,
+                    "expert_count": model_profile.expert_count,
+                },
+            )
+            fragments.append(
+                ComponentPlanFragment(
+                    fragment_id=f"colibri-routed:{worker.worker_id}",
+                    provider_engine_id=self.engine_id,
+                    controller_engine_id=self.engine_id,
+                    model_fingerprint=model.content_fingerprint,
+                    execution_identity=identity,
+                    components=(component,),
+                    worker_roles={worker.worker_id: "routed_expert_component"},
+                    required_memory_bytes=profile.required_memory_bytes,
+                    predicted_ttft_ms=1000.0 / max(prefill, 1e-9),
+                    predicted_decode_tokens_s=rate,
+                    predicted_aggregate_tokens_s=rate * request.concurrency,
+                    predicted_messages_per_token=0.0,
+                    predicted_bytes_per_token=0.0,
+                    predicted_serial_waits_per_token=0.0,
+                    score=rate / (1 + worker.queue_depth),
+                    optional_mechanisms={
+                        "prefetch": profile.persistent_expert_residency,
+                        "tensor_microshards": profile.tensor_microshards,
+                        "direct_peer_model_data": profile.direct_peer_model_data,
+                        "persistent_expert_residency": profile.persistent_expert_residency,
+                        "expert_storage_tiering": True,
+                    },
+                    engine_parameters={
+                        "model_id": model.model_id,
+                        "model_revision": model.revision,
+                        "model_family": adapter.adapter_id,
+                        "model_paths": list(model.local_paths),
+                        "component_scope": "routed-experts",
+                    },
+                    explanation=(
+                        "Colibri owns routed experts and their VRAM/RAM/NVMe residency",
+                        "router identity and activation boundaries are validated explicitly",
+                        *profile.limitations,
+                    ),
+                )
+            )
+        return fragments
 
     async def candidate_plans(
         self,

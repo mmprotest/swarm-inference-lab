@@ -1,0 +1,230 @@
+{
+  "acceptance_schema_version": 4,
+  "acceptance_source_sha256": "sha256:77ad0e145d5932c9a9a0da631383b8c924304c52093f90874b0eaf66cdbc8b96",
+  "document_type": "swarm-process-repeatability",
+  "evidence_checksum": "sha256:436cd6dfe41a037db8eba3f7011c68e1056a09c5d39ab3cd2a55ea3d6a3717c0",
+  "excluded_source_audit_tests": [
+    "tests/integration/test_experiment_007_corrections_run.py",
+    "tests/integration/test_experiment_007_run.py"
+  ],
+  "finish_git_status": "M .gitignore\n M benchmarks/canonical/experiment_009_contract.yaml\n M benchmarks/canonical/experiment_010_contract.yaml\n D configs/experiments/experiment_009_colibri.yaml\n M docs/architecture.md\n D docs/experiment-010-correction-decisions.md\n M docs/experiments.md\n D docs/experiments/experiment-011-design.md\n D experiments/009_colibri_adaptive_expert_runtime/README.md\n D experiments/009_colibri_adaptive_expert_runtime/reproduce.ps1\n D experiments/010_hardware_in_loop_virtual_swarm_closure/IMPLEMENTATION_MAP.md\n D experiments/010_hardware_in_loop_virtual_swarm_closure/README.md\n D experiments/010_hardware_in_loop_virtual_swarm_closure/reproduce.ps1\n M integrations/colibri/README.md\n M integrations/colibri/build.ps1\n M integrations/colibri/build.sh\n M integrations/colibri/build_manifest.py\n D integrations/colibri/patches/0002-olmoe-routing-telemetry.patch\n D integrations/colibri/patches/0004-olmoe-machine-readable-telemetry.patch\n D integrations/colibri/patches/0005-olmoe-shared-expert-runtime.patch\n D integrations/colibri/patches/0006-olmoe-external-expert-dispatch.patch\n D integrations/colibri/patches/0007-olmoe-native-microshards.patch\n D integrations/colibri/patches/0008-olmoe-memory-residency-telemetry.patch\n M integrations/colibri/patches/series\n M pyproject.toml\n D scripts/prepare_experiment_010_olmoe_regression.py\n D scripts/run-experiment-011.ps1\n M src/swarm_inference/acceptance/productization.py\n M src/swarm_inference/backends/colibri/adapters.py\n M src/swarm_inference/backends/colibri/backend.py\n M src/swarm_inference/backends/colibri/cuda.py\n D src/swarm_inference/backends/colibri/expert_bank.py\n M src/swarm_inference/cli.py\n M src/swarm_inference/cluster/artifacts.py\n M src/swarm_inference/cluster/orchestrator.py\n D src/swarm_inference/config/experiment_009.py\n M src/swarm_inference/config/loader.py\n M src/swarm_inference/coordinator/service.py\n M src/swarm_inference/coordinator/session_controller.py\n M src/swarm_inference/coordinator/stage_planner.py\n M src/swarm_inference/engines/colibri.py\n M src/swarm_inference/engines/interfaces.py\n M src/swarm_inference/engines/llamacpp_rpc.py\n M src/swarm_inference/engines/local_capabilities.py\n M src/swarm_inference/engines/native_stage.py\n M src/swarm_inference/engines/registry.py\n M src/swarm_inference/execution/moe.py\n D src/swarm_inference/execution/olmoe_stage.py\n M src/swarm_inference/execution/qwen3_stage.py\n M src/swarm_inference/experiments/cli_exports.py\n D src/swarm_inference/experiments/experiment_009/runner.py\n D src/swarm_inference/experiments/experiment_010/__main__.py\n D src/swarm_inference/experiments/experiment_010/cli.py\n D src/swarm_inference/experiments/experiment_010/colibri_expert_bank.py\n D src/swarm_inference/experiments/experiment_010/colibri_native.py\n D src/swarm_inference/experiments/experiment_010/colibri_token_path.py\n D src/swarm_inference/experiments/experiment_010/colibri_workloads.py\n D src/swarm_inference/experiments/experiment_010/correction_bundle.py\n M src/swarm_inference/experiments/experiment_010/kimi.py\n D src/swarm_inference/experiments/experiment_010/level_a.py\n D src/swarm_inference/experiments/experiment_010/level_b.py\n D src/swarm_inference/experiments/experiment_010/real_path_resilience.py\n D src/swarm_inference/experiments/experiment_010/runner.py\n D src/swarm_inference/experiments/experiment_011/__main__.py\n D src/swarm_inference/experiments/experiment_011/baseline.py\n D src/swarm_inference/experiments/experiment_011/cli.py\n D src/swarm_inference/experiments/experiment_011/concurrency.py\n D src/swarm_inference/experiments/experiment_011/discovery.py\n D src/swarm_inference/experiments/experiment_011/evidence.py\n D src/swarm_inference/experiments/experiment_011/failures.py\n D src/swarm_inference/experiments/experiment_011/model.py\n D src/swarm_inference/experiments/experiment_011/partition.py\n D src/swarm_inference/experiments/experiment_011/reference.py\n D src/swarm_inference/experiments/experiment_011/runner.py\n D src/swarm_inference/experiments/experiment_011/runtime.py\n D src/swarm_inference/experiments/experiment_011/speculation.py\n M src/swarm_inference/model/architecture.py\n M src/swarm_inference/model/architecture_adapters.py\n D src/swarm_inference/model/olmoe.py\n D src/swarm_inference/model/olmoe_adapter.py\n M src/swarm_inference/model/qwen3.py\n M src/swarm_inference/model/qwen3_moe.py\n M src/swarm_inference/model/resolver.py\n M src/swarm_inference/protocol/product.py\n M src/swarm_inference/runtime/telemetry.py\n M src/swarm_inference/worker/capabilities.py\n M src/swarm_inference/worker/stage_runtime.py\n M tests/correctness/test_qwen3_moe_tiny.py\n D tests/integration/test_experiment_010_olmoe_regression.py\n D tests/integration/test_persistent_stage_worker_gpu.py\n D tests/integration/test_product_expert_paths.py\n M tests/integration/test_product_stage_ring.py\n M tests/integration/test_secure_wan_transport.py\n M tests/unit/test_architecture_boundaries.py\n M tests/unit/test_canonical_expert_runtime.py\n M tests/unit/test_colibri_canonical_engine.py\n M tests/unit/test_colibri_integration.py\n M tests/unit/test_execution_engine_registry.py\n D tests/unit/test_experiment_010_colibri_expert_bank.py\n D tests/unit/test_experiment_010_colibri_token_path.py\n M tests/unit/test_experiment_010_colibri_wire.py\n M tests/unit/test_experiment_010_cuda_kimi_evidence.py\n D tests/unit/test_experiment_010_level_b.py\n M tests/unit/test_experiment_010_planning_simulation.py\n D tests/unit/test_experiment_010_real_path_resilience.py\n D tests/unit/test_experiment_011_gpu.py\n M tests/unit/test_experiment_011_mechanisms.py\n M tests/unit/test_model_architecture_capabilities.py\n D tests/unit/test_olmoe_adapter_compatibility.py\n M tests/unit/test_product_expert_planning.py\n M tests/unit/test_productization_acceptance.py\n D tests/unit/test_stage_ring_compatibility.py\n M tests/unit/test_stage_ring_primitives.py\n M tests/unit/test_universal_architecture_adapters.py\n?? .test-temp-architecture-density-20260808/\n?? .test-temp-capability-sidecar-20260808/\n?? .test-temp-colibri-capability-20260808/\n?? .test-temp-major-acceptance-20260808/\n?? .test-temp-major-connectivity-20260808/\n?? .test-temp-major-offline-preflight-20260808/\n?? .test-temp-major-offline-preflight-r2-20260808/\n?? .test-temp-planner-pure-20260808/\n?? .test-temp-productization-env-20260808/\n?? .test-temp-pure-suite-r2-20260808/\n?? .test-temp-pure-suite-r3-20260808/\n?? .test-temp-regression-20260808/\n?? .test-temp-two-regressions-20260808/\n?? configs/validation/\n?? scripts/run_major_model_acceptance.py\n?? src/swarm_inference/acceptance/major_models.py\n?? src/swarm_inference/backends/colibri/torch_backend.py\n?? src/swarm_inference/engines/component_graph.py\n?? src/swarm_inference/engines/composite.py\n?? tests/unit/test_local_capability_isolation.py\n?? tests/unit/test_major_model_acceptance.py",
+  "git_commit": "6d05c4f7b093696718e68571a9eb3e04d9865603",
+  "git_dirty": true,
+  "git_status": "M .gitignore\n M benchmarks/canonical/experiment_009_contract.yaml\n M benchmarks/canonical/experiment_010_contract.yaml\n D configs/experiments/experiment_009_colibri.yaml\n M docs/architecture.md\n D docs/experiment-010-correction-decisions.md\n M docs/experiments.md\n D docs/experiments/experiment-011-design.md\n D experiments/009_colibri_adaptive_expert_runtime/README.md\n D experiments/009_colibri_adaptive_expert_runtime/reproduce.ps1\n D experiments/010_hardware_in_loop_virtual_swarm_closure/IMPLEMENTATION_MAP.md\n D experiments/010_hardware_in_loop_virtual_swarm_closure/README.md\n D experiments/010_hardware_in_loop_virtual_swarm_closure/reproduce.ps1\n M integrations/colibri/README.md\n M integrations/colibri/build.ps1\n M integrations/colibri/build.sh\n M integrations/colibri/build_manifest.py\n D integrations/colibri/patches/0002-olmoe-routing-telemetry.patch\n D integrations/colibri/patches/0004-olmoe-machine-readable-telemetry.patch\n D integrations/colibri/patches/0005-olmoe-shared-expert-runtime.patch\n D integrations/colibri/patches/0006-olmoe-external-expert-dispatch.patch\n D integrations/colibri/patches/0007-olmoe-native-microshards.patch\n D integrations/colibri/patches/0008-olmoe-memory-residency-telemetry.patch\n M integrations/colibri/patches/series\n M pyproject.toml\n D scripts/prepare_experiment_010_olmoe_regression.py\n D scripts/run-experiment-011.ps1\n M src/swarm_inference/acceptance/productization.py\n M src/swarm_inference/backends/colibri/adapters.py\n M src/swarm_inference/backends/colibri/backend.py\n M src/swarm_inference/backends/colibri/cuda.py\n D src/swarm_inference/backends/colibri/expert_bank.py\n M src/swarm_inference/cli.py\n M src/swarm_inference/cluster/artifacts.py\n M src/swarm_inference/cluster/orchestrator.py\n D src/swarm_inference/config/experiment_009.py\n M src/swarm_inference/config/loader.py\n M src/swarm_inference/coordinator/service.py\n M src/swarm_inference/coordinator/session_controller.py\n M src/swarm_inference/coordinator/stage_planner.py\n M src/swarm_inference/engines/colibri.py\n M src/swarm_inference/engines/interfaces.py\n M src/swarm_inference/engines/llamacpp_rpc.py\n M src/swarm_inference/engines/local_capabilities.py\n M src/swarm_inference/engines/native_stage.py\n M src/swarm_inference/engines/registry.py\n M src/swarm_inference/execution/moe.py\n D src/swarm_inference/execution/olmoe_stage.py\n M src/swarm_inference/execution/qwen3_stage.py\n M src/swarm_inference/experiments/cli_exports.py\n D src/swarm_inference/experiments/experiment_009/runner.py\n D src/swarm_inference/experiments/experiment_010/__main__.py\n D src/swarm_inference/experiments/experiment_010/cli.py\n D src/swarm_inference/experiments/experiment_010/colibri_expert_bank.py\n D src/swarm_inference/experiments/experiment_010/colibri_native.py\n D src/swarm_inference/experiments/experiment_010/colibri_token_path.py\n D src/swarm_inference/experiments/experiment_010/colibri_workloads.py\n D src/swarm_inference/experiments/experiment_010/correction_bundle.py\n M src/swarm_inference/experiments/experiment_010/kimi.py\n D src/swarm_inference/experiments/experiment_010/level_a.py\n D src/swarm_inference/experiments/experiment_010/level_b.py\n D src/swarm_inference/experiments/experiment_010/real_path_resilience.py\n D src/swarm_inference/experiments/experiment_010/runner.py\n D src/swarm_inference/experiments/experiment_011/__main__.py\n D src/swarm_inference/experiments/experiment_011/baseline.py\n D src/swarm_inference/experiments/experiment_011/cli.py\n D src/swarm_inference/experiments/experiment_011/concurrency.py\n D src/swarm_inference/experiments/experiment_011/discovery.py\n D src/swarm_inference/experiments/experiment_011/evidence.py\n D src/swarm_inference/experiments/experiment_011/failures.py\n D src/swarm_inference/experiments/experiment_011/model.py\n D src/swarm_inference/experiments/experiment_011/partition.py\n D src/swarm_inference/experiments/experiment_011/reference.py\n D src/swarm_inference/experiments/experiment_011/runner.py\n D src/swarm_inference/experiments/experiment_011/runtime.py\n D src/swarm_inference/experiments/experiment_011/speculation.py\n M src/swarm_inference/model/architecture.py\n M src/swarm_inference/model/architecture_adapters.py\n D src/swarm_inference/model/olmoe.py\n D src/swarm_inference/model/olmoe_adapter.py\n M src/swarm_inference/model/qwen3.py\n M src/swarm_inference/model/qwen3_moe.py\n M src/swarm_inference/model/resolver.py\n M src/swarm_inference/protocol/product.py\n M src/swarm_inference/runtime/telemetry.py\n M src/swarm_inference/worker/capabilities.py\n M src/swarm_inference/worker/stage_runtime.py\n M tests/correctness/test_qwen3_moe_tiny.py\n D tests/integration/test_experiment_010_olmoe_regression.py\n D tests/integration/test_persistent_stage_worker_gpu.py\n D tests/integration/test_product_expert_paths.py\n M tests/integration/test_product_stage_ring.py\n M tests/integration/test_secure_wan_transport.py\n M tests/unit/test_architecture_boundaries.py\n M tests/unit/test_canonical_expert_runtime.py\n M tests/unit/test_colibri_canonical_engine.py\n M tests/unit/test_colibri_integration.py\n M tests/unit/test_execution_engine_registry.py\n D tests/unit/test_experiment_010_colibri_expert_bank.py\n D tests/unit/test_experiment_010_colibri_token_path.py\n M tests/unit/test_experiment_010_colibri_wire.py\n M tests/unit/test_experiment_010_cuda_kimi_evidence.py\n D tests/unit/test_experiment_010_level_b.py\n M tests/unit/test_experiment_010_planning_simulation.py\n D tests/unit/test_experiment_010_real_path_resilience.py\n D tests/unit/test_experiment_011_gpu.py\n M tests/unit/test_experiment_011_mechanisms.py\n M tests/unit/test_model_architecture_capabilities.py\n D tests/unit/test_olmoe_adapter_compatibility.py\n M tests/unit/test_product_expert_planning.py\n M tests/unit/test_productization_acceptance.py\n D tests/unit/test_stage_ring_compatibility.py\n M tests/unit/test_stage_ring_primitives.py\n M tests/unit/test_universal_architecture_adapters.py\n?? .test-temp-architecture-density-20260808/\n?? .test-temp-capability-sidecar-20260808/\n?? .test-temp-colibri-capability-20260808/\n?? .test-temp-major-acceptance-20260808/\n?? .test-temp-major-connectivity-20260808/\n?? .test-temp-major-offline-preflight-20260808/\n?? .test-temp-major-offline-preflight-r2-20260808/\n?? .test-temp-planner-pure-20260808/\n?? .test-temp-productization-env-20260808/\n?? .test-temp-pure-suite-r2-20260808/\n?? .test-temp-pure-suite-r3-20260808/\n?? .test-temp-regression-20260808/\n?? .test-temp-two-regressions-20260808/\n?? configs/validation/\n?? scripts/run_major_model_acceptance.py\n?? src/swarm_inference/acceptance/major_models.py\n?? src/swarm_inference/backends/colibri/torch_backend.py\n?? src/swarm_inference/engines/component_graph.py\n?? src/swarm_inference/engines/composite.py\n?? tests/unit/test_local_capability_isolation.py\n?? tests/unit/test_major_model_acceptance.py",
+  "os": "Windows-10-10.0.26200-SP0",
+  "overall_repeatability_status": "FAIL",
+  "process_runner_sha256": "sha256:6cb25a6a27581462265de08ccf416fbe47e4e481f2e8b92b0b8046df591c58e6",
+  "python_version": "3.11.9",
+  "requested_runs": {
+    "full_process_suite": 3,
+    "stage_ring_module": 5
+  },
+  "required_runs": {
+    "full_process_suite": 3,
+    "stage_ring_module": 5
+  },
+  "results": [
+    {
+      "checksums": {
+        "full-1.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "full-1.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "full-1",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 1,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "checksums": {
+        "full-2.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "full-2.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "full-2",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 0,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "checksums": {
+        "full-3.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "full-3.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "full-3",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 0,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "checksums": {
+        "stage-ring-1.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stage-ring-1.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "stage-ring-1",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 0,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "checksums": {
+        "stage-ring-2.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stage-ring-2.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "stage-ring-2",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 0,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "checksums": {
+        "stage-ring-3.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stage-ring-3.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "stage-ring-3",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 0,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "checksums": {
+        "stage-ring-4.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stage-ring-4.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "stage-ring-4",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 0,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "checksums": {
+        "stage-ring-5.stderr.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stage-ring-5.stdout.log": "sha256:c9d7a0682d275afe0a4d41a00294f56d6d82783a4de393ea188806cc8b3ee509"
+      },
+      "exit_code": 0,
+      "graceful_shutdown_count": 2,
+      "leaked_process_count": 0,
+      "name": "stage-ring-5",
+      "resource_warning_count": 0,
+      "status": "PASS",
+      "test_counts": {
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0,
+        "tests": 1
+      },
+      "unexpected_kill_count": 0,
+      "unexpected_terminate_count": 0,
+      "warning_scan": {
+        "ignore_list": [],
+        "matches": [],
+        "status": "PASS"
+      }
+    }
+  ],
+  "schema_version": 2,
+  "test_command_version": 3
+}

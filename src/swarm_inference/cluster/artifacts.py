@@ -15,7 +15,6 @@ from uuid import uuid4
 
 from pydantic import Field, NonNegativeInt, PositiveInt, model_validator
 from safetensors import safe_open
-from safetensors.torch import save_file
 
 from swarm_inference.cluster.models import (
     ARTIFACT_FORMAT_VERSION,
@@ -313,6 +312,7 @@ class StageArtifactBuilder:
         assignment: StageAssignment,
         adapter: NativeModelAdapter,
         config: dict[str, Any],
+        remote_experts: set[tuple[int, int]],
     ) -> tuple[list[str], list[list[str]], tuple[str, str] | None]:
         selected: list[str] = []
         embedding_names: list[str] = []
@@ -358,6 +358,17 @@ class StageArtifactBuilder:
             if source_name not in embedding_names:
                 raise IntegrityError("architecture tied-weight source is not an embedding tensor")
             tied_groups.append([source_name, alias_name])
+        exclude = getattr(adapter, "exclude_delegated_tensor_names", None)
+        if remote_experts:
+            if not callable(exclude):
+                raise IntegrityError(
+                    f"native adapter {adapter.adapter_id!r} cannot exclude delegated experts"
+                )
+            delegated = set(exclude(tuple(selected), remote_experts))
+            unknown = delegated - set(selected)
+            if unknown:
+                raise IntegrityError("adapter delegated tensors outside the stage selection")
+            selected = [name for name in selected if name not in delegated]
         if not selected and tied_alias is None:
             raise IntegrityError("stage assignment selected no checkpoint tensors")
         return selected, tied_groups, tied_alias
@@ -389,8 +400,16 @@ class StageArtifactBuilder:
         quantization: str = "none",
         model_fingerprint: str | None = None,
         adapter_id: str | None = None,
+        delegated_experts: set[tuple[int, int]] | None = None,
+        external_experts: set[tuple[int, int]] | None = None,
         before_publish: Callable[[ArtifactManifest], object] | None = None,
     ) -> ArtifactManifest:
+        # Importing the PyTorch safetensors bridge loads the native PyTorch
+        # runtime on Windows.  Keep that dependency inside the native-stage
+        # artifact builder so GGUF/llama.cpp orchestration remains usable when
+        # PyTorch is absent or unhealthy.
+        from safetensors.torch import save_file
+
         source = source_model_path.expanduser().resolve()
         if not source.is_dir():
             raise FileNotFoundError(f"source model directory is unavailable: {source}")
@@ -413,13 +432,15 @@ class StageArtifactBuilder:
             raise IntegrityError(
                 f"native adapter {adapter.adapter_id!r} cannot validate stage assignments"
             )
-        validate_assignment(
-            source,
-            assignment=assignment,
-            stage_count=stage_count,
-            model_revision=model_revision,
-            tokenizer_revision=tokenizer_revision,
-        )
+        validation_kwargs: dict[str, Any] = {
+            "assignment": assignment,
+            "stage_count": stage_count,
+            "model_revision": model_revision,
+            "tokenizer_revision": tokenizer_revision,
+        }
+        if delegated_experts:
+            validation_kwargs["remote_experts"] = delegated_experts
+        validate_assignment(source, **validation_kwargs)
         index_path = source / _INDEX_NAME
         try:
             raw_index = json.loads(index_path.read_text(encoding="utf-8"))
@@ -430,7 +451,11 @@ class StageArtifactBuilder:
             raise IntegrityError("source native safetensors index has no weight map")
         weight_map = {str(name): str(shard) for name, shard in raw_weight_map.items()}
         selected, tied_groups, tied_alias = self._selected_tensor_names(
-            weight_map, assignment, adapter, config
+            weight_map,
+            assignment,
+            adapter,
+            config,
+            set(external_experts or set()),
         )
         selected_set = set(selected)
         temporary = self.temporary_root / f"artifact-{uuid4().hex}.partial"

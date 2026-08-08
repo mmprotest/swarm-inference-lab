@@ -9,10 +9,6 @@ from swarm_inference.experiments.experiment_010.batching import (
     batching_summary,
     make_routing_batches,
 )
-from swarm_inference.experiments.experiment_010.colibri_workloads import (
-    _counter_delta,
-    prefill_context_supported,
-)
 from swarm_inference.experiments.experiment_010.memory_analysis import (
     amdahl_gate,
     page_fault_candidate_validity,
@@ -21,13 +17,8 @@ from swarm_inference.experiments.experiment_010.memory_analysis import (
 )
 from swarm_inference.experiments.experiment_010.phase10_analysis import _plan
 from swarm_inference.experiments.experiment_010.planner import PositiveUtilityPlanner
-from swarm_inference.experiments.experiment_010.runner import (
-    FULL_RUN_PREREQUISITES,
-    assess_full_run_completeness,
-)
 from swarm_inference.experiments.experiment_010.schemas import (
     ExecutionStrategy,
-    Experiment010Mode,
     PlannerCandidate,
     PlannerObjective,
     ServicePhase,
@@ -36,9 +27,6 @@ from swarm_inference.simulation.expert_model import (
     calibrate_expert_simulator,
     deterministic_calibration_split,
 )
-
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-
 
 def _candidate(
     candidate_id: str,
@@ -234,48 +222,6 @@ def test_simulator_regret() -> None:
     assert model.validation["planner_regret_pass"] is True
 
 
-def test_level_b_current_run_required() -> None:
-    assert "level_b_current_workload" in FULL_RUN_PREREQUISITES
-    reproduction = (
-        REPOSITORY_ROOT
-        / "experiments"
-        / "010_hardware_in_loop_virtual_swarm_closure"
-        / "reproduce.ps1"
-    ).read_text(encoding="utf-8")
-    assert "008_single_host_adaptive_moe_saturation\\reproduce.ps1" in reproduction
-    assert "experiment-010-correction-work\\phase-14\\level-b-current" in reproduction
-    assert '"-Configuration", "A"' in reproduction
-
-
-def test_full_run_incomplete_when_level_b_missing() -> None:
-    prerequisites = {name: True for name in FULL_RUN_PREREQUISITES}
-    prerequisites["level_b_current_workload"] = False
-    result = assess_full_run_completeness(
-        mode=Experiment010Mode.FULL,
-        prerequisites=prerequisites,
-        reasons={"level_b_current_workload": "current Level B model path is unavailable"},
-    )
-    assert result["status"] == "INCOMPLETE_FULL_RUN"
-    assert result["full_complete"] is False
-    assert result["missing_prerequisites"] == [
-        {
-            "prerequisite": "level_b_current_workload",
-            "complete": False,
-            "reason": "current Level B model path is unavailable",
-        }
-    ]
-
-
-def test_full_run_completeness() -> None:
-    result = assess_full_run_completeness(
-        mode=Experiment010Mode.FULL,
-        prerequisites={name: True for name in FULL_RUN_PREREQUISITES},
-    )
-    assert result["status"] == "FULL_COMPLETE"
-    assert result["full_complete"] is True
-    assert result["missing_prerequisites"] == []
-
-
 def test_reuse_distance_candidates_follow_measured_thresholds(tmp_path) -> None:
     trace = tmp_path / "route.trace"
     trace.write_text(
@@ -325,25 +271,6 @@ def test_amdahl_gate_rejects_microbenchmark_only_gain() -> None:
     assert result["measured_kernel_gain"] == 2.0
     assert result["measured_end_to_end_gain"] == 1.0
     assert result["accepted"] is False
-
-
-def test_worker_counter_delta_uses_documented_zero_initial_value() -> None:
-    assert _counter_delta({"logical_cache_hits": 17}, {}, "logical_cache_hits") == 17
-    assert (
-        _counter_delta(
-            {"logical_cache_hits": 3},
-            {"logical_cache_hits": 100},
-            "logical_cache_hits",
-        )
-        == 3
-    )
-    assert _counter_delta({}, {}, "logical_cache_hits") is None
-
-
-def test_prefill_context_capability_does_not_infer_32k_from_workspace() -> None:
-    assert prefill_context_supported(context_length=8192, advertised_context_limit=4096)
-    assert not prefill_context_supported(context_length=32768, advertised_context_limit=4096)
-    assert prefill_context_supported(context_length=32768, advertised_context_limit=32768)
 
 
 def test_measured_phase_plan_rejects_faster_inexact_candidate() -> None:

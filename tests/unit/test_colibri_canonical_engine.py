@@ -33,13 +33,13 @@ class _Tokenizer:
         return "answer"
 
 
-def test_colibri_olmoe_prompt_uses_the_immutable_local_tokenizer(tmp_path: Path) -> None:
+def test_colibri_glm_prompt_uses_the_immutable_local_tokenizer(tmp_path: Path) -> None:
     model = tmp_path / "model"
     engine = tmp_path / "engine"
     model.mkdir()
     engine.mkdir()
     (model / "config.json").write_text(
-        json.dumps({"model_type": "olmoe"}),
+        json.dumps({"model_type": "glm_moe_dsa"}),
         encoding="utf-8",
     )
     backend = ColibriBackend(
@@ -47,7 +47,7 @@ def test_colibri_olmoe_prompt_uses_the_immutable_local_tokenizer(tmp_path: Path)
         model_path=model,
         model_id="org/model",
         model_revision="a" * 40,
-        model_family="olmoe",
+        model_family="glm-5.2",
         ram_safety_reserve_bytes=0,
     )
     backend._tokenizer = _Tokenizer()
@@ -144,11 +144,11 @@ def _write_routing_runtime(tmp_path: Path) -> tuple[Path, Path, str]:
     engine.mkdir()
     model.mkdir()
     profiles.mkdir()
-    binary = engine / "olmoe.exe"
+    binary = engine / "colibri.exe"
     binary.write_bytes(b"pinned-colibri-binary")
     config = model / "config.json"
-    config.write_text(json.dumps({"model_type": "olmoe"}), encoding="utf-8")
-    bitmap = profiles / "olmoe-hot.bin"
+    config.write_text(json.dumps({"model_type": "glm_moe_dsa"}), encoding="utf-8")
+    bitmap = profiles / "glm-hot.bin"
     bitmap.write_bytes(b"\x01\x00\x01\x00")
     fingerprint = "sha256:" + "4" * 64
     manifest = tmp_path / "runtime-manifest.json"
@@ -156,16 +156,16 @@ def _write_routing_runtime(tmp_path: Path) -> tuple[Path, Path, str]:
         json.dumps(
             {
                 "runtime_revision": "colibri-pinned",
-                "binary_hashes": {"olmoe": hashlib.sha256(binary.read_bytes()).hexdigest()},
-                "model_families": ["olmoe"],
+                "binary_hashes": {"colibri": hashlib.sha256(binary.read_bytes()).hexdigest()},
+                "model_families": ["glm-5.2"],
                 "formats": ["safetensors"],
                 "engine_directory": "engine",
                 "routing_profiles": [
                     {
-                        "profile_id": "olmoe-hot-v1",
-                        "adapter_id": "olmoe",
+                        "profile_id": "glm-hot-v1",
+                        "adapter_id": "glm-5.2",
                         "model_fingerprint": fingerprint,
-                        "hot_pin_path": "profiles/olmoe-hot.bin",
+                        "hot_pin_path": "profiles/glm-hot.bin",
                         "hot_pin_sha256": hashlib.sha256(bitmap.read_bytes()).hexdigest(),
                         "settings": {
                             "PILOT": "1",
@@ -192,7 +192,7 @@ def test_verified_routing_profile_is_advertised_and_changes_backend_environment(
     capability = next(item for item in capabilities if item.engine_id == "colibri")
     assert capability.enabled
     assert capability.fast_paths == ("routing-aware-placement",)
-    assert [item.profile_id for item in capability.execution_profiles] == ["olmoe-hot-v1"]
+    assert [item.profile_id for item in capability.execution_profiles] == ["glm-hot-v1"]
 
     plan = _plan().model_copy(
         update={
@@ -201,9 +201,9 @@ def test_verified_routing_profile_is_advertised_and_changes_backend_environment(
             "engine_parameters": {
                 "model_id": "org/model",
                 "model_revision": "a" * 40,
-                "model_family": "olmoe",
+                "model_family": "glm-5.2",
                 "model_paths": [str(config)],
-                "routing_profile_id": "olmoe-hot-v1",
+                "routing_profile_id": "glm-hot-v1",
             },
         }
     )
@@ -213,9 +213,9 @@ def test_verified_routing_profile_is_advertised_and_changes_backend_environment(
         "PILOT": "1",
         "WIDE": "2",
         "PILOT_EVICT_GUARD": "1",
-        "COLI_HOT_PIN_PATH": str((tmp_path / "profiles" / "olmoe-hot.bin").resolve()),
+        "COLI_HOT_PIN_PATH": str((tmp_path / "profiles" / "glm-hot.bin").resolve()),
     }
-    assert backend.execution_profile_id == "olmoe-hot-v1"
+    assert backend.execution_profile_id == "glm-hot-v1"
 
     baseline = _colibri_factory(manifest)(
         plan.model_copy(

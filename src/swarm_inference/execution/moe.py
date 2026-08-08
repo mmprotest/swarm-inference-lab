@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from threading import Condition
 from typing import Any, Protocol, runtime_checkable
 from uuid import uuid4
 
@@ -61,6 +63,22 @@ class MoeExecutionEvent:
     elapsed_ns: int = 0
     result_hash: str = ""
     fallback_reason: str | None = None
+    total_messages: int = 0
+    critical_path_messages: int = 0
+    serial_waits: int = 0
+    parallel_waits: int = 0
+    fanout_depth: int = 0
+    reduction_depth: int = 0
+    critical_path_sync_rounds: int = 0
+    scheduler_dispatch_ns: int = 0
+    reduction_ns: int = 0
+    communication_ns: int = 0
+    root_dispatches: int = 0
+    coordinator_waits: int = 0
+    coordinator_sync_rounds: int = 0
+    worker_sync_rounds: int = 0
+    fanout_nodes: int = 0
+    topology_construction_ns: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -77,6 +95,22 @@ class MoeExecutionEvent:
             "elapsed_ns": self.elapsed_ns,
             "result_hash": self.result_hash,
             "fallback_reason": self.fallback_reason,
+            "total_messages": self.total_messages,
+            "critical_path_messages": self.critical_path_messages,
+            "serial_waits": self.serial_waits,
+            "parallel_waits": self.parallel_waits,
+            "fanout_depth": self.fanout_depth,
+            "reduction_depth": self.reduction_depth,
+            "critical_path_sync_rounds": self.critical_path_sync_rounds,
+            "scheduler_dispatch_ns": self.scheduler_dispatch_ns,
+            "reduction_ns": self.reduction_ns,
+            "communication_ns": self.communication_ns,
+            "root_dispatches": self.root_dispatches,
+            "coordinator_waits": self.coordinator_waits,
+            "coordinator_sync_rounds": self.coordinator_sync_rounds,
+            "worker_sync_rounds": self.worker_sync_rounds,
+            "fanout_nodes": self.fanout_nodes,
+            "topology_construction_ns": self.topology_construction_ns,
         }
 
 
@@ -134,6 +168,69 @@ class WholeExpertTarget:
 class MicroshardTarget:
     ownership: MicroshardRange
     client: ExpertClient
+
+
+@dataclass(frozen=True, slots=True)
+class _FanoutNode:
+    node_id: str
+    target: MicroshardTarget | None = None
+    children: tuple[_FanoutNode, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class _FanoutTopology:
+    root_children: tuple[_FanoutNode, ...]
+    depth: int
+    node_count: int
+
+
+@dataclass(slots=True)
+class _FanoutCollector:
+    expected_partials: int
+    condition: Condition = field(default_factory=Condition)
+    partials: list[tuple[str, np.ndarray]] = field(default_factory=list)
+    request_bytes: int = 0
+    response_bytes: int = 0
+    maximum_request_ns: int = 0
+    scheduler_dispatch_ns: int = 0
+    error: BaseException | None = None
+
+    def cancelled(self) -> bool:
+        with self.condition:
+            return self.error is not None
+
+    def record_dispatch(self, elapsed_ns: int) -> None:
+        with self.condition:
+            self.scheduler_dispatch_ns += elapsed_ns
+
+    def record_partial(self, result: tuple[str, np.ndarray, int, int, int]) -> None:
+        owner_key, partial, sent, received, request_elapsed_ns = result
+        with self.condition:
+            if self.error is not None:
+                return
+            self.partials.append((owner_key, partial))
+            self.request_bytes += sent
+            self.response_bytes += received
+            self.maximum_request_ns = max(self.maximum_request_ns, request_elapsed_ns)
+            self.condition.notify_all()
+
+    def fail(self, exc: BaseException) -> None:
+        with self.condition:
+            if self.error is None:
+                self.error = exc
+            self.condition.notify_all()
+
+    def wait(self, deadline_ns: int) -> list[tuple[str, np.ndarray]]:
+        with self.condition:
+            while len(self.partials) < self.expected_partials and self.error is None:
+                remaining_ns = deadline_ns - time.time_ns()
+                if remaining_ns <= 0:
+                    self.error = TimeoutError("microshard fan-out deadline elapsed")
+                    break
+                self.condition.wait(timeout=remaining_ns / 1_000_000_000)
+            if self.error is not None:
+                raise self.error
+            return list(self.partials)
 
 
 class _ExpertRouteAuthentication:
@@ -551,6 +648,20 @@ class WholeExpertRemoteBackend(_SessionBackend):
             response_bytes=int(transport.get("response_bytes", 0)),
             elapsed_ns=time.perf_counter_ns() - started,
             result_hash=_result_hash(output),
+            total_messages=2,
+            critical_path_messages=2,
+            serial_waits=1,
+            parallel_waits=1,
+            fanout_depth=1,
+            critical_path_sync_rounds=1,
+            root_dispatches=1,
+            coordinator_waits=0,
+            coordinator_sync_rounds=0,
+            worker_sync_rounds=1,
+            fanout_nodes=1,
+            communication_ns=int(
+                transport.get("request_elapsed_ns", time.perf_counter_ns() - started)
+            ),
         )
         return output, event
 
@@ -601,12 +712,35 @@ class WholeExpertRemoteBackend(_SessionBackend):
                     item.request_bytes + item.response_bytes for item in events
                 ),
                 "expert_critical_path_ns": sum(item.elapsed_ns for item in events),
+                "serial_waits_per_token": float(sum(item.serial_waits for item in events)),
+                "messages_per_token": float(sum(item.total_messages for item in events)),
+                "payload_bytes_per_token": float(
+                    sum(item.request_bytes + item.response_bytes for item in events)
+                ),
+                "critical_path_messages": sum(
+                    item.critical_path_messages for item in events
+                ),
+                "critical_path_sync_rounds": sum(
+                    item.critical_path_sync_rounds for item in events
+                ),
+                "root_dispatches": sum(item.root_dispatches for item in events),
+                "coordinator_waits": sum(item.coordinator_waits for item in events),
+                "coordinator_sync_rounds": sum(
+                    item.coordinator_sync_rounds for item in events
+                ),
+                "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
+                "fanout_depth": max((item.fanout_depth for item in events), default=0),
+                "fanout_nodes": sum(item.fanout_nodes for item in events),
+                "coordinator_activation_bytes": 0,
+                "worker_to_worker_bytes": sum(
+                    item.request_bytes + item.response_bytes for item in events
+                ),
             },
         )
 
 
 class MicroshardRemoteBackend(_SessionBackend):
-    """Dispatch native matched slices and reconstruct experts in fixed order."""
+    """Dispatch matched slices concurrently and reduce them deterministically."""
 
     def __init__(
         self,
@@ -618,8 +752,17 @@ class MicroshardRemoteBackend(_SessionBackend):
         quantization_fingerprint: str,
         topology_id: str,
         route_generation: int,
+        maximum_parallel_requests: int = 32,
+        fanout_branching_factor: int = 8,
+        reduction_branching_factor: int = 8,
     ) -> None:
         super().__init__()
+        if maximum_parallel_requests <= 0:
+            raise ValueError("maximum_parallel_requests must be positive")
+        if reduction_branching_factor < 2 or reduction_branching_factor > 32:
+            raise ValueError("reduction_branching_factor must be between 2 and 32")
+        if fanout_branching_factor < 2 or fanout_branching_factor > 32:
+            raise ValueError("fanout_branching_factor must be between 2 and 32")
         self.targets = {key: list(value) for key, value in targets.items()}
         for value in self.targets.values():
             physical_microshard_ownership([item.ownership for item in value])
@@ -629,6 +772,19 @@ class MicroshardRemoteBackend(_SessionBackend):
         self.quantization_fingerprint = quantization_fingerprint
         self.topology_id = topology_id
         self.route_generation = route_generation
+        self.maximum_parallel_requests = maximum_parallel_requests
+        self.fanout_branching_factor = fanout_branching_factor
+        self.reduction_branching_factor = reduction_branching_factor
+        self._executor = ThreadPoolExecutor(
+            max_workers=maximum_parallel_requests,
+            thread_name_prefix="swarm-microshard",
+        )
+        topology_started = time.perf_counter_ns()
+        self._fanout_topologies = {
+            key: self._build_fanout_topology(self._ordered_targets(value))
+            for key, value in self.targets.items()
+        }
+        self.topology_construction_ns = time.perf_counter_ns() - topology_started
         self._route_auth = _ExpertRouteAuthentication(
             topology_id=topology_id,
             route_generation=route_generation,
@@ -636,6 +792,10 @@ class MicroshardRemoteBackend(_SessionBackend):
             model_fingerprint=model_fingerprint,
             quantization_fingerprint=quantization_fingerprint,
         )
+
+    def close(self) -> None:
+        super().close()
+        self._executor.shutdown(wait=True, cancel_futures=True)
 
     def configure_route(
         self,
@@ -671,6 +831,223 @@ class MicroshardRemoteBackend(_SessionBackend):
                 )
         super().cancel_session(session_id)
 
+    @staticmethod
+    def _ordered_targets(targets: list[MicroshardTarget]) -> list[MicroshardTarget]:
+        return sorted(
+            targets,
+            key=lambda item: (
+                item.ownership.hidden_start,
+                item.ownership.hidden_end,
+                item.ownership.worker_id,
+            ),
+        )
+
+    def _build_fanout_topology(
+        self, targets: list[MicroshardTarget]
+    ) -> _FanoutTopology:
+        leaf_index = {id(target): index for index, target in enumerate(targets)}
+
+        def build(items: list[MicroshardTarget], prefix: str) -> tuple[_FanoutNode, ...]:
+            if len(items) <= self.fanout_branching_factor:
+                return tuple(
+                    _FanoutNode(
+                        node_id=f"{prefix}/worker-{leaf_index[id(target)]:06d}",
+                        target=target,
+                    )
+                    for target in items
+                )
+            group_size = (len(items) + self.fanout_branching_factor - 1) // (
+                self.fanout_branching_factor
+            )
+            groups = [
+                items[index : index + group_size]
+                for index in range(0, len(items), group_size)
+            ]
+            return tuple(
+                _FanoutNode(
+                    node_id=f"{prefix}/group-{index:04d}",
+                    children=build(group, f"{prefix}/group-{index:04d}"),
+                )
+                for index, group in enumerate(groups)
+            )
+
+        root_children = build(targets, "root")
+
+        def depth(node: _FanoutNode) -> int:
+            return 1 if node.target is not None else 1 + max(depth(item) for item in node.children)
+
+        def count(node: _FanoutNode) -> int:
+            return 1 + sum(count(item) for item in node.children)
+
+        return _FanoutTopology(
+            root_children=root_children,
+            depth=max((depth(item) for item in root_children), default=0),
+            node_count=sum(count(item) for item in root_children),
+        )
+
+    @staticmethod
+    def _sum_partial_group(group: tuple[np.ndarray, ...]) -> np.ndarray:
+        result = np.zeros_like(group[0], dtype=np.float32)
+        for partial in group:
+            result += np.asarray(partial, dtype=np.float32)
+        return result
+
+    def _reduce_partials(
+        self, partials: list[tuple[str, np.ndarray]]
+    ) -> tuple[np.ndarray, int]:
+        ordered = sorted(partials, key=lambda item: item[0])
+        if not ordered:
+            raise ValueError("at least one microshard partial is required")
+        shape = ordered[0][1].shape
+        if any(partial.shape != shape for _, partial in ordered):
+            raise ValueError("remote microshard partial shapes do not match")
+        level = [np.ascontiguousarray(partial, dtype=np.float32) for _, partial in ordered]
+        rounds = 0
+        while len(level) > 1:
+            groups = [
+                tuple(level[index : index + self.reduction_branching_factor])
+                for index in range(0, len(level), self.reduction_branching_factor)
+            ]
+            futures = [self._executor.submit(self._sum_partial_group, group) for group in groups]
+            # Result lookup is in group order, so completion timing cannot alter
+            # floating-point addition order.
+            level = [future.result() for future in futures]
+            rounds += 1
+        return level[0], rounds
+
+    def _dispatch_target(
+        self,
+        *,
+        target: MicroshardTarget,
+        fanout_request_id: str,
+        session_id: str,
+        token_position: int,
+        layer_id: int,
+        expert_id: int,
+        source: np.ndarray,
+        deadline_ns: int,
+    ) -> tuple[str, np.ndarray, int, int, int]:
+        owner = target.ownership
+        subrequest_id = (
+            f"{fanout_request_id}:slice-{owner.hidden_start}-{owner.hidden_end}"
+        )
+        request = ExpertExecutionRequest(
+            request_id=subrequest_id,
+            session_id=session_id,
+            token_position=token_position,
+            sequence_id=token_position,
+            route_generation=self.route_generation,
+            topology_id=self.topology_id,
+            model_id=self.model_id,
+            model_revision=self.model_revision,
+            model_fingerprint=self.model_fingerprint,
+            quantization_fingerprint=self.quantization_fingerprint,
+            layer_id=layer_id,
+            batch_rows=int(source.shape[0]),
+            latent_dimension=int(source.shape[1]),
+            expert_ids=[expert_id],
+            expert_hashes={expert_id: owner.content_hash},
+            routing_weights=[1.0],
+            top_k=1,
+            response_mode=ExpertResponseMode.PER_WORKER_FAST,
+            activations={},
+            deadline_ns=deadline_ns,
+            execution_mode=ExpertExecutionMode.MICROSHARD,
+            determinism_mode=DeterminismMode.EXACT,
+            compression=TransportCodec.RAW_FP32,
+            hidden_start=owner.hidden_start,
+            hidden_end=owner.hidden_end,
+            down_accumulators=None,
+            microshard_final=False,
+            reduction_mode=ReductionMode.FIXED_ORDER_FP32,
+            metadata={"exact_contribution_representation": "unweighted_expert_output"},
+            authentication=self._route_auth.request_authentication(owner.worker_id),
+        )
+        started = time.perf_counter_ns()
+        response, result, transport = target.client.execute(request, source)
+        elapsed_ns = time.perf_counter_ns() - started
+        self._route_auth.verify_response(
+            peer_worker_id=owner.worker_id,
+            request=request,
+            response=response,
+            result=result,
+        )
+        if getattr(response, "status", "ok") != "ok":
+            raise RuntimeError(str(getattr(response, "error", "remote microshard failed")))
+        partial = np.ascontiguousarray(result, dtype=np.float32)
+        expected_shape = (source.shape[0], source.shape[1])
+        if partial.shape != expected_shape:
+            raise ValueError("remote microshard partial shape mismatch")
+        integrity = getattr(response, "integrity", None)
+        if integrity is None:
+            raise ValueError("remote microshard response is missing integrity metadata")
+        remote_fingerprint = str(getattr(integrity, "model_fingerprint", ""))
+        if self.model_fingerprint and remote_fingerprint != self.model_fingerprint:
+            raise ValueError("remote microshard model fingerprint mismatch")
+        hashes = getattr(integrity, "expert_hashes", {})
+        if owner.content_hash and hashes.get(expert_id) != owner.content_hash:
+            raise ValueError("remote microshard content hash mismatch")
+        owner_key = (
+            f"{owner.hidden_start:020d}:{owner.hidden_end:020d}:{owner.worker_id}"
+        )
+        return (
+            owner_key,
+            partial,
+            int(transport.get("request_bytes", 0)),
+            int(transport.get("response_bytes", 0)),
+            int(transport.get("request_elapsed_ns", elapsed_ns)),
+        )
+
+    def _dispatch_node(
+        self,
+        *,
+        node: _FanoutNode,
+        collector: _FanoutCollector,
+        fanout_request_id: str,
+        session_id: str,
+        token_position: int,
+        layer_id: int,
+        expert_id: int,
+        source: np.ndarray,
+        deadline_ns: int,
+    ) -> None:
+        if collector.cancelled():
+            return
+        try:
+            if node.target is not None:
+                collector.record_partial(
+                    self._dispatch_target(
+                        target=node.target,
+                        fanout_request_id=fanout_request_id,
+                        session_id=session_id,
+                        token_position=token_position,
+                        layer_id=layer_id,
+                        expert_id=expert_id,
+                        source=source,
+                        deadline_ns=deadline_ns,
+                    )
+                )
+                return
+            dispatch_started = time.perf_counter_ns()
+            for child in node.children:
+                if collector.cancelled():
+                    break
+                self._executor.submit(
+                    self._dispatch_node,
+                    node=child,
+                    collector=collector,
+                    fanout_request_id=fanout_request_id,
+                    session_id=session_id,
+                    token_position=token_position,
+                    layer_id=layer_id,
+                    expert_id=expert_id,
+                    source=source,
+                    deadline_ns=deadline_ns,
+                )
+            collector.record_dispatch(time.perf_counter_ns() - dispatch_started)
+        except BaseException as exc:
+            collector.fail(exc)
+
     def execute_expert_rows(
         self,
         *,
@@ -686,96 +1063,45 @@ class MicroshardRemoteBackend(_SessionBackend):
         if not targets:
             raise KeyError(f"no microshard owners for layer {layer_id} expert {expert_id}")
         source = activation.detach().to(device="cpu", dtype=torch.float32).contiguous().numpy()
-        accumulator: np.ndarray | None = None
         request_bytes = response_bytes = 0
         started = time.perf_counter_ns()
-        chain_request_id = (
+        fanout_request_id = (
             f"{request_id}:token-{token_position}:layer-{layer_id}:expert-{expert_id}:"
-            "microshard-chain"
+            "microshard-fanout"
         )
-        ordered = sorted(
-            targets,
-            key=lambda item: (
-                item.ownership.hidden_start,
-                item.ownership.hidden_end,
-                item.ownership.worker_id,
-            ),
-        )
-        for target_index, target in enumerate(ordered):
-            owner = target.ownership
-            subrequest_id = f"{chain_request_id}:slice-{owner.hidden_start}-{owner.hidden_end}"
-            final_slice = target_index == len(ordered) - 1
-            request = ExpertExecutionRequest(
-                request_id=subrequest_id,
+        ordered = self._ordered_targets(targets)
+        topology = self._fanout_topologies[(layer_id, expert_id)]
+        collector = _FanoutCollector(expected_partials=len(ordered))
+        dispatch_started = time.perf_counter_ns()
+        for node in topology.root_children:
+            self._executor.submit(
+                self._dispatch_node,
+                node=node,
+                collector=collector,
+                fanout_request_id=fanout_request_id,
                 session_id=session_id,
                 token_position=token_position,
-                sequence_id=token_position,
-                route_generation=self.route_generation,
-                topology_id=self.topology_id,
-                model_id=self.model_id,
-                model_revision=self.model_revision,
-                model_fingerprint=self.model_fingerprint,
-                quantization_fingerprint=self.quantization_fingerprint,
                 layer_id=layer_id,
-                batch_rows=int(source.shape[0]),
-                latent_dimension=int(source.shape[1]),
-                expert_ids=[expert_id],
-                expert_hashes={expert_id: owner.content_hash},
-                routing_weights=[1.0],
-                top_k=1,
-                response_mode=ExpertResponseMode.PER_EXPERT_EXACT,
-                activations={},
+                expert_id=expert_id,
+                source=source,
                 deadline_ns=deadline_ns,
-                execution_mode=ExpertExecutionMode.MICROSHARD,
-                determinism_mode=DeterminismMode.EXACT,
-                compression=TransportCodec.RAW_FP32,
-                hidden_start=owner.hidden_start,
-                hidden_end=owner.hidden_end,
-                down_accumulators=({} if accumulator is not None else None),
-                microshard_final=final_slice,
-                reduction_mode=ReductionMode.FIXED_ORDER_FP32,
-                metadata={"exact_contribution_representation": "unweighted_expert_output"},
-                authentication=self._route_auth.request_authentication(owner.worker_id),
             )
-            response, result, transport = target.client.execute(
-                request,
-                source,
-                down_accumulators=accumulator,
-            )
-            self._route_auth.verify_response(
-                peer_worker_id=owner.worker_id,
-                request=request,
-                response=response,
-                result=result,
-            )
-            if getattr(response, "status", "ok") != "ok":
-                raise RuntimeError(str(getattr(response, "error", "remote microshard failed")))
-            chained = np.ascontiguousarray(result, dtype=np.float32)
-            expected_shape = (source.shape[0], 1, source.shape[1])
-            if chained.shape != expected_shape:
-                raise ValueError("remote microshard accumulator shape mismatch")
-            integrity = getattr(response, "integrity", None)
-            if integrity is None:
-                raise ValueError("remote microshard response is missing integrity metadata")
-            remote_fingerprint = str(getattr(integrity, "model_fingerprint", ""))
-            if self.model_fingerprint and remote_fingerprint != self.model_fingerprint:
-                raise ValueError("remote microshard model fingerprint mismatch")
-            hashes = getattr(integrity, "expert_hashes", {})
-            if owner.content_hash and hashes.get(expert_id) != owner.content_hash:
-                raise ValueError("remote microshard content hash mismatch")
-            accumulator = chained
-            request_bytes += int(transport.get("request_bytes", 0))
-            response_bytes += int(transport.get("response_bytes", 0))
-        if accumulator is None:  # pragma: no cover - constructor rejects empty ownership
-            raise RuntimeError("microshard chain produced no accumulator")
-        output = torch.from_numpy(accumulator[:, 0, :]).to(
+        coordinator_dispatch_ns = time.perf_counter_ns() - dispatch_started
+        partials = collector.wait(deadline_ns)
+        request_bytes = collector.request_bytes
+        response_bytes = collector.response_bytes
+        scheduler_dispatch_ns = coordinator_dispatch_ns + collector.scheduler_dispatch_ns
+        reduction_started = time.perf_counter_ns()
+        accumulator, reduction_depth = self._reduce_partials(partials)
+        reduction_ns = time.perf_counter_ns() - reduction_started
+        output = torch.from_numpy(accumulator).to(
             device=activation.device, dtype=activation.dtype
         )
         event = MoeExecutionEvent(
             event="remote_microshard_result_consumed",
             backend="microshard-remote",
             session_id=session_id,
-            request_id=chain_request_id,
+            request_id=fanout_request_id,
             token_position=token_position,
             layer_id=layer_id,
             expert_id=expert_id,
@@ -784,6 +1110,22 @@ class MicroshardRemoteBackend(_SessionBackend):
             response_bytes=response_bytes,
             elapsed_ns=time.perf_counter_ns() - started,
             result_hash=_result_hash(output),
+            total_messages=2 * len(ordered),
+            critical_path_messages=2 * topology.depth,
+            serial_waits=topology.depth + reduction_depth,
+            parallel_waits=len(ordered),
+            fanout_depth=topology.depth,
+            reduction_depth=reduction_depth,
+            critical_path_sync_rounds=topology.depth + reduction_depth,
+            scheduler_dispatch_ns=scheduler_dispatch_ns,
+            reduction_ns=reduction_ns,
+            communication_ns=collector.maximum_request_ns,
+            root_dispatches=len(topology.root_children),
+            coordinator_waits=0,
+            coordinator_sync_rounds=0,
+            worker_sync_rounds=topology.depth + reduction_depth,
+            fanout_nodes=topology.node_count,
+            topology_construction_ns=self.topology_construction_ns,
         )
         return output, event
 
@@ -834,18 +1176,57 @@ class MicroshardRemoteBackend(_SessionBackend):
                     item.request_bytes + item.response_bytes for item in events
                 ),
                 "expert_critical_path_ns": sum(item.elapsed_ns for item in events),
-                "reduction_mode": ReductionMode.FIXED_ORDER_FP32.value,
+                "reduction_mode": ReductionMode.TREE_FP32.value,
+                "worker_partial_reduction_mode": ReductionMode.FIXED_ORDER_FP32.value,
+                "logical_microshard_workers": sum(len(item.worker_ids) for item in events),
+                "total_messages": sum(item.total_messages for item in events),
+                "critical_path_messages": sum(
+                    item.critical_path_messages for item in events
+                ),
+                "serial_waits": sum(item.serial_waits for item in events),
+                "parallel_waits": sum(item.parallel_waits for item in events),
+                "fanout_depth": max((item.fanout_depth for item in events), default=0),
+                "reduction_depth": sum(item.reduction_depth for item in events),
+                "critical_path_sync_rounds": sum(
+                    item.critical_path_sync_rounds for item in events
+                ),
+                "scheduler_dispatch_ns": sum(
+                    item.scheduler_dispatch_ns for item in events
+                ),
+                "reduction_ns": sum(item.reduction_ns for item in events),
+                "communication_ns": sum(item.communication_ns for item in events),
+                "coordinator_activation_bytes": 0,
+                "worker_to_worker_bytes": sum(
+                    item.request_bytes + item.response_bytes for item in events
+                ),
+                "maximum_parallel_requests": self.maximum_parallel_requests,
+                "fanout_branching_factor": self.fanout_branching_factor,
+                "reduction_branching_factor": self.reduction_branching_factor,
+                "root_dispatches": sum(item.root_dispatches for item in events),
+                "coordinator_waits": sum(item.coordinator_waits for item in events),
+                "coordinator_sync_rounds": sum(
+                    item.coordinator_sync_rounds for item in events
+                ),
+                "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
+                "fanout_nodes": sum(item.fanout_nodes for item in events),
+                "topology_construction_ns": self.topology_construction_ns,
+                "serial_waits_per_token": float(sum(item.serial_waits for item in events)),
+                "messages_per_token": float(sum(item.total_messages for item in events)),
+                "payload_bytes_per_token": float(
+                    sum(item.request_bytes + item.response_bytes for item in events)
+                ),
             },
         )
 
 
 class HybridMoeBackend(_SessionBackend):
-    """Per-expert placement across local, whole-remote, and microshard backends."""
+    """Per-expert placement across native, Colibri, and direct remote backends."""
 
     def __init__(
         self,
         *,
         local: LocalMoeBackend | None = None,
+        colibri: Any | None = None,
         whole_remote: WholeExpertRemoteBackend | None = None,
         microshard_remote: MicroshardRemoteBackend | None = None,
         placement: dict[tuple[int, int], str],
@@ -855,6 +1236,7 @@ class HybridMoeBackend(_SessionBackend):
     ) -> None:
         super().__init__()
         self.local = local
+        self.colibri = colibri
         self.whole_remote = whole_remote
         self.microshard_remote = microshard_remote
         self.placement = dict(placement)
@@ -879,7 +1261,7 @@ class HybridMoeBackend(_SessionBackend):
             backend="hybrid",
             whole_expert=True,
             native_microshard=True,
-            local=self.local is not None,
+            local=self.local is not None or self.colibri is not None,
         )
 
     def configure_route(
@@ -897,6 +1279,11 @@ class HybridMoeBackend(_SessionBackend):
         events = list(self._events)
         return {
             **super().status(),
+            **(
+                self.colibri.status()
+                if self.colibri is not None and hasattr(self.colibri, "status")
+                else {}
+            ),
             "remote_whole_expert_calls": sum(
                 item.event == "remote_whole_expert_result_consumed" for item in events
             ),
@@ -906,8 +1293,34 @@ class HybridMoeBackend(_SessionBackend):
             "fallbacks": sum(item.event == "expert_local_fallback" for item in events),
             "bytes_transferred": sum(item.request_bytes + item.response_bytes for item in events),
             "expert_critical_path_ns": sum(item.elapsed_ns for item in events),
+            "total_messages": sum(item.total_messages for item in events),
+            "critical_path_messages": sum(item.critical_path_messages for item in events),
+            "serial_waits": sum(item.serial_waits for item in events),
+            "parallel_waits": sum(item.parallel_waits for item in events),
+            "critical_path_sync_rounds": sum(
+                item.critical_path_sync_rounds for item in events
+            ),
+            "root_dispatches": sum(item.root_dispatches for item in events),
+            "coordinator_waits": sum(item.coordinator_waits for item in events),
+            "coordinator_sync_rounds": sum(
+                item.coordinator_sync_rounds for item in events
+            ),
+            "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
+            "fanout_depth": max((item.fanout_depth for item in events), default=0),
+            "reduction_depth": sum(item.reduction_depth for item in events),
+            "fanout_nodes": sum(item.fanout_nodes for item in events),
+            "topology_construction_ns": max(
+                (item.topology_construction_ns for item in events), default=0
+            ),
+            "scheduler_dispatch_ns": sum(item.scheduler_dispatch_ns for item in events),
+            "reduction_ns": sum(item.reduction_ns for item in events),
+            "communication_ns": sum(item.communication_ns for item in events),
+            "coordinator_activation_bytes": 0,
+            "worker_to_worker_bytes": sum(
+                item.request_bytes + item.response_bytes for item in events
+            ),
             "reduction_mode": (
-                ReductionMode.FIXED_ORDER_FP32.value
+                ReductionMode.TREE_FP32.value
                 if any(item.event == "remote_microshard_result_consumed" for item in events)
                 else "none"
             ),
@@ -915,24 +1328,24 @@ class HybridMoeBackend(_SessionBackend):
 
     def open_session(self, session_id: str) -> None:
         super().open_session(session_id)
-        for backend in (self.local, self.whole_remote, self.microshard_remote):
+        for backend in (self.local, self.colibri, self.whole_remote, self.microshard_remote):
             if backend is not None:
                 backend.open_session(session_id)
 
     def close_session(self, session_id: str) -> None:
-        for backend in (self.local, self.whole_remote, self.microshard_remote):
+        for backend in (self.local, self.colibri, self.whole_remote, self.microshard_remote):
             if backend is not None:
                 backend.close_session(session_id)
         super().close_session(session_id)
 
     def cancel_session(self, session_id: str) -> None:
-        for backend in (self.local, self.whole_remote, self.microshard_remote):
+        for backend in (self.local, self.colibri, self.whole_remote, self.microshard_remote):
             if backend is not None:
                 backend.cancel_session(session_id)
         super().cancel_session(session_id)
 
     def close(self) -> None:
-        for backend in (self.local, self.whole_remote, self.microshard_remote):
+        for backend in (self.local, self.colibri, self.whole_remote, self.microshard_remote):
             if backend is not None:
                 backend.close()
         super().close()
@@ -958,6 +1371,7 @@ class HybridMoeBackend(_SessionBackend):
         remote_calls = 0
         remote_whole_calls = 0
         remote_microshard_calls = 0
+        colibri_calls = 0
         for expert_id in range(int(router_logits.shape[-1])):
             token_indices, ranks = _selected_rows(selected_experts, expert_id)
             if token_indices.numel() == 0:
@@ -982,6 +1396,30 @@ class HybridMoeBackend(_SessionBackend):
                         layer_id=layer_id,
                         expert_id=expert_id,
                         worker_ids=workers,
+                        result_hash=_result_hash(output),
+                    )
+                elif strategy == "colibri":
+                    if self.require_remote:
+                        raise RuntimeError("forced-remote mode rejected colocated Colibri")
+                    if self.colibri is None:
+                        raise KeyError("Colibri expert backend is unavailable")
+                    started = time.perf_counter_ns()
+                    output, workers, _ = self.colibri.execute_expert_rows(
+                        layer_id=layer_id,
+                        expert_id=expert_id,
+                        activation=source,
+                    )
+                    colibri_calls += 1
+                    event = MoeExecutionEvent(
+                        event="colibri_expert_result_consumed",
+                        backend="colibri",
+                        session_id=session_id,
+                        request_id=request_id,
+                        token_position=token_position,
+                        layer_id=layer_id,
+                        expert_id=expert_id,
+                        worker_ids=workers,
+                        elapsed_ns=time.perf_counter_ns() - started,
                         result_hash=_result_hash(output),
                     )
                 elif strategy == "whole-remote":
@@ -1053,11 +1491,52 @@ class HybridMoeBackend(_SessionBackend):
                 "remote_expert_calls": remote_calls,
                 "remote_whole_expert_calls": remote_whole_calls,
                 "remote_microshard_calls": remote_microshard_calls,
+                "colibri_expert_calls": colibri_calls,
                 "fallbacks": sum(item.event == "expert_local_fallback" for item in events),
                 "bytes_transferred": sum(
                     item.request_bytes + item.response_bytes for item in events
                 ),
                 "expert_critical_path_ns": sum(item.elapsed_ns for item in events),
+                "logical_microshard_workers": sum(
+                    len(item.worker_ids)
+                    for item in events
+                    if item.event == "remote_microshard_result_consumed"
+                ),
+                "total_messages": sum(item.total_messages for item in events),
+                "serial_waits": sum(item.serial_waits for item in events),
+                "serial_waits_per_token": float(sum(item.serial_waits for item in events)),
+                "messages_per_token": float(sum(item.total_messages for item in events)),
+                "payload_bytes_per_token": float(
+                    sum(item.request_bytes + item.response_bytes for item in events)
+                ),
+                "critical_path_messages": sum(
+                    item.critical_path_messages for item in events
+                ),
+                "parallel_waits": sum(item.parallel_waits for item in events),
+                "critical_path_sync_rounds": sum(
+                    item.critical_path_sync_rounds for item in events
+                ),
+                "fanout_depth": max((item.fanout_depth for item in events), default=0),
+                "reduction_depth": sum(item.reduction_depth for item in events),
+                "root_dispatches": sum(item.root_dispatches for item in events),
+                "coordinator_waits": sum(item.coordinator_waits for item in events),
+                "coordinator_sync_rounds": sum(
+                    item.coordinator_sync_rounds for item in events
+                ),
+                "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
+                "fanout_nodes": sum(item.fanout_nodes for item in events),
+                "topology_construction_ns": max(
+                    (item.topology_construction_ns for item in events), default=0
+                ),
+                "scheduler_dispatch_ns": sum(
+                    item.scheduler_dispatch_ns for item in events
+                ),
+                "reduction_ns": sum(item.reduction_ns for item in events),
+                "communication_ns": sum(item.communication_ns for item in events),
+                "coordinator_activation_bytes": 0,
+                "worker_to_worker_bytes": sum(
+                    item.request_bytes + item.response_bytes for item in events
+                ),
             },
         )
 

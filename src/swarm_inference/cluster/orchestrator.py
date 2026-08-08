@@ -35,6 +35,7 @@ from swarm_inference.engines.interfaces import (
     ClusterCapabilities,
     Deployment,
     EngineSupportReport,
+    ExecutionComponentType,
     ExecutionPlan,
     ExecutionRequest,
     InferenceEvent,
@@ -82,6 +83,14 @@ from swarm_inference.transport.grpc_transport import GrpcTransport
 
 _IMMUTABLE_REVISION = re.compile(r"^[0-9a-fA-F]{40}([0-9a-fA-F]{24})?$")
 _TOKENIZER_HASH = re.compile(r"^sha256:[0-9a-fA-F]{64}$")
+
+
+def _uses_colocated_colibri(plan: ExecutionPlan) -> bool:
+    return any(
+        component.component_type == ExecutionComponentType.ROUTED_EXPERTS
+        and component.engine_id == "colibri"
+        for component in plan.components
+    )
 
 
 class RunProgress(StrictModel):
@@ -582,6 +591,25 @@ class ClusterOrchestrator:
                 "preparing-artifacts",
                 f"building stage {item.stage_id} owned tensors",
             )
+            expert_plan = next(
+                (
+                    candidate
+                    for candidate in plan.expert_plans
+                    if candidate.stage_id == item.stage_id
+                ),
+                None,
+            )
+            delegated_experts = {
+                (placement.layer_id, placement.expert_id)
+                for placement in (expert_plan.placements if expert_plan is not None else [])
+                if placement.strategy != "local" and not placement.local_fallback_permitted
+            }
+            external_experts = {
+                (placement.layer_id, placement.expert_id)
+                for placement in (expert_plan.placements if expert_plan is not None else [])
+                if placement.strategy in {"whole-remote", "microshard-remote"}
+                and not placement.local_fallback_permitted
+            }
             manifest = await asyncio.to_thread(
                 builder.build,
                 source,
@@ -594,6 +622,8 @@ class ClusterOrchestrator:
                 quantization=plan.model.quantization or "none",
                 model_fingerprint=plan.model.model_fingerprint or None,
                 adapter_id=plan.model.adapter_id,
+                delegated_experts=delegated_experts,
+                external_experts=external_experts,
                 before_publish=lambda manifest: manager.evict_to_fit(
                     _required_artifact_size(manifest)
                 ),
@@ -834,6 +864,7 @@ class ClusterOrchestrator:
                     quantization=descriptor.quantization,
                     resolution_policy=ModelResolutionPolicy.LOCAL_ONLY,
                 )
+                uses_colibri = _uses_colocated_colibri(selected)
                 planned = await client.plan_model(
                     ModelPlanRequest(
                         reference=reference,
@@ -844,6 +875,13 @@ class ClusterOrchestrator:
                         excluded_node_ids=sorted(set(excluded_node_ids or [])),
                         allow_artifact_provisioning=True,
                         max_sequence_tokens=max_context_tokens,
+                        expert_policy="hybrid" if uses_colibri else "auto",
+                        # The current Colibri component is deliberately bound to
+                        # the native stage worker/device by the component plan.
+                        # Physically remote expert validation is a distinct gate.
+                        require_remote_experts=False,
+                        allow_expert_local_fallback=False,
+                        routed_expert_engine="colibri" if uses_colibri else "auto",
                     )
                 )
                 plan = planned.plan.model_copy(

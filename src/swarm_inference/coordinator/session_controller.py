@@ -669,6 +669,7 @@ class ProductSessionController:
         remote_events = 0
         remote_whole_events = 0
         remote_microshard_events = 0
+        colibri_events = 0
         fallback_events = 0
         traced_bytes = 0
         for event in publication.expert_trace:
@@ -704,6 +705,17 @@ class ProductSessionController:
                     raise IntegrityError("expert fallback has no result hash")
                 fallback_events += 1
                 continue
+            if event_name == "colibri_expert_result_consumed":
+                if placement is None or placement.strategy != "colibri":
+                    raise IntegrityError("Colibri contribution is not present in the plan")
+                if event.get("worker_ids"):
+                    raise IntegrityError("colocated Colibri contribution names remote workers")
+                if int(event.get("request_bytes", 0)) or int(event.get("response_bytes", 0)):
+                    raise IntegrityError("colocated Colibri contribution reports remote bytes")
+                if not str(event.get("result_hash", "")).startswith("sha256:"):
+                    raise IntegrityError("Colibri contribution has no result hash")
+                colibri_events += 1
+                continue
             if event_name not in {
                 "remote_whole_expert_result_consumed",
                 "remote_microshard_result_consumed",
@@ -738,6 +750,7 @@ class ProductSessionController:
             "remote_expert_calls": remote_events,
             "remote_whole_expert_calls": remote_whole_events,
             "remote_microshard_calls": remote_microshard_events,
+            "colibri_expert_calls": colibri_events,
             "fallbacks": fallback_events,
             "bytes_transferred": traced_bytes,
         }
@@ -750,6 +763,8 @@ class ProductSessionController:
             raise IntegrityError("remote expert call metric is missing from contribution proof")
         if remote_events and int(metrics.get("bytes_transferred", -1)) != traced_bytes:
             raise IntegrityError("remote expert byte metric is missing from contribution proof")
+        if colibri_events and int(metrics.get("colibri_expert_calls", -1)) != colibri_events:
+            raise IntegrityError("Colibri call metric is missing from contribution proof")
 
     def _update_durable(
         self,

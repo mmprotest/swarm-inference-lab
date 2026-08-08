@@ -275,7 +275,7 @@ async def test_encrypted_mutually_authenticated_expert_control_path(
     runtime = ExpertWorkerRuntime(
         worker_id="expert-worker",
         identity=expert_identity,
-        model_id="test/olmoe",
+        model_id="test/sparse-moe",
         model_revision="revision",
         model_fingerprint="model-fingerprint",
         quantization_fingerprint="quantization-fingerprint",

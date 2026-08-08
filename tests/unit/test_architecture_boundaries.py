@@ -113,19 +113,17 @@ def test_generic_runtime_has_no_model_specific_orchestration_coupling() -> None:
         "engines/colibri.py",
         "engines/native_stage.py",
         "commands/run.py",
-        "cli.py",
         "model/resolver.py",
         "model/shard_builder.py",
         "model/feasibility.py",
         "execution/expert.py",
         "execution/microshard.py",
     )
-    forbidden = ("olmoe",)
     violations: list[tuple[str, str]] = []
     package_root = SOURCE_ROOT / "swarm_inference"
     for relative in generic_files:
         source = (package_root / relative).read_text(encoding="utf-8").casefold()
-        for marker in forbidden:
+        for marker in ("deepseek", "gemma", "glm", "kimi", "minimax", "mistral", "qwen"):
             if marker in source:
                 violations.append((relative, marker))
     assert not violations, f"generic runtime contains model-specific coupling: {violations}"
@@ -213,12 +211,8 @@ def test_legacy_runtime_is_frozen_to_the_documented_module_set() -> None:
 
 
 def test_experiment_010_runtime_compatibility_names_are_canonical() -> None:
-    from swarm_inference.backends.colibri import expert_bank as canonical_bank
     from swarm_inference.execution import expert as canonical_expert
     from swarm_inference.experiments.experiment_010 import codecs as legacy_codecs
-    from swarm_inference.experiments.experiment_010 import (
-        colibri_expert_bank as legacy_bank,
-    )
     from swarm_inference.experiments.experiment_010 import expert as legacy_expert
     from swarm_inference.experiments.experiment_010 import schemas as legacy_schemas
     from swarm_inference.experiments.experiment_010 import wire as legacy_wire
@@ -232,7 +226,6 @@ def test_experiment_010_runtime_compatibility_names_are_canonical() -> None:
     assert legacy_codecs.encode_array is canonical_transport.encode_array
     assert legacy_wire.encode_request is canonical_transport.encode_request
     assert legacy_wire.decode_response is canonical_transport.decode_response
-    assert legacy_bank.scan_safetensors is canonical_bank.scan_safetensors
 
 
 def test_experiment_010_frozen_public_paths_are_named_compatibility_shims() -> None:

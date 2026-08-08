@@ -201,7 +201,7 @@ def _per_row_request() -> tuple[ExpertExecutionRequest, np.ndarray]:
     return (
         ExpertExecutionRequest(
             request_id="c-wire-request",
-            model_id="olmoe-fixture",
+            model_id="sparse-moe-fixture",
             model_revision="revision-1",
             quantization_fingerprint="quantization-1",
             layer_id=3,
@@ -268,7 +268,7 @@ def test_python_wire_decodes_full_colibri_c_request(c_wire: ctypes.CDLL) -> None
     ranks = (ctypes.c_int * 4)(0, 1, 0, 1)
     request = RouteRequest()
     request.request_id = b"c-encoded-request"
-    request.model_id = b"olmoe-fixture"
+    request.model_id = b"sparse-moe-fixture"
     request.model_revision = b"revision-1"
     request.quantization_fingerprint = b"quantization-1"
     request.layer_id = 3
@@ -314,7 +314,7 @@ def test_colibri_c_wire_decodes_python_microshard_accumulator(
     accumulator = np.arange(16, dtype=np.float32).reshape(2, 2, 4) / np.float32(16)
     request = ExpertExecutionRequest(
         request_id="python-microshard-request",
-        model_id="olmoe-fixture",
+        model_id="sparse-moe-fixture",
         model_revision="revision-1",
         quantization_fingerprint="quantization-1",
         layer_id=3,
@@ -363,7 +363,7 @@ def test_python_wire_decodes_colibri_c_microshard_accumulator(
     ranks = (ctypes.c_int * 4)(0, 1, 0, 1)
     request = RouteRequest()
     request.request_id = b"c-microshard-request"
-    request.model_id = b"olmoe-fixture"
+    request.model_id = b"sparse-moe-fixture"
     request.model_revision = b"revision-1"
     request.quantization_fingerprint = b"quantization-1"
     request.layer_id = 3

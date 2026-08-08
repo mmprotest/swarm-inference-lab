@@ -6,6 +6,7 @@ owned by its stage. It never calls ``Qwen3ForCausalLM.from_pretrained``.
 
 from __future__ import annotations
 
+import gc
 import inspect
 import json
 import math
@@ -66,6 +67,7 @@ from swarm_inference.protocol.checksums import sha256_file
 from swarm_inference.runtime.telemetry import lifecycle_observer
 
 _LAYER_PATTERN = re.compile(r"^model\.layers\.(\d+)\.")
+_EXPERT_PATTERN = re.compile(r"^model\.layers\.(\d+)\.mlp\.experts\.(\d+)\.")
 _DTYPE_BYTES = {
     "BOOL": 1,
     "U8": 1,
@@ -497,6 +499,8 @@ class Qwen3StageModule:
         device: Any,
         dtype: Any,
         engine_options: Qwen3EngineOptions | None = None,
+        moe_backend_factory: Callable[[dict[tuple[int, int], Any]], Any] | None = None,
+        remote_experts: set[tuple[int, int]] | None = None,
     ) -> None:
         import torch
 
@@ -585,6 +589,13 @@ class Qwen3StageModule:
         self.required_memory_bytes = stage.required_memory_bytes
         self.device = torch.device(device)
         self.dtype = dtype
+        remote = set(remote_experts or set())
+        if remote and model_type != "qwen3_moe":
+            raise ValueError("remote expert placement requires a sparse Qwen3 stage")
+        stage_layers = set(range(stage.layer_start, stage.layer_end))
+        outside = sorted(item for item in remote if item[0] not in stage_layers)
+        if outside:
+            raise ValueError(f"remote expert placement lies outside this stage: {outside[:3]}")
         if (
             self.device.type == "cuda"
             and self.engine_options.profile == Qwen3ExecutionProfile.CORRECTNESS
@@ -614,14 +625,46 @@ class Qwen3StageModule:
             if stage.owns_embeddings
             else None
         )
-        self.layers = torch.nn.ModuleDict(
-            {
-                str(layer_index): StageDecoderLayer(config, layer_index).to(
-                    device=self.device, dtype=dtype
+
+        class _RemoteExpertPlaceholder(torch.nn.Module):
+            def forward(self, *_args: Any, **_kwargs: Any) -> Any:
+                raise RuntimeError("delegated expert executed through the native module")
+
+        layer_modules: dict[str, Any] = {}
+        local_experts: dict[tuple[int, int], Any] = {}
+        for layer_index in range(stage.layer_start, stage.layer_end):
+            if remote:
+                with torch.device("meta"):
+                    layer = StageDecoderLayer(config, layer_index)
+                experts = getattr(layer.mlp, "experts", None)
+                if experts is None:
+                    raise ValueError("sparse Qwen3 decoder has no routed expert module list")
+                for expert_id in range(len(experts)):
+                    if (layer_index, expert_id) in remote:
+                        experts[expert_id] = _RemoteExpertPlaceholder()
+                layer.to_empty(device=self.device)
+                layer.to(dtype=dtype)
+            else:
+                layer = StageDecoderLayer(config, layer_index).to(
+                    device=self.device,
+                    dtype=dtype,
                 )
-                for layer_index in range(stage.layer_start, stage.layer_end)
-            }
+            experts = getattr(layer.mlp, "experts", ())
+            for expert_id, expert in enumerate(experts):
+                if (layer_index, expert_id) not in remote:
+                    local_experts[(layer_index, expert_id)] = expert
+            layer_modules[str(layer_index)] = layer
+            gc.collect()
+        self.layers = torch.nn.ModuleDict(layer_modules)
+        self.moe_backend = (
+            moe_backend_factory(local_experts) if moe_backend_factory is not None else None
         )
+        if remote and self.moe_backend is None:
+            raise ValueError("delegated experts require an execution backend")
+        self.remote_experts = frozenset(remote)
+        self._active_execution_metadata: BatchExecutionMetadata | None = None
+        self._last_expert_metrics: dict[str, Any] = {}
+        self._last_expert_events: list[dict[str, Any]] = []
         self._layer_modules = tuple(
             self.layers[str(layer_index)]
             for layer_index in range(stage.layer_start, stage.layer_end)
@@ -991,6 +1034,17 @@ class Qwen3StageModule:
         use_cache: bool = True,
     ) -> Any:
         torch = self.torch
+        self._active_execution_metadata = BatchExecutionMetadata(
+            requests=(
+                StageExecutionMetadata(
+                    request_id=request_id,
+                    token_position=token_position,
+                    sequence_length=int(inputs.shape[1]),
+                    cache_generation=cache_generation,
+                    route_generation=route_generation,
+                ),
+            )
+        )
         with nvtx_range(
             torch,
             "embedding",
@@ -1197,22 +1251,109 @@ class Qwen3StageModule:
         cache: Any,
     ) -> Any:
         torch = self.torch
-        for layer_call in self._layer_calls:
+        self._last_expert_metrics = {}
+        self._last_expert_events = []
+        for offset, layer_call in enumerate(self._layer_calls):
             with nvtx_range(
                 torch,
                 "decoder_layer",
                 enabled=self.engine_options.nvtx_enabled,
             ):
-                hidden_states = layer_call(
-                    hidden_states,
-                    attention_mask,
-                    position_ids,
-                    use_cache,
-                    position_embeddings,
-                    cache_position,
-                    cache,
-                )
+                if self.moe_backend is None:
+                    hidden_states = layer_call(
+                        hidden_states,
+                        attention_mask,
+                        position_ids,
+                        use_cache,
+                        position_embeddings,
+                        cache_position,
+                        cache,
+                    )
+                else:
+                    hidden_states = self._hybrid_moe_layer(
+                        self._layer_modules[offset],
+                        layer_id=self.stage.layer_start + offset,
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        position_ids=position_ids,
+                        position_embeddings=position_embeddings,
+                        cache_position=cache_position,
+                        cache=cache,
+                    )
         return hidden_states
+
+    def _hybrid_moe_layer(
+        self,
+        layer: Any,
+        *,
+        layer_id: int,
+        hidden_states: Any,
+        attention_mask: Any,
+        position_ids: Any,
+        position_embeddings: Any,
+        cache_position: Any,
+        cache: Any,
+    ) -> Any:
+        """Execute the exact Transformers outer layer with delegated experts."""
+
+        metadata = self._active_execution_metadata
+        if metadata is None or metadata.batch_size != 1:
+            raise RuntimeError("hybrid routed experts require one explicit request context")
+        residual = hidden_states
+        attention_input = layer.input_layernorm(hidden_states)
+        attention_output, _ = layer.self_attn(
+            hidden_states=attention_input,
+            position_embeddings=position_embeddings,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=cache,
+            cache_position=cache_position,
+        )
+        hidden_states = residual + attention_output
+        residual = hidden_states
+        expert_input = layer.post_attention_layernorm(hidden_states)
+        batch_size, sequence_length, hidden_dimension = expert_input.shape
+        flat = expert_input.view(-1, hidden_dimension)
+        router_logits = layer.mlp.gate(flat)
+        routing_weights = self.torch.nn.functional.softmax(
+            router_logits,
+            dim=1,
+            dtype=self.torch.float,
+        )
+        routing_weights, selected_experts = self.torch.topk(
+            routing_weights,
+            layer.mlp.top_k,
+            dim=-1,
+        )
+        if layer.mlp.norm_topk_prob:
+            routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
+        routing_weights = routing_weights.to(flat.dtype)
+        request = metadata.requests[0]
+        result = self.moe_backend.execute_layer(
+            session_id=request.request_id,
+            request_id=request.request_id,
+            token_position=request.token_position,
+            layer_id=layer_id,
+            hidden_states=expert_input,
+            router_logits=router_logits,
+            selected_experts=selected_experts,
+            routing_weights=routing_weights,
+            deadline_ns=time.time_ns() + 120_000_000_000,
+        )
+        if tuple(result.output.shape) != (
+            batch_size,
+            sequence_length,
+            hidden_dimension,
+        ):
+            raise ValueError("routed-expert component returned an invalid hidden-state shape")
+        self._last_expert_events.extend(item.to_dict() for item in result.events)
+        for key, value in result.metrics.items():
+            if isinstance(value, (int, float)):
+                current = self._last_expert_metrics.get(key, 0)
+                self._last_expert_metrics[key] = current + value
+            else:
+                self._last_expert_metrics[key] = value
+        return residual + result.output
 
     def _configure_compile(self) -> None:
         if self.engine_options.profile != Qwen3ExecutionProfile.FAST:
@@ -1449,6 +1590,7 @@ class Qwen3StageModule:
         batched_call: bool,
     ) -> Any:
         torch = self.torch
+        self._active_execution_metadata = metadata
         # The CUDA-native tensor boundary is used by both profiles.  The fast
         # profile selects the static cache, compact final-worker sampling and
         # optional compilation/graphs; the correctness profile deliberately
@@ -2084,6 +2226,10 @@ class Qwen3StageModule:
             return source_name
         return None
 
+    def _is_delegated_expert_tensor(self, source_name: str) -> bool:
+        match = _EXPERT_PATTERN.match(source_name)
+        return bool(match and (int(match.group(1)), int(match.group(2))) in self.remote_experts)
+
     def _target_parameter_names(
         self,
         source_name: str,
@@ -2182,6 +2328,11 @@ class Qwen3StageModule:
                             raise IntegrityError(
                                 f"stage {self.stage_id} repeats tensor {source_name}"
                             )
+                        if self._is_delegated_expert_tensor(source_name):
+                            # The tensor remains in a colocated artifact when the
+                            # Colibri residency engine streams it from RAM/NVMe.
+                            # It must never be materialized into the native stage.
+                            continue
                         target_names = targets(source_name)
                         if not target_names:
                             raise IntegrityError(
@@ -2217,6 +2368,47 @@ class Qwen3StageModule:
         self._autotune_attention_backend()
         self._configure_compile()
         return self.loaded_source_tensors
+
+    def open_expert_session(self, session_id: str) -> None:
+        if self.moe_backend is not None:
+            self.moe_backend.open_session(session_id)
+
+    def close_expert_session(self, session_id: str) -> None:
+        if self.moe_backend is not None:
+            self.moe_backend.close_session(session_id)
+
+    def install_expert_route(self, lease: Any, *, identity: Any, worker_id: str) -> None:
+        if self.moe_backend is None:
+            if self.remote_experts:
+                raise RuntimeError("delegated experts have no routed execution backend")
+            return
+        configure = getattr(self.moe_backend, "configure_route", None)
+        if self.remote_experts and not callable(configure):
+            raise RuntimeError("routed expert backend cannot install authenticated routes")
+        if callable(configure):
+            configure(lease, identity=identity, worker_id=worker_id)
+
+    def expert_status(self) -> dict[str, Any]:
+        status = (
+            getattr(self.moe_backend, "status", lambda: {})()
+            if self.moe_backend is not None
+            else {}
+        )
+        return {
+            "backend": (
+                self.moe_backend.capabilities().backend
+                if self.moe_backend is not None
+                else "native-inline"
+            ),
+            "remote_experts": [list(item) for item in sorted(self.remote_experts)],
+            "last_call": dict(self._last_expert_metrics),
+            "last_events": list(self._last_expert_events),
+            **status,
+        }
+
+    def close_expert_backend(self) -> None:
+        if self.moe_backend is not None:
+            self.moe_backend.close()
 
     def load_weights(
         self,

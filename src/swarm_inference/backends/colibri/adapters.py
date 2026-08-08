@@ -622,161 +622,6 @@ class _BaseColibriAdapter:
         raise NotImplementedError(f"replay is not implemented by adapter {self.adapter_id}")
 
 
-class OlmoeColibriAdapter(_BaseColibriAdapter):
-    adapter_id = "olmoe"
-    claimed_architectures = ("olmoe_moe", "olmoe", "OlmoeForCausalLM")
-    engine_basename = "olmoe"
-    gateway_architecture = None
-    required_config: ClassVar[dict[str, tuple[str, ...]]] = {
-        "layers": ("num_hidden_layers",),
-        "hidden": ("hidden_size",),
-        "experts": ("num_experts",),
-        "top_k": ("num_experts_per_tok",),
-        "intermediate": ("intermediate_size",),
-    }
-    accepted_quantizations = frozenset(
-        {"int8", "int8-rowwise", "merged-int8", "merged-int8-per-row"}
-    )
-    native_quantization = "merged-int8-per-row"
-    checkpoint_layout = "olmoe-merged-int8-experts-v1"
-    routing_kind = "softmax-top-k"
-    routing_normalization = "optional top-k renormalization from norm_topk_prob"
-    routed_weight_semantics = "router probabilities weight whole-expert outputs"
-    tokenizer_mode = "local-token-ids"
-    launch_mode = "one-shot"
-    exact_replay = True
-    static_limitations = (
-        "pinned OLMoE binary has no persistent streaming mux; each request is one-shot",
-    )
-    tuning_settings = (
-        "OMP_NUM_THREADS",
-        "PILOT",
-        "HOT",
-        "WIDE",
-        "SMOOTH",
-        "CONF_LIMIT",
-        "PILOT_EVICT_GUARD",
-        "EXPERT_DROP",
-        "COLI_USAGE_PATH",
-        "COLI_HOT_PIN_PATH",
-    )
-
-    def _validate_tensor_layout(self, tensor_names: tuple[str, ...]) -> None:
-        names = set(tensor_names)
-        merged = [
-            name for name in names if ".mlp.experts." in name and name.endswith(".merged_weight")
-        ]
-        scales = [name for name in names if ".mlp.experts." in name and name.endswith(".qs")]
-        if not merged or not scales:
-            raise ValueError(
-                "OLMoE Colibri requires converted merged_weight and qs expert tensors; "
-                "a standard Hugging Face BF16 checkpoint is not interchangeable"
-            )
-
-    def _required_memory_bytes(
-        self, model: ResolvedModelDescriptor, profile: ColibriModelProfile
-    ) -> int:
-        if not all(
-            (
-                profile.layer_count,
-                profile.hidden_size,
-                profile.expert_count,
-                profile.expert_intermediate_size,
-            )
-        ):
-            return int(model.weight_bytes)
-        layers = int(profile.layer_count or 0)
-        hidden = int(profile.hidden_size or 0)
-        experts = int(profile.expert_count or 0)
-        intermediate = int(profile.expert_intermediate_size or 0)
-        per_expert = 3 * hidden * intermediate + (2 * intermediate + hidden) * 4
-        bank = min(int(model.weight_bytes), layers * experts * per_expert)
-        dense = max(0, int(model.weight_bytes) - bank)
-        cache = bank * min(16, experts) // experts
-        return dense + cache + 1024**3
-
-    def _map_tensor(
-        self,
-        *,
-        name: str,
-        shape: tuple[int, ...],
-        dtype: str,
-        byte_size: int,
-        config: dict[str, Any],
-    ) -> ColibriTensorMapping:
-        layer = _LAYER_RE.search(name)
-        expert = _EXPERT_RE.search(name)
-        role = _dense_role(name)
-        projection = None
-        quantization = dtype.casefold()
-        packing = "safetensors-native"
-        scale = "none"
-        reencode = dtype.casefold() in {"f32", "f16", "bf16"}
-        if expert and name.endswith(".merged_weight"):
-            role = "routed_expert_merged_weight"
-            projection = "gate+up+down"
-            quantization = "int8-rowwise"
-            packing = "three-projections-flattened"
-            scale = "float32-per-row-sidecar"
-            reencode = False
-        elif expert and name.endswith(".qs"):
-            role = "routed_expert_scale"
-            projection = "gate+up+down"
-            quantization = "float32-scale"
-            packing = "one-scale-per-output-row"
-            scale = "float32-per-row"
-            reencode = False
-        return ColibriTensorMapping(
-            tensor_name=name,
-            tensor_role=role,
-            layer_index=int(layer.group(1)) if layer else -1,
-            expert_index=int(expert.group(1)) if expert else None,
-            projection=projection,
-            shard_axis=0 if expert else None,
-            logical_shape=shape,
-            packed_shape=shape,
-            quantization_format=quantization,
-            packing=packing,
-            scale_format=scale,
-            reencoding_allowed=reencode,
-            byte_size=byte_size,
-        )
-
-    def validate_generation_request(
-        self,
-        *,
-        stream: bool,
-        temperature: float,
-        top_p: float,
-        has_token_ids: bool,
-    ) -> None:
-        if stream:
-            raise NotImplementedError("pinned Colibri OLMoE has no persistent streaming mux")
-        if temperature != 0 or top_p != 1:
-            raise ValueError("OLMoE one-shot generation supports greedy decoding only")
-        if not has_token_ids:
-            raise ValueError("OLMoE one-shot generation requires explicit input token IDs")
-
-    def replay_invocation(
-        self,
-        *,
-        engine: Path,
-        model_path: Path,
-        cap: int,
-        quant_bits: int,
-        reference: Path,
-        prompt_ids: tuple[int, ...],
-        completion_tokens: int,
-        teacher_forced: bool,
-    ) -> ColibriReplayInvocation:
-        del model_path, prompt_ids, completion_tokens
-        return ColibriReplayInvocation(
-            command=(str(engine), str(cap), str(quant_bits), str(reference)),
-            environment={"PPL": "1"} if teacher_forced else {},
-            exact_replay=teacher_forced,
-        )
-
-
 class Glm52ColibriAdapter(_BaseColibriAdapter):
     adapter_id = "glm-5.2"
     claimed_architectures = (
@@ -1057,8 +902,11 @@ class _ComposableSparseMoeColibriAdapter(_BaseColibriAdapter):
         experts = int(profile.expert_count or 1)
         hot_experts = min(experts, max(1, int(profile.experts_per_token or 1) * 2))
         average_expert = max(1, int(model.weight_bytes) // max(sparse_layers * experts, 1))
-        dense_floor = max(0, int(model.weight_bytes) - sparse_layers * experts * average_expert)
-        return min(int(model.weight_bytes), dense_floor + hot_experts * average_expert + 1024**3)
+        # This adapter is a routed-expert component.  Dense weights are owned by
+        # the outer component and must not be double-counted during hybrid
+        # admission.  Keep two route sets plus an explicit runtime/workspace
+        # reserve resident; all other experts remain in the RAM/NVMe tiers.
+        return min(int(model.weight_bytes), hot_experts * average_expert + 1024**3)
 
     def _map_tensor(
         self,
@@ -1223,6 +1071,55 @@ class DeepSeekV3ColibriAdapter(_ComposableSparseMoeColibriAdapter):
     }
     routing_kind = "sigmoid-noaux-grouped-top-k"
     routing_score_correction = "e_score_correction_bias"
+
+
+class DeepSeekV4ColibriAdapter(_ComposableSparseMoeColibriAdapter):
+    """Component contract for V4 routed experts.
+
+    V4 cannot reuse the V3 outer model or routing contract.  The official
+    checkpoints mix packed FP4 experts with FP8 dense tensors and start with
+    token-id hash-routed layers.  The adapter therefore makes those
+    requirements visible during planning; the floating PyTorch component
+    rejects the packed tensors and an external pin-bound Colibri runtime must
+    advertise this adapter before such a plan is executable.
+    """
+
+    adapter_id = "deepseek-v4-moe"
+    claimed_architectures = (
+        "deepseek_v4_moe",
+        "deepseek_v4",
+        "DeepseekV4ForCausalLM",
+    )
+    required_config: ClassVar[dict[str, tuple[str, ...]]] = {
+        "layers": ("num_hidden_layers",),
+        "hidden": ("hidden_size",),
+        "experts": ("n_routed_experts",),
+        "top_k": ("num_experts_per_tok",),
+        "intermediate": ("moe_intermediate_size",),
+    }
+    checkpoint_layout = "deepseek-v4-mixed-fp4-fp8-v1"
+    routing_kind = "static-hash-then-sqrtsoftplus-noaux-top-k"
+    routing_score_correction = "e_score_correction_bias after hash-routed layers"
+    static_limitations = _ComposableSparseMoeColibriAdapter.static_limitations + (
+        "official V4 packed FP4 expert tensors require a pin-bound V4 Colibri kernel; "
+        "the embedded floating PyTorch component fails closed",
+    )
+
+    def _architecture_metadata(self, config: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: config[key]
+            for key in (
+                "expert_dtype",
+                "num_hash_layers",
+                "scoring_func",
+                "swiglu_limit",
+                "hc_mult",
+                "hc_eps",
+                "index_topk",
+                "sliding_window",
+            )
+            if key in config
+        }
 
 
 class MiniMaxMoeColibriAdapter(_ComposableSparseMoeColibriAdapter):
@@ -1655,6 +1552,7 @@ def default_colibri_adapter_registry() -> ColibriArchitectureAdapterRegistry:
     if not targets:
         targets = {
             "deepseek-v3-moe": "swarm_inference.backends.colibri.adapters:DeepSeekV3ColibriAdapter",
+            "deepseek-v4-moe": "swarm_inference.backends.colibri.adapters:DeepSeekV4ColibriAdapter",
             "glm-5.2": "swarm_inference.backends.colibri.adapters:Glm52ColibriAdapter",
             "inkling": "swarm_inference.backends.colibri.adapters:InklingColibriAdapter",
             "kimi-k2-moe": "swarm_inference.backends.colibri.adapters:KimiK2ColibriAdapter",
@@ -1663,7 +1561,6 @@ def default_colibri_adapter_registry() -> ColibriArchitectureAdapterRegistry:
             "minimax-moe": "swarm_inference.backends.colibri.adapters:MiniMaxMoeColibriAdapter",
             "mistral4-moe": "swarm_inference.backends.colibri.adapters:Mistral4MoeColibriAdapter",
             "mixtral-moe": "swarm_inference.backends.colibri.adapters:MixtralColibriAdapter",
-            "olmoe": "swarm_inference.backends.colibri.adapters:OlmoeColibriAdapter",
             "qwen3-5-moe": "swarm_inference.backends.colibri.adapters:Qwen35MoeColibriAdapter",
             "qwen3-moe": "swarm_inference.backends.colibri.adapters:Qwen3MoeColibriAdapter",
         }
@@ -1681,6 +1578,7 @@ def default_colibri_adapter_registry() -> ColibriArchitectureAdapterRegistry:
 
 __all__ = [
     "DeepSeekV3ColibriAdapter",
+    "DeepSeekV4ColibriAdapter",
     "Glm52ColibriAdapter",
     "InklingColibriAdapter",
     "KimiK2ColibriAdapter",
@@ -1689,7 +1587,6 @@ __all__ = [
     "MiniMaxMoeColibriAdapter",
     "Mistral4MoeColibriAdapter",
     "MixtralColibriAdapter",
-    "OlmoeColibriAdapter",
     "Qwen3MoeColibriAdapter",
     "Qwen35MoeColibriAdapter",
     "default_colibri_adapter_registry",

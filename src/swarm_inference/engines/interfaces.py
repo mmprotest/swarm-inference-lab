@@ -42,6 +42,208 @@ class CompatibilityStatus(StrEnum):
     NOT_TESTED = "NOT_TESTED"
 
 
+class ExecutionComponentType(StrEnum):
+    """Canonical whole-model component vocabulary.
+
+    A component describes ownership of model work, not a deployment process.  A
+    single persistent worker may own several components and one component may be
+    implemented by several logical workers.
+    """
+
+    TOKENIZATION = "tokenization"
+    EMBEDDING = "embedding"
+    ATTENTION = "attention"
+    KV_CACHE = "kv-cache"
+    ROUTER = "router"
+    ROUTED_EXPERTS = "routed-experts"
+    SHARED_EXPERTS = "shared-experts"
+    DENSE_MLP = "dense-mlp"
+    NORMALIZATION = "normalization"
+    LM_HEAD = "lm-head"
+    SAMPLING = "sampling"
+    TOKEN_PUBLICATION = "token-publication"
+
+
+class ComponentBoundaryContract(StrictModel):
+    """Semantically complete contract for one component input or output."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    boundary_id: str = Field(min_length=1)
+    value_kind: Literal[
+        "token-ids",
+        "hidden-states",
+        "router-logits",
+        "expert-routes",
+        "kv-state",
+        "logits",
+        "sampled-token-ids",
+        "published-token",
+    ]
+    shape: tuple[int | str, ...]
+    dtype: str = Field(min_length=1)
+    device: str = Field(min_length=1)
+    model_revision: str = Field(min_length=1)
+    batch_dimension: int | None = Field(default=None, ge=0)
+    sequence_dimension: int | None = Field(default=None, ge=0)
+    sequence_position: Literal[
+        "prompt-relative",
+        "absolute-cache-position",
+        "current-token",
+        "not-applicable",
+    ]
+    token_position: Literal[
+        "prompt-token",
+        "decode-token",
+        "same-as-input",
+        "next-token",
+        "not-applicable",
+    ]
+    kv_identity: str | None = None
+    route_identity: str | None = None
+
+    @model_validator(mode="after")
+    def dimensions_and_identities_are_explicit(self) -> ComponentBoundaryContract:
+        for value in self.shape:
+            if isinstance(value, bool) or (isinstance(value, int) and value <= 0):
+                raise ValueError("component boundary dimensions must be positive or symbolic")
+            if isinstance(value, str) and not value.strip():
+                raise ValueError("symbolic component boundary dimensions cannot be empty")
+        for axis in (self.batch_dimension, self.sequence_dimension):
+            if axis is not None and axis >= len(self.shape):
+                raise ValueError("component boundary axis lies outside its shape")
+        if self.value_kind == "kv-state" and not self.kv_identity:
+            raise ValueError("KV-state boundaries require an explicit KV identity")
+        if self.value_kind in {"router-logits", "expert-routes"} and not self.route_identity:
+            raise ValueError("routing boundaries require an explicit route identity")
+        return self
+
+    def semantic_mismatches(
+        self,
+        consumer: ComponentBoundaryContract,
+        *,
+        allow_device_transfer: bool,
+    ) -> tuple[str, ...]:
+        """Return every semantic mismatch; never silently coerce a boundary."""
+
+        fields = (
+            "value_kind",
+            "shape",
+            "dtype",
+            "model_revision",
+            "batch_dimension",
+            "sequence_dimension",
+            "sequence_position",
+            "token_position",
+            "kv_identity",
+            "route_identity",
+        )
+        mismatches = tuple(
+            field for field in fields if getattr(self, field) != getattr(consumer, field)
+        )
+        if self.device != consumer.device and not allow_device_transfer:
+            return (*mismatches, "device")
+        return mismatches
+
+
+class ComponentPlacement(StrictModel):
+    """Physical/logical placement and direct-data-path policy."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    worker_ids: tuple[str, ...] = Field(min_length=1)
+    device: str = Field(min_length=1)
+    memory_tiers: tuple[Literal["vram", "ram", "nvme"], ...] = ()
+    persistent: bool = True
+    direct_data_path: bool = True
+    bounded_queue_depth: PositiveInt = 1
+    colocation_group: str | None = None
+    require_same_device: bool = False
+
+    @model_validator(mode="after")
+    def workers_are_unique(self) -> ComponentPlacement:
+        if len(set(self.worker_ids)) != len(self.worker_ids):
+            raise ValueError("component placement contains duplicate logical workers")
+        if self.require_same_device and not self.colocation_group:
+            raise ValueError("same-device placement requires an explicit colocation group")
+        if self.colocation_group is not None and not self.colocation_group.strip():
+            raise ValueError("component colocation group cannot be empty")
+        return self
+
+
+class ExecutionComponent(StrictModel):
+    """One independently placed unit of a complete model execution graph."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    component_id: str = Field(min_length=1)
+    component_type: ExecutionComponentType
+    engine_id: str = Field(min_length=1)
+    architecture_id: str = Field(min_length=1)
+    model_revision: str = Field(min_length=1)
+    placement: ComponentPlacement
+    input_contracts: tuple[ComponentBoundaryContract, ...] = ()
+    output_contracts: tuple[ComponentBoundaryContract, ...] = ()
+    depends_on: tuple[str, ...] = ()
+    estimated_compute_ms: float = Field(default=0.0, ge=0)
+    estimated_memory_bytes: NonNegativeInt = 0
+    estimated_network_bytes: NonNegativeInt = 0
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def contracts_belong_to_placement(self) -> ExecutionComponent:
+        contracts = (*self.input_contracts, *self.output_contracts)
+        allowed_devices = {self.placement.device, "cpu"}
+        if any(item.device not in allowed_devices for item in contracts):
+            raise ValueError("component contract device is not owned by its placement")
+        if any(item.model_revision != self.model_revision for item in contracts):
+            raise ValueError("component boundary carries a different model revision")
+        if self.component_id in self.depends_on:
+            raise ValueError("component cannot depend on itself")
+        return self
+
+
+class ComponentDataEdge(StrictModel):
+    """Explicit data movement between two component boundary contracts."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source_component_id: str = Field(min_length=1)
+    source_boundary_id: str = Field(min_length=1)
+    target_component_id: str = Field(min_length=1)
+    target_boundary_id: str = Field(min_length=1)
+    transport: Literal["in-process", "direct-worker", "coordinator-control"]
+    device_transfer: bool = False
+    bounded_asynchronous: bool = True
+    estimated_bytes: NonNegativeInt = 0
+
+
+class ComponentPlanFragment(StrictModel):
+    """Provider offer consumed by the canonical composite planner."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    fragment_id: str = Field(min_length=1)
+    provider_engine_id: str = Field(min_length=1)
+    controller_engine_id: str = Field(min_length=1)
+    model_fingerprint: str = Field(min_length=1)
+    execution_identity: str = Field(min_length=1)
+    components: tuple[ExecutionComponent, ...] = Field(min_length=1)
+    edges: tuple[ComponentDataEdge, ...] = ()
+    worker_roles: dict[str, str]
+    required_memory_bytes: NonNegativeInt = 0
+    predicted_ttft_ms: float = Field(ge=0)
+    predicted_decode_tokens_s: float = Field(ge=0)
+    predicted_aggregate_tokens_s: float = Field(ge=0)
+    predicted_messages_per_token: float | None = Field(default=None, ge=0)
+    predicted_bytes_per_token: float | None = Field(default=None, ge=0)
+    predicted_serial_waits_per_token: float | None = Field(default=None, ge=0)
+    score: float
+    engine_parameters: dict[str, Any] = Field(default_factory=dict)
+    optional_mechanisms: dict[str, bool] = Field(default_factory=dict)
+    explanation: tuple[str, ...] = ()
+
+
 class ExecutionDevice(StrictModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -290,6 +492,9 @@ class ExecutionPlan(StrictModel):
     objective: Literal["speed", "throughput", "capacity", "balanced"]
     topology: str
     worker_roles: dict[str, str]
+    components: tuple[ExecutionComponent, ...] = ()
+    component_edges: tuple[ComponentDataEdge, ...] = ()
+    critical_path: tuple[str, ...] = ()
     idle_workers: dict[str, str] = Field(default_factory=dict)
     stage_assignments: tuple[dict[str, Any], ...] = ()
     fast_paths: dict[str, str] = Field(default_factory=dict)
@@ -314,6 +519,111 @@ class ExecutionPlan(StrictModel):
     required_memory_bytes: NonNegativeInt = 0
     score: float
     explanation: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_composite_graph(self) -> ExecutionPlan:
+        """Fail closed when a plan advertises a partial or incoherent graph."""
+
+        if not self.components:
+            if self.component_edges or self.critical_path:
+                raise ValueError("component edges/critical path require execution components")
+            return self
+        by_id = {item.component_id: item for item in self.components}
+        if len(by_id) != len(self.components):
+            raise ValueError("composite execution plan contains duplicate component IDs")
+        if any(
+            item.architecture_id != self.components[0].architecture_id for item in self.components
+        ):
+            raise ValueError("composite execution components disagree on architecture identity")
+        revisions = {item.model_revision for item in self.components}
+        if len(revisions) != 1:
+            raise ValueError("composite execution components disagree on model revision")
+        required = {
+            ExecutionComponentType.TOKENIZATION,
+            ExecutionComponentType.EMBEDDING,
+            ExecutionComponentType.ATTENTION,
+            ExecutionComponentType.KV_CACHE,
+            ExecutionComponentType.NORMALIZATION,
+            ExecutionComponentType.LM_HEAD,
+            ExecutionComponentType.SAMPLING,
+            ExecutionComponentType.TOKEN_PUBLICATION,
+        }
+        present = {item.component_type for item in self.components}
+        missing = required - present
+        if missing:
+            values = ", ".join(sorted(item.value for item in missing))
+            raise ValueError(f"composite execution plan is incomplete: missing {values}")
+        if not present.intersection(
+            {ExecutionComponentType.DENSE_MLP, ExecutionComponentType.ROUTED_EXPERTS}
+        ):
+            raise ValueError("composite execution plan has no dense or routed MLP computation")
+        if (
+            ExecutionComponentType.ROUTED_EXPERTS in present
+            and ExecutionComponentType.ROUTER not in present
+        ):
+            raise ValueError("routed-expert execution requires a router component")
+        for component in self.components:
+            unknown = set(component.depends_on) - set(by_id)
+            if unknown:
+                raise ValueError(
+                    f"component {component.component_id!r} has unknown dependencies: "
+                    + ", ".join(sorted(unknown))
+                )
+        if not self.critical_path or set(self.critical_path) != set(by_id):
+            raise ValueError("composite critical path must name every component exactly once")
+        if len(self.critical_path) != len(set(self.critical_path)):
+            raise ValueError("composite critical path contains duplicate components")
+
+        connected_dependencies: set[tuple[str, str]] = set()
+        for edge in self.component_edges:
+            try:
+                source = by_id[edge.source_component_id]
+                target = by_id[edge.target_component_id]
+            except KeyError as exc:
+                raise ValueError("component edge references an unknown component") from exc
+            source_contracts = {item.boundary_id: item for item in source.output_contracts}
+            target_contracts = {item.boundary_id: item for item in target.input_contracts}
+            try:
+                producer = source_contracts[edge.source_boundary_id]
+                consumer = target_contracts[edge.target_boundary_id]
+            except KeyError as exc:
+                raise ValueError("component edge references an unknown boundary") from exc
+            mismatches = producer.semantic_mismatches(
+                consumer,
+                allow_device_transfer=edge.device_transfer,
+            )
+            if mismatches:
+                raise ValueError(
+                    "component edge silently changes model semantics: " + ", ".join(mismatches)
+                )
+            source_workers = set(source.placement.worker_ids)
+            target_workers = set(target.placement.worker_ids)
+            crosses_workers = not source_workers.intersection(target_workers)
+            if crosses_workers and edge.transport != "direct-worker":
+                raise ValueError("cross-worker model data must use the direct-worker transport")
+            if edge.transport == "coordinator-control" and producer.value_kind not in {
+                "sampled-token-ids",
+                "published-token",
+            }:
+                raise ValueError("coordinator transport cannot relay model activations")
+            connected_dependencies.add((target.component_id, source.component_id))
+        for component in self.components:
+            for dependency in component.depends_on:
+                if (component.component_id, dependency) not in connected_dependencies:
+                    raise ValueError("component dependency has no validated data edge")
+        return self
+
+
+class CompositeExecutionPlan(ExecutionPlan):
+    """Execution plan whose completeness is proven from composable fragments."""
+
+    @model_validator(mode="after")
+    def requires_components(self) -> CompositeExecutionPlan:
+        if not self.components:
+            raise ValueError("composite execution plans require a component graph")
+        if len({item.engine_id for item in self.components}) < 2:
+            raise ValueError("composite execution plans require at least two execution engines")
+        return self
 
 
 class Deployment(StrictModel):
@@ -386,14 +696,36 @@ class ExecutionEngine(Protocol):
     async def unload(self, deployment: Deployment) -> None: ...
 
 
+@runtime_checkable
+class ExecutionComponentProvider(Protocol):
+    """Optional engine capability used by canonical whole-model composition."""
+
+    engine_id: str
+
+    async def candidate_components(
+        self,
+        model: ResolvedModelDescriptor,
+        cluster: ClusterCapabilities,
+        request: ExecutionRequest,
+    ) -> list[ComponentPlanFragment]: ...
+
+
 __all__ = [
     "AdapterFastPathCapability",
     "ClusterCapabilities",
     "CompatibilityStatus",
+    "ComponentBoundaryContract",
+    "ComponentDataEdge",
+    "ComponentPlacement",
+    "ComponentPlanFragment",
+    "CompositeExecutionPlan",
     "DecodePlan",
     "Deployment",
     "EngineSupportReport",
     "EngineSupportStatus",
+    "ExecutionComponent",
+    "ExecutionComponentProvider",
+    "ExecutionComponentType",
     "ExecutionDevice",
     "ExecutionEngine",
     "ExecutionEngineCapability",

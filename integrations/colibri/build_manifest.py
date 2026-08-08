@@ -33,10 +33,6 @@ def tree_hash(root: Path) -> str:
         "inkling.exe",
         "kimi_k3",
         "kimi_k3.exe",
-        "olmoe",
-        "olmoe.exe",
-        "olmoe_expert_worker",
-        "olmoe_expert_worker.exe",
         "coli_kimi_mxfp4.dll",
         "libcoli_kimi_mxfp4.so",
         "coli_swarm_moe.dll",
@@ -95,121 +91,6 @@ def main() -> None:
         "license": "Apache-2.0",
         "source_tree_sha256": tree_hash(args.source),
         "patches": args.patches,
-        "shared_expert_runtime": {
-            "header": "c/olmoe_expert_runtime.h",
-            "source": "c/olmoe_expert_runtime.c",
-            "worker": "c/olmoe_expert_worker.c",
-            "present": all(
-                (args.source / relative).is_file()
-                for relative in (
-                    "c/olmoe_expert_runtime.h",
-                    "c/olmoe_expert_runtime.c",
-                    "c/olmoe_expert_worker.c",
-                )
-            ),
-        },
-        "external_expert_dispatch": {
-            "header": "c/olmoe_external_dispatch.h",
-            "source": "c/olmoe_external_dispatch.c",
-            "socket_source": "c/olmoe_expert_socket.c",
-            "wire_header": "c/swarm_expert_wire.h",
-            "wire_source": "c/swarm_expert_wire.c",
-            "present": all(
-                (args.source / relative).is_file()
-                for relative in (
-                    "c/olmoe_external_dispatch.h",
-                    "c/olmoe_external_dispatch.c",
-                    "c/olmoe_expert_socket.c",
-                    "c/swarm_expert_wire.h",
-                    "c/swarm_expert_wire.c",
-                )
-            ),
-        },
-        "native_microshards": {
-            "quantized_bytes_preserved": True,
-            "exact_reduction": "ordered_unscaled_down_accumulator_then_original_row_scale",
-            "wire_chain_state": "SWARMEX1/SWARMT01 down_accumulators",
-            "runtime_source": "c/olmoe_expert_runtime.c",
-            "dispatch_source": "c/olmoe_external_dispatch.c",
-            "worker_source": "c/olmoe_expert_worker.c",
-            "present": all(
-                (args.source / relative).is_file()
-                for relative in (
-                    "c/olmoe_expert_runtime.c",
-                    "c/olmoe_external_dispatch.c",
-                    "c/olmoe_expert_worker.c",
-                    "c/swarm_expert_wire.c",
-                )
-            ),
-        },
-        "memory_residency_telemetry": {
-            "header": "c/olmoe_memory_residency.h",
-            "source": "c/olmoe_memory_residency.c",
-            "windows_apis": [
-                "GetProcessMemoryInfo",
-                "GetPerformanceInfo",
-                "GlobalMemoryStatusEx",
-                "QueryWorkingSetEx",
-            ],
-            "resident_cache_classification": "sampled_QueryWorkingSetEx",
-            "unavailable_windows_metrics": [
-                "pagefile_read_bytes",
-                "hard_soft_fault_attribution",
-                "process_memory_compression_bytes",
-            ],
-            "capacity_isolation_guard": "skip_local_runtime_when_all_routed_experts_are_remote",
-            "present": all(
-                (args.source / relative).is_file()
-                for relative in (
-                    "c/olmoe_memory_residency.h",
-                    "c/olmoe_memory_residency.c",
-                    "c/tests/test_olmoe_memory_residency.c",
-                )
-            ),
-        },
-        "native_data_planes": {
-            "canonical_protocol": "SWARMEX1",
-            "supported": ["direct_tcp", "relayed_tcp", "shared_memory"],
-            "shared_memory_header": "c/olmoe_expert_shm.h",
-            "shared_memory_source": "c/olmoe_expert_shm.c",
-            "shared_memory_control": "SWARMEX1 control handshake over TCP",
-            "worker_queue_measurement": "mutex_wait_ns_excluding_compute",
-            "present": all(
-                (args.source / relative).is_file()
-                for relative in (
-                    "c/olmoe_expert_shm.h",
-                    "c/olmoe_expert_shm.c",
-                    "c/tests/test_olmoe_expert_shm.c",
-                )
-            ),
-        },
-        "native_olmoe_cuda": {
-            "backend_header": "c/backend_cuda.h",
-            "backend_source": "c/backend_cuda.cu",
-            "runtime_loader": "c/backend_loader.c",
-            "shared_runtime": "c/olmoe_expert_runtime.c",
-            "native_format": "merged_int8_with_original_f32_row_scales",
-            "selection_environment": "COLI_SWARM_EXPERT_CUDA_TARGET",
-            "failure_contract": "required_target_fails_without_cpu_fallback",
-            "telemetry": [
-                "cuda_resident_tensor_bytes",
-                "cuda_weight_upload_ns",
-                "cuda_execution_count",
-                "cuda_h2d_ns",
-                "cuda_kernel_ns",
-                "cuda_d2h_ns",
-                "cuda_fallback_count",
-            ],
-            "present": all(
-                (args.source / relative).is_file()
-                for relative in (
-                    "c/backend_cuda.h",
-                    "c/backend_cuda.cu",
-                    "c/backend_loader.c",
-                    "c/olmoe_expert_runtime.c",
-                )
-            ),
-        },
         "native_kimi_mxfp4_fixture": {
             "adapter_source": "integrations/colibri/adapter/kimi_mxfp4_runtime.c",
             "shared_kernel": "c/quant.h::matmul_mxfp4",

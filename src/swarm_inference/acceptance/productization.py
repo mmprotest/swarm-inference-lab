@@ -1167,7 +1167,11 @@ def environment_evidence(repository_root: Path) -> dict[str, Any]:
                 for index in range(torch.cuda.device_count())
             ],
         }
-    except (ImportError, RuntimeError) as exc:
+    # PyTorch can be installed yet unusable when a native runtime dependency is
+    # missing or its DLL/shared object is inaccessible.  Environment capture is
+    # evidence collection, so retain that exact failure instead of crashing the
+    # entire acceptance bundle before its gates can be reported.
+    except (ImportError, RuntimeError, OSError) as exc:
         cuda["error"] = f"{type(exc).__name__}: {exc}"
     status = _git_value(repository_root, "status", "--porcelain")
     wheels = [

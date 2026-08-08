@@ -9,13 +9,22 @@ from swarm_inference.coordinator.canonical_planner import (
     MechanismEvidence,
 )
 from swarm_inference.engines.colibri import ColibriExecutionEngine
+from swarm_inference.engines.component_graph import (
+    routed_expert_component,
+    sparse_outer_components,
+)
+from swarm_inference.engines.composite import _combine
 from swarm_inference.engines.interfaces import (
     ClusterCapabilities,
+    ComponentDataEdge,
+    ComponentPlanFragment,
+    CompositeExecutionPlan,
     Deployment,
     EngineSupportReport,
     EngineSupportStatus,
     ExecutionDevice,
     ExecutionEngineCapability,
+    ExecutionComponentType,
     ExecutionPlan,
     ExecutionProfileCapability,
     ExecutionRequest,
@@ -423,3 +432,308 @@ async def test_native_capacity_plan_uses_stage_specific_execution_identity() -> 
     assert plans[0].predicted_messages_per_token == 2
     assert plans[0].predicted_serial_waits_per_token == 2
     assert plans[0].execution_identity.startswith("sha256:")
+
+
+def _qwen3_moe_model() -> ResolvedModelDescriptor:
+    return ResolvedModelDescriptor(
+        model_id="Qwen/Qwen3-30B-A3B",
+        revision="c" * 40,
+        content_fingerprint="sha256:" + "d" * 64,
+        source_type="huggingface",
+        format="safetensors",
+        architecture="qwen3_moe",
+        architecture_raw="Qwen3MoeForCausalLM",
+        files=(
+            ModelFileDescriptor(
+                relative_path="model-00001-of-00016.safetensors",
+                size_bytes=128 * 1024**2,
+            ),
+        ),
+        weight_bytes=128 * 1024**2,
+        layer_count=4,
+        hidden_size=64,
+        tokenizer_identity="e" * 40,
+        configuration={
+            "architectures": ["Qwen3MoeForCausalLM"],
+            "model_type": "qwen3_moe",
+            "num_hidden_layers": 4,
+            "hidden_size": 64,
+            "num_experts": 8,
+            "num_experts_per_tok": 2,
+            "moe_intermediate_size": 32,
+            "torch_dtype": "bfloat16",
+        },
+    )
+
+
+def test_composite_rejects_declared_edge_with_semantic_boundary_drift() -> None:
+    revision = "c" * 40
+    fingerprint = "sha256:" + "d" * 64
+    outer_components = sparse_outer_components(
+        engine_id="native-stage",
+        architecture_id="qwen3_moe",
+        revision=revision,
+        worker_id="local/worker",
+        device="cuda:0",
+        hidden_size=64,
+        layer_count=4,
+        experts_per_token=2,
+        dtype="bfloat16",
+        required_memory_bytes=1024,
+    )
+    routed_component = routed_expert_component(
+        engine_id="colibri",
+        architecture_id="qwen3_moe",
+        revision=revision,
+        worker_ids=("local/worker",),
+        device="cuda:0",
+        hidden_size=64,
+        experts_per_token=2,
+        dtype="bfloat16",
+        required_memory_bytes=1024,
+        metadata={},
+    )
+    invalid = ComponentDataEdge(
+        source_component_id="attention",
+        source_boundary_id="attention-hidden-out",
+        target_component_id="routed-experts",
+        target_boundary_id="routed-expert-routes-in",
+        transport="in-process",
+    )
+    shared = {
+        "model_fingerprint": fingerprint,
+        "required_memory_bytes": 1024,
+        "predicted_ttft_ms": 1,
+        "predicted_decode_tokens_s": 1,
+        "predicted_aggregate_tokens_s": 1,
+        "score": 1,
+    }
+    outer = ComponentPlanFragment(
+        fragment_id="outer",
+        provider_engine_id="native-stage",
+        controller_engine_id="native-stage",
+        execution_identity="sha256:" + "a" * 64,
+        components=outer_components,
+        worker_roles={"local/worker": "native"},
+        **shared,
+    )
+    experts = ComponentPlanFragment(
+        fragment_id="experts",
+        provider_engine_id="colibri",
+        controller_engine_id="colibri",
+        execution_identity="sha256:" + "b" * 64,
+        components=(routed_component,),
+        edges=(invalid,),
+        worker_roles={"local/worker": "experts"},
+        **shared,
+    )
+
+    with pytest.raises(ValueError, match="semantic boundary mismatches"):
+        _combine((outer, experts), ExecutionRequest())
+
+
+@pytest.mark.asyncio
+async def test_incomplete_colibri_profile_composes_into_complete_product_plan() -> None:
+    device = ExecutionDevice(
+        device_id="cuda:0",
+        device_type="cuda",
+        uuid="one-physical-gpu",
+        name="test-gpu",
+        total_memory_bytes=4 * 1024**3,
+        usable_memory_bytes=4 * 1024**3,
+        measured_prefill_tokens_s=20,
+        measured_decode_tokens_s=10,
+    )
+    worker = WorkerExecutionCapability(
+        worker_id="local/worker",
+        node_id="local",
+        engines=(
+            ExecutionEngineCapability(
+                engine_id="native-stage",
+                enabled=True,
+                runtime_revision="native-v1",
+                binary_hashes={"runtime": "native-hash"},
+                formats=("safetensors",),
+                devices=(device,),
+                adapters=("qwen3_moe",),
+                roles=("stage",),
+            ),
+            ExecutionEngineCapability(
+                engine_id="colibri",
+                enabled=True,
+                runtime_revision="pinned-colibri+component-v1",
+                binary_hashes={"component": "component-hash"},
+                formats=("safetensors",),
+                quantizations=("bfloat16",),
+                devices=(device,),
+                adapters=("qwen3-moe",),
+                fast_paths=(
+                    "bounded-expert-lru",
+                    "direct-peer-model-data",
+                    "persistent-expert-residency",
+                    "whole-expert-execution",
+                ),
+                roles=("routed-expert-component",),
+            ),
+        ),
+    )
+    registry = ExecutionEngineRegistry((NativeStageEngine(), ColibriExecutionEngine()))
+
+    competition = await registry.compete(
+        _qwen3_moe_model(),
+        ClusterCapabilities(workers=(worker,)),
+        ExecutionRequest(requested_engine="colibri"),
+    )
+
+    selected = competition.selected
+    assert isinstance(selected, CompositeExecutionPlan)
+    assert {item.engine_id for item in selected.components} == {"native-stage", "colibri"}
+    assert {item.component_type for item in selected.components} == {
+        ExecutionComponentType.TOKENIZATION,
+        ExecutionComponentType.EMBEDDING,
+        ExecutionComponentType.ATTENTION,
+        ExecutionComponentType.KV_CACHE,
+        ExecutionComponentType.ROUTER,
+        ExecutionComponentType.ROUTED_EXPERTS,
+        ExecutionComponentType.NORMALIZATION,
+        ExecutionComponentType.LM_HEAD,
+        ExecutionComponentType.SAMPLING,
+        ExecutionComponentType.TOKEN_PUBLICATION,
+    }
+    assert all(edge.transport == "in-process" for edge in selected.component_edges)
+    assert selected.engine_parameters["coordinator_activation_bytes_per_token"] == 0
+    assert selected.predicted_serial_waits_per_token == 0
+    assert selected.optional_mechanisms["persistent_model_state"]
+    assert selected.optional_mechanisms["persistent_expert_residency"]
+    colibri_report = next(
+        item for item in competition.support if item.engine_id == "colibri"
+    )
+    assert colibri_report.status == EngineSupportStatus.COMPONENT_SUPPORTED
+
+
+@pytest.mark.asyncio
+async def test_all_minimal_hybrid_plans_compete_and_fastest_is_selected() -> None:
+    def worker(worker_id: str, *, rate: float) -> WorkerExecutionCapability:
+        device = ExecutionDevice(
+            device_id="cuda:0",
+            device_type="cuda",
+            uuid=f"{worker_id}-gpu",
+            name=f"{worker_id}-gpu",
+            total_memory_bytes=4 * 1024**3,
+            usable_memory_bytes=4 * 1024**3,
+            measured_prefill_tokens_s=rate * 2,
+            measured_decode_tokens_s=rate,
+        )
+        return WorkerExecutionCapability(
+            worker_id=worker_id,
+            node_id=worker_id.split("/")[0],
+            engines=(
+                ExecutionEngineCapability(
+                    engine_id="native-stage",
+                    enabled=True,
+                    runtime_revision="native-v1",
+                    binary_hashes={"runtime": f"native-{worker_id}"},
+                    formats=("safetensors",),
+                    devices=(device,),
+                    adapters=("qwen3_moe",),
+                    roles=("stage",),
+                ),
+                ExecutionEngineCapability(
+                    engine_id="colibri",
+                    enabled=True,
+                    runtime_revision="pinned-colibri+component-v1",
+                    binary_hashes={"component": f"component-{worker_id}"},
+                    formats=("safetensors",),
+                    quantizations=("bfloat16",),
+                    devices=(device,),
+                    adapters=("qwen3-moe",),
+                    fast_paths=(
+                        "bounded-expert-lru",
+                        "direct-peer-model-data",
+                        "persistent-expert-residency",
+                        "whole-expert-execution",
+                    ),
+                    roles=("routed-expert-component",),
+                ),
+            ),
+        )
+
+    slow = worker("slow/worker", rate=5)
+    fast = worker("fast/worker", rate=50)
+    registry = ExecutionEngineRegistry((NativeStageEngine(), ColibriExecutionEngine()))
+
+    competition = await registry.compete(
+        _qwen3_moe_model(),
+        ClusterCapabilities(workers=(slow, fast)),
+        ExecutionRequest(objective="speed", requested_engine="colibri"),
+    )
+
+    hybrid_candidates = [
+        item for item in competition.candidates if isinstance(item, CompositeExecutionPlan)
+    ]
+    assert len(hybrid_candidates) == 2
+    assert {tuple(item.worker_roles) for item in hybrid_candidates} == {
+        ("fast/worker",),
+        ("slow/worker",),
+    }
+    assert isinstance(competition.selected, CompositeExecutionPlan)
+    assert tuple(competition.selected.worker_roles) == ("fast/worker",)
+
+
+@pytest.mark.asyncio
+async def test_colocated_colibri_component_cannot_be_selected_on_another_worker() -> None:
+    native_device = ExecutionDevice(
+        device_id="cuda:0",
+        device_type="cuda",
+        uuid="native-gpu",
+        name="native-test-gpu",
+        total_memory_bytes=4 * 1024**3,
+        usable_memory_bytes=4 * 1024**3,
+        measured_prefill_tokens_s=20,
+        measured_decode_tokens_s=10,
+    )
+    colibri_device = native_device.model_copy(
+        update={"uuid": "colibri-gpu", "name": "colibri-test-gpu"}
+    )
+    native = WorkerExecutionCapability(
+        worker_id="node-a/native",
+        node_id="node-a",
+        engines=(
+            ExecutionEngineCapability(
+                engine_id="native-stage",
+                enabled=True,
+                runtime_revision="native-v1",
+                binary_hashes={"runtime": "native-hash"},
+                formats=("safetensors",),
+                devices=(native_device,),
+                adapters=("qwen3_moe",),
+                roles=("stage",),
+            ),
+        ),
+    )
+    colibri = WorkerExecutionCapability(
+        worker_id="node-b/colibri",
+        node_id="node-b",
+        engines=(
+            ExecutionEngineCapability(
+                engine_id="colibri",
+                enabled=True,
+                runtime_revision="pinned-colibri+component-v1",
+                binary_hashes={"component": "component-hash"},
+                formats=("safetensors",),
+                quantizations=("bfloat16",),
+                devices=(colibri_device,),
+                adapters=("qwen3-moe",),
+                fast_paths=("bounded-expert-lru", "persistent-expert-residency"),
+                roles=("routed-expert-component",),
+            ),
+        ),
+    )
+    registry = ExecutionEngineRegistry((NativeStageEngine(), ColibriExecutionEngine()))
+
+    with pytest.raises(RuntimeError, match="no complete execution plan"):
+        await registry.compete(
+            _qwen3_moe_model(),
+            ClusterCapabilities(workers=(native, colibri)),
+            ExecutionRequest(requested_engine="colibri"),
+        )

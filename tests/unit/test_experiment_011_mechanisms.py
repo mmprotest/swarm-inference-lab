@@ -21,9 +21,6 @@ from swarm_inference.experiments.experiment_011.drafting import (
     PromptLookupDraftProvider,
     verify_greedy_candidates,
 )
-from swarm_inference.experiments.experiment_011.runner import (
-    _reconstruct_expert_rpc_dependencies,
-)
 from swarm_inference.model.partition import (
     LayerCost,
     StageAssignment,
@@ -117,38 +114,6 @@ def test_strided_singleton_integer_tensor_has_canonical_wire_bytes() -> None:
     packed = pack_tensor(source, requested_mode="none")
     restored, _ = unpack_tensor(packed.payload, packed.attributes())
     assert torch.equal(restored, source)
-
-
-def test_expert_rpc_serial_waits_are_reconstructed_from_request_events(
-    tmp_path: Path,
-) -> None:
-    telemetry = tmp_path / "session" / "worker-telemetry.jsonl"
-    telemetry.parent.mkdir(parents=True)
-    events = [
-        {
-            "event": "native_expert_request_completed",
-            "worker_id": "worker-0",
-            "request_id": f"run-colibri-{sequence}-token-{position}-layer-0-worker-0",
-            "execution_sequence": sequence,
-            "wall_time_ns": sequence,
-            "duration_ns": 10,
-            "bytes_received": 4,
-            "bytes_sent": 8,
-            "model_fingerprint": "sha256:model",
-        }
-        for sequence, position in ((1, 0), (2, 11))
-    ]
-    telemetry.write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
-    result = _reconstruct_expert_rpc_dependencies(
-        output_directory=tmp_path,
-        generated_tokens=2,
-        prompt_tokens=11,
-        expected_message_count=2,
-    )
-    assert result["serial_waits_by_generated_token"] == [1, 1]
-    assert result["serial_waits_per_token"] == 1
-    assert result["not_estimated_from_aggregate_message_total"] is True
-    assert result["valid"] is True
 
 
 def test_adaptive_compression_uses_measured_cost_not_profile_name() -> None:

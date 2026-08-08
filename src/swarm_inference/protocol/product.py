@@ -174,7 +174,7 @@ class StagePlanReport(StrictModel):
 class ProductExpertPlacement(StrictModel):
     layer_id: int = Field(ge=0)
     expert_id: int = Field(ge=0)
-    strategy: Literal["local", "whole-remote", "microshard-remote"]
+    strategy: Literal["local", "colibri", "whole-remote", "microshard-remote"]
     worker_ids: list[str] = Field(default_factory=list)
     worker_endpoints: dict[str, str] = Field(default_factory=dict)
     expert_hashes: dict[str, str] = Field(default_factory=dict)
@@ -199,6 +199,12 @@ class ProductExpertPlacement(StrictModel):
                 raise ValueError("local expert placement cannot contain remote ownership")
             if self.forced_remote or self.local_fallback_permitted:
                 raise ValueError("local expert placement cannot be forced or a fallback target")
+            return self
+        if self.strategy == "colibri":
+            if self.worker_ids or self.worker_endpoints or self.expert_hashes or self.microshards:
+                raise ValueError("colibri-local placement is colocated with its native stage")
+            if self.forced_remote or self.local_fallback_permitted:
+                raise ValueError("colibri-local placement is delegated but not a remote fallback")
             return self
         workers = set(self.worker_ids)
         if set(self.worker_endpoints) != workers or any(
@@ -263,7 +269,17 @@ class ProductStageExpertPlan(StrictModel):
     stage_id: int = Field(ge=0)
     policy: Literal["auto", "local", "whole-remote", "microshard-remote", "hybrid"]
     require_remote_experts: bool = False
+    cache_budget_bytes: int = Field(default=0, ge=0)
     placements: list[ProductExpertPlacement] = Field(default_factory=list)
+
+    @property
+    def requires_remote_route(self) -> bool:
+        """Whether execution crosses the authenticated expert data plane."""
+
+        return any(
+            item.strategy in {"whole-remote", "microshard-remote"}
+            for item in self.placements
+        )
 
     @model_validator(mode="after")
     def validate_stage_experts(self) -> ProductStageExpertPlan:
@@ -271,9 +287,14 @@ class ProductStageExpertPlan(StrictModel):
         if len(identities) != len(set(identities)):
             raise ValueError("a stage expert may have only one placement")
         if self.require_remote_experts and any(
-            item.strategy == "local" or item.local_fallback_permitted for item in self.placements
+            item.strategy not in {"whole-remote", "microshard-remote"}
+            or item.local_fallback_permitted
+            for item in self.placements
         ):
             raise ValueError("forced-remote stage plans cannot use or fall back to local experts")
+        uses_colibri = any(item.strategy == "colibri" for item in self.placements)
+        if uses_colibri != (self.cache_budget_bytes > 0):
+            raise ValueError("Colibri placements require one explicit positive cache budget")
         return self
 
 
@@ -292,6 +313,7 @@ class ProductStagePlan(StrictModel):
     expert_plans: list[ProductStageExpertPlan] = Field(default_factory=list)
     expert_model_fingerprint: str = ""
     expert_quantization_fingerprint: str = ""
+    routed_expert_engine: Literal["native-stage", "colibri", "remote"] = "native-stage"
     optional_mechanisms: dict[str, bool] = Field(default_factory=dict)
     prefill_parameters: dict[str, Any] = Field(default_factory=dict)
     decode_parameters: dict[str, Any] = Field(default_factory=dict)
@@ -324,8 +346,25 @@ class ProductStagePlan(StrictModel):
                 for placement in expert_plan.placements
             ) and (not self.expert_model_fingerprint or not self.expert_quantization_fingerprint):
                 raise ValueError(
-                    "remote expert plans require exact model and quantisation identity"
+                    "delegated expert plans require exact model and quantisation identity"
                 )
+        placements = [
+            placement
+            for expert_plan in self.expert_plans
+            for placement in expert_plan.placements
+        ]
+        if self.routed_expert_engine == "colibri" and (
+            not placements or any(item.strategy != "colibri" for item in placements)
+        ):
+            raise ValueError("a Colibri product plan must delegate every routed expert")
+        if self.routed_expert_engine == "native-stage" and any(
+            item.strategy != "local" for item in placements
+        ):
+            raise ValueError("native-stage expert plans cannot contain delegated placements")
+        if self.routed_expert_engine == "remote" and not any(
+            item.strategy in {"whole-remote", "microshard-remote"} for item in placements
+        ):
+            raise ValueError("remote expert plans contain no physical remote placement")
         return self
 
 
@@ -352,6 +391,7 @@ class ModelPlanRequest(StrictModel):
     expert_policy: Literal["auto", "local", "whole-remote", "microshard-remote", "hybrid"] = "auto"
     require_remote_experts: bool = False
     allow_expert_local_fallback: bool = False
+    routed_expert_engine: Literal["auto", "native-stage", "colibri"] = "auto"
 
     @model_validator(mode="after")
     def validate_node_constraints(self) -> ModelPlanRequest:
@@ -364,6 +404,8 @@ class ModelPlanRequest(StrictModel):
             raise ValueError(
                 "nodes cannot be both required and excluded: " + ", ".join(sorted(overlap))
             )
+        if self.require_remote_experts and self.routed_expert_engine == "colibri":
+            raise ValueError("colibri-local execution does not satisfy a physically remote gate")
         return self
 
 

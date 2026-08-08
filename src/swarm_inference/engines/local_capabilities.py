@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import platform
 import socket
 from pathlib import Path
@@ -11,6 +12,8 @@ import psutil
 from swarm_inference.backends.colibri.runtime_manifest import (
     load_colibri_runtime_manifest,
 )
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
+from swarm_inference.backends.colibri.constants import COLIBRI_COMMIT
 from swarm_inference.engines.installed import discover_installed_engine_manifests
 from swarm_inference.engines.interfaces import (
     AdapterFastPathCapability,
@@ -25,27 +28,40 @@ from swarm_inference.model.architecture import GGUF_ARCHITECTURE_IDENTIFIERS
 
 
 def _native_capability() -> ExecutionEngineCapability:
-    adapters = default_native_adapter_registry().adapters()
-    adapter_ids = tuple(sorted(item.adapter_id for item in adapters))
-    fast_paths = tuple(
-        sorted(
-            {
-                mode
-                for adapter in adapters
-                for path in adapter.fast_paths()
-                for mode in getattr(path, "candidate_modes", (path.fast_path_id,))
-            }
+    adapter_error: Exception | None = None
+    try:
+        adapters = default_native_adapter_registry().adapters()
+        adapter_ids = tuple(sorted(item.adapter_id for item in adapters))
+        fast_paths = tuple(
+            sorted(
+                {
+                    mode
+                    for adapter in adapters
+                    for path in adapter.fast_paths()
+                    for mode in getattr(path, "candidate_modes", (path.fast_path_id,))
+                }
+            )
         )
-    )
-    adapter_fast_paths = tuple(
-        AdapterFastPathCapability(
-            adapter_id=adapter.adapter_id,
-            fast_path_id=path.fast_path_id,
-            candidate_modes=tuple(getattr(path, "candidate_modes", (path.fast_path_id,))),
+        adapter_fast_paths = tuple(
+            AdapterFastPathCapability(
+                adapter_id=adapter.adapter_id,
+                fast_path_id=path.fast_path_id,
+                candidate_modes=tuple(getattr(path, "candidate_modes", (path.fast_path_id,))),
+            )
+            for adapter in adapters
+            for path in adapter.fast_paths()
         )
-        for adapter in adapters
-        for path in adapter.fast_paths()
-    )
+    except Exception as exc:
+        # Native adapters are optional engine plug-ins and may import their
+        # numerical runtime while being discovered.  A broken or unavailable
+        # PyTorch DLL must disable only native-stage; it must not prevent the
+        # same worker from advertising an independent llama.cpp or Colibri
+        # runtime.
+        adapters = ()
+        adapter_ids = ()
+        fast_paths = ()
+        adapter_fast_paths = ()
+        adapter_error = exc
     memory = psutil.virtual_memory()
     device = ExecutionDevice(
         device_id="cpu",
@@ -61,9 +77,14 @@ def _native_capability() -> ExecutionEngineCapability:
     try:
         import torch
 
-        enabled = True
+        enabled = adapter_error is None
         runtime_revision = str(torch.__version__)
-        detail = "local PyTorch native-stage runtime"
+        detail = (
+            "local PyTorch native-stage runtime"
+            if adapter_error is None
+            else "native adapter discovery failed: "
+            f"{type(adapter_error).__name__}: {adapter_error}"
+        )
         if torch.cuda.is_available():
             index = torch.cuda.current_device()
             free, total = torch.cuda.mem_get_info(index)
@@ -90,7 +111,13 @@ def _native_capability() -> ExecutionEngineCapability:
                 features=("eager",),
             )
     except (ImportError, OSError, RuntimeError) as exc:
-        detail = f"PyTorch native runtime unavailable: {type(exc).__name__}: {exc}"
+        runtime_detail = f"PyTorch native runtime unavailable: {type(exc).__name__}: {exc}"
+        detail = (
+            runtime_detail
+            if adapter_error is None
+            else "native adapter discovery failed: "
+            f"{type(adapter_error).__name__}: {adapter_error}; {runtime_detail}"
+        )
     return ExecutionEngineCapability(
         engine_id="native-stage",
         enabled=enabled,
@@ -194,6 +221,12 @@ def _llamacpp_capability(path: Path | None) -> ExecutionEngineCapability:
         binary_hashes={
             "llama-server": manifest.server_sha256,
             "ggml-rpc-server": manifest.rpc_server_sha256,
+            **{
+                f"architecture-probe:{path.name}": digest
+                for path, digest in sorted(
+                    manifest.architecture_probe_binaries.items(), key=lambda item: str(item[0])
+                )
+            },
         },
         formats=("gguf",),
         model_architectures=architecture_probe.supported_identifiers,
@@ -280,6 +313,68 @@ def _colibri_capability(path: Path | None) -> ExecutionEngineCapability:
     )
 
 
+def embedded_colibri_component_capability(
+    native: ExecutionEngineCapability,
+) -> ExecutionEngineCapability:
+    """Advertise the pin-bound in-process routed-expert component.
+
+    The implementation uses the Colibri architecture/component ABI and Swarm's
+    persistent PyTorch tensor executor.  It is deliberately not advertised as
+    a complete-model Colibri executable and shares the exact native-stage
+    device rather than creating another CUDA context.
+    """
+
+    if not native.enabled or not native.devices:
+        return ExecutionEngineCapability(
+            engine_id="colibri",
+            enabled=False,
+            detail="embedded Colibri component requires a healthy native-stage runtime",
+        )
+    implementation_paths = (
+        Path(__file__).resolve().parents[1] / "backends" / "colibri" / "adapters.py",
+        Path(__file__).resolve().parents[1] / "backends" / "colibri" / "torch_backend.py",
+    )
+    digest = hashlib.sha256()
+    for path in implementation_paths:
+        digest.update(path.name.encode("utf-8"))
+        digest.update(path.read_bytes())
+    adapters = tuple(
+        sorted(
+            adapter.adapter_id
+            for adapter in default_colibri_adapter_registry().adapters()
+            if not adapter.complete_model
+        )
+    )
+    fast_paths = (
+        "bounded-expert-lru",
+        "direct-peer-model-data",
+        "expert-storage-tiering",
+        "persistent-expert-residency",
+        "whole-expert-execution",
+    )
+    devices = tuple(
+        device.model_copy(update={"features": tuple(sorted({*device.features, *fast_paths}))})
+        for device in native.devices
+    )
+    return ExecutionEngineCapability(
+        engine_id="colibri",
+        enabled=True,
+        runtime_revision=f"{COLIBRI_COMMIT}+swarm-component-v1",
+        binary_hashes={"swarm-colibri-component-abi": digest.hexdigest()},
+        formats=("safetensors",),
+        quantizations=("bf16", "bfloat16", "f16", "float16", "f32", "float32"),
+        devices=devices,
+        adapters=adapters,
+        required_features=("routed-expert-component",),
+        fast_paths=fast_paths,
+        roles=("routed-expert-component", "storage_cache"),
+        detail=(
+            "embedded Swarm Colibri routed-expert component; shares the native-stage "
+            "device and does not claim complete-model execution"
+        ),
+    )
+
+
 def discover_local_cluster_capabilities(
     *,
     llamacpp_manifest: Path | None = None,
@@ -287,13 +382,15 @@ def discover_local_cluster_capabilities(
 ) -> ClusterCapabilities:
     """Return physical local facts without running a performance benchmark."""
 
+    native = _native_capability()
     general = discover_configured_general_engine_capabilities(
         llamacpp_manifest=llamacpp_manifest,
         colibri_manifest=colibri_manifest,
+        colibri_fallback=embedded_colibri_component_capability(native),
     )
     worker_id = f"local/{socket.gethostname()}"
     engines = (
-        _native_capability(),
+        native,
         *general,
     )
     return ClusterCapabilities(
@@ -314,6 +411,7 @@ def discover_configured_general_engine_capabilities(
     llamacpp_manifest: Path | None = None,
     colibri_manifest: Path | None = None,
     install_root: Path | None = None,
+    colibri_fallback: ExecutionEngineCapability | None = None,
 ) -> tuple[ExecutionEngineCapability, ...]:
     """Read installer-owned runtime manifests without probing model families."""
 
@@ -322,13 +420,19 @@ def discover_configured_general_engine_capabilities(
         colibri=colibri_manifest,
         install_root=install_root,
     )
+    colibri = (
+        _colibri_capability(manifests.colibri)
+        if manifests.colibri is not None
+        else colibri_fallback or _colibri_capability(None)
+    )
     return (
         _llamacpp_capability(manifests.llamacpp),
-        _colibri_capability(manifests.colibri),
+        colibri,
     )
 
 
 __all__ = [
     "discover_configured_general_engine_capabilities",
     "discover_local_cluster_capabilities",
+    "embedded_colibri_component_capability",
 ]

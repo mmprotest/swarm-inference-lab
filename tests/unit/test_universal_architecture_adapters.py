@@ -238,6 +238,28 @@ FAMILY_CONFIGS: tuple[tuple[str, dict[str, Any], str, str], ...] = (
         "moe",
     ),
     (
+        "DeepSeek V4",
+        {
+            **_moe("deepseek_v4", "DeepseekV4ForCausalLM", experts=16, top_k=4),
+            "n_routed_experts": 16,
+            "n_shared_experts": 1,
+            "num_hash_layers": 2,
+            "expert_dtype": "fp4",
+            "scoring_func": "sqrtsoftplus",
+            "swiglu_limit": 10.0,
+            "hc_mult": 4,
+            "index_topk": 32,
+            "sliding_window": 128,
+            "quantization_config": {
+                "quant_method": "fp8",
+                "fmt": "e4m3",
+                "weight_block_size": [128, 128],
+            },
+        },
+        "deepseek_v4_moe",
+        "moe",
+    ),
+    (
         "MiniMax",
         {
             **_moe("minimax_m2", "MiniMaxM2ForCausalLM", experts=16, top_k=4),
@@ -588,6 +610,7 @@ def test_colibri_adapter_registry_covers_major_moe_architectures() -> None:
         "kimi_k3_moe": "kimi-k3",
         "glm_moe": "glm-5.2",
         "deepseek_v3_moe": "deepseek-v3-moe",
+        "deepseek_v4_moe": "deepseek-v4-moe",
         "minimax_moe": "minimax-moe",
         "mixtral_moe": "mixtral-moe",
     }
@@ -610,7 +633,6 @@ def test_generic_product_layers_contain_no_model_family_dispatch() -> None:
         "src/swarm_inference/worker/shard_manager.py",
     )
     family_tokens = (
-        "olmoe",
         "qwen",
         "kimi",
         "deepseek",

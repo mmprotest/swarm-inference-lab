@@ -55,12 +55,6 @@ from swarm_inference.backends.colibri.telemetry import (
     ColibriTelemetryReader,
     ColibriUsageHistoryReader,
 )
-from swarm_inference.experiments.experiment_009.bundle import REQUIRED_FILES, EvidenceBundle
-from swarm_inference.experiments.experiment_009.runner import (
-    Experiment009Options,
-    run_experiment_009,
-)
-from swarm_inference.experiments.experiment_009.schemas import Experiment009Verdict
 from swarm_inference.microsharding.expert_abi import (
     ExpertMicroshardDescriptor,
     ExpertProjectionSlice,
@@ -266,49 +260,9 @@ def test_colibri_commit_pin() -> None:
     assert patches["upstream_commit"] == COLIBRI_COMMIT
     assert [item["name"] for item in patches["patches"]] == [
         "0001-swarm-bridge.patch",
-        "0002-olmoe-routing-telemetry.patch",
         "0003-aggregate-runtime-telemetry.patch",
-        "0004-olmoe-machine-readable-telemetry.patch",
-        "0005-olmoe-shared-expert-runtime.patch",
-        "0006-olmoe-external-expert-dispatch.patch",
-        "0007-olmoe-native-microshards.patch",
-        "0008-olmoe-memory-residency-telemetry.patch",
         "0009-generic-sparse-moe-component.patch",
     ]
-    bridge_patch = (
-        REPOSITORY_ROOT
-        / "integrations"
-        / "colibri"
-        / "patches"
-        / "0004-olmoe-machine-readable-telemetry.patch"
-    ).read_text(encoding="utf-8")
-    assert "COLI_USAGE_PATH" in bridge_patch
-    assert "COLI_HOT_PIN_PATH" in bridge_patch
-
-
-def test_colibri_memory_residency_patch_contract() -> None:
-    patch = (
-        REPOSITORY_ROOT
-        / "integrations"
-        / "colibri"
-        / "patches"
-        / "0008-olmoe-memory-residency-telemetry.patch"
-    ).read_text(encoding="utf-8")
-    for required in (
-        "QueryWorkingSetEx",
-        "GetProcessMemoryInfo",
-        "logical_cache_hits",
-        "resident_cache_hits",
-        "nonresident_cache_hits",
-        "coordinator_owned_routed_expert_bytes",
-        "capacity-isolated coordinator",
-        "test_olmoe_memory_residency",
-        "COLI_SWARM_EXPERT_CUDA_TARGET",
-        "CPU fallback is forbidden",
-        "cuda_resident_tensor_bytes",
-        "coli_cuda_expert_mlp",
-    ):
-        assert required in patch
 
 
 def test_colibri_license_present() -> None:
@@ -339,22 +293,19 @@ def test_colibri_build_fingerprint(tmp_path: Path) -> None:
         assert payload["compiler"]
         required_binaries = {
             "colibri.exe",
-            "olmoe.exe",
             "swarm_bridge.py",
         }
-        if "0005-olmoe-shared-expert-runtime.patch" in payload.get("patches", []):
-            required_binaries.add("olmoe_expert_worker.exe")
         assert {item["name"] for item in payload["binaries"]} >= required_binaries
 
 
 def test_colibri_capability_handshake(tmp_path: Path) -> None:
-    for binary in ("colibri.exe", "olmoe.exe", "inkling.exe", "kimi_k3.exe"):
+    for binary in ("colibri.exe", "inkling.exe", "kimi_k3.exe"):
         (tmp_path / binary).write_bytes(b"fixture")
     (tmp_path / "swarm_bridge.py").write_text("# fixture\n", encoding="utf-8")
     report = ColibriCapabilityProbe(tmp_path).probe()
     assert report.backend == "colibri"
     assert report.colibri_commit == COLIBRI_COMMIT
-    assert set(report.model_families) == {"glm-5.2", "olmoe", "inkling", "kimi-k3"}
+    assert set(report.model_families) == {"glm-5.2", "inkling", "kimi-k3"}
     assert report.supports_cpu
     assert report.supports_native_mxfp4
     assert report.supports_tensor_microshards is False
@@ -888,43 +839,6 @@ def test_orphaned_process_cleanup(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     )
     assert ColibriProcess.cleanup_orphaned_process(pid_file, expected_model=model) is False
     assert not pid_file.exists()
-
-
-def test_completed_experiment_009_bundle_resumes_without_rerun(tmp_path: Path) -> None:
-    root = tmp_path / "experiment_009"
-    bundle = EvidenceBundle(root, resume=False)
-    for relative in REQUIRED_FILES:
-        bundle.write_text(relative, "completed\n")
-    bundle.write_json(
-        "manifest.json",
-        {
-            "run_mode": "QUICK",
-            "selected_configuration": None,
-        },
-    )
-    bundle.write_json(
-        "verdict.json",
-        {
-            "verdict": Experiment009Verdict.PASS_INTEGRATION.value,
-            "run_mode": "QUICK",
-            "completed": True,
-            "terminal_error": None,
-        },
-    )
-    bundle.complete_stage("evidence_tables")
-
-    outcome = run_experiment_009(
-        Experiment009Options(
-            config_path=REPOSITORY_ROOT / "configs" / "experiments" / "experiment_009_colibri.yaml",
-            output_directory=tmp_path,
-            quick=True,
-            resume=True,
-        )
-    )
-
-    assert outcome.completed
-    assert outcome.verdict is Experiment009Verdict.PASS_INTEGRATION
-    assert outcome.bundle_path == root.resolve()
 
 
 def test_colibri_real_bridge_fixture_if_built() -> None:

@@ -68,6 +68,7 @@ class LlamaCppRuntimeManifest(StrictModel):
     server_sha256: str
     rpc_server_binary: Path
     rpc_server_sha256: str
+    architecture_probe_binaries: dict[Path, str] = Field(default_factory=dict)
     build_flags: dict[str, bool | str] = Field(default_factory=dict)
     device_support: tuple[str, ...] = ()
     supported_features: tuple[str, ...] = ("text-generation",)
@@ -86,10 +87,12 @@ class LlamaCppRuntimeManifest(StrictModel):
         return value.strip().casefold() in {"1", "on", "true", "yes"}
 
     def verify(self) -> None:
-        for path, expected in (
+        binaries = (
             (self.server_binary, self.server_sha256),
             (self.rpc_server_binary, self.rpc_server_sha256),
-        ):
+            *self.architecture_probe_binaries.items(),
+        )
+        for path, expected in binaries:
             resolved = path.expanduser().resolve()
             if not resolved.is_file():
                 raise FileNotFoundError(resolved)
@@ -105,6 +108,8 @@ class LlamaCppArchitectureProbe(StrictModel):
     supported_identifiers: tuple[str, ...]
     inspected_binary: Path
     binary_sha256: str
+    inspected_binaries: tuple[Path, ...] = ()
+    binary_sha256s: dict[str, str] = Field(default_factory=dict)
     mechanism: str = "bounded-binary-identifier-scan"
 
 
@@ -154,20 +159,26 @@ def probe_llamacpp_architectures(
     """
 
     manifest.verify()
-    binary = manifest.server_binary.expanduser().resolve()
+    binaries = (
+        manifest.server_binary.expanduser().resolve(),
+        *tuple(sorted(path.expanduser().resolve() for path in manifest.architecture_probe_binaries)),
+    )
     supported = tuple(
         sorted(
             {
                 identifier.casefold()
                 for identifier in identifiers
-                if _contains_identifier(binary, identifier)
+                if any(_contains_identifier(binary, identifier) for binary in binaries)
             }
         )
     )
+    server = binaries[0]
     return LlamaCppArchitectureProbe(
         supported_identifiers=supported,
-        inspected_binary=binary,
-        binary_sha256="sha256:" + sha256_file(binary),
+        inspected_binary=server,
+        binary_sha256="sha256:" + sha256_file(server),
+        inspected_binaries=binaries,
+        binary_sha256s={str(binary): "sha256:" + sha256_file(binary) for binary in binaries},
     )
 
 
@@ -188,6 +199,12 @@ def load_llamacpp_runtime_manifest(path: Path) -> LlamaCppRuntimeManifest:
                 if manifest.rpc_server_binary.is_absolute()
                 else resolved.parent / manifest.rpc_server_binary
             ).resolve(),
+            "architecture_probe_binaries": {
+                (
+                    binary if binary.is_absolute() else resolved.parent / binary
+                ).resolve(): digest
+                for binary, digest in manifest.architecture_probe_binaries.items()
+            },
         }
     )
     manifest.verify()

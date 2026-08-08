@@ -5,10 +5,12 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 
+from swarm_inference.engines.composite import compose_candidate_plans
 from swarm_inference.engines.interfaces import (
     ClusterCapabilities,
     EngineSupportReport,
     EngineSupportStatus,
+    ExecutionComponentProvider,
     ExecutionEngine,
     ExecutionPlan,
     ExecutionRequest,
@@ -92,28 +94,47 @@ class ExecutionEngineRegistry:
         if request.requested_engine is not None:
             engine = self.get(request.requested_engine)
             report = by_id[engine.engine_id]
-            if not report.supported:
+            if not report.supported and report.status != EngineSupportStatus.COMPONENT_SUPPORTED:
                 raise RuntimeError(
                     f"forced engine {engine.engine_id!r} is unavailable: "
                     f"{report.status.value}: {report.reason}"
                 )
-            selected_engines: tuple[ExecutionEngine, ...] = (engine,)
+            selected_engines: tuple[ExecutionEngine, ...] = (engine,) if report.supported else ()
         else:
             selected_engines = tuple(
                 engine for engine in self.engines() if by_id[engine.engine_id].supported
             )
-        if not selected_engines:
-            detail = "; ".join(
-                f"{item.engine_id}={item.status.value}: {item.reason}" for item in reports
-            )
-            raise RuntimeError(f"no execution engine supports the resolved model; {detail}")
         plan_groups = await asyncio.gather(
             *(engine.candidate_plans(model, cluster, request) for engine in selected_engines)
         )
-        raw_plans = tuple(plan for group in plan_groups for plan in group)
+        component_providers = tuple(
+            engine for engine in self.engines() if isinstance(engine, ExecutionComponentProvider)
+        )
+        composite_plans = await compose_candidate_plans(
+            component_providers,
+            model,
+            cluster,
+            request,
+        )
+        raw_plans = (
+            *(plan for group in plan_groups for plan in group),
+            *composite_plans,
+        )
+        if request.requested_engine is not None:
+            raw_plans = tuple(
+                plan
+                for plan in raw_plans
+                if plan.engine_id == request.requested_engine
+                or any(
+                    component.engine_id == request.requested_engine for component in plan.components
+                )
+            )
+        if not raw_plans:
+            detail = "; ".join(
+                f"{item.engine_id}={item.status.value}: {item.reason}" for item in reports
+            )
+            raise RuntimeError(f"no complete execution plan supports the resolved model; {detail}")
         plans = tuple(self._with_network_competition_score(plan) for plan in raw_plans)
-        if not plans:
-            raise RuntimeError("supported execution engines returned no feasible plan")
         worker_nodes = {worker.worker_id: worker.node_id for worker in cluster.workers}
         non_required_roles = {"idle", "background_replica", "storage_cache", "verification"}
         compatible = []

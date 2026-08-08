@@ -16,7 +16,7 @@ rejected_mechanisms:
   - rejected_prefetch_variants
   - infer_cuda_from_backend_presence
   - infer_microshards_from_backend_presence
-reference_models: [allenai/OLMoE-1B-7B-0125-Instruct]
+reference_models: [glm-5.2-bridge-fixture, kimi-k3-metadata-fixture]
 reference_hardware_class: pinned-windows-colibri-build
 correctness_gates: [exact_tokens, exact_router_selection, exact_router_weights]
 performance_gates: [adapter_overhead_budget, routing_aware_candidate_evaluated]

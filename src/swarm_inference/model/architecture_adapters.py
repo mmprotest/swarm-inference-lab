@@ -667,14 +667,19 @@ class ModelArchitectureAdapterRegistry:
     def has_architecture(self, architecture_id: str) -> bool:
         return architecture_id in self._architectures
 
-    def architecture_for_identifier(self, value: str) -> str | None:
+    def architecture_for_identifier(
+        self,
+        value: str,
+        *,
+        dense_or_moe: DenseOrMoe | None = None,
+    ) -> str | None:
         supplied = _key(value)
-        matches: set[str] = set()
+        matches: dict[str, DenseOrMoe | None] = {}
         for adapter in self.adapters():
             spec = getattr(adapter, "spec", None)
             if not isinstance(spec, ArchitectureSpec):
                 if supplied in {_key(item) for item in adapter.gguf_architectures}:
-                    matches.add(adapter.architecture_id)
+                    matches[adapter.architecture_id] = None
                 continue
             claims = (
                 *spec.root_model_types,
@@ -685,8 +690,20 @@ class ModelArchitectureAdapterRegistry:
                 spec.architecture_id,
             )
             if supplied in {_key(item) for item in claims}:
-                matches.add(adapter.architecture_id)
-        return next(iter(matches)) if len(matches) == 1 else None
+                matches[adapter.architecture_id] = spec.dense_or_moe
+        # Density is only a disambiguator.  An intrinsically sparse identifier
+        # such as ``qwen3moe`` remains exact even when its minimal GGUF metadata
+        # does not repeat an expert_count key.
+        if len(matches) == 1:
+            return next(iter(matches))
+        if dense_or_moe is None:
+            return None
+        filtered = {
+            architecture
+            for architecture, density in matches.items()
+            if density == dense_or_moe
+        }
+        return next(iter(filtered)) if len(filtered) == 1 else None
 
     def resolve_config(self, config: dict[str, Any]) -> ModelArchitectureAdapter | None:
         scored = [(adapter.match_score(config), adapter) for adapter in self.adapters()]
@@ -830,6 +847,31 @@ def _specs() -> tuple[ArchitectureSpec, ...]:
             ),
         ),
         ArchitectureSpec(
+            "deepseek_v4_moe",
+            "deepseek-v4-moe",
+            "moe",
+            root_model_types=("deepseek_v4",),
+            root_architectures=("DeepseekV4ForCausalLM",),
+            gguf_architectures=("deepseek4",),
+            attention_type="hybrid-compressed-sparse-and-local-attention",
+            tensor_layout="deepseek-v4-fp4-routed-and-fp8-dense",
+            router_type="static-hash-then-sqrtsoftplus-noaux-top-k",
+            expert_layout="packed-fp4-routed-and-shared-experts",
+            capabilities=(
+                "compressed-sparse-attention",
+                "local-attention",
+                "mhc-residuals",
+                "static-hash-routing",
+                "shared-experts",
+                "sparse-moe",
+                "mtp",
+            ),
+            validation_notes=(
+                "V4 is intentionally separate from V3: it requires compressed sparse attention, "
+                "mHC residuals, static hash-routed early MoE layers, and mixed FP4/FP8 weights",
+            ),
+        ),
+        ArchitectureSpec(
             "minimax_moe",
             "minimax-moe",
             "moe",
@@ -927,22 +969,6 @@ def _specs() -> tuple[ArchitectureSpec, ...]:
             attention_type="alternating-sliding-and-global-attention",
             tensor_layout="gemma-decoder",
             capabilities=("sliding-window-attention", "logit-softcapping"),
-        ),
-        # Compatibility is retained through the same adapter mechanism as any
-        # third-party architecture; it is intentionally not a product default.
-        ArchitectureSpec(
-            "olmoe_moe",
-            "olmoe-compat",
-            "moe",
-            root_model_types=("olmoe",),
-            root_architectures=("OlmoeForCausalLM",),
-            gguf_architectures=("olmoe",),
-            attention_type="rope-gqa",
-            tensor_layout="transformers-indexed-experts",
-            router_type="softmax-top-k",
-            expert_layout="indexed-separate-projections",
-            capabilities=("sparse-moe",),
-            validation_notes=("compatibility adapter; no product-default status",),
         ),
     )
 

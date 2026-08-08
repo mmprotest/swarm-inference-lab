@@ -6,6 +6,7 @@ import hashlib
 import json
 import statistics
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -278,6 +279,8 @@ def _load_module(
     root: Path,
     config: dict[str, Any],
     options: Qwen3EngineOptions,
+    moe_backend_factory: Callable[[dict[tuple[int, int], Any]], Any] | None = None,
+    remote_experts: set[tuple[int, int]] | None = None,
 ) -> Qwen3StageModule:
     try:
         dtype = _DTYPES[request.dtype.strip().lower()]
@@ -289,6 +292,8 @@ def _load_module(
         device=request.device,
         dtype=dtype,
         engine_options=options,
+        moe_backend_factory=moe_backend_factory,
+        remote_experts=remote_experts,
     )
     module.load_owned_weights(root, model_revision=request.model_revision)
     return module
@@ -575,6 +580,8 @@ class Qwen3StageExecutor:
         resolved_model_path: Path | None,
         *,
         fast_path_profile_store: FastPathProfileStore | None = None,
+        moe_backend_factory: Callable[[dict[tuple[int, int], Any]], Any] | None = None,
+        remote_experts: set[tuple[int, int]] | None = None,
     ) -> Qwen3StageExecutor:
         if resolved_model_path is None:
             raise FileNotFoundError("native Qwen3 loading requires an acquired checkpoint")
@@ -585,6 +592,25 @@ class Qwen3StageExecutor:
         config_value = json.loads(config_path.read_text(encoding="utf-8"))
         if not isinstance(config_value, dict):
             raise ValueError("Qwen3 checkpoint config must be a JSON object")
+        if remote_experts:
+            options, selected, fallback = _engine_options(
+                request.model_copy(update={"fast_path_mode": "eager"}),
+                config=config_value,
+            )
+            module = _load_module(
+                request,
+                root=root,
+                config=config_value,
+                options=options,
+                moe_backend_factory=moe_backend_factory,
+                remote_experts=remote_experts,
+            )
+            return cls(
+                module=module,
+                request=request,
+                selected_fast_path=selected,
+                fallback_reason=fallback,
+            )
         requested_mode = request.fast_path_mode.strip().lower()
         auto_cuda = (
             requested_mode in {"", "auto", "auto-exact"}
@@ -788,6 +814,7 @@ class Qwen3StageExecutor:
         if session_id in self._sessions:
             raise ValueError("stage session is already open")
         self._sessions.add(session_id)
+        self.module.open_expert_session(session_id)
         if self.selected_fast_path != "manual_cuda_graph":
             return
         available = next(
@@ -918,6 +945,8 @@ class Qwen3StageExecutor:
                 "fast_path_fallback": (graph_fallback or self.fast_path_fallback_reason or "none"),
                 "cuda_graph_replays": graph_slot.replay_count if graph_slot else 0,
                 "cuda_graph_capture_ms": graph_slot.capture_ms if graph_slot else 0.0,
+                "coordinator_activation_bytes": 0,
+                **self.module.expert_status(),
             },
         )
 
@@ -967,7 +996,11 @@ class Qwen3StageExecutor:
         else:
             released = self.module.reset_cache(session_id)
         self._sessions.remove(session_id)
+        self.module.close_expert_session(session_id)
         return released
+
+    def install_expert_route(self, lease: Any, *, identity: Any, worker_id: str) -> None:
+        self.module.install_expert_route(lease, identity=identity, worker_id=worker_id)
 
     def cancel_session(self, session_id: str) -> int:
         return self.close_session(session_id)
@@ -1008,6 +1041,7 @@ class Qwen3StageExecutor:
         self.module.end_cuda_graph_decode()
         for slot_id in slot_ids:
             self.module.reset_cache(slot_id)
+        self.module.close_expert_backend()
         self._closed = True
 
 

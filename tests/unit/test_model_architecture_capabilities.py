@@ -72,6 +72,14 @@ def test_hugging_face_and_gguf_architecture_sources_are_retained() -> None:
     assert gguf.source == "gguf.general.architecture"
 
 
+def test_ambiguous_gguf_identifier_uses_model_density() -> None:
+    dense = architecture_from_gguf("llama", dense_or_moe="dense")
+    sparse = architecture_from_gguf("llama", dense_or_moe="moe")
+
+    assert dense.canonical == "llama_dense"
+    assert sparse.canonical == "mixtral_moe"
+
+
 @pytest.mark.parametrize(
     ("model_type", "architecture"),
     [
@@ -104,12 +112,21 @@ def _gguf_string(value: str) -> bytes:
     return struct.pack("<Q", len(encoded)) + encoded
 
 
-def _write_metadata_only_gguf(path: Path, architecture: str) -> None:
-    entries = (
+def _write_metadata_only_gguf(
+    path: Path,
+    architecture: str,
+    *,
+    expert_count: int | None = None,
+) -> None:
+    entries = [
         (_gguf_string("general.architecture"), 8, _gguf_string(architecture)),
         (_gguf_string(f"{architecture}.block_count"), 4, struct.pack("<I", 2)),
         (_gguf_string(f"{architecture}.embedding_length"), 4, struct.pack("<I", 16)),
-    )
+    ]
+    if expert_count is not None:
+        entries.append(
+            (_gguf_string(f"{architecture}.expert_count"), 4, struct.pack("<I", expert_count))
+        )
     payload = bytearray(b"GGUF")
     payload.extend(struct.pack("<IQQ", 3, 0, len(entries)))
     for key, value_type, value in entries:
@@ -130,6 +147,23 @@ def test_local_gguf_metadata_drives_qwen3_moe_detection(tmp_path: Path) -> None:
     assert descriptor.architecture_source == "gguf.general.architecture"
     assert descriptor.layer_count == 2
     assert descriptor.hidden_size == 16
+
+
+@pytest.mark.parametrize(
+    ("expert_count", "expected"),
+    [(None, "llama_dense"), (8, "mixtral_moe")],
+)
+def test_local_ambiguous_llama_gguf_uses_expert_metadata(
+    tmp_path: Path,
+    expert_count: int | None,
+    expected: str,
+) -> None:
+    model = tmp_path / "tiny.gguf"
+    _write_metadata_only_gguf(model, "llama", expert_count=expert_count)
+
+    descriptor = ModelSourceResolver(cache_directory=tmp_path / "cache").resolve(str(model))
+
+    assert descriptor.architecture == expected
 
 
 def _model(
@@ -377,6 +411,35 @@ def test_llamacpp_binary_probe_is_hash_bound_and_not_filename_based(tmp_path: Pa
     assert report.supported_identifiers == ("qwen3", "qwen3moe")
     assert report.binary_sha256 == digest(server)
     assert report.mechanism == "bounded-binary-identifier-scan"
+
+
+def test_llamacpp_binary_probe_uses_only_hash_bound_sidecars(tmp_path: Path) -> None:
+    server = tmp_path / "server.bin"
+    rpc = tmp_path / "rpc.bin"
+    loader = tmp_path / "loader.bin"
+    server.write_bytes(b"server")
+    rpc.write_bytes(b"rpc")
+    loader.write_bytes(b"prefix\x00qwen3\x00suffix")
+
+    def digest(path: Path) -> str:
+        return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+    manifest = LlamaCppRuntimeManifest(
+        commit="pinned-commit",
+        build_id="fixture-build",
+        platform="fixture",
+        server_binary=server,
+        server_sha256=digest(server),
+        rpc_server_binary=rpc,
+        rpc_server_sha256=digest(rpc),
+        architecture_probe_binaries={loader: digest(loader)},
+    )
+
+    report = probe_llamacpp_architectures(manifest, ("qwen3", "unsupported"))
+
+    assert report.supported_identifiers == ("qwen3",)
+    assert report.inspected_binaries == (server, loader)
+    assert report.binary_sha256s[str(loader)] == digest(loader)
 
 
 def _remote_candidate(domain: TopologyDomain) -> ExpertStrategyCandidate:
