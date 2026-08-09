@@ -631,8 +631,7 @@ def test_microshard_fanout_is_parallel_and_reduction_is_hierarchical() -> None:
         np.testing.assert_allclose(output.numpy(), expected, rtol=2e-6, atol=2e-8)
         assert [client.calls for client in clients] == [1, 1, 1, 1]
         assert all(
-            client.response_modes == [ExpertResponseMode.PER_WORKER_FAST]
-            for client in clients
+            client.response_modes == [ExpertResponseMode.PER_WORKER_FAST] for client in clients
         )
         assert event.total_messages == 8
         assert event.critical_path_messages == 2

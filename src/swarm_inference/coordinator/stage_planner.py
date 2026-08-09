@@ -1124,8 +1124,7 @@ class ProductStagePlanner:
                 )
                 maximum_expert_bytes = max(
                     (
-                        metadata.layer_costs[layer_id].expert_weight_bytes
-                        // metadata.expert_count
+                        metadata.layer_costs[layer_id].expert_weight_bytes // metadata.expert_count
                         for layer_id in stage.assignment.layer_ids
                     ),
                     default=0,

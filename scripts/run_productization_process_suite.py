@@ -22,9 +22,9 @@ import psutil
 from swarm_inference.acceptance.productization import (
     ACCEPTANCE_BUNDLE_VERSION,
     NON_GPU_PRODUCT_TEST_ARGUMENTS,
-    NON_PRODUCT_SOURCE_AUDIT_TESTS,
     REPEATABILITY_SCHEMA_VERSION,
     REPEATABILITY_TEST_COMMAND_VERSION,
+    SOFTWARE_SUITE_OPT_IN_TESTS,
 )
 
 REQUIRED_FULL_RUNS = 3
@@ -437,7 +437,7 @@ def main(argv: list[str] | None = None) -> int:
         "schema_version": REPEATABILITY_SCHEMA_VERSION,
         "test_command_version": REPEATABILITY_TEST_COMMAND_VERSION,
         "acceptance_schema_version": ACCEPTANCE_BUNDLE_VERSION,
-        "excluded_source_audit_tests": list(NON_PRODUCT_SOURCE_AUDIT_TESTS),
+        "excluded_software_opt_in_tests": list(SOFTWARE_SUITE_OPT_IN_TESTS),
         "git_commit": _git_value(repository_root, "rev-parse", "HEAD"),
         "git_dirty": start_git_status is None or bool(start_git_status),
         "git_status": start_git_status,

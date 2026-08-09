@@ -71,15 +71,11 @@ def test_canonical_matrix_covers_every_required_architecture() -> None:
     }
     assert all(target.mandatory for target in suite.targets)
     assert all(
-        "colibri" in target.comparison_engines
-        for target in suite.targets
-        if target.require_colibri
+        "colibri" in target.comparison_engines for target in suite.targets if target.require_colibri
     )
 
 
-def test_preflight_pins_revision_and_accounts_for_cached_bytes(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_preflight_pins_revision_and_accounts_for_cached_bytes(tmp_path: Path, monkeypatch) -> None:
     suite = load_suite(Path("configs/validation/major_open_weight_models.yaml"))
     target = MajorModelTarget(
         id="fixture",
@@ -156,13 +152,9 @@ def test_offline_preflight_uses_one_immutable_cached_safetensors_index(
             "b": "model-00002-of-00002.safetensors",
         },
     }
-    (snapshot / "model.safetensors.index.json").write_text(
-        json.dumps(index), encoding="utf-8"
-    )
+    (snapshot / "model.safetensors.index.json").write_text(json.dumps(index), encoding="utf-8")
     api = SimpleNamespace(
-        model_info=lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            ConnectionError("offline")
-        )
+        model_info=lambda *_args, **_kwargs: (_ for _ in ()).throw(ConnectionError("offline"))
     )
     monkeypatch.setattr("swarm_inference.acceptance.major_models._cache_root", lambda: cache)
 

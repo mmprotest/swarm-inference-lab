@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import csv
 import hashlib
 import importlib.metadata
@@ -22,7 +23,6 @@ import re
 import shutil
 import statistics
 import subprocess
-import sys
 import threading
 import time
 from collections.abc import Iterable, Mapping, Sequence
@@ -193,7 +193,9 @@ class EvidenceDirectory:
     def json(self, relative: str, value: object) -> None:
         self._replace(
             relative,
-            (json.dumps(value, indent=2, sort_keys=True, default=str, allow_nan=False) + "\n").encode(),
+            (
+                json.dumps(value, indent=2, sort_keys=True, default=str, allow_nan=False) + "\n"
+            ).encode(),
         )
 
     def text(self, relative: str, value: str) -> None:
@@ -319,10 +321,8 @@ def _storage_benchmark(root: Path, *, size_bytes: int = 64 * 1024**2) -> dict[st
             "random_read_iops": None,
         }
     finally:
-        try:
+        with contextlib.suppress(OSError):
             path.unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 def capture_hardware(root: Path) -> dict[str, object]:
@@ -438,12 +438,7 @@ def _required_repository_files(
 def _cached_bytes(
     cache_root: Path, model_id: str, revision: str, required_files: Sequence[str]
 ) -> tuple[int, bool]:
-    snapshot = (
-        cache_root
-        / ("models--" + model_id.replace("/", "--"))
-        / "snapshots"
-        / revision
-    )
+    snapshot = cache_root / ("models--" + model_id.replace("/", "--")) / "snapshots" / revision
     total = 0
     complete = True
     for relative in required_files:
@@ -784,10 +779,7 @@ def _resolve_local_gguf_preflight(
             / artifact.source_revision.casefold()
         )
         cached_ref = (
-            cache_root
-            / ("models--" + target.model_id.replace("/", "--"))
-            / "refs"
-            / "main"
+            cache_root / ("models--" + target.model_id.replace("/", "--")) / "refs" / "main"
         )
         cached_revision = (
             cached_ref.read_text(encoding="utf-8").strip().casefold()
@@ -795,18 +787,13 @@ def _resolve_local_gguf_preflight(
             else ""
         )
         tokenizer_path = snapshot_root / "tokenizer.json"
-        tokenizer_digest = (
-            _sha256_file(tokenizer_path) if tokenizer_path.is_file() else ""
-        )
+        tokenizer_digest = _sha256_file(tokenizer_path) if tokenizer_path.is_file() else ""
         cached_snapshot_verified = (
             snapshot_root.is_dir()
             and (snapshot_root / "config.json").is_file()
             and tokenizer_digest == conversion.get("tokenizer_hash")
         )
-        if (
-            cached_revision != artifact.source_revision.casefold()
-            and not cached_snapshot_verified
-        ):
+        if cached_revision != artifact.source_revision.casefold() and not cached_snapshot_verified:
             raise
         online_resolution_error = f"{type(exc).__name__}: {exc}"
 
@@ -982,8 +969,10 @@ def _first_number(mapping: Mapping[str, Any], names: Sequence[str]) -> float | N
     while pending:
         current = pending.pop()
         for key, value in current.items():
-            if key.casefold() in wanted and isinstance(value, (int, float)) and not isinstance(
-                value, bool
+            if (
+                key.casefold() in wanted
+                and isinstance(value, (int, float))
+                and not isinstance(value, bool)
             ):
                 return float(value)
             if isinstance(value, Mapping):
@@ -1047,14 +1036,15 @@ def _tokenizer_for(target: MajorModelTarget, revision: str) -> Any:
     try:
         from transformers import AutoTokenizer
 
-        return AutoTokenizer.from_pretrained(
+        tokenizer_factory: Any = AutoTokenizer
+        return tokenizer_factory.from_pretrained(
             target.model_id,
             revision=revision,
             local_files_only=True,
             trust_remote_code=False,
         )
     except Exception:
-        from tokenizers import Tokenizer
+        from tokenizers import Tokenizer  # type: ignore[import-untyped]
 
         tokenizer_path = (
             _cache_root()
@@ -1203,16 +1193,16 @@ def _run_record(
         "prefill_tokens_per_second": (
             telemetry.prefill_tokens_s if telemetry is not None else None
         ),
-        "decode_tokens_per_second": (
-            telemetry.decode_tokens_s if telemetry is not None else None
-        ),
+        "decode_tokens_per_second": (telemetry.decode_tokens_s if telemetry is not None else None),
         "p50_token_latency_ms": _percentile(inter_token, 0.50),
         "p95_token_latency_ms": _percentile(inter_token, 0.95),
         "peak_vram_bytes": resources.get("peak_vram_bytes"),
         "peak_system_ram_bytes": resources.get("peak_system_ram_bytes"),
         "bytes_read_from_storage": storage_bytes,
         "effective_disk_bandwidth_bytes_per_second": effective_bandwidth,
-        "expert_cache_hit_rate": (cache_hits / cache_total if cache_hits is not None and cache_total else None),
+        "expert_cache_hit_rate": (
+            cache_hits / cache_total if cache_hits is not None and cache_total else None
+        ),
         "expert_movement_bytes": _first_number(
             engine_metrics,
             ("colibri_expert_movement_bytes", "expert_movement_bytes", "bytes_loaded"),
@@ -1453,7 +1443,7 @@ async def _canonical_run(
 ) -> tuple[ClusterRunSummary, tuple[RunProgress, ...], dict[str, object]]:
     if target.local_gguf is not None:
         with ResourceSampler() as sampler:
-            summary, events = await _local_gguf_run(
+            summary, progress_events = await _local_gguf_run(
                 target=target,
                 revision=revision,
                 prompt=prompt,
@@ -1461,7 +1451,7 @@ async def _canonical_run(
                 requested_engine=requested_engine,
                 runtime_log_root=runtime_log_root,
             )
-        return summary, events, sampler.result()
+        return summary, progress_events, sampler.result()
     from swarm_inference.cluster.orchestrator import ClusterOrchestrator
     from swarm_inference.cluster.state import ClusterStateStore
 
@@ -1512,9 +1502,11 @@ def _model_summary_row(
     decode = [row for row in successful if row.get("workload") == "decode"]
     prefill = [row for row in successful if row.get("workload") == "prefill"]
     representative = successful[0] if successful else {}
-    component_sets = [
-        tuple(str(item) for item in row.get("component_engines", [])) for row in successful
-    ]
+    component_sets: list[tuple[str, ...]] = []
+    for row in successful:
+        raw_components = row.get("component_engines")
+        components = raw_components if isinstance(raw_components, (list, tuple)) else ()
+        component_sets.append(tuple(str(item) for item in components))
     colibri = any("colibri" in items for items in component_sets)
     hybrid = any("colibri" in items and len(set(items)) > 1 for items in component_sets)
     storage_bytes = sum(
@@ -1547,9 +1539,7 @@ def _model_summary_row(
         "real_run": status == ValidationStatus.PASS,
         "colibri": colibri,
         "hybrid": hybrid,
-        "alternative_engine": [
-            item for item in target.comparison_engines if item != "colibri"
-        ],
+        "alternative_engine": [item for item in target.comparison_engines if item != "colibri"],
         "selected_engine": selected_engines,
         "decode_tokens_per_second": _average(decode, "decode_tokens_per_second"),
         "prefill_tokens_per_second": _average(prefill, "prefill_tokens_per_second"),
@@ -1585,10 +1575,9 @@ def _comparison_row(
         and float(auto_rate) > 0
         else None
     )
-    same_precision = (
-        automatic.get("format") == forced.get("format")
-        and automatic.get("quantization") == forced.get("quantization")
-    )
+    same_precision = automatic.get("format") == forced.get("format") and automatic.get(
+        "quantization"
+    ) == forced.get("quantization")
     tokens_match = automatic.get("generated_token_ids") == forced.get("generated_token_ids")
     return {
         "family": target.family,
@@ -1623,7 +1612,11 @@ def _write_chart(
     matplotlib.use("Agg", force=True)
     import matplotlib.pyplot as plt
 
-    present = [(label, float(value)) for label, value in zip(labels, values, strict=True) if value is not None]
+    present = [
+        (label, float(value))
+        for label, value in zip(labels, values, strict=True)
+        if value is not None
+    ]
     height = max(4.5, len(present) * 0.38 + 1.8)
     figure, axis = plt.subplots(figsize=(11, height), constrained_layout=True)
     if present:
@@ -1643,6 +1636,10 @@ def _write_chart(
     plt.close(figure)
 
 
+def _chart_number(value: object) -> float | int | None:
+    return value if isinstance(value, (int, float)) else None
+
+
 def generate_charts(
     root: Path,
     compatibility: Sequence[Mapping[str, object]],
@@ -1650,19 +1647,34 @@ def generate_charts(
 ) -> None:
     labels = [str(row["family"]) for row in compatibility]
     definitions = (
-        ("decode_throughput.svg", "Decode throughput by model", "decode_tokens_per_second", "tokens/s"),
-        ("prefill_throughput.svg", "Prefill throughput by model", "prefill_tokens_per_second", "tokens/s"),
+        (
+            "decode_throughput.svg",
+            "Decode throughput by model",
+            "decode_tokens_per_second",
+            "tokens/s",
+        ),
+        (
+            "prefill_throughput.svg",
+            "Prefill throughput by model",
+            "prefill_tokens_per_second",
+            "tokens/s",
+        ),
         ("ttft.svg", "Time to first token by model", "ttft_ms", "milliseconds"),
         ("peak_vram.svg", "Peak VRAM by model", "peak_vram_bytes", "bytes"),
         ("peak_ram.svg", "Peak system RAM by model", "peak_ram_bytes", "bytes"),
-        ("storage_read.svg", "Storage bytes per generated token", "disk_bytes_per_token", "bytes/token"),
+        (
+            "storage_read.svg",
+            "Storage bytes per generated token",
+            "disk_bytes_per_token",
+            "bytes/token",
+        ),
     )
     for filename, title, key, x_label in definitions:
         _write_chart(
             root / "charts" / filename,
             title=title,
             labels=labels,
-            values=[row.get(key) if isinstance(row.get(key), (int, float)) else None for row in compatibility],
+            values=[_chart_number(row.get(key)) for row in compatibility],
             x_label=x_label,
         )
     comparison_labels = [f"{row['family']} ({row['forced_engine']})" for row in comparisons]
@@ -1671,10 +1683,7 @@ def generate_charts(
         title="Forced backend throughput relative to automatic plan",
         labels=comparison_labels,
         values=[
-            row.get("forced_to_automatic_throughput_ratio")
-            if isinstance(row.get("forced_to_automatic_throughput_ratio"), (int, float))
-            else None
-            for row in comparisons
+            _chart_number(row.get("forced_to_automatic_throughput_ratio")) for row in comparisons
         ],
         x_label="forced / automatic decode throughput",
     )
@@ -1779,13 +1788,21 @@ class MajorModelAcceptanceRunner:
                     )
                     measured.append(row)
                     if row["execution_status"] != "PASS":
-                        raise RuntimeError(f"{workload_name} repetition {repetition} did not generate tokens")
+                        raise RuntimeError(
+                            f"{workload_name} repetition {repetition} did not generate tokens"
+                        )
                     if row["architecture_id"] != target.architecture_id:
                         raise RuntimeError(
                             f"resolved architecture {row['architecture_id']!r} does not match "
                             f"required {target.architecture_id!r}"
                         )
-                    tokens = [int(item) for item in row["generated_token_ids"]]  # type: ignore[union-attr]
+                    generated_token_ids = row["generated_token_ids"]
+                    if not isinstance(generated_token_ids, list) or not all(
+                        isinstance(item, int) and not isinstance(item, bool)
+                        for item in generated_token_ids
+                    ):
+                        raise RuntimeError("canonical runtime returned invalid token IDs")
+                    tokens: list[int] = list(generated_token_ids)
                     reference = workload_references.setdefault(workload_name, tokens)
                     if tokens != reference:
                         row["correctness_status"] = "FAIL"
@@ -1915,7 +1932,9 @@ class MajorModelAcceptanceRunner:
             self._write_tables()
 
         mandatory = [
-            row for row, target in zip(self.compatibility, self.suite.targets, strict=True) if target.mandatory
+            row
+            for row, target in zip(self.compatibility, self.suite.targets, strict=True)
+            if target.mandatory
         ]
         overall = (
             "MAJOR_MODEL_REAL_RUN_PASS"

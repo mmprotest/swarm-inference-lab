@@ -987,9 +987,7 @@ class PersistentStageRuntime:
             if loaded.request.expert_plan is not None
             else None
         )
-        has_remote_experts = bool(
-            expert_plan is not None and expert_plan.requires_remote_route
-        )
+        has_remote_experts = bool(expert_plan is not None and expert_plan.requires_remote_route)
         if has_remote_experts and expert_lease is None:
             raise IntegrityError("remote expert execution requires a signed expert route lease")
         if expert_lease is not None:

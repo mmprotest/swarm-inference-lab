@@ -18,7 +18,6 @@ from typing import Any
 import numpy as np
 
 
-
 class ColibriCudaError(RuntimeError):
     """The requested Colibri CUDA path did not execute correctly."""
 

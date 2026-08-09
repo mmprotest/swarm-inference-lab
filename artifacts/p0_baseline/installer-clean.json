@@ -1,0 +1,278 @@
+﻿{
+    "schema_version":  1,
+    "status":  "PASS",
+    "label":  "p0-clean-cpu",
+    "setup_path":  "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\release\\generated\\SwarmInferenceSetup-x64.exe",
+    "setup_sha256":  "sha256:e235378c545ec4ef6d3a001c1b83f7024205ce66efa1034128875c16a4bdb901",
+    "install":  {
+                    "file":  "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\release\\generated\\SwarmInferenceSetup-x64.exe",
+                    "arguments":  [
+                                      "/VERYSILENT",
+                                      "/SUPPRESSMSGBOXES",
+                                      "/NORESTART",
+                                      "/BACKEND=cpu",
+                                      "/PURGESTATE=0",
+                                      "/DIR=C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\Programs\\SwarmInference",
+                                      "/LOG=C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\setup-clean.log"
+                                  ],
+                    "exit_code":  0,
+                    "duration_ms":  65696,
+                    "stdout":  "",
+                    "stderr":  ""
+                },
+    "repair":  {
+                   "file":  "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\release\\generated\\SwarmInferenceSetup-x64.exe",
+                   "arguments":  [
+                                     "/VERYSILENT",
+                                     "/SUPPRESSMSGBOXES",
+                                     "/NORESTART",
+                                     "/BACKEND=cpu",
+                                     "/PURGESTATE=0",
+                                     "/DIR=C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\Programs\\SwarmInference",
+                                     "/LOG=C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\setup-repair.log"
+                                 ],
+                   "exit_code":  0,
+                   "duration_ms":  66913,
+                   "stdout":  "",
+                   "stderr":  ""
+               },
+    "uninstall":  {
+                      "file":  "C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\Programs\\SwarmInference\\unins000.exe",
+                      "arguments":  [
+                                        "/VERYSILENT",
+                                        "/SUPPRESSMSGBOXES",
+                                        "/NORESTART",
+                                        "/PURGESTATE=0",
+                                        "/LOG=C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\uninstall.log"
+                                    ],
+                      "exit_code":  0,
+                      "duration_ms":  11945,
+                      "stdout":  "",
+                      "stderr":  ""
+                  },
+    "install_record":  {
+                           "schema_version":  1,
+                           "product_version":  "0.1.0rc11",
+                           "git_tag":  "v0.1.0-rc.11",
+                           "git_commit":  "cd35c6950722a89b1f91f0fa45031042587f5c13",
+                           "installation_mode":  "native-windows",
+                           "installation_operation":  "install",
+                           "candidate_backend":  "cpu",
+                           "selected_backend":  "cpu",
+                           "rejected_backend":  null,
+                           "rejection_reason":  null,
+                           "python_version":  "3.11.15",
+                           "uv_version":  "0.12.0",
+                           "uv_sha256":  "sha256:268cd62b99395eb53825795518e067e4b27ec4b445175df343824689f307c807",
+                           "wheel_filename":  "swarm_inference_lab-0.1.0rc11-py3-none-any.whl",
+                           "wheel_sha256":  "sha256:93046fa27441d7327bb6022011148cef05e1101eb116cb72a3a974579fbd2ced",
+                           "runtime_profile_filename":  "windows-x64-cpu.requirements.lock",
+                           "runtime_profile_sha256":  "sha256:733b680a32dc31a5c7796655059291851d41282cded43c6f73faee197033b35e",
+                           "installed_at_utc":  "2026-08-08T23:46:36.6536320+00:00",
+                           "installer_version":  "0.1.0rc11",
+                           "signature_status":  "unsigned-prerelease",
+                           "previous_installed_version":  null,
+                           "doctor_summary":  {
+                                                  "backend_selection":  {
+                                                                            "candidates":  [
+                                                                                               {
+                                                                                                   "available_memory_bytes":  0,
+                                                                                                   "backend":  "torch-cuda",
+                                                                                                   "detected":  false,
+                                                                                                   "device":  "cuda",
+                                                                                                   "device_name":  null,
+                                                                                                   "operational":  false,
+                                                                                                   "reason":  "torch-cuda is not visible to PyTorch",
+                                                                                                   "supported_dtypes":  [
+
+                                                                                                                        ],
+                                                                                                   "total_memory_bytes":  0
+                                                                                               },
+                                                                                               {
+                                                                                                   "available_memory_bytes":  75127828480,
+                                                                                                   "backend":  "torch-cpu",
+                                                                                                   "detected":  true,
+                                                                                                   "device":  "cpu",
+                                                                                                   "device_name":  "CPU",
+                                                                                                   "operational":  true,
+                                                                                                   "reason":  "correct tensor probe passed",
+                                                                                                   "supported_dtypes":  [
+                                                                                                                            "float32",
+                                                                                                                            "float16",
+                                                                                                                            "bfloat16"
+                                                                                                                        ],
+                                                                                                   "total_memory_bytes":  102496780288
+                                                                                               }
+                                                                                           ],
+                                                                            "document_version":  1,
+                                                                            "measured_at_unix_ns":  1786232793775756800,
+                                                                            "reason":  "selected highest-priority operational backend torch-cpu",
+                                                                            "schema_version":  1,
+                                                                            "selected_backend":  "torch-cpu",
+                                                                            "selected_device":  "cpu",
+                                                                            "selected_dtype":  "bfloat16"
+                                                                        },
+                                                  "backend_validation":  [
+                                                                             {
+                                                                                 "backend":  "torch-cuda",
+                                                                                 "detail":  "no retained acceptance evidence exists for this platform/backend scope",
+                                                                                 "evidence_id":  null,
+                                                                                 "evidence_path":  null,
+                                                                                 "physical_status":  "not-run",
+                                                                                 "platform_architecture":  "AMD64",
+                                                                                 "platform_release":  "10",
+                                                                                 "platform_system":  "windows",
+                                                                                 "software_status":  "not-run",
+                                                                                 "validated_at_unix_ns":  null
+                                                                             },
+                                                                             {
+                                                                                 "backend":  "torch-cpu",
+                                                                                 "detail":  "no retained acceptance evidence exists for this platform/backend scope",
+                                                                                 "evidence_id":  null,
+                                                                                 "evidence_path":  null,
+                                                                                 "physical_status":  "not-run",
+                                                                                 "platform_architecture":  "AMD64",
+                                                                                 "platform_release":  "10",
+                                                                                 "platform_system":  "windows",
+                                                                                 "software_status":  "not-run",
+                                                                                 "validated_at_unix_ns":  null
+                                                                             }
+                                                                         ],
+                                                  "cluster_configured":  false,
+                                                  "diagnostics":  [
+                                                                      {
+                                                                          "detail":  "windows AMD64 product path is implemented; validation requires retained evidence",
+                                                                          "name":  "platform-implementation",
+                                                                          "remediation":  null,
+                                                                          "status":  "pass"
+                                                                      }
+                                                                  ],
+                                                  "platform":  {
+                                                                   "architecture":  "AMD64",
+                                                                   "implementation_reason":  "windows AMD64 product path is implemented; validation requires retained evidence",
+                                                                   "implementation_status":  "implemented",
+                                                                   "release":  "10",
+                                                                   "system":  "windows"
+                                                               },
+                                                  "state_root":  "C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\SwarmInference",
+                                                  "status":  "pass"
+                                              },
+                           "application_path":  "C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\Programs\\SwarmInference",
+                           "state_path":  "C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\SwarmInference",
+                           "release_manifest_sha256":  "sha256:2ec4d283e0cca72299450d1f314244bd5bb6ae391d62cb88f47976ba3e10586d"
+                       },
+    "repaired_record":  {
+                            "schema_version":  1,
+                            "product_version":  "0.1.0rc11",
+                            "git_tag":  "v0.1.0-rc.11",
+                            "git_commit":  "cd35c6950722a89b1f91f0fa45031042587f5c13",
+                            "installation_mode":  "native-windows",
+                            "installation_operation":  "repair",
+                            "candidate_backend":  "cpu",
+                            "selected_backend":  "cpu",
+                            "rejected_backend":  null,
+                            "rejection_reason":  null,
+                            "python_version":  "3.11.15",
+                            "uv_version":  "0.12.0",
+                            "uv_sha256":  "sha256:268cd62b99395eb53825795518e067e4b27ec4b445175df343824689f307c807",
+                            "wheel_filename":  "swarm_inference_lab-0.1.0rc11-py3-none-any.whl",
+                            "wheel_sha256":  "sha256:93046fa27441d7327bb6022011148cef05e1101eb116cb72a3a974579fbd2ced",
+                            "runtime_profile_filename":  "windows-x64-cpu.requirements.lock",
+                            "runtime_profile_sha256":  "sha256:733b680a32dc31a5c7796655059291851d41282cded43c6f73faee197033b35e",
+                            "installed_at_utc":  "2026-08-08T23:47:40.5553126+00:00",
+                            "installer_version":  "0.1.0rc11",
+                            "signature_status":  "unsigned-prerelease",
+                            "previous_installed_version":  "0.1.0rc11",
+                            "doctor_summary":  {
+                                                   "backend_selection":  {
+                                                                             "candidates":  [
+                                                                                                {
+                                                                                                    "available_memory_bytes":  0,
+                                                                                                    "backend":  "torch-cuda",
+                                                                                                    "detected":  false,
+                                                                                                    "device":  "cuda",
+                                                                                                    "device_name":  null,
+                                                                                                    "operational":  false,
+                                                                                                    "reason":  "torch-cuda is not visible to PyTorch",
+                                                                                                    "supported_dtypes":  [
+
+                                                                                                                         ],
+                                                                                                    "total_memory_bytes":  0
+                                                                                                },
+                                                                                                {
+                                                                                                    "available_memory_bytes":  74949410816,
+                                                                                                    "backend":  "torch-cpu",
+                                                                                                    "detected":  true,
+                                                                                                    "device":  "cpu",
+                                                                                                    "device_name":  "CPU",
+                                                                                                    "operational":  true,
+                                                                                                    "reason":  "correct tensor probe passed",
+                                                                                                    "supported_dtypes":  [
+                                                                                                                             "float32",
+                                                                                                                             "float16",
+                                                                                                                             "bfloat16"
+                                                                                                                         ],
+                                                                                                    "total_memory_bytes":  102496780288
+                                                                                                }
+                                                                                            ],
+                                                                             "document_version":  1,
+                                                                             "measured_at_unix_ns":  1786232859757139300,
+                                                                             "reason":  "selected highest-priority operational backend torch-cpu",
+                                                                             "schema_version":  1,
+                                                                             "selected_backend":  "torch-cpu",
+                                                                             "selected_device":  "cpu",
+                                                                             "selected_dtype":  "bfloat16"
+                                                                         },
+                                                   "backend_validation":  [
+                                                                              {
+                                                                                  "backend":  "torch-cuda",
+                                                                                  "detail":  "no retained acceptance evidence exists for this platform/backend scope",
+                                                                                  "evidence_id":  null,
+                                                                                  "evidence_path":  null,
+                                                                                  "physical_status":  "not-run",
+                                                                                  "platform_architecture":  "AMD64",
+                                                                                  "platform_release":  "10",
+                                                                                  "platform_system":  "windows",
+                                                                                  "software_status":  "not-run",
+                                                                                  "validated_at_unix_ns":  null
+                                                                              },
+                                                                              {
+                                                                                  "backend":  "torch-cpu",
+                                                                                  "detail":  "no retained acceptance evidence exists for this platform/backend scope",
+                                                                                  "evidence_id":  null,
+                                                                                  "evidence_path":  null,
+                                                                                  "physical_status":  "not-run",
+                                                                                  "platform_architecture":  "AMD64",
+                                                                                  "platform_release":  "10",
+                                                                                  "platform_system":  "windows",
+                                                                                  "software_status":  "not-run",
+                                                                                  "validated_at_unix_ns":  null
+                                                                              }
+                                                                          ],
+                                                   "cluster_configured":  false,
+                                                   "diagnostics":  [
+                                                                       {
+                                                                           "detail":  "windows AMD64 product path is implemented; validation requires retained evidence",
+                                                                           "name":  "platform-implementation",
+                                                                           "remediation":  null,
+                                                                           "status":  "pass"
+                                                                       }
+                                                                   ],
+                                                   "platform":  {
+                                                                    "architecture":  "AMD64",
+                                                                    "implementation_reason":  "windows AMD64 product path is implemented; validation requires retained evidence",
+                                                                    "implementation_status":  "implemented",
+                                                                    "release":  "10",
+                                                                    "system":  "windows"
+                                                                },
+                                                   "state_root":  "C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\SwarmInference",
+                                                   "status":  "pass"
+                                               },
+                            "application_path":  "C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\Programs\\SwarmInference",
+                            "state_path":  "C:\\Users\\Simon\\AppData\\Local\\Temp\\swarm-installer-tests\\p-1022cc78717a\\LocalAppData\\SwarmInference",
+                            "release_manifest_sha256":  "sha256:2ec4d283e0cca72299450d1f314244bd5bb6ae391d62cb88f47976ba3e10586d"
+                        },
+    "state_preserved":  true,
+    "developer_commands_absent":  true,
+    "service_created_before_pairing":  false
+}

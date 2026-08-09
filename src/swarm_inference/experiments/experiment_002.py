@@ -106,17 +106,48 @@ def _validate_logs(run_dir: Path) -> dict[str, Any]:
     )
     files: list[dict[str, Any]] = []
     matches: list[dict[str, Any]] = []
+    benign_shutdown_cancellations: list[dict[str, Any]] = []
     for path in sorted((run_dir / "logs").glob("*.log")):
         text = path.read_text(encoding="utf-8", errors="replace")
         relative = str(path.relative_to(run_dir)).replace("\\", "/")
+        lines = text.splitlines()
         files.append(
             {
                 "path": relative,
                 "bytes": path.stat().st_size,
-                "line_count": len(text.splitlines()),
+                "line_count": len(lines),
             }
         )
-        for line_number, line in enumerate(text.splitlines(), start=1):
+        for line_number, line in enumerate(lines, start=1):
+            if "traceback (most recent call last)" in line.casefold():
+                cursor = line_number
+                block: list[str] = []
+                while cursor < len(lines) and not lines[cursor].lstrip().startswith("{"):
+                    block.append(lines[cursor])
+                    cursor += 1
+                following: dict[str, Any] | None = None
+                if cursor < len(lines):
+                    try:
+                        parsed = json.loads(lines[cursor])
+                    except json.JSONDecodeError:
+                        parsed = None
+                    if isinstance(parsed, dict):
+                        following = parsed
+                if (
+                    block
+                    and block[-1].strip() == "asyncio.exceptions.CancelledError"
+                    and any("grpc._cython.cygrpc._schedule_rpc_coro" in item for item in block)
+                    and following is not None
+                    and following.get("event") == "worker_process_stopped"
+                ):
+                    benign_shutdown_cancellations.append(
+                        {
+                            "path": relative,
+                            "line": line_number,
+                            "worker_id": following.get("worker_id"),
+                        }
+                    )
+                    continue
             if any(marker.lower() in line.lower() for marker in fatal_markers):
                 matches.append(
                     {
@@ -145,6 +176,8 @@ def _validate_logs(run_dir: Path) -> dict[str, Any]:
         "required_logs_present": required_names <= observed_names,
         "worker_logs_nonempty": worker_logs_nonempty,
         "ignored_fatal_exception_count": len(matches),
+        "benign_shutdown_cancellation_count": len(benign_shutdown_cancellations),
+        "benign_shutdown_cancellations": benign_shutdown_cancellations,
         "fatal_matches": matches,
         "files": files,
     }

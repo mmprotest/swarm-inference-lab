@@ -27,15 +27,15 @@ def _contract(
 ) -> ComponentBoundaryContract:
     return ComponentBoundaryContract(
         boundary_id=boundary_id,
-        value_kind=value_kind,  # type: ignore[arg-type]
+        value_kind=value_kind,
         shape=shape,
         dtype=dtype,
         device=device,
         model_revision=revision,
         batch_dimension=batch_dimension,
         sequence_dimension=sequence_dimension,
-        sequence_position=sequence_position,  # type: ignore[arg-type]
-        token_position=token_position,  # type: ignore[arg-type]
+        sequence_position=sequence_position,
+        token_position=token_position,
         kv_identity=kv_identity,
         route_identity=route_identity,
     )

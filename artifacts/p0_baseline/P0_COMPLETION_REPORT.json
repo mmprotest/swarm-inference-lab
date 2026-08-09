@@ -1,0 +1,411 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-09T10:22:02+10:00",
+  "status": "P0_PASS",
+  "safe_to_proceed_to_p1": true,
+  "validation_boundary": {
+    "physical_machines": 1,
+    "os": "Windows 11 build 26200 AMD64",
+    "network": "local processes and loopback only",
+    "physical_multi_machine_validation_claimed": false,
+    "release_published": false
+  },
+  "completion_statement": "On a clean single-machine development environment, the repository builds, installs, imports, compiles, and passes every test that does not inherently require another physical machine, an unavailable operating-system or hardware class, or unavailable heavyweight external-model evidence.",
+  "initial_state": {
+    "branch": "main",
+    "commit_sha": "cd35c6950722a89b1f91f0fa45031042587f5c13",
+    "git_describe": "v0.1.0-rc.11-6-gcd35c69",
+    "tracked_worktree_clean": true,
+    "package_version": "0.1.0rc11",
+    "python_requires": ">=3.11,<3.14",
+    "default_python": "3.11",
+    "pyproject_sha256": "b3171feb1b7efe69e3248560f9fa997eac2800fe743c71ae137d9c7276415870",
+    "uv_lock_sha256": "a48749361fd32174ca5620ad84437f373556cc12262d19a54d65844d27c01085",
+    "uv_lock_git_blob": "0b420dbecae58fa30f6e06204576d28d0be7ae13",
+    "colibri_url": "https://github.com/JustVugg/colibri.git",
+    "colibri_gitlink_sha": "b085b48888a88d9a1c00b151a9979774b72cdbfd",
+    "colibri_populated": true,
+    "colibri_clean": true,
+    "initial_failures": [
+      "Experiment 009 canonical owner referenced nonexistent swarm_inference.backends.colibri.expert_bank.",
+      "Python 3.13 secure-WAN matrix had 5 failures and 6 passes because generated certificates lacked Authority Key Identifier.",
+      "Six canonical experiment evidence paths were stale and one evidence-only reference was classified as a product owner."
+    ]
+  },
+  "dependency_audit": {
+    "locked_workflow_used": true,
+    "clean_environments": [
+      ".tmp/p0-baseline-env311",
+      ".tmp/p0-env312",
+      ".tmp/p0-baseline-env313",
+      ".tmp/p0-env311-cuda"
+    ],
+    "transformers": "already correctly declared as a runtime dependency and present in uv.lock",
+    "hypothesis": "already correctly declared in the development/test group and present in uv.lock",
+    "metadata_change_required": false,
+    "ci_uv_sync_locked": true,
+    "recursive_submodule_checkout_asserted": true
+  },
+  "defects_fixed": [
+    {
+      "id": "promotion-owner-009",
+      "fix": "Changed expert_bank owner to swarm_inference.backends.colibri.torch_backend.ColibriMoeBackend; no compatibility module added."
+    },
+    {
+      "id": "promotion-provenance",
+      "fix": "Corrected stale Experiment 001, 002, 003, 006, 007, and 010 evidence roots; added immutable SHA-256 evidence anchors; corrected Experiment 007 and 010 classifications."
+    },
+    {
+      "id": "promotion-validation",
+      "fix": "Added automatic resolution and origin checks for every canonical owner/evidence reference and an AST gate against product imports from experiment code."
+    },
+    {
+      "id": "tls-x509-profiles",
+      "fix": "Added profile-correct SKI/AKI, constraints, usages, EKUs and SAN handling, issuer-key validation, and issuer-bounded leaf validity without weakening verification."
+    },
+    {
+      "id": "colibri-reproducibility",
+      "fix": "Verified exact pin, locked recursive CI setup, distinguished runtime-unavailable from model-unsupported, cleaned generated targets safely, and validated wheel isolation."
+    },
+    {
+      "id": "qwen3-moe-product-validation",
+      "fix": "Validated topology, expert completeness, metadata, hashes/fingerprints, exact cache sizing, and same-artifact stage/expert loading."
+    },
+    {
+      "id": "experiment-002-process-diagnostics",
+      "fix": "Pinned model revision and bounded the one recognized orderly gRPC cancellation traceback while retaining fatal handling for all other tracebacks."
+    },
+    {
+      "id": "cuda-device-index",
+      "fix": "Normalized only equivalent CUDA indices while retaining cross-device rejection."
+    },
+    {
+      "id": "productization-scope",
+      "fix": "Removed opt-in heavyweight evidence/native-DLL tests from mandatory repeatability and retained zero-skip enforcement for the mandatory software suite."
+    }
+  ],
+  "promotion_gates": {
+    "canonical_owners_resolve": true,
+    "canonical_owners_are_product_implementations": true,
+    "evidence_references_exist": true,
+    "evidence_hashes_validate": true,
+    "product_imports_experiment_code": false,
+    "focused_tests": {
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "tls": {
+    "verification_enabled": true,
+    "minimum_protocol": "TLSv1.3",
+    "hostname_verification": true,
+    "trusted_handshake": "PASS",
+    "untrusted_ca_rejection": "PASS",
+    "wrong_host_rejection": "PASS",
+    "forged_certificate_rejection": "PASS",
+    "chain_validation": "PASS",
+    "route_and_lease_authentication": "PASS",
+    "secure_wan_results_per_python": {
+      "3.11": {"passed": 14, "failed": 0},
+      "3.12": {"passed": 14, "failed": 0},
+      "3.13": {"passed": 14, "failed": 0}
+    },
+    "route_lease_focused": {"passed": 16, "failed": 0}
+  },
+  "authoritative_test_counts": {
+    "definition": "Unique Python 3.11 behavior corpus after executing all locally satisfiable opt-in skips; overlapping interpreter/release reruns are excluded from this total.",
+    "passed": 1039,
+    "failed": 0,
+    "skipped_or_unavailable": 5
+  },
+  "test_matrix": [
+    {
+      "name": "full-default-suite",
+      "python": "3.11",
+      "collected": 1044,
+      "passed": 1031,
+      "failed": 0,
+      "skipped": 13,
+      "junit": ".tmp/p0-results/pytest-py311-final.xml"
+    },
+    {
+      "name": "locally-dischargeable-default-skips-unique",
+      "python": "3.11",
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "components": ["real CUDA experiments", "Experiment 007 original/corrected archives", "generic native Colibri ABI"]
+    },
+    {
+      "name": "unit-repeat",
+      "python": "3.12",
+      "passed": 914,
+      "failed": 0,
+      "skipped": 0,
+      "junit": ".tmp/p0-results/pytest-py312-unit-final.xml"
+    },
+    {
+      "name": "integration-failure-repeat",
+      "python": "3.12",
+      "passed": 38,
+      "failed": 0,
+      "skipped": 9,
+      "gpu_deselected": 3,
+      "junit": ".tmp/p0-results/pytest-py312-integration-failure-final.xml"
+    },
+    {
+      "name": "unit-repeat",
+      "python": "3.13",
+      "passed": 914,
+      "failed": 0,
+      "skipped": 0,
+      "junit": ".tmp/p0-results/pytest-py313-unit-final.xml"
+    },
+    {
+      "name": "integration-failure-repeat",
+      "python": "3.13",
+      "passed": 38,
+      "failed": 0,
+      "skipped": 9,
+      "gpu_deselected": 3,
+      "junit": ".tmp/p0-results/pytest-py313-integration-failure-final.xml"
+    },
+    {
+      "name": "installer-python-contracts",
+      "python": "3.11",
+      "passed": 52,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "productization-contract",
+      "python": "3.11",
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "productization-mandatory-software-gates",
+      "python": "3.11",
+      "gates_passed": 33,
+      "passed": 207,
+      "failed": 0,
+      "skipped": 0,
+      "status": "SOFTWARE_ACCEPTANCE_PASS",
+      "evidence": ".tmp/p0-productization-acceptance-fixed/productization-20260808T233031Z"
+    }
+  ],
+  "python_matrix": [
+    {"python": "3.11.9", "openssl": "3.0.13", "cryptography": "49", "status": "PASS"},
+    {"python": "3.12.11", "openssl": "3.0.16", "cryptography": "49", "status": "PASS"},
+    {"python": "3.13.14", "openssl": "3.0.21", "cryptography": "49", "status": "PASS"}
+  ],
+  "static_validation": {
+    "compileall": "PASS",
+    "ruff_format": {"status": "PASS", "files": 510},
+    "ruff_check": "PASS",
+    "mypy": {"status": "PASS", "files": 335, "issues": 0},
+    "git_diff_check": "PASS"
+  },
+  "colibri": {
+    "submodule_sha": "b085b48888a88d9a1c00b151a9979774b72cdbfd",
+    "submodule_clean": true,
+    "license_sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+    "build_source_sha256": "d4002535267968c140cad816a1df22af2d1c15f6ee1ebc54a82461b4d8ebad44",
+    "bridge_tests_passed": 26,
+    "broader_local_tests_passed": 43,
+    "generic_native_abi_tests_passed": 2,
+    "cuda": {
+      "device": "NVIDIA GeForce RTX 5090",
+      "compute_capability": "12.0",
+      "architecture": "sm_120",
+      "tests_passed": 2,
+      "max_absolute_error": 7.28e-11,
+      "dll_sha256": "7874cb42d77290c9ec9cc208587dab4816a0d256d1899e41b44213ca43c218ee"
+    },
+    "wheel_contains_submodule": false,
+    "installer_contains_submodule": false,
+    "availability_distinguished_from_unsupported_model": true
+  },
+  "release": {
+    "wheel": {
+      "path": "release/generated/swarm_inference_lab-0.1.0rc11-py3-none-any.whl",
+      "bytes": 1425262,
+      "sha256": "93046fa27441d7327bb6022011148cef05e1101eb116cb72a3a974579fbd2ced",
+      "isolated_import_and_cli": {"3.11": "PASS", "3.12": "PASS", "3.13": "PASS"}
+    },
+    "runtime_profiles": {
+      "cpu_sha256": "733b680a32dc31a5c7796655059291851d41282cded43c6f73faee197033b35e",
+      "cuda_sha256": "df0411fc046f480838d759508757993fdb168c53b172f09d0e7f9ff2169a0e1d"
+    },
+    "windows_setup": {
+      "path": "release/generated/SwarmInferenceSetup-x64.exe",
+      "bytes": 601772732,
+      "sha256": "e235378c545ec4ef6d3a001c1b83f7024205ce66efa1034128875c16a4bdb901",
+      "signature_status": "unsigned-prerelease",
+      "clean_install_repair_uninstall": "PASS",
+      "silent_install_repair_uninstall": "PASS",
+      "upgrade": "PASS",
+      "downgrade_rejection_exit_code": 7,
+      "explicit_downgrade": "PASS",
+      "broken_upgrade_rejection_exit_code": 7,
+      "rollback": "PASS",
+      "state_preservation_and_purge": "PASS"
+    },
+    "release_manifest_sha256": "2ec4d283e0cca72299450d1f314244bd5bb6ae391d62cb88f47976ba3e10586d",
+    "checksums_file_sha256": "42ec0b39f79ecb5bcf36985c42e64b91a14ce032c1460255186de9ffcde29215",
+    "sbom_sha256": "b2365d16eb2dd9ec176d348f7a7b5850216d1199b208e32d164d9e1f88d381e6",
+    "acceptance_archive_sha256": "1e8943eb985a6e314eb7e04bc34f92f61d35b56043de50eb081aab3da92d722f",
+    "manifest_verification": "PASS",
+    "payload_verification": "PASS",
+    "payload_files_verified": 13,
+    "published": false
+  },
+  "forbidden_model_gate": {
+    "active_product_support_present": false,
+    "regression_test": "tests/unit/test_forbidden_model_support.py",
+    "regression_test_status": "PASS",
+    "active_tree_search_status": "NO_MATCH",
+    "third_party_boundary": "The immutable upstream Colibri pin has dormant upstream architecture sources. Explicit Swarm build targets, generated output, wheel contents, and installer contents exclude them; upstream history was not modified."
+  },
+  "remaining_external_prerequisites": [
+    {
+      "count": 4,
+      "type": "heavyweight external model evidence",
+      "details": ["real-model baseline", "restart/replay", "whole-expert", "native-microshard"],
+      "reason": "Required evidence archives/model weights are not present locally."
+    },
+    {
+      "count": 1,
+      "type": "physical topology",
+      "details": ["at least two physical hosts"],
+      "reason": "The task is intentionally limited to one physical machine."
+    },
+    {
+      "count": 4,
+      "type": "non-software acceptance configurations",
+      "details": ["real-model physical configuration", "Linux x86 physical configuration", "macOS arm64 physical configuration", "Linux arm64 physical configuration"],
+      "reason": "Unavailable external models, operating systems, hardware classes, or physical hosts."
+    }
+  ],
+  "changed_files": {
+    "tracked_modified_count": 47,
+    "tracked_insertions_before_reports": 721,
+    "tracked_deletions_before_reports": 259,
+    "modified": [
+      ".github/workflows/productization.yml",
+      ".gitignore",
+      "benchmarks/canonical/experiment_001_contract.yaml",
+      "benchmarks/canonical/experiment_002_contract.yaml",
+      "benchmarks/canonical/experiment_003_contract.yaml",
+      "benchmarks/canonical/experiment_006_contract.yaml",
+      "benchmarks/canonical/experiment_007_contract.yaml",
+      "benchmarks/canonical/experiment_010_contract.yaml",
+      "benchmarks/canonical/promotion_manifest.yaml",
+      "configs/experiments/experiment_002_qwen3_real_loopback.yaml",
+      "docs/experiment-010-runtime-mapping.md",
+      "integrations/colibri/build.ps1",
+      "integrations/colibri/build.sh",
+      "scripts/report_runtime_lines.py",
+      "scripts/run_productization_process_suite.py",
+      "src/swarm_inference/acceptance/major_models.py",
+      "src/swarm_inference/acceptance/productization.py",
+      "src/swarm_inference/backends/colibri/adapters.py",
+      "src/swarm_inference/backends/colibri/architecture.py",
+      "src/swarm_inference/backends/colibri/cuda.py",
+      "src/swarm_inference/backends/colibri/torch_backend.py",
+      "src/swarm_inference/coordinator/stage_planner.py",
+      "src/swarm_inference/engines/component_graph.py",
+      "src/swarm_inference/engines/composite.py",
+      "src/swarm_inference/engines/llamacpp_rpc.py",
+      "src/swarm_inference/engines/local_capabilities.py",
+      "src/swarm_inference/execution/__init__.py",
+      "src/swarm_inference/execution/moe.py",
+      "src/swarm_inference/experiments/experiment_002.py",
+      "src/swarm_inference/model/architecture_adapters.py",
+      "src/swarm_inference/model/qwen3.py",
+      "src/swarm_inference/model/qwen3_moe.py",
+      "src/swarm_inference/protocol/product.py",
+      "src/swarm_inference/security/tls.py",
+      "src/swarm_inference/worker/capabilities.py",
+      "src/swarm_inference/worker/stage_runtime.py",
+      "tests/correctness/test_qwen3_moe_tiny.py",
+      "tests/integration/test_product_stage_ring.py",
+      "tests/integration/test_secure_wan_transport.py",
+      "tests/unit/test_canonical_benchmark_contracts.py",
+      "tests/unit/test_canonical_expert_runtime.py",
+      "tests/unit/test_colibri_source_contract.py",
+      "tests/unit/test_execution_engine_registry.py",
+      "tests/unit/test_experiment_002.py",
+      "tests/unit/test_experiment_010_planning_simulation.py",
+      "tests/unit/test_major_model_acceptance.py",
+      "tests/unit/test_productization_acceptance.py"
+    ],
+    "added_implementation_or_provenance": [
+      "benchmarks/canonical/evidence_provenance.yaml",
+      "tests/unit/test_colibri_support_classification.py",
+      "tests/unit/test_forbidden_model_support.py"
+    ],
+    "status_metadata_note": {
+      "path": "src/swarm_inference/model/resolver.py",
+      "porcelain_state": ".M",
+      "worktree_blob": "b9d16fbb9f5ba24a67aad4f70921cbea34dae160",
+      "head_blob": "b9d16fbb9f5ba24a67aad4f70921cbea34dae160",
+      "content_changed": false,
+      "explanation": "Git's stat cache reports a worktree touch, but the worktree and HEAD content hashes are identical and git diff is empty."
+    },
+    "added_durable_evidence": [
+      "artifacts/p0_baseline/STARTING_STATE.md",
+      "artifacts/p0_baseline/starting_state.json",
+      "artifacts/p0_baseline/P0_COMPLETION_REPORT.md",
+      "artifacts/p0_baseline/P0_COMPLETION_REPORT.json",
+      "artifacts/p0_baseline/release-identity.json",
+      "artifacts/p0_baseline/wheel-isolation.json",
+      "artifacts/p0_baseline/wheel-isolation-py312.json",
+      "artifacts/p0_baseline/wheel-isolation-py313.json",
+      "artifacts/p0_baseline/installer-clean.json",
+      "artifacts/p0_baseline/installer-silent.json",
+      "artifacts/p0_baseline/installer-upgrade.json",
+      "artifacts/p0_baseline/installer-uninstall.json"
+    ]
+  },
+  "evidence": {
+    "starting_state_markdown": "artifacts/p0_baseline/STARTING_STATE.md",
+    "starting_state_json": "artifacts/p0_baseline/starting_state.json",
+    "completion_markdown": "artifacts/p0_baseline/P0_COMPLETION_REPORT.md",
+    "completion_json": "artifacts/p0_baseline/P0_COMPLETION_REPORT.json",
+    "release_identity": "artifacts/p0_baseline/release-identity.json",
+    "wheel_isolation": [
+      "artifacts/p0_baseline/wheel-isolation.json",
+      "artifacts/p0_baseline/wheel-isolation-py312.json",
+      "artifacts/p0_baseline/wheel-isolation-py313.json"
+    ],
+    "installer": [
+      "artifacts/p0_baseline/installer-clean.json",
+      "artifacts/p0_baseline/installer-silent.json",
+      "artifacts/p0_baseline/installer-upgrade.json",
+      "artifacts/p0_baseline/installer-uninstall.json"
+    ],
+    "productization": ".tmp/p0-productization-acceptance-fixed/productization-20260808T233031Z",
+    "final_diff_summary": "47 tracked files modified, 721 insertions, 259 deletions before adding completion reports; 3 implementation/provenance files and 12 durable evidence files added."
+  },
+  "reproduction_commands": [
+    "git submodule update --init --recursive",
+    "uv sync --locked --python 3.11 --all-extras --group dev",
+    "uv sync --locked --python 3.12 --all-extras --group dev",
+    "uv sync --locked --python 3.13 --all-extras --group dev",
+    "uv run --locked --python 3.11 python -m compileall -q src",
+    "uv run --locked --python 3.11 ruff format --check .",
+    "uv run --locked --python 3.11 ruff check .",
+    "uv run --locked --python 3.11 mypy src",
+    "uv run --locked --python 3.11 pytest -q",
+    "uv run --locked --python 3.11 pytest -q tests/integration/test_secure_wan_transport.py",
+    "uv run --locked --python 3.12 pytest -q tests/integration/test_secure_wan_transport.py",
+    "uv run --locked --python 3.13 pytest -q tests/integration/test_secure_wan_transport.py",
+    "uv build --wheel --out-dir release/generated",
+    "uv run --locked --python 3.11 python scripts/run_productization_acceptance.py run --output artifacts/acceptance --run-repeatability",
+    "uv run --locked --python 3.11 python scripts/build_windows_installer.py --output-dir release/generated --acceptance-zip release/generated/swarm-inference-acceptance.zip",
+    "uv run --locked --python 3.11 python scripts/verify_release_manifest.py release/generated/release-manifest.json --payload-dir release/generated",
+    "uv run --locked --python 3.11 python scripts/verify_release_payload.py --manifest release/generated/release-manifest.json --payload-dir release/generated --checksums release/generated/SHA256SUMS"
+  ]
+}

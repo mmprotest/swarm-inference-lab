@@ -277,8 +277,7 @@ class ProductStageExpertPlan(StrictModel):
         """Whether execution crosses the authenticated expert data plane."""
 
         return any(
-            item.strategy in {"whole-remote", "microshard-remote"}
-            for item in self.placements
+            item.strategy in {"whole-remote", "microshard-remote"} for item in self.placements
         )
 
     @model_validator(mode="after")
@@ -349,9 +348,7 @@ class ProductStagePlan(StrictModel):
                     "delegated expert plans require exact model and quantisation identity"
                 )
         placements = [
-            placement
-            for expert_plan in self.expert_plans
-            for placement in expert_plan.placements
+            placement for expert_plan in self.expert_plans for placement in expert_plan.placements
         ]
         if self.routed_expert_engine == "colibri" and (
             not placements or any(item.strategy != "colibri" for item in placements)

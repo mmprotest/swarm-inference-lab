@@ -22,7 +22,7 @@ ACTUAL=$(git -C "$COLIBRI" rev-parse HEAD)
   exit 1
 }
 
-rm -rf "$OUTPUT/source"
+rm -rf "$OUTPUT/source" "$OUTPUT/bin"
 mkdir -p "$OUTPUT/source" "$OUTPUT/bin"
 git -C "$COLIBRI" archive --format=tar "$EXPECTED_COMMIT" | tar -xf - -C "$OUTPUT/source"
 PATCHES=()

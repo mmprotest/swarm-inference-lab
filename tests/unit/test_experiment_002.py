@@ -8,6 +8,7 @@ import pytest
 
 from swarm_inference.config.real_model import load_real_experiment_config
 from swarm_inference.exceptions import MemoryLimitExceededError
+from swarm_inference.experiments.experiment_002 import _validate_logs
 from swarm_inference.experiments.real_status import evaluate_experiment_002_status
 from swarm_inference.experiments.runner import validate_run, write_artifact_manifest
 from swarm_inference.model.adapter import (
@@ -84,6 +85,50 @@ def _description(tmp_path: Path) -> ModelDescription:
         tensors=tensors,
         source_file_hashes={"model.safetensors": "b" * 64},
     )
+
+
+def _required_experiment_logs(root: Path, worker_zero: str) -> Path:
+    logs = root / "logs"
+    logs.mkdir()
+    (logs / "coordinator.log").write_text("coordinator stopped\n", encoding="utf-8")
+    (logs / "reference.log").write_text("reference complete\n", encoding="utf-8")
+    for index in range(4):
+        value = worker_zero if index == 0 else '{"event":"worker_process_stopped"}\n'
+        (logs / f"worker-{index:03d}.log").write_text(value, encoding="utf-8")
+    return root
+
+
+def test_log_validation_accepts_only_the_exact_grpc_shutdown_cancellation(tmp_path: Path) -> None:
+    run = _required_experiment_logs(
+        tmp_path,
+        "Traceback (most recent call last):\n"
+        '  File "src/python/grpcio/grpc/_cython/_cygrpc/aio/server.pyx.pxi", line 787, '
+        "in grpc._cython.cygrpc._schedule_rpc_coro\n"
+        "asyncio.exceptions.CancelledError\n"
+        '{"event":"worker_process_stopped","worker_id":"worker-0"}\n',
+    )
+
+    result = _validate_logs(run)
+
+    assert result["status"] == "PASS"
+    assert result["ignored_fatal_exception_count"] == 0
+    assert result["benign_shutdown_cancellation_count"] == 1
+
+
+def test_log_validation_still_rejects_other_tracebacks(tmp_path: Path) -> None:
+    run = _required_experiment_logs(
+        tmp_path,
+        "Traceback (most recent call last):\n"
+        '  File "worker.py", line 1, in execute\n'
+        "RuntimeError: execution failed\n"
+        '{"event":"worker_process_stopped","worker_id":"worker-0"}\n',
+    )
+
+    result = _validate_logs(run)
+
+    assert result["status"] == "FAIL"
+    assert result["ignored_fatal_exception_count"] == 1
+    assert result["benign_shutdown_cancellation_count"] == 0
 
 
 def test_qwen3_tensor_name_mapping_is_fail_closed() -> None:

@@ -1,0 +1,100 @@
+{
+  "checkout_imported": false,
+  "dependency_mode": "prevalidated-site-packages",
+  "doctor": {
+    "backend_selection": {
+      "candidates": [
+        {
+          "available_memory_bytes": 0,
+          "backend": "torch-cuda",
+          "detected": false,
+          "device": "cuda",
+          "device_name": null,
+          "operational": false,
+          "reason": "torch-cuda is not visible to PyTorch",
+          "supported_dtypes": [],
+          "total_memory_bytes": 0
+        },
+        {
+          "available_memory_bytes": 75607547904,
+          "backend": "torch-cpu",
+          "detected": true,
+          "device": "cpu",
+          "device_name": "CPU",
+          "operational": true,
+          "reason": "correct tensor probe passed",
+          "supported_dtypes": [
+            "float32",
+            "float16",
+            "bfloat16"
+          ],
+          "total_memory_bytes": 102496780288
+        }
+      ],
+      "document_version": 1,
+      "measured_at_unix_ns": 1786234358321139800,
+      "reason": "selected highest-priority operational backend torch-cpu",
+      "schema_version": 1,
+      "selected_backend": "torch-cpu",
+      "selected_device": "cpu",
+      "selected_dtype": "bfloat16"
+    },
+    "backend_validation": [
+      {
+        "backend": "torch-cuda",
+        "detail": "no retained acceptance evidence exists for this platform/backend scope",
+        "evidence_id": null,
+        "evidence_path": null,
+        "physical_status": "not-run",
+        "platform_architecture": "AMD64",
+        "platform_release": "11",
+        "platform_system": "windows",
+        "software_status": "not-run",
+        "validated_at_unix_ns": null
+      },
+      {
+        "backend": "torch-cpu",
+        "detail": "no retained acceptance evidence exists for this platform/backend scope",
+        "evidence_id": null,
+        "evidence_path": null,
+        "physical_status": "not-run",
+        "platform_architecture": "AMD64",
+        "platform_release": "11",
+        "platform_system": "windows",
+        "software_status": "not-run",
+        "validated_at_unix_ns": null
+      }
+    ],
+    "cluster_configured": false,
+    "diagnostics": [
+      {
+        "detail": "windows AMD64 product path is implemented; validation requires retained evidence",
+        "name": "platform-implementation",
+        "remediation": null,
+        "status": "pass"
+      }
+    ],
+    "platform": {
+      "architecture": "AMD64",
+      "implementation_reason": "windows AMD64 product path is implemented; validation requires retained evidence",
+      "implementation_status": "implemented",
+      "release": "11",
+      "system": "windows"
+    },
+    "state_root": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.tmp\\p0-wheel313-final\\swarm-wheel-validation\\state",
+    "status": "pass"
+  },
+  "elapsed_seconds": 4.390999999828637,
+  "environment_root": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.tmp\\p0-wheel313-final\\swarm-wheel-validation",
+  "experiments_imported": false,
+  "extra": "cpu",
+  "install_stdout_tail": "",
+  "module": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.tmp\\p0-wheel313-final\\swarm-wheel-validation\\environment\\Lib\\site-packages\\swarm_inference\\__init__.py",
+  "python": "3.13",
+  "schema_version": 2,
+  "status": "PASS",
+  "third_party_colibri_imported": false,
+  "wheel": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\release\\generated\\swarm_inference_lab-0.1.0rc11-py3-none-any.whl",
+  "wheel_contains_third_party_colibri": false,
+  "wheel_size_bytes": 1425262
+}

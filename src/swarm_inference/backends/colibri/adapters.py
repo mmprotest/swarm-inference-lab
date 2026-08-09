@@ -227,12 +227,13 @@ class _BaseColibriAdapter:
     ) -> ColibriSupportResult:
         limitations: list[str] = []
         reasons: list[str] = []
-        runtime_supported = (
+        runtime_available = (
             runtime.installed
             and bool(runtime.runtime_version)
             and bool(runtime.binary_hashes)
-            and self.adapter_id in runtime.adapters
+            and bool(runtime.device_types)
         )
+        runtime_supported = runtime_available and self.adapter_id in runtime.adapters
         if not runtime.installed:
             reasons.append("Colibri runtime is not installed for this worker profile")
         elif not runtime.runtime_version or not runtime.binary_hashes:
@@ -291,7 +292,6 @@ class _BaseColibriAdapter:
                 "tokenizer identity is unavailable at probe time; immutable acquisition must provide it"
             )
         if not runtime.device_types:
-            runtime_supported = False
             reasons.append("Colibri runtime advertises no executable device")
 
         supported = all(
@@ -312,6 +312,8 @@ class _BaseColibriAdapter:
                 if limitations
                 else ColibriCompatibilityStatus.SUPPORTED
             )
+        elif not runtime_available:
+            classification = ColibriCompatibilityStatus.RUNTIME_UNAVAILABLE
         elif not format_supported:
             classification = ColibriCompatibilityStatus.INCOMPATIBLE_FORMAT
         else:
@@ -836,7 +838,7 @@ class _ComposableSparseMoeColibriAdapter(_BaseColibriAdapter):
     )
     tensor_microshards = True
     direct_peer_model_data = True
-    static_limitations = (
+    static_limitations: ClassVar[tuple[str, ...]] = (
         "this pinned Swarm extension executes routed-expert components; attention, KV, "
         "tokenization, and sampling require a compatible hybrid plan",
         "packed symmetric INT4-G32 uses the Swarm Colibri reference ABI; other packed "
@@ -1100,7 +1102,8 @@ class DeepSeekV4ColibriAdapter(_ComposableSparseMoeColibriAdapter):
     checkpoint_layout = "deepseek-v4-mixed-fp4-fp8-v1"
     routing_kind = "static-hash-then-sqrtsoftplus-noaux-top-k"
     routing_score_correction = "e_score_correction_bias after hash-routed layers"
-    static_limitations = _ComposableSparseMoeColibriAdapter.static_limitations + (
+    static_limitations: ClassVar[tuple[str, ...]] = (
+        *_ComposableSparseMoeColibriAdapter.static_limitations,
         "official V4 packed FP4 expert tensors require a pin-bound V4 Colibri kernel; "
         "the embedded floating PyTorch component fails closed",
     )

@@ -31,15 +31,18 @@ if (-not (Test-Path -LiteralPath (Join-Path $colibri 'LICENSE') -PathType Leaf))
     throw 'pinned Colibri checkout does not contain LICENSE'
 }
 
-New-Item -ItemType Directory -Force $output, $binaryDirectory | Out-Null
-if (Test-Path -LiteralPath $source) {
-    $resolvedSource = (Resolve-Path -LiteralPath $source).Path
-    if (-not $resolvedSource.StartsWith($output, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "refusing to replace source directory outside build output: $resolvedSource"
+New-Item -ItemType Directory -Force $output | Out-Null
+foreach ($generatedDirectory in @($source, $binaryDirectory)) {
+    if (Test-Path -LiteralPath $generatedDirectory) {
+        $resolvedGenerated = (Resolve-Path -LiteralPath $generatedDirectory).Path
+        $generatedParent = [IO.Path]::GetDirectoryName($resolvedGenerated)
+        if (-not $generatedParent.Equals($output, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "refusing to replace generated directory outside build output: $resolvedGenerated"
+        }
+        Remove-Item -LiteralPath $resolvedGenerated -Recurse -Force
     }
-    Remove-Item -LiteralPath $resolvedSource -Recurse -Force
 }
-New-Item -ItemType Directory -Path $source | Out-Null
+New-Item -ItemType Directory -Path $source, $binaryDirectory | Out-Null
 
 & git -c "safe.directory=$safeDirectory" -C $colibri archive --format=tar $expectedCommit -o $archive
 if ($LASTEXITCODE -ne 0) { throw "git archive failed with exit code $LASTEXITCODE" }

@@ -650,6 +650,8 @@ class Qwen3StageModule:
                     dtype=dtype,
                 )
             experts = getattr(layer.mlp, "experts", ())
+            if experts is None:
+                experts = ()
             for expert_id, expert in enumerate(experts):
                 if (layer_index, expert_id) not in remote:
                     local_experts[(layer_index, expert_id)] = expert
@@ -1299,6 +1301,9 @@ class Qwen3StageModule:
         metadata = self._active_execution_metadata
         if metadata is None or metadata.batch_size != 1:
             raise RuntimeError("hybrid routed experts require one explicit request context")
+        moe_backend = self.moe_backend
+        if moe_backend is None:
+            raise RuntimeError("hybrid routed experts require an execution backend")
         residual = hidden_states
         attention_input = layer.input_layernorm(hidden_states)
         attention_output, _ = layer.self_attn(
@@ -1329,7 +1334,7 @@ class Qwen3StageModule:
             routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
         routing_weights = routing_weights.to(flat.dtype)
         request = metadata.requests[0]
-        result = self.moe_backend.execute_layer(
+        result = moe_backend.execute_layer(
             session_id=request.request_id,
             request_id=request.request_id,
             token_position=request.token_position,
@@ -1598,7 +1603,18 @@ class Qwen3StageModule:
         # Allowing the oracle through this boundary is important for a fair
         # batch-shape comparison without changing the legacy NumPy execute()
         # compatibility interface.
-        if input_tensor.device != self.device:
+        same_device = input_tensor.device == self.device
+        if input_tensor.device.type == self.device.type == "cuda":
+            expected_index = (
+                self.device.index if self.device.index is not None else torch.cuda.current_device()
+            )
+            input_index = (
+                input_tensor.device.index
+                if input_tensor.device.index is not None
+                else torch.cuda.current_device()
+            )
+            same_device = input_index == expected_index
+        if not same_device:
             raise ValueError(
                 f"CUDA-native stage input must already be on {self.device}; "
                 f"received {input_tensor.device}"
@@ -2389,7 +2405,7 @@ class Qwen3StageModule:
             configure(lease, identity=identity, worker_id=worker_id)
 
     def expert_status(self) -> dict[str, Any]:
-        status = (
+        status: dict[str, Any] = (
             getattr(self.moe_backend, "status", lambda: {})()
             if self.moe_backend is not None
             else {}

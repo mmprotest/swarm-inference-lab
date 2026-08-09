@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from swarm_inference.experiments.experiment_010.batching import (
@@ -27,6 +26,7 @@ from swarm_inference.simulation.expert_model import (
     calibrate_expert_simulator,
     deterministic_calibration_split,
 )
+
 
 def _candidate(
     candidate_id: str,

@@ -1,0 +1,86 @@
+schema_version: 1
+hash_algorithm: sha256
+archive_policy:
+  raw_bundles: generated experiment artifacts are retained outside the source distribution
+  clean_clone_verification: this tracked index anchors each bundle identity and critical files
+  local_archive_verification: when a raw bundle is present, every listed anchor must match
+bundles:
+  "001":
+    source_experiment: "001"
+    identity: artifacts/runs/20260730T054106Z-loopback-matrix-6227a6a5
+    verdict: PASS
+    anchors:
+      summary.json: ee208619a6f7975dd547e103d8441287885f20ec1fdd1d91d7ac6a3bfdc74fac
+      artifact_manifest.json: 17290c54d804594d38a98ca68b79ad2f3f6d2b72ac24bf8fe86649f4750751c0
+  "002":
+    source_experiment: "002"
+    identity: artifacts/runs/20260730T084829Z-qwen3-real-loopback-b9d93341
+    verdict: PASS
+    anchors:
+      summary.json: 136bb34d571069f3ec6da4595522dd0a0303c4f4b4d25f2a1522547417ae9c4f
+      artifact_manifest.json: 93440abb4c1b320624c6e30c8b4a4c3688cfaebfb7fb90a2c5b0ca2002b1dc71
+  "003":
+    source_experiment: "003"
+    identity: artifacts/runs/20260730T155128Z-worker-fanout-987f7daf
+    verdict: PASS
+    anchors:
+      summary.json: 7cf72e32d097acf5976abc3d6a23d9ac417b51e0391f0016dd4d2b4a42b9b885
+      artifact_manifest.json: 9cceb511dffb2e770dbe62d840592151333d363e0f31e3af1097f758bc5af864
+  "004":
+    source_experiment: "004"
+    identity: artifacts/runs-final/20260731T012349Z-engine-performance-a75f18be
+    verdict: PASS
+    anchors:
+      summary.json: 7e3da65df3e42e0ce158a25dcfb21e213f78ac12184fa07e1792a34d2ceb0e99
+      artifact.json: 00bfc5042009da384daa2305ea2cd529e14cdb07e63ea3f97721a5f9aacde448
+  "006":
+    source_experiment: "006"
+    identity: artifacts/runs/20260731T125954Z-microsharding-b73f8ee8
+    verdict: PASS
+    anchors:
+      summary.json: 6059eacd0d527fa31d26d9ab1f6c5cdbcf7aa3613b69e0cec936c1a68c83891a
+      git.json: ae4d958d0defa6a774d9790769cb6872532eac8b4b3f9e01f4974831021e1153
+  "007":
+    source_experiment: 007-corrected
+    identity: artifacts/runs/20260801T072104Z-experiment-007-corrections-2ea6750e
+    verdict: PASS_WITH_SYNCHRONOUS_CPU_EXPERT_NOT_USEFUL
+    anchors:
+      summary.json: 734236742a0b9925a52d3c63d89448e325d8eb2ee6edea712cf8737ad0cbc965
+      git.json: 96e90f8fefc57f67935c38a26ae0a35911bd8560b56e290ab28eeb2baf431307
+      original_experiment_reference.json: 47f34ff76738e5bddcad8cacdc749508271682a5ca439a93dccf7b7cdb2742bb
+  "008":
+    source_experiment: "008"
+    identity: artifacts/runs/experiment-008-20260801T233500-sydney
+    verdict: PARTIAL_MIXED
+    anchors:
+      experiment_008/manifest.json: 58dd2584fbb37c0b363de58c97e892a486b7c312a10ca6976b6d578d3663f48e
+      experiment_008/verdict.json: ad5009f0b4c3813400ed77383abf0a373ac901d0eaaec8ea823fd94d1320bf6b
+  "009":
+    source_experiment: "009"
+    identity: artifacts/runs/20260802T013951Z-confirmed-experiment-009
+    verdict: PASS_STRONG
+    anchors:
+      experiment_009/manifest.json: 6a21933759e4c7fe0e7091cbb2ba4e0e8c5bb6d81ec89e623725fb8d57610d23
+      experiment_009/verdict.json: 60363d38fe4cc84e3f331b61813c02118ba272c2634cc8706b776c9d1c402a88
+      experiment_009/colibri_dependency.json: 9d751358e2b4fdb721e3780c4f2037b7bf25a644593dd2b396da9f6e0f7f04f4
+  "010":
+    source_experiment: "010"
+    identity: artifacts/runs/experiment-010-correction-final
+    verdict: PASS_CLOSURE
+    physical_distributed_inference_proven: false
+    anchors:
+      experiment_010/manifest.json: bfb5b122252b35714cd4491a99bb6822f1499b9b1a8a062b4cb970c788b07478
+      experiment_010/verdict.json: 7989e6f1c340072498d154ed58e865d302ab6eb135ec5b82eba3b4aab841c347
+      experiment_010/full_run_completeness.json: 4dd6f665bf9ade8914c5b49d360ad93436f43aaa0e22072c01bca06d092b7883
+      experiment_010/level_b_gate_17_validation.json: af19204121ec62d7d63bb10eb036d843f860c79e6f1bf369214370468e72d7af
+      experiment_010/SHA256SUMS.txt: 7cf7205cec0745426919f4c61a9e970a2f4a0626e261dc0124f6efcf09121320
+      experiment_010/retained_baseline_provenance.json: 16b4e4c20c1ab508ffdefb78faa14e8e033f258369b1b35c4788c2635770d83f
+      experiment_010/repository_fingerprint.json: 3b3e0a8a04a044f97c43a0145353699338d4d0b6ddc6f137edf7c302d5241055
+  "011":
+    source_experiment: "011"
+    identity: artifacts/runs/experiment-011-20260804T051700Z
+    verdict: PASS_CLOSURE
+    anchors:
+      manifest.json: 1d0a0b89d45ec9e4c0ca4ccd38610ee4b8ec28a41339f5c7db7b42187cf1f489
+      verdict.json: e58736270fc9983dcc35588464a3969d00316d6458ed85d095ac9e37e306aec0
+      bundle_identity.json: c2e8aa20fe9eabf187907c40fc02989f406cc5622328829c5e7cca55b7a3eca2

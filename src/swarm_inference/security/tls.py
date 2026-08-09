@@ -174,6 +174,14 @@ def create_cluster_ca_certificate(
         .serial_number(x509.random_serial_number())
         .not_valid_before(current - timedelta(minutes=5))
         .not_valid_after(current + timedelta(days=lifetime_days))
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(tls_private_key.public_key()),
+            critical=False,
+        )
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(tls_private_key.public_key()),
+            critical=False,
+        )
         .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
         .add_extension(
             x509.KeyUsage(
@@ -267,6 +275,13 @@ def issue_node_certificate(
     ):
         raise IntegrityError("node TLS public key must use P-256")
     current = now or _utc_now()
+    not_valid_before = max(current - timedelta(minutes=5), ca.not_valid_before_utc)
+    not_valid_after = min(current + timedelta(days=lifetime_days), ca.not_valid_after_utc)
+    if not_valid_before >= not_valid_after:
+        raise IntegrityError("node TLS certificate lifetime is outside the cluster CA lifetime")
+    issuer_public_key = ca.public_key()
+    if not isinstance(issuer_public_key, ec.EllipticCurvePublicKey):
+        raise IntegrityError("cluster CA certificate does not use an elliptic-curve key")
     subject = x509.Name(
         [x509.NameAttribute(NameOID.COMMON_NAME, f"swarm-node-{node_fingerprint[:40]}")]
     )
@@ -276,8 +291,16 @@ def issue_node_certificate(
         .issuer_name(ca.subject)
         .public_key(node_tls_public_key)
         .serial_number(x509.random_serial_number())
-        .not_valid_before(current - timedelta(minutes=5))
-        .not_valid_after(current + timedelta(days=lifetime_days))
+        .not_valid_before(not_valid_before)
+        .not_valid_after(not_valid_after)
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(node_tls_public_key),
+            critical=False,
+        )
+        .add_extension(
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(issuer_public_key),
+            critical=False,
+        )
         .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
         .add_extension(
             x509.KeyUsage(

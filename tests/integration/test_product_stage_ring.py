@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import queue
 import time
@@ -33,7 +32,6 @@ from swarm_inference.execution.interfaces import StageExecutionResult, WeightOwn
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.model.product import (
     ModelResolutionPolicy,
-    ProductModelReference,
     ProductModelSpec,
 )
 from swarm_inference.protocol.messages import (
@@ -44,7 +42,6 @@ from swarm_inference.protocol.messages import (
 )
 from swarm_inference.protocol.product import (
     ModelDeployRequest,
-    ModelPlanRequest,
     ModelUnloadRequest,
     PlanCandidateReport,
     PlanWorkerAssignment,
@@ -58,7 +55,6 @@ from swarm_inference.protocol.stage_worker import GetStageStatusRequest, LoadSta
 from swarm_inference.security.identity import (
     WorkerIdentity,
     create_identity_file,
-    public_key_fingerprint,
 )
 from swarm_inference.security.signatures import canonical_json_bytes
 from swarm_inference.security.trust_store import WorkerTrustStore

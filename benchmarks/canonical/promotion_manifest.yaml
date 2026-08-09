@@ -67,7 +67,7 @@ mechanisms:
   - {experiment: "007", mechanism: heterogeneous_worker_capability_model, disposition: REQUIRED, canonical_owner: swarm_inference.engines.interfaces, release_gate: worker_capability_model}
   - {experiment: "007", mechanism: cpu_execution_roles, disposition: REQUIRED, canonical_owner: swarm_inference.engines.interfaces, release_gate: background_throughput}
   - {experiment: "007", mechanism: background_inference, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.engines.native_stage, release_gate: background_throughput, reason: positive fixed-window service utility, planner_effect: use without joining interactive critical path}
-  - {experiment: "007", mechanism: held_out_planner_evaluation, disposition: REQUIRED, canonical_owner: benchmarks.canonical.experiment_007_contract, release_gate: positive_utility_planner}
+  - {experiment: "007", mechanism: held_out_planner_evaluation, disposition: EVIDENCE_ONLY, canonical_owner: benchmarks.canonical.experiment_007_contract, release_gate: positive_utility_planner, reason: held-out evaluation validates evidence and is not a product execution path, planner_effect: admit calibration only after disjoint held-out validation}
   - {experiment: "007", mechanism: idle_worker_role, disposition: REQUIRED, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: speed_can_reject_node}
   - {experiment: "007", mechanism: matched_executor_benchmarking, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.performance_profiles, release_gate: exact_fast_path_admission}
   - {experiment: "007", mechanism: fixed_window_service_throughput, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.telemetry, release_gate: background_throughput}
@@ -91,7 +91,7 @@ mechanisms:
 
   - {experiment: "009", mechanism: colibri_execution_engine, disposition: REQUIRED, canonical_owner: swarm_inference.engines.colibri, release_gate: colibri_product_engine}
   - {experiment: "009", mechanism: native_quantization_metadata, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri, release_gate: colibri_regression}
-  - {experiment: "009", mechanism: expert_bank, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.expert_bank, release_gate: colibri_regression}
+  - {experiment: "009", mechanism: expert_bank, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.torch_backend.ColibriMoeBackend, release_gate: colibri_regression}
   - {experiment: "009", mechanism: route_traces, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.telemetry, release_gate: colibri_regression}
   - {experiment: "009", mechanism: tier_residency, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.storage, release_gate: residency_telemetry}
   - {experiment: "009", mechanism: cache_events, disposition: REQUIRED, canonical_owner: swarm_inference.backends.colibri.telemetry, release_gate: cache_telemetry}

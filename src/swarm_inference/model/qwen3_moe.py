@@ -8,6 +8,8 @@ coordinator.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from dataclasses import replace
 from pathlib import Path
@@ -36,6 +38,90 @@ class Qwen3MoeAdapter(Qwen3Adapter):
         {"qwen3_moe", "qwen3moe", "Qwen3MoeForCausalLM"}
     )
     _expert_tensor = re.compile(r"^model\.layers\.(\d+)\.mlp\.experts\.(\d+)\.")
+
+    def _partition_metadata(
+        self,
+        description: Any,
+        *,
+        tokenizer_revision: str,
+    ) -> ModelPartitionMetadata:
+        metadata = partition_metadata_from_description(
+            description,
+            tokenizer_revision=tokenizer_revision,
+        )
+        config = description.config
+        expert_count = int(config.get("num_experts") or 0)
+        experts_per_token = int(config.get("num_experts_per_tok") or 0)
+        expert_intermediate_size = int(config.get("moe_intermediate_size") or 0)
+        if min(expert_count, experts_per_token, expert_intermediate_size) <= 0:
+            raise ValueError("Qwen3 MoE config lacks positive routed-expert topology")
+        if experts_per_token > expert_count:
+            raise ValueError("Qwen3 MoE experts-per-token exceeds the expert bank")
+        expert_bytes = [0] * len(metadata.layer_costs)
+        observed: list[set[int]] = [set() for _ in metadata.layer_costs]
+        for tensor in description.tensors:
+            match = self._expert_tensor.match(tensor.name)
+            if match is None:
+                continue
+            layer_id = int(match.group(1))
+            expert_id = int(match.group(2))
+            if not 0 <= layer_id < len(expert_bytes) or not 0 <= expert_id < expert_count:
+                raise ValueError("Qwen3 MoE expert tensor lies outside configured topology")
+            expert_bytes[layer_id] += tensor.bytes
+            observed[layer_id].add(expert_id)
+        expected = set(range(expert_count))
+        incomplete = [index for index, values in enumerate(observed) if values != expected]
+        if incomplete:
+            raise ValueError(f"Qwen3 MoE layers have incomplete expert banks: {incomplete}")
+        layer_costs = tuple(
+            replace(
+                cost,
+                expert_weight_bytes=expert_bytes[cost.layer_id],
+                expert_execution_ns=max(
+                    1,
+                    cost.execution_ns * expert_bytes[cost.layer_id] // max(cost.weight_bytes, 1),
+                ),
+            )
+            for cost in metadata.layer_costs
+        )
+        expert_identity = json.dumps(
+            {
+                "base_metadata_hash": metadata.metadata_hash,
+                "expert_count": expert_count,
+                "experts_per_token": experts_per_token,
+                "expert_intermediate_size": expert_intermediate_size,
+                "expert_weight_bytes": expert_bytes,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        digest = hashlib.sha256(expert_identity).hexdigest()
+        return replace(
+            metadata,
+            layer_costs=layer_costs,
+            expert_count=expert_count,
+            experts_per_token=experts_per_token,
+            expert_intermediate_size=expert_intermediate_size,
+            metadata_hash=digest,
+            model_fingerprint="sha256:" + digest,
+        )
+
+    def inspect_partition_metadata(
+        self,
+        model_path: Path,
+        *,
+        model_revision: str,
+        tokenizer_revision: str,
+    ) -> ModelPartitionMetadata:
+        description = self.describe(
+            model_path,
+            model_id=str(model_path),
+            model_revision=model_revision,
+        )
+        return self._partition_metadata(
+            description,
+            tokenizer_revision=tokenizer_revision,
+        )
 
     def probe_model(self, model: ResolvedModelDescriptor) -> AdapterSupportReport:
         if model.format != "safetensors":
@@ -99,7 +185,7 @@ class Qwen3MoeAdapter(Qwen3Adapter):
             if (match := self._expert_tensor.match(tensor.name))
             and (int(match.group(1)), int(match.group(2))) in remote
         )
-        metadata = partition_metadata_from_description(
+        metadata = self._partition_metadata(
             description,
             tokenizer_revision=tokenizer_revision,
         )

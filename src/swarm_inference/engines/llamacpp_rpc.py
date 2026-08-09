@@ -161,7 +161,9 @@ def probe_llamacpp_architectures(
     manifest.verify()
     binaries = (
         manifest.server_binary.expanduser().resolve(),
-        *tuple(sorted(path.expanduser().resolve() for path in manifest.architecture_probe_binaries)),
+        *tuple(
+            sorted(path.expanduser().resolve() for path in manifest.architecture_probe_binaries)
+        ),
     )
     supported = tuple(
         sorted(
@@ -200,9 +202,7 @@ def load_llamacpp_runtime_manifest(path: Path) -> LlamaCppRuntimeManifest:
                 else resolved.parent / manifest.rpc_server_binary
             ).resolve(),
             "architecture_probe_binaries": {
-                (
-                    binary if binary.is_absolute() else resolved.parent / binary
-                ).resolve(): digest
+                (binary if binary.is_absolute() else resolved.parent / binary).resolve(): digest
                 for binary, digest in manifest.architecture_probe_binaries.items()
             },
         }

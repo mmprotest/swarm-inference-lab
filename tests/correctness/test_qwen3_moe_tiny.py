@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from swarm_inference.cluster.artifacts import StageArtifactBuilder
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.model.qwen3 import Qwen3StageModule
 from swarm_inference.model.qwen3_moe import Qwen3MoeAdapter
@@ -34,7 +36,12 @@ def tiny_qwen3_moe(tmp_path: Path):
     torch.manual_seed(29)
     model = transformers.Qwen3MoeForCausalLM(config).eval()
     source = tmp_path / "source"
-    model.save_pretrained(source, safe_serialization=True)
+    model.save_pretrained(source, safe_serialization=True, max_shard_size="2KB")
+    config_path = source / "config.json"
+    saved_config = json.loads(config_path.read_text(encoding="utf-8"))
+    saved_config["_commit_hash"] = "fixture-revision"
+    config_path.write_text(json.dumps(saved_config, sort_keys=True), encoding="utf-8")
+    (source / "tokenizer.json").write_text('{"fixture":"tiny-qwen3-moe"}', encoding="utf-8")
 
     adapter = Qwen3MoeAdapter()
     description = adapter.describe(
@@ -156,7 +163,7 @@ def test_qwen3_moe_adapter_validates_a_delegated_expert_component(
         weight_bytes=stage.required_memory_bytes - delegated_bytes,
         estimated_compute_ns=1,
         measured_compute_ns=None,
-        kv_cache_bytes_per_token=1,
+        kv_cache_bytes_per_token=stage.cache_spec.bytes_per_token,
         peak_temporary_bytes=0,
         activation_bytes=manifest.activation_bytes_per_stage_boundary,
         device="cpu",
@@ -174,6 +181,9 @@ def test_qwen3_moe_adapter_validates_a_delegated_expert_component(
     )
 
     assert metadata.expert_count == 4
+    assert metadata.experts_per_token == 2
+    assert metadata.expert_intermediate_size == 16
+    assert all(cost.expert_weight_bytes > 0 for cost in metadata.layer_costs)
     selected = tuple(stage.tensor_names)
     excluded = adapter.exclude_delegated_tensor_names(selected, remote_experts)
     assert excluded
@@ -186,7 +196,16 @@ def test_qwen3_moe_colibri_component_matches_reference_logits_and_tokens(
     from swarm_inference.backends.colibri.torch_backend import ColibriMoeBackend
     from swarm_inference.execution.moe import HybridMoeBackend
 
-    model, adapter, _, output, manifest, _ = tiny_qwen3_moe
+    model, adapter, source, output, manifest, _ = tiny_qwen3_moe
+    description = adapter.describe(
+        source,
+        model_id="tiny-qwen3-moe",
+        model_revision="fixture-revision",
+    )
+    artifact_builder = StageArtifactBuilder(
+        artifact_root=output.parent / "product-artifacts",
+        temporary_root=output.parent / "product-artifact-downloads",
+    )
     modules: list[Qwen3StageModule] = []
     component_backends: list[ColibriMoeBackend] = []
     for stage in manifest.stages:
@@ -195,11 +214,47 @@ def test_qwen3_moe_colibri_component_matches_reference_logits_and_tokens(
             for layer_id in range(stage.layer_start, stage.layer_end)
             for expert_id in range(model.config.num_experts)
         }
+        delegated_bytes = sum(
+            tensor.bytes
+            for tensor in description.tensors
+            if any(
+                tensor.name.startswith(f"model.layers.{layer_id}.mlp.experts.{expert_id}.")
+                for layer_id, expert_id in delegated
+            )
+        )
+        assignment = StageAssignment(
+            stage_id=stage.stage_id,
+            layer_start=stage.layer_start,
+            layer_end=stage.layer_end,
+            layer_ids=tuple(range(stage.layer_start, stage.layer_end)),
+            weight_bytes=stage.required_memory_bytes - delegated_bytes,
+            estimated_compute_ns=1,
+            measured_compute_ns=None,
+            kv_cache_bytes_per_token=stage.cache_spec.bytes_per_token,
+            peak_temporary_bytes=0,
+            activation_bytes=manifest.activation_bytes_per_stage_boundary,
+            device="cpu",
+            owns_embeddings=stage.owns_embeddings,
+            owns_final_norm=stage.owns_final_norm,
+            owns_output_projection=stage.owns_output_head,
+        )
+        artifact_manifest = artifact_builder.build(
+            source,
+            model_id="tiny-qwen3-moe",
+            model_revision="fixture-revision",
+            tokenizer_revision="fixture-tokenizer",
+            assignment=assignment,
+            stage_count=2,
+            dtype="float32",
+            adapter_id=adapter.adapter_id,
+            delegated_experts=delegated,
+        )
+        stage_artifact = artifact_builder.artifact_root / artifact_manifest.artifact_id
 
         def backend_factory(
             _local_experts: dict[tuple[int, int], Any],
             *,
-            artifact: Path = output / f"stage-{stage.stage_id:03d}",
+            artifact: Path = stage_artifact,
             placements: set[tuple[int, int]] = delegated,
         ) -> HybridMoeBackend:
             colibri = ColibriMoeBackend(
@@ -224,10 +279,9 @@ def test_qwen3_moe_colibri_component_matches_reference_logits_and_tokens(
             moe_backend_factory=backend_factory,
             remote_experts=delegated,
         )
-        adapter.load_stage_weights(
-            module,
-            output / f"stage-{stage.stage_id:03d}",
-            manifest=manifest,
+        module.load_owned_weights(
+            stage_artifact,
+            model_revision="fixture-revision",
         )
         module.open_expert_session("colibri-request")
         modules.append(module)
@@ -251,8 +305,7 @@ def test_qwen3_moe_colibri_component_matches_reference_logits_and_tokens(
     )
     assert all(backend.status()["colibri_expert_calls"] > 0 for backend in component_backends)
     assert all(
-        backend.status()["coordinator_activation_bytes"] == 0
-        for backend in component_backends
+        backend.status()["coordinator_activation_bytes"] == 0 for backend in component_backends
     )
     assert all(backend.status()["colibri_cache_misses"] > 0 for backend in component_backends)
     for module in modules:

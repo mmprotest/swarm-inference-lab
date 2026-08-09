@@ -9,11 +9,11 @@ from pathlib import Path
 
 import psutil
 
+from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
+from swarm_inference.backends.colibri.constants import COLIBRI_COMMIT
 from swarm_inference.backends.colibri.runtime_manifest import (
     load_colibri_runtime_manifest,
 )
-from swarm_inference.backends.colibri.adapters import default_colibri_adapter_registry
-from swarm_inference.backends.colibri.constants import COLIBRI_COMMIT
 from swarm_inference.engines.installed import discover_installed_engine_manifests
 from swarm_inference.engines.interfaces import (
     AdapterFastPathCapability,
@@ -82,8 +82,7 @@ def _native_capability() -> ExecutionEngineCapability:
         detail = (
             "local PyTorch native-stage runtime"
             if adapter_error is None
-            else "native adapter discovery failed: "
-            f"{type(adapter_error).__name__}: {adapter_error}"
+            else f"native adapter discovery failed: {type(adapter_error).__name__}: {adapter_error}"
         )
         if torch.cuda.is_available():
             index = torch.cuda.current_device()

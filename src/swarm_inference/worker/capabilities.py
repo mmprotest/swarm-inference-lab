@@ -22,8 +22,8 @@ from swarm_inference.config.models import (
     StageBenchmark,
     WorkerCapability,
 )
-from swarm_inference.exceptions import BackendIncompatibleError
 from swarm_inference.engines.interfaces import ExecutionEngineCapability
+from swarm_inference.exceptions import BackendIncompatibleError
 from swarm_inference.host import detect_host_runtime, split_endpoint
 from swarm_inference.model.adapter import default_native_adapter_registry
 from swarm_inference.protocol.stage_ring import STAGE_RING_PROTOCOL_VERSION
@@ -490,8 +490,7 @@ def measure_capabilities(
         (
             item
             for raw in execution_engines
-            if (item := ExecutionEngineCapability.model_validate(raw)).engine_id
-            == "native-stage"
+            if (item := ExecutionEngineCapability.model_validate(raw)).engine_id == "native-stage"
         ),
         ExecutionEngineCapability(engine_id="native-stage", enabled=False),
     )

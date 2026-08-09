@@ -717,17 +717,11 @@ class WholeExpertRemoteBackend(_SessionBackend):
                 "payload_bytes_per_token": float(
                     sum(item.request_bytes + item.response_bytes for item in events)
                 ),
-                "critical_path_messages": sum(
-                    item.critical_path_messages for item in events
-                ),
-                "critical_path_sync_rounds": sum(
-                    item.critical_path_sync_rounds for item in events
-                ),
+                "critical_path_messages": sum(item.critical_path_messages for item in events),
+                "critical_path_sync_rounds": sum(item.critical_path_sync_rounds for item in events),
                 "root_dispatches": sum(item.root_dispatches for item in events),
                 "coordinator_waits": sum(item.coordinator_waits for item in events),
-                "coordinator_sync_rounds": sum(
-                    item.coordinator_sync_rounds for item in events
-                ),
+                "coordinator_sync_rounds": sum(item.coordinator_sync_rounds for item in events),
                 "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
                 "fanout_depth": max((item.fanout_depth for item in events), default=0),
                 "fanout_nodes": sum(item.fanout_nodes for item in events),
@@ -842,9 +836,7 @@ class MicroshardRemoteBackend(_SessionBackend):
             ),
         )
 
-    def _build_fanout_topology(
-        self, targets: list[MicroshardTarget]
-    ) -> _FanoutTopology:
+    def _build_fanout_topology(self, targets: list[MicroshardTarget]) -> _FanoutTopology:
         leaf_index = {id(target): index for index, target in enumerate(targets)}
 
         def build(items: list[MicroshardTarget], prefix: str) -> tuple[_FanoutNode, ...]:
@@ -860,8 +852,7 @@ class MicroshardRemoteBackend(_SessionBackend):
                 self.fanout_branching_factor
             )
             groups = [
-                items[index : index + group_size]
-                for index in range(0, len(items), group_size)
+                items[index : index + group_size] for index in range(0, len(items), group_size)
             ]
             return tuple(
                 _FanoutNode(
@@ -892,9 +883,7 @@ class MicroshardRemoteBackend(_SessionBackend):
             result += np.asarray(partial, dtype=np.float32)
         return result
 
-    def _reduce_partials(
-        self, partials: list[tuple[str, np.ndarray]]
-    ) -> tuple[np.ndarray, int]:
+    def _reduce_partials(self, partials: list[tuple[str, np.ndarray]]) -> tuple[np.ndarray, int]:
         ordered = sorted(partials, key=lambda item: item[0])
         if not ordered:
             raise ValueError("at least one microshard partial is required")
@@ -928,9 +917,7 @@ class MicroshardRemoteBackend(_SessionBackend):
         deadline_ns: int,
     ) -> tuple[str, np.ndarray, int, int, int]:
         owner = target.ownership
-        subrequest_id = (
-            f"{fanout_request_id}:slice-{owner.hidden_start}-{owner.hidden_end}"
-        )
+        subrequest_id = f"{fanout_request_id}:slice-{owner.hidden_start}-{owner.hidden_end}"
         request = ExpertExecutionRequest(
             request_id=subrequest_id,
             session_id=session_id,
@@ -987,9 +974,7 @@ class MicroshardRemoteBackend(_SessionBackend):
         hashes = getattr(integrity, "expert_hashes", {})
         if owner.content_hash and hashes.get(expert_id) != owner.content_hash:
             raise ValueError("remote microshard content hash mismatch")
-        owner_key = (
-            f"{owner.hidden_start:020d}:{owner.hidden_end:020d}:{owner.worker_id}"
-        )
+        owner_key = f"{owner.hidden_start:020d}:{owner.hidden_end:020d}:{owner.worker_id}"
         return (
             owner_key,
             partial,
@@ -1094,9 +1079,7 @@ class MicroshardRemoteBackend(_SessionBackend):
         reduction_started = time.perf_counter_ns()
         accumulator, reduction_depth = self._reduce_partials(partials)
         reduction_ns = time.perf_counter_ns() - reduction_started
-        output = torch.from_numpy(accumulator).to(
-            device=activation.device, dtype=activation.dtype
-        )
+        output = torch.from_numpy(accumulator).to(device=activation.device, dtype=activation.dtype)
         event = MoeExecutionEvent(
             event="remote_microshard_result_consumed",
             backend="microshard-remote",
@@ -1180,19 +1163,13 @@ class MicroshardRemoteBackend(_SessionBackend):
                 "worker_partial_reduction_mode": ReductionMode.FIXED_ORDER_FP32.value,
                 "logical_microshard_workers": sum(len(item.worker_ids) for item in events),
                 "total_messages": sum(item.total_messages for item in events),
-                "critical_path_messages": sum(
-                    item.critical_path_messages for item in events
-                ),
+                "critical_path_messages": sum(item.critical_path_messages for item in events),
                 "serial_waits": sum(item.serial_waits for item in events),
                 "parallel_waits": sum(item.parallel_waits for item in events),
                 "fanout_depth": max((item.fanout_depth for item in events), default=0),
                 "reduction_depth": sum(item.reduction_depth for item in events),
-                "critical_path_sync_rounds": sum(
-                    item.critical_path_sync_rounds for item in events
-                ),
-                "scheduler_dispatch_ns": sum(
-                    item.scheduler_dispatch_ns for item in events
-                ),
+                "critical_path_sync_rounds": sum(item.critical_path_sync_rounds for item in events),
+                "scheduler_dispatch_ns": sum(item.scheduler_dispatch_ns for item in events),
                 "reduction_ns": sum(item.reduction_ns for item in events),
                 "communication_ns": sum(item.communication_ns for item in events),
                 "coordinator_activation_bytes": 0,
@@ -1204,9 +1181,7 @@ class MicroshardRemoteBackend(_SessionBackend):
                 "reduction_branching_factor": self.reduction_branching_factor,
                 "root_dispatches": sum(item.root_dispatches for item in events),
                 "coordinator_waits": sum(item.coordinator_waits for item in events),
-                "coordinator_sync_rounds": sum(
-                    item.coordinator_sync_rounds for item in events
-                ),
+                "coordinator_sync_rounds": sum(item.coordinator_sync_rounds for item in events),
                 "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
                 "fanout_nodes": sum(item.fanout_nodes for item in events),
                 "topology_construction_ns": self.topology_construction_ns,
@@ -1297,14 +1272,10 @@ class HybridMoeBackend(_SessionBackend):
             "critical_path_messages": sum(item.critical_path_messages for item in events),
             "serial_waits": sum(item.serial_waits for item in events),
             "parallel_waits": sum(item.parallel_waits for item in events),
-            "critical_path_sync_rounds": sum(
-                item.critical_path_sync_rounds for item in events
-            ),
+            "critical_path_sync_rounds": sum(item.critical_path_sync_rounds for item in events),
             "root_dispatches": sum(item.root_dispatches for item in events),
             "coordinator_waits": sum(item.coordinator_waits for item in events),
-            "coordinator_sync_rounds": sum(
-                item.coordinator_sync_rounds for item in events
-            ),
+            "coordinator_sync_rounds": sum(item.coordinator_sync_rounds for item in events),
             "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
             "fanout_depth": max((item.fanout_depth for item in events), default=0),
             "reduction_depth": sum(item.reduction_depth for item in events),
@@ -1509,28 +1480,20 @@ class HybridMoeBackend(_SessionBackend):
                 "payload_bytes_per_token": float(
                     sum(item.request_bytes + item.response_bytes for item in events)
                 ),
-                "critical_path_messages": sum(
-                    item.critical_path_messages for item in events
-                ),
+                "critical_path_messages": sum(item.critical_path_messages for item in events),
                 "parallel_waits": sum(item.parallel_waits for item in events),
-                "critical_path_sync_rounds": sum(
-                    item.critical_path_sync_rounds for item in events
-                ),
+                "critical_path_sync_rounds": sum(item.critical_path_sync_rounds for item in events),
                 "fanout_depth": max((item.fanout_depth for item in events), default=0),
                 "reduction_depth": sum(item.reduction_depth for item in events),
                 "root_dispatches": sum(item.root_dispatches for item in events),
                 "coordinator_waits": sum(item.coordinator_waits for item in events),
-                "coordinator_sync_rounds": sum(
-                    item.coordinator_sync_rounds for item in events
-                ),
+                "coordinator_sync_rounds": sum(item.coordinator_sync_rounds for item in events),
                 "worker_sync_rounds": sum(item.worker_sync_rounds for item in events),
                 "fanout_nodes": sum(item.fanout_nodes for item in events),
                 "topology_construction_ns": max(
                     (item.topology_construction_ns for item in events), default=0
                 ),
-                "scheduler_dispatch_ns": sum(
-                    item.scheduler_dispatch_ns for item in events
-                ),
+                "scheduler_dispatch_ns": sum(item.scheduler_dispatch_ns for item in events),
                 "reduction_ns": sum(item.reduction_ns for item in events),
                 "communication_ns": sum(item.communication_ns for item in events),
                 "coordinator_activation_bytes": 0,

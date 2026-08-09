@@ -22,9 +22,9 @@ from swarm_inference.engines.interfaces import (
     Deployment,
     EngineSupportReport,
     EngineSupportStatus,
+    ExecutionComponentType,
     ExecutionDevice,
     ExecutionEngineCapability,
-    ExecutionComponentType,
     ExecutionPlan,
     ExecutionProfileCapability,
     ExecutionRequest,
@@ -605,9 +605,7 @@ async def test_incomplete_colibri_profile_composes_into_complete_product_plan() 
     assert selected.predicted_serial_waits_per_token == 0
     assert selected.optional_mechanisms["persistent_model_state"]
     assert selected.optional_mechanisms["persistent_expert_residency"]
-    colibri_report = next(
-        item for item in competition.support if item.engine_id == "colibri"
-    )
+    colibri_report = next(item for item in competition.support if item.engine_id == "colibri")
     assert colibri_report.status == EngineSupportStatus.COMPONENT_SUPPORTED
 
 

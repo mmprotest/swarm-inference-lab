@@ -83,15 +83,11 @@ def _validate_colocation(components: tuple[ExecutionComponent, ...]) -> None:
         for member in members[1:]:
             common_workers.intersection_update(member.placement.worker_ids)
         if not common_workers:
-            raise ValueError(
-                f"component colocation group {group!r} has no common logical worker"
-            )
+            raise ValueError(f"component colocation group {group!r} has no common logical worker")
         if any(member.placement.require_same_device for member in members):
             devices = {member.placement.device for member in members}
             if len(devices) != 1:
-                raise ValueError(
-                    f"component colocation group {group!r} spans multiple devices"
-                )
+                raise ValueError(f"component colocation group {group!r} spans multiple devices")
 
 
 def _cross_fragment_edges(
@@ -123,14 +119,10 @@ def _cross_fragment_edges(
                 "does not correspond to a declared dependency"
             )
         producers = [
-            item
-            for item in source.output_contracts
-            if item.boundary_id == edge.source_boundary_id
+            item for item in source.output_contracts if item.boundary_id == edge.source_boundary_id
         ]
         consumers = [
-            item
-            for item in target.input_contracts
-            if item.boundary_id == edge.target_boundary_id
+            item for item in target.input_contracts if item.boundary_id == edge.target_boundary_id
         ]
         if len(producers) != 1 or len(consumers) != 1:
             raise ValueError("component edge boundary IDs must resolve exactly once")
@@ -160,15 +152,15 @@ def _cross_fragment_edges(
             ExecutionComponentType.TOKEN_PUBLICATION
         }:
             raise ValueError("model activations cannot relay through coordinator control")
-        dependency = (target.component_id, source.component_id)
-        if dependency in connected:
+        dependency_edge = (target.component_id, source.component_id)
+        if dependency_edge in connected:
             raise ValueError("component dependency has duplicate data edges")
-        connected.add(dependency)
+        connected.add(dependency_edge)
     for target in components:
-        for dependency in target.depends_on:
-            if (target.component_id, dependency) in connected:
+        for dependency_id in target.depends_on:
+            if (target.component_id, dependency_id) in connected:
                 continue
-            source = by_id[dependency]
+            source = by_id[dependency_id]
             matches = []
             for producer in source.output_contracts:
                 for consumer in target.input_contracts:
@@ -180,7 +172,7 @@ def _cross_fragment_edges(
                         matches.append((producer, consumer))
             if len(matches) != 1:
                 raise ValueError(
-                    f"dependency {dependency!r} -> {target.component_id!r} requires exactly "
+                    f"dependency {dependency_id!r} -> {target.component_id!r} requires exactly "
                     f"one compatible boundary, found {len(matches)}"
                 )
             producer, consumer = matches[0]

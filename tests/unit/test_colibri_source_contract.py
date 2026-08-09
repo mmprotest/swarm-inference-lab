@@ -105,3 +105,14 @@ def test_source_ci_jobs_checkout_recursive_submodules_before_preflight() -> None
         ]
         assert source_tests
         assert preflight < min(source_tests)
+
+
+def test_productization_ci_uses_the_committed_dependency_lock() -> None:
+    workflow_text = Path(".github/workflows/productization.yml").read_text(encoding="utf-8")
+    sync_commands = [
+        line.strip()
+        for line in workflow_text.splitlines()
+        if line.strip().startswith("- run: uv sync ")
+    ]
+    assert sync_commands
+    assert all(" --locked " in command for command in sync_commands)

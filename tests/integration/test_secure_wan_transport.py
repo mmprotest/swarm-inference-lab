@@ -7,6 +7,10 @@ from pathlib import Path
 
 import grpc
 import pytest
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import ExtendedKeyUsageOID
 
 from swarm_inference.exceptions import IntegrityError, TransportError
 from swarm_inference.execution.expert import ExpertStore, deterministic_expert
@@ -15,6 +19,7 @@ from swarm_inference.protocol.messages import HealthResponse, serialize_message
 from swarm_inference.protocol.stage_ring import Operation, StageMessage
 from swarm_inference.security.identity import CoordinatorIdentity, WorkerIdentity
 from swarm_inference.security.tls import (
+    COORDINATOR_TLS_NAME,
     WORKER_TLS_NAME,
     TlsCertificatePaths,
     TlsClientConfig,
@@ -124,6 +129,57 @@ def _message(sequence: int) -> StageMessage:
     )
 
 
+def test_generated_certificates_have_strict_ca_and_dual_use_node_profiles(
+    tmp_path: Path,
+) -> None:
+    coordinator, first, _, ca_pem, _, first_paths, _ = _identities(tmp_path)
+    ca = x509.load_pem_x509_certificate(ca_pem.encode("ascii"))
+    node = x509.load_pem_x509_certificate(first_paths.certificate.read_bytes())
+
+    ca_basic = ca.extensions.get_extension_for_class(x509.BasicConstraints)
+    assert ca_basic.critical is True
+    assert ca_basic.value == x509.BasicConstraints(ca=True, path_length=0)
+    ca_usage = ca.extensions.get_extension_for_class(x509.KeyUsage)
+    assert ca_usage.critical is True
+    assert ca_usage.value.digital_signature is True
+    assert ca_usage.value.key_cert_sign is True
+    assert ca_usage.value.crl_sign is True
+    ca_ski = ca.extensions.get_extension_for_class(x509.SubjectKeyIdentifier).value
+    ca_aki = ca.extensions.get_extension_for_class(x509.AuthorityKeyIdentifier).value
+    assert ca_aki.key_identifier == ca_ski.digest
+    assert ca.subject == ca.issuer
+    assert ca.extensions.get_extension_for_class(x509.SubjectAlternativeName).value == (
+        x509.SubjectAlternativeName([x509.DNSName(COORDINATOR_TLS_NAME)])
+    )
+
+    node_basic = node.extensions.get_extension_for_class(x509.BasicConstraints)
+    assert node_basic.critical is True
+    assert node_basic.value == x509.BasicConstraints(ca=False, path_length=None)
+    node_usage = node.extensions.get_extension_for_class(x509.KeyUsage)
+    assert node_usage.critical is True
+    assert node_usage.value.digital_signature is True
+    assert node_usage.value.key_cert_sign is False
+    assert node_usage.value.crl_sign is False
+    node_eku = node.extensions.get_extension_for_class(x509.ExtendedKeyUsage).value
+    assert set(node_eku) == {
+        ExtendedKeyUsageOID.SERVER_AUTH,
+        ExtendedKeyUsageOID.CLIENT_AUTH,
+    }
+    node_ski = node.extensions.get_extension_for_class(x509.SubjectKeyIdentifier).value
+    node_aki = node.extensions.get_extension_for_class(x509.AuthorityKeyIdentifier).value
+    assert node_ski.digest != ca_ski.digest
+    assert node_aki.key_identifier == ca_ski.digest
+    assert node.issuer == ca.subject
+    assert ca.not_valid_before_utc <= node.not_valid_before_utc
+    assert node.not_valid_after_utc <= ca.not_valid_after_utc
+    assert set(
+        node.extensions.get_extension_for_class(
+            x509.SubjectAlternativeName
+        ).value.get_values_for_type(x509.DNSName)
+    ) == {WORKER_TLS_NAME, f"node-{first.public_key_fingerprint}.worker.swarm"}
+    assert coordinator.public_key_fingerprint != first.public_key_fingerprint
+
+
 async def _echo(message: StageMessage) -> StageMessage:
     return replace(
         message,
@@ -153,20 +209,26 @@ def test_certificate_identity_expiry_revocation_and_wrong_ca(tmp_path: Path) -> 
             role="worker",
             revoked_fingerprints=frozenset({first.public_key_fingerprint}),
         )
+    issued_at = datetime.now(UTC) - timedelta(days=3)
+    historical_ca = create_cluster_ca_certificate(
+        coordinator,
+        cluster_id="cluster-secure-test",
+        now=issued_at - timedelta(days=1),
+    )
     expired = issue_node_certificate(
         coordinator,
-        ca_certificate_pem=ca,
+        ca_certificate_pem=historical_ca,
         cluster_id="cluster-secure-test",
         node_public_key_b64=first.public_key_b64,
         node_fingerprint=first.public_key_fingerprint,
         node_tls_public_key_pem=identity_tls_public_key_pem(first),
-        now=datetime.now(UTC) - timedelta(days=3),
+        now=issued_at,
         lifetime_days=1,
     )
     with pytest.raises(IntegrityError, match="expired"):
         validate_certificate_binding(
             expired,
-            ca_certificate_pem=ca,
+            ca_certificate_pem=historical_ca,
             cluster_id="cluster-secure-test",
             role="worker",
         )
@@ -186,6 +248,33 @@ def test_certificate_identity_expiry_revocation_and_wrong_ca(tmp_path: Path) -> 
             ca_certificate_pem=ca,
             cluster_id="cluster-secure-test",
             role="worker",
+        )
+
+
+def test_forged_certificate_with_the_pinned_issuer_name_is_rejected(tmp_path: Path) -> None:
+    _, first, _, ca, _, first_paths, _ = _identities(tmp_path)
+    legitimate = x509.load_pem_x509_certificate(first_paths.certificate.read_bytes())
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(legitimate.subject)
+        .issuer_name(legitimate.issuer)
+        .public_key(legitimate.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(legitimate.not_valid_before_utc)
+        .not_valid_after(legitimate.not_valid_after_utc)
+    )
+    for extension in legitimate.extensions:
+        builder = builder.add_extension(extension.value, extension.critical)
+    forged = builder.sign(ec.generate_private_key(ec.SECP256R1()), hashes.SHA256())
+    forged_pem = forged.public_bytes(serialization.Encoding.PEM).decode("ascii")
+
+    with pytest.raises(IntegrityError, match="signature"):
+        validate_certificate_binding(
+            forged_pem,
+            ca_certificate_pem=ca,
+            cluster_id="cluster-secure-test",
+            role="worker",
+            expected_identity_fingerprint=first.public_key_fingerprint,
         )
 
 
@@ -354,6 +443,53 @@ async def test_wrong_worker_certificate_and_plaintext_stage_connections_are_reje
         assert actual.public_key_fingerprint != expected.public_key_fingerprint
     finally:
         await pool.close()
+        await server.stop()
+
+
+@pytest.mark.asyncio
+async def test_untrusted_ca_and_wrong_hostname_fail_real_tls_handshakes(tmp_path: Path) -> None:
+    _, server_identity, _, _, _, server_paths, client_paths = _identities(tmp_path)
+    attacker_ca = create_cluster_ca_certificate(
+        CoordinatorIdentity.generate(),
+        cluster_id="cluster-secure-test",
+    )
+    untrusted_ca_path = tmp_path / "untrusted-ca.pem"
+    untrusted_ca_path.write_text(attacker_ca, encoding="ascii")
+    untrusted_paths = TlsCertificatePaths(
+        certificate=client_paths.certificate,
+        private_key=client_paths.private_key,
+        ca_certificate=untrusted_ca_path,
+    )
+    server = StageRingServer(handler=_echo, tls=TlsServerConfig(server_paths))
+    port = await server.start("127.0.0.1:0")
+    endpoint = f"127.0.0.1:{port}"
+    configurations = (
+        TlsClientConfig(
+            untrusted_paths,
+            WORKER_TLS_NAME,
+            expected_peer_fingerprint=server_identity.public_key_fingerprint,
+        ),
+        TlsClientConfig(
+            client_paths,
+            "wrong-host.swarm",
+            expected_peer_fingerprint=server_identity.public_key_fingerprint,
+        ),
+    )
+    try:
+        for tls in configurations:
+            pool = StageRingConnectionPool(
+                tls=tls,
+                reconnect_attempts=1,
+                connect_timeout_s=1,
+                read_timeout_s=1,
+                write_timeout_s=1,
+            )
+            try:
+                with pytest.raises(TransportError, match=r"certificate|connection"):
+                    await pool.send(endpoint, _message(1))
+            finally:
+                await pool.close()
+    finally:
         await server.stop()
 
 

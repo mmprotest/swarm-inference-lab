@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-09T07:26:18.9263261+10:00",
+  "repository": {
+    "branch": "main",
+    "commit_sha": "cd35c6950722a89b1f91f0fa45031042587f5c13",
+    "describe": "v0.1.0-rc.11-6-gcd35c69",
+    "initial_tracked_worktree_clean": true,
+    "package_version": "0.1.0rc11"
+  },
+  "host": {
+    "os": "Windows 11",
+    "build": "26200",
+    "architecture": "AMD64",
+    "physical_machine_count": 1
+  },
+  "python": {
+    "requires_python": ">=3.11,<3.14",
+    "default_version": "3.11",
+    "initial_active": "3.11.9",
+    "initial_active_openssl": "OpenSSL 3.0.13 30 Jan 2024",
+    "tls_reproduction": "3.13.14",
+    "tls_reproduction_openssl": "OpenSSL 3.0.21 9 Jun 2026",
+    "tls_reproduction_cryptography": "49.0.0"
+  },
+  "dependency_lock": {
+    "tool": "uv 0.12.0",
+    "uv_lock_sha256": "A48749361FD32174CA5620AD84437F373556CC12262D19A54D65844D27C01085",
+    "uv_lock_git_blob": "0b420dbecae58fa30f6e06204576d28d0be7ae13",
+    "pyproject_sha256": "B3171FEB1B7EFE69E3248560F9FA997EAC2800FE743C71AE137D9C7276415870",
+    "build_backend": "hatchling==1.31.0",
+    "transformers_group": "runtime",
+    "hypothesis_group": "dev"
+  },
+  "colibri": {
+    "path": "third_party/colibri",
+    "url": "https://github.com/JustVugg/colibri.git",
+    "gitlink_sha": "b085b48888a88d9a1c00b151a9979774b72cdbfd",
+    "populated_head_sha": "b085b48888a88d9a1c00b151a9979774b72cdbfd",
+    "clean": true
+  },
+  "markers": ["gpu", "model_download", "physical", "slow"],
+  "initial_tests": [
+    {
+      "id": "promotion_owner_resolution_py311",
+      "passed": 0,
+      "failed": 1,
+      "failure": "ModuleNotFoundError: swarm_inference.backends.colibri.expert_bank"
+    },
+    {
+      "id": "tls_security_slice_py311",
+      "passed": 11,
+      "failed": 0
+    },
+    {
+      "id": "tls_security_slice_py313",
+      "passed": 6,
+      "failed": 5,
+      "failure": "CERTIFICATE_VERIFY_FAILED: Missing Authority Key Identifier"
+    }
+  ]
+}

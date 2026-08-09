@@ -152,9 +152,7 @@ class ColibriMoeBackend:
         raw_index = json.loads(
             (self.root / "model.safetensors.index.json").read_text(encoding="utf-8")
         )
-        self.weight_map = {
-            str(name): str(path) for name, path in raw_index["weight_map"].items()
-        }
+        self.weight_map = {str(name): str(path) for name, path in raw_index["weight_map"].items()}
         if cache_budget_bytes is None:
             if self.device.type == "cuda" and torch.cuda.is_available():
                 free_bytes, _ = torch.cuda.mem_get_info(self.device)
@@ -309,12 +307,16 @@ class ColibriMoeBackend:
         elapsed = time.perf_counter_ns() - started
         self.calls += 1
         self.compute_ns += elapsed
-        return output, (), {
-            "colibri_compute_ns": elapsed,
-            "colibri_cache_hits": self.cache_hits,
-            "colibri_cache_misses": self.cache_misses,
-            "colibri_expert_movement_bytes": self.bytes_read,
-        }
+        return (
+            output,
+            (),
+            {
+                "colibri_compute_ns": elapsed,
+                "colibri_cache_hits": self.cache_hits,
+                "colibri_cache_misses": self.cache_misses,
+                "colibri_expert_movement_bytes": self.bytes_read,
+            },
+        )
 
     def status(self) -> dict[str, Any]:
         total = self.cache_hits + self.cache_misses

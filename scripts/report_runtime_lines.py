@@ -21,17 +21,10 @@ CANONICAL_ROOTS = (
 EVIDENCE_MODULES = (
     "batching.py",
     "bundle.py",
-    "colibri_token_path.py",
-    "colibri_workloads.py",
-    "correction_bundle.py",
-    "level_a.py",
-    "level_b.py",
     "memory_analysis.py",
     "phase10_analysis.py",
-    "real_path_resilience.py",
     "real_path_simulator.py",
     "reporting.py",
-    "runner.py",
     "verification.py",
 )
 

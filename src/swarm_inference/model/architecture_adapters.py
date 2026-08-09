@@ -699,9 +699,7 @@ class ModelArchitectureAdapterRegistry:
         if dense_or_moe is None:
             return None
         filtered = {
-            architecture
-            for architecture, density in matches.items()
-            if density == dense_or_moe
+            architecture for architecture, density in matches.items() if density == dense_or_moe
         }
         return next(iter(filtered)) if len(filtered) == 1 else None
 

@@ -15,10 +15,11 @@ from swarm_inference.acceptance import productization
 from swarm_inference.acceptance.productization import (
     ACCEPTANCE_BUNDLE_VERSION,
     NON_GPU_PRODUCT_TEST_ARGUMENTS,
-    NON_PRODUCT_SOURCE_AUDIT_TESTS,
     REAL_MODEL_GATES,
+    REPEATABILITY_SCHEMA_VERSION,
     REPEATABILITY_TEST_COMMAND_VERSION,
     SOFTWARE_GATES,
+    SOFTWARE_SUITE_OPT_IN_TESTS,
     AcceptanceStatus,
     GateResult,
     GateSpec,
@@ -41,7 +42,7 @@ def test_repeatability_producer_reuses_current_acceptance_contract() -> None:
     assert tuple(namespace["NON_GPU_PRODUCT_TEST_ARGUMENTS"]) == NON_GPU_PRODUCT_TEST_ARGUMENTS
 
 
-def test_non_gpu_product_collection_excludes_opt_in_experiment_audits() -> None:
+def test_non_gpu_product_collection_excludes_all_prerequisite_gated_tests() -> None:
     completed = subprocess.run(
         [
             sys.executable,
@@ -59,7 +60,7 @@ def test_non_gpu_product_collection_excludes_opt_in_experiment_audits() -> None:
 
     assert completed.returncode == 0, completed.stderr
     assert "test_cluster_pair_and_join.py" in completed.stdout
-    assert all(path not in completed.stdout for path in NON_PRODUCT_SOURCE_AUDIT_TESTS)
+    assert all(path not in completed.stdout for path in SOFTWARE_SUITE_OPT_IN_TESTS)
 
 
 def test_acceptance_parser_supports_required_repeatability_command() -> None:
@@ -293,10 +294,10 @@ def _write_repeatability_bundle(tmp_path: Path) -> tuple[Path, dict[str, object]
     acceptance_source = Path("src/swarm_inference/acceptance/productization.py")
     payload: dict[str, object] = {
         "document_type": "swarm-process-repeatability",
-        "schema_version": 2,
+        "schema_version": REPEATABILITY_SCHEMA_VERSION,
         "test_command_version": REPEATABILITY_TEST_COMMAND_VERSION,
         "acceptance_schema_version": ACCEPTANCE_BUNDLE_VERSION,
-        "excluded_source_audit_tests": list(NON_PRODUCT_SOURCE_AUDIT_TESTS),
+        "excluded_software_opt_in_tests": list(SOFTWARE_SUITE_OPT_IN_TESTS),
         "git_commit": _git_output("rev-parse", "HEAD"),
         "git_dirty": bool(git_status),
         "git_status": git_status,

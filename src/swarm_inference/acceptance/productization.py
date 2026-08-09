@@ -26,8 +26,8 @@ from typing import Any, Literal
 import psutil
 
 ACCEPTANCE_BUNDLE_VERSION = 4
-REPEATABILITY_SCHEMA_VERSION = 2
-REPEATABILITY_TEST_COMMAND_VERSION = 3
+REPEATABILITY_SCHEMA_VERSION = 3
+REPEATABILITY_TEST_COMMAND_VERSION = 4
 MACHINE_IDENTITY_VERSION = 1
 PHYSICAL_EVIDENCE_VERSION = 4
 MANAGED_RESOURCE_WARNINGS = (
@@ -49,12 +49,21 @@ NON_PRODUCT_SOURCE_AUDIT_TESTS = (
     "tests/integration/test_experiment_007_corrections_run.py",
     "tests/integration/test_experiment_007_run.py",
 )
+# These tests have their own prerequisite-aware gates. The universal real-model
+# evidence consumers are executed only by REAL_MODEL_GATES; the native Colibri
+# ABI is validated when its separately built optional DLL is configured. They
+# must not appear as implicit skips in the mandatory software repeatability run.
+SOFTWARE_SUITE_OPT_IN_TESTS = (
+    *NON_PRODUCT_SOURCE_AUDIT_TESTS,
+    "tests/integration/test_generic_colibri_native_component.py",
+    "tests/integration/test_universal_real_model_acceptance.py",
+)
 NON_GPU_PRODUCT_TEST_ARGUMENTS = (
     "tests/integration",
     "tests/failure",
     "-m",
     "not gpu",
-    *(f"--ignore={path}" for path in NON_PRODUCT_SOURCE_AUDIT_TESTS),
+    *(f"--ignore={path}" for path in SOFTWARE_SUITE_OPT_IN_TESTS),
 )
 
 
@@ -1080,8 +1089,8 @@ def validate_repeatability_evidence(
     }
     if required != expected_counts or requested != expected_counts:
         stale.append("repeatability evidence does not contain the required three plus five runs")
-    if payload.get("excluded_source_audit_tests") != list(NON_PRODUCT_SOURCE_AUDIT_TESTS):
-        stale.append("repeatability source-audit exclusion contract is stale")
+    if payload.get("excluded_software_opt_in_tests") != list(SOFTWARE_SUITE_OPT_IN_TESTS):
+        stale.append("repeatability software opt-in exclusion contract is stale")
     results = payload.get("results")
     expected_names = [f"full-{index}" for index in range(1, 4)] + [
         f"stage-ring-{index}" for index in range(1, 6)
@@ -2046,6 +2055,7 @@ __all__ = [
     "PHYSICAL_EVIDENCE_VERSION",
     "REPEATABILITY_SCHEMA_VERSION",
     "REPEATABILITY_TEST_COMMAND_VERSION",
+    "SOFTWARE_SUITE_OPT_IN_TESTS",
     "AcceptanceStatus",
     "GateResult",
     "OverallStatus",
