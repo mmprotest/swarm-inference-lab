@@ -226,6 +226,7 @@ class WorkerPool:
         protocol_script: Path,
         runtime_profiles: tuple[dict[str, Any], ...] | None = None,
         include_site_packages: bool = False,
+        protocol_module: str = "swarm_inference.microworker_protocol",
     ) -> None:
         self.count = count
         self.directory = directory
@@ -233,6 +234,7 @@ class WorkerPool:
         self.protocol_script = protocol_script
         self.runtime_profiles = runtime_profiles or tuple({} for _ in range(count))
         self.include_site_packages = include_site_packages
+        self.protocol_module = protocol_module
         if len(self.runtime_profiles) != count:
             raise ValueError("runtime profile count must equal worker count")
         self.workers: list[WorkerProcess] = []
@@ -271,7 +273,7 @@ class WorkerPool:
                         command = [
                             sys.executable,
                             "-m",
-                            "swarm_inference.microworker_protocol",
+                            self.protocol_module,
                             "serve",
                             "--config",
                             str(config_path),

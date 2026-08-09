@@ -527,7 +527,9 @@ def shaped_round_trip(
 
     if timeout_s <= 0:
         raise TimeoutError("microworker timeout elapsed before transport")
+    serialization_started_ns = time.perf_counter_ns()
     framed = encode_message(message)
+    serialization_ns = time.perf_counter_ns() - serialization_started_ns
     seed = f"{message.get('request_id')}|{sender_id}|{receiver_id}|{attempt}"
     if _deterministic_fraction(seed, "loss") < profile.request_loss_rate:
         time.sleep(min(timeout_s, profile.rtt_ms / 2_000.0))
@@ -571,6 +573,7 @@ def shaped_round_trip(
             "connection_reused": not owns_connection,
             "elapsed_ns": elapsed_ns,
             "client_cpu_ns": time.process_time_ns() - cpu_started_ns,
+            "serialization_ns": serialization_ns,
             "profile": profile.name,
             "attempt": attempt,
         }
@@ -599,6 +602,7 @@ def shaped_round_trip(
         "connection_reused": not owns_connection,
         "elapsed_ns": elapsed_ns,
         "client_cpu_ns": time.process_time_ns() - cpu_started_ns,
+        "serialization_ns": serialization_ns,
         "profile": profile.name,
         "attempt": attempt,
     }
@@ -638,6 +642,7 @@ def combine_transport_attempts(attempts: list[dict[str, Any]]) -> dict[str, Any]
         "new_connection_count",
         "elapsed_ns",
         "client_cpu_ns",
+        "serialization_ns",
     ):
         combined[field] = sum(int(item.get(field, 0)) for item in attempts)
     combined["attempt_count"] = len(attempts)
@@ -1595,6 +1600,7 @@ class MicroworkerServer:
         targets = {str(value) for value in fault_control.get("target_worker_ids", [])}
         if self.worker_id not in targets or fault_kind not in {
             "drop_result_once",
+            "duplicate_response_once",
             "stale_generation_once",
         }:
             return response
@@ -1612,6 +1618,10 @@ class MicroworkerServer:
         )
         if fault_kind == "drop_result_once":
             raise DropResponse(f"controlled dropped result at {self.worker_id}")
+        if fault_kind == "duplicate_response_once":
+            duplicate = dict(response)
+            duplicate["_duplicate_response_frame"] = True
+            return duplicate
         stale = dict(response)
         stale["execution_generation"] = int(response["execution_generation"]) - 1
         return stale
@@ -1792,7 +1802,15 @@ class MicroworkerServer:
                     )
                 try:
                     kind, response = self._dispatch_request(request)
+                    duplicate_response = bool(response.pop("_duplicate_response_frame", False))
                     sent = send_message(connection, response)
+                    if duplicate_response:
+                        sent += send_message(connection, response)
+                        self._trace(
+                            "server_response_duplicated",
+                            request_id=request.get("request_id"),
+                            operation_id=request.get("operation_id"),
+                        )
                     persistent_request = (
                         kind == "delegated_execute"
                         and request.get("connection_policy") == "persistent"
