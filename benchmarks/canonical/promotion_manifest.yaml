@@ -12,6 +12,7 @@ experiments:
   "009": {status: PASS_STRONG, contract: experiment_009_contract.yaml}
   "010": {status: COMPLETED_ALL_17_GATES, contract: experiment_010_contract.yaml}
   "011": {status: COMPLETED, contract: experiment_011_contract.yaml}
+  "012": {status: PASS_PROMOTED_CONDITIONAL, contract: experiment_012_contract.yaml}
 mechanisms:
   - {experiment: "001", mechanism: direct_peer_data_plane, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_ring_connection, release_gate: experiment_011_critical_path}
   - {experiment: "001", mechanism: persistent_peer_connections, disposition: REQUIRED, canonical_owner: swarm_inference.transport.stage_ring_connection, release_gate: connection_reuse}
@@ -140,6 +141,19 @@ mechanisms:
   - {experiment: "011", mechanism: coordinator_activation_relay, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.protocol.stage_ring, release_gate: zero_coordinator_activation_edges, reason: violates direct stage data plane, planner_effect: no candidate may contain such an edge}
   - {experiment: "011", mechanism: per_layer_or_per_expert_stage_rpc, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.canonical_planner, release_gate: experiment_011_critical_path, reason: recreates Experiment 010 communication curve, planner_effect: reject topology}
   - {experiment: "011", mechanism: session_interleaving_called_continuous_batching, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.runtime.telemetry, release_gate: capability_truthfulness, reason: interleaving is not batching, planner_effect: advertise batching only when engine implements it}
+
+  - {experiment: "012", mechanism: worker_owned_microshard_delegation, disposition: AVAILABLE_CONDITIONAL, canonical_owner: swarm_inference.execution.moe, release_gate: experiment_012_bounded_root, reason: bounded root capacity and a measured heterogeneous throughput region, planner_effect: admit only inside a supported low-latency topology domain}
+  - {experiment: "012", mechanism: signed_delegated_subtree_validation, disposition: REQUIRED, canonical_owner: swarm_inference.worker.expert_service, release_gate: delegated_route_integrity}
+  - {experiment: "012", mechanism: deterministic_hierarchical_reduction, disposition: REQUIRED, canonical_owner: swarm_inference.worker.expert_service, release_gate: deterministic_reduction}
+  - {experiment: "012", mechanism: immediate_parent_retry, disposition: REQUIRED, canonical_owner: swarm_inference.worker.expert_service, release_gate: hierarchical_recovery}
+  - {experiment: "012", mechanism: recursive_hierarchical_cancellation, disposition: REQUIRED, canonical_owner: swarm_inference.worker.expert_service, release_gate: hierarchical_cancellation}
+  - {experiment: "012", mechanism: root_and_worker_traffic_separation, disposition: REQUIRED, canonical_owner: swarm_inference.runtime.telemetry, release_gate: experiment_012_bounded_root}
+  - {experiment: "012", mechanism: explicit_flat_microshard_fallback, disposition: REQUIRED, canonical_owner: swarm_inference.execution.moe, release_gate: positive_utility_planner}
+  - {experiment: "012", mechanism: adaptive_branch_factor_research_planner, disposition: EVIDENCE_ONLY, canonical_owner: benchmarks.canonical.experiment_012_contract, release_gate: held_out_topology_regret, reason: measured held-out evidence does not by itself define a production network estimator, planner_effect: local default remains conservative}
+  - {experiment: "012", mechanism: local_scheduler_tree_as_distributed_hierarchy, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.execution.moe, release_gate: actual_worker_edges, reason: local tasks do not delegate protocol ownership, planner_effect: never count local scheduler nodes as worker hops}
+  - {experiment: "012", mechanism: unconditional_persistent_hierarchy_sessions, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.execution.moe, release_gate: positive_utility_planner, reason: removed connections but improved N=1000 latency only 0.4 percent in the isolated cycle, planner_effect: require a measured workload-specific tail benefit}
+  - {experiment: "012", mechanism: universal_fixed_branch_factor, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.execution.moe, release_gate: positive_utility_planner, reason: the best branch factor crossed over with shaped RTT and workload, planner_effect: do not claim one branch factor is universal}
+  - {experiment: "012", mechanism: fine_grained_wan_microshards, disposition: REJECTED_DEFAULT, canonical_owner: swarm_inference.coordinator.stage_planner, release_gate: experiment_011_critical_path, reason: Experiment 011 coarse persistent stages remain the WAN boundary, planner_effect: refuse delegated microshard fanout outside local-fast domains}
 
   - {experiment: cross-cutting, mechanism: simulation_reports_and_charts, disposition: EVIDENCE_ONLY, canonical_owner: swarm_inference.experiments, release_gate: experiment_separation, reason: analysis tooling is not an execution path, planner_effect: none}
   - {experiment: cross-cutting, mechanism: synthetic_fixtures, disposition: EVIDENCE_ONLY, canonical_owner: swarm_inference.experiments, release_gate: real_model_acceptance, reason: fixtures cannot satisfy physical gates, planner_effect: none}

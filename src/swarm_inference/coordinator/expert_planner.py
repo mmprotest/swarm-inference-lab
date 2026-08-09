@@ -154,6 +154,7 @@ class ExpertPlacementDecision(StrictModel):
     forced_remote: bool = False
     explanation: list[str]
     rejected: list[RejectedExpertStrategy]
+    topology_domain: TopologyDomain = TopologyDomain.UNKNOWN
 
 
 class StageExpertPlan(StrictModel):
@@ -348,6 +349,7 @@ class ExpertUtilityPlanner:
             forced_remote=require_remote,
             explanation=explanation,
             rejected=rejected,
+            topology_domain=selected.topology_domain,
         )
 
     def plan_stage(

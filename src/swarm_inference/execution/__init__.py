@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from swarm_inference.execution.moe import (
         HybridMoeBackend,
         LocalMoeBackend,
+        MicroshardFanoutDecision,
+        MicroshardFanoutMode,
         MicroshardRemoteBackend,
         MoeExecutionBackend,
         MoeExecutionResult,
@@ -29,6 +31,8 @@ _EXPORT_MODULES = {
     "HybridMoeBackend": "swarm_inference.execution.moe",
     "LocalMoeBackend": "swarm_inference.execution.moe",
     "MicroshardRemoteBackend": "swarm_inference.execution.moe",
+    "MicroshardFanoutDecision": "swarm_inference.execution.moe",
+    "MicroshardFanoutMode": "swarm_inference.execution.moe",
     "MoeExecutionBackend": "swarm_inference.execution.moe",
     "MoeExecutionResult": "swarm_inference.execution.moe",
     "StageExecutionResult": "swarm_inference.execution.interfaces",
@@ -51,6 +55,8 @@ def __getattr__(name: str) -> Any:
 __all__ = [
     "HybridMoeBackend",
     "LocalMoeBackend",
+    "MicroshardFanoutDecision",
+    "MicroshardFanoutMode",
     "MicroshardRemoteBackend",
     "MoeExecutionBackend",
     "MoeExecutionResult",

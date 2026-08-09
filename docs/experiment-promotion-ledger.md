@@ -18,6 +18,7 @@ experiment bundles remain immutable evidence; production code must not import th
 | 009 | PASS_STRONG | Colibri is a first-class probed engine; routing-aware placement is conditional; rejected prefetch and inferred capabilities remain disabled. |
 | 010 | all 17 gates | Whole experts, native expert microshards, hybrid placement, deterministic reduction, isolation, detection, quarantine, and replay remain inside stages. |
 | 011 | completed | The persistent direct contiguous stage ring is mandatory; compression and speculation are exact but auto-off without positive utility. |
+| 012 | PASS, conditionally promoted | Genuine worker-owned microshard delegation, deterministic intermediate reduction, local retry/cancellation, and root/worker telemetry are canonical; flat remains selectable and fine-grained WAN fanout remains rejected. |
 
 ## Architecture-neutral promotion
 
@@ -35,7 +36,10 @@ The following promoted mechanisms remain active behind generic contracts:
   fallback accounting; and
 - persistent stage processes/state/connections, stage-local KV, direct worker-to-worker
   activation flow, bounded asynchronous transport, reduced coordinator participation, and
-  utility-gated compression/speculation.
+  utility-gated compression/speculation; and
+- signed bounded-degree microworker subtrees inside low-latency stages, with deterministic
+  worker-side reduction, immediate-parent retry, hierarchical cancellation, explicit flat
+  fallback, and separate root versus system traffic accounting.
 
 Architecture-specific kernels and legacy exact-byte containers remain isolated adapters or
 historical evidence. They are not generic data models.

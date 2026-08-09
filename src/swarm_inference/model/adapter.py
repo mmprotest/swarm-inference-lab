@@ -246,8 +246,9 @@ def default_native_adapter_registry() -> NativeModelAdapterRegistry:
             .get("entry-points", {})
             .get("swarm_inference.native_adapters", {})
         )
-        for name, target in configured.items():
-            targets.setdefault(str(name), str(target))
+        # A source checkout's manifest is authoritative. Installed editable
+        # metadata may lag behind a removal and must not resurrect stale adapters.
+        targets = {str(name): str(target) for name, target in configured.items()}
         break
 
     adapters: list[NativeModelAdapter] = []

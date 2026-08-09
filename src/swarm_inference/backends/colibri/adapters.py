@@ -1547,8 +1547,9 @@ def default_colibri_adapter_registry() -> ColibriArchitectureAdapterRegistry:
             .get("entry-points", {})
             .get("swarm_inference.colibri_adapters", {})
         )
-        for name, target in configured.items():
-            targets.setdefault(str(name), str(target))
+        # A source checkout's manifest is authoritative. Installed editable
+        # metadata may lag behind a removal and must not resurrect stale adapters.
+        targets = {str(name): str(target) for name, target in configured.items()}
         break
     # Installed wheels always carry entry-point metadata.  This explicit
     # built-in fallback keeps source-tree and zip-import tests deterministic.

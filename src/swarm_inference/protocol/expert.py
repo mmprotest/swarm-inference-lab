@@ -77,6 +77,66 @@ class ReductionMode(StrEnum):
     FAST_BACKEND_NATIVE = "fast_backend_native"
 
 
+class DelegatedMicroshardNode(StrictModel):
+    """One lease-bound worker node in a delegated microshard subtree."""
+
+    worker_id: str
+    endpoint: str
+    layer_id: int = Field(ge=0)
+    expert_id: int = Field(ge=0)
+    hidden_start: int = Field(ge=0)
+    hidden_end: int = Field(gt=0)
+    logical_intermediate_dimension: int = Field(gt=0)
+    content_hash: str
+    ordering_key: str
+    children: list[DelegatedMicroshardNode] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_node(self) -> DelegatedMicroshardNode:
+        if not self.worker_id or not self.endpoint:
+            raise ValueError("delegated worker identity and endpoint are required")
+        if self.hidden_end <= self.hidden_start:
+            raise ValueError("delegated microshard range must be non-empty")
+        if self.hidden_end > self.logical_intermediate_dimension:
+            raise ValueError("delegated microshard range exceeds its logical width")
+        if not self.content_hash.startswith("sha256:"):
+            raise ValueError("delegated microshard requires a content hash")
+        expected_key = f"{self.hidden_start:020d}:{self.hidden_end:020d}:{self.worker_id}"
+        if self.ordering_key != expected_key:
+            raise ValueError("delegated microshard ordering key is not canonical")
+        child_keys = [item.ordering_key for item in self.children]
+        if child_keys != sorted(child_keys) or len(child_keys) != len(set(child_keys)):
+            raise ValueError("delegated children must be uniquely ordered")
+        return self
+
+
+class DelegatedMicroshardOperation(StrictModel):
+    """Authenticated instructions for one worker-owned fanout/reduction step."""
+
+    schema_version: Literal["1.0"] = "1.0"
+    operation_id: str
+    execution_generation: PositiveInt
+    parent_worker_id: str
+    branch_factor: int = Field(ge=2, le=32)
+    aggregation: Literal["fixed_order_fp32_sum"] = "fixed_order_fp32_sum"
+    retry_max_attempts: int = Field(default=2, ge=1, le=2)
+    deterministic_ordering: Literal["hidden_range_then_worker_id"] = "hidden_range_then_worker_id"
+    cancellation_state: Literal["active"] = "active"
+    deadline_ns: PositiveInt
+    route_lease_identity: str
+    trace_id: str
+    parent_span_id: str
+    node: DelegatedMicroshardNode
+
+    @model_validator(mode="after")
+    def validate_operation(self) -> DelegatedMicroshardOperation:
+        if not self.operation_id or not self.parent_worker_id:
+            raise ValueError("delegated operation and parent identities are required")
+        if not self.route_lease_identity or not self.trace_id or not self.parent_span_id:
+            raise ValueError("delegated route and tracing identities are required")
+        return self
+
+
 class TensorWireMetadata(StrictModel):
     name: str
     envelope: Literal["raw", "SWARMT01"] = "raw"
@@ -267,6 +327,18 @@ class ExpertExecutionMetadata(StrictModel):
     resident_tensor_bytes: int = Field(default=0, ge=0)
     expert_resident_bytes: int = Field(default=0, ge=0)
     fallback_events: list[dict[str, Any]] = Field(default_factory=list)
+    delegation_mode: Literal["none", "worker_tree"] = "none"
+    delegated_worker_ids: list[str] = Field(default_factory=list)
+    delegated_edges: list[dict[str, Any]] = Field(default_factory=list)
+    delegated_worker_count: int = Field(default=0, ge=0)
+    delegated_worker_messages: int = Field(default=0, ge=0)
+    delegated_request_bytes: int = Field(default=0, ge=0)
+    delegated_response_bytes: int = Field(default=0, ge=0)
+    delegated_depth: int = Field(default=0, ge=0)
+    delegated_reduction_depth: int = Field(default=0, ge=0)
+    delegated_intermediate_reductions: int = Field(default=0, ge=0)
+    delegated_retries: int = Field(default=0, ge=0)
+    delegated_failures: int = Field(default=0, ge=0)
 
 
 class ResultIntegrity(StrictModel):
@@ -504,6 +576,8 @@ def verify_expert_peer_handshake(
 __all__ = [
     "SUPPORTED_EXPERT_PROTOCOL_VERSIONS",
     "DataPlane",
+    "DelegatedMicroshardNode",
+    "DelegatedMicroshardOperation",
     "DeterminismMode",
     "ExpertExecutionMetadata",
     "ExpertExecutionMode",

@@ -65,11 +65,11 @@ def _resolve_owner(owner: str) -> tuple[types.ModuleType | None, object]:
 
 
 def test_every_numbered_experiment_has_one_canonical_contract() -> None:
-    expected = {f"experiment_{number:03d}_contract.yaml" for number in range(1, 12)}
+    expected = {f"experiment_{number:03d}_contract.yaml" for number in range(1, 13)}
     actual = {path.name for path in CANONICAL_ROOT.glob("experiment_*_contract.yaml")}
     assert actual == expected
 
-    for number in range(1, 12):
+    for number in range(1, 13):
         path = CANONICAL_ROOT / f"experiment_{number:03d}_contract.yaml"
         contract = _document(path)
         assert set(contract) == CONTRACT_FIELDS
@@ -98,7 +98,7 @@ def test_experiment_005_contract_makes_no_capability_claim() -> None:
 def test_promotion_ledger_covers_contract_mechanisms_and_importable_product_owners() -> None:
     manifest = _document(CANONICAL_ROOT / "promotion_manifest.yaml")
     assert set(manifest["allowed_dispositions"]) == DISPOSITIONS
-    assert set(manifest["experiments"]) == {f"{number:03d}" for number in range(1, 12)}
+    assert set(manifest["experiments"]) == {f"{number:03d}" for number in range(1, 13)}
     mechanisms = manifest["mechanisms"]
     assert isinstance(mechanisms, list) and mechanisms
     by_key: dict[tuple[str, str], dict[str, Any]] = {}
@@ -126,7 +126,7 @@ def test_promotion_ledger_covers_contract_mechanisms_and_importable_product_owne
             assert module_path.is_relative_to(PRODUCT_ROOT)
             assert "experiments" not in module_path.relative_to(PRODUCT_ROOT).parts
 
-    for number in range(1, 12):
+    for number in range(1, 13):
         experiment = f"{number:03d}"
         contract = _document(CANONICAL_ROOT / f"experiment_{experiment}_contract.yaml")
         for mechanism in contract["promoted_mechanisms"]:
@@ -146,9 +146,9 @@ def test_contract_evidence_has_durable_provenance_and_matches_local_archive() ->
     assert provenance["hash_algorithm"] == "sha256"
     bundles = provenance["bundles"]
     assert isinstance(bundles, dict)
-    assert set(bundles) == {f"{number:03d}" for number in range(1, 12)} - {"005"}
+    assert set(bundles) == {f"{number:03d}" for number in range(1, 13)} - {"005"}
 
-    for number in range(1, 12):
+    for number in range(1, 13):
         experiment = f"{number:03d}"
         contract = _document(CANONICAL_ROOT / f"experiment_{experiment}_contract.yaml")
         identity = contract["evidence_bundle_identity"]

@@ -20,6 +20,7 @@ from swarm_inference.coordinator.expert_planner import (
 )
 from swarm_inference.coordinator.model_catalog import InspectedProductModel
 from swarm_inference.engines.interfaces import ExecutionEngineCapability
+from swarm_inference.engines.topology import TopologyDomain
 from swarm_inference.model.partition import (
     ModelPartitionMetadata,
     PartitionMethod,
@@ -1449,6 +1450,14 @@ class ProductStagePlanner:
                                 explanation=[
                                     "workers advertise a gap-free matched native microshard union"
                                 ],
+                                topology_domain=(
+                                    TopologyDomain.LOCAL_FAST
+                                    if all(
+                                        _worker_node_id(owner) == _worker_node_id(stage_worker)
+                                        for owner in owners
+                                    )
+                                    else TopologyDomain.UNKNOWN
+                                ),
                             )
                         )
                     decision = utility_planner.choose(
@@ -1509,6 +1518,7 @@ class ProductStagePlanner:
                             forced_remote=decision.forced_remote,
                             explanation=decision.explanation,
                             rejected=[item.model_dump(mode="json") for item in decision.rejected],
+                            topology_domain=decision.topology_domain.value,
                         )
                     )
             final_required = base_required + local_reserved

@@ -120,3 +120,19 @@ workload-specific stock llama.cpp search, logical tensor metadata, capability-ga
 ablations, deterministic token comparison, machine profiling, resource telemetry, and a
 resumable evidence bundle. Unsupported target-backend hooks remain null and cannot be replaced
 by fixture measurements. Only `-Full` is eligible for the official verdict.
+
+## Experiment 012: evidence-driven hierarchical microworker scaling
+
+Experiment 012 tests whether genuine worker-to-worker delegation can keep the
+stage owner's work bounded as one reducible operation grows from 2 to 1,000
+independent local worker processes. Its method, immutable metrics, PASS/FAIL
+gates, staged matrix, correctness boundary, and artifact contract are defined
+in [the Experiment 012 specification](experiment-012-specification.md).
+
+The completed one-host experiment passes the coordinator-scaling thesis and is
+promoted conditionally: bounded signed delegation, deterministic intermediate
+reduction, immediate-parent retry, recursive cancellation, and separate
+root/system telemetry are available only in an eligible low-latency domain.
+Flat fanout remains selectable, and Experiment 011 coarse persistent stages
+remain the WAN boundary. Shaped network profiles are simulation evidence, not
+physical LAN or WAN validation.

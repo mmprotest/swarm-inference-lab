@@ -717,6 +717,7 @@ class ProductSessionController:
                 colibri_events += 1
                 continue
             if event_name not in {
+                "delegated_microshard_result_consumed",
                 "remote_whole_expert_result_consumed",
                 "remote_microshard_result_consumed",
             }:
@@ -740,6 +741,17 @@ class ProductSessionController:
                 )
             if int(event.get("request_bytes", 0)) <= 0 or int(event.get("response_bytes", 0)) <= 0:
                 raise IntegrityError("remote contribution has no data-plane byte proof")
+            if event_name == "delegated_microshard_result_consumed":
+                branch_factor = int(placement.microshard_branch_factor)
+                root_dispatches = int(event.get("root_dispatches", 0))
+                if not 1 <= root_dispatches <= branch_factor:
+                    raise IntegrityError("delegated root degree exceeds the installed plan")
+                if int(event.get("root_messages", 0)) != 2 * root_dispatches:
+                    raise IntegrityError("delegated root message evidence is inconsistent")
+                if int(event.get("root_leaf_rpcs", -1)) != 0:
+                    raise IntegrityError("delegated execution reports a root-to-leaf RPC")
+                if int(event.get("worker_to_worker_messages", 0)) <= 0:
+                    raise IntegrityError("delegated execution has no worker-to-worker evidence")
             traced_bytes += int(event["request_bytes"]) + int(event["response_bytes"])
             if not str(event.get("result_hash", "")).startswith("sha256:"):
                 raise IntegrityError("remote contribution has no result hash")
@@ -865,6 +877,7 @@ class ProductSessionController:
             remote_expert_contributions=sum(
                 item.get("event")
                 in {
+                    "delegated_microshard_result_consumed",
                     "remote_whole_expert_result_consumed",
                     "remote_microshard_result_consumed",
                 }

@@ -6,6 +6,7 @@ import hashlib
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from enum import StrEnum
 from threading import Condition
 from typing import Any, Protocol, runtime_checkable
 from uuid import uuid4
@@ -14,6 +15,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from swarm_inference.engines.topology import TopologyDomain
+from swarm_inference.exceptions import IntegrityError
 from swarm_inference.execution.microshard import (
     MicroshardRange,
     physical_microshard_ownership,
@@ -21,6 +24,8 @@ from swarm_inference.execution.microshard import (
 from swarm_inference.protocol.checksums import sha256_bytes
 from swarm_inference.protocol.expert import (
     SUPPORTED_EXPERT_PROTOCOL_VERSIONS,
+    DelegatedMicroshardNode,
+    DelegatedMicroshardOperation,
     DeterminismMode,
     ExpertExecutionMode,
     ExpertExecutionRequest,
@@ -79,6 +84,16 @@ class MoeExecutionEvent:
     worker_sync_rounds: int = 0
     fanout_nodes: int = 0
     topology_construction_ns: int = 0
+    fanout_mode: str = "flat"
+    fanout_decision_reason: str = ""
+    root_messages: int = 0
+    root_bytes: int = 0
+    root_leaf_rpcs: int = 0
+    worker_to_worker_messages: int = 0
+    worker_to_worker_bytes: int = 0
+    intermediate_reductions: int = 0
+    retries: int = 0
+    failures: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -111,6 +126,16 @@ class MoeExecutionEvent:
             "worker_sync_rounds": self.worker_sync_rounds,
             "fanout_nodes": self.fanout_nodes,
             "topology_construction_ns": self.topology_construction_ns,
+            "fanout_mode": self.fanout_mode,
+            "fanout_decision_reason": self.fanout_decision_reason,
+            "root_messages": self.root_messages,
+            "root_bytes": self.root_bytes,
+            "root_leaf_rpcs": self.root_leaf_rpcs,
+            "worker_to_worker_messages": self.worker_to_worker_messages,
+            "worker_to_worker_bytes": self.worker_to_worker_bytes,
+            "intermediate_reductions": self.intermediate_reductions,
+            "retries": self.retries,
+            "failures": self.failures,
         }
 
 
@@ -168,12 +193,74 @@ class WholeExpertTarget:
 class MicroshardTarget:
     ownership: MicroshardRange
     client: ExpertClient
+    endpoint: str = ""
+
+
+class MicroshardFanoutMode(StrEnum):
+    FLAT = "flat"
+    DELEGATED = "delegated"
+    AUTO = "auto"
+
+
+@dataclass(frozen=True, slots=True)
+class MicroshardFanoutDecision:
+    requested: MicroshardFanoutMode
+    selected: MicroshardFanoutMode
+    branch_factor: int
+    topology_domain: TopologyDomain
+    worker_count: int
+    reason: str
+
+
+def select_microshard_fanout(
+    *,
+    requested: MicroshardFanoutMode | str,
+    worker_count: int,
+    branch_factor: int,
+    topology_domain: TopologyDomain | str,
+    minimum_delegated_workers: int = 8,
+) -> MicroshardFanoutDecision:
+    """Apply the Experiment 012 promotion gate without crossing WAN stages."""
+
+    mode = MicroshardFanoutMode(requested)
+    domain = TopologyDomain(topology_domain)
+    if worker_count < 2:
+        raise ValueError("microshard fanout requires at least two workers")
+    if not 2 <= branch_factor <= 32:
+        raise ValueError("microshard branch factor must be between 2 and 32")
+    if minimum_delegated_workers < 2:
+        raise ValueError("delegation threshold must be at least two workers")
+    if mode == MicroshardFanoutMode.DELEGATED and domain != TopologyDomain.LOCAL_FAST:
+        raise ValueError(
+            "fine-grained delegated microshards require one measured local-fast domain"
+        )
+    if mode == MicroshardFanoutMode.AUTO:
+        if domain == TopologyDomain.LOCAL_FAST and worker_count >= minimum_delegated_workers:
+            selected = MicroshardFanoutMode.DELEGATED
+            reason = "Experiment 012 admits bounded delegation in one low-latency domain"
+        else:
+            selected = MicroshardFanoutMode.FLAT
+            reason = (
+                "flat fanout retained below the evidence threshold or outside one "
+                "low-latency domain"
+            )
+    else:
+        selected = mode
+        reason = f"explicit {mode.value} fanout mode"
+    return MicroshardFanoutDecision(
+        requested=mode,
+        selected=selected,
+        branch_factor=branch_factor,
+        topology_domain=domain,
+        worker_count=worker_count,
+        reason=reason,
+    )
 
 
 @dataclass(frozen=True, slots=True)
 class _FanoutNode:
     node_id: str
-    target: MicroshardTarget | None = None
+    target: MicroshardTarget
     children: tuple[_FanoutNode, ...] = ()
 
 
@@ -182,6 +269,16 @@ class _FanoutTopology:
     root_children: tuple[_FanoutNode, ...]
     depth: int
     node_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class _MicroshardDispatchResult:
+    owner_key: str
+    partial: np.ndarray
+    request_bytes: int
+    response_bytes: int
+    request_elapsed_ns: int
+    execution_metadata: Any
 
 
 @dataclass(slots=True)
@@ -203,15 +300,17 @@ class _FanoutCollector:
         with self.condition:
             self.scheduler_dispatch_ns += elapsed_ns
 
-    def record_partial(self, result: tuple[str, np.ndarray, int, int, int]) -> None:
-        owner_key, partial, sent, received, request_elapsed_ns = result
+    dispatch_results: list[_MicroshardDispatchResult] = field(default_factory=list)
+
+    def record_partial(self, result: _MicroshardDispatchResult) -> None:
         with self.condition:
             if self.error is not None:
                 return
-            self.partials.append((owner_key, partial))
-            self.request_bytes += sent
-            self.response_bytes += received
-            self.maximum_request_ns = max(self.maximum_request_ns, request_elapsed_ns)
+            self.partials.append((result.owner_key, result.partial))
+            self.dispatch_results.append(result)
+            self.request_bytes += result.request_bytes
+            self.response_bytes += result.response_bytes
+            self.maximum_request_ns = max(self.maximum_request_ns, result.request_elapsed_ns)
             self.condition.notify_all()
 
     def fail(self, exc: BaseException) -> None:
@@ -726,8 +825,18 @@ class WholeExpertRemoteBackend(_SessionBackend):
                 "fanout_depth": max((item.fanout_depth for item in events), default=0),
                 "fanout_nodes": sum(item.fanout_nodes for item in events),
                 "coordinator_activation_bytes": 0,
-                "worker_to_worker_bytes": sum(
-                    item.request_bytes + item.response_bytes for item in events
+                "worker_to_worker_bytes": sum(item.worker_to_worker_bytes for item in events),
+                "worker_to_worker_messages": sum(item.worker_to_worker_messages for item in events),
+                "root_messages": sum(item.root_messages for item in events),
+                "root_bytes": sum(item.root_bytes for item in events),
+                "root_leaf_rpcs": sum(item.root_leaf_rpcs for item in events),
+                "intermediate_reductions": sum(item.intermediate_reductions for item in events),
+                "retries": sum(item.retries for item in events),
+                "failures": sum(item.failures for item in events),
+                "fanout_mode": (
+                    events[0].fanout_mode
+                    if events and all(item.fanout_mode == events[0].fanout_mode for item in events)
+                    else "mixed"
                 ),
             },
         )
@@ -749,6 +858,10 @@ class MicroshardRemoteBackend(_SessionBackend):
         maximum_parallel_requests: int = 32,
         fanout_branching_factor: int = 8,
         reduction_branching_factor: int = 8,
+        fanout_mode: MicroshardFanoutMode | str = MicroshardFanoutMode.AUTO,
+        topology_domain: TopologyDomain | str = TopologyDomain.UNKNOWN,
+        minimum_delegated_workers: int = 8,
+        delegated_retry_max_attempts: int = 2,
     ) -> None:
         super().__init__()
         if maximum_parallel_requests <= 0:
@@ -757,6 +870,8 @@ class MicroshardRemoteBackend(_SessionBackend):
             raise ValueError("reduction_branching_factor must be between 2 and 32")
         if fanout_branching_factor < 2 or fanout_branching_factor > 32:
             raise ValueError("fanout_branching_factor must be between 2 and 32")
+        if delegated_retry_max_attempts not in {1, 2}:
+            raise ValueError("delegated retry attempts must be one or two")
         self.targets = {key: list(value) for key, value in targets.items()}
         for value in self.targets.values():
             physical_microshard_ownership([item.ownership for item in value])
@@ -769,6 +884,10 @@ class MicroshardRemoteBackend(_SessionBackend):
         self.maximum_parallel_requests = maximum_parallel_requests
         self.fanout_branching_factor = fanout_branching_factor
         self.reduction_branching_factor = reduction_branching_factor
+        self.requested_fanout_mode = MicroshardFanoutMode(fanout_mode)
+        self.topology_domain = TopologyDomain(topology_domain)
+        self.minimum_delegated_workers = minimum_delegated_workers
+        self.delegated_retry_max_attempts = delegated_retry_max_attempts
         self._executor = ThreadPoolExecutor(
             max_workers=maximum_parallel_requests,
             thread_name_prefix="swarm-microshard",
@@ -776,6 +895,16 @@ class MicroshardRemoteBackend(_SessionBackend):
         topology_started = time.perf_counter_ns()
         self._fanout_topologies = {
             key: self._build_fanout_topology(self._ordered_targets(value))
+            for key, value in self.targets.items()
+        }
+        self._fanout_decisions = {
+            key: select_microshard_fanout(
+                requested=self.requested_fanout_mode,
+                worker_count=len(value),
+                branch_factor=self.fanout_branching_factor,
+                topology_domain=self.topology_domain,
+                minimum_delegated_workers=self.minimum_delegated_workers,
+            )
             for key, value in self.targets.items()
         }
         self.topology_construction_ns = time.perf_counter_ns() - topology_started
@@ -800,6 +929,24 @@ class MicroshardRemoteBackend(_SessionBackend):
     ) -> None:
         self._route_auth.configure(lease, identity=identity, worker_id=worker_id)
         self.route_generation = lease.route_generation
+        participants = {item.worker_id: item for item in lease.participants}
+        for key, decision in list(self._fanout_decisions.items()):
+            if decision.selected != MicroshardFanoutMode.DELEGATED:
+                continue
+            try:
+                for root in self._fanout_topologies[key].root_children:
+                    self._validate_route_topology(root, participants)
+            except (ValueError, IntegrityError) as exc:
+                if self.requested_fanout_mode == MicroshardFanoutMode.DELEGATED:
+                    raise
+                self._fanout_decisions[key] = MicroshardFanoutDecision(
+                    requested=decision.requested,
+                    selected=MicroshardFanoutMode.FLAT,
+                    branch_factor=decision.branch_factor,
+                    topology_domain=decision.topology_domain,
+                    worker_count=decision.worker_count,
+                    reason=f"delegation route rejected; flat fallback: {exc}",
+                )
 
     def capabilities(self) -> MoeBackendCapabilities:
         return MoeBackendCapabilities(
@@ -810,11 +957,15 @@ class MicroshardRemoteBackend(_SessionBackend):
         )
 
     def cancel_session(self, session_id: str) -> None:
-        clients = {
-            target.ownership.worker_id: target.client
-            for targets in self.targets.values()
-            for target in targets
-        }
+        clients: dict[str, ExpertClient] = {}
+        for key, targets in self.targets.items():
+            decision = self._fanout_decisions[key]
+            selected = (
+                [node.target for node in self._fanout_topologies[key].root_children]
+                if decision.selected == MicroshardFanoutMode.DELEGATED
+                else targets
+            )
+            clients.update({item.ownership.worker_id: item.client for item in selected})
         for worker_id, client in clients.items():
             control = getattr(client, "control", None)
             if control is not None:
@@ -837,35 +988,41 @@ class MicroshardRemoteBackend(_SessionBackend):
         )
 
     def _build_fanout_topology(self, targets: list[MicroshardTarget]) -> _FanoutTopology:
-        leaf_index = {id(target): index for index, target in enumerate(targets)}
+        def groups(items: list[MicroshardTarget], count: int) -> list[list[MicroshardTarget]]:
+            quotient, remainder = divmod(len(items), count)
+            result: list[list[MicroshardTarget]] = []
+            cursor = 0
+            for index in range(count):
+                size = quotient + (1 if index < remainder else 0)
+                result.append(items[cursor : cursor + size])
+                cursor += size
+            return result
 
-        def build(items: list[MicroshardTarget], prefix: str) -> tuple[_FanoutNode, ...]:
-            if len(items) <= self.fanout_branching_factor:
-                return tuple(
-                    _FanoutNode(
-                        node_id=f"{prefix}/worker-{leaf_index[id(target)]:06d}",
-                        target=target,
-                    )
-                    for target in items
-                )
-            group_size = (len(items) + self.fanout_branching_factor - 1) // (
-                self.fanout_branching_factor
+        def build_group(items: list[MicroshardTarget], prefix: str) -> _FanoutNode:
+            target = items[0]
+            remaining = items[1:]
+            child_groups = (
+                groups(remaining, min(self.fanout_branching_factor, len(remaining)))
+                if remaining
+                else []
             )
-            groups = [
-                items[index : index + group_size] for index in range(0, len(items), group_size)
-            ]
-            return tuple(
-                _FanoutNode(
-                    node_id=f"{prefix}/group-{index:04d}",
-                    children=build(group, f"{prefix}/group-{index:04d}"),
-                )
-                for index, group in enumerate(groups)
+            return _FanoutNode(
+                node_id=f"{prefix}/{target.ownership.worker_id}",
+                target=target,
+                children=tuple(
+                    build_group(group, f"{prefix}/child-{index:04d}")
+                    for index, group in enumerate(child_groups)
+                ),
             )
 
-        root_children = build(targets, "root")
+        root_groups = groups(targets, min(self.fanout_branching_factor, len(targets)))
+        root_children = tuple(
+            build_group(group, f"root/branch-{index:04d}")
+            for index, group in enumerate(root_groups)
+        )
 
         def depth(node: _FanoutNode) -> int:
-            return 1 if node.target is not None else 1 + max(depth(item) for item in node.children)
+            return 1 + max((depth(item) for item in node.children), default=0)
 
         def count(node: _FanoutNode) -> int:
             return 1 + sum(count(item) for item in node.children)
@@ -875,6 +1032,60 @@ class MicroshardRemoteBackend(_SessionBackend):
             depth=max((depth(item) for item in root_children), default=0),
             node_count=sum(count(item) for item in root_children),
         )
+
+    @staticmethod
+    def _target_endpoint(target: MicroshardTarget) -> str:
+        endpoint = target.endpoint or str(getattr(target.client, "endpoint", ""))
+        if not endpoint:
+            raise ValueError(
+                f"delegated worker {target.ownership.worker_id} has no direct endpoint"
+            )
+        return endpoint
+
+    def _protocol_node(self, node: _FanoutNode) -> DelegatedMicroshardNode:
+        owner = node.target.ownership
+        return DelegatedMicroshardNode(
+            worker_id=owner.worker_id,
+            endpoint=self._target_endpoint(node.target),
+            layer_id=owner.layer_id,
+            expert_id=owner.expert_id,
+            hidden_start=owner.hidden_start,
+            hidden_end=owner.hidden_end,
+            logical_intermediate_dimension=owner.logical_intermediate_dimension,
+            content_hash=owner.content_hash,
+            ordering_key=(f"{owner.hidden_start:020d}:{owner.hidden_end:020d}:{owner.worker_id}"),
+            children=[self._protocol_node(child) for child in node.children],
+        )
+
+    def _validate_route_topology(
+        self,
+        node: _FanoutNode,
+        participants: dict[str, Any],
+    ) -> None:
+        owner = node.target.ownership
+        participant = participants.get(owner.worker_id)
+        if participant is None:
+            raise IntegrityError(f"delegated worker {owner.worker_id} is absent from the route")
+        if participant.endpoint != self._target_endpoint(node.target):
+            raise IntegrityError("delegated endpoint differs from the signed route")
+        roles = set(participant.roles)
+        if "expert-microshard" not in roles or (node.children and "reducer" not in roles):
+            raise IntegrityError("delegated topology requires microshard/reducer route roles")
+        expected = {
+            "layer_id": owner.layer_id,
+            "expert_id": owner.expert_id,
+            "hidden_start": owner.hidden_start,
+            "hidden_end": owner.hidden_end,
+            "logical_intermediate_dimension": owner.logical_intermediate_dimension,
+            "content_hash": owner.content_hash,
+        }
+        if not any(
+            all(item.get(field) == value for field, value in expected.items())
+            for item in participant.owned_microshards
+        ):
+            raise IntegrityError("delegated topology work is absent from signed ownership")
+        for child in node.children:
+            self._validate_route_topology(child, participants)
 
     @staticmethod
     def _sum_partial_group(group: tuple[np.ndarray, ...]) -> np.ndarray:
@@ -915,9 +1126,28 @@ class MicroshardRemoteBackend(_SessionBackend):
         expert_id: int,
         source: np.ndarray,
         deadline_ns: int,
-    ) -> tuple[str, np.ndarray, int, int, int]:
+        delegated_node: _FanoutNode | None = None,
+    ) -> _MicroshardDispatchResult:
         owner = target.ownership
         subrequest_id = f"{fanout_request_id}:slice-{owner.hidden_start}-{owner.hidden_end}"
+        metadata: dict[str, Any] = {"exact_contribution_representation": "unweighted_expert_output"}
+        if delegated_node is not None:
+            lease = self._route_auth.lease
+            if lease is None or not self._route_auth.worker_id:
+                raise ValueError("delegated microshards require a configured signed route")
+            operation = DelegatedMicroshardOperation(
+                operation_id=fanout_request_id,
+                execution_generation=self.route_generation,
+                parent_worker_id=self._route_auth.worker_id,
+                branch_factor=self.fanout_branching_factor,
+                retry_max_attempts=self.delegated_retry_max_attempts,
+                deadline_ns=deadline_ns,
+                route_lease_identity=expert_route_lease_hash(lease),
+                trace_id=fanout_request_id,
+                parent_span_id="stage-owner",
+                node=self._protocol_node(delegated_node),
+            )
+            metadata["delegation"] = operation.model_dump(mode="json")
         request = ExpertExecutionRequest(
             request_id=subrequest_id,
             session_id=session_id,
@@ -947,7 +1177,7 @@ class MicroshardRemoteBackend(_SessionBackend):
             down_accumulators=None,
             microshard_final=False,
             reduction_mode=ReductionMode.FIXED_ORDER_FP32,
-            metadata={"exact_contribution_representation": "unweighted_expert_output"},
+            metadata=metadata,
             authentication=self._route_auth.request_authentication(owner.worker_id),
         )
         started = time.perf_counter_ns()
@@ -975,12 +1205,13 @@ class MicroshardRemoteBackend(_SessionBackend):
         if owner.content_hash and hashes.get(expert_id) != owner.content_hash:
             raise ValueError("remote microshard content hash mismatch")
         owner_key = f"{owner.hidden_start:020d}:{owner.hidden_end:020d}:{owner.worker_id}"
-        return (
-            owner_key,
-            partial,
-            int(transport.get("request_bytes", 0)),
-            int(transport.get("response_bytes", 0)),
-            int(transport.get("request_elapsed_ns", elapsed_ns)),
+        return _MicroshardDispatchResult(
+            owner_key=owner_key,
+            partial=partial,
+            request_bytes=int(transport.get("request_bytes", 0)),
+            response_bytes=int(transport.get("response_bytes", 0)),
+            request_elapsed_ns=int(transport.get("request_elapsed_ns", elapsed_ns)),
+            execution_metadata=getattr(response, "execution_metadata", None),
         )
 
     def _dispatch_node(
@@ -995,32 +1226,14 @@ class MicroshardRemoteBackend(_SessionBackend):
         expert_id: int,
         source: np.ndarray,
         deadline_ns: int,
+        delegated: bool,
     ) -> None:
         if collector.cancelled():
             return
         try:
-            if node.target is not None:
-                collector.record_partial(
-                    self._dispatch_target(
-                        target=node.target,
-                        fanout_request_id=fanout_request_id,
-                        session_id=session_id,
-                        token_position=token_position,
-                        layer_id=layer_id,
-                        expert_id=expert_id,
-                        source=source,
-                        deadline_ns=deadline_ns,
-                    )
-                )
-                return
-            dispatch_started = time.perf_counter_ns()
-            for child in node.children:
-                if collector.cancelled():
-                    break
-                self._executor.submit(
-                    self._dispatch_node,
-                    node=child,
-                    collector=collector,
+            collector.record_partial(
+                self._dispatch_target(
+                    target=node.target,
                     fanout_request_id=fanout_request_id,
                     session_id=session_id,
                     token_position=token_position,
@@ -1028,8 +1241,9 @@ class MicroshardRemoteBackend(_SessionBackend):
                     expert_id=expert_id,
                     source=source,
                     deadline_ns=deadline_ns,
+                    delegated_node=node if delegated else None,
                 )
-            collector.record_dispatch(time.perf_counter_ns() - dispatch_started)
+            )
         except BaseException as exc:
             collector.fail(exc)
 
@@ -1056,9 +1270,19 @@ class MicroshardRemoteBackend(_SessionBackend):
         )
         ordered = self._ordered_targets(targets)
         topology = self._fanout_topologies[(layer_id, expert_id)]
-        collector = _FanoutCollector(expected_partials=len(ordered))
+        decision = self._fanout_decisions[(layer_id, expert_id)]
+        delegated = decision.selected == MicroshardFanoutMode.DELEGATED
+        selected_nodes = (
+            topology.root_children
+            if delegated
+            else tuple(
+                _FanoutNode(node_id=f"root/{item.ownership.worker_id}", target=item)
+                for item in ordered
+            )
+        )
+        collector = _FanoutCollector(expected_partials=len(selected_nodes))
         dispatch_started = time.perf_counter_ns()
-        for node in topology.root_children:
+        for node in selected_nodes:
             self._executor.submit(
                 self._dispatch_node,
                 node=node,
@@ -1070,6 +1294,7 @@ class MicroshardRemoteBackend(_SessionBackend):
                 expert_id=expert_id,
                 source=source,
                 deadline_ns=deadline_ns,
+                delegated=delegated,
             )
         coordinator_dispatch_ns = time.perf_counter_ns() - dispatch_started
         partials = collector.wait(deadline_ns)
@@ -1079,9 +1304,56 @@ class MicroshardRemoteBackend(_SessionBackend):
         reduction_started = time.perf_counter_ns()
         accumulator, reduction_depth = self._reduce_partials(partials)
         reduction_ns = time.perf_counter_ns() - reduction_started
+        delegated_metadata = [
+            result.execution_metadata
+            for result in collector.dispatch_results
+            if result.execution_metadata is not None
+        ]
+        worker_messages = (
+            sum(int(item.delegated_worker_messages) for item in delegated_metadata)
+            if delegated
+            else 0
+        )
+        worker_request_bytes = (
+            sum(int(item.delegated_request_bytes) for item in delegated_metadata)
+            if delegated
+            else 0
+        )
+        worker_response_bytes = (
+            sum(int(item.delegated_response_bytes) for item in delegated_metadata)
+            if delegated
+            else 0
+        )
+        total_worker_count = (
+            sum(int(item.delegated_worker_count) for item in delegated_metadata)
+            if delegated
+            else len(ordered)
+        )
+        if total_worker_count != len(ordered):
+            raise IntegrityError("delegated responses do not cover the installed worker set")
+        intermediate_reductions = (
+            sum(int(item.delegated_intermediate_reductions) for item in delegated_metadata)
+            if delegated
+            else 0
+        )
+        retries = (
+            sum(int(item.delegated_retries) for item in delegated_metadata) if delegated else 0
+        )
+        failures = (
+            sum(int(item.delegated_failures) for item in delegated_metadata) if delegated else 0
+        )
+        root_messages = 2 * len(selected_nodes)
+        root_bytes = request_bytes + response_bytes
+        total_messages = root_messages + worker_messages
+        fanout_depth = topology.depth if delegated else 1
+        effective_reduction_depth = topology.depth if delegated else reduction_depth
         output = torch.from_numpy(accumulator).to(device=activation.device, dtype=activation.dtype)
         event = MoeExecutionEvent(
-            event="remote_microshard_result_consumed",
+            event=(
+                "delegated_microshard_result_consumed"
+                if delegated
+                else "remote_microshard_result_consumed"
+            ),
             backend="microshard-remote",
             session_id=session_id,
             request_id=fanout_request_id,
@@ -1089,26 +1361,38 @@ class MicroshardRemoteBackend(_SessionBackend):
             layer_id=layer_id,
             expert_id=expert_id,
             worker_ids=tuple(item.ownership.worker_id for item in ordered),
-            request_bytes=request_bytes,
-            response_bytes=response_bytes,
+            request_bytes=request_bytes + worker_request_bytes,
+            response_bytes=response_bytes + worker_response_bytes,
             elapsed_ns=time.perf_counter_ns() - started,
             result_hash=_result_hash(output),
-            total_messages=2 * len(ordered),
-            critical_path_messages=2 * topology.depth,
-            serial_waits=topology.depth + reduction_depth,
-            parallel_waits=len(ordered),
-            fanout_depth=topology.depth,
-            reduction_depth=reduction_depth,
-            critical_path_sync_rounds=topology.depth + reduction_depth,
+            total_messages=total_messages,
+            critical_path_messages=2 * fanout_depth,
+            serial_waits=fanout_depth,
+            parallel_waits=len(selected_nodes),
+            fanout_depth=fanout_depth,
+            reduction_depth=effective_reduction_depth,
+            critical_path_sync_rounds=fanout_depth,
             scheduler_dispatch_ns=scheduler_dispatch_ns,
             reduction_ns=reduction_ns,
             communication_ns=collector.maximum_request_ns,
-            root_dispatches=len(topology.root_children),
-            coordinator_waits=0,
-            coordinator_sync_rounds=0,
-            worker_sync_rounds=topology.depth + reduction_depth,
+            root_dispatches=len(selected_nodes),
+            coordinator_waits=1,
+            coordinator_sync_rounds=1,
+            worker_sync_rounds=(max(fanout_depth - 1, 0) if delegated else 0),
             fanout_nodes=topology.node_count,
             topology_construction_ns=self.topology_construction_ns,
+            fanout_mode=decision.selected.value,
+            fanout_decision_reason=decision.reason,
+            root_messages=root_messages,
+            root_bytes=root_bytes,
+            root_leaf_rpcs=(
+                sum(not node.children for node in selected_nodes) if delegated else len(ordered)
+            ),
+            worker_to_worker_messages=worker_messages,
+            worker_to_worker_bytes=worker_request_bytes + worker_response_bytes,
+            intermediate_reductions=intermediate_reductions,
+            retries=retries,
+            failures=failures,
         )
         return output, event
 
@@ -1173,8 +1457,18 @@ class MicroshardRemoteBackend(_SessionBackend):
                 "reduction_ns": sum(item.reduction_ns for item in events),
                 "communication_ns": sum(item.communication_ns for item in events),
                 "coordinator_activation_bytes": 0,
-                "worker_to_worker_bytes": sum(
-                    item.request_bytes + item.response_bytes for item in events
+                "worker_to_worker_bytes": sum(item.worker_to_worker_bytes for item in events),
+                "worker_to_worker_messages": sum(item.worker_to_worker_messages for item in events),
+                "root_messages": sum(item.root_messages for item in events),
+                "root_bytes": sum(item.root_bytes for item in events),
+                "root_leaf_rpcs": sum(item.root_leaf_rpcs for item in events),
+                "intermediate_reductions": sum(item.intermediate_reductions for item in events),
+                "retries": sum(item.retries for item in events),
+                "failures": sum(item.failures for item in events),
+                "fanout_mode": (
+                    events[0].fanout_mode
+                    if events and all(item.fanout_mode == events[0].fanout_mode for item in events)
+                    else "mixed"
                 ),
                 "maximum_parallel_requests": self.maximum_parallel_requests,
                 "fanout_branching_factor": self.fanout_branching_factor,
@@ -1263,7 +1557,12 @@ class HybridMoeBackend(_SessionBackend):
                 item.event == "remote_whole_expert_result_consumed" for item in events
             ),
             "remote_microshard_calls": sum(
-                item.event == "remote_microshard_result_consumed" for item in events
+                item.event
+                in {
+                    "remote_microshard_result_consumed",
+                    "delegated_microshard_result_consumed",
+                }
+                for item in events
             ),
             "fallbacks": sum(item.event == "expert_local_fallback" for item in events),
             "bytes_transferred": sum(item.request_bytes + item.response_bytes for item in events),
@@ -1287,12 +1586,21 @@ class HybridMoeBackend(_SessionBackend):
             "reduction_ns": sum(item.reduction_ns for item in events),
             "communication_ns": sum(item.communication_ns for item in events),
             "coordinator_activation_bytes": 0,
-            "worker_to_worker_bytes": sum(
-                item.request_bytes + item.response_bytes for item in events
-            ),
+            "worker_to_worker_bytes": sum(item.worker_to_worker_bytes for item in events),
+            "worker_to_worker_messages": sum(item.worker_to_worker_messages for item in events),
+            "root_messages": sum(item.root_messages for item in events),
+            "root_bytes": sum(item.root_bytes for item in events),
+            "root_leaf_rpcs": sum(item.root_leaf_rpcs for item in events),
             "reduction_mode": (
                 ReductionMode.TREE_FP32.value
-                if any(item.event == "remote_microshard_result_consumed" for item in events)
+                if any(
+                    item.event
+                    in {
+                        "remote_microshard_result_consumed",
+                        "delegated_microshard_result_consumed",
+                    }
+                    for item in events
+                )
                 else "none"
             ),
         }
@@ -1471,7 +1779,11 @@ class HybridMoeBackend(_SessionBackend):
                 "logical_microshard_workers": sum(
                     len(item.worker_ids)
                     for item in events
-                    if item.event == "remote_microshard_result_consumed"
+                    if item.event
+                    in {
+                        "remote_microshard_result_consumed",
+                        "delegated_microshard_result_consumed",
+                    }
                 ),
                 "total_messages": sum(item.total_messages for item in events),
                 "serial_waits": sum(item.serial_waits for item in events),
@@ -1497,9 +1809,7 @@ class HybridMoeBackend(_SessionBackend):
                 "reduction_ns": sum(item.reduction_ns for item in events),
                 "communication_ns": sum(item.communication_ns for item in events),
                 "coordinator_activation_bytes": 0,
-                "worker_to_worker_bytes": sum(
-                    item.request_bytes + item.response_bytes for item in events
-                ),
+                "worker_to_worker_bytes": sum(item.worker_to_worker_bytes for item in events),
             },
         )
 
@@ -1507,6 +1817,8 @@ class HybridMoeBackend(_SessionBackend):
 __all__ = [
     "HybridMoeBackend",
     "LocalMoeBackend",
+    "MicroshardFanoutDecision",
+    "MicroshardFanoutMode",
     "MicroshardRemoteBackend",
     "MicroshardTarget",
     "MoeBackendCapabilities",
@@ -1515,4 +1827,5 @@ __all__ = [
     "MoeExecutionResult",
     "WholeExpertRemoteBackend",
     "WholeExpertTarget",
+    "select_microshard_fanout",
 ]

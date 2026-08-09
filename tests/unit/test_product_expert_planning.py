@@ -573,3 +573,47 @@ def test_microshard_trace_cannot_omit_a_planned_physical_owner() -> None:
     )
     with pytest.raises(IntegrityError, match="exactly match the plan"):
         ProductSessionController._validate_expert_trace(publication, plan)
+
+
+def test_delegated_microshard_trace_requires_bounded_root_evidence() -> None:
+    stage = _worker("stage-0", memory_bytes=500)
+    workers = [
+        _expert_worker(
+            f"micro-{index}",
+            role=WorkerRole.EXPERT_MICROSHARD,
+            slice_start=index * 2,
+            slice_end=(index + 1) * 2,
+        )
+        for index in range(4)
+    ]
+    plan = ProductStagePlanner().build_plan(
+        _request(policy="microshard-remote", require_remote=True),
+        _inspected(stage, *workers),
+    )
+    event = {
+        "event": "delegated_microshard_result_consumed",
+        "session_id": "session-1",
+        "request_id": "request-1:layer-0:expert-0",
+        "token_position": 0,
+        "layer_id": 0,
+        "expert_id": 0,
+        "worker_ids": [f"micro-{index}" for index in range(4)],
+        "request_bytes": 120,
+        "response_bytes": 80,
+        "result_hash": "sha256:result",
+        "root_dispatches": 2,
+        "root_messages": 4,
+        "root_leaf_rpcs": 0,
+        "worker_to_worker_messages": 4,
+    }
+    publication = _publication(
+        plan,
+        event=event,
+        metrics={"remote_expert_calls": 1, "bytes_transferred": 200},
+    )
+    ProductSessionController._validate_expert_trace(publication, plan)
+    with pytest.raises(IntegrityError, match="root-to-leaf"):
+        ProductSessionController._validate_expert_trace(
+            publication.model_copy(update={"expert_trace": [{**event, "root_leaf_rpcs": 1}]}),
+            plan,
+        )

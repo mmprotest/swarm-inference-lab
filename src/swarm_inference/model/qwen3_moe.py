@@ -247,6 +247,29 @@ class Qwen3MoeAdapter(Qwen3Adapter):
             for item in delegated_placements
             if item.strategy in {"whole-remote", "microshard-remote"}
         ]
+        microshard_placements = [
+            item for item in external_placements if item.strategy == "microshard-remote"
+        ]
+        if microshard_placements:
+            fanout_settings = {
+                (
+                    item.microshard_fanout_mode,
+                    item.microshard_branch_factor,
+                    item.topology_domain,
+                )
+                for item in microshard_placements
+            }
+            if len(fanout_settings) != 1:
+                raise ValueError("one stage requires consistent microshard fanout settings")
+            microshard_fanout_mode, microshard_branch_factor, microshard_domain = next(
+                iter(fanout_settings)
+            )
+        else:
+            microshard_fanout_mode, microshard_branch_factor, microshard_domain = (
+                "flat",
+                8,
+                "unknown",
+            )
         colibri_experts = {
             (item.layer_id, item.expert_id)
             for item in delegated_placements
@@ -303,6 +326,7 @@ class Qwen3MoeAdapter(Qwen3Adapter):
                                 ),
                             ),
                             client=clients[str(shard["worker_id"])],
+                            endpoint=item.worker_endpoints[str(shard["worker_id"])],
                         )
                         for shard in item.microshards
                     ]
@@ -347,6 +371,9 @@ class Qwen3MoeAdapter(Qwen3Adapter):
                         quantization_fingerprint=request.expert_quantization_fingerprint or "",
                         topology_id=request.topology_id,
                         route_generation=request.route_generation,
+                        fanout_mode=microshard_fanout_mode,
+                        topology_domain=microshard_domain,
+                        fanout_branching_factor=microshard_branch_factor,
                     )
                     if micro_targets
                     else None

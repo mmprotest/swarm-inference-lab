@@ -185,6 +185,9 @@ class ProductExpertPlacement(StrictModel):
     forced_remote: bool = False
     explanation: list[str] = Field(default_factory=list)
     rejected: list[dict[str, Any]] = Field(default_factory=list)
+    microshard_fanout_mode: Literal["auto", "flat", "delegated"] = "auto"
+    microshard_branch_factor: int = Field(default=8, ge=2, le=32)
+    topology_domain: Literal["local-fast", "regional", "wan", "unknown"] = "unknown"
 
     @model_validator(mode="after")
     def validate_placement(self) -> ProductExpertPlacement:

@@ -1,0 +1,86 @@
+contract_version: 1
+source_experiment: "012"
+status: COMPLETED
+evidence_bundle_identity: artifacts/runs/experiment-012-20260809T004356Z
+research_question: >-
+  Can a single stage-internal inference operation use 2 through 1000
+  microworkers without making the stage owner perform work proportional to
+  the participating worker count?
+physical_boundary: single-windows-host-loopback-only
+evidence_classes:
+  measured:
+    - independent_process_loopback_protocol
+    - shaped_loopback_network
+    - supported_immutable_model
+  not_physical_evidence:
+    - shaped_lan
+    - shaped_wan
+    - synthetic_microshard_workload
+immutable_worker_counts: [2, 8, 32, 128, 512, 1000]
+candidate_branch_factors: [2, 4, 8, 16, 32]
+baseline_modes:
+  - flat_root_to_leaf
+  - local_scheduler_tree_root_to_leaf
+primary_root_metrics:
+  - root_rpc_count
+  - root_messages_sent
+  - root_messages_received
+  - root_bytes_sent
+  - root_bytes_received
+  - root_leaf_rpc_count
+  - root_serial_waits
+  - root_direct_degree
+  - root_cpu_ns
+  - critical_path_sync_points
+system_metrics:
+  - total_messages
+  - total_bytes
+  - hierarchy_depth
+  - fanout_depth
+  - reduction_depth
+  - leaf_latency_p50_ms
+  - leaf_latency_p95_ms
+  - leaf_latency_p99_ms
+  - end_to_end_latency_p50_ms
+  - end_to_end_latency_p95_ms
+  - end_to_end_latency_p99_ms
+  - throughput_ops_s
+  - retries
+  - failures
+  - stragglers
+  - maximum_queue_depth
+  - duplicated_work
+  - peak_worker_rss_bytes
+thesis_pass_gates:
+  - runtime_trace_proves_worker_to_worker_delegation
+  - root_direct_degree_lte_configured_branch_factor
+  - root_leaf_rpc_count_eq_0_after_topology_setup
+  - root_coordination_fit_prefers_constant_or_log_over_linear
+  - hierarchical_reduction_proven
+  - deterministic_result_matches_flat_reference
+runtime_promotion_gates:
+  - thesis_pass
+  - correctness_pass
+  - measured_useful_operating_region
+  - experiment_011_stage_ring_unchanged
+  - flat_fanout_retained_when_measured_better
+required_artifacts:
+  - cycle_ledger
+  - hypotheses
+  - implementation_records
+  - raw_trials
+  - failed_runs
+  - traces
+  - environment
+  - source_identity
+  - network_profiles
+  - topology_descriptions
+  - worker_identities
+  - correctness
+  - failures
+  - scaling_fits
+  - planner_decisions
+  - promotion_decision
+  - technical_report
+  - portable_html_report
+  - machine_readable_summary

@@ -68,6 +68,13 @@ Capacity mode requires collective fit and then headroom/replacement capacity. Ba
 reports explicit throughput, headroom, reliability, and participation components. Every healthy
 node receives a utility/inclusion or exclusion record; pairing does not require participation.
 
+Within a single measured `local-fast` stage domain, an adapter-valid reducible microshard
+operation can choose `flat`, `delegated`, or `auto` fanout. Delegated execution uses actual signed
+worker endpoints with bounded branch factor and worker-side reduction; it is not a root-local
+scheduler tree. Auto requires at least eight eligible workers. It stays flat for WAN, cross-domain,
+unknown, or smaller populations, and an explicitly forced delegated request outside the admitted
+domain fails instead of silently changing the coarse stage architecture.
+
 `--dry-run --explain-plan` exposes the architecture profile, all engine probe axes, runtime
 identity, capabilities, limitations/rejections, component ownership, workers, stages, shards,
 experts, microshards, predicted throughput/memory/network, and the exact selection rationale in

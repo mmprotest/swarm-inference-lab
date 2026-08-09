@@ -348,6 +348,7 @@ async def run_worker(
             owned_microshards=owned_microshards,
             maximum_queue_depth=expert_queue_capacity,
             maximum_concurrent_requests=expert_max_concurrent_requests,
+            peer_tls=peer_tls,
         )
         expert_listen_host, expert_listen_port = split_endpoint(expert_data_listen_endpoint)
         expert_server = ExpertWorkerServer(

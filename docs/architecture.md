@@ -70,6 +70,14 @@ Whole-expert and native microshard execution are optional, canonical backends wi
 They use coordinator-planned expert ownership and direct expert transport, but do not introduce a
 second product coordinator, protocol family, or inference runtime.
 
+For a reducible microshard operation inside one `local-fast` topology domain, the planner may
+select a signed bounded-degree worker tree. The stage owner contacts only the tree's immediate
+children. Intermediate workers validate their assigned subtree against the route lease, dispatch
+actual child endpoints, reduce results in deterministic shard order, retry one transient child
+locally, propagate cancellation, and return one aggregate upstream. Runtime telemetry reports
+root and worker traffic separately. Explicit flat fanout remains available and is preferred when
+the hierarchy has no measured utility.
+
 ## Direct protocol and route generations
 
 Each stage-ring frame carries the topology, route generation, session, request, operation,
@@ -90,8 +98,8 @@ leases and peer handshakes. See [Security boundary](security-boundary.md).
 Planning classifies measured directed links from RTT, bandwidth, jitter, and connection
 stability. Low-latency domains may admit more stage boundaries, whole-expert work, or
 microshards. WAN domains prefer persistent contiguous stages and minimize synchronous
-crossings; fine-grained expert RPC is not placed across a WAN boundary. Unknown communication
-cost remains `unknown`, never zero.
+crossings; fine-grained expert or delegated microshard RPC is not placed across a WAN boundary.
+Unknown communication cost remains `unknown`, never zero.
 
 ## Session interleaving
 

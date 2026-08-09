@@ -580,7 +580,7 @@ class _BarrierExactClient(_ExactClient):
         return super().execute(request, activation, down_accumulators)
 
 
-def test_microshard_fanout_is_parallel_and_reduction_is_hierarchical() -> None:
+def test_flat_microshard_fanout_is_parallel_and_root_reduction_is_explicit() -> None:
     weights = deterministic_expert(latent_dimension=4, intermediate_dimension=8, seed=1200)
     activation = torch.arange(8, dtype=torch.float32).reshape(2, 4) / 7
     expected = execute_expert(activation.numpy(), weights)
@@ -636,16 +636,19 @@ def test_microshard_fanout_is_parallel_and_reduction_is_hierarchical() -> None:
         assert event.total_messages == 8
         assert event.critical_path_messages == 2
         assert event.parallel_waits == 4
-        assert event.serial_waits == 3
+        assert event.serial_waits == 1
         assert event.fanout_depth == 1
         assert event.reduction_depth == 2
-        assert event.critical_path_sync_rounds == 3
+        assert event.critical_path_sync_rounds == 1
         assert event.scheduler_dispatch_ns > 0
         assert event.reduction_ns > 0
         assert event.root_dispatches == 4
-        assert event.coordinator_waits == 0
-        assert event.coordinator_sync_rounds == 0
-        assert event.worker_sync_rounds == 3
+        assert event.root_messages == 8
+        assert event.root_leaf_rpcs == 4
+        assert event.fanout_mode == "flat"
+        assert event.coordinator_waits == 1
+        assert event.coordinator_sync_rounds == 1
+        assert event.worker_sync_rounds == 0
         assert event.fanout_nodes == 4
         assert event.topology_construction_ns > 0
     finally:
@@ -662,7 +665,7 @@ class _FailingClient:
     ("branching_factor", "expected_depth"),
     ((4, 5), (8, 4), (16, 3), (32, 2)),
 )
-def test_microshard_fanout_topology_bounds_root_dispatch_at_one_thousand(
+def test_microshard_worker_topology_has_no_synthetic_internal_nodes_at_one_thousand(
     branching_factor: int,
     expected_depth: int,
 ) -> None:
@@ -697,7 +700,15 @@ def test_microshard_fanout_topology_bounds_root_dispatch_at_one_thousand(
         topology = backend._fanout_topologies[(0, 0)]
         assert len(topology.root_children) <= branching_factor
         assert topology.depth == expected_depth
-        assert topology.node_count > 1000
+        assert topology.node_count == 1000
+        stack = list(topology.root_children)
+        observed_workers: set[str] = set()
+        while stack:
+            node = stack.pop()
+            observed_workers.add(node.target.ownership.worker_id)
+            assert len(node.children) <= branching_factor
+            stack.extend(node.children)
+        assert len(observed_workers) == 1000
         assert backend.topology_construction_ns > 0
     finally:
         backend.close()
