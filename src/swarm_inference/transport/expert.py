@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import socket
 import struct
+import threading
 import time
 import zlib
+from contextlib import suppress
 from dataclasses import asdict, dataclass
 from typing import Any, Literal, overload
 
@@ -561,6 +563,8 @@ class ExpertTransportMetrics:
     socket_ns: int = 0
     queue_ns: int = 0
     total_request_ns: int = 0
+    connections_created: int = 0
+    connections_reused: int = 0
 
     def snapshot(self) -> dict[str, int | str]:
         return asdict(self)
@@ -577,6 +581,7 @@ class ExpertTransportClient:
         timeout_s: float = 30.0,
         tls: TlsClientConfig | None = None,
         allow_plaintext_loopback: bool = True,
+        persistent: bool = True,
     ) -> None:
         self.endpoint = endpoint
         self.tls = tls
@@ -592,33 +597,72 @@ class ExpertTransportClient:
         if timeout_s <= 0:
             raise ValueError("expert transport timeout must be positive")
         self.timeout_s = timeout_s
+        self.persistent = persistent
         self.metrics = ExpertTransportMetrics(data_plane=self.data_plane.value)
+        self._connection: socket.socket | None = None
+        self._connection_lock = threading.Lock()
+
+    def _connect(self, timeout: float) -> socket.socket:
+        host, port = _parse_endpoint(self.endpoint)
+        raw_connection = socket.create_connection((host, port), timeout=timeout)
+        try:
+            if self.tls is not None:
+                connection = self.tls.ssl_context().wrap_socket(
+                    raw_connection,
+                    server_hostname=self.tls.expected_server_name,
+                )
+                self.tls.validate_peer_der(connection.getpeercert(binary_form=True))
+            else:
+                connection = raw_connection
+            connection.settimeout(timeout)
+            self.metrics.connections_created += 1
+            return connection
+        except BaseException:
+            raw_connection.close()
+            raise
+
+    def close(self) -> None:
+        with self._connection_lock:
+            connection, self._connection = self._connection, None
+            if connection is not None:
+                connection.close()
+
+    def __enter__(self) -> ExpertTransportClient:
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        self.close()
+
+    def __del__(self) -> None:
+        with suppress(BaseException):
+            self.close()
 
     def _round_trip(self, payload: bytes, *, timeout_s: float | None = None) -> bytes:
-        host, port = _parse_endpoint(self.endpoint)
         framed = frame_with_length(payload)
         timeout = self.timeout_s if timeout_s is None else min(self.timeout_s, timeout_s)
         if timeout <= 0:
             raise TimeoutError("expert request deadline elapsed before socket transport")
         started = time.perf_counter_ns()
         socket_started = time.perf_counter_ns()
-        raw_connection = socket.create_connection((host, port), timeout=timeout)
-        connection: socket.socket = raw_connection
-        try:
-            if self.tls is not None:
-                secure_connection = self.tls.ssl_context().wrap_socket(
-                    raw_connection,
-                    server_hostname=self.tls.expected_server_name,
-                )
-                self.tls.validate_peer_der(secure_connection.getpeercert(binary_form=True))
-                connection = secure_connection
+        with self._connection_lock:
+            reused = self._connection is not None
+            connection = self._connection or self._connect(timeout)
+            if reused:
+                self.metrics.connections_reused += 1
             connection.settimeout(timeout)
-            connection.sendall(framed)
-            response = _recv_frame(connection)
-        finally:
-            connection.close()
-            if connection is not raw_connection:
-                raw_connection.close()
+            try:
+                connection.sendall(framed)
+                response = _recv_frame(connection)
+            except BaseException:
+                connection.close()
+                if self._connection is connection:
+                    self._connection = None
+                raise
+            if self.persistent:
+                self._connection = connection
+            else:
+                connection.close()
+                self._connection = None
         self.metrics.socket_ns += time.perf_counter_ns() - socket_started
         self.metrics.messages_sent += 1
         self.metrics.messages_received += 1

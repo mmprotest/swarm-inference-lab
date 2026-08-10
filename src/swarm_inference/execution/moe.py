@@ -666,6 +666,13 @@ class WholeExpertRemoteBackend(_SessionBackend):
                 )
         super().cancel_session(session_id)
 
+    def close(self) -> None:
+        for client in {id(item.client): item.client for item in self.targets.values()}.values():
+            close = getattr(client, "close", None)
+            if close is not None:
+                close()
+        super().close()
+
     def execute_expert_rows(
         self,
         *,
@@ -917,8 +924,15 @@ class MicroshardRemoteBackend(_SessionBackend):
         )
 
     def close(self) -> None:
-        super().close()
+        clients = {
+            id(item.client): item.client for targets in self.targets.values() for item in targets
+        }
+        for client in clients.values():
+            close = getattr(client, "close", None)
+            if close is not None:
+                close()
         self._executor.shutdown(wait=True, cancel_futures=True)
+        super().close()
 
     def configure_route(
         self,

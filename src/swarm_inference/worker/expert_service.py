@@ -177,6 +177,7 @@ class ExpertWorkerRuntime:
         self.peer_tls = peer_tls
         self.allow_plaintext_loopback = allow_plaintext_loopback
         self._active_delegated_children: dict[str, dict[str, DelegatedMicroshardNode]] = {}
+        self._delegated_clients: dict[str, ExpertTransportClient] = {}
         self._delegation_events: list[dict[str, Any]] = []
         self.telemetry = ExpertServiceTelemetry()
 
@@ -513,19 +514,11 @@ class ExpertWorkerRuntime:
         )
         failures = 0
         last_error: BaseException | None = None
+        client = self._delegated_client(child)
         for attempt in range(operation.retry_max_attempts):
             child_request = child_request.model_copy(
                 update={"authentication": self._peer_authentication(child.worker_id)},
                 deep=True,
-            )
-            client = ExpertTransportClient(
-                child.endpoint,
-                timeout_s=max(
-                    0.001,
-                    (parent_request.deadline_ns - time.time_ns()) / 1_000_000_000,
-                ),
-                tls=self.peer_tls,
-                allow_plaintext_loopback=self.allow_plaintext_loopback,
             )
             try:
                 response, result, transport = await asyncio.to_thread(
@@ -559,6 +552,27 @@ class ExpertWorkerRuntime:
         self.telemetry.delegated_failures += failures
         assert last_error is not None
         raise last_error
+
+    def _delegated_client(self, child: DelegatedMicroshardNode) -> ExpertTransportClient:
+        client = self._delegated_clients.get(child.worker_id)
+        if client is not None and client.endpoint != child.endpoint:
+            client.close()
+            client = None
+        if client is None:
+            client = ExpertTransportClient(
+                child.endpoint,
+                timeout_s=24 * 60 * 60,
+                tls=self.peer_tls,
+                allow_plaintext_loopback=self.allow_plaintext_loopback,
+                persistent=True,
+            )
+            self._delegated_clients[child.worker_id] = client
+        return client
+
+    def close_peer_transports(self) -> None:
+        for client in self._delegated_clients.values():
+            client.close()
+        self._delegated_clients.clear()
 
     async def _execute_delegated(
         self,
@@ -922,12 +936,7 @@ class ExpertWorkerRuntime:
         children = list(self._active_delegated_children.get(session_id, {}).values())
 
         async def cancel_child(child: DelegatedMicroshardNode) -> tuple[str, dict[str, Any]]:
-            client = ExpertTransportClient(
-                child.endpoint,
-                timeout_s=5.0,
-                tls=self.peer_tls,
-                allow_plaintext_loopback=self.allow_plaintext_loopback,
-            )
+            client = self._delegated_client(child)
             response = await asyncio.to_thread(
                 client.control,
                 "cancel_session",
@@ -975,6 +984,10 @@ class ExpertWorkerRuntime:
             ),
             "delegation_events": list(self._delegation_events),
             "active_delegated_sessions": sorted(self._active_delegated_children),
+            "persistent_delegated_channels": {
+                worker_id: client.metrics.snapshot()
+                for worker_id, client in sorted(self._delegated_clients.items())
+            },
             **self.store.status(),
             **self.telemetry.to_dict(),
         }
@@ -1025,38 +1038,43 @@ class ExpertWorkerServer:
         if self.server is not None:
             self.server.close()
             await self.server.wait_closed()
+        self.runtime.close_peer_transports()
 
     async def _connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        accepted_ns = time.perf_counter_ns()
         try:
             if self.tls is not None:
                 tls_object = writer.get_extra_info("ssl_object")
                 peer_der = tls_object.getpeercert(binary_form=True) if tls_object else None
                 self.tls.validate_peer_der(peer_der)
-            payload = await read_length_frame(reader)
-            packet = decode_packet(payload)
-            if packet.kind == "request":
-                request, activation, down_accumulators, decode_ns = decode_request(
-                    payload,
-                    include_down_accumulators=True,
-                )
-                response, output = await self.runtime.execute(
-                    request,
-                    activation,
-                    bytes_received=len(payload),
-                    decode_ns=decode_ns,
-                    accepted_ns=accepted_ns,
-                    down_accumulators=down_accumulators,
-                )
-                encoded, encode_ns = encode_response(response, output)
-                response.execution_metadata.serialisation_ns += encode_ns
-                encoded, _ = encode_response(response, output)
-                writer.write(frame_with_length(encoded))
-                await writer.drain()
-            elif packet.kind == "control":
-                await self._control(packet.semantic, writer)
-            else:
-                raise ValueError("expert worker accepts request or control frames only")
+            while True:
+                accepted_ns = time.perf_counter_ns()
+                try:
+                    payload = await read_length_frame(reader)
+                except asyncio.IncompleteReadError:
+                    break
+                packet = decode_packet(payload)
+                if packet.kind == "request":
+                    request, activation, down_accumulators, decode_ns = decode_request(
+                        payload,
+                        include_down_accumulators=True,
+                    )
+                    response, output = await self.runtime.execute(
+                        request,
+                        activation,
+                        bytes_received=len(payload),
+                        decode_ns=decode_ns,
+                        accepted_ns=accepted_ns,
+                        down_accumulators=down_accumulators,
+                    )
+                    encoded, encode_ns = encode_response(response, output)
+                    response.execution_metadata.serialisation_ns += encode_ns
+                    encoded, _ = encode_response(response, output)
+                    writer.write(frame_with_length(encoded))
+                    await writer.drain()
+                elif packet.kind == "control":
+                    await self._control(packet.semantic, writer)
+                else:
+                    raise ValueError("expert worker accepts request or control frames only")
         except asyncio.CancelledError as error:
             await self._write_error(writer, f"CancelledError: {error}")
         except Exception as error:

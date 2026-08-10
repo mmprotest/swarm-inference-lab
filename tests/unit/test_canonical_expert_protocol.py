@@ -258,6 +258,9 @@ async def test_authenticated_tcp_whole_expert_result_is_verified_and_consumed() 
         assert result.events[0].result_hash.startswith("sha256:")
         assert runtime.status()["remote_whole_expert_calls"] == 1
         assert runtime.status()["duplicate_requests"] == 1
+        persistent_client = backend.targets[(0, 0)].client
+        assert persistent_client.metrics.connections_created == 1
+        assert persistent_client.metrics.connections_reused == 1
 
         renewed_lease = _signed_lease(
             coordinator=coordinator,
