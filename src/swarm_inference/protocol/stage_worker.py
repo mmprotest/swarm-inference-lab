@@ -204,6 +204,13 @@ class LoadStageRequest(_StageControlModel):
     fast_path_context_bucket: PositiveInt = 2048
     device: str
     dtype: str
+    verifier_precision_mode: Literal[
+        "exact-fp32",
+        "bf16-state-fp32-update",
+        "fp8-projection-activation",
+        "mxfp4-bf16-activation",
+        "mxfp4-fp8-activation",
+    ] = "exact-fp32"
     artifact_id: str | None = None
     model_path: str | None = Field(default=None, json_schema_extra={"deprecated": True})
     allow_download: bool = False

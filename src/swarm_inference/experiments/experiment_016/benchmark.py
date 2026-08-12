@@ -469,6 +469,8 @@ def _benchmark_layer(
     warmup: int,
     iterations: int,
     profile_iterations: int,
+    fast_path_mode: str,
+    fused_gate_up: bool,
     progress: Callable[[str, dict[str, Any]], None],
     gpu_sampler: _GpuSampler,
 ) -> dict[str, Any]:
@@ -483,7 +485,7 @@ def _benchmark_layer(
     )
     request = base_request.model_copy(
         update={
-            "fast_path_mode": "verification-major",
+            "fast_path_mode": fast_path_mode,
             "fast_path_batch_bucket": 17,
         }
     )
@@ -495,6 +497,7 @@ def _benchmark_layer(
         device=device,
     )
     try:
+        executor.runtime.set_fused_gate_up(fused_gate_up)
         load_wall_ms = (time.perf_counter_ns() - load_started) / 1e6
         executor.prepare_for_ready()
         lifecycle_ready = executor.lifecycle_snapshot()
@@ -605,6 +608,8 @@ def benchmark(
     warmup: int = 3,
     iterations: int = 20,
     profile_iterations: int = 3,
+    fast_path_mode: str = "verification-major",
+    fused_gate_up: bool = True,
 ) -> dict[str, Any]:
     paths = (checkpoint.resolve(), cuda_library.resolve(), oracle_trace.resolve())
     for path in paths:
@@ -623,6 +628,8 @@ def benchmark(
             "profile_iterations": profile_iterations,
             "device": device,
             "exactness_relative_l2_gate": CORRECTNESS_RELATIVE_L2_GATE,
+            "fast_path_mode": fast_path_mode,
+            "fused_gate_up": fused_gate_up,
         },
         "environment": {
             "platform": platform.platform(),
@@ -665,6 +672,8 @@ def benchmark(
                 warmup=warmup,
                 iterations=iterations,
                 profile_iterations=profile_iterations,
+                fast_path_mode=fast_path_mode,
+                fused_gate_up=fused_gate_up,
                 progress=progress,
                 gpu_sampler=sampler,
             )
@@ -707,6 +716,16 @@ def main() -> int:
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--iterations", type=int, default=20)
     parser.add_argument("--profile-iterations", type=int, default=3)
+    parser.add_argument(
+        "--fast-path-mode",
+        choices=("verification-major", "verification-major-kda-window"),
+        default="verification-major",
+    )
+    parser.add_argument(
+        "--fused-gate-up",
+        choices=("true", "false"),
+        default="true",
+    )
     arguments = parser.parse_args()
     layers = tuple(int(value) for value in arguments.layers.split(",") if value)
     benchmark(
@@ -720,6 +739,8 @@ def main() -> int:
         warmup=arguments.warmup,
         iterations=arguments.iterations,
         profile_iterations=arguments.profile_iterations,
+        fast_path_mode=arguments.fast_path_mode,
+        fused_gate_up=arguments.fused_gate_up == "true",
     )
     return 0
 

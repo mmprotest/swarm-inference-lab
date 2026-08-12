@@ -833,6 +833,39 @@ class _CudaRuntime:
             ctypes.c_float,
         ]
         self._library.coli_cuda_kimi_kda_core_dev.restype = ctypes.c_int
+        try:
+            kda_short_window = self._library.coli_cuda_kimi_kda_short_window_dev
+        except AttributeError:
+            kda_short_window = None
+        if kda_short_window is not None:
+            kda_short_window.argtypes = [
+                ctypes.c_int,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_float,
+                ctypes.c_float,
+            ]
+            kda_short_window.restype = ctypes.c_int
+        self.kda_short_window_function = kda_short_window
         self._library.coli_cuda_kimi_mla_cache_append_dev.argtypes = [
             ctypes.c_int,
             pointer,
@@ -1656,6 +1689,66 @@ class _CudaRuntime:
         )
         if status != 1:
             raise KimiCudaError("resident Kimi KDA core rejected execution")
+
+    def execute_kda_short_window(
+        self,
+        output: ctypes.c_void_p,
+        q: ctypes.c_void_p,
+        k: ctypes.c_void_p,
+        v: ctypes.c_void_p,
+        gate: ctypes.c_void_p,
+        decay: ctypes.c_void_p,
+        beta: ctypes.c_void_p,
+        conv_q: ctypes.c_void_p,
+        conv_k: ctypes.c_void_p,
+        conv_v: ctypes.c_void_p,
+        window_q: ctypes.c_void_p,
+        window_k: ctypes.c_void_p,
+        window_v: ctypes.c_void_p,
+        state: ctypes.c_void_p,
+        dt: ctypes.c_void_p,
+        a: ctypes.c_void_p,
+        output_norm: ctypes.c_void_p,
+        *,
+        rows: int,
+        heads: int = 96,
+        head_dimension: int = 128,
+        convolution_width: int = 4,
+        gate_lower_bound: float = -5.0,
+        epsilon: float = 1e-5,
+    ) -> None:
+        if self.kda_short_window_function is None:
+            raise KimiCudaError(
+                "requested KDA short-window backend is absent from the native runtime"
+            )
+        status = self.kda_short_window_function(
+            self.device,
+            output,
+            q,
+            k,
+            v,
+            gate,
+            decay,
+            beta,
+            conv_q,
+            conv_k,
+            conv_v,
+            window_q,
+            window_k,
+            window_v,
+            state,
+            dt,
+            a,
+            output_norm,
+            rows,
+            heads,
+            head_dimension,
+            convolution_width,
+            ctypes.c_float(gate_lower_bound),
+            ctypes.c_float(epsilon),
+        )
+        if status != 1:
+            raise KimiCudaError("resident Kimi KDA short-window core rejected execution")
 
     def execute_mla_cache_append(
         self,

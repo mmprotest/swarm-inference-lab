@@ -3,11 +3,15 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
+import swarm_inference.execution.kimi_k3_stage as kimi_stage
 from swarm_inference.exceptions import IntegrityError
+from swarm_inference.execution.kimi_k3_stage import PersistentKimiStageExecutor
+from swarm_inference.experiments.experiment_014.cuda import KimiCudaError
 from swarm_inference.model.adapter import ComponentKind, default_native_adapter_registry
 from swarm_inference.model.kimi_k3 import KimiK3CudaAdapter
 from swarm_inference.model.kimi_tokenizer import apply_kimi_prompt_special_tokens
@@ -53,6 +57,92 @@ def _request(**updates):
     }
     values.update(updates)
     return LoadStageRequest(**values)
+
+
+@pytest.mark.parametrize(
+    "mode",
+    (
+        "exact-fp32",
+        "bf16-state-fp32-update",
+        "fp8-projection-activation",
+        "mxfp4-bf16-activation",
+        "mxfp4-fp8-activation",
+    ),
+)
+def test_verifier_precision_mode_round_trips(mode: str) -> None:
+    request = _request(verifier_precision_mode=mode)
+    restored = LoadStageRequest.model_validate_json(request.model_dump_json())
+    assert restored.verifier_precision_mode == mode
+
+
+def test_unknown_verifier_precision_mode_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="verifier_precision_mode"):
+        _request(verifier_precision_mode="silent-fallback")
+
+
+@pytest.mark.parametrize(
+    "mode",
+    (
+        "bf16-state-fp32-update",
+        "fp8-projection-activation",
+        "mxfp4-bf16-activation",
+        "mxfp4-fp8-activation",
+    ),
+)
+def test_unsupported_precision_mode_fails_before_native_runtime_load(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    mode: str,
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    cuda_library = tmp_path / "candidate.dll"
+    cuda_library.write_bytes(b"not-loaded")
+    monkeypatch.setattr(
+        kimi_stage,
+        "_configure_kimi_cpu_transport_threads",
+        lambda: {"intraop_threads": 1, "interop_threads": 1},
+    )
+    monkeypatch.setattr(
+        kimi_stage,
+        "KimiCudaGraphRunner",
+        lambda *_args, **_kwargs: pytest.fail("unsupported precision reached native load"),
+    )
+
+    with pytest.raises(KimiCudaError, match="refusing silent fallback"):
+        PersistentKimiStageExecutor(
+            request=_request(verifier_precision_mode=mode),
+            checkpoint=checkpoint,
+            cuda_library=cuda_library,
+        )
+
+
+def test_requested_short_window_backend_fails_closed_when_export_is_absent(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    cuda_library = tmp_path / "legacy.dll"
+    cuda_library.write_bytes(b"legacy")
+    runtime = SimpleNamespace(
+        expert_supported_batches=(1, 2, 4, 8, 16),
+        kda_short_window_function=None,
+    )
+    runner = SimpleNamespace(runtime=runtime, config=SimpleNamespace())
+    monkeypatch.setattr(
+        kimi_stage,
+        "_configure_kimi_cpu_transport_threads",
+        lambda: {"intraop_threads": 1, "interop_threads": 1},
+    )
+    monkeypatch.setattr(kimi_stage, "KimiCudaGraphRunner", lambda *_args, **_kwargs: runner)
+
+    with pytest.raises(KimiCudaError, match="explicitly requested"):
+        PersistentKimiStageExecutor(
+            request=_request(fast_path_mode="verification-major-kda-window"),
+            checkpoint=checkpoint,
+            cuda_library=cuda_library,
+        )
 
 
 def test_kimi_prompt_special_tokens_follow_native_exactly_once_bos_rule() -> None:

@@ -172,3 +172,54 @@ def test_dcp_mla_falls_closed_for_legacy_binary() -> None:
             final_context_length=2,
             attention_scale=1.0,
         )
+
+
+def test_kda_short_window_calls_optional_native_export() -> None:
+    observed: list[tuple[object, ...]] = []
+    runtime = object.__new__(_CudaRuntime)
+    runtime.device = 2
+
+    def native(*args: object) -> int:
+        observed.append(args)
+        return 1
+
+    runtime.kda_short_window_function = native
+    pointers = tuple(ctypes.c_void_p(value) for value in range(1, 18))
+    runtime.execute_kda_short_window(
+        *pointers,
+        rows=8,
+        heads=96,
+        head_dimension=128,
+        convolution_width=4,
+        gate_lower_bound=-5.0,
+        epsilon=1e-5,
+    )
+
+    assert len(observed) == 1
+    assert observed[0][0] == 2
+    assert observed[0][1:18] == pointers
+    assert observed[0][18:22] == (8, 96, 128, 4)
+
+
+def test_kda_short_window_fails_closed_for_legacy_binary() -> None:
+    runtime = object.__new__(_CudaRuntime)
+    runtime.device = 0
+    runtime.kda_short_window_function = None
+
+    with pytest.raises(KimiCudaError, match="absent from the native runtime"):
+        runtime.execute_kda_short_window(
+            *(ctypes.c_void_p(value) for value in range(1, 18)),
+            rows=1,
+        )
+
+
+def test_kda_short_window_propagates_native_failure_without_serial_fallback() -> None:
+    runtime = object.__new__(_CudaRuntime)
+    runtime.device = 0
+    runtime.kda_short_window_function = lambda *_args: 0
+
+    with pytest.raises(KimiCudaError, match="short-window core rejected"):
+        runtime.execute_kda_short_window(
+            *(ctypes.c_void_p(value) for value in range(1, 18)),
+            rows=16,
+        )

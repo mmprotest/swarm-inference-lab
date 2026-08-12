@@ -265,6 +265,12 @@ class PersistentKimiStageExecutor:
         self.checkpoint = checkpoint.expanduser().resolve()
         self.cuda_library = cuda_library.expanduser().resolve()
         self.cuda_library_sha256 = _sha256_file(self.cuda_library)
+        if request.verifier_precision_mode != "exact-fp32":
+            raise KimiCudaError(
+                "the Colibri Kimi runtime does not implement requested verifier "
+                f"precision mode {request.verifier_precision_mode!r}; refusing "
+                "silent fallback to exact-fp32"
+            )
         self.runner = KimiCudaGraphRunner(self.checkpoint, self.cuda_library, device)
         self.runtime = self.runner.runtime
         self._telemetry_mode = "minimal"
@@ -290,7 +296,21 @@ class PersistentKimiStageExecutor:
         production_capacity = _production_batch_capacity(
             self.runtime.expert_supported_batches
         )
-        self._verification_major_enabled = request.fast_path_mode == "verification-major"
+        self._verification_major_enabled = request.fast_path_mode in {
+            "verification-major",
+            "verification-major-kda-window",
+        }
+        self._kda_short_window_enabled = (
+            request.fast_path_mode == "verification-major-kda-window"
+        )
+        if (
+            self._kda_short_window_enabled
+            and self.runtime.kda_short_window_function is None
+        ):
+            raise KimiCudaError(
+                "fast_path_mode='verification-major-kda-window' was explicitly "
+                "requested but the native runtime has no short-window KDA export"
+            )
         requested_capacity = int(request.fast_path_batch_bucket)
         if self._verification_major_enabled and requested_capacity > VERIFICATION_MAX_ROWS:
             raise ValueError(
@@ -1364,31 +1384,62 @@ class PersistentKimiStageExecutor:
                 config.hidden,
                 config.kda_heads,
             )
-            for row, session in enumerate(sessions):
-                runtime.execute_kda_core(
-                    _pointer_offset(scratch["core"], row * projection),
-                    _pointer_offset(scratch["q"], row * projection),
-                    _pointer_offset(scratch["k"], row * projection),
-                    _pointer_offset(scratch["v"], row * projection),
-                    _pointer_offset(scratch["gate"], row * projection),
-                    _pointer_offset(scratch["decay"], row * projection),
-                    _pointer_offset(scratch["beta"], row * config.kda_heads),
+            if self._kda_short_window_enabled:
+                if any(session is not sessions[0] for session in sessions[1:]):
+                    raise KimiCudaError(
+                        "short-window KDA requires one session with contiguous rows"
+                    )
+                runtime.execute_kda_short_window(
+                    scratch["core"],
+                    scratch["q"],
+                    scratch["k"],
+                    scratch["v"],
+                    scratch["gate"],
+                    scratch["decay"],
+                    scratch["beta"],
                     weights["conv_q"],
                     weights["conv_k"],
                     weights["conv_v"],
-                    session.attention_state["window_q"],
-                    session.attention_state["window_k"],
-                    session.attention_state["window_v"],
-                    session.attention_state["state"],
+                    sessions[0].attention_state["window_q"],
+                    sessions[0].attention_state["window_k"],
+                    sessions[0].attention_state["window_v"],
+                    sessions[0].attention_state["state"],
                     weights["dt"],
                     weights["a"],
                     weights["output_norm"],
+                    rows=batch,
                     heads=config.kda_heads,
                     head_dimension=config.kda_head_dimension,
                     convolution_width=config.convolution_width,
                     gate_lower_bound=config.gate_lower_bound,
                     epsilon=config.epsilon,
                 )
+            else:
+                for row, session in enumerate(sessions):
+                    runtime.execute_kda_core(
+                        _pointer_offset(scratch["core"], row * projection),
+                        _pointer_offset(scratch["q"], row * projection),
+                        _pointer_offset(scratch["k"], row * projection),
+                        _pointer_offset(scratch["v"], row * projection),
+                        _pointer_offset(scratch["gate"], row * projection),
+                        _pointer_offset(scratch["decay"], row * projection),
+                        _pointer_offset(scratch["beta"], row * config.kda_heads),
+                        weights["conv_q"],
+                        weights["conv_k"],
+                        weights["conv_v"],
+                        session.attention_state["window_q"],
+                        session.attention_state["window_k"],
+                        session.attention_state["window_v"],
+                        session.attention_state["state"],
+                        weights["dt"],
+                        weights["a"],
+                        weights["output_norm"],
+                        heads=config.kda_heads,
+                        head_dimension=config.kda_head_dimension,
+                        convolution_width=config.convolution_width,
+                        gate_lower_bound=config.gate_lower_bound,
+                        epsilon=config.epsilon,
+                    )
             dense(
                 "output",
                 output_rows,
@@ -2056,7 +2107,7 @@ class PersistentKimiStageExecutor:
 
         if not self._verification_major_enabled:
             raise RuntimeError(
-                "verification-major execution requires fast_path_mode='verification-major'"
+                "verification-major execution requires a verification-major fast path"
             )
         if self._owns_embeddings or self._owns_final_endpoint:
             raise RuntimeError(
