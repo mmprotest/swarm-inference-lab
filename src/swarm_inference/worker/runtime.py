@@ -59,6 +59,7 @@ class WorkerRuntimeConfig(StrictModel):
     model_cache_dir: Path | None = None
     artifact_storage_limit_bytes: PositiveInt | None = None
     configured_model_path: Path | None = None
+    configured_model_identity_path: Path | None = None
     allow_model_download: bool = False
     max_stage_sessions: PositiveInt = 256
     stage_execution_queue_capacity: PositiveInt = 256
@@ -187,6 +188,7 @@ class WorkerRuntime:
             "artifact_storage_limit_bytes": config.artifact_storage_limit_bytes,
             "artifact_manager": self.artifact_manager,
             "configured_model_path": config.configured_model_path,
+            "configured_model_identity_path": config.configured_model_identity_path,
             "allow_model_download": config.allow_model_download,
             "max_stage_sessions": config.max_stage_sessions,
             "stage_execution_queue_capacity": config.stage_execution_queue_capacity,

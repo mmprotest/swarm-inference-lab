@@ -188,6 +188,11 @@ class LoadStageRequest(_StageControlModel):
     fast_path_id: str | None = None
     fast_path_mode: str = "auto"
     fast_path_profile_fingerprint: str | None = None
+    # Native runtimes are deployment artifacts in their own right.  A product
+    # load must identify the exact library and digest instead of relying on a
+    # developer-machine search path or whichever binary happens to load first.
+    native_runtime_library: str | None = None
+    native_runtime_library_sha256: str | None = None
     # Optional only for backward-reading stage-control messages emitted before
     # artifact manifest v2. Canonical deployments always send the immutable
     # descriptor fingerprint.
@@ -212,6 +217,16 @@ class LoadStageRequest(_StageControlModel):
     def validate_model_source(self) -> LoadStageRequest:
         if self.artifact_id is not None and self.model_path is not None:
             raise ValueError("artifact_id and the deprecated model_path override are exclusive")
+        if (self.native_runtime_library is None) != (
+            self.native_runtime_library_sha256 is None
+        ):
+            raise ValueError(
+                "native runtime library and SHA-256 identity must be supplied together"
+            )
+        if self.native_runtime_library_sha256 is not None:
+            digest = self.native_runtime_library_sha256
+            if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+                raise ValueError("native runtime library SHA-256 must be 64 lowercase hex digits")
         return self
 
 

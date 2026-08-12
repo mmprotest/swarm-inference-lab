@@ -238,6 +238,7 @@ def run_serial_oracle(
     generated_tokens: int = 2,
     layer_limit: int | None = None,
     timeout_seconds: float | None = None,
+    k3_idot: int | None = None,
 ) -> dict[str, Any]:
     """Run the real engine, retain raw evidence, and emit a fail-closed receipt."""
 
@@ -271,6 +272,10 @@ def run_serial_oracle(
     )
     if layer_limit is not None:
         environment["K3_LAYERS"] = str(layer_limit)
+    if k3_idot is not None:
+        if k3_idot not in (0, 1):
+            raise SerialOracleError("K3_IDOT must be 0 or 1")
+        environment["K3_IDOT"] = str(k3_idot)
     command = [str(binary), str(root), prompt, "--ngen", str(generated_tokens)]
     started = datetime.now(UTC)
     monotonic = time.perf_counter()
@@ -409,6 +414,11 @@ def run_serial_oracle(
         "precision_disclosure": {
             "reference_activations": "FP32",
             "routed_expert_weights": "native checkpoint MXFP4 E2M1/UE8M0",
+            "routed_expert_activation_path": (
+                "FP32" if k3_idot == 0 else "INT8_APPROXIMATION"
+                if k3_idot == 1
+                else "ENGINE_DEFAULT_INT8_APPROXIMATION"
+            ),
             "non_expert_weights": "load-time Colibri quantization controlled by K3_BITS/K3_MLA_BITS/K3_HEAD_BITS",
             "production_mxfp8_activation_gate": "NOT_CERTIFIED_BY_THIS_ORACLE",
         },

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import time
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING
 from swarm_inference.config.models import Backend, QueueConfig, WorkerCapability, WorkerRole
 from swarm_inference.coordinator.service import CoordinatorClient
 from swarm_inference.host import is_wildcard_host, split_endpoint
+from swarm_inference.model.kimi_tokenizer import verify_pinned_kimi_tokenizer_assets
 from swarm_inference.protocol.messages import Heartbeat, RegistrationRequest
 from swarm_inference.protocol.product import ProductTokenPublication
 from swarm_inference.runtime.performance_profiles import FastPathProfileStore
@@ -42,6 +44,71 @@ if TYPE_CHECKING:
     from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 
+def _verify_configured_model_identity(
+    identity_path: str | Path,
+    model_path: str | Path,
+    *,
+    worker_id: str,
+) -> dict[str, object]:
+    """Fail closed on the worker-specific snapshot identity before registration."""
+
+    identity_file = Path(identity_path).expanduser().resolve()
+    snapshot = Path(model_path).expanduser().resolve()
+    try:
+        value = json.loads(identity_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("configured model identity manifest is invalid") from exc
+    if not isinstance(value, dict):
+        raise ValueError("configured model identity manifest is not a JSON object")
+    required_text = (
+        "model_id",
+        "model_revision",
+        "tokenizer_revision",
+        "adapter_id",
+        "model_content_fingerprint",
+        "config_sha256",
+        "safetensors_index_sha256",
+        "worker_id",
+        "assignment_sha256",
+    )
+    if value.get("schema_version") != "swarm-model-identity-v1":
+        raise ValueError("configured model identity schema is not supported")
+    for name in required_text:
+        field = value.get(name)
+        if not isinstance(field, str) or not field:
+            raise ValueError(f"configured model identity field {name!r} is absent")
+    if value["worker_id"] != worker_id:
+        raise ValueError("configured model identity belongs to a different worker")
+    owns_embeddings = value.get("owns_embeddings")
+    tokenizer_hashes = value.get("tokenizer_assets_sha256")
+    if not isinstance(owns_embeddings, bool) or not isinstance(tokenizer_hashes, dict):
+        raise ValueError("configured model identity has no tokenizer ownership contract")
+    for name in (
+        "model_content_fingerprint",
+        "config_sha256",
+        "safetensors_index_sha256",
+        "assignment_sha256",
+    ):
+        digest = str(value[name])
+        if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+            raise ValueError(f"configured model identity field {name!r} is not SHA-256")
+    for name, path in (
+        ("config_sha256", snapshot / "config.json"),
+        ("safetensors_index_sha256", snapshot / "model.safetensors.index.json"),
+    ):
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != value[name]:
+            raise ValueError(f"configured model identity field {name!r} mismatches the snapshot")
+    if owns_embeddings:
+        verify_pinned_kimi_tokenizer_assets(
+            snapshot,
+            identity_file,
+            expected_worker_id=worker_id,
+        )
+    elif tokenizer_hashes:
+        raise ValueError("non-stage-zero snapshot contains tokenizer code")
+    return value
+
+
 async def run_worker(
     *,
     coordinator_endpoint: str,
@@ -70,6 +137,7 @@ async def run_worker(
     artifact_storage_limit_bytes: int | None = None,
     artifact_manager: ArtifactManager | None = None,
     configured_model_path: str | Path | None = None,
+    configured_model_identity_path: str | Path | None = None,
     allow_model_download: bool = False,
     max_stage_sessions: int = 256,
     stage_execution_queue_capacity: int = 256,
@@ -193,12 +261,12 @@ async def run_worker(
         if device is None:
             raise ValueError("stage runtime requires an explicit device")
         device_type = device.split(":", 1)[0].lower()
-        expected_device = {
-            Backend.TORCH_CPU: "cpu",
-            Backend.TORCH_CUDA: "cuda",
-            Backend.TORCH_MPS: "mps",
+        allowed_devices = {
+            Backend.TORCH_CPU: {"cpu"},
+            Backend.TORCH_CUDA: {"cuda", "native-cuda"},
+            Backend.TORCH_MPS: {"mps"},
         }.get(backend)
-        if expected_device is None or device_type != expected_device:
+        if allowed_devices is None or device_type not in allowed_devices:
             raise ValueError(
                 f"backend {backend.value} is incompatible with stage device {device!r}"
             )
@@ -233,6 +301,20 @@ async def run_worker(
         llamacpp_runtime_manifest=llamacpp_runtime_manifest,
         colibri_runtime_manifest=colibri_runtime_manifest,
     )
+    if configured_model_identity_path is not None:
+        if configured_model_path is None:
+            raise ValueError("configured model identity requires a configured model path")
+        configured_identity = _verify_configured_model_identity(
+            configured_model_identity_path,
+            configured_model_path,
+            worker_id=capability.worker_id,
+        )
+        configured_adapter = str(configured_identity["adapter_id"])
+        if configured_adapter not in capability.supported_model_adapters:
+            raise ValueError("configured model adapter is unavailable in this worker build")
+        capability.model_fingerprint = str(
+            configured_identity["model_content_fingerprint"]
+        )
     capability.roles = sorted(roles, key=lambda item: item.value)
     if stage_runtime_enabled and expert_roles:
         # ``configured_memory_limit_bytes`` retains the process-wide limit;
@@ -450,6 +532,7 @@ async def run_worker(
             token_queue_capacity=token_publication_queue_capacity,
             model_cache_dir=model_cache_dir,
             configured_model_path=configured_model_path,
+            configured_model_identity_path=configured_model_identity_path,
             allow_model_download=allow_model_download,
             capability=capability,
             token_publisher=publish_token,

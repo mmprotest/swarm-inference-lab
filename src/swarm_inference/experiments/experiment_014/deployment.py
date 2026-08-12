@@ -210,7 +210,9 @@ def build_execution_plan(placement_path: Path, output_path: Path) -> dict[str, A
         "schema_version": EXECUTION_SCHEMA,
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "status": "PASS",
-        "node_count": int(placement["node_count"]),
+        "node_count": int(
+            placement.get("node_count", placement["topology"]["worker_count"])
+        ),
         "placement_manifest": str(placement_path.expanduser().resolve()),
         "placement_manifest_sha256": _sha256(placement_path.expanduser().resolve()),
         "checkpoint": placement["checkpoint"],

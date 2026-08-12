@@ -20,6 +20,10 @@ from swarm_inference.experiments.experiment_014.distribution import (
     build_distribution_manifest,
     materialize_worker_package,
 )
+from swarm_inference.experiments.experiment_014.full_cuda import (
+    KimiCudaGraphRunner,
+    benchmark_streamed_cuda_graph,
+)
 from swarm_inference.experiments.experiment_014.oracle import (
     SerialOracleError,
     run_serial_oracle,
@@ -39,11 +43,13 @@ __all__ = [
     "CompatibilityError",
     "DeploymentPlanError",
     "DistributionError",
+    "KimiCudaGraphRunner",
     "MemoryPolicy",
     "ModelSupportError",
     "PlacementError",
     "SerialOracleError",
     "TensorClassification",
+    "benchmark_streamed_cuda_graph",
     "build_checkpoint_census",
     "build_compatibility_matrix",
     "build_distribution_manifest",

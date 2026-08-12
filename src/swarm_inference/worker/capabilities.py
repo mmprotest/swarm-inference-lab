@@ -84,7 +84,10 @@ def _gpu_details(
                 "torch-cuda requested but CUDA is not visible to PyTorch"
             )
         try:
-            device = torch.device(device_identifier or "cuda")
+            probe_identifier = device_identifier or "cuda"
+            if probe_identifier.lower().startswith("native-cuda:"):
+                probe_identifier = "cuda:" + probe_identifier.split(":", 1)[1]
+            device = torch.device(probe_identifier)
             probe = torch.ones(1, device=device)
             torch.cuda.synchronize(device)
             if probe.item() != 1:

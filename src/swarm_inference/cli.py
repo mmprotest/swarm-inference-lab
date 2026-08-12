@@ -1797,6 +1797,14 @@ def worker_command(
             ),
         ),
     ] = None,
+    model_identity: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Exact identity manifest for the configured worker-only model snapshot.",
+        ),
+    ] = None,
     allow_model_download: Annotated[
         bool,
         typer.Option(help="Permit explicit stage loads to download an exact model revision."),
@@ -1903,7 +1911,14 @@ def worker_command(
     data_advertised_endpoint: str | None = None
     expert_data_advertised_endpoint: str | None = None
     enable_stage_runtime = WorkerRole.CONTIGUOUS_STAGE in parsed_roles or any(
-        (device, data_advertise, model_cache_dir, model_snapshot, allow_model_download)
+        (
+            device,
+            data_advertise,
+            model_cache_dir,
+            model_snapshot,
+            model_identity,
+            allow_model_download,
+        )
     )
     if enable_stage_runtime:
         parsed_roles.add(WorkerRole.CONTIGUOUS_STAGE)
@@ -1920,10 +1935,18 @@ def worker_command(
             _fail("--stage-runtime requires torch-cpu, torch-cuda, or torch-mps backend")
         assert resolved_device is not None
         expected = default_devices[backend]
-        if resolved_device.split(":", 1)[0].lower() != expected:
+        device_family = resolved_device.split(":", 1)[0].lower()
+        compatible_device_families = (
+            {"cuda", "native-cuda"}
+            if backend == Backend.TORCH_CUDA
+            else {expected}
+        )
+        if device_family not in compatible_device_families:
             _fail(f"--device {resolved_device!r} is incompatible with backend {backend.value}")
         if dtype.lower() not in {"bfloat16", "bf16", "float16", "f16", "float32", "f32"}:
             _fail("--dtype must be bfloat16, float16, or float32")
+        if model_identity is not None and model_snapshot is None:
+            _fail("--model-identity requires --model-snapshot")
         try:
             data_advertised_endpoint = resolve_data_plane_advertised_endpoint(
                 listen_endpoint=data_listen,
@@ -1937,6 +1960,7 @@ def worker_command(
         or device is not None
         or model_cache_dir is not None
         or model_snapshot is not None
+        or model_identity is not None
         or allow_model_download
     ):
         _fail("stage data, device, model-cache, and download options require --stage-runtime")
@@ -1982,6 +2006,7 @@ def worker_command(
             dtype=dtype,
             model_cache_dir=model_cache_dir,
             configured_model_path=model_snapshot,
+            configured_model_identity_path=model_identity,
             allow_model_download=allow_model_download,
             max_stage_sessions=max_stage_sessions,
             upload_bandwidth_bytes_s=upload_bandwidth_mbps * 1_000_000 / 8,

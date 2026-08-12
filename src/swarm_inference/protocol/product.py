@@ -67,12 +67,28 @@ class PlanWorkerAssignment(StrictModel):
     fast_path_id: str | None = None
     fast_path_mode: str = "auto"
     fast_path_profile_fingerprint: str | None = None
+    native_runtime_library: str | None = None
+    native_runtime_library_sha256: str | None = None
     worker_role: str = "critical_path_stage"
     artifact_id: str | None = None
     artifact_manifest: ArtifactManifest | None = None
 
     @model_validator(mode="after")
     def validate_artifact_identity(self) -> PlanWorkerAssignment:
+        if (self.native_runtime_library is None) != (
+            self.native_runtime_library_sha256 is None
+        ):
+            raise ValueError(
+                "assignment native runtime library and SHA-256 must be supplied together"
+            )
+        if self.native_runtime_library_sha256 is not None:
+            digest = self.native_runtime_library_sha256
+            if len(digest) != 64 or any(
+                character not in "0123456789abcdef" for character in digest
+            ):
+                raise ValueError(
+                    "assignment native runtime SHA-256 must be 64 lowercase hex digits"
+                )
         manifest = self.artifact_manifest
         if manifest is None:
             return self

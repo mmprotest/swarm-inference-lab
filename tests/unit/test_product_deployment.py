@@ -7,7 +7,10 @@ from typing import Any
 import pytest
 
 from swarm_inference.config.models import Backend, WorkerCapability
-from swarm_inference.coordinator.deployment import DeploymentManager
+from swarm_inference.coordinator.deployment import (
+    DeploymentManager,
+    build_load_stage_request,
+)
 from swarm_inference.coordinator.registry import WorkerRegistry
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.model.product import ModelResolutionPolicy, ProductModelSpec
@@ -130,6 +133,49 @@ def _plan() -> ProductStagePlan:
             worker_eligibility=[],
         ),
     )
+
+
+def test_load_request_preserves_runtime_identity_for_initial_and_recovery() -> None:
+    plan = _plan()
+    runtime_sha = "a" * 64
+    assignments = [
+        item.model_copy(
+            update={
+                "native_runtime_library": "/opt/swarm/libcoli_cuda-sm86.so",
+                "native_runtime_library_sha256": runtime_sha,
+            },
+            deep=True,
+        )
+        for item in plan.assignments
+    ]
+    plan = plan.model_copy(
+        update={
+            "assignments": assignments,
+            "decode_parameters": {"production_batch": 8},
+            "report": plan.report.model_copy(
+                update={"worker_assignments": assignments}, deep=True
+            ),
+        },
+        deep=True,
+    )
+    for generation in (1, 2):
+        request = build_load_stage_request(
+            plan,
+            plan.assignments[0],
+            request_id=f"load:{generation}",
+            route_generation=generation,
+            lease_expiry_unix_ns=10,
+            deadline_unix_ns=9,
+        )
+        assert request.native_runtime_library == "/opt/swarm/libcoli_cuda-sm86.so"
+        assert request.native_runtime_library_sha256 == runtime_sha
+        assert request.fast_path_batch_bucket == 8
+        assert request.route_generation == generation
+
+    invalid = assignments[0].model_dump(mode="python")
+    invalid["native_runtime_library_sha256"] = None
+    with pytest.raises(ValueError, match="supplied together"):
+        PlanWorkerAssignment.model_validate(invalid)
 
 
 class _DeploymentTransport:

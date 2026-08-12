@@ -57,6 +57,11 @@ def build_distribution_manifest(
 ) -> dict[str, Any]:
     root = checkpoint.expanduser().resolve()
     placement_source = placement_path.expanduser().resolve()
+    destination = output_path.expanduser().resolve()
+    if destination.parent != placement_source.parent:
+        raise DistributionError(
+            "portable distribution manifest must be written beside its placement manifest"
+        )
     placement = _load_json(placement_source)
     revision = str(placement["checkpoint"]["revision"])
     shard_names = sorted(
@@ -137,7 +142,7 @@ def build_distribution_manifest(
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "status": "PASS" if no_full_checkpoint else "FAIL",
         "checkpoint": placement["checkpoint"],
-        "placement_manifest": str(placement_source),
+        "placement_manifest": placement_source.name,
         "placement_manifest_sha256": _sha256(placement_source),
         "source": {
             "model_id": "moonshotai/Kimi-K3",
@@ -164,7 +169,6 @@ def build_distribution_manifest(
             "corrupted_shard_rejection": True,
         },
     }
-    destination = output_path.expanduser().resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".partial")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")

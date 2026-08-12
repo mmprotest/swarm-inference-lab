@@ -22,6 +22,7 @@ dependencies = [
   "pydantic>=2.7",
   "PyYAML>=6",
   "safetensors>=0.4",
+  "tiktoken>=0.9",
   "transformers>=4.51,<5",
   "typer>=0.12",
 ]
@@ -56,6 +57,7 @@ swarm = "swarm_inference.cli:app"
 builtin = "swarm_inference.experiments.cli_exports:get_export"
 
 [project.entry-points."swarm_inference.native_adapters"]
+kimi_k3_cuda = "swarm_inference.model.kimi_k3:KimiK3CudaAdapter"
 qwen3_dense = "swarm_inference.model.qwen3:Qwen3Adapter"
 qwen3_moe = "swarm_inference.model.qwen3_moe:Qwen3MoeAdapter"
 

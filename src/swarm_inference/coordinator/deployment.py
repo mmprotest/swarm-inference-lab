@@ -72,6 +72,66 @@ def _atomic_write_text(path: Path, payload: str) -> None:
             temporary.unlink()
 
 
+def build_load_stage_request(
+    plan: ProductStagePlan,
+    item: PlanWorkerAssignment,
+    *,
+    request_id: str,
+    route_generation: int,
+    lease_expiry_unix_ns: int,
+    deadline_unix_ns: int,
+) -> LoadStageRequest:
+    """Build the one canonical initial/recovery stage-load identity."""
+
+    batch_bucket = plan.decode_parameters.get("production_batch", 1)
+    if isinstance(batch_bucket, bool) or not isinstance(batch_bucket, int) or batch_bucket <= 0:
+        raise ValueError("product plan production_batch must be a positive integer")
+
+    return LoadStageRequest(
+        worker_id=item.worker_id,
+        request_id=request_id,
+        model_id=plan.model.model_id,
+        model_revision=plan.model.model_revision,
+        tokenizer_revision=plan.model.tokenizer_revision,
+        topology_id=plan.topology_id,
+        route_generation=route_generation,
+        stage_count=plan.stage_count,
+        assignment=item.assignment,
+        adapter_id=plan.model.adapter_id,
+        fast_path_id=item.fast_path_id,
+        fast_path_mode=item.fast_path_mode,
+        fast_path_profile_fingerprint=item.fast_path_profile_fingerprint,
+        native_runtime_library=item.native_runtime_library,
+        native_runtime_library_sha256=item.native_runtime_library_sha256,
+        model_content_fingerprint=(plan.model.model_fingerprint or None),
+        model_format=plan.model.model_format,
+        quantization=plan.model.quantization,
+        fast_path_objective=plan.report.objective_mode,
+        fast_path_batch_bucket=batch_bucket,
+        fast_path_context_bucket=plan.max_sequence_tokens,
+        device=item.device,
+        dtype=plan.model.dtype,
+        artifact_id=item.artifact_id,
+        model_path=None,
+        allow_download=(
+            plan.model.resolution_policy == ModelResolutionPolicy.ALLOW_DOWNLOAD
+        ),
+        lease_expiry_unix_ns=lease_expiry_unix_ns,
+        deadline_unix_ns=deadline_unix_ns,
+        expert_plan=(
+            plan.expert_plans[item.stage_id].model_dump(mode="json")
+            if plan.expert_plans
+            else None
+        ),
+        expert_model_fingerprint=(
+            plan.expert_model_fingerprint if plan.expert_plans else None
+        ),
+        expert_quantization_fingerprint=(
+            plan.expert_quantization_fingerprint if plan.expert_plans else None
+        ),
+    )
+
+
 class DeploymentTransport(Protocol):
     async def prepare_artifact(
         self, endpoint: str, request: PrepareArtifactRequest
@@ -743,47 +803,14 @@ class DeploymentManager:
                 status = self._transition(status, DeploymentPhase.LOADING)
                 lease_expiry = time.time_ns() + int(self.lease_seconds * 1_000_000_000)
                 load_requests = [
-                    LoadStageRequest(
-                        worker_id=item.worker_id,
+                    build_load_stage_request(
+                        plan,
+                        item,
                         request_id=f"{status.deployment_id}:load:{item.stage_id}",
-                        model_id=plan.model.model_id,
-                        model_revision=plan.model.model_revision,
-                        tokenizer_revision=plan.model.tokenizer_revision,
-                        topology_id=plan.topology_id,
                         route_generation=plan.generation,
-                        stage_count=plan.stage_count,
-                        assignment=item.assignment,
-                        adapter_id=plan.model.adapter_id,
-                        fast_path_id=item.fast_path_id,
-                        fast_path_mode=item.fast_path_mode,
-                        fast_path_profile_fingerprint=item.fast_path_profile_fingerprint,
-                        model_content_fingerprint=(plan.model.model_fingerprint or None),
-                        model_format=plan.model.model_format,
-                        quantization=plan.model.quantization,
-                        fast_path_objective=plan.report.objective_mode,
-                        fast_path_batch_bucket=1,
-                        fast_path_context_bucket=plan.max_sequence_tokens,
-                        device=item.device,
-                        dtype=plan.model.dtype,
-                        artifact_id=item.artifact_id,
-                        model_path=None,
-                        allow_download=(
-                            plan.model.resolution_policy == ModelResolutionPolicy.ALLOW_DOWNLOAD
-                        ),
                         lease_expiry_unix_ns=lease_expiry,
                         deadline_unix_ns=(
                             time.time_ns() + int(self.control_timeout_s * 1_000_000_000)
-                        ),
-                        expert_plan=(
-                            plan.expert_plans[item.stage_id].model_dump(mode="json")
-                            if plan.expert_plans
-                            else None
-                        ),
-                        expert_model_fingerprint=(
-                            plan.expert_model_fingerprint if plan.expert_plans else None
-                        ),
-                        expert_quantization_fingerprint=(
-                            plan.expert_quantization_fingerprint if plan.expert_plans else None
                         ),
                     )
                     for item in plan.assignments
@@ -1139,56 +1166,16 @@ class DeploymentManager:
                         *(
                             self.transport.load_stage(
                                 item.control_endpoint,
-                                LoadStageRequest(
-                                    worker_id=item.worker_id,
+                                build_load_stage_request(
+                                    new_plan,
+                                    item,
                                     request_id=(
                                         f"{status.deployment_id}:recover-load:{generation}:"
                                         f"{item.stage_id}"
                                     ),
-                                    model_id=new_plan.model.model_id,
-                                    model_revision=new_plan.model.model_revision,
-                                    tokenizer_revision=new_plan.model.tokenizer_revision,
-                                    topology_id=new_plan.topology_id,
                                     route_generation=generation,
-                                    stage_count=new_plan.stage_count,
-                                    assignment=item.assignment,
-                                    adapter_id=new_plan.model.adapter_id,
-                                    fast_path_id=item.fast_path_id,
-                                    fast_path_mode=item.fast_path_mode,
-                                    fast_path_profile_fingerprint=(
-                                        item.fast_path_profile_fingerprint
-                                    ),
-                                    model_content_fingerprint=(
-                                        new_plan.model.model_fingerprint or None
-                                    ),
-                                    model_format=new_plan.model.model_format,
-                                    quantization=new_plan.model.quantization,
-                                    fast_path_objective=(new_plan.report.objective_mode),
-                                    fast_path_batch_bucket=1,
-                                    fast_path_context_bucket=(new_plan.max_sequence_tokens),
-                                    device=item.device,
-                                    dtype=new_plan.model.dtype,
-                                    allow_download=(
-                                        new_plan.model.resolution_policy
-                                        == ModelResolutionPolicy.ALLOW_DOWNLOAD
-                                    ),
                                     lease_expiry_unix_ns=lease_expiry,
                                     deadline_unix_ns=deadline,
-                                    expert_plan=(
-                                        new_plan.expert_plans[item.stage_id].model_dump(mode="json")
-                                        if new_plan.expert_plans
-                                        else None
-                                    ),
-                                    expert_model_fingerprint=(
-                                        new_plan.expert_model_fingerprint
-                                        if new_plan.expert_plans
-                                        else None
-                                    ),
-                                    expert_quantization_fingerprint=(
-                                        new_plan.expert_quantization_fingerprint
-                                        if new_plan.expert_plans
-                                        else None
-                                    ),
                                 ),
                             )
                             for item in replacement_items

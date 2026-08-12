@@ -194,6 +194,58 @@ class CountingLoader:
         return self.executor
 
 
+class ThreadRecordingExecutor(FakeStageExecutor):
+    def __init__(self, owned: StageAssignment, native_thread_ids: list[int]) -> None:
+        super().__init__(owned)
+        self.native_thread_ids = native_thread_ids
+
+    def _record_thread(self) -> None:
+        self.native_thread_ids.append(threading.get_native_id())
+
+    def prepare_for_ready(self) -> None:
+        self._record_thread()
+
+    def open_session(self, session_id: str) -> None:
+        self._record_thread()
+        super().open_session(session_id)
+
+    def _execute(
+        self,
+        *,
+        session_id: str,
+        tensor: torch.Tensor,
+        cache_position_start: int,
+    ) -> StageExecutionResult:
+        self._record_thread()
+        return super()._execute(
+            session_id=session_id,
+            tensor=tensor,
+            cache_position_start=cache_position_start,
+        )
+
+    def close_session(self, session_id: str) -> int:
+        self._record_thread()
+        return super().close_session(session_id)
+
+    def close(self) -> None:
+        self._record_thread()
+        super().close()
+
+
+class ThreadRecordingLoader:
+    def __init__(self) -> None:
+        self.native_thread_ids: list[int] = []
+        self.executor: ThreadRecordingExecutor | None = None
+
+    def __call__(self, request: LoadStageRequest, _path) -> ThreadRecordingExecutor:
+        self.native_thread_ids.append(threading.get_native_id())
+        self.executor = ThreadRecordingExecutor(
+            request.assignment,
+            self.native_thread_ids,
+        )
+        return self.executor
+
+
 class BlockingExecutor(FakeStageExecutor):
     def __init__(self, owned: StageAssignment) -> None:
         super().__init__(owned)
@@ -330,6 +382,51 @@ async def loaded_runtime(*, maximum_sessions: int = 8):
     await runtime.load_stage(load_request())
     await runtime.install_route(route_request())
     return runtime, loader
+
+
+@pytest.mark.asyncio
+async def test_stage_lifecycle_and_execution_share_one_owned_native_thread() -> None:
+    loader = ThreadRecordingLoader()
+    observed_phases: list[tuple[str, str]] = []
+
+    async def observe_phase(phase: str, message: StageMessage) -> None:
+        observed_phases.append((phase, message.request_id))
+
+    runtime = PersistentStageRuntime(
+        worker_id="worker-a",
+        device="cpu",
+        dtype="float32",
+        memory_limit_bytes=4096,
+        maximum_sessions=1,
+        loader=loader,
+        execution_phase_observer=observe_phase,
+    )
+    try:
+        await runtime.load_stage(load_request())
+        await runtime.install_route(route_request())
+        await runtime.open_session(session_request("thread-owned"))
+        await runtime.handle_message(
+            data_message("thread-owned", [7], cache_position=0, sequence=0)
+        )
+        await runtime.close_session(
+            CloseStageSessionRequest(**session_request("thread-owned").model_dump())
+        )
+        snapshot = runtime.compute_executor_snapshot()
+        assert snapshot["thread_start_count"] == 1
+        assert snapshot["thread_native_id"] is not None
+        assert set(loader.native_thread_ids) == {snapshot["thread_native_id"]}
+        assert observed_phases == [
+            ("input_unpacked", "execute-thread-owned-0"),
+            ("compute_complete", "execute-thread-owned-0"),
+            ("response_built", "execute-thread-owned-0"),
+        ]
+    finally:
+        await runtime.close()
+
+    closed = runtime.compute_executor_snapshot()
+    assert closed["closed"] is True
+    assert closed["thread_start_count"] == 1
+    assert set(loader.native_thread_ids) == {closed["thread_native_id"]}
 
 
 @pytest.mark.asyncio

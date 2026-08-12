@@ -54,6 +54,27 @@ def _config(path: Path) -> WorkerRuntimeConfig:
     )
 
 
+def test_worker_runtime_passes_configured_model_identity_to_service(tmp_path: Path) -> None:
+    config = _config(tmp_path / "worker.json").model_copy(
+        update={
+            "configured_model_path": tmp_path / "snapshot",
+            "configured_model_identity_path": tmp_path / "snapshot" / "model-identity.json",
+        }
+    )
+    async def runner(**_: Any) -> None:
+        return None
+
+    runtime = WorkerRuntime(config=config, runner=runner)
+    arguments = runtime._runner_arguments(
+        stop_event=object(),  # type: ignore[arg-type]
+        startup_future=object(),  # type: ignore[arg-type]
+    )
+    assert arguments["configured_model_path"] == tmp_path / "snapshot"
+    assert arguments["configured_model_identity_path"] == (
+        tmp_path / "snapshot" / "model-identity.json"
+    )
+
+
 @pytest.mark.asyncio
 async def test_worker_runtime_start_wait_stop_are_idempotent(tmp_path: Path) -> None:
     identity = WorkerIdentity.load_or_create(tmp_path / "worker.json")

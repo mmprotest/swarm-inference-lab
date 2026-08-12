@@ -7,10 +7,13 @@ import gc
 import hashlib
 import json
 import os
+import threading
 import time
 from collections.abc import Awaitable, Callable
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import asdict, dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any, Protocol, TypeVar
 from uuid import uuid4
@@ -92,6 +95,7 @@ from swarm_inference.transport.stage_tensor import pack_tensor, unpack_tensor
 from swarm_inference.worker.stage_sessions import StageSessionRegistry
 
 TokenPublisher = Callable[["TokenPublication"], Awaitable[None]]
+ExecutionPhaseObserver = Callable[[str, StageMessage], Awaitable[None]]
 AttributeT = TypeVar("AttributeT")
 
 
@@ -154,6 +158,12 @@ def _normalise_dtype(value: str) -> str:
 
 
 def _normalise_device(value: str) -> str:
+    native = value.strip().lower()
+    if native.startswith("native-cuda:"):
+        index_text = native.removeprefix("native-cuda:")
+        if not index_text.isdigit():
+            raise ValueError(f"invalid native CUDA stage device {value!r}")
+        return f"native-cuda:{int(index_text)}"
     device = torch.device(value)
     if device.type == "cuda" and device.index is None:
         if not torch.cuda.is_available():
@@ -225,6 +235,7 @@ class PersistentStageRuntime:
         token_queue_capacity: int = 256,
         model_cache_dir: str | Path | None = None,
         configured_model_path: str | Path | None = None,
+        configured_model_identity_path: str | Path | None = None,
         allow_model_download: bool = False,
         capability: WorkerCapability | None = None,
         adapter_registry: NativeModelAdapterRegistry | None = None,
@@ -241,6 +252,7 @@ class PersistentStageRuntime:
         artifact_lease_acquirer: Callable[[str, str], str] | None = None,
         artifact_lease_releaser: Callable[[str], bool] | None = None,
         fast_path_profile_store: FastPathProfileStore | None = None,
+        execution_phase_observer: ExecutionPhaseObserver | None = None,
     ) -> None:
         if not worker_id:
             raise ValueError("stage runtime worker ID cannot be empty")
@@ -262,8 +274,14 @@ class PersistentStageRuntime:
             if configured_model_path is not None
             else None
         )
+        self.configured_model_identity_path = (
+            Path(configured_model_identity_path).expanduser().resolve()
+            if configured_model_identity_path is not None
+            else None
+        )
         self.allow_model_download = allow_model_download
         self.fast_path_profile_store = fast_path_profile_store
+        self._execution_phase_observer = execution_phase_observer
         self.connection_tls = connection_tls
         self._artifact_resolver = artifact_resolver
         self._artifact_lease_acquirer = artifact_lease_acquirer
@@ -306,6 +324,15 @@ class PersistentStageRuntime:
         self._last_route_generation: int | None = None
         self._execution_runner: asyncio.Task[None] | None = None
         self._token_runner: asyncio.Task[None] | None = None
+        self._compute_executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix=f"stage-compute-{worker_id}",
+        )
+        self._compute_executor_closed = False
+        self._compute_thread_native_id: int | None = None
+        self._compute_thread_ident: int | None = None
+        self._compute_thread_start_count = 0
+        self._compute_submission_count = 0
         self._executor_lock = asyncio.Lock()
         self._lifecycle_lock = asyncio.Lock()
         self._sequence_validator = MessageSequenceValidator()
@@ -349,6 +376,55 @@ class PersistentStageRuntime:
             self._token_runner = asyncio.create_task(
                 self._token_publication_loop(), name="stage-token-publication"
             )
+
+    async def _run_compute(
+        self,
+        function: Callable[..., AttributeT],
+        /,
+        *args: Any,
+        **kwargs: Any,
+    ) -> AttributeT:
+        """Run stage-owned blocking work on one persistent native thread."""
+
+        if self._compute_executor_closed:
+            raise RuntimeError("stage compute executor is closed")
+        invocation = partial(function, *args, **kwargs)
+
+        def execute() -> AttributeT:
+            native_id = threading.get_native_id()
+            ident = threading.get_ident()
+            if self._compute_thread_native_id is None:
+                self._compute_thread_native_id = native_id
+                self._compute_thread_ident = ident
+                self._compute_thread_start_count += 1
+            elif (
+                self._compute_thread_native_id != native_id
+                or self._compute_thread_ident != ident
+            ):
+                raise RuntimeError("stage compute executor changed its native thread")
+            return invocation()
+
+        self._compute_submission_count += 1
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self._compute_executor, execute)
+
+    def compute_executor_snapshot(self) -> dict[str, int | bool | None]:
+        return {
+            "max_workers": 1,
+            "closed": self._compute_executor_closed,
+            "thread_native_id": self._compute_thread_native_id,
+            "thread_ident": self._compute_thread_ident,
+            "thread_start_count": self._compute_thread_start_count,
+            "submission_count": self._compute_submission_count,
+        }
+
+    async def _observe_execution_phase(
+        self,
+        phase: str,
+        message: StageMessage,
+    ) -> None:
+        if self._execution_phase_observer is not None:
+            await self._execution_phase_observer(phase, message)
 
     def _check_worker(self, worker_id: str) -> None:
         if worker_id != self.worker_id:
@@ -465,6 +541,7 @@ class PersistentStageRuntime:
         requested_tokenizer_revision: str,
         model_path: Path,
         requested_adapter_id: str | None = None,
+        requested_model_content_fingerprint: str | None = None,
         artifact_tokenizer_revision: str | None = None,
     ) -> NativeModelAdapter:
         config_path = model_path / "config.json"
@@ -497,19 +574,84 @@ class PersistentStageRuntime:
             and config_revision != resolved_model_revision
         ):
             raise IntegrityError("checkpoint config revision conflicts with local metadata")
+        pinned_identity: dict[str, Any] | None = None
+        if self.configured_model_identity_path is not None:
+            if self.configured_model_path is None or model_path != self.configured_model_path:
+                raise IntegrityError(
+                    "configured model identity may only attest the configured model path"
+                )
+            try:
+                identity_value = json.loads(
+                    self.configured_model_identity_path.read_text(encoding="utf-8")
+                )
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise IntegrityError("configured model identity manifest is invalid") from exc
+            if not isinstance(identity_value, dict):
+                raise IntegrityError("configured model identity manifest is not a JSON object")
+            expected_identity = {
+                "schema_version": "swarm-model-identity-v1",
+                "model_id": model_id,
+                "model_revision": requested_model_revision,
+                "tokenizer_revision": requested_tokenizer_revision,
+                "adapter_id": adapter.adapter_id,
+            }
+            for name, expected in expected_identity.items():
+                if identity_value.get(name) != expected:
+                    raise IntegrityError(
+                        f"configured model identity field {name!r} differs from the request"
+                    )
+            if self.capability is not None and (
+                identity_value.get("worker_id") != self.capability.worker_id
+            ):
+                raise IntegrityError(
+                    "configured model identity belongs to a different worker"
+                )
+            assignment_digest = identity_value.get("assignment_sha256")
+            if not isinstance(assignment_digest, str) or len(assignment_digest) != 64 or any(
+                character not in "0123456789abcdef" for character in assignment_digest
+            ):
+                raise IntegrityError(
+                    "configured model identity has no valid assignment SHA-256"
+                )
+            for name, path in (
+                ("config_sha256", config_path),
+                ("safetensors_index_sha256", index_path),
+            ):
+                expected_hash = identity_value.get(name)
+                if not isinstance(expected_hash, str) or len(expected_hash) != 64:
+                    raise IntegrityError(
+                        f"configured model identity has no valid {name}"
+                    )
+                actual_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+                if actual_hash != expected_hash:
+                    raise IntegrityError(
+                        f"configured model identity {name} does not match local checkpoint"
+                    )
+            manifest_fingerprint = identity_value.get("model_content_fingerprint")
+            if requested_model_content_fingerprint is not None and (
+                manifest_fingerprint != requested_model_content_fingerprint
+            ):
+                raise IntegrityError(
+                    "configured model content fingerprint differs from the load request"
+                )
+            pinned_identity = identity_value
+        if resolved_model_revision is None and pinned_identity is not None:
+            resolved_model_revision = str(pinned_identity["model_revision"])
         if resolved_model_revision != requested_model_revision:
             raise IntegrityError(
                 f"model revision mismatch: resolved={resolved_model_revision!r} "
                 f"requested={requested_model_revision!r}"
             )
         tokenizer_files = ("tokenizer.json", "tokenizer_config.json")
-        if artifact_tokenizer_revision is None and not any(
+        if artifact_tokenizer_revision is None and pinned_identity is None and not any(
             (model_path / filename).is_file() for filename in tokenizer_files
         ):
             raise IntegrityError("resolved checkpoint has no tokenizer identity files")
         resolved_tokenizer_revision: str | None
         if artifact_tokenizer_revision is not None:
             resolved_tokenizer_revision = artifact_tokenizer_revision
+        elif pinned_identity is not None:
+            resolved_tokenizer_revision = str(pinned_identity["tokenizer_revision"])
         elif requested_tokenizer_revision.startswith("sha256:"):
             tokenizer_json = model_path / "tokenizer.json"
             if not tokenizer_json.is_file():
@@ -566,6 +708,7 @@ class PersistentStageRuntime:
             requested_tokenizer_revision=request.tokenizer_revision,
             model_path=model_path,
             requested_adapter_id=request.adapter_id,
+            requested_model_content_fingerprint=request.model_content_fingerprint,
             artifact_tokenizer_revision=artifact_tokenizer_revision,
         )
 
@@ -649,9 +792,12 @@ class PersistentStageRuntime:
         rss = int(psutil.Process().memory_info().rss)
         allocated = 0
         reserved = 0
-        device = torch.device(self.device)
+        device = None if self.device.startswith("native-cuda:") else torch.device(self.device)
         if (
-            device.type == "cuda" and torch.cuda.is_available() and torch.cuda.is_initialized()  # type: ignore[no-untyped-call]
+            device is not None
+            and device.type == "cuda"
+            and torch.cuda.is_available()
+            and torch.cuda.is_initialized()  # type: ignore[no-untyped-call]
         ):
             allocated = int(torch.cuda.memory_allocated(device))
             reserved = int(torch.cuda.memory_reserved(device))
@@ -745,7 +891,7 @@ class PersistentStageRuntime:
             before = self._memory_snapshot()
             executor: StageExecutor | None = None
             try:
-                executor = await asyncio.to_thread(self._loader, request, resolved_path)
+                executor = await self._run_compute(self._loader, request, resolved_path)
                 ownership = executor.ownership
                 assignment = request.assignment
                 if (
@@ -762,6 +908,21 @@ class PersistentStageRuntime:
                         "loaded executor owns more parameter bytes than its exact assignment"
                     )
                 after = self._memory_snapshot()
+                native_resident = getattr(executor, "resident_device_bytes", None)
+                if self.device.startswith("native-cuda:"):
+                    if (
+                        isinstance(native_resident, bool)
+                        or not isinstance(native_resident, int)
+                        or native_resident <= 0
+                    ):
+                        raise IntegrityError(
+                            "native CUDA executor did not report positive resident device bytes"
+                        )
+                    after = ProcessMemorySnapshot(
+                        rss_bytes=after.rss_bytes,
+                        cuda_allocated_bytes=native_resident,
+                        cuda_reserved_bytes=native_resident,
+                    )
                 rss_delta = max(0, after.rss_bytes - before.rss_bytes)
                 cuda_delta = max(0, after.cuda_allocated_bytes - before.cuda_allocated_bytes)
                 # A custom loader is the deterministic test/integration seam; process RSS
@@ -777,10 +938,13 @@ class PersistentStageRuntime:
                         f"loaded stage resident delta {actual_resident} bytes exceeds configured "
                         f"logical limit {self.memory_limit_bytes}"
                     )
+                prepare_for_ready = getattr(executor, "prepare_for_ready", None)
+                if callable(prepare_for_ready):
+                    await self._run_compute(prepare_for_ready)
             except BaseException:
                 if executor is not None:
                     with suppress(Exception):
-                        await asyncio.to_thread(executor.close)
+                        await self._run_compute(executor.close)
                 self._release_device_memory()
                 if artifact_lease_id is not None and self._artifact_lease_releaser is not None:
                     self._artifact_lease_releaser(artifact_lease_id)
@@ -908,8 +1072,8 @@ class PersistentStageRuntime:
         old_endpoint = (
             self._route.next_stage.data_endpoint if self._route and self._route.next_stage else None
         )
-        released = await asyncio.to_thread(self.sessions.cancel_all, loaded.executor)
-        await asyncio.to_thread(loaded.executor.close)
+        released = await self._run_compute(self.sessions.cancel_all, loaded.executor)
+        await self._run_compute(loaded.executor.close)
         artifact_lease_id = self._loaded_artifact_lease_id
         self._loaded = None
         self._loaded_artifact_lease_id = None
@@ -930,6 +1094,8 @@ class PersistentStageRuntime:
 
     def _release_device_memory(self) -> None:
         gc.collect()
+        if self.device.startswith("native-cuda:"):
+            return
         device = torch.device(self.device)
         if (
             device.type == "cuda" and torch.cuda.is_available() and torch.cuda.is_initialized()  # type: ignore[no-untyped-call]
@@ -1321,12 +1487,23 @@ class PersistentStageRuntime:
             route = self._route
             if route is None or route.route_generation != request.route_generation:
                 raise ValueError("tokenization route generation mismatch")
+            adapter: NativeModelAdapter | None = None
+            if loaded.request.adapter_id is not None:
+                with suppress(KeyError):
+                    adapter = self._adapters.get(loaded.request.adapter_id)
             if self._tokenizer is None:
                 model_path = Path(loaded.status.model_path)
                 if not model_path.is_dir():
                     raise RuntimeError("resident stage has no tokenizer-capable local snapshot")
 
                 def load_tokenizer() -> Any:
+                    adapter_loader = getattr(adapter, "load_tokenizer", None)
+                    if callable(adapter_loader):
+                        return adapter_loader(
+                            model_path,
+                            self.configured_model_identity_path,
+                            worker_id=self.worker_id,
+                        )
                     from transformers import AutoTokenizer
 
                     return AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
@@ -1334,16 +1511,26 @@ class PersistentStageRuntime:
                         local_files_only=True,
                     )
 
-                self._tokenizer = await asyncio.to_thread(load_tokenizer)
+                self._tokenizer = await self._run_compute(load_tokenizer)
             tokenizer = self._tokenizer
         assert tokenizer is not None
-        encoded = await asyncio.to_thread(
-            tokenizer,
-            request.text,
-            add_special_tokens=request.add_special_tokens,
-            return_tensors=None,
-        )
-        token_ids = [int(value) for value in encoded["input_ids"]]
+        adapter_encoder = getattr(adapter, "encode_prompt", None)
+        if callable(adapter_encoder):
+            token_ids = await self._run_compute(
+                adapter_encoder,
+                tokenizer,
+                request.text,
+                add_special_tokens=request.add_special_tokens,
+            )
+        else:
+            encoded = await self._run_compute(
+                tokenizer,
+                request.text,
+                add_special_tokens=request.add_special_tokens,
+                return_tensors=None,
+            )
+            token_ids = [int(value) for value in encoded["input_ids"]]
+        token_ids = [int(value) for value in token_ids]
         if not token_ids:
             raise ValueError("prompt tokenization produced no token IDs")
         return TokenizeStageResponse(
@@ -1391,7 +1578,7 @@ class PersistentStageRuntime:
             if self._draining:
                 raise RuntimeError("worker is draining and cannot open a session")
             loaded, _ = self._validate_session_request(request)
-            await asyncio.to_thread(
+            await self._run_compute(
                 self.sessions.open,
                 loaded.executor,
                 topology_id=request.topology_id,
@@ -1425,7 +1612,7 @@ class PersistentStageRuntime:
                 request_generation=request.request_generation,
                 stage_id=request.stage_id,
             )
-            released = await asyncio.to_thread(
+            released = await self._run_compute(
                 self.sessions.close,
                 loaded.executor,
                 topology_id=request.topology_id,
@@ -1459,7 +1646,7 @@ class PersistentStageRuntime:
                 request_generation=request.request_generation,
                 stage_id=request.stage_id,
             )
-            released = await asyncio.to_thread(
+            released = await self._run_compute(
                 self.sessions.cancel,
                 loaded.executor,
                 topology_id=request.topology_id,
@@ -1528,14 +1715,14 @@ class PersistentStageRuntime:
         download_requested = reference.resolution_policy == ModelResolutionPolicy.ALLOW_DOWNLOAD
         allow_download = download_requested and self.allow_model_download
         try:
-            model_path = await asyncio.to_thread(
+            model_path = await self._run_compute(
                 self._resolve_exact_model_path,
                 model_id=reference.model_id,
                 model_revision=reference.model_revision,
                 model_path=None,
                 allow_download=allow_download,
             )
-            resolved_adapter = await asyncio.to_thread(
+            resolved_adapter = await self._run_compute(
                 self._verify_model_identity_values,
                 model_id=reference.model_id,
                 requested_model_revision=reference.model_revision,
@@ -1550,7 +1737,7 @@ class PersistentStageRuntime:
                 raise IntegrityError(
                     f"native adapter {resolved_adapter.adapter_id!r} cannot inspect partitions"
                 )
-            partition = await asyncio.to_thread(
+            partition = await self._run_compute(
                 inspect_partition,
                 model_path,
                 model_revision=reference.model_revision,
@@ -1604,7 +1791,7 @@ class PersistentStageRuntime:
                 raise ValueError("unknown stage topology")
             sessions = []
             if loaded is not None:
-                sessions = await asyncio.to_thread(self.sessions.statuses, loaded.executor)
+                sessions = await self._run_compute(self.sessions.statuses, loaded.executor)
         route_status = None
         if self._route is not None:
             route_status = InstalledStageRouteStatus(
@@ -1652,7 +1839,7 @@ class PersistentStageRuntime:
         if request.cancel_active_sessions:
             async with self._executor_lock:
                 if self._loaded is not None:
-                    released = await asyncio.to_thread(
+                    released = await self._run_compute(
                         self.sessions.cancel_all, self._loaded.executor
                     )
                     self._sync_capability()
@@ -2135,6 +2322,7 @@ class PersistentStageRuntime:
     async def _execute_message(self, message: StageMessage) -> StageMessage:
         tensor_metadata = dict(message.attributes["tensor"])
         tensor, decode_ns = unpack_tensor(message.payload, tensor_metadata)
+        await self._observe_execution_phase("input_unpacked", message)
         cache_position = int(message.attributes["cache_position_start"])
         deadline_ns = int(message.attributes.get("deadline_ns", time.time_ns() + 30_000_000_000))
         async with self._executor_lock:
@@ -2160,7 +2348,7 @@ class PersistentStageRuntime:
                 if not isinstance(expert_context, dict):
                     raise TypeError("stage execution context must be a dictionary")
             if loaded.request.assignment.owns_embeddings:
-                result = await asyncio.to_thread(
+                result = await self._run_compute(
                     loaded.executor.execute_prefill,
                     session_id=message.session_id,
                     token_ids=tensor,
@@ -2168,7 +2356,7 @@ class PersistentStageRuntime:
                     **expert_context,
                 )
             else:
-                result = await asyncio.to_thread(
+                result = await self._run_compute(
                     loaded.executor.execute_decode,
                     session_id=message.session_id,
                     hidden_states=tensor,
@@ -2180,6 +2368,7 @@ class PersistentStageRuntime:
                 session_id=message.session_id,
                 new_position=result.cache_sequence_length,
             )
+        await self._observe_execution_phase("compute_complete", message)
         if route.next_stage is not None:
             forwarded = self._forward_message(
                 message,
@@ -2187,6 +2376,7 @@ class PersistentStageRuntime:
                 route=route,
                 decode_ns=decode_ns,
             )
+            await self._observe_execution_phase("response_built", message)
             downstream = await self.connection_pool.send(
                 route.next_stage.data_endpoint,
                 forwarded,
@@ -2212,6 +2402,7 @@ class PersistentStageRuntime:
                 self._enqueue_token_publication(route, response)
             return response
         response = self._token_result(message, result=result, route=route, decode_ns=decode_ns)
+        await self._observe_execution_phase("response_built", message)
         if route.assignment.stage_id == 0:
             self._enqueue_token_publication(route, response)
         return response
@@ -2519,6 +2710,8 @@ class PersistentStageRuntime:
                 self._token_queue.get_nowait()
                 self._token_queue.task_done()
             await self.connection_pool.close()
+            self._compute_executor.shutdown(wait=True, cancel_futures=True)
+            self._compute_executor_closed = True
             self._closed = True
 
 
