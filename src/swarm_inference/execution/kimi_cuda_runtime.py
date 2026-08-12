@@ -781,6 +781,21 @@ class _CudaRuntime:
             ctypes.c_int,
         ]
         self._library.coli_cuda_kimi_moe_reduce_dev.restype = ctypes.c_int
+        try:
+            indexed_copy_rows = self._library.coli_cuda_kimi_indexed_copy_rows_dev
+        except AttributeError:
+            indexed_copy_rows = None
+        if indexed_copy_rows is not None:
+            indexed_copy_rows.argtypes = [
+                ctypes.c_int,
+                pointer,
+                pointer,
+                pointer,
+                ctypes.c_int,
+                ctypes.c_int,
+            ]
+            indexed_copy_rows.restype = ctypes.c_int
+        self.indexed_copy_rows_function = indexed_copy_rows
         self._library.coli_cuda_kimi_attnres_mix_dev.argtypes = [
             ctypes.c_int,
             pointer,
@@ -844,6 +859,53 @@ class _CudaRuntime:
             ctypes.c_float,
         ]
         self._library.coli_cuda_kimi_mla_absorb_dev.restype = ctypes.c_int
+        try:
+            mla_absorb_triangular = (
+                self._library.coli_cuda_kimi_mla_absorb_triangular_dev
+            )
+        except AttributeError:
+            mla_absorb_triangular = None
+        if mla_absorb_triangular is not None:
+            mla_absorb_triangular.argtypes = [
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_float,
+            ]
+            mla_absorb_triangular.restype = ctypes.c_int
+        self.mla_absorb_triangular_function = mla_absorb_triangular
+        try:
+            mla_absorb_dcp = self._library.coli_cuda_kimi_mla_absorb_dcp_dev
+        except AttributeError:
+            mla_absorb_dcp = None
+        if mla_absorb_dcp is not None:
+            mla_absorb_dcp.argtypes = [
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                pointer,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_float,
+            ]
+            mla_absorb_dcp.restype = ctypes.c_int
+        self.mla_absorb_dcp_function = mla_absorb_dcp
         self._library.coli_cuda_kimi_mla_sigmoid_gate_dev.argtypes = [
             ctypes.c_int,
             pointer,
@@ -1489,6 +1551,32 @@ class _CudaRuntime:
         ):
             raise KimiCudaError("resident deterministic Kimi MoE reduction failed")
 
+    def execute_indexed_copy_rows(
+        self,
+        output: ctypes.c_void_p,
+        source: ctypes.c_void_p,
+        source_rows: ctypes.c_void_p,
+        *,
+        rows: int,
+        dimension: int,
+    ) -> None:
+        """Gather source rows into contiguous output with one device launch."""
+
+        if self.indexed_copy_rows_function is None:
+            raise KimiCudaError("Kimi CUDA binary has no indexed row-copy export")
+        if (
+            self.indexed_copy_rows_function(
+                self.device,
+                output,
+                source,
+                source_rows,
+                rows,
+                dimension,
+            )
+            != 1
+        ):
+            raise KimiCudaError("resident Kimi indexed row copy failed")
+
     def execute_attnres_mix(
         self,
         output: ctypes.c_void_p,
@@ -1625,6 +1713,88 @@ class _CudaRuntime:
         )
         if status != 1:
             raise KimiCudaError("resident Kimi MLA absorb attention rejected execution")
+
+    def execute_mla_absorb_triangular(
+        self,
+        kv_b: ctypes.c_void_p,
+        context: ctypes.c_void_p,
+        query: ctypes.c_void_p,
+        latent_cache: ctypes.c_void_p,
+        rope_cache: ctypes.c_void_p,
+        *,
+        batch: int,
+        heads: int,
+        query_nope: int,
+        query_rope: int,
+        value_dimension: int,
+        kv_lora: int,
+        final_context_length: int,
+        attention_scale: float,
+    ) -> None:
+        """Run exact contiguous-query MLA over one shared resident cache."""
+
+        function = self.mla_absorb_triangular_function
+        if function is None:
+            raise KimiCudaError("Kimi CUDA binary has no triangular MLA export")
+        status = function(
+            kv_b,
+            context,
+            query,
+            latent_cache,
+            rope_cache,
+            batch,
+            heads,
+            query_nope,
+            query_rope,
+            value_dimension,
+            kv_lora,
+            final_context_length,
+            ctypes.c_float(attention_scale),
+        )
+        if status != 1:
+            raise KimiCudaError("resident Kimi triangular MLA attention rejected execution")
+
+    def execute_mla_absorb_dcp(
+        self,
+        kv_b: ctypes.c_void_p,
+        context: ctypes.c_void_p,
+        query: ctypes.c_void_p,
+        latent_cache: ctypes.c_void_p,
+        rope_cache: ctypes.c_void_p,
+        *,
+        batch: int,
+        degree: int,
+        heads: int,
+        query_nope: int,
+        query_rope: int,
+        value_dimension: int,
+        kv_lora: int,
+        final_context_length: int,
+        attention_scale: float,
+    ) -> None:
+        """Run exact context-sharded MLA and deterministic device reduction."""
+
+        function = self.mla_absorb_dcp_function
+        if function is None:
+            raise KimiCudaError("Kimi CUDA binary has no DCP MLA export")
+        status = function(
+            kv_b,
+            context,
+            query,
+            latent_cache,
+            rope_cache,
+            batch,
+            degree,
+            heads,
+            query_nope,
+            query_rope,
+            value_dimension,
+            kv_lora,
+            final_context_length,
+            ctypes.c_float(attention_scale),
+        )
+        if status != 1:
+            raise KimiCudaError("resident Kimi DCP MLA attention rejected execution")
 
     def execute_mla_gate(
         self,

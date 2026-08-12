@@ -35,6 +35,11 @@ from swarm_inference.execution.kimi_k3_graph_runtime import (
     _parse_oracle_routes,
     _pointer_offset,
 )
+from swarm_inference.execution.verification import (
+    VerificationBlock,
+    build_grouped_expert_plan,
+    expert_reuse_statistics,
+)
 from swarm_inference.model.partition import StageAssignment
 from swarm_inference.protocol.stage_ring import Operation, StageMessage, encode_message
 from swarm_inference.protocol.stage_worker import (
@@ -49,6 +54,7 @@ from swarm_inference.worker.stage_runtime import PersistentStageRuntime
 
 SCHEMA_VERSION = "experiment-014-k3-persistent-final-stage-v1"
 PRODUCTION_MAX_CERTIFIED_BATCH = 8
+VERIFICATION_MAX_ROWS = 17
 PREPARE_MEMORY_RECOVERY_TOLERANCE_BYTES = 4 * 1024**2
 PREPARE_THREAD_QUIESCENCE_TIMEOUT_S = 8.0
 PREPARE_THREAD_QUIESCENCE_MINIMUM_OBSERVATION_S = 3.5
@@ -281,8 +287,20 @@ class PersistentKimiStageExecutor:
         self._layer_resources = _LayerResources(self.runtime)
         self._endpoint_resources = _LayerResources(self.runtime)
         self._batch_resources = _LayerResources(self.runtime)
-        self._batch_capacity = _production_batch_capacity(
+        production_capacity = _production_batch_capacity(
             self.runtime.expert_supported_batches
+        )
+        self._verification_major_enabled = request.fast_path_mode == "verification-major"
+        requested_capacity = int(request.fast_path_batch_bucket)
+        if self._verification_major_enabled and requested_capacity > VERIFICATION_MAX_ROWS:
+            raise ValueError(
+                "verification-major Kimi execution supports at most "
+                f"{VERIFICATION_MAX_ROWS} target rows"
+            )
+        self._batch_capacity = (
+            max(production_capacity, requested_capacity)
+            if self._verification_major_enabled
+            else production_capacity
         )
         self._batch_workspace_bytes = 0
         memory_before = self.runtime.mem_info()
@@ -690,9 +708,19 @@ class PersistentKimiStageExecutor:
         topk = self.config.topk
         self._batch_hidden_input = self._allocate(self._batch_resources, capacity * hidden)
         self._batch_hidden_output = self._allocate(self._batch_resources, capacity * hidden)
+        self._batch_shared_output = self._allocate(self._batch_resources, capacity * hidden)
+        self._batch_boundary = self._allocate(
+            self._batch_resources, capacity * 9 * hidden
+        )
         self._batch_latent_rows = self._allocate(self._batch_resources, capacity * latent)
         self._batch_expert_input = self._allocate(self._batch_resources, capacity * topk * latent)
         self._batch_expert_output = self._allocate(self._batch_resources, capacity * topk * latent)
+        self._batch_gather_indices = self._allocate(
+            self._batch_resources, capacity * topk
+        )
+        self._batch_scatter_indices = self._allocate(
+            self._batch_resources, capacity * topk
+        )
         attention_elements = 0
         self._batch_attention_scratch: dict[str, ctypes.c_void_p] = {}
 
@@ -715,7 +743,10 @@ class PersistentKimiStageExecutor:
             attention_buffer("mla_gate", self.config.context_dimension)
             attention_buffer("context", self.config.context_dimension)
         self._batch_workspace_bytes = (
-            capacity * (2 * hidden + latent + 2 * topk * latent) + attention_elements
+            capacity * (
+                12 * hidden + latent + 2 * topk * latent + 2 * topk
+            )
+            + attention_elements
         ) * np.dtype(np.float32).itemsize
 
     def _supported_batch_chunks(self, count: int) -> tuple[int, ...]:
@@ -743,6 +774,42 @@ class PersistentKimiStageExecutor:
             chunks.append(chunk)
             remaining -= chunk
         return tuple(chunks)
+
+    def _route_batch_chunked(
+        self,
+        activation: ctypes.c_void_p,
+        *,
+        batch: int,
+        accumulate_stats: bool,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Route any prepared row count through certified native chunks."""
+
+        if self.runtime.router_batch_function is None:
+            raise KimiCudaError("Kimi CUDA binary has no batched-router export")
+        ids_parts: list[np.ndarray] = []
+        weight_parts: list[np.ndarray] = []
+        effective_parts: list[np.ndarray] = []
+        offset = 0
+        for chunk in self._supported_batch_chunks(batch):
+            ids, route_weights, effective = self.runtime.route_batch(
+                _pointer_offset(activation, offset * self.config.hidden),
+                self._weights["router"],
+                self._weights["router_bias"],
+                batch=chunk,
+                hidden=self.config.hidden,
+                experts=self.config.experts,
+                topk=self.config.topk,
+                accumulate_stats=accumulate_stats,
+            )
+            ids_parts.append(ids)
+            weight_parts.append(route_weights)
+            effective_parts.append(effective)
+            offset += chunk
+        return (
+            np.concatenate(ids_parts, axis=0),
+            np.concatenate(weight_parts, axis=0),
+            np.concatenate(effective_parts, axis=0),
+        )
 
     def open_session(self, session_id: str, *, maximum_context_override: int | None = None) -> None:
         if self._closed:
@@ -1242,10 +1309,13 @@ class PersistentKimiStageExecutor:
         *,
         batch: int,
         positions: tuple[int, ...],
+        dcp_degree: int = 1,
     ) -> None:
         """Batch stateless projections while preserving session-owned state."""
         if len(positions) != batch:
             raise ValueError("Kimi attention batch positions must match the batch")
+        if dcp_degree not in (1, 2, 4, 8):
+            raise ValueError("Kimi DCP degree must be one of 1, 2, 4 or 8")
         runtime = self.runtime
         config = self.config
         weights = self._weights
@@ -1380,20 +1450,73 @@ class PersistentKimiStageExecutor:
                 rope_dimension=config.query_rope,
                 epsilon=config.epsilon,
             )
-            runtime.execute_mla_absorb(
+        one_session = all(session is sessions[0] for session in sessions)
+        contiguous = positions == tuple(range(positions[0], positions[0] + batch))
+        final_context_length = positions[-1] + 1
+        use_dcp_kernel = dcp_degree > 1 or final_context_length > 16_385
+        if (
+            batch > 1
+            and one_session
+            and contiguous
+            and use_dcp_kernel
+        ):
+            if getattr(runtime, "mla_absorb_dcp_function", None) is None:
+                raise KimiCudaError("Kimi CUDA binary has no DCP MLA export")
+            session = sessions[0]
+            runtime.execute_mla_absorb_dcp(
                 weights["kv_b"],
-                _pointer_offset(scratch["context"], row * config.context_dimension),
-                _pointer_offset(scratch["query"], row * config.query_dimension),
+                scratch["context"],
+                scratch["query"],
                 session.attention_state["latent_cache"],
                 session.attention_state["rope_cache"],
+                batch=batch,
+                degree=dcp_degree,
                 heads=config.heads,
                 query_nope=config.query_nope,
                 query_rope=config.query_rope,
                 value_dimension=config.value_dimension,
                 kv_lora=config.kv_lora,
-                context_length=position + 1,
+                final_context_length=final_context_length,
                 attention_scale=config.attention_scale,
             )
+        elif (
+            batch > 1
+            and one_session
+            and contiguous
+            and getattr(runtime, "mla_absorb_triangular_function", None) is not None
+        ):
+            session = sessions[0]
+            runtime.execute_mla_absorb_triangular(
+                weights["kv_b"],
+                scratch["context"],
+                scratch["query"],
+                session.attention_state["latent_cache"],
+                session.attention_state["rope_cache"],
+                batch=batch,
+                heads=config.heads,
+                query_nope=config.query_nope,
+                query_rope=config.query_rope,
+                value_dimension=config.value_dimension,
+                kv_lora=config.kv_lora,
+                final_context_length=final_context_length,
+                attention_scale=config.attention_scale,
+            )
+        else:
+            for row, session in enumerate(sessions):
+                runtime.execute_mla_absorb(
+                    weights["kv_b"],
+                    _pointer_offset(scratch["context"], row * config.context_dimension),
+                    _pointer_offset(scratch["query"], row * config.query_dimension),
+                    session.attention_state["latent_cache"],
+                    session.attention_state["rope_cache"],
+                    heads=config.heads,
+                    query_nope=config.query_nope,
+                    query_rope=config.query_rope,
+                    value_dimension=config.value_dimension,
+                    kv_lora=config.kv_lora,
+                    context_length=positions[row] + 1,
+                    attention_scale=config.attention_scale,
+                )
         runtime.execute_mla_gate(
             scratch["context"],
             scratch["mla_gate"],
@@ -1578,7 +1701,7 @@ class PersistentKimiStageExecutor:
         selected_ids: list[np.ndarray] = []
         selected_weights: list[np.ndarray] = []
         router_mode = (
-            "single_native_batch"
+            "certified_native_chunks"
             if runtime.router_batch_function is not None
             else "row_serial_native"
         )
@@ -1591,14 +1714,9 @@ class PersistentKimiStageExecutor:
                     hidden,
                 )
             if runtime.router_batch_function is not None:
-                ids_batch, weights_batch, effective_batch = runtime.route_batch(
+                ids_batch, weights_batch, effective_batch = self._route_batch_chunked(
                     self._batch_hidden_input,
-                    weights["router"],
-                    weights["router_bias"],
                     batch=batch,
-                    hidden=hidden,
-                    experts=self.config.experts,
-                    topk=topk,
                     accumulate_stats=profile_phases,
                 )
                 for row in range(batch):
@@ -1630,27 +1748,33 @@ class PersistentKimiStageExecutor:
 
         run_phase("router", router)
 
-        tasks_by_expert: dict[int, list[tuple[int, int]]] = {}
-        for row, ids in enumerate(selected_ids):
-            for slot, expert_value in enumerate(ids.tolist()):
-                tasks_by_expert.setdefault(int(expert_value), []).append((row, slot))
-        task_plan: list[tuple[int, int, int, int]] = []
-        expert_groups: list[dict[str, Any]] = []
-        native_expert_calls = 0
-        for expert, tasks in sorted(tasks_by_expert.items()):
-            start = len(task_plan)
-            for row, slot in sorted(tasks):
-                task_plan.append((expert, row, slot, len(task_plan)))
-            chunks = self._supported_batch_chunks(len(tasks))
-            native_expert_calls += len(chunks)
-            expert_groups.append(
-                {
-                    "expert_id": expert,
-                    "start": start,
-                    "rows": len(tasks),
-                    "chunks": chunks,
-                }
+        grouped_plan = build_grouped_expert_plan(
+            np.stack(selected_ids, axis=0),
+            supported_batch_sizes=(
+                size
+                for size in self.runtime.expert_supported_batches
+                if size <= self._batch_capacity
+            ),
+        )
+        task_plan = [
+            (
+                assignment.expert_id,
+                assignment.row,
+                assignment.slot,
+                assignment.work_index,
             )
+            for assignment in grouped_plan.assignments
+        ]
+        expert_groups = [
+            {
+                "expert_id": group.expert_id,
+                "start": group.start,
+                "rows": group.count,
+                "chunks": group.native_chunks,
+            }
+            for group in grouped_plan.groups
+        ]
+        native_expert_calls = grouped_plan.native_call_count
         if len(task_plan) != batch * topk:
             raise KimiCudaError("row-cooperative Kimi dispatch omitted selected experts")
 
@@ -1912,6 +2036,571 @@ class PersistentKimiStageExecutor:
         self.execution_records.append(record)
         return record
 
+    def execute_verification_block(
+        self,
+        *,
+        block: VerificationBlock,
+        hidden_states: torch.Tensor,
+        expert_strategy: str = "expert_major",
+        profile_phases: bool = False,
+        dcp_degree: int = 1,
+    ) -> dict[str, Any]:
+        """Execute contiguous candidate positions as one exact scheduling unit.
+
+        Unlike :meth:`execute_decode_batch`, all rows belong to one session and
+        therefore update one KDA/MLA state in position order.  Stateless
+        projections and MoE work are row-cooperative. KDA retains its canonical
+        sequential state dependency; MLA may schedule the known contiguous
+        queries together, including an exact context-sharded reduction.
+        """
+
+        if not self._verification_major_enabled:
+            raise RuntimeError(
+                "verification-major execution requires fast_path_mode='verification-major'"
+            )
+        if self._owns_embeddings or self._owns_final_endpoint:
+            raise RuntimeError(
+                "verification-major decode currently requires a non-endpoint Kimi layer"
+            )
+        if self._weights["mlp_type"] != "moe":
+            raise RuntimeError("verification-major decode requires a routed-MoE layer")
+        if expert_strategy not in {"token_major", "expert_major"}:
+            raise ValueError("expert strategy must be 'token_major' or 'expert_major'")
+        if dcp_degree not in (1, 2, 4, 8):
+            raise ValueError("verification DCP degree must be one of 1, 2, 4 or 8")
+        rows = block.row_count
+        if rows > self._batch_capacity:
+            raise KimiCudaError(
+                "Kimi verification block rejected before CUDA work: "
+                f"requested_rows={rows}, prepared_rows={self._batch_capacity}"
+            )
+        if hidden_states.dtype != torch.float32 or tuple(hidden_states.shape) != (
+            rows,
+            9,
+            self.config.hidden,
+        ):
+            raise ValueError(
+                f"Kimi verification boundary must be float32 [{rows},9,7168]"
+            )
+        session = self._require_session(block.session_id)
+        positions = block.positions
+        if block.cache_position_start != session.cache_length:
+            raise ValueError("Kimi verification block cache position is not contiguous")
+        if positions[-1] >= session.maximum_context:
+            raise ValueError("Kimi verification block exceeds its prepared cache")
+
+        values = np.ascontiguousarray(hidden_states.detach().cpu().numpy(), dtype=np.float32)
+        block_count = (self.layer + self.config.residual_block - 1) // (
+            self.config.residual_block
+        )
+        is_snapshot = self.layer % self.config.residual_block == 0
+        next_block_count = block_count + int(is_snapshot)
+        if not 0 <= block_count <= 8 or not 1 <= next_block_count <= 8:
+            raise KimiCudaError("persistent stage AttnRes block count is invalid")
+
+        runtime = self.runtime
+        weights = self._weights
+        hidden = self.config.hidden
+        latent = self.config.latent
+        topk = self.config.topk
+        boundary_row_elements = 9 * hidden
+        allocation_before = self._persistent_buffer_allocation_count
+        weight_load_before = self._weight_load_count
+        materialization_before = self._model_materialization_count
+        memory_before = runtime.mem_info()
+        wall_started = time.perf_counter_ns()
+        phase_device_ms: dict[str, float] = {}
+        phase_wall_ms: dict[str, float] = {}
+        result_boundary: np.ndarray | None = None
+        whole_profile_open = False
+
+        def run_phase(name: str, action: Callable[[], None]) -> None:
+            phase_started = time.perf_counter_ns()
+            if profile_phases:
+                runtime.profile_begin()
+            try:
+                action()
+            except BaseException:
+                if profile_phases:
+                    with contextlib.suppress(BaseException):
+                        runtime.profile_end()
+                raise
+            if profile_phases:
+                phase_device_ms[name] = runtime.profile_end()
+            phase_wall_ms[name] = (time.perf_counter_ns() - phase_started) / 1e6
+
+        if not profile_phases:
+            runtime.profile_begin()
+            whole_profile_open = True
+
+        try:
+            run_phase(
+                "boundary_h2d",
+                lambda: runtime.upload_activation(self._batch_boundary, values),
+            )
+
+            def attention_and_pre_moe() -> None:
+                for row in range(rows):
+                    row_boundary = _pointer_offset(
+                        self._batch_boundary, row * boundary_row_elements
+                    )
+                    row_hidden = row_boundary
+                    runtime.execute_copy(session.prefix_row, row_hidden, hidden)
+                    if block_count:
+                        runtime.execute_attnres_mix(
+                            session.hidden_scratch,
+                            session.prefix_row,
+                            _pointer_offset(row_boundary, hidden),
+                            weights["attention_residual_score"],
+                            block_count=block_count,
+                            dimension=hidden,
+                            epsilon=self.config.epsilon,
+                        )
+                        attention_input = session.hidden_scratch
+                    else:
+                        attention_input = row_hidden
+                    if is_snapshot:
+                        runtime.execute_copy(
+                            _pointer_offset(
+                                row_boundary, (1 + block_count) * hidden
+                            ),
+                            row_hidden,
+                            hidden,
+                        )
+                    runtime.execute_rmsnorm(
+                        _pointer_offset(self._batch_hidden_input, row * hidden),
+                        attention_input,
+                        weights["input_norm"],
+                        batch=1,
+                        dimension=hidden,
+                        epsilon=self.config.epsilon,
+                    )
+
+                self._execute_attention_batch(
+                    [session] * rows,
+                    self._batch_hidden_input,
+                    self._batch_hidden_output,
+                    batch=rows,
+                    positions=positions,
+                    dcp_degree=dcp_degree,
+                )
+
+                for row in range(rows):
+                    row_boundary = _pointer_offset(
+                        self._batch_boundary, row * boundary_row_elements
+                    )
+                    attention_output = _pointer_offset(
+                        self._batch_hidden_output, row * hidden
+                    )
+                    if is_snapshot:
+                        runtime.execute_copy(session.prefix_row, attention_output, hidden)
+                    else:
+                        runtime.execute_copy(session.prefix_row, row_boundary, hidden)
+                        runtime.execute_add(session.prefix_row, attention_output, hidden)
+                    runtime.execute_attnres_mix(
+                        session.mixed,
+                        session.prefix_row,
+                        _pointer_offset(row_boundary, hidden),
+                        weights["mlp_residual_score"],
+                        block_count=next_block_count,
+                        dimension=hidden,
+                        epsilon=self.config.epsilon,
+                    )
+                    runtime.execute_rmsnorm(
+                        _pointer_offset(self._batch_hidden_input, row * hidden),
+                        session.mixed,
+                        weights["post_norm"],
+                        batch=1,
+                        dimension=hidden,
+                        epsilon=self.config.epsilon,
+                    )
+                    runtime.execute_copy(attention_output, session.prefix_row, hidden)
+
+            run_phase("attention_and_pre_moe", attention_and_pre_moe)
+
+            selected_ids: list[np.ndarray] = []
+            selected_weights: list[np.ndarray] = []
+
+            def router() -> None:
+                if runtime.router_batch_function is not None:
+                    ids_batch, weights_batch, effective_batch = self._route_batch_chunked(
+                        self._batch_hidden_input,
+                        batch=rows,
+                        accumulate_stats=profile_phases,
+                    )
+                    for row in range(rows):
+                        ids = ids_batch[row]
+                        route_weights = weights_batch[row]
+                        if int(effective_batch[row]) != topk or len(set(ids.tolist())) != topk:
+                            raise KimiCudaError(
+                                "verification-major Kimi route did not retain 16 unique experts"
+                            )
+                        selected_ids.append(ids.copy())
+                        selected_weights.append(route_weights.copy())
+                    return
+                for row in range(rows):
+                    ids, route_weights, effective = runtime.route(
+                        _pointer_offset(self._batch_hidden_input, row * hidden),
+                        weights["router"],
+                        weights["router_bias"],
+                        hidden=hidden,
+                        experts=self.config.experts,
+                        topk=topk,
+                        accumulate_stats=profile_phases,
+                    )
+                    if effective != topk or len(set(ids.tolist())) != topk:
+                        raise KimiCudaError(
+                            "verification-major Kimi route did not retain 16 unique experts"
+                        )
+                    selected_ids.append(ids.copy())
+                    selected_weights.append(route_weights.copy())
+
+            run_phase("router", router)
+            route_matrix = np.stack(selected_ids, axis=0)
+            grouped_plan = build_grouped_expert_plan(
+                route_matrix,
+                supported_batch_sizes=(
+                    size
+                    for size in runtime.expert_supported_batches
+                    if size <= self._batch_capacity
+                ),
+            )
+
+            run_phase(
+                "latent_down",
+                lambda: runtime.execute_dense(
+                    weights["latent_down"],
+                    self._batch_latent_rows,
+                    self._batch_hidden_input,
+                    rows,
+                ),
+            )
+
+            shared_chunks = self._supported_batch_chunks(rows)
+
+            def shared_expert() -> None:
+                offset = 0
+                for chunk in shared_chunks:
+                    runtime.execute_resident(
+                        weights["shared_mlp"],
+                        _pointer_offset(self._batch_shared_output, offset * hidden),
+                        _pointer_offset(self._batch_hidden_input, offset * hidden),
+                        chunk,
+                    )
+                    offset += chunk
+
+            run_phase("shared_expert", shared_expert)
+
+            dispatch_copies = 0
+            collection_copies = 0
+            fused_indexed_dispatch = runtime.indexed_copy_rows_function is not None
+            if len(self._expert_ownership) != self.config.experts:
+                raise KimiCudaError(
+                    "verification-major execution requires all experts to be locally resident"
+                )
+
+            if expert_strategy == "expert_major":
+
+                if fused_indexed_dispatch:
+                    gather_indices = np.ascontiguousarray(
+                        [assignment.row for assignment in grouped_plan.assignments],
+                        dtype=np.int32,
+                    )
+
+                    def expert_dispatch() -> None:
+                        nonlocal dispatch_copies
+                        runtime.upload_bytes(
+                            self._batch_gather_indices, gather_indices
+                        )
+                        runtime.execute_indexed_copy_rows(
+                            self._batch_expert_input,
+                            self._batch_latent_rows,
+                            self._batch_gather_indices,
+                            rows=grouped_plan.total_assignments,
+                            dimension=latent,
+                        )
+                        dispatch_copies = grouped_plan.total_assignments
+
+                else:
+
+                    def expert_dispatch() -> None:
+                        nonlocal dispatch_copies
+                        for assignment in grouped_plan.assignments:
+                            runtime.execute_copy(
+                                _pointer_offset(
+                                    self._batch_expert_input,
+                                    assignment.work_index * latent,
+                                ),
+                                _pointer_offset(
+                                    self._batch_latent_rows,
+                                    assignment.row * latent,
+                                ),
+                                latent,
+                            )
+                            dispatch_copies += 1
+
+                run_phase("expert_dispatch", expert_dispatch)
+
+                def routed_expert_compute() -> None:
+                    for group in grouped_plan.groups:
+                        offset = group.start
+                        for chunk in group.native_chunks:
+                            runtime.execute_resident(
+                                self._experts[group.expert_id],
+                                _pointer_offset(
+                                    self._batch_expert_output, offset * latent
+                                ),
+                                _pointer_offset(
+                                    self._batch_expert_input, offset * latent
+                                ),
+                                chunk,
+                            )
+                            offset += chunk
+
+                run_phase("routed_expert_compute", routed_expert_compute)
+
+                if fused_indexed_dispatch:
+                    scatter_indices = np.ascontiguousarray(
+                        grouped_plan.row_slot_to_work, dtype=np.int32
+                    ).reshape(-1)
+
+                    def expert_collection() -> None:
+                        nonlocal collection_copies
+                        runtime.upload_bytes(
+                            self._batch_scatter_indices, scatter_indices
+                        )
+                        runtime.execute_indexed_copy_rows(
+                            self._batch_expert_input,
+                            self._batch_expert_output,
+                            self._batch_scatter_indices,
+                            rows=grouped_plan.total_assignments,
+                            dimension=latent,
+                        )
+                        collection_copies = grouped_plan.total_assignments
+
+                else:
+
+                    def expert_collection() -> None:
+                        nonlocal collection_copies
+                        for assignment in grouped_plan.assignments:
+                            runtime.execute_copy(
+                                _pointer_offset(
+                                    self._batch_expert_input,
+                                    (
+                                        assignment.row * topk
+                                        + assignment.slot
+                                    )
+                                    * latent,
+                                ),
+                                _pointer_offset(
+                                    self._batch_expert_output,
+                                    assignment.work_index * latent,
+                                ),
+                                latent,
+                            )
+                            collection_copies += 1
+
+                run_phase("expert_collection", expert_collection)
+                native_expert_calls = grouped_plan.native_call_count
+            else:
+
+                def token_major_experts() -> None:
+                    for row, ids in enumerate(selected_ids):
+                        for slot, expert_value in enumerate(ids.tolist()):
+                            runtime.execute_resident(
+                                self._experts[int(expert_value)],
+                                _pointer_offset(
+                                    self._batch_expert_input,
+                                    (row * topk + slot) * latent,
+                                ),
+                                _pointer_offset(self._batch_latent_rows, row * latent),
+                                1,
+                            )
+
+                run_phase("routed_expert_compute", token_major_experts)
+                native_expert_calls = rows * topk
+
+            def reduction() -> None:
+                for row in range(rows):
+                    runtime.execute_copy(
+                        session.expert_rows,
+                        _pointer_offset(
+                            self._batch_expert_input, row * topk * latent
+                        ),
+                        topk * latent,
+                    )
+                    runtime.upload_activation(
+                        session.route_weights,
+                        np.ascontiguousarray(selected_weights[row], dtype=np.float32),
+                    )
+                    runtime.execute_moe_reduction(
+                        session.reduced,
+                        session.expert_rows,
+                        session.route_weights,
+                        count=topk,
+                        dimension=latent,
+                    )
+                    runtime.execute_rmsnorm(
+                        session.reduced,
+                        session.reduced,
+                        weights["routed_norm"],
+                        batch=1,
+                        dimension=latent,
+                        epsilon=self.config.epsilon,
+                    )
+                    runtime.execute_copy(
+                        _pointer_offset(self._batch_latent_rows, row * latent),
+                        session.reduced,
+                        latent,
+                    )
+
+            run_phase("scatter_reduction", reduction)
+            run_phase(
+                "latent_up",
+                lambda: runtime.execute_dense(
+                    weights["latent_up"],
+                    self._batch_hidden_input,
+                    self._batch_latent_rows,
+                    rows,
+                ),
+            )
+
+            def residual_and_boundary() -> None:
+                for row in range(rows):
+                    routed = _pointer_offset(self._batch_hidden_input, row * hidden)
+                    prefix = _pointer_offset(self._batch_hidden_output, row * hidden)
+                    shared = _pointer_offset(self._batch_shared_output, row * hidden)
+                    runtime.execute_add(routed, shared, hidden)
+                    runtime.execute_add(prefix, routed, hidden)
+                    runtime.execute_copy(
+                        _pointer_offset(
+                            self._batch_boundary, row * boundary_row_elements
+                        ),
+                        prefix,
+                        hidden,
+                    )
+
+            run_phase("residual", residual_and_boundary)
+
+            def download_boundary() -> None:
+                nonlocal result_boundary
+                result_boundary = runtime.download_activation(
+                    self._batch_boundary, (rows, 9, hidden)
+                )
+
+            run_phase("boundary_d2h", download_boundary)
+            runtime.synchronize()
+            device_ms = None
+            if whole_profile_open:
+                device_ms = runtime.profile_end()
+                whole_profile_open = False
+        except BaseException:
+            if whole_profile_open:
+                with contextlib.suppress(BaseException):
+                    runtime.profile_end()
+            # Stateful attention cannot be rolled back cheaply.  Invalidating
+            # the session is the only exact failure-recovery policy.
+            with contextlib.suppress(BaseException):
+                self.close_session(block.session_id)
+            raise
+
+        if result_boundary is None:
+            raise KimiCudaError("verification-major execution emitted no boundary")
+        session.cache_length += rows
+        self._execute_count += rows
+        self._batch_execute_count += 1
+        wall_ns = time.perf_counter_ns() - wall_started
+        memory_after = runtime.mem_info()
+        reuse = expert_reuse_statistics(route_matrix)
+        total_assignments = rows * topk
+        boundary_bytes = rows * boundary_row_elements * np.dtype(np.float32).itemsize
+        router_metadata_bytes = rows * (2 * topk + 1) * np.dtype(np.float32).itemsize
+        record: dict[str, Any] = {
+            "verification_block": {
+                "session_id": block.session_id,
+                "candidate_count": block.candidate_count,
+                "include_bonus_token": block.include_bonus_token,
+                "row_count": rows,
+                "positions": list(positions),
+            },
+            "expert_strategy": expert_strategy,
+            "dcp_degree": dcp_degree,
+            "selected_expert_ids": route_matrix.astype(int).tolist(),
+            "selected_weights": [
+                [float(value) for value in row] for row in selected_weights
+            ],
+            "boundary_output": result_boundary,
+            "wall_ms": wall_ns / 1e6,
+            "device_ms": device_ms,
+            "phase_device_ms": phase_device_ms,
+            "phase_wall_ms": phase_wall_ms,
+            "profile_phases": profile_phases,
+            "routing": {
+                **reuse,
+                "native_routed_expert_calls": native_expert_calls,
+                "effective_weight_reuse_rows_per_native_call": (
+                    total_assignments / native_expert_calls
+                ),
+                "avoided_routed_expert_weight_launches": (
+                    total_assignments - native_expert_calls
+                ),
+            },
+            "dispatch": {
+                "implementation": (
+                    "fused_indexed_device_copy"
+                    if fused_indexed_dispatch and expert_strategy == "expert_major"
+                    else "individual_device_copies"
+                ),
+                "count": dispatch_copies + collection_copies,
+                "gather_count": dispatch_copies,
+                "scatter_count": collection_copies,
+                "gather_payload_bytes": dispatch_copies * latent * 4,
+                "scatter_payload_bytes": collection_copies * latent * 4,
+                "index_h2d_bytes": (
+                    2 * total_assignments * np.dtype(np.int32).itemsize
+                    if fused_indexed_dispatch and expert_strategy == "expert_major"
+                    else 0
+                ),
+                "group_dimensions": [
+                    {
+                        "expert_id": group.expert_id,
+                        "assignments": group.count,
+                        "native_chunks": list(group.native_chunks),
+                    }
+                    for group in grouped_plan.groups
+                ],
+            },
+            "transfers": {
+                "boundary_h2d_bytes": boundary_bytes,
+                "boundary_d2h_bytes": boundary_bytes,
+                "router_metadata_d2h_bytes": router_metadata_bytes,
+                "route_weight_h2d_bytes": rows * topk * 4,
+                "expert_gather_d2d_bytes": dispatch_copies * latent * 4,
+                "expert_scatter_d2d_bytes": collection_copies * latent * 4,
+                "host_device_transfer_count": 2 + 2 * len(
+                    self._supported_batch_chunks(rows)
+                ) + rows,
+            },
+            "synchronization_count": (
+                len(phase_wall_ms) if profile_phases else 2
+            ),
+            "persistent_buffer_allocations_during_execute": (
+                self._persistent_buffer_allocation_count - allocation_before
+            ),
+            "weight_loads_during_execute": self._weight_load_count - weight_load_before,
+            "materializations_during_execute": (
+                self._model_materialization_count - materialization_before
+            ),
+            "free_device_bytes_before": memory_before["free_bytes"],
+            "free_device_bytes_after": memory_after["free_bytes"],
+            "device_memory_growth_bytes": max(
+                0,
+                int(memory_before["free_bytes"]) - int(memory_after["free_bytes"]),
+            ),
+        }
+        self.execution_records.append(record)
+        return record
+
     def execute_prefill(
         self,
         *,
@@ -1975,6 +2664,76 @@ class PersistentKimiStageExecutor:
             * np.dtype(np.float32).itemsize
         )
 
+    def clone_session_state(
+        self,
+        source_session_id: str,
+        destination_session_id: str,
+        *,
+        maximum_context_override: int | None = None,
+    ) -> dict[str, Any]:
+        """Clone exact attention state device-to-device for a prepared branch."""
+
+        source = self._require_session(source_session_id)
+        maximum_context = (
+            source.maximum_context
+            if maximum_context_override is None
+            else int(maximum_context_override)
+        )
+        if maximum_context < source.cache_length:
+            raise ValueError("cloned Kimi session cannot truncate active attention state")
+        copied_bytes = 0
+        self.open_session(
+            destination_session_id,
+            maximum_context_override=maximum_context,
+        )
+        try:
+            destination = self._require_session(destination_session_id)
+            if self.layer in self.config.kda_layers:
+                elements = {
+                    "state": (
+                        self.config.kda_heads
+                        * self.config.kda_head_dimension
+                        * self.config.kda_head_dimension
+                    ),
+                    "window_q": (
+                        self.config.kda_projection * self.config.convolution_width
+                    ),
+                    "window_k": (
+                        self.config.kda_projection * self.config.convolution_width
+                    ),
+                    "window_v": (
+                        self.config.kda_projection * self.config.convolution_width
+                    ),
+                }
+            else:
+                elements = {
+                    "latent_cache": source.cache_length * self.config.kv_lora,
+                    "rope_cache": source.cache_length * self.config.query_rope,
+                }
+            for name, count in elements.items():
+                if count:
+                    self.runtime.execute_copy(
+                        destination.attention_state[name],
+                        source.attention_state[name],
+                        count,
+                    )
+                    copied_bytes += count * np.dtype(np.float32).itemsize
+            self.runtime.synchronize()
+            destination.cache_length = source.cache_length
+        except BaseException:
+            with contextlib.suppress(BaseException):
+                self.close_session(destination_session_id)
+            raise
+        return {
+            "source_session_id": source_session_id,
+            "destination_session_id": destination_session_id,
+            "cache_sequence_length": source.cache_length,
+            "copied_device_to_device_bytes": copied_bytes,
+            "attention_type": (
+                "KDA" if self.layer in self.config.kda_layers else "Gated_MLA"
+            ),
+        }
+
     def close_session(self, session_id: str) -> int:
         session = self._require_session(session_id)
         released = self.kv_cache_bytes(session_id)
@@ -2002,6 +2761,8 @@ class PersistentKimiStageExecutor:
             "resident_device_bytes": self.resident_device_bytes,
             "tracked_device_bytes": self.tracked_device_bytes,
             "batch_capacity": self._batch_capacity,
+            "verification_major_enabled": self._verification_major_enabled,
+            "verification_max_rows": VERIFICATION_MAX_ROWS,
             "batch_supported_sizes": [
                 size
                 for size in self.runtime.expert_supported_batches

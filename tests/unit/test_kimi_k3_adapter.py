@@ -124,6 +124,20 @@ def test_native_library_identity_is_paired_and_fail_closed(tmp_path: Path) -> No
         )
 
 
+def test_verification_major_load_configuration_round_trips() -> None:
+    request = _request(
+        fast_path_mode="verification-major",
+        fast_path_batch_bucket=17,
+        fast_path_context_bucket=8192,
+    )
+
+    restored = LoadStageRequest.model_validate_json(request.model_dump_json())
+
+    assert restored.fast_path_mode == "verification-major"
+    assert restored.fast_path_batch_bucket == 17
+    assert restored.fast_path_context_bucket == 8192
+
+
 def test_worker_pinned_identity_attests_unannotated_checkpoint(tmp_path: Path) -> None:
     config_path = tmp_path / "config.json"
     index_path = tmp_path / "model.safetensors.index.json"
