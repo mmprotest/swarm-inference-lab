@@ -1,370 +1,821 @@
-# AGENTS.md — Swarm Inference Lab
+# AGENTS.md
 
-## 1. Project mission
+# Swarm Inference Lab
 
-Swarm Inference Lab exists to test whether very large LLM inference can be assembled from **fragmented commodity compute and memory** rather than requiring any participating machine to hold large model units.
+This file defines the permanent product thesis, engineering principles, experimental method, and decision rules for Swarm Inference Lab.
 
-The north-star model is **Kimi K3**. The current technical target is **>= 5 exact output/accepted target tokens per second per user**, eventually with economics competitive with conventional hosted inference.
+These principles override temporary experiment-specific assumptions. Individual experiments may impose artificial constraints to isolate a hypothesis, but those constraints must never silently become the product architecture.
 
-The project is experimental. Every material claim must be tied to a reproducible experiment and an explicit evidence class.
+---
 
-## 2. Canonical definition of a Swarm result
+## 1. Core Product Thesis
 
-> **A Swarm result is only a Swarm result if the model cannot be executed by assigning whole layers to the participating workers, and the reported performance emerges from sub-layer fragments distributed across independent machines.**
+Swarm Inference is a heterogeneous distributed inference runtime for large AI models.
 
-This definition is non-negotiable.
+The system should accept a changing pool of compute nodes with different capabilities, understand what each node is good at, and dynamically partition model execution across those nodes in the way that best satisfies the current objective.
 
-If an experiment can be implemented by assigning complete transformer layers to the same participating machines, it may still be useful distributed-inference research, but **it is not evidence for the core Swarm thesis**.
+A node may differ from another node in:
 
-## 3. What a Swarm worker means
+- accelerator type;
+- accelerator memory;
+- system RAM;
+- compute throughput;
+- memory bandwidth;
+- supported numerical formats;
+- CPU capability;
+- network latency;
+- network bandwidth;
+- locality relative to other nodes;
+- reliability;
+- availability;
+- power or monetary cost;
+- model data already cached locally.
 
-For core-thesis experiments:
+The runtime must treat this heterogeneity as a first-class scheduling input.
 
-- A **worker is one independent machine**, not a logical GPU rank hidden inside a multi-GPU server.
-- A worker owns only **sub-layer model fragments**.
-- A worker must have an explicit total peak memory cap.
-- The primary pre-physical proof tier is **<= 8 GiB total peak worker memory**.
-- Also test 4 GiB, 2 GiB, and 1 GiB tiers where feasible.
-- Worker peak memory includes weights, quantization scales, recurrent/KV state, activations, scratch, reduction buffers, transport buffers, CUDA workspace, queued chunks, and measurable allocator overhead.
-- No worker may own an entire ordinary K3 transformer layer.
-- No worker may own an entire routed expert or entire shared expert in a core-thesis headline configuration.
-- A compute event must always have a concrete `worker_id`.
-- Every resident model byte and mutable state object must have a concrete worker owner.
+The long-term objective is not to force one fixed sharding topology onto every deployment. The objective is to build a runtime capable of choosing the right granularity and placement for the resources that actually exist.
 
-A host/pod/locality grouping may exist for orchestration or reporting, but it must not be an aggregate compute resource and must not hide memory, compute, or communication.
+---
 
-## 4. Whole-layer infeasibility must be proven, not asserted
+## 2. Ultimate Product Goal
 
-Every core-thesis experiment must run an explicit **whole-layer placement feasibility test** using the same participating worker capacities.
+The eventual product should behave approximately like this:
 
-The test asks whether the complete K3 graph could be executed by assigning every transformer layer whole to one of the participating machines without sub-layer sharding.
+1. Nodes join the swarm.
+2. The runtime profiles or learns their capabilities.
+3. The runtime discovers network relationships between nodes.
+4. The runtime determines which parts of a model each node can execute efficiently.
+5. The runtime creates a placement and execution plan.
+6. Model state is distributed or reused according to that plan.
+7. Inference executes across the swarm.
+8. The runtime measures actual performance.
+9. Placement and scheduling can adapt as nodes, workloads, or network conditions change.
 
-For the current checkpoint, measured physical checkpoint payload by transformer layer is approximately:
+The user should not need to manually decide which node runs which layer, expert, projection, attention head, shard, or reduction.
 
-- layer 0: ~2.18 GiB, a small special layer;
-- 24 layers: ~15.43 GiB each;
-- 68 layers: ~15.82 GiB each.
+The runtime should make those decisions.
 
-Therefore an 8 GiB worker tier makes whole-layer placement of the complete model impossible even though the small first layer can fit. The experiment must emit a machine-readable infeasibility receipt rather than relying on these approximate numbers.
+---
 
-Do not weaken the worker cap merely to obtain a favorable throughput result.
+## 3. Model Partitioning Is Multi-Granularity
 
-## 5. Independent-machine rule
+Swarm must support multiple useful partitioning granularities.
 
-The core thesis is not proven by putting many shard workers inside one conventional multi-GPU server.
+Possible units include:
 
-For a core Swarm result:
+- groups of layers;
+- individual layers;
+- experts;
+- groups of experts;
+- expert stripes;
+- attention heads;
+- projection rows or columns;
+- tensor shards;
+- sub-layer fragments;
+- recurrent or cache state ownership;
+- other architecture-specific units where mathematically valid.
 
-- Each worker is modeled or physically instantiated as an **independent machine**.
-- There is no free shared VRAM.
-- There is no free PCIe/NVLink/NCCL path between workers.
-- Every inter-worker dependency crosses an explicit transport edge with latency, bandwidth, serialization/protocol overhead, queuing, and synchronization accounted for.
-- One machine must not host multiple headline workers whose aggregate memory would quietly reconstruct a conventional layer-sized executor.
+No single granularity is the permanent architecture.
 
-A multi-GPU server may be used later as a control or implementation comparison, but it must be labeled **clustered distributed inference**, not Swarm proof.
+Whole-layer placement is valid when it is efficient.
 
-## 6. No monolithic compute abstractions
+Sub-layer placement is valid when it improves the system.
 
-The following are forbidden as headline compute resources in core Swarm experiments:
+Mixed placement is expected to be important.
 
-- 8-layer `microcell` service times;
-- whole-layer service times;
-- aggregate GPU pools;
-- aggregate host compute;
-- idealized stages whose service is supplied externally;
-- `sum(layer_time)/workers` or similar divide-by-N speedups;
-- hidden monolithic fallbacks underneath a shard API.
+A strong Swarm planner may choose different granularities for different parts of the same model.
 
-A logical stage may be derived **after** worker events complete for reporting, but stage latency must emerge from explicit worker tasks and communication.
+---
 
-The term `microcell` should not be used for a compute resource in new core-thesis experiments. Historical references to Experiments 012–020 are allowed.
+## 4. Why Sub-Layer Execution Matters
 
-## 7. Performance must emerge bottom-up
+Sub-layer execution is a critical capability, but it is not a requirement that every layer be split.
 
-Every headline throughput result must emerge from:
+Its value must be demonstrated empirically.
 
-- physically measured shard primitives where available;
-- explicit worker queues;
-- explicit shard ownership;
-- explicit fanout;
-- explicit reductions/collectives;
-- explicit state dependencies;
-- explicit transport;
-- explicit wavefront scheduling;
-- explicit scheduler/software overhead.
+Sub-layer execution may be useful because it can:
 
-Do not normalize bottom-up timings to historical target-pass numbers or to the desired result.
+- allow nodes that cannot efficiently take a larger model unit to contribute;
+- make fragmented memory usable;
+- improve utilization of heterogeneous hardware;
+- increase parallelism;
+- reduce bottlenecks caused by one slow or oversized stage;
+- allow expert, projection, attention, or other model work to be distributed independently;
+- enable more flexible placement across a changing node pool;
+- improve cost efficiency;
+- increase aggregate capacity available to the inference system.
 
-No global correction multiplier may be applied merely to force agreement.
+The important experimental question is therefore not:
 
-## 8. Model validation rule
+> Can we split a layer?
 
-The model-validity question is:
+The important question is:
 
-> Does the event/runtime model predict the physically executed **sharded algorithm**?
+> Does having access to sub-layer partitioning improve the best achievable inference system compared with a planner restricted to coarser placement?
 
-It is **not**:
+Sub-layer execution must earn its complexity through measured system benefit.
 
-> Does serial execution of a sharded algorithm equal the optimized monolithic algorithm?
+---
 
-Sharding may legitimately increase total compute work.
+## 5. Swarm Is Not a Fixed Cluster Topology
 
-Validation should use ordered physical shard execution on the local GPU, then constrain the event model to the same resource/order and compare predicted wall time with measured wall time.
+Do not hard-code the product around a topology discovered in one experiment.
 
-Recommended gates unless a later preregistered experiment justifies stricter ones:
+Concepts such as:
 
-- median absolute error <= 5%;
-- p90 <= 10%;
-- maximum <= 15%.
+- stages;
+- pods;
+- cells;
+- worker groups;
+- locality domains;
+- pipelines;
 
-No post-hoc normalization.
+may be useful implementation abstractions.
 
-## 9. Evidence classes
+They must not become permanent compute assumptions unless the evidence justifies them.
 
-Every important performance claim must be labeled as one of:
+In particular, never create an abstract aggregate compute resource and assume it has a service time without deriving that service from the actual resources underneath it.
 
-- **PHYSICAL_SINGLE_MACHINE** — actually timed on one physical machine/GPU.
-- **PHYSICAL_SHARD_EXECUTION** — real shard code/weights executed physically, possibly serialized on one device.
-- **VALIDATED_INDEPENDENT_MACHINE_MODEL** — explicit independent-worker model whose shard timing/accounting has passed the declared validation gates.
-- **SHAPED_NETWORK** — network behavior imposed/modelled, not physically measured between independent machines.
-- **PHYSICAL_SWARM** — multiple independent physical machines actually execute the distributed inference path.
+Any aggregate structure used in a performance model must be explainable from:
 
-Never call a shaped network physical WAN.
-Never call a one-GPU logical-worker test a physical swarm.
-Never call a multi-GPU single-host run proof of independent-machine Swarm.
+- concrete workers;
+- concrete compute;
+- concrete memory ownership;
+- concrete communication;
+- concrete synchronization.
 
-## 10. Kimi K3 canonical facts for this repo
+Topology is a consequence of placement, not the product thesis.
 
-Current authoritative local checkpoint path:
+---
 
-`F:\\models\\Kimi-K3`
+## 6. Nodes Are Capability Descriptions
 
-Checkpoint facts established by prior experiments:
+A node should be represented by measured capabilities rather than a hard-coded hardware class.
 
-- ~1.56 TB physical checkpoint payload;
-- 497,220 tensors in the current census;
-- 93 transformer layers;
-- 69 KDA layers;
-- 24 Gated MLA layers;
-- 896 routed experts;
-- 16 selected routed experts per applicable token/layer;
-- 2 shared experts;
-- hidden dimension 7168;
-- latent dimension 3584.
+A useful node capability record should eventually include fields such as:
 
-Use current repo artifacts/checkpoint metadata as the source of truth and revalidate hashes/identities for new decisive experiments.
+- node identifier;
+- accelerator type;
+- accelerator architecture;
+- available accelerator memory;
+- available system RAM;
+- measured matrix/vector performance for relevant shapes;
+- supported dtypes and quantization formats;
+- memory bandwidth;
+- CPU capability;
+- network latency to relevant peers;
+- network bandwidth to relevant peers;
+- reliability;
+- current utilization;
+- monetary cost if applicable;
+- power cost if applicable;
+- local model shards or cached objects;
+- software/runtime capabilities.
 
-## 11. Exactness
+Prefer measured capability over hardware-name heuristics.
 
-Core experiments are exact unless explicitly classified otherwise.
+Two devices with the same product name may behave differently because of clocks, topology, drivers, contention, or network.
 
-Do not use in a headline exact result:
+---
 
-- expert dropping;
-- approximate routing;
-- route prediction;
-- lossy activation compression;
-- lossy state compression;
-- state quantization that fails qualification;
-- approximate reductions;
-- altered K3 weights/model architecture.
+## 7. The Placement Problem
 
-Preserve routes, recurrent state, MLA/KV state, AttnRes state, hidden outputs, logits, and greedy token under the established numerical tolerance policy.
+The long-term planner should solve a constrained optimization problem.
 
-Approximate research may be performed as a separately labeled arm only if an exact control is retained.
+Inputs include:
 
-## 12. The scientific loop
+- model graph;
+- tensor sizes;
+- operator dependencies;
+- state dependencies;
+- available nodes;
+- node capabilities;
+- network topology;
+- cached model state;
+- workload;
+- latency target;
+- throughput target;
+- cost objective;
+- reliability constraints.
 
-Every experiment follows:
+Outputs include:
 
-**hypothesis -> implementation -> benchmark -> inspect result -> redesign**
+- model partition;
+- tensor ownership;
+- state ownership;
+- worker assignment;
+- replication decisions;
+- communication plan;
+- collective plan;
+- execution schedule;
+- wavefront or pipeline schedule where useful.
 
-Do not optimize for PASS.
-A strong falsification is a successful experiment.
+Potential objectives include:
 
-Never change gates after seeing results.
-Never promote a microbenchmark to a system claim without passing through the actual worker-level critical path.
+- minimize single-user latency;
+- maximize throughput;
+- minimize cost per token;
+- maximize useful hardware utilization;
+- minimize network communication;
+- minimize expensive synchronization;
+- satisfy a latency target at minimum cost.
 
-## 13. System target
+Different product modes may optimize different objectives.
 
-Current primary technical target:
+---
 
-**>= 5 exact Kimi K3 tok/s/user**
+## 8. Performance Must Be End-to-End
 
-Always report:
+Do not confuse a local kernel improvement with a Swarm improvement.
 
-- target pass ms;
-- tok/s/user;
-- worker count;
-- max peak memory/worker;
-- total resident bytes;
-- active worker-seconds/token;
-- network bytes/token;
-- compute-work inflation;
-- worker utilization;
+Every optimization must eventually answer:
+
+- Did target-pass latency improve?
+- Did tokens per second improve?
+- Did cost per token improve?
+- Did usable node capacity improve?
+- Did the critical path shrink?
+- Did communication or synchronization increase elsewhere?
+- Did the optimization still help after composing the full system?
+
+Local benchmarks are diagnostic evidence.
+
+System-level performance is the decision metric.
+
+---
+
+## 9. Communication Is Part of Compute Architecture
+
+Distributed execution is useful only if communication does not erase the benefit.
+
+Every partitioning design must account for:
+
+- bytes transferred;
+- message count;
+- serial waits;
+- collective steps;
+- fanout;
+- reduction;
+- software transport overhead;
+- network latency;
+- network bandwidth;
+- state movement;
+- synchronization frequency.
+
+Prefer architectures that:
+
+- keep nonlinear intermediate state local;
+- send compact inputs and outputs;
+- coalesce many logical operations into fewer physical messages;
+- reduce locally before communicating;
+- cache immutable state;
+- avoid repeatedly transmitting unchanged data;
+- overlap communication with useful compute where dependencies permit;
+- keep fine-grained synchronization on sufficiently fast links;
+- use coarse communication across slower links.
+
+Many messages are acceptable if they do not become serial critical-path waits.
+
+---
+
+## 10. Logical Granularity and Physical Execution Are Different
+
+A logical task may be tiny without requiring one kernel, one process, or one network message per task.
+
+This distinction is fundamental.
+
+The runtime should be able to represent thousands of fine-grained logical tasks while physically coalescing compatible work.
+
+Examples:
+
+- many expert fragments may execute in one grouped kernel;
+- many route assignments may be reduced locally before one network transfer;
+- multiple logical shard tasks may share persistent state;
+- a persistent worker may execute an internal task graph without returning to the central coordinator.
+
+Fine-grained ownership should not automatically imply fine-grained overhead.
+
+---
+
+## 11. Persistent State Is Important
+
+Where possible, workers should retain the state they repeatedly need.
+
+Examples include:
+
+- model weights;
+- quantization metadata;
+- recurrent state;
+- KV or compressed attention state;
+- immutable depth-state objects;
+- static pointer maps;
+- tensor descriptors;
+- routing structures;
+- compiled kernels;
+- reusable buffers.
+
+Performance experiments must distinguish:
+
+- startup cost;
+- model acquisition cost;
+- steady-state inference cost.
+
+Do not accidentally include repeated model loading in steady-state execution unless the intended product truly requires it.
+
+Likewise, do not exclude loading or transfer costs if the proposed deployment would actually pay them repeatedly.
+
+The validation environment and modeled environment must use the same residency assumptions.
+
+---
+
+## 12. Dynamic Adaptation Is a Product Requirement
+
+The final system should not assume a static fleet forever.
+
+Nodes may:
+
+- join;
+- leave;
+- slow down;
+- become unavailable;
+- change network conditions;
+- change utilization;
+- change cost.
+
+The planner should eventually be capable of:
+
+- profiling new nodes;
+- deciding whether a node is useful;
+- assigning useful work;
+- rebalancing bottlenecks;
+- avoiding or removing harmful nodes;
+- recomputing placement when necessary.
+
+More nodes are not automatically better.
+
+A node should participate only when its contribution improves the selected system objective or provides required capacity/reliability.
+
+---
+
+## 13. Scientific Experimental Process
+
+All major Swarm development must follow:
+
+> hypothesis -> implementation -> benchmark -> inspect result -> redesign
+
+Every experiment must begin with a falsifiable hypothesis.
+
+Every experiment must define success and failure criteria before seeing the result.
+
+Every experiment must preserve enough artifacts for an independent reader to reconstruct:
+
+- what was tested;
+- what code ran;
+- what model/checkpoint ran;
+- what hardware ran;
+- what assumptions were modeled;
+- what was physically measured;
+- how metrics were calculated;
+- why the conclusion follows from the evidence.
+
+A failed hypothesis is a useful result.
+
+Do not redesign acceptance thresholds after seeing the data.
+
+---
+
+## 14. Experimental Evidence Classes
+
+Every result must clearly identify its evidence class.
+
+### PHYSICAL
+
+Actually executed on the stated independent hardware and network.
+
+### PHYSICALLY GROUNDED MODEL
+
+Uses physical measurements of lower-level operations but composes them into a larger unmeasured system model.
+
+### SHAPED NETWORK
+
+Uses explicit simulated or shaped network conditions.
+
+### PROJECTION
+
+Derived from measurements and assumptions but not directly physically instantiated.
+
+### SYNTHETIC
+
+Uses artificial workload or timing inputs.
+
+Never present one class as another.
+
+A modeled full swarm is not a physical swarm.
+
+A single-device sequential replay is not a physical many-device swarm.
+
+---
+
+## 15. Model Validation
+
+A performance model must predict the algorithm it is actually modeling.
+
+Validation should compare:
+
+> predicted execution of implementation X
+
+with:
+
+> physically measured execution of implementation X.
+
+Do not require a distributed/sharded algorithm to have the same serial cost as a different monolithic implementation.
+
+Sharding may introduce additional work.
+
+That work must be measured and charged.
+
+The important checks are:
+
+- are all compute operations included?
+- are all communication operations included?
+- are all waits included?
+- are all state operations included?
+- does the model predict a physically executed version of the same task graph?
+
+Never normalize a model to force agreement with the desired result.
+
+If a correction factor is required, its origin must be independently justified and validated on held-out evidence.
+
+---
+
+## 16. Baselines Must Be Strong
+
+When testing whether a new capability is valuable, compare it against the strongest reasonable alternative using the same resource pool.
+
+Examples:
+
+- whole-layer placement versus mixed/sub-layer placement;
+- whole experts versus expert stripes;
+- serial stage execution versus wavefront execution;
+- fixed placement versus adaptive placement;
+- current transport versus improved transport.
+
+Do not compare a sophisticated new method against an intentionally weak baseline.
+
+The goal is to learn whether the capability adds value to the best system we could otherwise build.
+
+---
+
+## 17. Whole-Layer vs Sub-Layer Value Test
+
+This should become a recurring Swarm benchmark.
+
+Given the same heterogeneous node inventory, evaluate increasingly capable planners:
+
+### Planner A
+Coarse placement only.
+
+### Planner B
+Whole layers plus architecture-specific coarse units such as whole experts.
+
+### Planner C
+Adds selective sub-layer partitioning.
+
+### Planner D
+Fully adaptive mixed-granularity placement.
+
+Measure:
+
+- feasible/not feasible;
+- tokens per second;
+- latency;
+- aggregate throughput;
 - critical path;
-- evidence class.
+- utilized memory;
+- stranded memory;
+- worker utilization;
+- communication;
+- cost per token;
+- number of useful nodes.
 
-A throughput number without worker size and network assumptions is incomplete.
+The value of sub-layer execution is the improvement from allowing the planner to use it when advantageous.
 
-## 14. Memory-fragmentation curve is a core result
+---
 
-New Swarm experiments should, where possible, measure the tradeoff:
+## 18. Heterogeneous Resource Experiments
 
-- 8 GiB workers;
-- 4 GiB workers;
-- 2 GiB workers;
-- 1 GiB workers.
+Experiments should increasingly use realistic mixed inventories rather than only homogeneous fleets.
 
-For each tier report the best exact throughput, worker count, communication, and utilization.
+Useful variations include:
 
-The core research question is:
+- different memory capacities;
+- different compute speeds;
+- different accelerator architectures;
+- CPU-only nodes;
+- different network links;
+- changing reliability;
+- different monetary costs.
 
-> How small can independent worker memory become before useful inference collapses?
+The planner should learn or measure which nodes are useful.
 
-Do not substitute a larger-memory tier merely because it benchmarks better.
+Do not assume every available node should be used.
 
-## 15. Network regimes must be separated
+---
 
-Independent-machine Swarm performance must be reported across explicit network regimes rather than hidden behind one favorable link assumption.
+## 19. Critical-Path Thinking
 
-At minimum maintain comparable sweeps such as:
+The main performance question is:
 
-- very fast independent-host: ~0.25 ms / 25 Gb/s;
-- fast LAN: ~1 ms / 10 Gb/s;
-- regional: ~5 ms / 1 Gb/s;
-- WAN/consumer-like: ~20 ms / 100 Mb/s;
-- wider WAN sensitivity where useful.
+> What is on the critical path of one output token or verification block?
 
-Exact values may be changed only when preregistered and justified.
+Track:
 
-Report the **break-even network envelope** for the 5 tok/s goal.
+- total compute work;
+- parallel compute work;
+- serial compute work;
+- communication critical path;
+- synchronization critical path;
+- pipeline fill/drain;
+- load imbalance;
+- straggler amplification.
 
-A result that works only at datacenter-class network latency must say so clearly.
+Prefer designs that transform:
 
-## 16. Hierarchy is allowed only if it does not redefine the worker
+`sum(all work latency)`
 
-Hierarchical scheduling, reduction trees, caching, and wavefront execution are encouraged.
+toward:
 
-However, hierarchy must not turn several independent workers into an assumed aggregate compute unit.
+`critical path through overlapping work`.
 
-All lower-level network costs remain explicit.
+Do not claim parallelism merely because work has been divided into many tasks.
 
-## 17. Wavefront lesson from Experiment 018
+---
 
-Experiment 018 demonstrated a useful scheduling property: exact verification chunks can overlap across model depth and significantly shorten the critical path.
+## 20. Standard Metrics
 
-Its 6.7022 tok/s result was **not proof of the core Swarm thesis** because the compute model used logical 8-layer stages of roughly 122–136 GiB aggregate model state.
+Where applicable, Swarm experiments should report:
 
-Retain the wavefront scheduling idea.
-Discard the giant-stage abstraction for core Swarm claims.
+- output tokens/second/user;
+- target-only oracle tokens/second/user;
+- aggregate tokens/second;
+- latency per accepted/output token;
+- critical-path latency;
+- useful parallelism;
+- critical-path fraction;
+- total worker compute;
+- compute-work inflation;
+- bytes transferred/token;
+- serial waits/token;
+- messages/token;
+- worker utilization;
+- memory utilization;
+- maximum worker memory;
+- total resident model memory;
+- replication factor;
+- active worker-seconds/token;
+- cost per million output tokens;
+- prediction error when a model is used.
 
-## 18. Experiment 019 lesson
+Metrics should be mechanically derived from saved artifacts where possible.
 
-Experiment 019 materially advanced the real thesis:
+---
 
-- complete K3 shard-only placement;
-- 376 bounded workers in its winning provisional layout;
-- max worker peak ~4.495 GiB;
-- no whole layers/experts;
-- full 93-layer sharded correctness;
-- exact routes and greedy token.
+## 21. Correctness Comes Before Performance
 
-Its `MODEL_INVALID` result followed a flawed serial-equality validation gate. Do not repeat that gate.
+Optimization must preserve the intended model semantics unless an experiment explicitly studies approximation.
 
-E019 also showed that naïve per-expert network microsharding is poor and that **expert-stripe workers** are much better: a stripe worker owns the same sub-expert slice across all experts in its assigned depth, computes the top-16 local fragments, applies route weights locally, and emits one partial output for reduction.
+Exact-mode checks may include:
 
-Retain that architecture unless newer evidence falsifies it.
+- tensor coverage;
+- output equivalence;
+- route identity;
+- expert identity/order;
+- recurrent-state identity;
+- cache/state fingerprints;
+- hidden-state error;
+- logit error;
+- greedy-token identity.
 
-## 19. Experiment 020 lesson
+Approximate execution, if ever tested, must be clearly labeled and compared with an exact control.
 
-Experiment 020 was correctly zero-spend and found deployment blockers, but its frozen 96-worker plan used 12 conventional 8-GPU P8 hosts.
+Never silently trade correctness for speed.
 
-That plan is **not the core Swarm proof** because:
+---
 
-- each 24 GB RTX 3090 can already hold an ordinary K3 layer;
-- an 8x3090 host is a conventional multi-GPU cluster;
-- intra-host P8 sharding is optional tensor parallelism, not memory-forced sub-layer Swarm.
+## 22. Generality
 
-The Vast provisioning, safety, model acquisition, hashing, Linux/SM86 build, controller work, and other reusable infrastructure remain valuable.
+The runtime is intended to become a general distributed inference system, not a one-model benchmark harness.
 
-Do not treat the 12xP8-host deployment topology as canonical for the core thesis.
+Specific models may serve as demanding proving grounds.
 
-## 20. Whole-layer control
+Model-specific kernels and execution strategies are acceptable when architecture-specific behavior genuinely requires them.
 
-When hardware/memory permits, compare a sub-layer Swarm architecture against whole-layer placement as a control.
+However:
 
-But the **headline Swarm result must use a worker tier where complete-model whole-layer placement is infeasible**.
+- model names must not be used as hidden benchmark shortcuts;
+- scheduling abstractions should remain general where possible;
+- architecture-specific capabilities should be exposed cleanly;
+- the planner should be able to reason about different model structures.
 
-A whole-layer control is there to quantify fragmentation tax, not to define the Swarm architecture.
+A successful experiment should be incorporated into the canonical runtime when the result is general enough to justify it.
 
-## 21. Repeated-work/caching principles
+---
 
-Retain exact optimizations that reduce repeated work without changing the thesis, including:
+## 23. No Benchmark-Specific Tricks
 
-- immutable AttnRes object caching;
-- device-resident persistent state;
-- grouped top-16 expert-stripe execution;
-- local route-weighted accumulation before reduction;
-- persistent connections;
-- cached tensor descriptors/pointer maps;
-- direct shard loading from checkpoint ranges;
-- no repeated whole-weight repacking on the hot path.
+Never introduce:
 
-Do not resurrect optimizations already falsified as primary latency paths unless new evidence changes the bottleneck.
+- hard-coded benchmark routes;
+- task-name heuristics;
+- test-fixture-specific branches;
+- synthetic shortcuts in production paths;
+- hidden precomputed outputs;
+- assumptions chosen only because they make one experiment pass.
 
-## 22. Control plane
+Experiments must test architecture, not exploit the benchmark.
 
-There must not be one central RPC per microshard.
+---
 
-Use hierarchical/task-batched scheduling while retaining explicit independent worker ownership.
+## 24. Do Not Confuse Capacity With Performance
 
-Measure scaling to hundreds/thousands of logical workers/tasks.
+A partition may prove that a model fits across a set of nodes.
 
-Logical task count and physical kernel count are different. Coalesce compatible local shard work into efficient launches where exact dependencies permit.
+That does not prove it runs efficiently.
 
-## 23. Vast.ai policy
+Always separate:
 
-No GPU rental without explicit user approval in the current conversation.
+### Capacity result
+The model can be represented and executed correctly using the available memory.
 
-Pre-rental experiments may use the installed Vast.ai CLI only for read-only operations such as account/auth verification and live offer searches.
+### Performance result
+The resulting execution has useful latency/throughput.
 
-Rental/mutation commands must fail closed unless an explicitly approved physical-swarm experiment arms them with a budget.
+### Economic result
+The resulting execution is cost-effective enough for the intended product.
 
-For core Swarm planning, search **independent single-GPU/small-memory machines**, not giant multi-GPU hosts, unless those hosts are being used only as controls.
+These are separate gates.
 
-A market/fleet plan must not redefine independent workers into one host-level resource.
+---
 
-## 24. Physical swarm threshold
+## 25. Do Not Confuse Simulation With Deployment
 
-Do not claim the core Swarm thesis physically proven until multiple independent machines actually execute sub-layer fragments and complete Kimi K3 inference through the production transport.
+Single-machine logical workers are useful for:
 
-The eventual physical test should use machines whose per-machine capacity makes whole-layer placement of the complete model impossible.
+- correctness;
+- task-graph validation;
+- scheduler testing;
+- control-plane scaling;
+- deterministic network models;
+- placement experiments.
 
-Until then use `VALIDATED_INDEPENDENT_MACHINE_MODEL`, not `PHYSICAL_SWARM`.
+They cannot prove:
 
-## 25. No OLMoE
+- actual inter-machine transport performance;
+- real distributed contention;
+- actual straggler behavior;
+- real multi-device collectives;
+- real full-swarm throughput.
 
-Do not add OLMoE-specific code, fixtures, examples, compatibility work, or documentation.
+Before spending money on large physical experiments, simulations should eliminate every uncertainty they reasonably can.
 
-General-purpose open-weight model support remains a product goal, but Kimi K3 is the current north-star proof target.
+Once those uncertainties are exhausted, physical experiments should adjudicate the remaining ones.
 
-## 26. Before declaring any experiment complete
+---
 
-Answer these questions explicitly:
+## 26. Experimental Scope Discipline
 
-1. Could the participating machines have run the complete model by assigning whole layers? If yes, this is not a core Swarm result.
-2. Does any headline worker secretly aggregate multiple GPUs/machines? If yes, fix the abstraction.
-3. Is every compute event tied to an independent worker?
-4. Are all worker memory caps respected including runtime state/buffers?
-5. Is the entire checkpoint covered?
-6. Are arbitrary real expert routes supported without hot-path weight movement?
-7. Are all fanout/reduction/network costs explicit?
-8. Is the sharded timing model validated against actual ordered shard execution?
-9. Is the result exact?
-10. Is the evidence class stated correctly?
-11. Does the result move the 5 tok/s goal?
-12. What memory tier and network regime does it actually support?
+Each experiment should answer one primary scientific question.
 
-If the answer to #1 is yes, do not use the word `Swarm` in the headline claim.
+Do not allow an experiment to expand indefinitely into unrelated optimizations.
 
+Secondary arms are appropriate when they:
+
+- directly explain the primary result;
+- remove a discovered bottleneck;
+- test an immediate redesign suggested by evidence.
+
+If the central hypothesis is falsified, say so.
+
+Do not rescue it by silently changing the question.
+
+---
+
+## 27. Historical Results Do Not Become Assumptions
+
+Previous experiment results are evidence.
+
+They should inform later hypotheses.
+
+They must not become permanent architectural constraints merely because they once won a benchmark.
+
+Every inherited choice should be revisited when:
+
+- the available resource pool changes;
+- the optimization objective changes;
+- the bottleneck moves;
+- a more general planner becomes available.
+
+---
+
+## 28. Product Economics
+
+The eventual runtime must be economically meaningful.
+
+Performance alone is insufficient.
+
+Relevant economic questions include:
+
+- What hardware capacity must remain reserved?
+- How much of it is actively computing?
+- How much network traffic is generated?
+- How many concurrent users can the placement serve?
+- What is the cost per output token?
+- What is the value of otherwise stranded hardware?
+- Does using a weak node help or hurt the system?
+- Is replication worth its cost?
+- Is a different partition cheaper for the same service target?
+
+The planner should eventually be able to optimize for cost as well as latency.
+
+---
+
+## 29. The Long-Term Product Test
+
+The ultimate demonstration should look like this:
+
+1. Provide Swarm with a heterogeneous set of nodes.
+2. Do not manually prescribe the model split.
+3. Swarm profiles the resources.
+4. Swarm discovers network topology.
+5. Swarm creates a mixed-granularity placement.
+6. The model is distributed.
+7. Inference runs correctly.
+8. Swarm measures performance.
+9. A node joins, leaves, slows down, or changes.
+10. Swarm adapts its placement or schedule.
+11. Performance remains useful.
+
+The important achievement is not one clever partition.
+
+It is a runtime that can repeatedly find a good partition for the resources it has.
+
+---
+
+## 30. North-Star Research Question
+
+All experiments should ultimately contribute evidence toward:
+
+> Can a heterogeneous pool of otherwise fragmented compute and memory be turned into a useful, adaptive virtual inference accelerator for models whose efficient execution would normally require much more rigid infrastructure?
+
+Sub-layer partitioning is a central capability in answering this question.
+
+It is not the entire answer.
+
+---
+
+## 31. Permanent Experimental Loop
+
+When deciding what to do next, always return to:
+
+**Hypothesis**
+
+What specific claim are we testing?
+
+**Implementation**
+
+What is the smallest honest implementation capable of testing it?
+
+**Benchmark**
+
+What measurement would distinguish success from failure?
+
+**Inspect**
+
+Where did time, memory, network traffic, and synchronization actually go?
+
+**Redesign**
+
+What does the evidence imply should change next?
+
+Then repeat:
+
+> hypothesis -> implementation -> benchmark -> inspect result -> redesign
+
+This loop is the operating method of Swarm Inference Lab.
+
+---
+
+## 32. Final Guardrail
+
+Before proposing or implementing a major architectural change, ask:
+
+1. Does this serve the heterogeneous adaptive Swarm thesis?
+2. Is this a temporary experimental constraint or a product requirement?
+3. Am I accidentally hard-coding a topology because it performed well once?
+4. Am I allowing the planner to choose whole-layer and sub-layer placement when appropriate?
+5. Does the claimed performance emerge from the actual workers and communication underneath it?
+6. Is the evidence physical, modeled, or projected, and is it labeled correctly?
+7. What strong baseline should this be compared against?
+8. What would falsify the idea?
+
+If these questions cannot be answered clearly, do not proceed until the experiment is reframed.
