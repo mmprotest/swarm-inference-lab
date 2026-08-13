@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1.7
+FROM nvidia/cuda:13.0.1-devel-ubuntu24.04 AS native
+
+WORKDIR /build
+COPY third_party/colibri/c/backend_cuda.cu third_party/colibri/c/backend_cuda.h third_party/colibri/c/backend_gpu_compat.h ./colibri/
+COPY src/swarm_inference/experiments/experiment_019/native/kda_shard.cu ./kda_shard.cu
+COPY src/swarm_inference/experiments/experiment_020/native/grouped_top16.cu ./grouped_top16.cu
+RUN mkdir -p /out \
+    && nvcc -O3 -std=c++17 -arch=sm_86 -Xcompiler=-fPIC -shared \
+       ./colibri/backend_cuda.cu -o /out/libcoli_cuda-sm86.so \
+    && nvcc -O3 -std=c++17 -arch=sm_86 -Xcompiler=-fPIC -shared \
+       ./kda_shard.cu -o /out/libe019_kda_shard-sm86.so \
+    && nvcc -O3 -std=c++17 -arch=sm_86 -Xcompiler=-fPIC -shared \
+       ./grouped_top16.cu -o /out/libe020_grouped_top16-sm86.so \
+    && cuobjdump --list-elf /out/libcoli_cuda-sm86.so \
+    && cuobjdump --list-elf /out/libe019_kda_shard-sm86.so \
+    && cuobjdump --list-elf /out/libe020_grouped_top16-sm86.so
+
+FROM nvidia/cuda:13.0.1-runtime-ubuntu24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl python3.12 python3.12-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV VIRTUAL_ENV=/opt/swarm-venv \
+    UV_PROJECT_ENVIRONMENT=/opt/swarm-venv \
+    PATH=/opt/swarm-venv/bin:$PATH \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    SWARM_COLI_CUDA_LIBRARY=/opt/swarm/native/libcoli_cuda-sm86.so \
+    SWARM_KDA_SHARD_LIBRARY=/opt/swarm/native/libe019_kda_shard-sm86.so \
+    SWARM_GROUPED_EXPERT_LIBRARY=/opt/swarm/native/libe020_grouped_top16-sm86.so
+RUN python3.12 -m venv "$VIRTUAL_ENV" \
+    && pip install --no-cache-dir uv==0.8.12
+
+WORKDIR /opt/swarm
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+COPY deployment/bootstrap_e021.sh /opt/swarm/bootstrap_e021.sh
+COPY artifacts/experiment-020/placement/worker-manifest /opt/swarm/manifests
+COPY artifacts/experiment-020/deployment/pod-bundles.json /opt/swarm/pod-bundles.json
+COPY --from=native /out/ /opt/swarm/native/
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --extra cuda
+
+RUN useradd --create-home --uid 10001 swarm \
+    && mkdir -p /var/lib/swarm/cache \
+    && chmod 0555 /opt/swarm/bootstrap_e021.sh \
+    && chown -R swarm:swarm /opt/swarm /var/lib/swarm
+USER swarm
+
+HEALTHCHECK --interval=10s --timeout=3s --retries=6 \
+  CMD python -m swarm_inference.experiments.experiment_020.worker_main health || exit 1
+
+ENTRYPOINT ["python", "-m", "swarm_inference.experiments.experiment_020.worker_main"]
