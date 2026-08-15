@@ -22,6 +22,7 @@ from swarm_inference.experiments.experiment_020.transport import Frame, MessageT
 
 
 class ShardTaskType(StrEnum):
+    WHOLE_LAYER = "WHOLE_LAYER"
     KDA_SHARD = "KDA_SHARD"
     MLA_SHARD = "MLA_SHARD"
     EXPERT_STRIPE = "EXPERT_STRIPE"
@@ -30,6 +31,7 @@ class ShardTaskType(StrEnum):
     PROJECTION_SHARD = "PROJECTION_SHARD"
     REDUCTION_CONTRIBUTION = "REDUCTION_CONTRIBUTION"
     ORDERED_LAYER_DAG = "ORDERED_LAYER_DAG"
+    ENDPOINT = "ENDPOINT"
 
 
 @dataclass(frozen=True, slots=True)

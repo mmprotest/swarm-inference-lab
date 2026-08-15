@@ -26,11 +26,6 @@ from .inventories import materialize_inventory_suite
 from .io import atomic_write_json, atomic_write_text, read_json, sha256_file, write_csv
 from .model_graph import build_model_graph, model_metadata
 from .models import PartitionKind, PlannerLevel
-from .native_dispatch import (
-    CallableResidentPrimitive,
-    NativeShardDispatcher,
-    ShardTaskType,
-)
 from .oracle import validate_optimizer_oracle
 from .planner import OptimizerConfiguration, SharedPlacementOptimizer
 from .sensitivity import run_sensitivities
@@ -135,26 +130,6 @@ def _production_primitive_receipt(artifact_root: Path) -> dict[str, Any]:
             artifact_root / "validation" / "resident-ordered-raw.json"
         )["status"],
     }
-    # The protocol/dispatch unit exercises exact binary shape and digest
-    # handling. Native invocation is separately proven by full correctness.
-    dispatcher = NativeShardDispatcher("receipt-worker")
-    for task_type in (
-        ShardTaskType.KDA_SHARD,
-        ShardTaskType.MLA_SHARD,
-        ShardTaskType.EXPERT_STRIPE,
-        ShardTaskType.SHARED_EXPERT_SHARD,
-        ShardTaskType.PROJECTION_SHARD,
-        ShardTaskType.REDUCTION_CONTRIBUTION,
-    ):
-        dispatcher.register(
-            f"schema:{task_type.value}",
-            task_type,
-            CallableResidentPrimitive(
-                f"native-binding-required:{task_type.value}",
-                lambda values, _request: values,
-                native=True,
-            ),
-        )
     correctness = read_json(
         artifact_root / "correctness" / "worker-process-full-93.json"
     )
@@ -162,21 +137,36 @@ def _production_primitive_receipt(artifact_root: Path) -> dict[str, Any]:
         all(value == "PASS" for value in physical.values())
         and correctness["status"] == "PASS"
     )
-    missing_individual_bindings = [
-        value.value
-        for value in (
-            ShardTaskType.KDA_SHARD,
-            ShardTaskType.MLA_SHARD,
-            ShardTaskType.EXPERT_STRIPE,
-            ShardTaskType.SHARED_EXPERT_SHARD,
-            ShardTaskType.PROJECTION_SHARD,
-            ShardTaskType.REDUCTION_CONTRIBUTION,
-        )
+    binding_path = (
+        artifact_root
+        / "completion"
+        / "implementation"
+        / "execute-shard-bindings.json"
+    )
+    binding = read_json(binding_path) if binding_path.is_file() else {}
+    binding_pass = (
+        binding.get("schema_version")
+        == "experiment-022-completion-execute-shard-bindings-v2"
+        and binding.get("status") == "PASS"
+        and int(binding.get("operation_count", 0)) == 6
+        and int(binding.get("checkpoint_reads_in_timed_region", -1)) == 0
+        and int(binding.get("whole_layer_fallback_count", -1)) == 0
+    )
+    expected_operations = [
+        "kda_shard",
+        "mla_shard",
+        "routed_expert_stripe",
+        "shared_expert_shard",
+        "projection_shard",
+        "reduction_contribution",
     ]
+    missing_individual_bindings = sorted(
+        set(expected_operations) - set(binding.get("operations", ()))
+    )
     return {
-        "schema_version": "experiment-022-primitive-results-v1",
-        "status": "FAIL",
-        "registered_task_types": [value.value for value in ShardTaskType],
+        "schema_version": "experiment-022-primitive-results-v2",
+        "status": "PASS" if physical_graph_pass and binding_pass else "FAIL",
+        "registered_task_types": expected_operations,
         "placeholder_result_present": False,
         "partial_latent_vector_present": False,
         "physical_receipts": physical,
@@ -185,13 +175,17 @@ def _production_primitive_receipt(artifact_root: Path) -> dict[str, Any]:
             "PASS" if physical_graph_pass else "FAIL"
         ),
         "individual_task_bindings": {
-            "status": "FAIL_NOT_BOUND_TO_PRODUCTION_NATIVE_HANDLES",
-            "binding_count": dispatcher.assignment_count,
-            "schema_dispatch_tested": True,
+            "status": "PASS" if binding_pass else "FAIL_COMPLETION_BINDING_REQUIRED",
+            "binding_count": int(binding.get("operation_count", 0)),
+            "physical_authenticated_dispatch_tested": binding_pass,
             "missing_individual_native_bindings": missing_individual_bindings,
-            "native_operator_evidence": "physical receipts and internal full-DAG audit only",
+            "native_operator_evidence": str(binding_path),
         },
-        "headline_gate_effect": "MODEL_INVALID",
+        "headline_gate_effect": (
+            "CONTINUE_TO_REMAINING_COMPLETION_GATES"
+            if binding_pass
+            else "MODEL_INVALID"
+        ),
     }
 
 

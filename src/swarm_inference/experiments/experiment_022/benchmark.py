@@ -156,7 +156,7 @@ def plan_row(
     }
 
 
-def _catalog_with_validation(
+def validated_candidate_catalog(
     model: ModelGraph,
     service: ResidentServiceModel,
 ) -> dict[str, Any]:
@@ -165,22 +165,135 @@ def _catalog_with_validation(
     for row in catalog["candidates"]:
         layer = model.layers[int(row["layer"])]
         kind = PartitionKind(row["partition_type"])
-        supported = service.supported_candidate(
-            layer, kind, int(row["degree"]), 1
+        eligible_chunks = [
+            chunk
+            for chunk in (1, 2, 4)
+            if service.supported_candidate(
+                layer, kind, int(row["degree"]), chunk
+            )
+        ]
+        correctness_receipts = {
+            PartitionKind.WHOLE_LAYER: [
+                "artifacts/experiment-018/physical/layer-service.csv",
+            ],
+            PartitionKind.WHOLE_EXPERT: [
+                "artifacts/experiment-022/completion/implementation/whole-expert-status.json",
+            ],
+            PartitionKind.EXPERT_SHARD: [
+                "artifacts/experiment-022/completion/implementation/execute-shard-bindings.json",
+                "artifacts/experiment-022/completion/physical/resident-kda-traces.json",
+                "artifacts/experiment-022/completion/physical/resident-mla-traces.json",
+            ],
+            PartitionKind.ATTENTION_PROJECTION_SHARD: [
+                "artifacts/experiment-022/completion/implementation/execute-shard-bindings.json",
+                "artifacts/experiment-022/completion/physical/resident-kda-traces.json",
+                "artifacts/experiment-022/completion/physical/resident-mla-traces.json",
+            ],
+            PartitionKind.FULL_MIXED_STRIPE: [
+                "artifacts/experiment-022/completion/implementation/execute-shard-bindings.json",
+                "artifacts/experiment-022/completion/physical/resident-kda-traces.json",
+                "artifacts/experiment-022/completion/physical/resident-mla-traces.json",
+            ],
+        }[kind]
+        row["partition_degree"] = int(row["degree"])
+        row["correctness_receipt"] = correctness_receipts
+        required_provenance = (
+            "candidate_type",
+            "layer",
+            "partition_degree",
+            "resident_memory_bytes",
+            "worker_compute_dag",
+            "state_ownership",
+            "collective_dag",
+            "network_payload",
         )
+        provenance_complete = all(
+            field in row and row[field] is not None for field in required_provenance
+        )
+        supported = bool(eligible_chunks) and provenance_complete
         row["correctness_status"] = "PASS" if supported else "INELIGIBLE_UNVALIDATED"
         row["service_status"] = (
-            "VALIDATED_PHYSICAL_OR_FEATURE_INTERPOLATION"
+            "VALIDATED_PHYSICAL_FEATURE_CONDITIONED"
             if supported
             else "NO_HEADLINE_SERVICE"
         )
         row["headline_eligible"] = supported
-        row["eligible_chunk_rows"] = [1] if supported and kind is not PartitionKind.WHOLE_LAYER else (
-            [1, 2, 4] if supported else []
-        )
+        row["eligible_chunk_rows"] = eligible_chunks
+        row["chunk_sizes_physically_validated"] = eligible_chunks
+        row["service_source"] = sorted(service.sources) if supported else []
+        row["required_provenance_complete"] = provenance_complete
+        row["production_native_binding"] = supported
         eligible += int(supported)
     catalog["headline_eligible_candidates"] = eligible
     catalog["imaginary_candidates_admitted"] = 0
+    required_fields = {
+        "candidate_type",
+        "layer",
+        "partition_degree",
+        "chunk_sizes_physically_validated",
+        "resident_memory_bytes",
+        "worker_compute_dag",
+        "state_ownership",
+        "collective_dag",
+        "network_payload",
+        "service_source",
+        "correctness_receipt",
+        "production_native_binding",
+    }
+    incomplete = [
+        str(row["candidate_id"])
+        for row in catalog["candidates"]
+        if not required_fields <= row.keys()
+    ]
+    eligible_without_provenance = [
+        str(row["candidate_id"])
+        for row in catalog["candidates"]
+        if row["headline_eligible"]
+        and (
+            not row["chunk_sizes_physically_validated"]
+            or not row["service_source"]
+            or not row["correctness_receipt"]
+            or row["production_native_binding"] is not True
+            or row["required_provenance_complete"] is not True
+        )
+    ]
+    whole_chunk_4_layers = {
+        int(row["layer"])
+        for row in catalog["candidates"]
+        if row["candidate_type"] == PartitionKind.WHOLE_LAYER.value
+        and int(row["partition_degree"]) == 1
+        and 4 in row["chunk_sizes_physically_validated"]
+    }
+    chunk_4_sublayer_types = {
+        str(row["candidate_type"])
+        for row in catalog["candidates"]
+        if row["candidate_type"] != PartitionKind.WHOLE_LAYER.value
+        and 4 in row["chunk_sizes_physically_validated"]
+    }
+    expected_sublayer_types = {
+        PartitionKind.WHOLE_EXPERT.value,
+        PartitionKind.EXPERT_SHARD.value,
+        PartitionKind.ATTENTION_PROJECTION_SHARD.value,
+        PartitionKind.FULL_MIXED_STRIPE.value,
+    }
+    catalog["required_fields"] = sorted(required_fields)
+    catalog["incomplete_candidates"] = incomplete
+    catalog["eligible_candidates_without_provenance"] = eligible_without_provenance
+    catalog["whole_layer_chunk_4_layer_count"] = len(whole_chunk_4_layers)
+    catalog["chunk_4_sublayer_types"] = sorted(chunk_4_sublayer_types)
+    catalog["fair_chunk_4_comparison"] = (
+        len(whole_chunk_4_layers) == len(model.layers)
+        and expected_sublayer_types <= chunk_4_sublayer_types
+    )
+    catalog["status"] = (
+        "PASS"
+        if not incomplete
+        and not eligible_without_provenance
+        and catalog["fair_chunk_4_comparison"]
+        else "FAIL"
+    )
+    if catalog["status"] != "PASS":
+        raise RuntimeError("MODEL_INVALID: candidate catalog provenance/fairness failed")
     return catalog
 
 
@@ -190,13 +303,16 @@ def run_static_suite(
     inventories: list[Inventory],
     service: ResidentServiceModel,
     configuration: OptimizerConfiguration,
+    *,
+    planner_directory: str = "planner",
 ) -> dict[str, Any]:
     optimizer = SharedPlacementOptimizer(model, service, configuration)
     all_rows: list[dict[str, Any]] = []
     convergence: list[dict[str, Any]] = []
     plans: dict[tuple[str, PlannerLevel], PlacementPlan] = {}
     optimizer_results: dict[tuple[str, PlannerLevel], OptimizerResult] = {}
-    placement_root = artifact_root / "planner" / "placements"
+    planner_root = artifact_root / planner_directory
+    placement_root = planner_root / "placements"
     for inventory_index, inventory in enumerate(inventories, 1):
         print(
             f"[e022 planner] inventory {inventory_index:02d}/{len(inventories)} "
@@ -204,12 +320,20 @@ def run_static_suite(
             flush=True,
         )
         results: dict[PlannerLevel, OptimizerResult] = {}
-        incumbent: PlacementPlan | None = None
-        for level in LEVELS:
-            result = optimizer.optimize(inventory, level, fallback=incumbent)
-            results[level] = result
-            if result.plan.feasible:
-                incumbent = result.plan
+        results[PlannerLevel.A] = optimizer.optimize(
+            inventory, PlannerLevel.A, fallback=None
+        )
+        planner_a_incumbent = results[PlannerLevel.A].plan
+        for level in LEVELS[1:]:
+            # Every expanded action space receives exactly the same free
+            # incumbent.  Otherwise E would inherit B/C/D search work in
+            # addition to its own frozen budget, making the headline optimizer
+            # comparison structurally unequal.
+            results[level] = optimizer.optimize(
+                inventory,
+                level,
+                fallback=planner_a_incumbent,
+            )
 
         # If a larger action space discovers a strictly better all-whole
         # placement, promote it into A and rerun the ladder. This is a baseline
@@ -241,13 +365,10 @@ def run_static_suite(
                 exact_evaluations=results[PlannerLevel.A].exact_evaluations,
                 fallback_retained=False,
             )
-            incumbent = promoted
             for level in LEVELS[1:]:
                 results[level] = optimizer.optimize(
-                    inventory, level, fallback=incumbent
+                    inventory, level, fallback=promoted
                 )
-                if results[level].plan.feasible:
-                    incumbent = results[level].plan
 
         fallback = results[PlannerLevel.A].plan
         for level in LEVELS[1:]:
@@ -263,13 +384,13 @@ def run_static_suite(
                 placement_root / f"{inventory.inventory_id}-{level.value}.json",
                 result.plan.as_manifest(model, inventory),
             )
-    write_csv(artifact_root / "planner" / "ablation-results.csv", all_rows)
+    write_csv(planner_root / "ablation-results.csv", all_rows)
     write_csv(
-        artifact_root / "planner" / "whole-layer-results.csv",
+        planner_root / "whole-layer-results.csv",
         [row for row in all_rows if row["planner_level"] == "A"],
     )
     write_csv(
-        artifact_root / "planner" / "adaptive-results.csv",
+        planner_root / "adaptive-results.csv",
         [row for row in all_rows if row["planner_level"] == "E"],
     )
     write_csv(
@@ -277,8 +398,8 @@ def run_static_suite(
         convergence,
     )
     atomic_write_json(
-        artifact_root / "planner" / "candidate-catalog.json",
-        _catalog_with_validation(model, service),
+        planner_root / "candidate-catalog.json",
+        validated_candidate_catalog(model, service),
     )
     analysis = analyze_static(inventories, all_rows)
     for name, rows in analysis.items():
@@ -372,6 +493,7 @@ def analyze_static(
                 for key in (
                     "inventory_id",
                     "family",
+                    "feasible",
                     "exact_tok_s_per_user",
                     "whole_layer_percent",
                     "whole_expert_percent",
@@ -426,6 +548,8 @@ def run_dynamic_suite(
     inventories: list[Inventory],
     static: dict[str, Any],
     optimizer: SharedPlacementOptimizer,
+    *,
+    output_directory: str = "dynamic",
 ) -> dict[str, list[dict[str, Any]]]:
     selected = [inventory for inventory in inventories if inventory.family == "full-mixed"][:5]
     rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -445,21 +569,42 @@ def run_dynamic_suite(
         "NODE_LOSS": "node-loss.csv",
     }
     for name, filename in names.items():
-        write_csv(artifact_root / "dynamic" / filename, rows.get(name, []))
+        write_csv(artifact_root / output_directory / filename, rows.get(name, []))
     return dict(rows)
 
 
 def headline_statistics(analysis: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
-    uplifts = [float(row["throughput_uplift_percent"]) for row in analysis["throughput-uplift"]]
+    uplift_rows = analysis["throughput-uplift"]
+    all_uplifts = [float(row["throughput_uplift_percent"]) for row in uplift_rows]
+    heterogeneous_uplifts = [
+        float(row["throughput_uplift_percent"])
+        for row in uplift_rows
+        if str(row["family"]) != "coarse-friendly"
+    ]
     return {
-        "a_feasible_inventory_count": len(uplifts),
-        "median_uplift_percent": statistics.median(uplifts) if uplifts else None,
-        "p25_uplift_percent": float(np.percentile(uplifts, 25)) if uplifts else None,
-        "p75_uplift_percent": float(np.percentile(uplifts, 75)) if uplifts else None,
-        "largest_uplift_percent": max(uplifts, default=None),
-        "wins_ge_20_percent": sum(value >= 20 for value in uplifts),
-        "wins_ge_10_percent": sum(value >= 10 for value in uplifts),
-        "regressions_gt_1_percent": sum(value < -1 for value in uplifts),
+        "a_feasible_inventory_count": len(all_uplifts),
+        "heterogeneous_a_feasible_inventory_count": len(heterogeneous_uplifts),
+        "median_uplift_percent": (
+            statistics.median(heterogeneous_uplifts)
+            if heterogeneous_uplifts
+            else None
+        ),
+        "p25_uplift_percent": (
+            float(np.percentile(heterogeneous_uplifts, 25))
+            if heterogeneous_uplifts
+            else None
+        ),
+        "p75_uplift_percent": (
+            float(np.percentile(heterogeneous_uplifts, 75))
+            if heterogeneous_uplifts
+            else None
+        ),
+        "largest_uplift_percent": max(heterogeneous_uplifts, default=None),
+        "wins_ge_20_percent": sum(value >= 20 for value in heterogeneous_uplifts),
+        "wins_ge_10_percent": sum(value >= 10 for value in heterogeneous_uplifts),
+        "regressions_gt_1_percent": sum(value < -1 for value in all_uplifts),
+        "uplift_population": "A-feasible heterogeneous inventories; coarse-friendly controls excluded",
+        "regression_population": "all A-feasible inventories",
         "capacity_unlocks": len(analysis["capacity-unlocks"]),
         "target_crossings": len(analysis["target-crossings"]),
     }
@@ -472,4 +617,5 @@ __all__ = [
     "plan_row",
     "run_dynamic_suite",
     "run_static_suite",
+    "validated_candidate_catalog",
 ]

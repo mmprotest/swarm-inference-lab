@@ -13,6 +13,7 @@ from swarm_inference.experiments.experiment_022.inventories import (
 from swarm_inference.experiments.experiment_022.io import read_json
 from swarm_inference.experiments.experiment_022.model_graph import (
     build_model_graph,
+    candidate_catalog,
     candidate_memory,
 )
 from swarm_inference.experiments.experiment_022.models import (
@@ -131,7 +132,9 @@ def test_execute_shard_dispatches_registered_resident_primitive() -> None:
 def test_candidate_memory_reconciles_semantic_split_ownership() -> None:
     layer = _model().layers[45]
     routed = layer.component_bytes["routed_expert"]
-    attention = layer.component_bytes["attention"]
+    attention = layer.component_bytes["attention_shardable"]
+    attention_common = layer.component_bytes["attention_common"]
+    attention_replicated = layer.component_bytes["attention_replicated"]
     projection = layer.component_bytes["projection"]
     shared = layer.component_bytes["shared_expert"]
     split_bytes = {
@@ -145,6 +148,27 @@ def test_candidate_memory_reconciles_semantic_split_ownership() -> None:
         assert sum(checkpoint) == layer.checkpoint_bytes
         assert checkpoint[0] >= layer.checkpoint_bytes - split
         assert sum(resident) >= layer.resident_bytes
+        if kind is PartitionKind.ATTENTION_PROJECTION_SHARD:
+            assert checkpoint[0] >= attention_common + attention_replicated
+            assert all(value > 0 for value in resident[1:])
+
+
+def test_candidate_catalog_exposes_every_required_completion_field() -> None:
+    rows = candidate_catalog(_model())["candidates"]
+    required = {
+        "candidate_type",
+        "layer",
+        "partition_degree",
+        "resident_memory_bytes",
+        "worker_compute_dag",
+        "state_ownership",
+        "collective_dag",
+        "network_payload",
+    }
+    assert rows
+    assert all(required <= row.keys() for row in rows)
+    assert all(row["candidate_type"] == row["partition_type"] for row in rows)
+    assert all(row["partition_degree"] == row["degree"] for row in rows)
 
 
 def test_required_validation_and_optimizer_artifacts_pass() -> None:

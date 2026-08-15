@@ -110,45 +110,66 @@ class ResidentServiceModel:
         rows: int,
     ) -> bool:
         if kind is PartitionKind.WHOLE_LAYER:
-            return self.has(layer, "whole_layer", 1, rows)
+            return self.has(layer, "whole_layer", 1, rows) and self.has(
+                layer, "worker_protocol", 1, rows
+            )
         common = {
             ("router", 1),
-            ("attnres", 1),
-            ("latent_up_whole", 1),
-            ("ordered_dag_admission", 1),
+            ("worker_protocol", 1),
+            ("attention_preprocess", 1),
+            ("post_attention_preprocess", 1),
+            ("routed_shared_reduction", 2),
+            ("routed_norm", 1),
+            ("output_state_commit", 1),
         }
         if kind is PartitionKind.WHOLE_EXPERT:
             required = common | {
                 ("attention_whole", 1),
-                ("latent_down", degree),
+                ("latent_down_whole", 1),
                 ("expert_whole_group", degree),
+                ("expert_whole_group_remote", degree),
                 ("shared_expert_whole", 1),
-                ("reduction", degree),
+                ("latent_up_whole", 1),
+                ("expert_reduction", degree),
             }
         elif kind is PartitionKind.EXPERT_SHARD:
             required = common | {
                 ("attention_whole", 1),
                 ("latent_down_whole", 1),
                 ("expert_stripe", degree),
+                ("expert_stripe_remote", degree),
                 ("shared_expert_whole", 1),
-                ("reduction", degree),
+                ("latent_up_whole", 1),
+                ("expert_reduction", degree),
             }
         elif kind is PartitionKind.ATTENTION_PROJECTION_SHARD:
             required = common | {
+                ("attention_common", 1),
                 ("attention_shard", degree),
+                ("attention_shard_remote", degree),
                 ("latent_down_whole", 1),
                 ("expert_whole", 1),
                 ("shared_expert_whole", 1),
-                ("reduction", degree),
+                ("latent_up_whole", 1),
+                ("attention_reduction", degree),
             }
         elif kind is PartitionKind.FULL_MIXED_STRIPE:
             required = common | {
+                ("attention_common", 1),
                 ("attention_shard", degree),
+                ("attention_shard_remote", degree),
                 ("latent_down", degree),
+                ("latent_down_remote", degree),
                 ("latent_up", degree),
+                ("latent_up_remote", degree),
                 ("expert_stripe", degree),
+                ("expert_stripe_remote", degree),
                 ("shared_expert", degree),
-                ("reduction", degree),
+                ("shared_expert_remote", degree),
+                ("attention_reduction", degree),
+                ("expert_reduction", degree),
+                ("shared_reduction", degree),
+                ("latent_up_reduction", degree),
             }
         else:
             return False

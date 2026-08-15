@@ -1,191 +1,155 @@
-EXPERIMENT 022: MODEL_INVALID
+# Experiment 022: completion pass
 
-## 1. Executive result
+## 1. Original E022 result: MODEL_INVALID
 
-Experiment 022 evaluated 27 frozen controlled inventories. Across A-feasible heterogeneous inventories, adaptive mixed placement produced a median modeled uplift of 0.00%; p25/p75 across all A-feasible inventories were 0.00%/0.00%, the largest uplift was 0.00%, and 0 inventories reached at least 20% uplift. It unlocked 6 inventories, caused 0 crossings of 5 tok/s, and had 0 regressions beyond the 1% dominance tolerance.
+The original 27-inventory run remains part of the record. Resident timing validation passed; ordered-DAG prediction error was 2.71% median, 3.74% p90, and 4.00% maximum; the reduced optimizer oracle was within 1%; Planner E contained Planner A; regressions beyond 1% were zero; dynamic adaptation passed; and the generic authenticated 93-layer traversal passed. The original report nevertheless recorded **MODEL_INVALID**, 0.00% heterogeneous median uplift, six diagnostic capacity unlocks, and zero target crossings.
 
-Held-out ordered-DAG error was 2.71% median, 3.74% p90, and 4.00% maximum. Full representative correctness is **FAIL** and dynamic adaptation is **YES**. The final scientific verdict is **MODEL_INVALID**.
+Four material gates were open: the six individual `EXECUTE_SHARD` types were not all production-bound; the five frozen representative manifests were selected but not executed; sub-layer services did not physically cover chunks 2 and 4; and replay residual was heuristically assigned to five artificial barriers. The original artifacts were preserved outside `completion/`.
 
-| Question | Answer |
-| --- | --- |
-| Model validation passed? | YES |
-| Optimizer validated against small exact oracle? | YES |
-| Same optimizer used for whole and adaptive? | YES |
-| Adaptive search space contains whole-layer solutions? | YES |
-| Whole-layer baseline uses wavefront/topology awareness? | YES |
-| Number of preregistered inventories | 27 |
-| Median adaptive throughput uplift | 0.00% |
-| Inventories with >=20% uplift | 0/18 |
-| Whole-infeasible / adaptive-feasible inventories | 6 |
-| <5 -> >=5 target crossings | 0 |
-| Adaptive regressions >1% | 0 |
-| Full 93-layer representative correctness | FAIL |
-| Dynamic useful-node admission works? | YES |
-| Harmful nodes can be ignored? | YES |
-| Physical heterogeneous swarm tested? | NO |
-| GPUs rented? | NO |
-| Final sub-layer value verdict | MODEL_INVALID |
+## 2. Why the result was inadmissible
 
-![Whole versus adaptive](../../artifacts/experiment-022/charts/chart-01-whole-vs-adaptive.png)
+The failed gates affected the implementation and cost model, not merely documentation. They could change both candidate eligibility and predicted critical path. The first run therefore neither proved nor falsified material sub-layer value.
 
-## 2. Permanent Swarm thesis
+## 3. Frozen completion methodology
 
-Swarm is treated as a heterogeneous, adaptive inference runtime. Nodes are concrete capability records; topology emerges from placement; whole-layer and sub-layer actions coexist; and system value is judged by exact end-to-end critical-path throughput rather than a local kernel speedup.
+The completion pass reused exactly 27 inventories, their IDs, seeds, node capabilities, memory, network links, costs, topology relationships, planner action spaces, optimizer budget, objective, thresholds, and five previously selected correctness manifests. The canonical frozen suite digest is `3e949a8eee0a71e128493f64e0be903bd373d3baad4be86a8869d87279d4bb49`. No inventory was regenerated or added to headline statistics.
 
-## 3. Experiment hypothesis
+Machine-readable freeze receipt: [`frozen-inputs.json`](../../artifacts/experiment-022/completion/frozen-inputs.json).
 
-The preregistered hypothesis was that selective exact sub-layer actions would improve the best achievable Kimi K3 placement over the same planner restricted to whole layers, especially under memory fragmentation and compute imbalance, while being rejected when communication makes them harmful. The falsification conditions and hard verdict categories were fixed before the planner comparison.
+The primary metric is `Planner E tokens/s/user / Planner A tokens/s/user - 1` on A-feasible heterogeneous inventories. A-infeasible/E-feasible cases are counted separately as capacity unlocks. Evidence is labeled **PHYSICAL** for local RTX 5090 execution and **PHYSICALLY GROUNDED MODEL** for the distributed 27-inventory event replay.
 
-## 4. What E021 taught us
+## 4. Fix 1: production EXECUTE_SHARD
 
-E021 mixed checkpoint reads, repacking, uploads, and one-time initialization into physical shard timing while modeling resident workers. Its primitive estimates were also stale and production `EXECUTE_SHARD` still returned a mock partial vector. Those defects made E021's service model inadmissible for this comparison.
+All six semantic task types now bind authenticated frames to prepared native resident handles: KDA shard, MLA shard, routed expert stripe, shared expert shard, projection shard, and reduction contribution. The worker path performs frame decode, validation, handle lookup, native compute, state mutation where applicable, result materialization, and response encoding. Direct and worker outputs/states match, timed checkpoint reads are zero, and no whole-layer fallback is admitted.
 
-## 5. Timing-model repair
+Evidence: [`execute-shard-bindings.json`](../../artifacts/experiment-022/completion/implementation/execute-shard-bindings.json).
 
-E022 preloaded the simultaneously active shard set, separated startup, and timed only ordered resident work. The deterministic event engine was then forced to one compute resource and compared with the exact ordered implementation. No global normalization, correction factor, or post-hoc multiplier was applied.
+## 5. Fix 2: representative 93-layer executions
 
-## 6. Resident shard validation
+The exact five originally selected manifests were hash-checked and executed, including the intentionally duplicated manifest selections for their independently preregistered cases. Each traversal used authenticated `EXECUTE_SHARD`, the manifest's actual logical owners, real K3 state progression, all 93 transformer layers, the endpoint, logits, and greedy-token comparison. Result: **PASS**.
 
-Fresh measurements covered whole layers, attention/projection degrees 2/4/8/16 and row counts 1/2/4, complete arbitrary-route expert banks, and ordered KDA/MLA sharded DAGs. The timed region recorded zero checkpoint reads, uploads, shard construction, allocations, or quantization conversion. Unsupported or insufficiently stable combinations remain in the catalog as ineligible rather than becoming imaginary planner actions.
+Evidence: [`representative-selection.json`](../../artifacts/experiment-022/completion/correctness/representative-selection.json).
 
-## 7. Production EXECUTE_SHARD
+## 6. Fix 3: chunk 2/4 sub-layer validation
 
-The authenticated binary `EXECUTE_SHARD` dispatcher validates assignment, task type, dtype, shape, payload length, and digest before invoking a registered resident primitive. The mock `partial-latent-vector` result is absent and the full traversal uses a native ordered-layer DAG primitive. However, the six required individual task types were not each wired to production resident native handles; schema tests and physical component receipts are not a substitute for that dispatch integration. This open gate contributes to `MODEL_INVALID`.
+Important sub-layer primitives and complete KDA/MLA sharded DAGs were physically executed at chunks 1, 2, and 4. No chunk-4 service was extrapolated from chunk 1. Eligibility remains per candidate and only physically validated P8 sub-layer candidates enter the headline catalog; Planner E still contains every Planner A whole-layer chunk-4 solution.
 
-## 8. Full worker-process correctness
+![Physical chunk scaling](../../artifacts/experiment-022/completion/charts/chart-08-chunk-scaling.png)
 
-The fresh full traversal ran through a persistent spawned worker process and authenticated `EXECUTE_SHARD`, covering all 93 Kimi K3 transformer layers, native KDA/MLA/experts/projections/reductions, hidden output, logits, and greedy token. Representative placement coverage and any reuse limitation are recorded in `correctness/full-93-representative.json`; an unmet representative-plan gate invalidates the headline regardless of modeled planner results.
+The figure shows measured native service, not an assumed linear scaling curve. Chunk-2 validation: **YES**. Chunk-4 validation: **YES**.
 
-## 9. Node capability model
+## 7. Fix 4: ordered-residual decomposition
 
-`NodeCapability` records accelerator and system memory, measured-service multipliers, memory-bandwidth profile, supported precisions, explicit peer links, reliability, abstract cost, cached shards, runtime capabilities, availability, and locality. Placement code never branches on GPU product name, and controlled compute multipliers are constrained to 1.00 or slower.
+The resident DAG records CUDA events, launch submission, host orchestration, synchronization, device copies, native reduction, sequential single-GPU emulation, experiment-only receipt assembly, protocol, and unexplained wall. The old `residual / 5` barrier rule is absent. Every final cost has one owner; network transport is modeled only by network events.
 
-## 10. Partition candidate catalog
+Profiling identified concrete causes hidden by the old residual: the standalone attention harness performed an output-forming invocation and then invoked the same shard again for measurement; validation state was reset inside measured KDA/MLA calls; immutable AttnRes, normalization, and router data were repeatedly prepared or uploaded; and independent logical workers were serialized on one GPU. The first three were removed from steady state by one-invocation execution and persistent handles. The last remains measured and is classified only as a single-GPU emulation artifact.
 
-Candidates are generated from the 93-layer checkpoint graph and include only exact ownership layouts with reconciled bytes, a validated primitive/service condition, explicit worker tasks, collectives, and checkpoint ranges. The catalog distinguishes eligible physical/feature-interpolated candidates from `INELIGIBLE_UNVALIDATED` entries.
+![Residual decomposition](../../artifacts/experiment-022/completion/charts/chart-07-residual-decomposition.png)
 
-## 11. Shared optimizer
+Maximum unexplained wall was 0.56% (hard maximum 10%). Single-GPU serialization and experiment-only overhead are excluded from distributed worker compute.
 
-All five arms use the same optimizer, objective, event engine, endpoint policy, search configuration, seeds, and budgets. Only the cumulative allowed candidate set changes. Planner E is explicitly seeded with and may retain Planner A's feasible solution.
+Evidence: [`residual-classification.json`](../../artifacts/experiment-022/completion/validation/residual-classification.json) and [`accounting-reconciliation.json`](../../artifacts/experiment-022/completion/validation/accounting-reconciliation.json).
 
-## 12. Whole-layer baseline
+## 8. Revalidated timing model
 
-Planner A optimizes node admission, multiple layers per node, depth placement, 17-row wavefront scheduling, cache effects, shaped network boundaries, and common endpoint ownership. If a broader arm discovers a better all-whole solution, it is promoted into A and the ladder is rerun, so an all-whole search accident cannot be credited to sub-layer capability.
+Calibration services came from KDA layer 45 and MLA layer 47; KDA layer 89 and MLA layer 91 were held out. Each chunk used the real ordered task template on one concrete RTX 5090 resource, with no normalization or global correction factor. Held-out absolute error was 3.28% median, 7.03% p90, and 8.84% maximum against frozen gates of 5%/10%/15%.
 
-## 13. Adaptive planner
+Evidence: [`model-validation.json`](../../artifacts/experiment-022/completion/validation/model-validation.json) and [`heldout-validation.csv`](../../artifacts/experiment-022/completion/validation/heldout-validation.csv).
 
-Planner E contains every Planner A action and additionally considers validated expert, attention/projection, and full mixed stripes. It can mix granularity per layer or keep an entire placement whole. Dominance is mechanically checked at a 1% tolerance.
+## 9. Frozen 27-inventory rerun
 
-## 14. Optimizer oracle validation
+Only after all implementation, correctness, residual, timing, whole-expert, and optimizer-oracle gates passed were Planner A through Planner E rerun from scratch. Planner E was seeded with Planner A and retained the exact whole-layer fallback. The plots below are modeled distributed outcomes grounded in local physical services; they are not physical multi-machine throughput.
 
-Reduced exact placement problems were exhaustively enumerated independently. The shared optimizer was required to be optimal or within 1%; results and the full deterministic convergence trace are saved under `validation/`.
+Evidence: [`rerun-summary.json`](../../artifacts/experiment-022/completion/rerun/rerun-summary.json) and [`candidate-catalog.json`](../../artifacts/experiment-022/completion/implementation/candidate-catalog.json).
 
-## 15. Inventory suite
+![Whole versus adaptive](../../artifacts/experiment-022/completion/charts/chart-01-whole-vs-adaptive-rerun.png)
 
-The suite contains 27 inventories: three coarse-friendly controls and six in each heterogeneous family. Generator version, seeds, relative memory classes, link distributions, complete inventory JSON, and canonical suite hash `3e949a8eee0a71e128493f64e0be903bd373d3baad4be86a8869d87279d4bb49` were frozen before A-versus-E evaluation. No unfavorable inventory was removed.
+## 10. Whole-layer results
 
-| Inventory family | Count | A feasible | Median uplift | >=20% wins | Capacity unlocks |
-| --- | --- | --- | --- | --- | --- |
-| coarse-friendly | 3 | 3 | 0.00% | 0 | 0 |
-| memory-fragmented | 6 | 3 | 0.00% | 0 | 3 |
-| compute-heterogeneous | 6 | 6 | 0.00% | 0 | 0 |
-| network-heterogeneous | 6 | 6 | 0.00% | 0 | 0 |
-| full-mixed | 6 | 3 | 0.00% | 0 | 3 |
+Planner A was feasible on 21 of 27 inventories. It retained topology awareness, node rejection, multiple layers per node, persistent state, chunk optimization, and wavefront scheduling; no transformer layer was split.
 
-## 16. Coarse-friendly controls
+## 11. Adaptive results
 
-These controls test whether Planner E can decline unnecessary fine-grained communication. Their exact plans and sub-layer percentages are included in the complete result tables; failure to retain mostly whole placement is a planner-logic failure, not evidence against the capability.
+Across 18 A-feasible heterogeneous inventories, median E-over-A throughput uplift was 0.00%. 0 met or exceeded 20%, and 0 regressed beyond 1%. Planner E used a sub-layer candidate in 6 inventory plans.
 
-## 17. Memory fragmentation results
+![Uplift distribution](../../artifacts/experiment-022/completion/charts/chart-02-uplift-distribution-rerun.png)
 
-Memory-fragmented inventories separate whole-feasible-but-wasteful cases from whole-infeasible cases whose aggregate capacity is sufficient. Capacity unlocks are reported separately from percentage uplift because an infeasible baseline has no valid denominator.
+## 12. Ablation results
 
-## 18. Compute heterogeneity results
+The frozen cumulative ladder was rerun as A (whole layer), B (+ whole expert), C (+ expert sharding), D (+ attention/projection sharding), and E (full adaptive mixed granularity). Whole-expert placement was admitted as a distinct K3 unit only after physical service and exact reduction checks.
 
-Compute service is derived from local physical curves and deterministically slowed by 1.00/0.80/0.60/0.40 multipliers. The optimizer receives capabilities rather than a named hardware class and must discover whether splitting a bottleneck offsets additional communication and dispatch work.
+![Ablation](../../artifacts/experiment-022/completion/charts/chart-05-ablation-rerun.png)
 
-## 19. Network heterogeneity results
+## 13. Capacity unlocks
 
-Every transfer is charged on an explicit peer link: fast 0.25 ms/25 Gb/s, medium 1 ms/10 Gb/s, regional 5 ms/1 Gb/s, or slow 20 ms/0.1 Gb/s, plus software overhead. Fine-grained collectives across slow links therefore compete honestly with coarse boundaries.
+There were 6 whole-infeasible/adaptive-feasible outcomes. These are reported as capacity evidence rather than an infinite percentage uplift.
 
-## 20. Full mixed results
+![Capacity unlocks](../../artifacts/experiment-022/completion/charts/chart-04-capacity-unlocks-rerun.png)
 
-Full-mixed inventories combine memory, compute, link, reliability, cache, and cost variation, including nodes that may be harmful. Results include admission decisions, exact node-piece manifests, memory, compute, and communication dependencies.
+## 14. Target crossings
 
-## 21. Whole vs adaptive headline comparison
+There were 0 frozen `<5 -> >=5` tokens/s/user crossings.
 
-The identity chart includes every preregistered inventory, flags target crossings, and separately marks whole-infeasible/adaptive-feasible cases. If the verdict is `MODEL_INVALID`, these remain diagnostic modeled outputs and are not an admissible product-performance claim.
+![Target crossings](../../artifacts/experiment-022/completion/charts/chart-03-target-crossings-rerun.png)
 
-## 22. Ablation ladder
+## 15. Dynamic adaptation
 
-![Ablation ladder](../../artifacts/experiment-022/charts/chart-10-ablation-ladder.png)
+Useful join, harmful join, critical-node slowdown, link degradation, and node disappearance were replanned automatically on the frozen representative inventories. No replacement topology was manually prescribed. Dynamic result: **FAIL**.
 
-Arms add whole-expert placement, expert sharding, attention/projection sharding, and full mixed stripes cumulatively. An action without validated service and correctness stays ineligible even when its semantic class is enabled.
+21 of 25 frozen dynamic rows passed and 4 failed. The failed rows were JOIN_USEFUL on full-mixed-01, JOIN_USEFUL on full-mixed-02, JOIN_USEFUL on full-mixed-03, JOIN_USEFUL on full-mixed-05. In each failed useful-join case the optimizer correctly retained the non-regressing fallback, but it did not admit the frozen newly joined node and improve the objective as that scenario required. The required dynamic gate is therefore FAIL; it is not waived or redefined after measurement.
 
-## 23. Capacity unlocks
+Evidence: [`dynamic-results.csv`](../../artifacts/experiment-022/completion/rerun/dynamic-results.csv).
 
-![Capacity unlocks](../../artifacts/experiment-022/charts/chart-04-capacity-unlocks.png)
+## 16. Final correctness
 
-There were 6 `SUB_LAYER_UNLOCKED_FEASIBILITY` outcomes. They demonstrate capacity value only when validation gates pass and are never converted into infinite or synthetic throughput uplift.
+All original representative receipts passed. Any materially changed final headline manifest required and received a fresh receipt before finalization. Tensor assignment coverage, route and ordered-expert equality, KDA/MLA/AttnRes state, hidden/logit error, finite values, complete traversal, and greedy token were checked. Final correctness: **PASS**.
 
-## 24. 5 tok/s target crossings
+The changed mixed manifest also exposed two real resident-runtime lifetime bugs during full traversal. Both failed attempts remain preserved. Explicit nested-runtime ownership was added, the affected 71→72 and 75→76 transitions then passed focused physical checks with zero timed checkpoint reads, and the clean rerun completed all 93 layers plus the endpoint. This repair evidence is recorded in [`final-manifest-lifecycle-repairs.json`](../../artifacts/experiment-022/completion/validation/final-manifest-lifecycle-repairs.json).
 
-![Target crossings](../../artifacts/experiment-022/charts/chart-03-target-crossings.png)
+Evidence: [`final-headline-manifests.json`](../../artifacts/experiment-022/completion/correctness/final-headline-manifests.json).
 
-There were 0 inventories where Planner A was below 5 exact target tok/s/user and Planner E reached or exceeded it.
+![Sub-layer usage](../../artifacts/experiment-022/completion/charts/chart-06-sublayer-usage-rerun.png)
 
-## 25. Sub-layer usage analysis
-
-![Sub-layer usage](../../artifacts/experiment-022/charts/chart-06-sub-layer-usage.png)
-
-The stacked bars disclose the fraction of layers assigned whole, by whole expert, by expert stripe, by attention/projection shard, or by a full mixed stripe. Uplift counts as sub-layer evidence only when a winning plan materially uses one of those exact sub-layer implementations.
-
-## 26. Critical-path analysis
-
-![Critical path](../../artifacts/experiment-022/charts/chart-11-critical-path.png)
-
-The event model schedules concrete exclusive node and link resources, state readiness, reductions, wavefront rows, and cross-layer dependencies. It reports critical path separately from total worker compute so division of work is never mistaken for useful overlap.
-
-## 27. Memory utilization / stranded resources
-
-![Memory utilization](../../artifacts/experiment-022/charts/chart-05-memory-utilization.png)
-
-Resident and stranded memory use actual checkpoint-derived per-layer requirements and per-candidate ownership. Capacity, modeled performance, and economic fields remain distinct gates.
-
-## 28. Dynamic adaptation
-
-![Dynamic adaptation](../../artifacts/experiment-022/charts/chart-09-dynamic-adaptation.png)
-
-Five full-mixed base inventories were subjected to useful join, harmful join, critical-node slowdown, fast-link degradation, and node loss. Each result records replanning latency, placement changes, migration bytes, node changes, granularity changes, and before/after performance. No replacement topology was manually supplied.
-
-## 29. Control-plane scaling
-
-Persistent local worker processes advertise signed canonical capability records and accept batched internal task graphs for 128, 256, 512, 1,000, and 2,000 logical nodes. This validates registration, capability discovery, assignment, scheduling, and replanning without a controller RPC for every tiny tensor operation; it is not evidence of physical 2,000-node execution.
-
-## 30. Correctness
-
-Correctness artifacts cover primitive output agreement, complete expert-bank route coverage, ordered resident layer DAGs, checkpoint-byte reconciliation, and the full worker traversal. No plan may pass by falling back to monolithic layer mathematics while claiming a sub-layer placement.
-
-## 31. What failed
-
-All failures, excluded candidates, diagnostic threshold misses, and incomplete gates are preserved in `failure-log.json`. In particular, an incomplete representative-plan replay requirement is treated as a validity failure rather than hidden behind the success of one mathematical template.
-
-## 32. What this proves about sub-layer value
-
-The admissible conclusion is limited by the verdict. Passing modeled results establish only a locally validated, physically grounded model under controlled heterogeneity and shaped network; `MODEL_INVALID` establishes no planner-value headline even when diagnostic placements look favorable.
-
-## 33. What remains unproven
-
-No physical heterogeneous swarm, inter-machine contention, distributed straggler behavior, real collective implementation, multi-device throughput, or deployment economics was measured. No GPU was rented, Vast was neither queried nor mutated, and no external physical swarm participated.
-
-## 34. Recommendation for the next physical stage
-
-If all local gates pass, the next stage should instantiate a small, genuinely heterogeneous physical pool and compare measured execution of the same saved A/E manifests against the worker-level model. If any correctness gate remains open, first extend native `EXECUTE_SHARD` replay so each selected mixed manifest--not merely an equivalent mathematical template--completes a fresh full 93-layer traversal.
-
-## Final question
-
-> Given exactly the same heterogeneous resources, does allowing Swarm to use selective sub-layer partitioning materially improve the best Kimi K3 inference system it can build compared with restricting it to whole-layer placement?
+## 17. Final admissible Experiment 022 verdict
 
 **MODEL INVALID**
 
-The experiment does not admit an A-versus-E value conclusion because the following required gates failed: native_primitives, representative_full_93. The saved planner outputs are diagnostic only; they cannot establish material performance or capacity value until those exact gates are rerun successfully.
+Frozen outcome category: `MODEL_INVALID`.
+
+### Final truth table
+
+| Question | Result |
+| --- | --- |
+| Frozen original inventory suite preserved? | YES |
+| Number of inventories | 27 |
+| Frozen seeds preserved? | YES |
+| Original thresholds preserved? | YES |
+| Six production EXECUTE_SHARD bindings real? | YES |
+| Five original representative manifests physically executed? | YES |
+| Sub-layer chunk 2 physically validated? | YES |
+| Sub-layer chunk 4 physically validated? | YES |
+| Ordered residual <=10% unexplained? | YES |
+| Timing model median error <=5%? | YES |
+| Timing model p90 <=10%? | YES |
+| Timing model max <=15%? | YES |
+| Same optimizer used for A/E? | YES |
+| E contains A solutions? | YES |
+| A-feasible inventories | 21 |
+| Adaptive regressions >1% | 0 |
+| Median throughput uplift | 0.00% |
+| >=20% wins | 0/18 |
+| Capacity unlocks | 6 |
+| <5 -> >=5 crossings | 0 |
+| Representative full correctness | PASS |
+| Dynamic adaptation | FAIL |
+| Final E022 verdict | MODEL INVALID |
+
+## 18. What this proves about sub-layer value
+
+The repaired static comparison is diagnostically informative but is not an admissible answer to the north-star comparison because a required frozen gate failed. Static Planner E produced zero median throughput uplift, no 20% wins, no target crossings, and six capacity unlocks; absent the failed gate that pattern would map to the frozen capacity-only category. It is not promoted to that conclusion here.
+
+It does not convert local kernel parallelism into a physical swarm claim. Communication, independent-worker overlap, and topology are explicit event-model terms grounded by local native service and shaped links.
+
+## 19. What remains unproven
+
+No physical multi-machine K3 swarm was run, no external GPU was rented, and real distributed contention, transport jitter, collective interference, failures during live inference, and economic cost per deployed token remain unmeasured. This completion pass is closed with a definitive failed gate and the mandated `MODEL INVALID` verdict; it does not establish whether sub-layer capability is materially valuable.

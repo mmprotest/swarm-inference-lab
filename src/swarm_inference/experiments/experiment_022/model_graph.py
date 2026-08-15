@@ -29,11 +29,22 @@ def _resident_measurements(path: Path) -> dict[int, int]:
     return {layer: round(statistics.median(rows)) for layer, rows in values.items()}
 
 
-def _component_name(role: str) -> str:
+def _component_name(role: str, name: str) -> str:
     if role == "routed_expert":
         return "routed_expert"
     if role == "attention":
-        return "attention"
+        if name.endswith(
+            (
+                ".f_a_proj.weight",
+                ".q_a_proj.weight",
+                ".q_a_layernorm.weight",
+                ".kv_a_proj_with_mqa.weight",
+            )
+        ):
+            return "attention_common"
+        if name.endswith((".o_norm.weight", ".kv_a_layernorm.weight")):
+            return "attention_replicated"
+        return "attention_shardable"
     if role == "shared_expert":
         return "shared_expert"
     if role == "latent_moe_projection":
@@ -98,7 +109,7 @@ def build_model_graph(
     for layer in range(TRANSFORMER_LAYERS):
         components: dict[str, int] = defaultdict(int)
         for record in by_layer[layer]:
-            components[_component_name(record.role)] += record.byte_size
+            components[_component_name(record.role, record.name)] += record.byte_size
         resident = measured.get(
             layer,
             round(checkpoint_bytes[layer] * type_factor[types[layer]]),
@@ -145,7 +156,12 @@ def candidate_memory(
     if degree not in (2, 4, 8, 16):
         raise ValueError("validated sub-layer degrees are 2/4/8/16")
     routed = int(layer.component_bytes.get("routed_expert", 0))
-    attention = int(layer.component_bytes.get("attention", 0))
+    attention_shardable = int(
+        layer.component_bytes.get("attention_shardable", 0)
+    )
+    attention_replicated = int(
+        layer.component_bytes.get("attention_replicated", 0)
+    )
     projection = int(layer.component_bytes.get("projection", 0))
     split_checkpoint: int
     shared = int(layer.component_bytes.get("shared_expert", 0))
@@ -155,9 +171,9 @@ def candidate_memory(
         # KDA/MLA projection matrices are classified as attention tensors in
         # the checkpoint. `projection` is the routed latent MoE down/up path
         # and remains whole in this selective candidate.
-        split_checkpoint = attention
+        split_checkpoint = attention_shardable
     elif kind is PartitionKind.FULL_MIXED_STRIPE:
-        split_checkpoint = routed + attention + projection + shared
+        split_checkpoint = routed + attention_shardable + projection + shared
     else:
         raise ValueError(f"unsupported candidate {kind}")
     fixed_checkpoint = layer.checkpoint_bytes - split_checkpoint
@@ -172,6 +188,17 @@ def candidate_memory(
     fixed_resident = layer.resident_bytes - split_resident
     resident = [value + SHARD_BUFFER_BYTES for value in split_integer(split_resident, degree)]
     resident[0] += fixed_resident
+    if kind in {
+        PartitionKind.ATTENTION_PROJECTION_SHARD,
+        PartitionKind.FULL_MIXED_STRIPE,
+    }:
+        # The canonical checkpoint bytes remain coordinator-owned, while every
+        # attention worker retains its own hot-path copy of these tiny vectors.
+        # The whole-layer resident measurement already includes worker 0's
+        # copy, so only additional workers add memory here.
+        replicated_resident = round(attention_replicated * runtime_ratio)
+        for worker in range(1, degree):
+            resident[worker] += replicated_resident
     if sum(checkpoint) != layer.checkpoint_bytes:
         raise RuntimeError("candidate checkpoint accounting did not reconcile")
     if sum(resident) < layer.resident_bytes:
@@ -207,9 +234,11 @@ def candidate_catalog(model: ModelGraph) -> dict[str, Any]:
                     PartitionKind.WHOLE_LAYER: set(),
                     PartitionKind.WHOLE_EXPERT: {"routed_expert"},
                     PartitionKind.EXPERT_SHARD: {"routed_expert"},
-                    PartitionKind.ATTENTION_PROJECTION_SHARD: {"attention"},
+                    PartitionKind.ATTENTION_PROJECTION_SHARD: {
+                        "attention_shardable"
+                    },
                     PartitionKind.FULL_MIXED_STRIPE: {
-                        "attention",
+                        "attention_shardable",
                         "projection",
                         "routed_expert",
                         "shared_expert",
@@ -220,7 +249,17 @@ def candidate_catalog(model: ModelGraph) -> dict[str, Any]:
                         "component": component,
                         "checkpoint_bytes": bytes_,
                         "ownership": (
-                            "degree_way_exact_axis_stripe"
+                            "degree_way_complete_expert_id_groups"
+                            if kind is PartitionKind.WHOLE_EXPERT
+                            and component == "routed_expert"
+                            else "runtime_replica_all_attention_workers_canonical_checkpoint_on_coordinator"
+                            if component == "attention_replicated"
+                            and kind
+                            in {
+                                PartitionKind.ATTENTION_PROJECTION_SHARD,
+                                PartitionKind.FULL_MIXED_STRIPE,
+                            }
+                            else "degree_way_exact_tensor_axis_stripe"
                             if component in split_components
                             else "coordinator_whole_component"
                         ),
@@ -230,52 +269,113 @@ def candidate_catalog(model: ModelGraph) -> dict[str, Any]:
                 compute_tasks = {
                     PartitionKind.WHOLE_LAYER: ["whole_layer"],
                     PartitionKind.WHOLE_EXPERT: [
-                        "attnres",
+                        "attention_preprocess",
                         "attention_whole",
+                        "post_attention_preprocess",
                         "router",
                         "latent_down_whole",
-                        "whole_expert_group",
-                        "reduction",
+                        "expert_whole_group",
+                        "expert_reduction",
+                        "routed_norm",
                         "shared_expert_whole",
                         "latent_up_whole",
+                        "routed_shared_reduction",
+                        "output_state_commit",
                     ],
                     PartitionKind.EXPERT_SHARD: [
-                        "attnres",
+                        "attention_preprocess",
                         "attention_whole",
+                        "post_attention_preprocess",
                         "router",
                         "latent_down_whole",
                         "expert_stripe",
-                        "reduction",
+                        "expert_reduction",
+                        "routed_norm",
                         "shared_expert_whole",
                         "latent_up_whole",
+                        "routed_shared_reduction",
+                        "output_state_commit",
                     ],
                     PartitionKind.ATTENTION_PROJECTION_SHARD: [
-                        "attnres",
-                        "attention_projection_shard",
-                        "reduction",
+                        "attention_preprocess",
+                        "attention_common",
+                        "attention_shard",
+                        "attention_reduction",
+                        "post_attention_preprocess",
                         "router",
-                        "routed_experts_whole",
+                        "latent_down_whole",
+                        "expert_whole",
+                        "routed_norm",
                         "shared_expert_whole",
                         "latent_up_whole",
+                        "routed_shared_reduction",
+                        "output_state_commit",
                     ],
                     PartitionKind.FULL_MIXED_STRIPE: [
-                        "attnres",
-                        "attention_projection_shard",
+                        "attention_preprocess",
+                        "attention_common",
+                        "attention_shard",
+                        "attention_reduction",
+                        "post_attention_preprocess",
                         "router",
-                        "latent_down_shard",
+                        "latent_down",
                         "expert_stripe",
-                        "shared_expert_shard",
-                        "latent_up_shard",
-                        "reductions",
+                        "expert_reduction",
+                        "routed_norm",
+                        "shared_expert",
+                        "shared_reduction",
+                        "latent_up",
+                        "latent_up_reduction",
+                        "routed_shared_reduction",
+                        "output_state_commit",
                     ],
                 }[kind]
+                worker_compute_dag = [
+                    {
+                        "node_id": f"compute-{index:02d}-{operation}",
+                        "operation": operation,
+                        "depends_on": (
+                            []
+                            if index == 0
+                            else [
+                                f"compute-{index - 1:02d}-{compute_tasks[index - 1]}"
+                            ]
+                        ),
+                    }
+                    for index, operation in enumerate(compute_tasks)
+                ]
+                collective_steps = (
+                    []
+                    if degree == 1
+                    else [
+                        "activation_fanout",
+                        "local_exact_contribution",
+                        "deterministic_reduction",
+                    ]
+                )
+                collective_dag = [
+                    {
+                        "node_id": f"collective-{index:02d}-{operation}",
+                        "operation": operation,
+                        "depends_on": (
+                            [worker_compute_dag[-1]["node_id"]]
+                            if index == 0
+                            else [
+                                f"collective-{index - 1:02d}-{collective_steps[index - 1]}"
+                            ]
+                        ),
+                    }
+                    for index, operation in enumerate(collective_steps)
+                ]
                 candidates.append(
                     {
                         "candidate_id": f"layer-{layer.layer_id:02d}:{kind.value}:p{degree}",
+                        "candidate_type": kind.value,
                         "layer": layer.layer_id,
                         "layer_type": layer.layer_type.value,
                         "partition_type": kind.value,
                         "degree": degree,
+                        "partition_degree": degree,
                         "worker_count": degree,
                         "resident_memory_bytes": list(resident),
                         "checkpoint_bytes": list(checkpoint),
@@ -301,6 +401,25 @@ def candidate_catalog(model: ModelGraph) -> dict[str, Any]:
                                 "local exact contribution",
                                 "deterministic reduction",
                             ]
+                        ),
+                        "worker_compute_dag": worker_compute_dag,
+                        "collective_dag": collective_dag,
+                        "network_payload": (
+                            {"kind": "none", "bytes_per_chunk": 0}
+                            if degree == 1
+                            else {
+                                "kind": "explicit event-DAG fanout/gather",
+                                "formulas": {
+                                    "hidden": "chunk_rows * 7168 * 4",
+                                    "attention_common_KDA": "chunk_rows * 128 * 4",
+                                    "attention_common_Gated_MLA": (
+                                        "chunk_rows * (1536 + 512 + 64) * 4"
+                                    ),
+                                    "latent": "chunk_rows * 3584 * 4",
+                                    "route_metadata": "chunk_rows * 16 * (4 + 4)",
+                                },
+                                "transport_service_owner": "network event only",
+                            }
                         ),
                         "physical_primitive_required": kind.value,
                         "correctness_status": "PENDING_E022_VALIDATION",

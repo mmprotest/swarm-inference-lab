@@ -1,14 +1,19 @@
 """Physical sub-layer KDA and Gated-MLA attention stripes."""
 
+# Benchmark closures are invoked synchronously before their worker loop advances
+# and are never retained, so their loop-local resident handles cannot rebind.
+# ruff: noqa: B023
+
 from __future__ import annotations
 
 import ctypes
 import hashlib
 import math
 import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -16,11 +21,12 @@ from swarm_inference.execution.kimi_cuda_runtime import (
     _array_fingerprint,
     _CudaRuntime,
     _numerical_metrics,
-    _QuantizedInt8Tensor,
     _quantize_bf16_rows_int8,
+    _QuantizedInt8Tensor,
     _rmsnorm_reference,
 )
 from swarm_inference.execution.kimi_k3_graph_runtime import (
+    _digest_array,
     _pointer_offset,
     _quantize_bf16_grouped_int4,
 )
@@ -151,6 +157,15 @@ class DeviceResources:
         source = np.ascontiguousarray(values, dtype=np.float32)
         pointer = self.allocate(source.size)
         self.runtime.upload_activation(pointer, source)
+        return pointer
+
+    def persistent_upload(self, values: np.ndarray) -> ctypes.c_void_p:
+        """Upload immutable values once when a resident replay is prepared."""
+
+        source = np.ascontiguousarray(values, dtype=np.float32)
+        pointer = self.allocate(source.size)
+        if getattr(self.runtime, "mode", "record") != "replay":
+            self.runtime.upload_activation(pointer, source)
         return pointer
 
     def close(self) -> None:
@@ -352,6 +367,44 @@ def _measure(
     }
 
 
+def _native_partial_sum(
+    runtime: _CudaRuntime,
+    partials: Sequence[np.ndarray],
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Reduce worker partials with the production CUDA copy/add primitives."""
+
+    if not partials:
+        raise ValueError("native partial reduction requires participants")
+    shape = tuple(int(value) for value in partials[0].shape)
+    if any(tuple(value.shape) != shape for value in partials):
+        raise ValueError("native partial reduction geometry differs by worker")
+    resources = DeviceResources(runtime)
+    try:
+        inputs = [resources.upload(np.ascontiguousarray(value)) for value in partials]
+        output = resources.allocate(int(np.prod(shape, dtype=np.int64)))
+        elements = int(np.prod(shape, dtype=np.int64))
+        started = time.perf_counter_ns()
+        runtime.profile_begin()
+        runtime.execute_copy(output, inputs[0], elements)
+        for source in inputs[1:]:
+            runtime.execute_add(output, source, elements)
+        runtime.synchronize()
+        cuda_ms = runtime.profile_end()
+        wall_ms = (time.perf_counter_ns() - started) / 1e6
+        values = runtime.download_activation(output, shape)
+        return values, {
+            "implementation": "production_cuda_copy_add_reduction",
+            "participants": len(partials),
+            "physical_launches": len(partials),
+            "wall_ms": wall_ms,
+            "cuda_ms": cuda_ms,
+            "host_overhead_ms": max(0.0, wall_ms - cuda_ms),
+            "payload_bytes_per_participant": int(partials[0].nbytes),
+        }
+    finally:
+        resources.close()
+
+
 def normalized_real_inputs(
     catalog: CheckpointCatalog,
     loader: DirectShardLoader,
@@ -386,6 +439,9 @@ def execute_kda_attention(
     iterations: int,
     shard_kernel: KdaShardKernel | None = None,
     quantizer: GpuShardQuantizer | None = None,
+    native_reduction: bool = False,
+    resident_single_execution: bool = False,
+    capture_state_arrays: bool = False,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     if shard_kernel is None:
         raise ValueError("KDA stripe execution requires the Experiment 019 shard kernel")
@@ -403,8 +459,18 @@ def execute_kda_attention(
         f_a = common.tensor(runtime.upload_float32(_bf16_f32(f_a_source)))
         input_device = common.upload(normalized)
         decay_low = common.allocate(rows * HEAD_DIMENSION)
-        runtime.execute_dense(f_a, decay_low, input_device, rows)
-        runtime.synchronize()
+        if resident_single_execution:
+            if warmup != 0 or iterations != 1:
+                raise ValueError(
+                    "resident single execution requires warmup=0 and iterations=1"
+                )
+        else:
+            # The standalone E019 benchmark retains its explicit untimed
+            # initialization pass.  The resident ordered-DAG replay disables
+            # it because the outer wall must contain one logical task exactly
+            # once, not an output-forming pass followed by a timing pass.
+            runtime.execute_dense(f_a, decay_low, input_device, rows)
+            runtime.synchronize()
         common_record = _measure(
             lambda: (runtime.execute_dense(f_a, decay_low, input_device, rows), runtime.synchronize()),
             runtime=runtime,
@@ -413,6 +479,9 @@ def execute_kda_attention(
         )
         partials: list[np.ndarray] = []
         worker_records: list[dict[str, Any]] = []
+        worker_states: list[dict[str, np.ndarray]] = []
+        validation_state_capture_ms = 0.0
+        validation_state_capture_d2h_ms = 0.0
         for stripe in range(degree):
             resources = DeviceResources(runtime)
             workers.append(resources)
@@ -473,7 +542,9 @@ def execute_kda_attention(
                     start=projection_start,
                     stop=projection_stop,
                 )
-                weights[f"conv_{role}"] = resources.upload(_bf16_or_f32(conv).reshape(-1))
+                weights[f"conv_{role}"] = resources.persistent_upload(
+                    _bf16_or_f32(conv).reshape(-1)
+                )
             dt = loader.load(
                 f"{prefix}.dt_bias",
                 worker_id=worker_id,
@@ -482,7 +553,7 @@ def execute_kda_attention(
                 start=projection_start,
                 stop=projection_stop,
             )
-            weights["dt"] = resources.upload(_bf16_or_f32(dt).reshape(-1))
+            weights["dt"] = resources.persistent_upload(_bf16_or_f32(dt).reshape(-1))
             a_log = loader.load(
                 f"{prefix}.A_log",
                 worker_id=worker_id,
@@ -491,13 +562,17 @@ def execute_kda_attention(
                 start=heads.start,
                 stop=heads.stop,
             )
-            weights["a"] = resources.upload(np.exp(_bf16_or_f32(a_log)).astype(np.float32))
+            weights["a"] = resources.persistent_upload(
+                np.exp(_bf16_or_f32(a_log)).astype(np.float32)
+            )
             output_norm = loader.reviewed_small(
                 f"{prefix}.o_norm.weight",
                 worker_id=worker_id,
                 purpose="replicated_small_kda_output_norm",
             )
-            weights["output_norm"] = resources.upload(_bf16_or_f32(output_norm).reshape(-1))
+            weights["output_norm"] = resources.persistent_upload(
+                _bf16_or_f32(output_norm).reshape(-1)
+            )
             local_input = resources.upload(normalized)
             q = resources.allocate(rows * local_projection)
             k = resources.allocate(rows * local_projection)
@@ -522,8 +597,19 @@ def execute_kda_attention(
                 runtime.upload_activation(window_k, zeros_window)
                 runtime.upload_activation(window_v, zeros_window)
 
+            if resident_single_execution:
+                register = getattr(runtime, "register_persistent_state", None)
+                if callable(register):
+                    register(state, zeros_state)
+                    register(window_q, zeros_window)
+                    register(window_k, zeros_window)
+                    register(window_v, zeros_window)
+                else:
+                    reset()
+
             def operation() -> None:
-                reset()
+                if not resident_single_execution:
+                    reset()
                 for role, target in (("q", q), ("k", k), ("v", v), ("g", gate)):
                     runtime.execute_dense(weights[role], target, local_input, rows)
                 runtime.execute_dense(weights["f_b"], decay, decay_low, rows)
@@ -552,10 +638,18 @@ def execute_kda_attention(
                 runtime.execute_dense(weights["output"], output, core, rows)
                 runtime.synchronize()
 
-            operation()
-            partial = runtime.download_activation(output, (rows, HIDDEN))
+            if not resident_single_execution:
+                operation()
             measurement = _measure(
                 operation, runtime=runtime, warmup=warmup, iterations=iterations
+            )
+            # The last measured invocation leaves the exact result and state
+            # resident.  Download that result rather than executing the shard
+            # a second time solely to materialize its contribution.
+            partial = runtime.download_activation(output, (rows, HIDDEN))
+            state_capture_started = time.perf_counter_ns()
+            state_capture_d2h_before = float(
+                getattr(runtime, "replay_stats", {}).get("d2h_wall_ms", 0.0)
             )
             state_parts = {
                 "recurrent": runtime.download_activation(
@@ -575,6 +669,21 @@ def execute_kda_attention(
             for state_name, state_values in state_parts.items():
                 state_digest.update(state_name.encode("utf-8"))
                 state_digest.update(np.ascontiguousarray(state_values).tobytes())
+            worker_state_capture_ms = (
+                time.perf_counter_ns() - state_capture_started
+            ) / 1e6
+            worker_state_capture_d2h_ms = max(
+                0.0,
+                float(
+                    getattr(runtime, "replay_stats", {}).get(
+                        "d2h_wall_ms", 0.0
+                    )
+                )
+                - state_capture_d2h_before,
+            )
+            validation_state_capture_ms += worker_state_capture_ms
+            validation_state_capture_d2h_ms += worker_state_capture_d2h_ms
+            worker_states.append(state_parts)
             partials.append(partial)
             worker_records.append(
                 {
@@ -585,15 +694,57 @@ def execute_kda_attention(
                     "runtime_weight_bytes": resources.weight_bytes,
                     "persistent_state_bytes": zeros_state.nbytes + 3 * zeros_window.nbytes,
                     "state_fingerprint": "sha256:" + state_digest.hexdigest(),
+                    "validation_state_capture_ms": worker_state_capture_ms,
+                    "validation_state_capture_d2h_ms": worker_state_capture_d2h_ms,
                     "wall": measurement["wall"],
+                    "cuda": measurement["cuda"],
+                    "host_overhead": measurement["host_overhead"],
                     "physical_launches": 8,
                     "network_visible_partial_outputs": 1,
                 }
             )
-        output = np.sum(
-            np.stack(partials, axis=0), axis=0, dtype=np.float64
-        ).astype(np.float32)
-        return output, {
+        reduction: dict[str, Any]
+        if native_reduction:
+            output, reduction = _native_partial_sum(runtime, partials)
+        else:
+            started = time.perf_counter_ns()
+            output = np.sum(
+                np.stack(partials, axis=0), axis=0, dtype=np.float64
+            ).astype(np.float32)
+            reduction = {
+                "implementation": "reference_host_fp64_sum",
+                "participants": len(partials),
+                "wall_ms": (time.perf_counter_ns() - started) / 1e6,
+                "cuda_ms": 0.0,
+            }
+        aggregate_capture_started = time.perf_counter_ns()
+        aggregate_state = {
+            "state": np.concatenate(
+                [item["recurrent"] for item in worker_states], axis=0
+            ),
+            "window_q": np.concatenate(
+                [item["window_q"] for item in worker_states], axis=0
+            ),
+            "window_k": np.concatenate(
+                [item["window_k"] for item in worker_states], axis=0
+            ),
+            "window_v": np.concatenate(
+                [item["window_v"] for item in worker_states], axis=0
+            ),
+        }
+        aggregate_digest = hashlib.sha256()
+        for state_name, state_values in aggregate_state.items():
+            _digest_array(aggregate_digest, state_name, state_values)
+        state_output = {
+            "fingerprint": "sha256:" + aggregate_digest.hexdigest(),
+            "bytes": sum(value.nbytes for value in aggregate_state.values()),
+            "finite": all(bool(np.isfinite(value).all()) for value in aggregate_state.values()),
+            "composition": "ordered head-stripe concatenation",
+        }
+        validation_state_capture_ms += (
+            time.perf_counter_ns() - aggregate_capture_started
+        ) / 1e6
+        record = {
             "attention_type": "KDA",
             "layer": layer,
             "rows": rows,
@@ -608,10 +759,21 @@ def execute_kda_attention(
                 item["wall"]["p50_ms"] for item in worker_records
             ),
             "one_layer_reduction": True,
+            "reduction": reduction,
             "kda_shard_library": str(shard_kernel.path),
             "kda_shard_library_sha256": shard_kernel.sha256,
             "output_fingerprint": _array_fingerprint(output),
+            "state_output": state_output,
+            "validation_state_capture_ms": validation_state_capture_ms,
+            "validation_state_capture_d2h_ms": validation_state_capture_d2h_ms,
+            "validation_state_capture_classification": "EXPERIMENT_ONLY",
         }
+        if capture_state_arrays:
+            record["_state_arrays"] = {
+                name: np.ascontiguousarray(values, dtype=np.float32)
+                for name, values in aggregate_state.items()
+            }
+        return output, record
     finally:
         for resources in reversed(workers):
             resources.close()
@@ -635,6 +797,9 @@ def execute_mla_attention(
     iterations: int,
     maximum_context: int = 256,
     quantizer: GpuShardQuantizer | None = None,
+    native_reduction: bool = False,
+    resident_single_execution: bool = False,
+    capture_state_arrays: bool = False,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     prefix = f"language_model.model.layers.{layer}.self_attn"
     rows = normalized.shape[0]
@@ -668,7 +833,7 @@ def execute_mla_attention(
         input_device = common.upload(normalized)
         query_low = common.allocate(rows * QUERY_LORA)
         compressed = common.allocate(rows * (KV_LORA + QUERY_ROPE))
-        query_norm = common.upload(
+        query_norm = common.persistent_upload(
             _bf16_f32(
                 loader.reviewed_small(
                     f"{prefix}.q_a_layernorm.weight",
@@ -691,7 +856,13 @@ def execute_mla_attention(
             runtime.execute_dense(kv_a, compressed, input_device, rows)
             runtime.synchronize()
 
-        common_operation()
+        if resident_single_execution:
+            if warmup != 0 or iterations != 1:
+                raise ValueError(
+                    "resident single execution requires warmup=0 and iterations=1"
+                )
+        else:
+            common_operation()
         common_record = _measure(
             common_operation,
             runtime=runtime,
@@ -710,6 +881,9 @@ def execute_mla_attention(
         )
         partials: list[np.ndarray] = []
         worker_records: list[dict[str, Any]] = []
+        worker_states: list[dict[str, np.ndarray]] = []
+        validation_state_capture_ms = 0.0
+        validation_state_capture_d2h_ms = 0.0
         for stripe, (output_resources, output_weight, column_range) in enumerate(column_resources):
             resources = DeviceResources(runtime)
             workers.append(resources)
@@ -757,7 +931,7 @@ def execute_mla_attention(
                 purpose="mla_gate_head_rows",
                 quantizer=quantizer,
             )
-            kv_norm = resources.upload(
+            kv_norm = resources.persistent_upload(
                 _bf16_f32(
                     loader.reviewed_small(
                         f"{prefix}.kv_a_layernorm.weight",
@@ -777,9 +951,19 @@ def execute_mla_attention(
             zero_latent = np.zeros((maximum_context, KV_LORA), dtype=np.float32)
             zero_rope = np.zeros((maximum_context, QUERY_ROPE), dtype=np.float32)
 
+            if resident_single_execution:
+                register = getattr(runtime, "register_persistent_state", None)
+                if callable(register):
+                    register(latent_cache, zero_latent)
+                    register(rope_cache, zero_rope)
+                else:
+                    runtime.upload_activation(latent_cache, zero_latent)
+                    runtime.upload_activation(rope_cache, zero_rope)
+
             def operation() -> None:
-                runtime.upload_activation(latent_cache, zero_latent)
-                runtime.upload_activation(rope_cache, zero_rope)
+                if not resident_single_execution:
+                    runtime.upload_activation(latent_cache, zero_latent)
+                    runtime.upload_activation(rope_cache, zero_rope)
                 runtime.execute_dense(q_b, query, query_low_device, rows)
                 runtime.execute_dense(gate, mla_gate, input_device, rows)
                 for row in range(rows):
@@ -814,10 +998,15 @@ def execute_mla_attention(
                 runtime.execute_dense(output_weight, output, context, rows)
                 runtime.synchronize()
 
-            operation()
-            partial = runtime.download_activation(output, (rows, HIDDEN))
+            if not resident_single_execution:
+                operation()
             measurement = _measure(
                 operation, runtime=runtime, warmup=warmup, iterations=iterations
+            )
+            partial = runtime.download_activation(output, (rows, HIDDEN))
+            state_capture_started = time.perf_counter_ns()
+            state_capture_d2h_before = float(
+                getattr(runtime, "replay_stats", {}).get("d2h_wall_ms", 0.0)
             )
             state_parts = {
                 "latent_cache": runtime.download_activation(
@@ -831,6 +1020,21 @@ def execute_mla_attention(
             for state_name, state_values in state_parts.items():
                 state_digest.update(state_name.encode("utf-8"))
                 state_digest.update(np.ascontiguousarray(state_values).tobytes())
+            worker_state_capture_ms = (
+                time.perf_counter_ns() - state_capture_started
+            ) / 1e6
+            worker_state_capture_d2h_ms = max(
+                0.0,
+                float(
+                    getattr(runtime, "replay_stats", {}).get(
+                        "d2h_wall_ms", 0.0
+                    )
+                )
+                - state_capture_d2h_before,
+            )
+            validation_state_capture_ms += worker_state_capture_ms
+            validation_state_capture_d2h_ms += worker_state_capture_d2h_ms
+            worker_states.append(state_parts)
             partials.append(partial)
             worker_records.append(
                 {
@@ -842,15 +1046,49 @@ def execute_mla_attention(
                     + output_resources.weight_bytes,
                     "persistent_state_bytes": zero_latent.nbytes + zero_rope.nbytes,
                     "state_fingerprint": "sha256:" + state_digest.hexdigest(),
+                    "validation_state_capture_ms": worker_state_capture_ms,
+                    "validation_state_capture_d2h_ms": worker_state_capture_d2h_ms,
                     "wall": measurement["wall"],
+                    "cuda": measurement["cuda"],
+                    "host_overhead": measurement["host_overhead"],
                     "physical_launches": rows * 3 + 3,
                     "network_visible_partial_outputs": 1,
                 }
             )
-        output = np.sum(
-            np.stack(partials, axis=0), axis=0, dtype=np.float64
-        ).astype(np.float32)
-        return output, {
+        reduction: dict[str, Any]
+        if native_reduction:
+            output, reduction = _native_partial_sum(runtime, partials)
+        else:
+            started = time.perf_counter_ns()
+            output = np.sum(
+                np.stack(partials, axis=0), axis=0, dtype=np.float64
+            ).astype(np.float32)
+            reduction = {
+                "implementation": "reference_host_fp64_sum",
+                "participants": len(partials),
+                "wall_ms": (time.perf_counter_ns() - started) / 1e6,
+                "cuda_ms": 0.0,
+            }
+        aggregate_capture_started = time.perf_counter_ns()
+        canonical_state = worker_states[0]
+        replicated_state_equal = all(
+            all(np.array_equal(worker[name], canonical_state[name]) for name in canonical_state)
+            for worker in worker_states[1:]
+        )
+        aggregate_digest = hashlib.sha256()
+        for state_name, state_values in canonical_state.items():
+            _digest_array(aggregate_digest, state_name, state_values)
+        state_output = {
+            "fingerprint": "sha256:" + aggregate_digest.hexdigest(),
+            "bytes": sum(value.nbytes for value in canonical_state.values()),
+            "finite": all(bool(np.isfinite(value).all()) for value in canonical_state.values()),
+            "composition": "replicated compressed cache; canonical worker-00",
+            "replicated_state_equal": replicated_state_equal,
+        }
+        validation_state_capture_ms += (
+            time.perf_counter_ns() - aggregate_capture_started
+        ) / 1e6
+        record = {
             "attention_type": "Gated_MLA",
             "layer": layer,
             "rows": rows,
@@ -866,8 +1104,19 @@ def execute_mla_attention(
                 item["wall"]["p50_ms"] for item in worker_records
             ),
             "one_layer_reduction": True,
+            "reduction": reduction,
             "output_fingerprint": _array_fingerprint(output),
+            "state_output": state_output,
+            "validation_state_capture_ms": validation_state_capture_ms,
+            "validation_state_capture_d2h_ms": validation_state_capture_d2h_ms,
+            "validation_state_capture_classification": "EXPERIMENT_ONLY",
         }
+        if capture_state_arrays:
+            record["_state_arrays"] = {
+                name: np.ascontiguousarray(values, dtype=np.float32)
+                for name, values in canonical_state.items()
+            }
+        return output, record
     finally:
         for resources in reversed(workers):
             resources.close()
@@ -951,9 +1200,9 @@ def benchmark_attention_stripes(
 
 
 __all__ = [
+    "KdaShardKernel",
     "benchmark_attention_stripes",
     "execute_kda_attention",
     "execute_mla_attention",
-    "KdaShardKernel",
     "normalized_real_inputs",
 ]

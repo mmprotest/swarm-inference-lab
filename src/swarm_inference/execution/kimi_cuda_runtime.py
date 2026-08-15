@@ -1997,10 +1997,20 @@ class _CudaRuntime:
             "gate_up_pair_ms": float(pair_ms.value),
         }
 
-    def close(self) -> None:
+    def close(self, *, shutdown: bool = True) -> None:
+        """Release this handle's tensors and optionally stop the shared runtime.
+
+        Multiple resident execution graphs can bind the same native CUDA DLL in
+        one production worker process.  Their tensor ownership is independent,
+        but ``coli_cuda_shutdown`` is process-global.  A nested graph therefore
+        releases only its own tensors; the outer worker performs the one final
+        shutdown after every resident graph is closed.
+        """
+
         for handle in reversed(self._tensors):
             self._library.coli_cuda_tensor_free(handle)
         self._tensors.clear()
-        self._library.coli_cuda_shutdown()
+        if shutdown:
+            self._library.coli_cuda_shutdown()
 
 

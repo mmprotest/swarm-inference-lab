@@ -104,11 +104,14 @@ class SharedPlacementOptimizer:
     def _runtime_supported(node: NodeCapability, kind: PartitionKind) -> bool:
         if kind is PartitionKind.WHOLE_LAYER:
             return "WHOLE_LAYER" in node.runtime_capabilities
+        if kind is PartitionKind.FULL_MIXED_STRIPE:
+            return {"EXPERT_SHARD", "PROJECTION_SHARD"}.issubset(
+                node.runtime_capabilities
+            )
         required = {
             PartitionKind.WHOLE_EXPERT: "WHOLE_EXPERT",
             PartitionKind.EXPERT_SHARD: "EXPERT_SHARD",
             PartitionKind.ATTENTION_PROJECTION_SHARD: "PROJECTION_SHARD",
-            PartitionKind.FULL_MIXED_STRIPE: "EXPERT_SHARD",
         }[kind]
         return required in node.runtime_capabilities
 
@@ -121,18 +124,37 @@ class SharedPlacementOptimizer:
     ) -> float:
         layer = self.model.layers[layer_id]
         if kind is PartitionKind.WHOLE_LAYER:
-            return self.service.service_ms(layer, "whole_layer", 1, rows)
-        common = (
-            2 * self.service.service_ms(layer, "attnres", 1, rows)
-            + self.service.service_ms(layer, "router", 1, rows)
-        )
+            return self.service.service_ms(
+                layer, "worker_protocol", 1, rows
+            ) + self.service.service_ms(layer, "whole_layer", 1, rows)
+        protocol = self.service.service_ms(layer, "worker_protocol", 1, rows)
         if kind in {
             PartitionKind.ATTENTION_PROJECTION_SHARD,
             PartitionKind.FULL_MIXED_STRIPE,
         }:
-            attention = self.service.service_ms(layer, "attention_shard", degree, rows)
+            attention = (
+                self.service.service_ms(layer, "attention_preprocess", 1, rows)
+                + self.service.service_ms(layer, "attention_common", 1, rows)
+                + protocol
+                + self.service.service_ms(
+                    layer, "attention_shard_remote", degree, rows
+                )
+                + self.service.service_ms(
+                    layer, "attention_reduction", degree, rows
+                )
+                + self.service.service_ms(
+                    layer, "post_attention_preprocess", 1, rows
+                )
+            )
         else:
-            attention = self.service.service_ms(layer, "attention_whole", 1, rows)
+            attention = (
+                self.service.service_ms(layer, "attention_preprocess", 1, rows)
+                + self.service.service_ms(layer, "attention_whole", 1, rows)
+                + self.service.service_ms(
+                    layer, "post_attention_preprocess", 1, rows
+                )
+            )
+        common = protocol + attention + self.service.service_ms(layer, "router", 1, rows)
         if kind in {
             PartitionKind.WHOLE_EXPERT,
             PartitionKind.EXPERT_SHARD,
@@ -153,29 +175,48 @@ class SharedPlacementOptimizer:
                 degree if kind is PartitionKind.FULL_MIXED_STRIPE else 1,
                 rows,
             )
-            expert = latent_down + self.service.service_ms(
-                layer, expert_name, degree, rows
-            ) + self.service.service_ms(layer, "reduction", degree, rows)
+            if kind is PartitionKind.FULL_MIXED_STRIPE:
+                latent_down = protocol + self.service.service_ms(
+                    layer, "latent_down_remote", degree, rows
+                )
+            expert = (
+                latent_down
+                + protocol
+                + self.service.service_ms(
+                    layer, f"{expert_name}_remote", degree, rows
+                )
+                + self.service.service_ms(layer, "expert_reduction", degree, rows)
+            )
         else:
             expert = (
                 self.service.service_ms(layer, "latent_down_whole", 1, rows)
                 + self.service.service_ms(layer, "expert_whole", 1, rows)
             )
+        expert += self.service.service_ms(layer, "routed_norm", 1, rows)
         shared = (
-            self.service.service_ms(layer, "shared_expert", degree, rows)
-            + self.service.service_ms(layer, "reduction", degree, rows)
+            protocol
+            + self.service.service_ms(layer, "shared_expert_remote", degree, rows)
+            + self.service.service_ms(layer, "shared_reduction", degree, rows)
             if kind is PartitionKind.FULL_MIXED_STRIPE
             else self.service.service_ms(layer, "shared_expert_whole", 1, rows)
         )
         latent_up = (
-            self.service.service_ms(layer, "latent_up", degree, rows)
-            + self.service.service_ms(layer, "reduction", degree, rows)
+            protocol
+            + self.service.service_ms(layer, "latent_up_remote", degree, rows)
+            + self.service.service_ms(layer, "latent_up_reduction", degree, rows)
             if kind is PartitionKind.FULL_MIXED_STRIPE
             else self.service.service_ms(layer, "latent_up_whole", 1, rows)
         )
         # Common work is charged to the coordinator while shard work is a
         # concrete worker ceiling, never ideal total_work / N.
-        return common + attention + expert + shared + latent_up
+        return (
+            common
+            + expert
+            + shared
+            + latent_up
+            + self.service.service_ms(layer, "routed_shared_reduction", 2, rows)
+            + self.service.service_ms(layer, "output_state_commit", 1, rows)
+        )
 
     def _internal_network_ms(
         self,

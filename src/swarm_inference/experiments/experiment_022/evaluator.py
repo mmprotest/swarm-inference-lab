@@ -25,6 +25,8 @@ LATENT = 3584
 TOPK = 16
 TARGET_ROWS = 17
 ROUTE_METADATA_BYTES_PER_ROW = TOPK * (4 + 4)
+KDA_COMMON_WIDTH = 128
+MLA_COMMON_WIDTH = 1536 + 512 + 64
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,15 +196,10 @@ class PlacementEvaluator:
         chunk: int,
         operation: str,
         rows: int,
-    ) -> EventTask:
-        """Create one logical compute task inside a persistent worker DAG.
+    ) -> tuple[EventTask, ...]:
+        """Create native compute inside an already authenticated worker DAG."""
 
-        Runtime synchronization/orchestration is measured as five explicit
-        phase-barrier services (`reduction`) rather than charging an invented
-        controller RPC to every fine-grained logical operation.
-        """
-
-        return self._compute(
+        return (self._compute(
             task_id,
             node_id,
             dependencies,
@@ -210,6 +207,77 @@ class PlacementEvaluator:
             layer=layer,
             chunk=chunk,
             operation=operation,
+        ),)
+
+    def _worker_protocol(
+        self,
+        task_id: str,
+        node_id: str,
+        dependencies: Iterable[str],
+        *,
+        layer: int,
+        chunk: int,
+        rows: int,
+        operation: str,
+    ) -> EventTask:
+        return EventTask(
+            task_id=task_id,
+            resource_id=f"compute:{node_id}",
+            dependency_ids=tuple(dict.fromkeys(dependencies)),
+            duration_ms=self._service(layer, "worker_protocol", 1, rows),
+            category="compute",
+            node_id=node_id,
+            layer_id=layer,
+            chunk_id=chunk,
+            operation=f"worker_protocol:{operation}",
+        )
+
+    def _remote_sub_compute(
+        self,
+        task_id: str,
+        node_id: str,
+        coordinator: str,
+        dependencies: Iterable[str],
+        duration_ms: float,
+        *,
+        layer: int,
+        chunk: int,
+        operation: str,
+        rows: int,
+    ) -> tuple[EventTask, ...]:
+        """Dispatch one production primitive outside the coordinator DAG."""
+
+        if node_id == coordinator:
+            return self._sub_compute(
+                task_id,
+                node_id,
+                dependencies,
+                duration_ms,
+                layer=layer,
+                chunk=chunk,
+                operation=operation,
+                rows=rows,
+            )
+        protocol_id = f"{task_id}.worker-protocol"
+        return (
+            self._worker_protocol(
+                protocol_id,
+                node_id,
+                dependencies,
+                layer=layer,
+                chunk=chunk,
+                rows=rows,
+                operation=operation,
+            ),
+            self._compute(
+                task_id,
+                node_id,
+                (protocol_id,),
+                duration_ms,
+                layer=layer,
+                chunk=chunk,
+                operation=operation,
+            ),
         )
 
     def _fanout(
@@ -295,11 +363,32 @@ class PlacementEvaluator:
         workers = assignment.node_ids
         degree = assignment.degree
         hidden_bytes = rows * HIDDEN * 4
+        attention_fanout_bytes = rows * (
+            HIDDEN
+            + (
+                KDA_COMMON_WIDTH
+                if self.model.layers[layer].layer_type.value == "KDA"
+                else MLA_COMMON_WIDTH
+            )
+        ) * 4
         latent_bytes = rows * LATENT * 4
         route_bytes = rows * ROUTE_METADATA_BYTES_PER_ROW
         initial_dependencies = [input_dependency]
         if state_dependency is not None:
             initial_dependencies.append(state_dependency)
+        coordinator_dispatch = f"{prefix}.ordered-dag.worker-protocol"
+        tasks.append(
+            self._worker_protocol(
+                coordinator_dispatch,
+                coordinator,
+                initial_dependencies,
+                layer=layer,
+                chunk=chunk_id,
+                rows=rows,
+                operation="ordered_layer_dag",
+            )
+        )
+        initial_dependencies = [coordinator_dispatch]
 
         split_attention = assignment.partition_kind in {
             PartitionKind.ATTENTION_PROJECTION_SHARD,
@@ -315,27 +404,40 @@ class PlacementEvaluator:
             PartitionKind.FULL_MIXED_STRIPE,
         }
 
-        start_id = f"{prefix}.attnres-start"
-        tasks.append(
+        preprocess = f"{prefix}.attention-preprocess"
+        tasks.extend(
             self._sub_compute(
-                start_id,
+                preprocess,
                 coordinator,
                 initial_dependencies,
-                self._service(layer, "attnres", 1, rows),
+                self._service(layer, "attention_preprocess", 1, rows),
                 layer=layer,
                 chunk=chunk_id,
-                operation="attnres_state_read",
+                operation="attention_preprocess",
                 rows=rows,
             )
         )
         if split_attention:
+            common_projection = f"{prefix}.attention-common-projection"
+            tasks.extend(
+                self._sub_compute(
+                    common_projection,
+                    coordinator,
+                    (preprocess,),
+                    self._service(layer, "attention_common", 1, rows),
+                    layer=layer,
+                    chunk=chunk_id,
+                    operation="attention_common_projection",
+                    rows=rows,
+                )
+            )
             readiness = self._fanout(
                 tasks,
                 prefix=f"{prefix}.attention-fanout",
                 source=coordinator,
                 destinations=workers,
-                dependency=start_id,
-                payload_bytes=hidden_bytes,
+                dependency=common_projection,
+                payload_bytes=attention_fanout_bytes,
                 layer=layer,
                 chunk=chunk_id,
                 operation="attention_input_fanout",
@@ -343,12 +445,20 @@ class PlacementEvaluator:
             partials: list[tuple[str, str]] = []
             for stripe, node_id in enumerate(workers):
                 identifier = f"{prefix}.attention-shard-{stripe:02d}"
-                tasks.append(
-                    self._sub_compute(
+                tasks.extend(
+                    self._remote_sub_compute(
                         identifier,
                         node_id,
+                        coordinator,
                         (readiness[node_id],),
-                        self._service(layer, "attention_shard", degree, rows),
+                        self._service(
+                            layer,
+                            "attention_shard"
+                            if node_id == coordinator
+                            else "attention_shard_remote",
+                            degree,
+                            rows,
+                        ),
                         layer=layer,
                         chunk=chunk_id,
                         operation="attention_head_projection_shard",
@@ -366,26 +476,27 @@ class PlacementEvaluator:
                 chunk=chunk_id,
                 operation="attention_partial",
             )
-            attention_done = f"{prefix}.attention-reduction"
-            tasks.append(
+            attention_reduced = f"{prefix}.attention-reduction"
+            tasks.extend(
                 self._sub_compute(
-                    attention_done,
+                    attention_reduced,
                     coordinator,
                     gather,
-                    self._service(layer, "reduction", degree, rows),
+                    self._service(layer, "attention_reduction", degree, rows),
                     layer=layer,
                     chunk=chunk_id,
                     operation="attention_reduction",
                     rows=rows,
                 )
             )
+            attention_result = attention_reduced
         else:
-            attention_done = f"{prefix}.attention-whole"
-            tasks.append(
+            attention_result = f"{prefix}.attention-whole"
+            tasks.extend(
                 self._sub_compute(
-                    attention_done,
+                    attention_result,
                     coordinator,
-                    (start_id,),
+                    (preprocess,),
                     self._service(layer, "attention_whole", 1, rows),
                     layer=layer,
                     chunk=chunk_id,
@@ -394,8 +505,22 @@ class PlacementEvaluator:
                 )
             )
 
+        attention_done = f"{prefix}.post-attention-preprocess"
+        tasks.extend(
+            self._sub_compute(
+                attention_done,
+                coordinator,
+                (attention_result,),
+                self._service(layer, "post_attention_preprocess", 1, rows),
+                layer=layer,
+                chunk=chunk_id,
+                operation="post_attention_preprocess",
+                rows=rows,
+            )
+        )
+
         router_done = f"{prefix}.router"
-        tasks.append(
+        tasks.extend(
             self._sub_compute(
                 router_done,
                 coordinator,
@@ -423,7 +548,7 @@ class PlacementEvaluator:
                 )
             else:
                 down_whole = f"{prefix}.latent-down-whole"
-                tasks.append(
+                tasks.extend(
                     self._sub_compute(
                         down_whole,
                         coordinator,
@@ -451,12 +576,20 @@ class PlacementEvaluator:
                 dependency = expert_ready[node_id]
                 if assignment.partition_kind is PartitionKind.FULL_MIXED_STRIPE:
                     down_id = f"{prefix}.latent-down-{stripe:02d}"
-                    tasks.append(
-                        self._sub_compute(
+                    tasks.extend(
+                        self._remote_sub_compute(
                             down_id,
                             node_id,
+                            coordinator,
                             (dependency,),
-                            self._service(layer, "latent_down", degree, rows),
+                            self._service(
+                                layer,
+                                "latent_down"
+                                if node_id == coordinator
+                                else "latent_down_remote",
+                                degree,
+                                rows,
+                            ),
                             layer=layer,
                             chunk=chunk_id,
                             operation="latent_down_projection_shard",
@@ -466,12 +599,20 @@ class PlacementEvaluator:
                     dependency = down_id
                 expert_id = f"{prefix}.expert-{stripe:02d}"
                 expert_operation = "expert_stripe" if striped_experts else "expert_whole_group"
-                tasks.append(
-                    self._sub_compute(
+                tasks.extend(
+                    self._remote_sub_compute(
                         expert_id,
                         node_id,
+                        coordinator,
                         (dependency,),
-                        self._service(layer, expert_operation, degree, rows),
+                        self._service(
+                            layer,
+                            expert_operation
+                            if node_id == coordinator
+                            else f"{expert_operation}_remote",
+                            degree,
+                            rows,
+                        ),
                         layer=layer,
                         chunk=chunk_id,
                         operation=expert_operation,
@@ -490,12 +631,12 @@ class PlacementEvaluator:
                 operation="expert_partial",
             )
             expert_done = f"{prefix}.expert-reduction"
-            tasks.append(
+            tasks.extend(
                 self._sub_compute(
                     expert_done,
                     coordinator,
                     gather,
-                    self._service(layer, "reduction", degree, rows),
+                    self._service(layer, "expert_reduction", degree, rows),
                     layer=layer,
                     chunk=chunk_id,
                     operation="expert_reduction",
@@ -504,7 +645,7 @@ class PlacementEvaluator:
             )
         else:
             down_done = f"{prefix}.latent-down-whole"
-            tasks.append(
+            tasks.extend(
                 self._sub_compute(
                     down_done,
                     coordinator,
@@ -517,7 +658,7 @@ class PlacementEvaluator:
                 )
             )
             expert_done = f"{prefix}.expert-whole"
-            tasks.append(
+            tasks.extend(
                 self._sub_compute(
                     expert_done,
                     coordinator,
@@ -529,6 +670,20 @@ class PlacementEvaluator:
                     rows=rows,
                 )
             )
+
+        routed_normalized = f"{prefix}.routed-normalization"
+        tasks.extend(
+            self._sub_compute(
+                routed_normalized,
+                coordinator,
+                (expert_done,),
+                self._service(layer, "routed_norm", 1, rows),
+                layer=layer,
+                chunk=chunk_id,
+                operation="routed_expert_normalization",
+                rows=rows,
+            )
+        )
 
         if assignment.partition_kind is PartitionKind.FULL_MIXED_STRIPE:
             shared_ready = self._fanout(
@@ -545,12 +700,20 @@ class PlacementEvaluator:
             shared_partials: list[tuple[str, str]] = []
             for stripe, node_id in enumerate(workers):
                 shared_id = f"{prefix}.shared-{stripe:02d}"
-                tasks.append(
-                    self._sub_compute(
+                tasks.extend(
+                    self._remote_sub_compute(
                         shared_id,
                         node_id,
+                        coordinator,
                         (shared_ready[node_id],),
-                        self._service(layer, "shared_expert", degree, rows),
+                        self._service(
+                            layer,
+                            "shared_expert"
+                            if node_id == coordinator
+                            else "shared_expert_remote",
+                            degree,
+                            rows,
+                        ),
                         layer=layer,
                         chunk=chunk_id,
                         operation="shared_expert_shard",
@@ -569,12 +732,12 @@ class PlacementEvaluator:
                 operation="shared_expert_partial",
             )
             shared_done = f"{prefix}.shared-reduction"
-            tasks.append(
+            tasks.extend(
                 self._sub_compute(
                     shared_done,
                     coordinator,
                     shared_gather,
-                    self._service(layer, "reduction", degree, rows),
+                    self._service(layer, "shared_reduction", degree, rows),
                     layer=layer,
                     chunk=chunk_id,
                     operation="shared_expert_reduction",
@@ -583,7 +746,7 @@ class PlacementEvaluator:
             )
         else:
             shared_done = f"{prefix}.shared-whole"
-            tasks.append(
+            tasks.extend(
                 self._sub_compute(
                     shared_done,
                     coordinator,
@@ -602,7 +765,7 @@ class PlacementEvaluator:
                 prefix=f"{prefix}.latent-up-fanout",
                 source=coordinator,
                 destinations=workers,
-                dependency=expert_done,
+                dependency=routed_normalized,
                 payload_bytes=latent_bytes,
                 layer=layer,
                 chunk=chunk_id,
@@ -611,12 +774,20 @@ class PlacementEvaluator:
             up_partials: list[tuple[str, str]] = []
             for stripe, node_id in enumerate(workers):
                 up_id = f"{prefix}.latent-up-{stripe:02d}"
-                tasks.append(
-                    self._sub_compute(
+                tasks.extend(
+                    self._remote_sub_compute(
                         up_id,
                         node_id,
+                        coordinator,
                         (up_ready[node_id],),
-                        self._service(layer, "latent_up", degree, rows),
+                        self._service(
+                            layer,
+                            "latent_up"
+                            if node_id == coordinator
+                            else "latent_up_remote",
+                            degree,
+                            rows,
+                        ),
                         layer=layer,
                         chunk=chunk_id,
                         operation="latent_up_projection_shard",
@@ -635,12 +806,12 @@ class PlacementEvaluator:
                 operation="latent_up_partial",
             )
             routed_up_done = f"{prefix}.latent-up-reduction"
-            tasks.append(
+            tasks.extend(
                 self._sub_compute(
                     routed_up_done,
                     coordinator,
                     up_gather,
-                    self._service(layer, "reduction", degree, rows),
+                    self._service(layer, "latent_up_reduction", degree, rows),
                     layer=layer,
                     chunk=chunk_id,
                     operation="latent_up_reduction",
@@ -649,11 +820,11 @@ class PlacementEvaluator:
             )
         else:
             routed_up_done = f"{prefix}.latent-up-whole"
-            tasks.append(
+            tasks.extend(
                 self._sub_compute(
                     routed_up_done,
                     coordinator,
-                    (expert_done,),
+                    (routed_normalized,),
                     self._service(layer, "latent_up_whole", 1, rows),
                     layer=layer,
                     chunk=chunk_id,
@@ -662,28 +833,28 @@ class PlacementEvaluator:
                 )
             )
         up_done = f"{prefix}.exact-output-sum"
-        tasks.append(
+        tasks.extend(
             self._sub_compute(
                 up_done,
                 coordinator,
                 (routed_up_done, shared_done),
-                self._service(layer, "reduction", degree, rows),
+                self._service(layer, "routed_shared_reduction", 2, rows),
                 layer=layer,
                 chunk=chunk_id,
                 operation="routed_shared_exact_sum",
                 rows=rows,
             )
         )
-        finish = f"{prefix}.attnres-finish"
-        tasks.append(
+        finish = f"{prefix}.output-state-commit"
+        tasks.extend(
             self._sub_compute(
                 finish,
                 coordinator,
                 (up_done,),
-                self._service(layer, "attnres", 1, rows),
+                self._service(layer, "output_state_commit", 1, rows),
                 layer=layer,
                 chunk=chunk_id,
-                operation="attnres_state_commit",
+                operation="output_state_commit",
                 rows=rows,
             )
         )
@@ -746,15 +917,28 @@ class PlacementEvaluator:
                     dependencies = [dependency]
                     if state_dependency is not None:
                         dependencies.append(state_dependency)
+                    protocol_id = f"{identifier}.worker-protocol"
                     tasks.append(
-                        self._compute(
-                            identifier,
+                        self._worker_protocol(
+                            protocol_id,
                             assignment.coordinator_node_id,
                             dependencies,
+                            layer=layer,
+                            chunk=chunk_id,
+                            rows=rows,
+                            operation="whole_layer",
+                        )
+                    )
+                    tasks.extend(
+                        self._sub_compute(
+                            identifier,
+                            assignment.coordinator_node_id,
+                            (protocol_id,),
                             self._service(layer, "whole_layer", 1, rows),
                             layer=layer,
                             chunk=chunk_id,
                             operation="whole_layer",
+                            rows=rows,
                         )
                     )
                     output = identifier

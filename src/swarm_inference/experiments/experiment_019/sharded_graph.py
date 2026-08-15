@@ -7,11 +7,11 @@ Every material checkpoint read goes through :class:`DirectShardLoader`.
 
 from __future__ import annotations
 
-import ctypes
 import hashlib
 import time
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -19,11 +19,6 @@ from swarm_inference.execution.kimi_cuda_runtime import (
     _array_fingerprint,
     _CudaRuntime,
     _numerical_metrics,
-    _quantize_bf16_rows_int8,
-    _rmsnorm_reference,
-)
-from swarm_inference.execution.kimi_k3_graph_runtime import (
-    _quantize_bf16_grouped_int4,
 )
 from swarm_inference.experiments.experiment_018.analysis import (
     parse_oracle_routes,
@@ -47,8 +42,8 @@ from swarm_inference.experiments.experiment_019.physical import (
     _upload_stripe_experts,
     striped_latent_down,
 )
-from swarm_inference.experiments.experiment_019.quantization import GpuShardQuantizer
 from swarm_inference.experiments.experiment_019.placement import KDA_LAYERS
+from swarm_inference.experiments.experiment_019.quantization import GpuShardQuantizer
 
 LAYERS = 93
 VOCAB = 163840
@@ -103,6 +98,31 @@ class ShardedK3Graph:
         )
         return _bf16_f32(source) if source.dtype == np.dtype("<u2") else np.asarray(source, dtype=np.float32)
 
+    def _reduce_partials(
+        self,
+        partials: Sequence[np.ndarray],
+        *,
+        layer: int | str,
+        operator: str,
+    ) -> np.ndarray:
+        """Reference reduction hook; resident production replay overrides it."""
+
+        started = time.perf_counter_ns()
+        output = np.sum(
+            np.stack(partials, axis=0), axis=0, dtype=np.float64
+        ).astype(np.float32)
+        self.worker_operations.append(
+            {
+                "worker_id": f"layer-{layer}.{operator}.reducer",
+                "operator": f"{operator}_host_reference_reduction",
+                "resource_type": "microworker",
+                "duration_ms": (time.perf_counter_ns() - started) / 1e6,
+                "participants": len(partials),
+                "physical_launches": 0,
+            }
+        )
+        return output
+
     def _attnres(
         self,
         prefix: np.ndarray,
@@ -120,8 +140,11 @@ class ShardedK3Graph:
             prefix_device = resources.upload(prefix)
             residual_values = np.ascontiguousarray(np.stack(residuals), dtype=np.float32)
             residual_device = resources.upload(residual_values)
-            query_device = resources.upload(query)
+            query_device = resources.allocate(query.size)
+            if getattr(self.runtime, "mode", "record") != "replay":
+                self.runtime.upload_activation(query_device, query)
             output = resources.allocate(HIDDEN)
+            self.runtime.profile_begin()
             self.runtime.execute_attnres_mix(
                 output,
                 prefix_device,
@@ -132,6 +155,7 @@ class ShardedK3Graph:
                 epsilon=EPSILON,
             )
             self.runtime.synchronize()
+            cuda_ms = self.runtime.profile_end()
             value = self.runtime.download_activation(output, (HIDDEN,))
         finally:
             resources.close()
@@ -141,6 +165,8 @@ class ShardedK3Graph:
                 "operator": operator,
                 "resource_type": "microworker",
                 "duration_ms": (time.perf_counter_ns() - started) / 1e6,
+                "cuda_ms": cuda_ms,
+                "physical_launches": 1,
                 "input_bytes": prefix.nbytes + sum(row.nbytes for row in residuals),
                 "output_bytes": value.nbytes,
             }
@@ -169,8 +195,12 @@ class ShardedK3Graph:
         started = time.perf_counter_ns()
         try:
             input_device = resources.upload(mlp_input)
-            router_device = resources.upload(router)
-            bias_device = resources.upload(bias)
+            router_device = resources.allocate(router.size)
+            bias_device = resources.allocate(bias.size)
+            if getattr(self.runtime, "mode", "record") != "replay":
+                self.runtime.upload_activation(router_device, router)
+                self.runtime.upload_activation(bias_device, bias)
+            self.runtime.profile_begin()
             ids, weights, effective = self.runtime.route(
                 input_device,
                 router_device,
@@ -181,6 +211,8 @@ class ShardedK3Graph:
             )
             if effective != TOPK:
                 raise RuntimeError(f"layer {layer} router retained {effective} experts")
+            self.runtime.synchronize()
+            cuda_ms = self.runtime.profile_end()
         finally:
             resources.close()
         self.worker_operations.append(
@@ -189,6 +221,8 @@ class ShardedK3Graph:
                 "operator": "router",
                 "resource_type": "microworker",
                 "duration_ms": (time.perf_counter_ns() - started) / 1e6,
+                "cuda_ms": cuda_ms,
+                "physical_launches": 1,
                 "route_metadata_bytes": TOPK * 8,
             }
         )
@@ -253,6 +287,7 @@ class ShardedK3Graph:
                     "duration_ms": wall_ms,
                     "cuda_ms": cuda_ms,
                     "host_overhead_ms": wall_ms - cuda_ms,
+                    "physical_launches": 1,
                     "input_bytes": int(values.nbytes),
                     "output_bytes": int(output.nbytes),
                 }
@@ -319,6 +354,7 @@ class ShardedK3Graph:
                     "duration_ms": wall_ms,
                     "cuda_ms": cuda_ms,
                     "host_overhead_ms": wall_ms - cuda_ms,
+                    "physical_launches": 1,
                     "input_bytes": int(input_values.nbytes),
                     "output_bytes": int(partial.nbytes),
                     "network_visible_partial_outputs": 1,
@@ -328,10 +364,9 @@ class ShardedK3Graph:
             finally:
                 resources.close()
                 self.runtime.release_tensor(handle)
-        output = np.sum(
-            np.stack(partials, axis=0), axis=0, dtype=np.float64
-        ).astype(np.float32)
-        return output, records
+        return self._reduce_partials(
+            partials, layer=layer, operator=operator
+        ), records
 
     def _intermediate_mlp_stripes(
         self,
@@ -423,10 +458,9 @@ class ShardedK3Graph:
         # The collective uses a deterministic FP64 accumulator before the
         # exact FP32 boundary cast.  This avoids compounding reassociation
         # error across independently accumulated intermediate stripes.
-        output = np.sum(
-            np.stack(partials, axis=0), axis=0, dtype=np.float64
-        ).astype(np.float32)
-        return output, records
+        return self._reduce_partials(
+            partials, layer=layer, operator=operator
+        ), records
 
     def _routed_experts(
         self,
@@ -480,10 +514,9 @@ class ShardedK3Graph:
                 self.worker_operations.append(record)
             finally:
                 resident.close()
-        output = np.sum(
-            np.stack(partials, axis=0), axis=0, dtype=np.float64
-        ).astype(np.float32)
-        return output, records
+        return self._reduce_partials(
+            partials, layer=layer, operator="expert_stripe_bank"
+        ), records
 
     def embedding(self, token_id: int) -> tuple[np.ndarray, dict[str, Any]]:
         shard = balanced_range(VOCAB, self.degree, 0)
@@ -803,7 +836,7 @@ class ShardedK3Graph:
                 )
         head: dict[str, Any] | None = None
         if layer_limit == LAYERS:
-            final_hidden, logits, head = self.final_head(hidden, residuals)
+            _final_hidden, logits, head = self.final_head(hidden, residuals)
             reference_logits = np.memmap(
                 oracle_logits_path,
                 mode="r",
