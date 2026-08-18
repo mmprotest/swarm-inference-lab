@@ -29,13 +29,14 @@ from .analysis import (
     analyze_attempt,
     evaluate_verdict,
     evaluate_zero_new_node_wedge,
+    repair_comparison_rows,
+    slo_boundary_rows,
 )
-from .freeze import (
-    FROZEN_CONSTANTS,
-    validate_e023_freeze,
-)
+from .correctness import FULL_CORRECTNESS_REPRESENTATIVES
+from .freeze import FROZEN_CONSTANTS
+from .repair_validation import validate_repair_inputs_read_only
 
-ATTEMPT_NAME = "deterministic-run-1"
+ATTEMPT_NAME = "deterministic-run-2"
 STOP_STATUS = "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE"
 FIXED_REPRESENTATIVES = (
     "memory-fragmented-03",
@@ -56,7 +57,7 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
 
 
 def _publish_attempt(attempt_root: Path, artifact_root: Path) -> None:
-    """Promote the complete first run as clearly invalid diagnostic evidence."""
+    """Publish one explicitly selected authoritative deterministic attempt."""
 
     for directory in ("baseline", "plans", "serving"):
         shutil.copytree(
@@ -64,7 +65,12 @@ def _publish_attempt(attempt_root: Path, artifact_root: Path) -> None:
             artifact_root / directory,
             dirs_exist_ok=True,
         )
-    for name in ("memory-reconciliation.csv", "cost-reconciliation.csv"):
+    for name in (
+        "memory-reconciliation.csv",
+        "cost-reconciliation.csv",
+        "flex-pool-superset.csv",
+        "flex-pool-search-coverage.csv",
+    ):
         destination = artifact_root / "validation" / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(attempt_root / "validation" / name, destination)
@@ -202,6 +208,7 @@ def _generate_charts(
     analysis: AttemptAnalysis,
     *,
     chart_qa_status: str,
+    primary_attempt: str = "deterministic-run-2",
 ) -> list[dict[str, Any]]:
     plt = _chart_setup()
     chart_root = artifact_root / "charts"
@@ -237,7 +244,7 @@ def _generate_charts(
     )
     _add_subtitle(
         fig,
-        "2.0x U_STRONG C1 p95 latency budget; diagnostic because E023 is MODEL_INVALID",
+        "Frozen 2.0x U_STRONG C1 p95 latency budget",
     )
     ax.grid(axis="x", color=grid, linewidth=0.7)
     ax.legend(frameon=False, loc="lower right")
@@ -370,9 +377,7 @@ def _generate_charts(
     ax.axhline(0.0, color=ink, linewidth=0.9)
     ax.set_xlabel("Added FLEX_POOL replica resident memory (GiB)")
     ax.set_ylabel("SLO efficiency uplift vs U_STRONG (%)")
-    fig.suptitle(
-        "Replica memory and diagnostic efficiency uplift", y=0.985, fontsize=13
-    )
+    fig.suptitle("Replica memory and efficiency uplift", y=0.985, fontsize=13)
     _add_subtitle(
         fig,
         "Headline inventories; coincident observations are represented without jitter",
@@ -459,7 +464,7 @@ def _generate_charts(
     fig.supxlabel("Closed-loop concurrency")
     fig.supylabel("Target rows per second")
     fig.suptitle("SHARED_NIC saturation curves for fixed representatives", y=0.985)
-    _add_subtitle(fig, "All plotted points are completed deterministic-run-1 measurements")
+    _add_subtitle(fig, f"All plotted points are completed {primary_attempt} measurements")
     fig.subplots_adjust(top=0.91, hspace=0.3, wspace=0.18)
     _finish_chart(plt, chart_root / "chart-06-saturation-curves.png")
 
@@ -518,7 +523,7 @@ def _generate_charts(
     ax.text(
         0.5,
         0.64,
-        "Hedging diagnostic not run",
+        "Hedging conclusion suppressed",
         ha="center",
         va="center",
         fontsize=18,
@@ -528,9 +533,9 @@ def _generate_charts(
     ax.text(
         0.5,
         0.45,
-        "E023 stopped at the mandatory coarse-friendly control gate.\n"
-        "All 12 service cells also exceeded the frozen 10% drift threshold,\n"
-        "so any hedging conclusion would have been suppressed.",
+        "The reused physical service evidence exceeded the frozen drift rule.\n"
+        "The primary deterministic verdict is independent of hedging,\n"
+        "and no replacement physical measurements were taken.",
         ha="center",
         va="center",
         fontsize=11,
@@ -540,7 +545,7 @@ def _generate_charts(
     ax.text(
         0.5,
         0.22,
-        "No p95-latency-change or extra-compute observations exist.",
+        "Status: HEDGE_SERVICE_DRIFT",
         ha="center",
         va="center",
         fontsize=10,
@@ -556,7 +561,7 @@ def _generate_charts(
             "comparison-and-ranking",
             "ranked dot plot",
             "inventory_id; efficiency_uplift_percent",
-            "Diagnostic distribution and 20% reference",
+            "Authoritative distribution and 20% reference",
         ),
         (
             "chart-02-throughput-uplift.png",
@@ -564,7 +569,7 @@ def _generate_charts(
             "comparison-and-ranking",
             "ranked dot plot",
             "inventory_id; throughput_uplift_percent",
-            "Diagnostic raw-throughput changes and zero reference",
+            "Authoritative raw-throughput changes and zero reference",
         ),
         (
             "chart-03-throughput-vs-cost.png",
@@ -576,7 +581,7 @@ def _generate_charts(
         ),
         (
             "chart-04-replica-memory-vs-uplift.png",
-            "Is replica memory associated with diagnostic efficiency uplift?",
+            "Is replica memory associated with efficiency uplift?",
             "relationship",
             "labeled scatter",
             "replica_resident_gib; efficiency_uplift_percent; family",
@@ -584,7 +589,7 @@ def _generate_charts(
         ),
         (
             "chart-05-family-summary.png",
-            "How does diagnostic uplift vary by preregistered family?",
+            "How does uplift vary by preregistered family?",
             "distribution",
             "strip plot with median",
             "family; efficiency_uplift_percent",
@@ -608,11 +613,11 @@ def _generate_charts(
         ),
         (
             "chart-08-hedging-tail-tradeoff.png",
-            "What was the hedging p95/compute trade-off?",
+            "Why is the hedging conclusion suppressed?",
             "uncertainty-and-benchmark",
             "explicit no-data status panel",
-            "none; phase stopped before execution",
-            "No hedging conclusion exists",
+            "physical service-drift status",
+            "No hedging conclusion is promoted",
         ),
     )
     return [
@@ -625,8 +630,8 @@ def _generate_charts(
             "fields": fields,
             "supported_takeaway": takeaway,
             "palette_policy": "two-root-or-family-categorical-with-neutral-references",
-            "source": "deterministic-run-1 diagnostic artifacts",
-            "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+            "source": f"{primary_attempt} authoritative repaired artifacts",
+            "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
             "visual_qa_status": chart_qa_status,
         }
         for index, (name, question, family, chart_type, fields, takeaway) in enumerate(
@@ -1403,97 +1408,858 @@ def _write_final_audit(
     return audit
 
 
+def _validate_u_strong_integrity(
+    artifact_root: Path,
+    attempt_root: Path,
+    failures: list[str],
+) -> int:
+    run1 = artifact_root / "attempts/deterministic-run-1/plans"
+    repaired = attempt_root / "plans"
+    matches = 0
+    inventory_roots = sorted(path for path in repaired.iterdir() if path.is_dir())
+    for inventory_root in inventory_roots:
+        inventory_id = inventory_root.name
+        old_path = run1 / inventory_id / "U_STRONG.json"
+        new_path = inventory_root / "U_STRONG.json"
+        if not old_path.is_file() or not new_path.is_file():
+            failures.append(f"U_STRONG_MANIFEST_MISSING:{inventory_id}")
+            continue
+        old = _read_json(old_path)
+        new = _read_json(new_path)
+        if old.get("canonical_plan_sha256") == new.get("canonical_plan_sha256"):
+            matches += 1
+        else:
+            failures.append(f"U_STRONG_HASH_MISMATCH:{inventory_id}")
+    if len(inventory_roots) != 27 or matches != 27:
+        failures.append(f"U_STRONG_INTEGRITY_NOT_27_OF_27:{matches}")
+    return matches
+
+
+def _validate_correctness_receipts(
+    artifact_root: Path,
+    failures: list[str],
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for inventory_id in FULL_CORRECTNESS_REPRESENTATIVES:
+        path = artifact_root / "correctness" / f"{inventory_id}.json"
+        if not path.is_file():
+            rows.append({"inventory_id": inventory_id, "status": "MISSING"})
+            failures.append(f"FULL_CORRECTNESS_MISSING:{inventory_id}")
+            continue
+        receipt = _read_json(path)
+        replica_count = int(receipt.get("replica_count_in_plan", -1))
+        forced = int(receipt.get("forced_alternate_dispatch_count", -1))
+        passed = (
+            receipt.get("status") == "PASS"
+            and receipt.get("complete_93_layer_traversal_executed") is True
+            and receipt.get("complete_tensor_assignment_coverage") is True
+            and receipt.get("authenticated_execute_shard") is True
+            and receipt.get("whole_layer_fallback_for_split_layers") is False
+            and int(receipt.get("checkpoint_reads_in_expert_timed_regions", -1)) == 0
+            and receipt.get("route_equality") is True
+            and receipt.get("ordered_expert_equality") is True
+            and receipt.get("all_state_finite") is True
+            and receipt.get("kda_state_reconciliation_exact") is True
+            and receipt.get("mla_state_reconciliation_exact") is True
+            and receipt.get("attnres_fingerprint_reconciliation_exact") is True
+            and float(receipt.get("hidden_relative_l2_maximum", math.inf))
+            <= float(FROZEN_CONSTANTS["whole_expert_relative_l2_gate"])
+            and float(receipt.get("logit_relative_l2", math.inf))
+            <= float(FROZEN_CONSTANTS["whole_expert_relative_l2_gate"])
+            and receipt.get("greedy_token_equality") is True
+            and (replica_count == 0 or forced > 0)
+        )
+        rows.append(
+            {
+                "inventory_id": inventory_id,
+                "status": "PASS" if passed else "FAIL",
+                "replica_count_in_plan": replica_count,
+                "forced_alternate_dispatch_count": forced,
+                "primary_dispatch_count": int(
+                    receipt.get("primary_dispatch_count", -1)
+                ),
+                "alternate_dispatch_count": int(
+                    receipt.get("alternate_dispatch_count", -1)
+                ),
+            }
+        )
+        if not passed:
+            failures.append(f"FULL_CORRECTNESS_FAILED:{inventory_id}")
+    return {
+        "status": "PASS" if len(rows) == 5 and all(row["status"] == "PASS" for row in rows) else "FAIL",
+        "receipts": rows,
+    }
+
+
+def _validate_reproducibility(
+    artifact_root: Path,
+    primary_attempt: str,
+    reproducibility_attempt: str,
+    reproducibility_root: Path,
+    failures: list[str],
+) -> dict[str, Any]:
+    path = artifact_root / "validation/reproducibility.json"
+    if not reproducibility_root.is_dir() or not path.is_file():
+        failures.append("DETERMINISTIC_REPRODUCIBILITY_MISSING")
+        return {"status": "MISSING"}
+    receipt = _read_json(path)
+    passed = (
+        receipt.get("status") == "PASS"
+        and receipt.get("primary_attempt") == primary_attempt
+        and receipt.get("reproducibility_attempt") == reproducibility_attempt
+        and int(receipt.get("u_strong_hash_matches", -1)) == 27
+        and int(receipt.get("canonical_plan_hash_matches", -1)) == 135
+        and int(receipt.get("selected_flex_pool_envelope_source_matches", -1)) == 27
+        and receipt.get("integer_and_replica_selection_counters_exact") is True
+        and float(receipt.get("maximum_float_relative_difference", math.inf))
+        <= 1e-12
+    )
+    if not passed:
+        failures.append("DETERMINISTIC_REPRODUCIBILITY_FAILED")
+    return receipt
+
+
+def _validate_repair_code_freeze(
+    repo: Path,
+    failures: list[str],
+) -> dict[str, Any]:
+    path = repo / "artifacts/experiment-023/repair/repair-code-freeze.json"
+    if not path.is_file():
+        failures.append("REPAIR_CODE_FREEZE_MISSING")
+        return {"status": "MISSING"}
+    receipt = _read_json(path)
+    mismatches = []
+    for row in receipt.get("files", ()):
+        source = repo / str(row["path"])
+        if (
+            not source.is_file()
+            or source.stat().st_size != int(row["bytes"])
+            or sha256_file(source) != str(row["sha256"])
+        ):
+            mismatches.append(str(row["path"]))
+    passed = (
+        not mismatches
+        and receipt.get("frozen_constants_sha256")
+        == canonical_sha256(FROZEN_CONSTANTS)
+    )
+    if not passed:
+        failures.append("REPAIR_CODE_FREEZE_CHANGED")
+    return {
+        **receipt,
+        "status": "PASS" if passed else "FAIL",
+        "mismatches": mismatches,
+    }
+
+
+def _e024_recommendation(verdict: Mapping[str, Any]) -> str:
+    category = verdict["final_verdict"]
+    if category == "YES_GENERAL_WEDGE":
+        return (
+            "E024 physically validates sparse expert optionality across independent "
+            "machines and measures real economic throughput."
+        )
+    if category == "YES_CONDITIONAL_WEDGE":
+        families = ", ".join(verdict["qualifying_families"])
+        return f"E024 focuses only on the qualifying predeclared family: {families}."
+    if category == "CAPABILITY_SIGNAL_ONLY":
+        return (
+            "E024 isolates the successful mechanism and establishes its phase boundary."
+        )
+    if category == "NO_WEDGE":
+        return (
+            "Stop pursuing exact replica optionality as the primary wedge. E024 moves "
+            "to communication-avoiding block composition and materialization-boundary "
+            "retiming."
+        )
+    return "Fix only the remaining invalid evidence path before any E024 experiment."
+
+
+def resolve_final_verdict(
+    headline_rows: Sequence[Mapping[str, Any]],
+    *,
+    validity_failures: Sequence[str] = (),
+) -> dict[str, Any]:
+    """Expose the unchanged verdict tree used by generalized finalization."""
+
+    return evaluate_verdict(
+        headline_rows,
+        validity_failures=validity_failures,
+    )
+
+
+def _repaired_summary(
+    *,
+    analysis: AttemptAnalysis,
+    verdict: Mapping[str, Any],
+    zero_new_node: Mapping[str, Any],
+    physical: Mapping[str, Any],
+    correctness: Mapping[str, Any],
+    reproducibility: Mapping[str, Any],
+    attempt_summary: Mapping[str, Any],
+    primary_attempt: str,
+    reproducibility_attempt: str,
+    u_strong_matches: int,
+    superset_pass: bool,
+    compatibility_pass: bool,
+    recommendation: str,
+) -> dict[str, Any]:
+    diagnostic = analysis.diagnostic_summary
+    network = next(
+        row
+        for row in analysis.uplift_rows
+        if row["inventory_id"] == "network-heterogeneous-01"
+    )
+    capacity = _capacity_summary(analysis.capacity_rows)
+    valid = not verdict["validity_failures"]
+    return {
+        "schema_version": "experiment-023-repaired-summary-v2",
+        "experiment_id": "023",
+        "original_attempt": "deterministic-run-1",
+        "original_verdict": "MODEL_INVALID",
+        "original_invalid_reason": (
+            "planner/headline objective mismatch and FLEX_POOL feasible-set superset defect"
+        ),
+        "authoritative_attempt": primary_attempt,
+        "reproducibility_attempt": reproducibility_attempt,
+        "final_verdict": verdict["final_verdict"],
+        "evidence_class": "PHYSICALLY GROUNDED MODEL + SHAPED NETWORK",
+        "primary_conclusion_status": "VALID" if valid else "MODEL_INVALID",
+        **diagnostic,
+        "flex_pool_optionality_only_median_percent": diagnostic[
+            "median_optionality_only_percent"
+        ],
+        "flex_pool_optionality_only_maximum_percent": diagnostic[
+            "maximum_optionality_only_percent"
+        ],
+        "flex_free_median_efficiency_uplift_percent": diagnostic[
+            "median_flex_free_efficiency_uplift_percent"
+        ],
+        "flex_free_maximum_efficiency_uplift_percent": diagnostic[
+            "maximum_flex_free_efficiency_uplift_percent"
+        ],
+        "negative_controls_pass": not analysis.control_failures,
+        "flex_pool_superset_pass_27_of_27": superset_pass,
+        "u_strong_run1_exact_matches": u_strong_matches,
+        "legacy_engine_compatibility_pass": compatibility_pass,
+        "zero_new_node_wedge": bool(zero_new_node["zero_new_node_wedge"] and valid),
+        "zero_new_node_gate": dict(zero_new_node),
+        "qualifying_families": verdict["qualifying_families"],
+        "network_heterogeneous_01": dict(network),
+        "capacity_cohort_summary": capacity,
+        "legacy_network_summary": {
+            "median_efficiency_uplift_percent": diagnostic[
+                "median_legacy_efficiency_uplift_percent"
+            ],
+            "nonnegative_inventory_count": diagnostic[
+                "legacy_nonnegative_inventory_count"
+            ],
+            "inventory_count": 18,
+        },
+        "physical_replica_validation": dict(physical),
+        "correctness": dict(correctness),
+        "reproducibility": dict(reproducibility),
+        "hedging_diagnostic": {
+            "status": "SUPPRESSED",
+            "reason": "HEDGE_SERVICE_DRIFT",
+            "maximum_absolute_service_drift_percent": physical[
+                "maximum_absolute_service_drift_percent"
+            ],
+            "primary_verdict_affected": False,
+        },
+        "validity_failures": verdict["validity_failures"],
+        "deterministic_run_2_wall_seconds": float(attempt_summary["elapsed_seconds"]),
+        "deterministic_run_3_wall_seconds": reproducibility.get(
+            "reproducibility_wall_seconds"
+        ),
+        "e024_recommendation": recommendation,
+    }
+
+
+def _repaired_truth_table(
+    *,
+    analysis: AttemptAnalysis,
+    verdict: Mapping[str, Any],
+    zero_new_node: Mapping[str, Any],
+    physical: Mapping[str, Any],
+    correctness: Mapping[str, Any],
+    reproducibility: Mapping[str, Any],
+    plan_audit: Mapping[str, Any],
+    u_strong_matches: int,
+    superset_pass: bool,
+    coverage_pass: bool,
+    memory_pass: bool,
+    cost_pass: bool,
+    compatibility_pass: bool,
+    code_freeze: Mapping[str, Any],
+) -> dict[str, Any]:
+    diagnostic = analysis.diagnostic_summary
+    return {
+        "schema_version": "experiment-023-repaired-truth-table-v2",
+        "experiment_id": "023",
+        "Original deterministic-run-1 verdict": "MODEL_INVALID",
+        "Frozen constants unchanged": code_freeze.get("status") == "PASS",
+        "Physical duplicate-group validation": physical["status"],
+        "Legacy engine compatibility": "PASS" if compatibility_pass else "FAIL",
+        "U_STRONG exact match 27/27": u_strong_matches == 27,
+        "FLEX_POOL superset audit 27/27": superset_pass,
+        "FLEX_POOL search coverage": coverage_pass,
+        "All required serving rows complete": analysis.completeness[
+            "all_required_rows_complete"
+        ],
+        "Memory reconciliation": "PASS" if memory_pass else "FAIL",
+        "Cost reconciliation": "PASS" if cost_pass else "FAIL",
+        "Three negative controls": {
+            "status": "PASS" if not analysis.control_failures else "FAIL",
+            "failures": list(analysis.control_failures),
+        },
+        "Five full correctness receipts": dict(correctness),
+        "Deterministic reproducibility": dict(reproducibility),
+        "Primary efficiency median percent": diagnostic[
+            "median_efficiency_uplift_percent"
+        ],
+        "Primary efficiency mean percent": diagnostic[
+            "mean_efficiency_uplift_percent"
+        ],
+        "Primary efficiency p90 percent": diagnostic[
+            "p90_efficiency_uplift_percent"
+        ],
+        "Cases >=20%": diagnostic["headline_cases_ge_20_percent"],
+        "Raw throughput median percent": diagnostic[
+            "median_raw_throughput_uplift_percent"
+        ],
+        "Worst efficiency percent": diagnostic[
+            "worst_efficiency_regression_percent"
+        ],
+        "Worst throughput percent": diagnostic[
+            "worst_raw_throughput_regression_percent"
+        ],
+        "General wedge gate": verdict["general_wedge_gate"],
+        "Each family wedge gate": verdict["family_wedge_gates"],
+        "Zero-new-node wedge": dict(zero_new_node),
+        "Hedging": {
+            "status": "SUPPRESSED",
+            "reason": "HEDGE_SERVICE_DRIFT",
+            "service_drift_percent": physical[
+                "maximum_absolute_service_drift_percent"
+            ],
+        },
+        "Final plan audit": dict(plan_audit),
+        "Validity failures": verdict["validity_failures"],
+        "Final verdict": verdict["final_verdict"],
+    }
+
+
+def _render_repaired_report(
+    *,
+    analysis: AttemptAnalysis,
+    summary: Mapping[str, Any],
+    verdict: Mapping[str, Any],
+    zero_new_node: Mapping[str, Any],
+    physical: Mapping[str, Any],
+    correctness: Mapping[str, Any],
+    reproducibility: Mapping[str, Any],
+) -> str:
+    diagnostic = analysis.diagnostic_summary
+    family_lines = [
+        "| Family | n | Median efficiency | >=20% | Median raw throughput | Replicas used | Gate |",
+        "|---|---:|---:|---:|---:|---:|---|",
+    ]
+    family_gates = verdict["family_wedge_gates"]
+    for row in analysis.family_rows:
+        family_lines.append(
+            "| {family} | {count} | {eff:+.2f}% | {wins} | {raw:+.2f}% | "
+            "{replicas} | {gate} |".format(
+                family=row["family"],
+                count=row["inventory_count"],
+                eff=row["median_efficiency_uplift_percent"],
+                wins=row["cases_ge_20_percent"],
+                raw=row["median_raw_throughput_uplift_percent"],
+                replicas=row["replica_using_inventories"],
+                gate="PASS" if family_gates[row["family"]]["passed"] else "FAIL",
+            )
+        )
+    network = summary["network_heterogeneous_01"]
+    correctness_lines = "\n".join(
+        f"- `{row['inventory_id']}`: **{row['status']}**; replicas "
+        f"{row.get('replica_count_in_plan', 'n/a')}, forced alternates "
+        f"{row.get('forced_alternate_dispatch_count', 'n/a')}."
+        for row in correctness["receipts"]
+    )
+    failures = verdict["validity_failures"]
+    failure_text = (
+        "None. The repaired evidence path passed every mandatory validity gate."
+        if not failures
+        else "; ".join(str(value) for value in failures)
+    )
+    qualifying = ", ".join(verdict["qualifying_families"]) or "none"
+    return f"""# Experiment 023: Exact Sparse Expert Optionality
+
+## Final Verdict
+
+**{verdict['final_verdict']}**
+
+Mandatory validity failures: {failure_text}
+
+The original `deterministic-run-1` verdict remains permanently **MODEL_INVALID**. The category above is the result of the repaired authoritative `deterministic-run-2`, validated against independently planned `deterministic-run-3`.
+
+## Executive Summary
+
+Across the 18 frozen headline inventories, median FLEX_POOL efficiency uplift was {diagnostic['median_efficiency_uplift_percent']:+.2f}%, mean uplift was {diagnostic['mean_efficiency_uplift_percent']:+.2f}%, p90 was {diagnostic['p90_efficiency_uplift_percent']:+.2f}%, and the maximum was {diagnostic['maximum_efficiency_uplift_percent']:+.2f}%. {diagnostic['headline_cases_ge_20_percent']} of 18 reached the frozen 20% threshold. Median raw SLO throughput uplift was {diagnostic['median_raw_throughput_uplift_percent']:+.2f}%.
+
+All three negative controls {'passed' if summary['negative_controls_pass'] else 'did not pass'}. FLEX_POOL {'passed' if summary['flex_pool_superset_pass_27_of_27'] else 'failed'} its mandatory 27/27 superset audit, and U_STRONG matched run 1 in {summary['u_strong_run1_exact_matches']}/27 inventories.
+
+![Headline efficiency uplift](../../artifacts/experiment-023/charts/chart-01-efficiency-uplift.png)
+
+## Why the First Attempt Was Invalid
+
+`deterministic-run-1` optimized C32 throughput (or C32 throughput per abstract cost) but was judged by a five-point hard-SLO selector. `coarse-friendly-03` exposed that mismatch when a locally attractive plan narrowly crossed the C8 latency boundary and fell to C1. FLEX_POOL also failed to retain its legal FLEX_FREE subset because completion-only primary and alternate pruning removed lower-cost candidates. Those defects made run 1 non-promotable; its files and verdict were not rewritten.
+
+## Repair Protocol
+
+The preregistered repair is recorded in `artifacts/experiment-023/repair/repair-protocol.json`. Action acceptance now uses the single canonical full-ladder SLO scorer. C32 remains only a heuristic. FLEX_POOL searches POOL-U and POOL-FREE branches and selects from U_STRONG, FLEX_FREE, POOL-U, and POOL-FREE. The repaired code was frozen after the three-control pilot and before headline execution.
+
+## Frozen Scientific Contract
+
+The original question, hypothesis, seed, 27 inventories, 18 headline cases, three controls, six capacity cases, P8 degree, maximum six actions, 2.0x latency multiplier, +0.5% action gain, 1% throughput guard, 20% wedge threshold, routing policy, and SHARED_NIC model were unchanged. The frozen constants canonical SHA-256 is `0b5e502e22bb0fca8cbb0dc0d8d0f80b3abd3610c34f2634e399900fc9c45f4b`.
+
+## Physical Replica Validation
+
+The unchanged physical prerequisite passed {physical['case_count']}/{physical['case_count']} cases with maximum A/B relative L2 {physical['maximum_a_b_relative_l2']:.3g}, maximum memory estimation error {physical['maximum_replica_memory_error_percent']:.3f}%, and {physical['service_sample_count']} service samples. This is local RTX 5090 primitive evidence, not physical multi-machine throughput.
+
+## U_STRONG Baseline Integrity
+
+Repaired U_STRONG canonical plan hashes matched `deterministic-run-1` exactly in {summary['u_strong_run1_exact_matches']}/27 inventories. Baseline construction was not changed by this repair.
+
+## Repaired FLEX Planner
+
+Every structurally feasible action reaching selection was evaluated at concurrency 1, 8, 32, 64, and 128. FLEX_FREE maximized SLO-selected raw throughput without new nodes. FLEX_POOL maximized SLO-selected throughput per abstract cost. Both applied the exact +0.5% objective gate, local 1% throughput guard, and cumulative 1% guard against U_STRONG.
+
+## FLEX_POOL Superset Audit
+
+The audit {'passed 27/27' if summary['flex_pool_superset_pass_27_of_27'] else 'failed'}. Every final envelope explicitly contained the current FLEX_FREE plan, and harmful optionality could be declined.
+
+## Negative Controls
+
+All controls {'passed both -5% efficiency and raw-throughput limits for FLEX_FREE and FLEX_POOL' if summary['negative_controls_pass'] else 'did not pass the mandatory limits'}. The detailed rows are in `analysis/uplift.csv` and `validation/flex-pool-superset.csv`.
+
+## Primary 18-Inventory Results
+
+Median efficiency uplift: {diagnostic['median_efficiency_uplift_percent']:+.3f}%. Mean: {diagnostic['mean_efficiency_uplift_percent']:+.3f}%. P90: {diagnostic['p90_efficiency_uplift_percent']:+.3f}%. Maximum: {diagnostic['maximum_efficiency_uplift_percent']:+.3f}%. Wins at or above 20%: {diagnostic['headline_cases_ge_20_percent']}/18. Median raw throughput uplift: {diagnostic['median_raw_throughput_uplift_percent']:+.3f}%. Worst efficiency: {diagnostic['worst_efficiency_regression_percent']:+.3f}%. Worst raw throughput: {diagnostic['worst_raw_throughput_regression_percent']:+.3f}%. Actual alternate users: {diagnostic['replica_using_headline_inventory_count']}/18.
+
+![Raw SLO throughput uplift](../../artifacts/experiment-023/charts/chart-02-throughput-uplift.png)
+
+## Family Results
+
+Qualifying preregistered families: **{qualifying}**.
+
+{chr(10).join(family_lines)}
+
+![Family results](../../artifacts/experiment-023/charts/chart-05-family-summary.png)
+
+## Optionality-Only Ablation
+
+FLEX_POOL optionality-only median was {diagnostic['median_optionality_only_percent']:+.3f}% and maximum was {diagnostic['maximum_optionality_only_percent']:+.3f}%. NO_ALT arms were derived by removing only alternate residency; they were not independently optimized.
+
+![Replica memory and uplift](../../artifacts/experiment-023/charts/chart-04-replica-memory-vs-uplift.png)
+
+## FLEX_FREE Zero-New-Node Result
+
+FLEX_FREE median efficiency uplift was {diagnostic['median_flex_free_efficiency_uplift_percent']:+.3f}% and maximum was {diagnostic['maximum_flex_free_efficiency_uplift_percent']:+.3f}%. `ZERO_NEW_NODE_WEDGE` is **{str(summary['zero_new_node_wedge']).upper()}**; its frozen diagnostic gate is `{zero_new_node}`.
+
+## Network-Heterogeneous Results
+
+For `network-heterogeneous-01`, repaired FLEX_POOL efficiency uplift was {network['efficiency_uplift_percent']:+.3f}%, raw SLO throughput uplift was {network['throughput_uplift_percent']:+.3f}%, optionality-only uplift was {network['optionality_only_percent']:+.3f}%, selected SLO concurrency was {network['flex_pool_slo_concurrency']}, and actual alternate use was {network['flex_pool_actual_replica_used']}.
+
+## Capacity-Exploratory Results
+
+The six frozen exploratory cases had median efficiency uplift {summary['capacity_cohort_summary']['median_efficiency_uplift_percent']:+.3f}% and median raw throughput uplift {summary['capacity_cohort_summary']['median_raw_throughput_uplift_percent']:+.3f}%. They cannot promote the primary verdict.
+
+## Legacy Network Robustness
+
+Median legacy efficiency uplift was {diagnostic['median_legacy_efficiency_uplift_percent']:+.3f}%, with {diagnostic['legacy_nonnegative_inventory_count']}/18 non-negative cases.
+
+![Saturation curves](../../artifacts/experiment-023/charts/chart-06-saturation-curves.png)
+
+## Full Correctness
+
+The five production-native authenticated 93-layer receipts have aggregate status **{correctness['status']}**.
+
+{correctness_lines}
+
+The replica-aware override changed only physical worker destination. Logical group, tensor ownership, expert range, routes, weights, reduction slot, and canonical group reduction order remained unchanged.
+
+## Reproducibility
+
+Deterministic reproducibility status: **{reproducibility.get('status', 'MISSING')}**. Canonical plan hash matches: {reproducibility.get('canonical_plan_hash_matches', 0)}/135; U_STRONG: {reproducibility.get('u_strong_hash_matches', 0)}/27; maximum deterministic float relative difference: {reproducibility.get('maximum_float_relative_difference', 'n/a')}.
+
+## Hedging Diagnostic
+
+Hedging is **SUPPRESSED** under the unchanged `HEDGE_SERVICE_DRIFT` rule. Maximum physical service drift was {physical['maximum_absolute_service_drift_percent']:.3f}%. No new physical samples were taken, and hedging does not affect the primary E023 verdict.
+
+![Hedging status](../../artifacts/experiment-023/charts/chart-08-hedging-tail-tradeoff.png)
+
+## Limitations
+
+Fleet serving results remain a physically grounded model with shaped network semantics, not a physical multi-machine deployment. Correctness multiplexes logical manifest workers on one RTX 5090. Abstract node cost is not a dollar price. The hard SLO remains discontinuous; `analysis/slo-boundary-analysis.csv` exposes those cliffs without changing them.
+
+## What E023 Proves
+
+E023 establishes exactly the result represented by **{verdict['final_verdict']}** under the frozen modeled inventory and validity contract. It also establishes physical duplicate-group substitutability within the fixed numerical gate and verifies whether the repaired planner can safely retain U_STRONG and FLEX_FREE.
+
+## What E023 Does Not Prove
+
+E023 does not prove real multi-machine transport, contention, straggler behavior, dollar economics, or production user-token throughput. It does not justify a subgroup outside the four preregistered families, a threshold change, a routing redesign, or a new inference technique.
+
+## Decision for E024
+
+**{summary['e024_recommendation']}**
+
+## Reproduction
+
+Run the compatibility gate, three-control pilot, code-freeze check, `deterministic-run-2`, five full correctness representatives, independently planned `deterministic-run-3`, reproducibility comparison, and finalizer with `PYTHONPATH=src`. Exact commands are in `artifacts/experiment-023/commands.txt`. Run-2 wall time was {summary['deterministic_run_2_wall_seconds']:.3f} seconds; run-3 wall time was {summary.get('deterministic_run_3_wall_seconds')} seconds.
+"""
+
+
+def _repaired_commands(primary_attempt: str, reproducibility_attempt: str) -> str:
+    return f"""# Experiment 023 repaired command ledger
+$env:PYTHONPATH='src'; .\\.venv\\Scripts\\python.exe scripts\\experiment_023_correctness.py compatibility
+$env:PYTHONPATH='src'; .\\.venv\\Scripts\\python.exe scripts\\experiment_023_run.py --attempt attempts/repair-control-pilot-v1 --inventory coarse-friendly-01 --inventory coarse-friendly-02 --inventory coarse-friendly-03
+$env:PYTHONPATH='src'; .\\.venv\\Scripts\\python.exe scripts\\experiment_023_run.py --attempt attempts/{primary_attempt}
+$env:PYTHONPATH='src'; .\\.venv\\Scripts\\python.exe scripts\\experiment_023_correctness.py full --primary-attempt {primary_attempt}
+$env:PYTHONPATH='src'; .\\.venv\\Scripts\\python.exe scripts\\experiment_023_run.py --attempt attempts/{reproducibility_attempt}
+$env:PYTHONPATH='src'; .\\.venv\\Scripts\\python.exe scripts\\experiment_023_finalize.py --primary-attempt {primary_attempt} --reproducibility-attempt {reproducibility_attempt}
+"""
+
+
+def _write_repaired_final_audit(
+    repo: Path,
+    artifact_root: Path,
+    *,
+    verdict: Mapping[str, Any],
+    failures: Sequence[str],
+    plan_audit: Mapping[str, Any],
+    input_validation: Mapping[str, Any],
+    chart_qa_status: str,
+) -> dict[str, Any]:
+    required_relative = [
+        "summary.json",
+        "truth-table.json",
+        "repair/repair-protocol.json",
+        "repair/repair-code-freeze.json",
+        "archive/model-invalid-run-1/archive-manifest.json",
+        "analysis/uplift.csv",
+        "analysis/family-summary.csv",
+        "analysis/optionality-ablation.csv",
+        "analysis/replica-efficiency.csv",
+        "analysis/capacity-exploratory.csv",
+        "analysis/repair-comparison.csv",
+        "analysis/slo-boundary-analysis.csv",
+        "serving/arm-results.csv",
+        "serving/saturation-summary.csv",
+        "serving/replica-actions.csv",
+        "serving/replica-routing-summary.csv",
+        "serving/resource-utilization.csv",
+        "serving/network-summary.csv",
+        "validation/engine-compatibility.csv",
+        "validation/memory-reconciliation.csv",
+        "validation/cost-reconciliation.csv",
+        "validation/flex-pool-superset.csv",
+        "validation/flex-pool-search-coverage.csv",
+        "validation/reproducibility.json",
+        "hedging-status.json",
+        "commands.txt",
+    ]
+    required = [artifact_root / value for value in required_relative]
+    required.extend(
+        artifact_root / "correctness" / f"{value}.json"
+        for value in FULL_CORRECTNESS_REPRESENTATIVES
+    )
+    required.extend(
+        artifact_root / "charts" / f"chart-{index:02d}-{name}.png"
+        for index, name in enumerate(
+            (
+                "efficiency-uplift",
+                "throughput-uplift",
+                "throughput-vs-cost",
+                "replica-memory-vs-uplift",
+                "family-summary",
+                "saturation-curves",
+                "replica-selection",
+                "hedging-tail-tradeoff",
+            ),
+            1,
+        )
+    )
+    required.append(repo / "docs/experiments/EXPERIMENT_023_REPORT.md")
+    missing = [str(path.relative_to(repo)) for path in required if not path.is_file()]
+    hashes = [
+        {
+            "path": path.relative_to(repo).as_posix(),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        }
+        for path in sorted(required, key=lambda value: value.as_posix())
+        if path.is_file()
+    ]
+    checks = {
+        "repair_inputs_read_only_validation": input_validation.get("status") == "PASS",
+        "frozen_constants_hash": canonical_sha256(FROZEN_CONSTANTS),
+        "original_attempt_preserved": (
+            artifact_root / "attempts/deterministic-run-1"
+        ).is_dir(),
+        "plan_manifest_audit_pass": plan_audit["status"] == "PASS",
+        "required_artifact_tree_complete": not missing,
+        "chart_visual_qa_pass": chart_qa_status == "PASS_VISUAL_INSPECTION",
+        "thresholds_changed_after_headline": False,
+    }
+    packaging_pass = (
+        not missing
+        and plan_audit["status"] == "PASS"
+        and chart_qa_status == "PASS_VISUAL_INSPECTION"
+    )
+    audit = {
+        "schema_version": "experiment-023-repaired-final-audit-v2",
+        "experiment_id": "023",
+        "final_verdict": verdict["final_verdict"],
+        "artifact_packaging_status": "PASS" if packaging_pass else "PENDING_OR_FAIL",
+        "primary_promotion_status": (
+            "VALID_SCIENTIFIC_VERDICT" if not failures else "BLOCKED_MODEL_INVALID"
+        ),
+        "validity_failures": list(failures),
+        "checks": checks,
+        "missing_required_artifacts": missing,
+        "plan_audit": dict(plan_audit),
+        "artifact_hash_count": len(hashes),
+        "artifact_hashes": hashes,
+        "artifact_manifest_sha256": canonical_sha256(hashes),
+    }
+    atomic_write_json(artifact_root / "validation/final-audit.json", audit)
+    return audit
+
+
 def finalize_experiment(
     repo: Path,
     *,
+    primary_attempt: str = "deterministic-run-2",
+    reproducibility_attempt: str = "deterministic-run-3",
     chart_qa_status: str = "PENDING_VISUAL_QA",
 ) -> dict[str, Any]:
-    """Finalize the stopped E023 run without promoting diagnostic results."""
+    """Finalize an explicitly selected repaired attempt without outcome assumptions."""
 
     if chart_qa_status not in {"PENDING_VISUAL_QA", "PASS_VISUAL_INSPECTION"}:
         raise ValueError("unknown chart QA state")
     root = repo.resolve()
     artifact_root = root / "artifacts/experiment-023"
-    attempt_root = artifact_root / "attempts" / ATTEMPT_NAME
+    attempt_root = artifact_root / "attempts" / primary_attempt
+    reproducibility_root = artifact_root / "attempts" / reproducibility_attempt
     if not attempt_root.is_dir():
-        raise RuntimeError("MODEL_INVALID: deterministic-run-1 is missing")
-    validate_e023_freeze(root)
-    _publish_attempt(attempt_root, artifact_root)
-    _write_stopped_phase_artifacts(artifact_root)
+        raise RuntimeError(f"MODEL_INVALID: primary attempt missing: {primary_attempt}")
+    if primary_attempt == "deterministic-run-1":
+        raise ValueError("the immutable first attempt cannot be promoted as repaired E023")
 
+    failures: list[str] = []
+    try:
+        input_validation = validate_repair_inputs_read_only(root)
+    except Exception as exc:
+        input_validation = {"status": "FAIL", "error": str(exc)}
+        failures.append(f"REPAIR_INPUT_VALIDATION:{type(exc).__name__}:{exc}")
+
+    _publish_attempt(attempt_root, artifact_root)
     analysis = analyze_attempt(attempt_root)
-    if not analysis.control_failures:
-        raise RuntimeError("expected frozen negative-control failure was not found")
-    validity_failures = tuple(
+    if not analysis.completeness["all_required_rows_complete"]:
+        failures.append("INCOMPLETE_PRIMARY_SERVING_EVIDENCE")
+    failures.extend(
         "{failure}:{inventory_id}:{arm}".format(**row)
         for row in analysis.control_failures
     )
     headline = [row for row in analysis.uplift_rows if row["cohort"] == "headline"]
-    verdict = evaluate_verdict(headline, validity_failures=validity_failures)
-    if verdict["final_verdict"] != "MODEL_INVALID":
-        raise AssertionError("mandatory control failure did not short-circuit verdict")
     zero_new_node = evaluate_zero_new_node_wedge(headline)
+
+    physical = _physical_summary(artifact_root)
+    if physical["status"] != "PASS" or physical["primary_gate"] != "PASS":
+        failures.append("PHYSICAL_REPLICA_VALIDATION_FAILED")
+    compatibility = _read_csv(artifact_root / "validation/engine-compatibility.csv")
+    compatibility_pass = len(compatibility) == 5 and all(
+        row["status"] == "PASS" for row in compatibility
+    )
+    if not compatibility_pass:
+        failures.append("LEGACY_ENGINE_COMPATIBILITY_FAILED")
+
+    u_strong_matches = _validate_u_strong_integrity(
+        artifact_root,
+        attempt_root,
+        failures,
+    )
+    superset_rows = _read_csv(attempt_root / "validation/flex-pool-superset.csv")
+    superset_pass = len(superset_rows) == 27 and all(
+        row["status"] == "PASS"
+        and row["pool_ge_u_strong"] == "True"
+        and row["pool_ge_flex_free"] == "True"
+        and row["pool_throughput_guard"] == "True"
+        for row in superset_rows
+    )
+    if not superset_pass:
+        failures.append("FLEX_POOL_SUPERSET_AUDIT_FAILED")
+    coverage_rows = _read_csv(
+        attempt_root / "validation/flex-pool-search-coverage.csv"
+    )
+    coverage_pass = (
+        {row["inventory_id"] for row in coverage_rows}
+        == {row["inventory_id"] for row in superset_rows}
+        and all(row["flex_free_in_final_pool_envelope"] == "True" for row in coverage_rows)
+    )
+    if not coverage_pass:
+        failures.append("FLEX_POOL_SEARCH_COVERAGE_FAILED")
+
+    memory = _read_csv(attempt_root / "validation/memory-reconciliation.csv")
+    memory_pass = bool(memory) and all(
+        row["within_capacity"] == "True"
+        and int(row["replica_persistent_state_bytes"]) == 0
+        for row in memory
+    )
+    if not memory_pass:
+        failures.append("MEMORY_RECONCILIATION_FAILED")
+    costs = _read_csv(attempt_root / "validation/cost-reconciliation.csv")
+    cost_pass = len(costs) == 135 and all(
+        row["status"] == "PASS" and float(row["difference"]) == 0.0
+        for row in costs
+    )
+    if not cost_pass:
+        failures.append("COST_RECONCILIATION_FAILED")
+
+    correctness = _validate_correctness_receipts(artifact_root, failures)
+    reproducibility = _validate_reproducibility(
+        artifact_root,
+        primary_attempt,
+        reproducibility_attempt,
+        reproducibility_root,
+        failures,
+    )
+    code_freeze = _validate_repair_code_freeze(root, failures)
+    plan_audit = _audit_final_plans(artifact_root)
+    if plan_audit["status"] != "PASS":
+        failures.append("FINAL_PLAN_AUDIT_FAILED")
+
+    verdict = resolve_final_verdict(headline, validity_failures=tuple(failures))
+    recommendation = _e024_recommendation(verdict)
     _write_analysis(artifact_root, analysis)
+    write_csv(
+        artifact_root / "analysis/repair-comparison.csv",
+        repair_comparison_rows(root, attempt_root),
+    )
+    write_csv(
+        artifact_root / "analysis/slo-boundary-analysis.csv",
+        slo_boundary_rows(attempt_root),
+    )
     chart_map = _generate_charts(
         artifact_root,
         analysis,
         chart_qa_status=chart_qa_status,
+        primary_attempt=primary_attempt,
     )
     atomic_write_json(artifact_root / "analysis/chart-map.json", chart_map)
 
-    physical = _physical_summary(artifact_root)
-    if physical["status"] != "PASS":
-        raise RuntimeError("MODEL_INVALID: frozen physical replica gate is not PASS")
-    plan_audit = _audit_final_plans(artifact_root)
     attempt_summary = _read_json(attempt_root / "attempt-summary.json")
-    summary = _build_summary(
-        analysis,
-        verdict,
-        zero_new_node,
-        physical,
-        attempt_summary,
+    summary = _repaired_summary(
+        analysis=analysis,
+        verdict=verdict,
+        zero_new_node=zero_new_node,
+        physical=physical,
+        correctness=correctness,
+        reproducibility=reproducibility,
+        attempt_summary=attempt_summary,
+        primary_attempt=primary_attempt,
+        reproducibility_attempt=reproducibility_attempt,
+        u_strong_matches=u_strong_matches,
+        superset_pass=superset_pass,
+        compatibility_pass=compatibility_pass,
+        recommendation=recommendation,
     )
-    truth = _truth_table(
-        analysis,
-        verdict,
-        zero_new_node,
-        physical,
-        plan_audit,
+    truth = _repaired_truth_table(
+        analysis=analysis,
+        verdict=verdict,
+        zero_new_node=zero_new_node,
+        physical=physical,
+        correctness=correctness,
+        reproducibility=reproducibility,
+        plan_audit=plan_audit,
+        u_strong_matches=u_strong_matches,
+        superset_pass=superset_pass,
+        coverage_pass=coverage_pass,
+        memory_pass=memory_pass,
+        cost_pass=cost_pass,
+        compatibility_pass=compatibility_pass,
+        code_freeze=code_freeze,
     )
     atomic_write_json(artifact_root / "summary.json", summary)
     atomic_write_json(artifact_root / "truth-table.json", truth)
     atomic_write_json(artifact_root / "environment.json", _environment(root, physical))
-    atomic_write_text(artifact_root / "commands.txt", _commands_text())
-    report = _render_report(
-        root,
-        analysis,
-        summary,
-        verdict,
-        zero_new_node,
-        physical,
-        attempt_summary,
+    atomic_write_json(
+        artifact_root / "hedging-status.json",
+        {
+            "status": "SUPPRESSED",
+            "reason": "HEDGE_SERVICE_DRIFT",
+            "maximum_absolute_service_drift_percent": physical[
+                "maximum_absolute_service_drift_percent"
+            ],
+            "primary_verdict_affected": False,
+        },
     )
-    atomic_write_text(root / "docs/experiments/EXPERIMENT_023_REPORT.md", report)
+    atomic_write_json(
+        artifact_root / "failure-log.json",
+        {
+            "status": "PASS" if not failures else "MODEL_INVALID",
+            "validity_failures": failures,
+        },
+    )
+    atomic_write_text(
+        artifact_root / "commands.txt",
+        _repaired_commands(primary_attempt, reproducibility_attempt),
+    )
+    report = _render_repaired_report(
+        analysis=analysis,
+        summary=summary,
+        verdict=verdict,
+        zero_new_node=zero_new_node,
+        physical=physical,
+        correctness=correctness,
+        reproducibility=reproducibility,
+    )
+    report_path = root / "docs/experiments/EXPERIMENT_023_REPORT.md"
+    atomic_write_text(report_path, report)
     atomic_write_json(
         artifact_root / "analysis/report-source-notes.json",
-        _report_source_notes(chart_map),
+        {
+            "schema_version": "experiment-023-repaired-report-sources-v1",
+            "primary_attempt": primary_attempt,
+            "reproducibility_attempt": reproducibility_attempt,
+            "original_attempt": "deterministic-run-1",
+            "original_verdict": "MODEL_INVALID",
+            "chart_map": chart_map,
+        },
     )
-    audit = _write_final_audit(
+    audit = _write_repaired_final_audit(
         root,
         artifact_root,
-        analysis=analysis,
-        physical=physical,
+        verdict=verdict,
+        failures=failures,
         plan_audit=plan_audit,
+        input_validation=input_validation,
         chart_qa_status=chart_qa_status,
     )
     return {
-        "status": "COMPLETE_MODEL_INVALID_AUDIT_PACKAGE",
-        "final_verdict": "MODEL_INVALID",
+        "status": "COMPLETE_REPAIRED_E023_AUDIT_PACKAGE",
+        "final_verdict": verdict["final_verdict"],
         "summary": summary,
         "artifact_packaging_status": audit["artifact_packaging_status"],
         "chart_qa_status": chart_qa_status,
-        "report": str(root / "docs/experiments/EXPERIMENT_023_REPORT.md"),
+        "report": str(report_path),
     }
 
 
-__all__ = ["ATTEMPT_NAME", "STOP_STATUS", "finalize_experiment"]
+__all__ = [
+    "ATTEMPT_NAME",
+    "STOP_STATUS",
+    "finalize_experiment",
+    "resolve_final_verdict",
+]

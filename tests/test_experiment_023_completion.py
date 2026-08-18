@@ -21,11 +21,10 @@ from swarm_inference.experiments.experiment_022.models import (
     PlannerLevel,
 )
 from swarm_inference.experiments.experiment_023 import baseline
-from swarm_inference.experiments.experiment_023.analysis import evaluate_verdict
+from swarm_inference.experiments.experiment_023.finalize import resolve_final_verdict
 from swarm_inference.experiments.experiment_023.freeze import (
     FROZEN_CONSTANTS,
     HEADLINE_INVENTORIES,
-    validate_e023_freeze,
 )
 from swarm_inference.experiments.experiment_023.hedging import (
     HEDGE_SEEDS,
@@ -33,11 +32,15 @@ from swarm_inference.experiments.experiment_023.hedging import (
     common_random_draw_indices,
     decide_hedge_launch,
 )
+from swarm_inference.experiments.experiment_023.repair_validation import (
+    validate_repair_inputs_read_only,
+)
 from swarm_inference.experiments.experiment_023.serving_engine import _eligible_passes
 
 REPO = Path(__file__).resolve().parents[1]
 ARTIFACT = REPO / "artifacts/experiment-023"
 ATTEMPT = ARTIFACT / "attempts/deterministic-run-1"
+REPAIRED_ATTEMPT = ARTIFACT / "attempts/deterministic-run-2"
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -93,28 +96,68 @@ def _verdict_rows(
 def test_verdict_fixtures_cover_every_exact_category(
     rows: list[dict[str, object]], failures: tuple[str, ...], expected: str
 ) -> None:
-    assert evaluate_verdict(rows, validity_failures=failures)["final_verdict"] == expected
-
-
-def test_actual_verdict_is_mechanical_model_invalid() -> None:
-    summary = json.loads((ARTIFACT / "summary.json").read_text(encoding="utf-8"))
-    truth = json.loads((ARTIFACT / "truth-table.json").read_text(encoding="utf-8"))
-    assert summary["final_verdict"] == truth["Final verdict"] == "MODEL_INVALID"
-    failures = truth["Mandatory control gate"]["failures"]
-    assert any(
-        row["inventory_id"] == "coarse-friendly-03"
-        and row["arm"] == "FLEX_POOL"
-        and row["efficiency_uplift_percent"] < -5.0
-        and row["throughput_uplift_percent"] < -5.0
-        for row in failures
+    assert (
+        resolve_final_verdict(rows, validity_failures=failures)["final_verdict"]
+        == expected
     )
 
 
+def test_generalized_finalizer_does_not_expect_a_control_failure() -> None:
+    verdict = resolve_final_verdict(_verdict_rows([25.0] * 18))
+    assert verdict["validity_failures"] == []
+    assert verdict["final_verdict"] == "YES_GENERAL_WEDGE"
+
+
+def test_actual_repaired_verdict_is_mechanical_and_valid() -> None:
+    summary = json.loads((ARTIFACT / "summary.json").read_text(encoding="utf-8"))
+    truth = json.loads((ARTIFACT / "truth-table.json").read_text(encoding="utf-8"))
+    assert summary["original_verdict"] == "MODEL_INVALID"
+    assert truth["Original deterministic-run-1 verdict"] == "MODEL_INVALID"
+    assert summary["final_verdict"] == truth["Final verdict"]
+    assert summary["final_verdict"] in {
+        "YES_GENERAL_WEDGE",
+        "YES_CONDITIONAL_WEDGE",
+        "CAPABILITY_SIGNAL_ONLY",
+        "NO_WEDGE",
+    }
+    assert summary["primary_conclusion_status"] == "VALID"
+    assert summary["validity_failures"] == truth["Validity failures"] == []
+    assert truth["Three negative controls"] == {"failures": [], "status": "PASS"}
+
+
 def test_frozen_inputs_revalidate_without_changing_e022() -> None:
-    validated = validate_e023_freeze(REPO)
+    validated = validate_repair_inputs_read_only(REPO)
     assert validated["status"] == "PASS"
-    assert validated["e022_verdict"] == "MODEL_INVALID"
-    assert validated["inventory_count"] == 27
+    assert validated["e022_file_count"] == 181
+    assert validated["physical_status"] == "PASS"
+
+
+def test_repaired_u_strong_hashes_match_run1_for_all_27() -> None:
+    if not (REPAIRED_ATTEMPT / "attempt-summary.json").is_file():
+        pytest.skip("authoritative repaired attempt has not run yet")
+    matches = 0
+    for old_path in sorted((ATTEMPT / "plans").glob("*/U_STRONG.json")):
+        inventory_id = old_path.parent.name
+        new_path = REPAIRED_ATTEMPT / "plans" / inventory_id / "U_STRONG.json"
+        old = json.loads(old_path.read_text(encoding="utf-8"))
+        new = json.loads(new_path.read_text(encoding="utf-8"))
+        matches += old["canonical_plan_sha256"] == new["canonical_plan_sha256"]
+    assert matches == 27
+
+
+def test_repaired_flex_pool_superset_audit_passes_all_27() -> None:
+    path = REPAIRED_ATTEMPT / "validation/flex-pool-superset.csv"
+    if not path.is_file():
+        pytest.skip("authoritative repaired attempt has not run yet")
+    rows = _read_csv(path)
+    assert len(rows) == 27
+    assert all(
+        row["status"] == "PASS"
+        and row["pool_ge_u_strong"] == "True"
+        and row["pool_ge_flex_free"] == "True"
+        and row["pool_throughput_guard"] == "True"
+        for row in rows
+    )
 
 
 def test_complete_arm_schema_concurrency_and_target_row_accounting() -> None:
@@ -328,17 +371,19 @@ def test_relocation_discovers_injected_useful_node_for_known_e022_cases(
     assert actions[0]["relative_gain_percent"] == 100.0
 
 
-def test_actual_planner_limits_and_no_forced_control_actions() -> None:
+def test_actual_planner_limits_apply_per_seed_branch() -> None:
     rows = _read_csv(ARTIFACT / "serving/replica-actions.csv")
-    accepted: dict[tuple[str, str], int] = {}
+    accepted: dict[tuple[str, str, str], int] = {}
     for row in rows:
         if row["accepted"] == "True":
-            key = (row["inventory_id"], row["arm"])
+            key = (row["inventory_id"], row["arm"], row["seed_branch"])
             accepted[key] = accepted.get(key, 0) + 1
             assert float(row["relative_gain_percent"]) >= 0.5
             assert float(row["objective_after"]) > float(row["objective_before"])
-    assert all(value <= int(FROZEN_CONSTANTS["planner_max_accepted_layer_actions"]) for value in accepted.values())
-    assert accepted.get(("coarse-friendly-02", "FLEX_POOL"), 0) == 0
+            assert float(row["slo_throughput_ratio_vs_current"]) >= 0.99
+            assert float(row["slo_throughput_ratio_vs_u_strong"]) >= 0.99
+    maximum = int(FROZEN_CONSTANTS["planner_max_accepted_layer_actions"])
+    assert all(value <= maximum for value in accepted.values())
 
 
 def test_physical_sample_and_memory_gates_are_preserved() -> None:
@@ -363,35 +408,40 @@ def test_required_report_sections_are_present_in_exact_order() -> None:
     )
     headings = re.findall(r"^## .+$", report, flags=re.MULTILINE)
     assert headings == [
-        "## Verdict",
+        "## Final Verdict",
         "## Executive Summary",
-        "## Frozen Hypothesis",
-        "## Why This Experiment Exists",
-        "## Evidence Boundary",
+        "## Why the First Attempt Was Invalid",
+        "## Repair Protocol",
+        "## Frozen Scientific Contract",
         "## Physical Replica Validation",
-        "## Strong Unique Baseline",
-        "## Serving Model",
-        "## Sparse Flexibility Mechanism",
-        "## Primary Results",
+        "## U_STRONG Baseline Integrity",
+        "## Repaired FLEX Planner",
+        "## FLEX_POOL Superset Audit",
+        "## Negative Controls",
+        "## Primary 18-Inventory Results",
         "## Family Results",
-        "## Optionality Ablation",
-        "## Zero-New-Node Result",
-        "## Capacity Cohort",
+        "## Optionality-Only Ablation",
+        "## FLEX_FREE Zero-New-Node Result",
+        "## Network-Heterogeneous Results",
+        "## Capacity-Exploratory Results",
         "## Legacy Network Robustness",
+        "## Full Correctness",
+        "## Reproducibility",
         "## Hedging Diagnostic",
-        "## Correctness",
-        "## Memory and Cost Accounting",
         "## Limitations",
         "## What E023 Proves",
         "## What E023 Does Not Prove",
-        "## Recommendation for Experiment 024",
+        "## Decision for E024",
         "## Reproduction",
     ]
-    first_verdict = report.split("## Verdict", 1)[1].split("\n\n", 2)[1]
-    assert "mechanically determined primary category is **MODEL_INVALID**" in first_verdict
+    first_verdict = report.split("## Final Verdict", 1)[1].split("\n\n", 2)[1]
+    summary = json.loads((ARTIFACT / "summary.json").read_text(encoding="utf-8"))
+    assert f"**{summary['final_verdict']}**" in first_verdict
+    assert "deterministic-run-1" in report
+    assert "MODEL_INVALID" in report
 
 
-def test_required_tree_and_explicit_not_run_receipts_exist() -> None:
+def test_required_tree_and_full_correctness_receipts_exist() -> None:
     for index, name in enumerate(
         (
             "efficiency-uplift",
@@ -420,5 +470,11 @@ def test_required_tree_and_explicit_not_run_receipts_exist() -> None:
                 encoding="utf-8"
             )
         )
-        assert receipt["status"] == "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE"
-        assert receipt["complete_93_layer_traversal_executed"] is False
+        assert receipt["status"] == "PASS"
+        assert receipt["complete_93_layer_traversal_executed"] is True
+        assert receipt["complete_tensor_assignment_coverage"] is True
+        assert receipt["authenticated_execute_shard"] is True
+        assert receipt["whole_layer_fallback_for_split_layers"] is False
+        assert receipt["checkpoint_reads_in_expert_timed_regions"] == 0
+        if receipt["replica_count_in_plan"] > 0:
+            assert receipt["forced_alternate_dispatch_count"] > 0

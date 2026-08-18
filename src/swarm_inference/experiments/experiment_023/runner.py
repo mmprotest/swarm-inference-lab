@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import os
 import time
 from collections.abc import Callable, Iterable
@@ -35,16 +36,25 @@ from .freeze import (
     CONTROL_INVENTORIES,
     FROZEN_CONSTANTS,
     HEADLINE_INVENTORIES,
-    validate_e023_freeze,
 )
 from .models import Arm, E023Plan, NetworkMode, base_resident_bytes
+from .repair_validation import validate_repair_inputs_read_only
 from .replica_memory import abstract_node_cost
 from .replica_planner import (
     PlannerContext,
+    PoolEnvelopeCandidate,
+    clone_as_flex_pool,
     run_flex_planner,
     run_unique_p8_refinement,
+    select_flex_pool_envelope,
 )
 from .serving_engine import CONCURRENCY_LEVELS, ServingEngine, ServingRun
+from .serving_objective import (
+    NoPrimarySLOEligibleConcurrency,
+    SLOScore,
+    score_plan_under_primary_slo,
+    score_runs_under_latency_budget,
+)
 
 CHECKPOINT = Path("F:/models/Kimi-K3")
 DEFAULT_PROFILE_WORKERS = min(12, os.cpu_count() or 1)
@@ -101,7 +111,7 @@ class ExperimentContext:
     @classmethod
     def load(cls, repo: Path) -> ExperimentContext:
         root = repo.resolve()
-        validate_e023_freeze(root)
+        validate_repair_inputs_read_only(root)
         if not CHECKPOINT.is_dir():
             raise RuntimeError(f"MODEL_INVALID: local Kimi K3 checkpoint missing: {CHECKPOINT}")
         inventories, _audit = load_frozen_inventories(root)
@@ -173,10 +183,35 @@ class InventoryResult:
     network_rows: list[dict[str, Any]]
     memory_rows: list[dict[str, Any]]
     cost_rows: list[dict[str, Any]]
+    superset_rows: list[dict[str, Any]]
+    search_coverage_rows: list[dict[str, Any]]
 
 
 def _plan_key(plan: E023Plan) -> str:
     return plan.canonical_sha256
+
+
+def require_run1_u_strong_match(context: ExperimentContext, plan: E023Plan) -> str:
+    """Require the repaired U_STRONG plan to match run 1 exactly."""
+
+    path = (
+        context.repo
+        / "artifacts/experiment-023/attempts/deterministic-run-1/plans"
+        / plan.inventory_id
+        / "U_STRONG.json"
+    )
+    if not path.is_file():
+        raise RuntimeError(
+            f"MODEL_INVALID: run-1 U_STRONG manifest missing for {plan.inventory_id}"
+        )
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    expected = str(manifest.get("canonical_plan_sha256", ""))
+    if not expected or plan.canonical_sha256 != expected:
+        raise RuntimeError(
+            "MODEL_INVALID: repaired U_STRONG differs from deterministic-run-1 "
+            f"for {plan.inventory_id}"
+        )
+    return expected
 
 
 def construct_u_strong(
@@ -389,25 +424,6 @@ def _arm_result_row(
     return row
 
 
-def _slo_selection(
-    runs: dict[int, ServingRun], latency_budget_ms: float
-) -> ServingRun | None:
-    eligible = [
-        run
-        for run in runs.values()
-        if run.status == "PASS" and run.p95_pass_latency_ms <= latency_budget_ms
-    ]
-    if not eligible:
-        return None
-    maximum = max(run.target_rows_per_second for run in eligible)
-    near = [
-        run
-        for run in eligible
-        if run.target_rows_per_second >= 0.995 * maximum
-    ]
-    return min(near, key=lambda run: run.concurrency)
-
-
 def _saturation_rows(
     inventory: Inventory,
     plans: dict[str, E023Plan],
@@ -439,10 +455,15 @@ def _saturation_rows(
             }
             for multiplier in FROZEN_CONSTANTS["latency_sensitivity_multipliers"]:
                 budget = float(multiplier) * u_c1.p95_pass_latency_ms
-                selected = _slo_selection(arm_runs, budget)
                 prefix = f"slo_{float(multiplier):.1f}x"
                 row[f"{prefix}_latency_budget_ms"] = budget
-                if selected is None:
+                try:
+                    selected = score_runs_under_latency_budget(
+                        arm_runs,
+                        latency_budget_ms=budget,
+                        abstract_cost=abstract_node_cost(plan, inventory),
+                    )
+                except NoPrimarySLOEligibleConcurrency:
                     row[f"{prefix}_target_rows_per_second"] = 0.0
                     row[f"{prefix}_concurrency"] = ""
                     row[f"{prefix}_p50_pass_latency_ms"] = ""
@@ -453,7 +474,7 @@ def _saturation_rows(
                     row[f"{prefix}_target_rows_per_second"] = (
                         selected.target_rows_per_second
                     )
-                    row[f"{prefix}_concurrency"] = selected.concurrency
+                    row[f"{prefix}_concurrency"] = selected.selected_concurrency
                     row[f"{prefix}_p50_pass_latency_ms"] = (
                         selected.p50_pass_latency_ms
                     )
@@ -461,8 +482,7 @@ def _saturation_rows(
                         selected.p95_pass_latency_ms
                     )
                     row[f"{prefix}_rows_per_second_per_abstract_cost"] = (
-                        selected.target_rows_per_second
-                        / abstract_node_cost(plan, inventory)
+                        selected.rows_per_second_per_abstract_cost
                     )
                     row[f"{prefix}_latency_eligible"] = True
             values.append(row)
@@ -629,6 +649,53 @@ def reconcile_plan(
     return memory_rows, cost_row
 
 
+def _relative_ge(left: float, right: float) -> bool:
+    tolerance = 1e-12 * max(abs(left), abs(right), 1.0)
+    return left >= right - tolerance
+
+
+def _flex_pool_superset_row(
+    inventory_id: str,
+    *,
+    u_strong: SLOScore,
+    flex_free: SLOScore,
+    flex_pool: SLOScore,
+) -> dict[str, Any]:
+    pool_ge_u = _relative_ge(
+        flex_pool.rows_per_second_per_abstract_cost,
+        u_strong.rows_per_second_per_abstract_cost,
+    )
+    pool_ge_free = _relative_ge(
+        flex_pool.rows_per_second_per_abstract_cost,
+        flex_free.rows_per_second_per_abstract_cost,
+    )
+    throughput_guard = (
+        flex_pool.target_rows_per_second
+        >= (1.0 - FROZEN_CONSTANTS["planner_local_throughput_regression_limit"])
+        * u_strong.target_rows_per_second
+    )
+    status = "PASS" if pool_ge_u and pool_ge_free and throughput_guard else "FAIL"
+    return {
+        "inventory_id": inventory_id,
+        "u_strong_slo_tps": u_strong.target_rows_per_second,
+        "u_strong_slo_efficiency": (
+            u_strong.rows_per_second_per_abstract_cost
+        ),
+        "flex_free_slo_tps": flex_free.target_rows_per_second,
+        "flex_free_slo_efficiency": (
+            flex_free.rows_per_second_per_abstract_cost
+        ),
+        "flex_pool_slo_tps": flex_pool.target_rows_per_second,
+        "flex_pool_slo_efficiency": (
+            flex_pool.rows_per_second_per_abstract_cost
+        ),
+        "pool_ge_u_strong": pool_ge_u,
+        "pool_ge_flex_free": pool_ge_free,
+        "pool_throughput_guard": throughput_guard,
+        "status": status,
+    }
+
+
 def evaluate_inventory(
     context: ExperimentContext,
     inventory_id: str,
@@ -643,14 +710,95 @@ def evaluate_inventory(
         notify(f"{inventory_id}: constructing U_STRONG")
         baseline = construct_u_strong(context, inventory, shared, planner_context)
         u_strong = baseline.u_strong
+        require_run1_u_strong_match(context, u_strong)
+        u_c1 = planner_context.serving_runs(
+            [(u_strong, NetworkMode.SHARED_NIC, 1)]
+        )[0]
+        if u_c1.status != "PASS":
+            raise RuntimeError("MODEL_INVALID: U_STRONG C1 serving run is incomplete")
+        u_strong_score = score_plan_under_primary_slo(
+            planner_context,
+            u_strong,
+            u_strong_c1_p95_ms=u_c1.p95_pass_latency_ms,
+        )
         notify(f"{inventory_id}: planning FLEX_FREE")
         flex_free, free_rows = run_flex_planner(
-            planner_context, u_strong.base_plan, arm=Arm.FLEX_FREE
+            planner_context,
+            u_strong,
+            arm=Arm.FLEX_FREE,
+            u_strong_plan=u_strong,
+            u_strong_c1_p95_ms=u_c1.p95_pass_latency_ms,
+            seed_branch="FLEX_FREE",
         )
-        notify(f"{inventory_id}: planning FLEX_POOL")
-        flex_pool, pool_rows = run_flex_planner(
-            planner_context, u_strong.base_plan, arm=Arm.FLEX_POOL
+        flex_free_score = score_plan_under_primary_slo(
+            planner_context,
+            flex_free,
+            u_strong_c1_p95_ms=u_c1.p95_pass_latency_ms,
         )
+        notify(f"{inventory_id}: planning FLEX_POOL POOL-U")
+        pool_u, pool_u_rows = run_flex_planner(
+            planner_context,
+            u_strong,
+            arm=Arm.FLEX_POOL,
+            u_strong_plan=u_strong,
+            u_strong_c1_p95_ms=u_c1.p95_pass_latency_ms,
+            seed_branch="POOL-U",
+        )
+        notify(f"{inventory_id}: planning FLEX_POOL POOL-FREE")
+        pool_free, pool_free_rows = run_flex_planner(
+            planner_context,
+            flex_free,
+            arm=Arm.FLEX_POOL,
+            u_strong_plan=u_strong,
+            u_strong_c1_p95_ms=u_c1.p95_pass_latency_ms,
+            seed_branch="POOL-FREE",
+        )
+        envelope_plans = (
+            ("U_STRONG", clone_as_flex_pool(u_strong, source="U_STRONG")),
+            ("FLEX_FREE", clone_as_flex_pool(flex_free, source="FLEX_FREE")),
+            ("POOL-U", pool_u),
+            ("POOL-FREE", pool_free),
+        )
+        envelope = tuple(
+            PoolEnvelopeCandidate(
+                source=source,
+                plan=plan,
+                score=score_plan_under_primary_slo(
+                    planner_context,
+                    plan,
+                    u_strong_c1_p95_ms=u_c1.p95_pass_latency_ms,
+                ),
+            )
+            for source, plan in envelope_plans
+        )
+        selected_pool = select_flex_pool_envelope(
+            envelope,
+            u_strong_slo_target_rows_per_second=(
+                u_strong_score.target_rows_per_second
+            ),
+        )
+        flex_pool = selected_pool.plan
+        flex_pool.metadata = {
+            **flex_pool.metadata,
+            "selected_final_flex_pool_envelope_source": selected_pool.source,
+            "final_flex_pool_envelope_sources": [
+                source for source, _plan in envelope_plans
+            ],
+            "flex_free_in_final_pool_envelope": True,
+        }
+        flex_pool_score = selected_pool.score
+        superset_row = _flex_pool_superset_row(
+            inventory_id,
+            u_strong=u_strong_score,
+            flex_free=flex_free_score,
+            flex_pool=flex_pool_score,
+        )
+        if superset_row["status"] != "PASS":
+            raise RuntimeError(
+                f"MODEL_INVALID: FLEX_POOL superset invariant failed for {inventory_id}"
+            )
+        for row in planner_context.search_coverage_rows:
+            row["flex_free_in_final_pool_envelope"] = True
         plans = {
             Arm.U_STRONG.value: u_strong,
             Arm.FLEX_FREE_NO_ALT.value: derive_no_alt(
@@ -680,6 +828,9 @@ def evaluate_inventory(
                 requests.append((plan, NetworkMode.LEGACY_DIRECTED_LINK, concurrency))
         evaluated = planner_context.serving_runs(requests)
         runs = dict(zip(request_keys, evaluated, strict=True))
+        search_coverage_rows = [
+            dict(row) for row in planner_context.search_coverage_rows
+        ]
     finally:
         planner_context.close()
     planner_context.profile_cache.clear()
@@ -710,7 +861,7 @@ def evaluate_inventory(
         inventory_id=inventory_id,
         plans=plans,
         baseline=baseline,
-        planner_rows=free_rows + pool_rows,
+        planner_rows=free_rows + pool_u_rows + pool_free_rows,
         runs=runs,
         arm_rows=arm_rows,
         saturation_rows=saturation_rows,
@@ -719,6 +870,8 @@ def evaluate_inventory(
         network_rows=network_rows,
         memory_rows=memory_rows,
         cost_rows=cost_rows,
+        superset_rows=[superset_row],
+        search_coverage_rows=search_coverage_rows,
     )
 
 
@@ -781,6 +934,18 @@ def write_attempt(
         attempt_root / "validation/cost-reconciliation.csv",
         [row for item in result.inventory_results for row in item.cost_rows],
     )
+    write_csv(
+        attempt_root / "validation/flex-pool-superset.csv",
+        [row for item in result.inventory_results for row in item.superset_rows],
+    )
+    write_csv(
+        attempt_root / "validation/flex-pool-search-coverage.csv",
+        [
+            row
+            for item in result.inventory_results
+            for row in item.search_coverage_rows
+        ],
+    )
     for item in result.inventory_results:
         inventory = context.inventories[item.inventory_id]
         for arm_name, plan in item.plans.items():
@@ -791,12 +956,18 @@ def write_attempt(
     atomic_write_json(
         attempt_root / "attempt-summary.json",
         {
-            "schema_version": "experiment-023-deterministic-attempt-v1",
+            "schema_version": "experiment-023-deterministic-attempt-v2",
             "status": "PASS",
             "inventory_ids": [row.inventory_id for row in result.inventory_results],
             "inventory_count": len(result.inventory_results),
             "elapsed_seconds": result.elapsed_seconds,
             "thresholds_sha256": canonical_sha256(FROZEN_CONSTANTS),
+            "u_strong_run1_exact_count": len(result.inventory_results),
+            "flex_pool_superset_pass_count": sum(
+                row["status"] == "PASS"
+                for item in result.inventory_results
+                for row in item.superset_rows
+            ),
         },
     )
 

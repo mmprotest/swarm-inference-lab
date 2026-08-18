@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -19,8 +20,12 @@ from swarm_inference.experiments.experiment_022.models import (
     PlannerLevel,
 )
 from swarm_inference.experiments.experiment_023.baseline import frozen_placement_paths
+from swarm_inference.experiments.experiment_023.correctness import (
+    ReplicaAwareManifestK3Runner,
+)
 from swarm_inference.experiments.experiment_023.freeze import FROZEN_CONSTANTS
 from swarm_inference.experiments.experiment_023.models import (
+    Arm,
     E023Plan,
     ExpertGroupReplica,
     NetworkMode,
@@ -34,7 +39,14 @@ from swarm_inference.experiments.experiment_023.replica_memory import (
 from swarm_inference.experiments.experiment_023.replica_planner import (
     PLANNER_RANDOMIZATION,
     PlannerActionCandidate,
+    PlanningProfile,
+    PoolEnvelopeCandidate,
+    PrimaryGroupCandidate,
     choose_best_action,
+    clone_as_flex_pool,
+    generate_alternate_assignment_candidates,
+    retain_primary_group_candidates,
+    select_flex_pool_envelope,
 )
 from swarm_inference.experiments.experiment_023.resource_calendar import (
     ResourceCalendar,
@@ -49,6 +61,10 @@ from swarm_inference.experiments.experiment_023.serving_engine import (
     CONCURRENCY_LEVELS,
     TARGET_ROWS,
     measured_passes_per_slot,
+)
+from swarm_inference.experiments.experiment_023.serving_objective import (
+    SLOScore,
+    score_runs_under_latency_budget,
 )
 
 
@@ -377,8 +393,15 @@ def _action_candidate(
     throughput: float,
     layer: int = 10,
     added_bytes: int = 100,
+    arm: Arm = Arm.FLEX_POOL,
 ) -> PlannerActionCandidate:
-    plan = E023Plan("fixture", "FLEX_POOL", _base_plan())
+    used = tuple(f"w{index}" for index in range(8))
+    plan = E023Plan(
+        "fixture",
+        arm.value,
+        _base_plan(),
+        u_strong_used_nodes=used if arm is Arm.FLEX_FREE else (),
+    )
     return PlannerActionCandidate(
         plan=plan,
         layer_id=layer,
@@ -411,7 +434,7 @@ def test_planner_gain_regression_limits_and_no_forced_action() -> None:
         current_throughput=100.0,
     ) is None
     winner = choose_best_action(
-        [_action_candidate(objective=100.5, throughput=99.0)],
+        [_action_candidate(objective=100.5000000001, throughput=99.0)],
         current_objective=100.0,
         current_throughput=100.0,
     )
@@ -430,6 +453,238 @@ def test_planner_tie_breakers_are_deterministic_and_action_limit_is_six() -> Non
     assert winner is candidates[1]
     assert FROZEN_CONSTANTS["planner_max_accepted_layer_actions"] == 6
     assert PLANNER_RANDOMIZATION == 0.0
+
+
+def _slo_run(concurrency: int, throughput: float, p95_ms: float) -> SimpleNamespace:
+    return SimpleNamespace(
+        status="PASS",
+        concurrency=concurrency,
+        target_rows_per_second=throughput,
+        p50_pass_latency_ms=0.8 * p95_ms,
+        p95_pass_latency_ms=p95_ms,
+    )
+
+
+def _slo_fixture(
+    *,
+    c1: tuple[float, float],
+    c8: tuple[float, float],
+    c32: tuple[float, float],
+) -> dict[int, SimpleNamespace]:
+    return {
+        1: _slo_run(1, *c1),
+        8: _slo_run(8, *c8),
+        32: _slo_run(32, *c32),
+        64: _slo_run(64, c32[0] * 0.95, c32[1] * 1.5),
+        128: _slo_run(128, c32[0] * 0.90, c32[1] * 2.0),
+    }
+
+
+def test_c32_improvement_cannot_override_primary_slo_cliff() -> None:
+    current = score_runs_under_latency_budget(
+        _slo_fixture(c1=(10.0, 100.0), c8=(50.0, 190.0), c32=(60.0, 300.0)),
+        latency_budget_ms=200.0,
+        abstract_cost=1.0,
+    )
+    candidate = score_runs_under_latency_budget(
+        _slo_fixture(c1=(11.0, 100.0), c8=(50.2, 201.0), c32=(61.0, 295.0)),
+        latency_budget_ms=200.0,
+        abstract_cost=1.0,
+    )
+    action = _action_candidate(
+        objective=candidate.rows_per_second_per_abstract_cost,
+        throughput=candidate.target_rows_per_second,
+    )
+    action.c32_objective = 61.0
+    action.c32_target_rows_per_second = 61.0
+    assert action.c32_objective / 60.0 - 1.0 > 0.005
+    assert action.c32_target_rows_per_second / 60.0 >= 0.99
+    assert current.selected_concurrency == 8
+    assert candidate.selected_concurrency == 1
+    assert choose_best_action(
+        [action],
+        current_objective=current.rows_per_second_per_abstract_cost,
+        current_throughput=current.target_rows_per_second,
+        u_strong_throughput=current.target_rows_per_second,
+    ) is None
+
+
+def test_slo_positive_candidate_is_accepted_without_c32_gate() -> None:
+    current = score_runs_under_latency_budget(
+        _slo_fixture(c1=(10.0, 100.0), c8=(50.0, 190.0), c32=(60.0, 300.0)),
+        latency_budget_ms=200.0,
+        abstract_cost=1.0,
+    )
+    candidate = score_runs_under_latency_budget(
+        _slo_fixture(c1=(10.0, 100.0), c8=(50.5, 195.0), c32=(59.0, 300.0)),
+        latency_budget_ms=200.0,
+        abstract_cost=1.0,
+    )
+    action = _action_candidate(
+        objective=candidate.rows_per_second_per_abstract_cost,
+        throughput=candidate.target_rows_per_second,
+    )
+    action.c32_objective = 59.0
+    winner = choose_best_action(
+        [action],
+        current_objective=current.rows_per_second_per_abstract_cost,
+        current_throughput=current.target_rows_per_second,
+        u_strong_throughput=current.target_rows_per_second,
+    )
+    assert winner is action
+
+
+@pytest.mark.parametrize("arm", (Arm.FLEX_FREE, Arm.FLEX_POOL))
+def test_no_op_remains_feasible_when_true_objective_does_not_improve(
+    arm: Arm,
+) -> None:
+    current = E023Plan(
+        "fixture",
+        arm.value,
+        _base_plan(),
+        u_strong_used_nodes=(
+            tuple(f"w{index}" for index in range(8))
+            if arm is Arm.FLEX_FREE
+            else ()
+        ),
+    )
+    candidate = _action_candidate(objective=100.4, throughput=100.0, arm=arm)
+    winner = choose_best_action(
+        [candidate],
+        current_objective=100.0,
+        current_throughput=100.0,
+        u_strong_throughput=100.0,
+    )
+    final = current if winner is None else winner.plan
+    assert final.canonical_sha256 == current.canonical_sha256
+
+
+def _score(efficiency: float, *, throughput: float = 100.0) -> SLOScore:
+    return SLOScore(
+        latency_budget_ms=200.0,
+        selected_concurrency=8,
+        target_rows_per_second=throughput,
+        p50_pass_latency_ms=150.0,
+        p95_pass_latency_ms=190.0,
+        abstract_node_cost=throughput / efficiency,
+        rows_per_second_per_abstract_cost=efficiency,
+    )
+
+
+def test_flex_pool_envelope_contains_exact_flex_free_plan() -> None:
+    free = E023Plan(
+        "fixture",
+        Arm.FLEX_FREE.value,
+        _base_plan(),
+        u_strong_used_nodes=tuple(f"w{index}" for index in range(8)),
+    )
+    cloned = clone_as_flex_pool(free, source="FLEX_FREE")
+    assert cloned.canonical_sha256 == free.canonical_sha256
+    assert cloned.metadata["seed_plan"] == "FLEX_FREE"
+
+
+def test_flex_pool_envelope_cannot_score_below_flex_free() -> None:
+    base = E023Plan("fixture", Arm.U_STRONG.value, _base_plan())
+    candidates = tuple(
+        PoolEnvelopeCandidate(source, clone_as_flex_pool(base, source=source), score)
+        for source, score in (
+            ("U_STRONG", _score(1.00)),
+            ("FLEX_FREE", _score(1.10)),
+            ("POOL-U", _score(1.04)),
+            ("POOL-FREE", _score(1.08)),
+        )
+    )
+    selected = select_flex_pool_envelope(
+        candidates,
+        u_strong_slo_target_rows_per_second=100.0,
+    )
+    assert selected.source == "FLEX_FREE"
+    assert selected.score.rows_per_second_per_abstract_cost == 1.10
+
+
+def test_pool_primary_pruning_retains_fastest_and_lowest_cost() -> None:
+    groups = [
+        PrimaryGroupCandidate(("expensive-a",), (1,), (1,), 1.0, resulting_abstract_node_cost=9.0),
+        PrimaryGroupCandidate(("expensive-b",), (1,), (1,), 2.0, resulting_abstract_node_cost=8.0),
+        PrimaryGroupCandidate(("paid",), (1,), (1,), 3.0, resulting_abstract_node_cost=5.0),
+    ]
+    retained = retain_primary_group_candidates(groups, selection_mode="FLEX_POOL")
+    assert [row.node_ids for row in retained] == [("expensive-a",), ("paid",)]
+    assert [row.candidate_source for row in retained] == [
+        "FASTEST",
+        "LOWEST_RESULTING_COST",
+    ]
+
+
+def test_pool_alternate_generation_retains_no_new_node_and_fastest() -> None:
+    inventory = _inventory(n2_memory=1_000_000_000)
+    layers = [_layer(0), _layer(1)]
+    context = SimpleNamespace(
+        model=SimpleNamespace(layers=layers),
+        inventory=inventory,
+        service=SimpleNamespace(service_ms=lambda *_args: 1.0),
+    )
+    profile = PlanningProfile(1.0, {}, {}, {}, {})
+    base = _base_plan(layers[1])
+    base.assignments.insert(0, _base_plan(layers[0]).assignments[0])
+    plan = E023Plan("fixture", Arm.FLEX_POOL.value, base)
+    maps, failures = generate_alternate_assignment_candidates(
+        context,
+        plan,
+        profile,
+        layer_id=1,
+        replicated_groups=(0,),
+        arm=Arm.FLEX_POOL,
+        u_strong_used_nodes=set(),
+    )
+    assert not failures
+    assert {row.alternate_assignment_source for row in maps} == {
+        "NO_NEW_NODE",
+        "UNRESTRICTED_FASTEST",
+    }
+    by_source = {row.alternate_assignment_source: row for row in maps}
+    assert by_source["NO_NEW_NODE"].replicas[0].alternate_node_id != "n2"
+    assert by_source["UNRESTRICTED_FASTEST"].replicas[0].alternate_node_id == "n2"
+
+
+def test_cumulative_u_strong_throughput_guard_blocks_compounding_loss() -> None:
+    action = _action_candidate(objective=101.0, throughput=98.9)
+    assert 98.9 / 99.5 >= 0.99
+    assert choose_best_action(
+        [action],
+        current_objective=100.0,
+        current_throughput=99.5,
+        u_strong_throughput=100.0,
+    ) is None
+
+
+def test_replica_correctness_override_changes_only_physical_destination() -> None:
+    runner = object.__new__(ReplicaAwareManifestK3Runner)
+    runner.replica_destinations = {(89, 0): "alternate"}
+    runner.primary_dispatch_count = 0
+    runner.alternate_dispatch_count = 0
+    runner.forced_alternate_dispatch_count = 0
+    runner.replica_dispatch_decisions = []
+    alternate = runner.physical_expert_worker_id(
+        layer=89,
+        logical_group_id=0,
+        chunk_index=0,
+        logical_worker_id="primary",
+    )
+    primary = runner.physical_expert_worker_id(
+        layer=89,
+        logical_group_id=0,
+        chunk_index=1,
+        logical_worker_id="primary",
+    )
+    assert alternate == "alternate"
+    assert primary == "primary"
+    assert runner.forced_alternate_dispatch_count == 1
+    assert runner.alternate_dispatch_count == 1
+    assert runner.primary_dispatch_count == 1
+    assert {
+        row["logical_group_id"] for row in runner.replica_dispatch_decisions
+    } == {0}
 
 
 def test_all_frozen_a_to_e_manifests_are_considered() -> None:

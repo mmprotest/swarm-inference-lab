@@ -25,7 +25,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--attempt",
-        default="attempts/deterministic-run-1",
+        default="attempts/deterministic-run-2",
         help="path below artifacts/experiment-023",
     )
     parser.add_argument(

@@ -1,4 +1,4 @@
-"""Create the fail-closed Experiment 023 audit package and report."""
+"""Create the generalized repaired Experiment 023 audit package and report."""
 
 from __future__ import annotations
 
@@ -24,10 +24,16 @@ def main() -> int:
         choices=("PENDING_VISUAL_QA", "PASS_VISUAL_INSPECTION"),
         default="PENDING_VISUAL_QA",
     )
+    parser.add_argument("--primary-attempt", default="deterministic-run-2")
+    parser.add_argument(
+        "--reproducibility-attempt", default="deterministic-run-3"
+    )
     arguments = parser.parse_args()
     try:
         result = finalize_experiment(
             REPO_ROOT,
+            primary_attempt=arguments.primary_attempt,
+            reproducibility_attempt=arguments.reproducibility_attempt,
             chart_qa_status=arguments.chart_qa_status,
         )
     except Exception as exc:

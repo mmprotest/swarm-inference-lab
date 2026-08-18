@@ -12,6 +12,7 @@ import os
 import time
 import traceback
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from contextlib import suppress
 from itertools import pairwise
 from pathlib import Path
@@ -616,6 +617,7 @@ class ManifestK3Runner(KimiCudaGraphRunner):
         self._expert_connection: Any | None = None
         self._expert_process: Any | None = None
         self.expert_worker_process_startups = 0
+        self._expert_chunk_index_by_layer: Counter[int] = Counter()
         self.expert_worker_process_audit: dict[str, Any] = {
             "required": False,
             "successful_startups": 0,
@@ -625,6 +627,19 @@ class ManifestK3Runner(KimiCudaGraphRunner):
             "exitcode": None,
         }
         self._register_manifest()
+
+    def physical_expert_worker_id(
+        self,
+        *,
+        layer: int,
+        logical_group_id: int,
+        chunk_index: int,
+        logical_worker_id: str,
+    ) -> str:
+        """Resolve a physical destination without changing logical ownership."""
+
+        del layer, logical_group_id, chunk_index
+        return logical_worker_id
 
     @staticmethod
     def _state_trace_filename(layer: int, name: str) -> str:
@@ -1237,10 +1252,18 @@ class ManifestK3Runner(KimiCudaGraphRunner):
             raise ValueError(
                 f"expert process cannot execute partition {partition_type}"
             )
+        chunk_index = self._expert_chunk_index_by_layer[layer]
+        self._expert_chunk_index_by_layer[layer] += 1
         pieces: list[dict[str, Any]] = []
         for piece in assignment["pieces"]:
             shard_index = int(piece["shard_index"])
-            worker_id = str(piece["node_id"])
+            logical_worker_id = str(piece["node_id"])
+            worker_id = self.physical_expert_worker_id(
+                layer=layer,
+                logical_group_id=shard_index,
+                chunk_index=chunk_index,
+                logical_worker_id=logical_worker_id,
+            )
             assignment_id = (
                 f"{assignment['candidate_id']}:{assignment_stem}-{shard_index:02d}"
             )
@@ -1267,6 +1290,7 @@ class ManifestK3Runner(KimiCudaGraphRunner):
             pieces.append(
                 {
                     "worker_id": worker_id,
+                    "logical_worker_id": logical_worker_id,
                     "assignment_id": assignment_id,
                     "shard_index": shard_index,
                     "encoded_frame": encode_frame(frame, self.credential),
@@ -1316,7 +1340,7 @@ class ManifestK3Runner(KimiCudaGraphRunner):
                 ],
             }
             outputs.append((result, output, float(row["protocol_wall_ms"]), audit))
-            self.logical_workers_instantiated.add(str(piece["worker_id"]))
+            self.logical_workers_instantiated.add(str(piece["logical_worker_id"]))
         return outputs, layer_wall_ms
 
     def _close_expert_worker(self) -> None:
@@ -1532,8 +1556,9 @@ class ManifestK3Runner(KimiCudaGraphRunner):
             assignment["pieces"], executions, strict=True
         ):
             shard_index = int(piece["shard_index"])
-            worker_id = str(piece["node_id"])
+            logical_worker_id = str(piece["node_id"])
             result, partial, protocol_wall_ms, audit = execution
+            physical_worker_id = str(audit["worker_id"])
             route_hash_equal = (
                 audit["last_execution"].get("route_ids_sha256")
                 == expected_route_hash
@@ -1553,7 +1578,8 @@ class ManifestK3Runner(KimiCudaGraphRunner):
                     "layer": layer,
                     "candidate_id": assignment["candidate_id"],
                     "partition_type": assignment["partition_type"],
-                    "worker_id": worker_id,
+                    "worker_id": physical_worker_id,
+                    "logical_worker_id": logical_worker_id,
                     "shard_index": shard_index,
                     "degree": assignment["degree"],
                     "native_primitive": result.native_primitive,
@@ -1701,6 +1727,7 @@ def execute_manifest(
     oracle_root: Path,
     state_trace_root: Path | None = None,
     state_reference_root: Path | None = None,
+    runner_factory: Callable[..., ManifestK3Runner] | None = None,
 ) -> dict[str, Any]:
     actual_hash = _sha256_file(manifest_path)
     if actual_hash != expected_manifest_sha256:
@@ -1721,7 +1748,8 @@ def execute_manifest(
     )
     routes = _parse_oracle_routes(oracle_root / "routes.txt")
     started = time.perf_counter_ns()
-    runner = ManifestK3Runner(
+    factory = runner_factory or ManifestK3Runner
+    runner = factory(
         checkpoint,
         cuda_library,
         grouped_library,

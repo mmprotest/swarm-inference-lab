@@ -8,6 +8,7 @@ evaluator always short-circuits on mandatory validity failures.
 from __future__ import annotations
 
 import csv
+import json
 import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
@@ -20,8 +21,10 @@ import numpy as np
 from .freeze import (
     CAPACITY_INVENTORIES,
     CONTROL_INVENTORIES,
+    FROZEN_CONSTANTS,
     HEADLINE_INVENTORIES,
 )
+from .serving_objective import SLOScore, score_recorded_runs_under_primary_slo
 
 PRIMARY_MODE = "SHARED_NIC"
 LEGACY_MODE = "LEGACY_DIRECTED_LINK"
@@ -72,8 +75,49 @@ def _percent_ratio(numerator: float, denominator: float) -> float:
     return 100.0 * (numerator / denominator - 1.0)
 
 
-def _slo(row: Mapping[str, str], metric: str) -> float:
-    return _number(row[f"{PRIMARY_SLO_PREFIX}_{metric}"])
+@dataclass(frozen=True, slots=True)
+class _RecordedRun:
+    status: str
+    concurrency: int
+    target_rows_per_second: float
+    p50_pass_latency_ms: float
+    p95_pass_latency_ms: float
+
+
+def _canonical_slo_index(
+    arm_rows: Sequence[Mapping[str, str]],
+) -> dict[tuple[str, str, str], SLOScore]:
+    grouped: dict[tuple[str, str, str], list[Mapping[str, str]]] = defaultdict(list)
+    for row in arm_rows:
+        grouped[(row["inventory_id"], row["arm"], row["network_mode"])].append(row)
+    references = {
+        (row["inventory_id"], row["network_mode"]): _number(
+            row["p95_pass_latency_ms"]
+        )
+        for row in arm_rows
+        if row["arm"] == "U_STRONG" and _integer(row["concurrency"]) == 1
+    }
+    result: dict[tuple[str, str, str], SLOScore] = {}
+    for key, rows in grouped.items():
+        costs = {_number(row["abstract_node_cost"]) for row in rows}
+        if len(costs) != 1:
+            raise ValueError(f"non-constant abstract cost for {key}")
+        runs = {
+            _integer(row["concurrency"]): _RecordedRun(
+                status=row["status"],
+                concurrency=_integer(row["concurrency"]),
+                target_rows_per_second=_number(row["target_rows_per_second"]),
+                p50_pass_latency_ms=_number(row["p50_pass_latency_ms"]),
+                p95_pass_latency_ms=_number(row["p95_pass_latency_ms"]),
+            )
+            for row in rows
+        }
+        result[key] = score_recorded_runs_under_primary_slo(
+            runs,
+            u_strong_c1_p95_ms=references[(key[0], key[2])],
+            abstract_cost=next(iter(costs)),
+        )
+    return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +142,31 @@ def _index_saturation(
             raise ValueError(f"duplicate saturation row {key}")
         result[key] = row
     return result
+
+
+def _validate_primary_slo_projection(
+    saturation: Mapping[tuple[str, str, str], Mapping[str, str]],
+    scores: Mapping[tuple[str, str, str], SLOScore],
+) -> None:
+    fields = {
+        "target_rows_per_second": "target_rows_per_second",
+        "p50_pass_latency_ms": "p50_pass_latency_ms",
+        "p95_pass_latency_ms": "p95_pass_latency_ms",
+        "rows_per_second_per_abstract_cost": (
+            "rows_per_second_per_abstract_cost"
+        ),
+    }
+    for key, score in scores.items():
+        row = saturation[key]
+        concurrency = _integer(row[f"{PRIMARY_SLO_PREFIX}_concurrency"])
+        if concurrency != score.selected_concurrency:
+            raise ValueError(f"canonical SLO concurrency mismatch for {key}")
+        for suffix, attribute in fields.items():
+            recorded = _number(row[f"{PRIMARY_SLO_PREFIX}_{suffix}"])
+            expected = float(getattr(score, attribute))
+            tolerance = 1e-12 * max(abs(recorded), abs(expected), 1.0)
+            if abs(recorded - expected) > tolerance:
+                raise ValueError(f"canonical SLO metric mismatch for {key}/{suffix}")
 
 
 def _constant_arm_fields(
@@ -160,6 +229,7 @@ def _routing_usage(
 def _inventory_analysis_row(
     inventory_id: str,
     saturation: Mapping[tuple[str, str, str], Mapping[str, str]],
+    scores: Mapping[tuple[str, str, str], SLOScore],
     arm_rows: Sequence[Mapping[str, str]],
     routing_rows: Sequence[Mapping[str, str]],
 ) -> dict[str, Any]:
@@ -173,22 +243,23 @@ def _inventory_analysis_row(
     shared = {
         arm: saturation[(inventory_id, arm, PRIMARY_MODE)] for arm in required
     }
-    legacy_u = saturation[(inventory_id, "U_STRONG", LEGACY_MODE)]
-    legacy_flex = saturation[(inventory_id, "FLEX_POOL", LEGACY_MODE)]
-    u_eff = _slo(shared["U_STRONG"], "rows_per_second_per_abstract_cost")
-    u_tps = _slo(shared["U_STRONG"], "target_rows_per_second")
-    pool_eff = _slo(shared["FLEX_POOL"], "rows_per_second_per_abstract_cost")
-    pool_tps = _slo(shared["FLEX_POOL"], "target_rows_per_second")
-    pool_no_alt_eff = _slo(
-        shared["FLEX_POOL_NO_ALT"], "rows_per_second_per_abstract_cost"
-    )
-    free_eff = _slo(shared["FLEX_FREE"], "rows_per_second_per_abstract_cost")
-    free_tps = _slo(shared["FLEX_FREE"], "target_rows_per_second")
-    free_no_alt_eff = _slo(
-        shared["FLEX_FREE_NO_ALT"], "rows_per_second_per_abstract_cost"
-    )
-    legacy_u_eff = _slo(legacy_u, "rows_per_second_per_abstract_cost")
-    legacy_flex_eff = _slo(legacy_flex, "rows_per_second_per_abstract_cost")
+    u_score = scores[(inventory_id, "U_STRONG", PRIMARY_MODE)]
+    pool_score = scores[(inventory_id, "FLEX_POOL", PRIMARY_MODE)]
+    pool_no_alt_score = scores[(inventory_id, "FLEX_POOL_NO_ALT", PRIMARY_MODE)]
+    free_score = scores[(inventory_id, "FLEX_FREE", PRIMARY_MODE)]
+    free_no_alt_score = scores[(inventory_id, "FLEX_FREE_NO_ALT", PRIMARY_MODE)]
+    legacy_u_score = scores[(inventory_id, "U_STRONG", LEGACY_MODE)]
+    legacy_flex_score = scores[(inventory_id, "FLEX_POOL", LEGACY_MODE)]
+    u_eff = u_score.rows_per_second_per_abstract_cost
+    u_tps = u_score.target_rows_per_second
+    pool_eff = pool_score.rows_per_second_per_abstract_cost
+    pool_tps = pool_score.target_rows_per_second
+    pool_no_alt_eff = pool_no_alt_score.rows_per_second_per_abstract_cost
+    free_eff = free_score.rows_per_second_per_abstract_cost
+    free_tps = free_score.target_rows_per_second
+    free_no_alt_eff = free_no_alt_score.rows_per_second_per_abstract_cost
+    legacy_u_eff = legacy_u_score.rows_per_second_per_abstract_cost
+    legacy_flex_eff = legacy_flex_score.rows_per_second_per_abstract_cost
     pool_plan = _constant_arm_fields(arm_rows, inventory_id, "FLEX_POOL")
     free_plan = _constant_arm_fields(arm_rows, inventory_id, "FLEX_FREE")
     primary_count, alternate_count, selection_rate = _routing_usage(
@@ -203,7 +274,10 @@ def _inventory_analysis_row(
         "family": source["family"],
         "cohort": source["cohort"],
         "u_strong_slo_target_rows_per_second": u_tps,
+        "u_strong_slo_concurrency": u_score.selected_concurrency,
         "flex_pool_slo_target_rows_per_second": pool_tps,
+        "flex_pool_slo_concurrency": pool_score.selected_concurrency,
+        "flex_free_slo_concurrency": free_score.selected_concurrency,
         "u_strong_slo_rows_per_second_per_abstract_cost": u_eff,
         "flex_pool_slo_rows_per_second_per_abstract_cost": pool_eff,
         "efficiency_uplift_percent": _percent_ratio(pool_eff, u_eff),
@@ -289,11 +363,13 @@ def analyze_attempt(attempt_root: Path) -> AttemptAnalysis:
     arm_rows = _read_csv(attempt_root / "serving/arm-results.csv")
     routing_rows = _read_csv(attempt_root / "serving/replica-routing-summary.csv")
     saturation = _index_saturation(saturation_rows)
+    scores = _canonical_slo_index(arm_rows)
+    _validate_primary_slo_projection(saturation, scores)
     inventory_ids = tuple(
         HEADLINE_INVENTORIES + CONTROL_INVENTORIES + CAPACITY_INVENTORIES
     )
     uplift = [
-        _inventory_analysis_row(value, saturation, arm_rows, routing_rows)
+        _inventory_analysis_row(value, saturation, scores, arm_rows, routing_rows)
         for value in inventory_ids
     ]
     headline = [row for row in uplift if row["cohort"] == "headline"]
@@ -423,7 +499,9 @@ def summarize_headline(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             bool(row["flex_pool_actual_replica_used"]) for row in rows
         ),
         "median_optionality_only_percent": _median(optionality),
+        "maximum_optionality_only_percent": max(optionality),
         "median_flex_free_efficiency_uplift_percent": _median(flex_free),
+        "maximum_flex_free_efficiency_uplift_percent": max(flex_free),
         "median_legacy_efficiency_uplift_percent": _median(legacy),
         "legacy_nonnegative_inventory_count": sum(value >= 0.0 for value in legacy),
     }
@@ -571,10 +649,158 @@ def evaluate_zero_new_node_wedge(
     }
 
 
+def _read_plan_manifest(attempt_root: Path, inventory_id: str, arm: str) -> dict[str, Any]:
+    path = attempt_root / "plans" / inventory_id / f"{arm}.json"
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"plan manifest is not an object: {path}")
+    return value
+
+
+def repair_comparison_rows(
+    repo: Path,
+    primary_attempt_root: Path,
+) -> list[dict[str, Any]]:
+    """Compare the non-promotable first attempt with the repaired attempt."""
+
+    run1_root = repo / "artifacts/experiment-023/attempts/deterministic-run-1"
+    run1 = {
+        row["inventory_id"]: row for row in analyze_attempt(run1_root).uplift_rows
+    }
+    run2 = {
+        row["inventory_id"]: row
+        for row in analyze_attempt(primary_attempt_root).uplift_rows
+    }
+    result: list[dict[str, Any]] = []
+    for inventory_id in HEADLINE_INVENTORIES + CONTROL_INVENTORIES + CAPACITY_INVENTORIES:
+        old = run1[inventory_id]
+        new = run2[inventory_id]
+        old_free = _read_plan_manifest(run1_root, inventory_id, "FLEX_FREE")
+        new_free = _read_plan_manifest(
+            primary_attempt_root, inventory_id, "FLEX_FREE"
+        )
+        old_pool = _read_plan_manifest(run1_root, inventory_id, "FLEX_POOL")
+        new_pool = _read_plan_manifest(
+            primary_attempt_root, inventory_id, "FLEX_POOL"
+        )
+        result.append(
+            {
+                "inventory_id": inventory_id,
+                "cohort": new["cohort"],
+                "family": new["family"],
+                "run1_u_strong_hash": old["u_strong_plan_sha256"],
+                "run2_u_strong_hash": new["u_strong_plan_sha256"],
+                "run1_flex_free_replica_count": len(old_free.get("replicas", ())),
+                "run2_flex_free_replica_count": len(new_free.get("replicas", ())),
+                "run1_flex_pool_replica_count": len(old_pool.get("replicas", ())),
+                "run2_flex_pool_replica_count": len(new_pool.get("replicas", ())),
+                "run1_flex_free_efficiency_uplift": old[
+                    "flex_free_efficiency_uplift_percent"
+                ],
+                "run2_flex_free_efficiency_uplift": new[
+                    "flex_free_efficiency_uplift_percent"
+                ],
+                "run1_flex_pool_efficiency_uplift": old[
+                    "efficiency_uplift_percent"
+                ],
+                "run2_flex_pool_efficiency_uplift": new[
+                    "efficiency_uplift_percent"
+                ],
+                "run1_flex_pool_raw_throughput_uplift": old[
+                    "throughput_uplift_percent"
+                ],
+                "run2_flex_pool_raw_throughput_uplift": new[
+                    "throughput_uplift_percent"
+                ],
+                "run1_flex_pool_slo_concurrency": old[
+                    "flex_pool_slo_concurrency"
+                ],
+                "run2_flex_pool_slo_concurrency": new[
+                    "flex_pool_slo_concurrency"
+                ],
+                "run1_flex_pool_actual_replica_used": old[
+                    "flex_pool_actual_replica_used"
+                ],
+                "run2_flex_pool_actual_replica_used": new[
+                    "flex_pool_actual_replica_used"
+                ],
+                "run2_flex_pool_envelope_source": new_pool.get("metadata", {}).get(
+                    "selected_final_flex_pool_envelope_source", ""
+                ),
+            }
+        )
+    return result
+
+
+def slo_boundary_rows(attempt_root: Path) -> list[dict[str, Any]]:
+    """Expose each final arm's position relative to the hard primary SLO."""
+
+    arm_rows = _read_csv(attempt_root / "serving/arm-results.csv")
+    shared = [row for row in arm_rows if row["network_mode"] == PRIMARY_MODE]
+    grouped: dict[tuple[str, str], list[Mapping[str, str]]] = defaultdict(list)
+    for row in shared:
+        grouped[(row["inventory_id"], row["arm"])].append(row)
+    scores = _canonical_slo_index(shared)
+    references = {
+        row["inventory_id"]: _number(row["p95_pass_latency_ms"])
+        for row in shared
+        if row["arm"] == "U_STRONG" and _integer(row["concurrency"]) == 1
+    }
+    result: list[dict[str, Any]] = []
+    for (inventory_id, arm), rows in sorted(grouped.items()):
+        budget = (
+            float(FROZEN_CONSTANTS["primary_latency_multiplier"])
+            * references[inventory_id]
+        )
+        score = scores[(inventory_id, arm, PRIMARY_MODE)]
+        by_concurrency = {_integer(row["concurrency"]): row for row in rows}
+        higher = [
+            row
+            for row in rows
+            if _number(row["target_rows_per_second"])
+            > score.target_rows_per_second
+        ]
+        next_point = min(
+            higher,
+            key=lambda row: (
+                _number(row["target_rows_per_second"]),
+                _integer(row["concurrency"]),
+            ),
+            default=None,
+        )
+        output: dict[str, Any] = {
+            "inventory_id": inventory_id,
+            "arm": arm,
+            "primary_latency_budget_ms": budget,
+        }
+        for concurrency in (1, 8, 32, 64, 128):
+            row = by_concurrency[concurrency]
+            p95 = _number(row["p95_pass_latency_ms"])
+            prefix = f"c{concurrency}"
+            output[f"{prefix}_tps"] = _number(row["target_rows_per_second"])
+            output[f"{prefix}_p95"] = p95
+            output[f"{prefix}_eligible"] = p95 <= budget
+        output["selected_slo_concurrency"] = score.selected_concurrency
+        output["selected_slo_tps"] = score.target_rows_per_second
+        if next_point is None:
+            output["distance_to_budget_ms_at_next_higher_throughput_point"] = ""
+            output["distance_to_budget_percent"] = ""
+        else:
+            distance = _number(next_point["p95_pass_latency_ms"]) - budget
+            output["distance_to_budget_ms_at_next_higher_throughput_point"] = (
+                distance
+            )
+            output["distance_to_budget_percent"] = 100.0 * distance / budget
+        result.append(output)
+    return result
+
+
 __all__ = [
     "AttemptAnalysis",
     "analyze_attempt",
     "evaluate_verdict",
     "evaluate_zero_new_node_wedge",
+    "repair_comparison_rows",
+    "slo_boundary_rows",
     "summarize_headline",
 ]

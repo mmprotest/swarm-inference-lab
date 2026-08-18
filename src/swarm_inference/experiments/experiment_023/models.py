@@ -226,6 +226,7 @@ class E023Plan:
             node["assigned_memory_bytes"] = base_bytes + replica_bytes
             node["replica_checkpoint_bytes"] = replica_checkpoint_by_node.get(node_id, 0)
         unique_checkpoint = int(base["checkpoint_reconciliation"]["assigned_checkpoint_bytes"])
+        unique_reconciliation = dict(base["checkpoint_reconciliation"])
         duplicate_checkpoint = self.replica_checkpoint_bytes
         base.update(
             {
@@ -247,6 +248,7 @@ class E023Plan:
                 "planner_actions": list(self.planner_actions),
                 "metadata": self.metadata,
                 "checkpoint_reconciliation": {
+                    **unique_reconciliation,
                     "unique_model_checkpoint_bytes": unique_checkpoint,
                     "duplicate_replica_checkpoint_bytes": duplicate_checkpoint,
                     "total_resident_checkpoint_bytes": (

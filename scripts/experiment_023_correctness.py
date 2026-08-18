@@ -14,19 +14,27 @@ if str(SOURCE_ROOT) not in sys.path:
 
 from swarm_inference.experiments.experiment_023.correctness import (  # noqa: E402
     run_engine_compatibility,
+    run_full_correctness,
 )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("compatibility",))
+    parser.add_argument("phase", choices=("compatibility", "full"))
+    parser.add_argument("--primary-attempt", default="deterministic-run-2")
+    parser.add_argument("--timeout-seconds", type=float, default=14_400.0)
     arguments = parser.parse_args()
     try:
         if arguments.phase == "compatibility":
             rows = run_engine_compatibility(REPO_ROOT)
             result = {"status": "PASS", "case_count": len(rows)}
-        else:  # pragma: no cover - argparse is exhaustive
-            raise AssertionError(arguments.phase)
+        else:
+            rows = run_full_correctness(
+                REPO_ROOT,
+                primary_attempt=arguments.primary_attempt,
+                timeout_seconds=arguments.timeout_seconds,
+            )
+            result = {"status": "PASS", "case_count": len(rows)}
     except Exception as exc:
         print(json.dumps({"status": "MODEL_INVALID", "reason": str(exc)}, indent=2))
         return 2

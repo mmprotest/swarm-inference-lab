@@ -5,8 +5,9 @@ from __future__ import annotations
 import itertools
 import math
 import multiprocessing
+from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from swarm_inference.experiments.experiment_022.evaluator import (
@@ -31,6 +32,11 @@ from .freeze import FROZEN_CONSTANTS
 from .models import Arm, E023Plan, ExpertGroupReplica, NetworkMode, base_resident_bytes
 from .replica_memory import abstract_node_cost, standalone_whole_expert_group_memory
 from .serving_engine import ServingEngine, ServingRun
+from .serving_objective import (
+    NoPrimarySLOEligibleConcurrency,
+    SLOScore,
+    score_plan_under_primary_slo,
+)
 
 PLANNER_RANDOMIZATION = 0.0
 _PROFILE_WORKER_ENGINE: ServingEngine | None = None
@@ -61,7 +67,7 @@ def _initialize_profile_worker(
     )
 
 
-def _profile_worker(plan: E023Plan) -> tuple[str, PlanningProfile]:
+def _profile_worker(plan: E023Plan) -> tuple[str, PlanningProfile, ServingRun]:
     if _PROFILE_WORKER_ENGINE is None:
         raise RuntimeError("E023 planner profile worker was not initialized")
     run = _PROFILE_WORKER_ENGINE.run_closed_loop(
@@ -69,7 +75,7 @@ def _profile_worker(plan: E023Plan) -> tuple[str, PlanningProfile]:
     )
     if run.status != "PASS":
         raise RuntimeError("MODEL_INVALID: C32 planning workload is incomplete")
-    return plan.canonical_sha256, planning_profile(run)
+    return plan.canonical_sha256, planning_profile(run), run
 
 
 def _serving_worker(
@@ -106,6 +112,7 @@ class PlannerContext:
     serving_run_cache: dict[tuple[str, str, int], ServingRun] = field(
         default_factory=dict
     )
+    search_coverage_rows: list[dict[str, Any]] = field(default_factory=list)
     _executor: ProcessPoolExecutor | None = field(
         default=None, init=False, repr=False
     )
@@ -149,10 +156,18 @@ class PlannerContext:
                         raise RuntimeError(
                             "MODEL_INVALID: C32 planning workload is incomplete"
                         )
-                    results.append((plan.canonical_sha256, planning_profile(run)))
+                    results.append((plan.canonical_sha256, planning_profile(run), run))
             else:
                 results = list(self._executor.map(_profile_worker, values, chunksize=1))
-            self.profile_cache.update(results)
+            for plan_hash, profile, run in results:
+                self.profile_cache[plan_hash] = profile
+                self.serving_run_cache[
+                    (
+                        plan_hash,
+                        NetworkMode.SHARED_NIC.value,
+                        int(FROZEN_CONSTANTS["planning_concurrency"]),
+                    )
+                ] = run
         return [self.profile_cache[plan.canonical_sha256] for plan in plans]
 
     def profile(self, plan: E023Plan) -> PlanningProfile:
@@ -188,6 +203,14 @@ class PlannerContext:
             else:
                 results = list(self._executor.map(_serving_worker, values, chunksize=1))
             self.serving_run_cache.update(results)
+            planning_concurrency = int(FROZEN_CONSTANTS["planning_concurrency"])
+            for (plan_hash, mode, concurrency), run in results:
+                if (
+                    mode == NetworkMode.SHARED_NIC.value
+                    and concurrency == planning_concurrency
+                    and run.status == "PASS"
+                ):
+                    self.profile_cache[plan_hash] = planning_profile(run)
         return [
             self.serving_run_cache[(plan.canonical_sha256, mode.value, concurrency)]
             for plan, mode, concurrency in requests
@@ -200,6 +223,14 @@ class PrimaryGroupCandidate:
     resident_bytes: tuple[int, ...]
     checkpoint_bytes: tuple[int, ...]
     predicted_completion_ms: float
+    candidate_source: str = "FASTEST"
+    resulting_abstract_node_cost: float = math.inf
+
+
+@dataclass(frozen=True, slots=True)
+class AlternateAssignmentCandidate:
+    replicas: tuple[ExpertGroupReplica, ...]
+    alternate_assignment_source: str
 
 
 @dataclass(slots=True)
@@ -220,6 +251,11 @@ class PlannerActionCandidate:
     objective: float
     relative_gain: float
     throughput_ratio: float
+    throughput_ratio_vs_u_strong: float = 1.0
+    c32_target_rows_per_second: float = 0.0
+    c32_objective: float = 0.0
+    candidate_source: str = "FASTEST"
+    alternate_assignment_source: str = "UNRESTRICTED_FASTEST"
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,6 +283,8 @@ class _ReplicaSearchState:
     newly_activated_nodes: tuple[str, ...]
     expansion_score_before: float
     expansion_score_after: float
+    candidate_source: str
+    alternate_assignment_source: str
 
 
 def planning_profile(run: ServingRun) -> PlanningProfile:
@@ -393,6 +431,7 @@ def generate_primary_groups(
     *,
     layer_id: int,
     allowed_nodes: set[str] | None,
+    selection_mode: str = "COMPLETION",
 ) -> tuple[PrimaryGroupCandidate, ...]:
     """Generate deterministic capability/memory-aware P8 primary layouts."""
 
@@ -470,8 +509,9 @@ def generate_primary_groups(
                 raw.add(
                     (coordinator.node_id, *(node.node_id for node in others[1:8]))
                 )
-    candidates = [
-        PrimaryGroupCandidate(
+    candidates: list[PrimaryGroupCandidate] = []
+    for group in raw:
+        preliminary = PrimaryGroupCandidate(
             node_ids=group,
             resident_bytes=resident,
             checkpoint_bytes=checkpoint,
@@ -479,11 +519,67 @@ def generate_primary_groups(
                 context, plan, layer_id, group, profile
             ),
         )
-        for group in raw
-    ]
-    candidates.sort(key=lambda value: (value.predicted_completion_ms, value.node_ids))
-    return tuple(
-        candidates[: int(FROZEN_CONSTANTS["planner_primary_groups_per_layer"])]
+        base = replace_layer_assignment(
+            plan.base_plan, make_p8_assignment(layer_id, preliminary)
+        )
+        candidate_plan = E023Plan(
+            plan.inventory_id,
+            plan.arm,
+            base,
+            tuple(replica for replica in plan.replicas if replica.layer_id != layer_id),
+            u_strong_used_nodes=plan.u_strong_used_nodes,
+        )
+        candidates.append(
+            replace(
+                preliminary,
+                resulting_abstract_node_cost=abstract_node_cost(
+                    candidate_plan, context.inventory
+                ),
+            )
+        )
+    return retain_primary_group_candidates(candidates, selection_mode=selection_mode)
+
+
+def retain_primary_group_candidates(
+    candidates: list[PrimaryGroupCandidate],
+    *,
+    selection_mode: str,
+) -> tuple[PrimaryGroupCandidate, ...]:
+    """Apply the frozen two-candidate completion or FLEX_POOL envelope."""
+
+    limit = int(FROZEN_CONSTANTS["planner_primary_groups_per_layer"])
+    if selection_mode == "COMPLETION":
+        ordered = sorted(
+            candidates,
+            key=lambda value: (value.predicted_completion_ms, value.node_ids),
+        )
+        return tuple(replace(value, candidate_source="FASTEST") for value in ordered[:limit])
+    if selection_mode != "FLEX_POOL":
+        raise ValueError(f"unknown primary candidate selection mode {selection_mode}")
+    if not candidates:
+        return ()
+    fastest = min(
+        candidates,
+        key=lambda value: (value.predicted_completion_ms, value.node_ids),
+    )
+    lowest_cost = min(
+        candidates,
+        key=lambda value: (
+            value.resulting_abstract_node_cost,
+            value.predicted_completion_ms,
+            value.node_ids,
+        ),
+    )
+    if fastest.node_ids == lowest_cost.node_ids:
+        return (
+            replace(
+                fastest,
+                candidate_source="FASTEST+LOWEST_RESULTING_COST",
+            ),
+        )
+    return (
+        replace(fastest, candidate_source="FASTEST"),
+        replace(lowest_cost, candidate_source="LOWEST_RESULTING_COST"),
     )
 
 
@@ -660,21 +756,106 @@ def assign_alternates(
     return tuple(selected[group] for group in sorted(selected))
 
 
+def generate_alternate_assignment_candidates(
+    context: PlannerContext,
+    plan: E023Plan,
+    profile: PlanningProfile,
+    *,
+    layer_id: int,
+    replicated_groups: tuple[int, ...],
+    arm: Arm,
+    u_strong_used_nodes: set[str],
+) -> tuple[tuple[AlternateAssignmentCandidate, ...], tuple[str, ...]]:
+    """Generate the frozen one-map FLEX_FREE or two-map FLEX_POOL envelope."""
+
+    if arm is Arm.FLEX_FREE:
+        replicas = assign_alternates(
+            context,
+            plan,
+            profile,
+            layer_id=layer_id,
+            replicated_groups=replicated_groups,
+            allowed_nodes=u_strong_used_nodes,
+        )
+        if replicas is None:
+            return (), ("FLEX_FREE_ACTIVE_SET",)
+        return (
+            (
+                AlternateAssignmentCandidate(
+                    replicas=replicas,
+                    alternate_assignment_source="FLEX_FREE_ACTIVE_SET",
+                ),
+            ),
+            (),
+        )
+
+    if arm is not Arm.FLEX_POOL:
+        raise ValueError("alternate generation requires a FLEX arm")
+    attempts = (
+        ("NO_NEW_NODE", set(plan.used_nodes)),
+        ("UNRESTRICTED_FASTEST", None),
+    )
+    generated: list[AlternateAssignmentCandidate] = []
+    failed: list[str] = []
+    by_assignment: dict[tuple[tuple[int, str], ...], int] = {}
+    for source, allowed_nodes in attempts:
+        replicas = assign_alternates(
+            context,
+            plan,
+            profile,
+            layer_id=layer_id,
+            replicated_groups=replicated_groups,
+            allowed_nodes=allowed_nodes,
+        )
+        if replicas is None:
+            failed.append(source)
+            continue
+        key = tuple(
+            (replica.logical_group_id, replica.alternate_node_id)
+            for replica in replicas
+        )
+        if key in by_assignment:
+            index = by_assignment[key]
+            prior = generated[index]
+            generated[index] = replace(
+                prior,
+                alternate_assignment_source=(
+                    prior.alternate_assignment_source + "+" + source
+                ),
+            )
+            continue
+        by_assignment[key] = len(generated)
+        generated.append(
+            AlternateAssignmentCandidate(
+                replicas=replicas,
+                alternate_assignment_source=source,
+            )
+        )
+    return tuple(generated), tuple(failed)
+
+
 def choose_best_action(
     candidates: list[PlannerActionCandidate],
     *,
     current_objective: float,
     current_throughput: float,
+    u_strong_throughput: float | None = None,
 ) -> PlannerActionCandidate | None:
     minimum_gain = float(FROZEN_CONSTANTS["planner_minimum_relative_gain"])
     throughput_floor = 1.0 - float(
         FROZEN_CONSTANTS["planner_local_throughput_regression_limit"]
     )
+    u_strong_floor = (
+        current_throughput
+        if u_strong_throughput is None
+        else float(u_strong_throughput)
+    )
     eligible = [
         row
         for row in candidates
-        if row.objective / current_objective - 1.0 >= minimum_gain - 1e-12
-        and row.target_rows_per_second >= throughput_floor * current_throughput - 1e-12
+        if row.objective / current_objective - 1.0 >= minimum_gain
+        and row.target_rows_per_second >= throughput_floor * current_throughput
+        and row.target_rows_per_second >= throughput_floor * u_strong_floor
     ]
     if not eligible:
         return None
@@ -698,6 +879,7 @@ def _convertible_layers(
     profile: PlanningProfile,
     *,
     allowed_nodes: set[str] | None,
+    primary_selection_mode: str = "COMPLETION",
 ) -> tuple[list[int], dict[int, tuple[PrimaryGroupCandidate, ...]]]:
     groups: dict[int, tuple[PrimaryGroupCandidate, ...]] = {}
     ranked: list[tuple[float, int]] = []
@@ -710,6 +892,7 @@ def _convertible_layers(
             profile,
             layer_id=assignment.layer_id,
             allowed_nodes=allowed_nodes,
+            selection_mode=primary_selection_mode,
         )
         if not values:
             continue
@@ -800,35 +983,252 @@ def run_unique_p8_refinement(
     return current.base_plan, actions
 
 
+@dataclass(frozen=True, slots=True)
+class PoolEnvelopeCandidate:
+    source: str
+    plan: E023Plan
+    score: SLOScore
+
+
+def clone_as_flex_pool(
+    plan: E023Plan,
+    *,
+    source: str,
+    preserve_planner_actions: bool = False,
+) -> E023Plan:
+    """Clone a legal plan into the unrestricted FLEX_POOL arm."""
+
+    return E023Plan(
+        plan.inventory_id,
+        Arm.FLEX_POOL.value,
+        clone_placement(plan.base_plan),
+        tuple(plan.replicas),
+        planner_actions=(plan.planner_actions if preserve_planner_actions else ()),
+        metadata={"seed_plan": source},
+    )
+
+
+def select_flex_pool_envelope(
+    candidates: Sequence[PoolEnvelopeCandidate],
+    *,
+    u_strong_slo_target_rows_per_second: float,
+) -> PoolEnvelopeCandidate:
+    """Select the final four-plan FLEX_POOL superset envelope."""
+
+    required = {"U_STRONG", "FLEX_FREE", "POOL-U", "POOL-FREE"}
+    if {candidate.source for candidate in candidates} != required:
+        raise ValueError("FLEX_POOL envelope must contain exactly four frozen sources")
+    throughput_floor = 1.0 - float(
+        FROZEN_CONSTANTS["planner_local_throughput_regression_limit"]
+    )
+    eligible = [
+        candidate
+        for candidate in candidates
+        if candidate.score.target_rows_per_second
+        >= throughput_floor * u_strong_slo_target_rows_per_second
+    ]
+    if not eligible:
+        raise RuntimeError("MODEL_INVALID: FLEX_POOL envelope lost U_STRONG")
+    return min(
+        eligible,
+        key=lambda candidate: (
+            -candidate.score.rows_per_second_per_abstract_cost,
+            -candidate.score.target_rows_per_second,
+            candidate.score.abstract_node_cost,
+            candidate.plan.replica_count,
+            len(candidate.plan.used_nodes),
+            candidate.plan.canonical_sha256,
+        ),
+    )
+
+
+def _objective(score: SLOScore, arm: Arm) -> float:
+    if arm is Arm.FLEX_FREE:
+        return score.target_rows_per_second
+    if arm is Arm.FLEX_POOL:
+        return score.rows_per_second_per_abstract_cost
+    raise ValueError("SLO objective requires a FLEX arm")
+
+
+def _c32_objective(
+    profile: PlanningProfile,
+    plan: E023Plan,
+    context: PlannerContext,
+    arm: Arm,
+) -> float:
+    if arm is Arm.FLEX_FREE:
+        return profile.target_rows_per_second
+    return profile.target_rows_per_second / abstract_node_cost(plan, context.inventory)
+
+
+def _action_row(
+    *,
+    context: PlannerContext,
+    current: E023Plan,
+    arm: Arm,
+    iteration: int,
+    seed_branch: str,
+    current_profile: PlanningProfile,
+    current_c32_objective: float,
+    current_score: SLOScore,
+    u_strong_score: SLOScore,
+    state: _ReplicaSearchState,
+    candidate_profile: PlanningProfile | None,
+    candidate_score: SLOScore | None,
+    accepted: bool,
+    rejection_reason: str,
+) -> dict[str, Any]:
+    c32_tps_after: float | str = ""
+    c32_objective_after: float | str = ""
+    c32_gain: float | str = ""
+    slo_concurrency_after: int | str = ""
+    slo_p95_after: float | str = ""
+    slo_tps_after: float | str = ""
+    slo_cost_after: float | str = ""
+    slo_objective_after: float | str = ""
+    slo_gain: float | str = ""
+    ratio_current: float | str = ""
+    ratio_u_strong: float | str = ""
+    if candidate_profile is not None:
+        c32_tps_after = candidate_profile.target_rows_per_second
+        c32_objective_after = _c32_objective(
+            candidate_profile, state.plan, context, arm
+        )
+        c32_gain = 100.0 * (
+            float(c32_objective_after) / current_c32_objective - 1.0
+        )
+    if candidate_score is not None:
+        candidate_objective = _objective(candidate_score, arm)
+        current_objective = _objective(current_score, arm)
+        slo_concurrency_after = candidate_score.selected_concurrency
+        slo_p95_after = candidate_score.p95_pass_latency_ms
+        slo_tps_after = candidate_score.target_rows_per_second
+        slo_cost_after = candidate_score.abstract_node_cost
+        slo_objective_after = candidate_objective
+        slo_gain = 100.0 * (candidate_objective / current_objective - 1.0)
+        ratio_current = (
+            candidate_score.target_rows_per_second
+            / current_score.target_rows_per_second
+        )
+        ratio_u_strong = (
+            candidate_score.target_rows_per_second
+            / u_strong_score.target_rows_per_second
+        )
+    current_objective = _objective(current_score, arm)
+    return {
+        "inventory_id": current.inventory_id,
+        "arm": arm.value,
+        "planner_iteration": iteration,
+        "layer_id": state.layer_id,
+        "action_type": state.action_type,
+        "replica_count": state.replica_count,
+        "primary_group_nodes": "|".join(state.primary_group_nodes),
+        "replicated_logical_groups": "|".join(
+            str(group) for group in state.replicated_logical_groups
+        ),
+        "alternate_nodes": "|".join(
+            f"{replica.logical_group_id}:{replica.alternate_node_id}"
+            for replica in state.replicas
+        ),
+        "added_checkpoint_bytes": state.added_checkpoint_bytes,
+        "added_resident_bytes": state.added_resident_bytes,
+        "new_nodes_activated": len(state.newly_activated_nodes),
+        "expansion_score_before": state.expansion_score_before,
+        "expansion_score_after": state.expansion_score_after,
+        "objective_before": current_objective,
+        "objective_after": slo_objective_after,
+        "relative_gain_percent": slo_gain,
+        "accepted": accepted,
+        "rejection_reason": rejection_reason,
+        "c32_target_rows_per_second_before": current_profile.target_rows_per_second,
+        "c32_target_rows_per_second_after": c32_tps_after,
+        "c32_objective_before": current_c32_objective,
+        "c32_objective_after": c32_objective_after,
+        "c32_relative_gain_percent": c32_gain,
+        "slo_latency_budget_ms": current_score.latency_budget_ms,
+        "slo_concurrency_before": current_score.selected_concurrency,
+        "slo_concurrency_after": slo_concurrency_after,
+        "slo_p95_before_ms": current_score.p95_pass_latency_ms,
+        "slo_p95_after_ms": slo_p95_after,
+        "slo_target_rows_per_second_before": current_score.target_rows_per_second,
+        "slo_target_rows_per_second_after": slo_tps_after,
+        "slo_abstract_cost_before": current_score.abstract_node_cost,
+        "slo_abstract_cost_after": slo_cost_after,
+        "slo_objective_before": current_objective,
+        "slo_objective_after": slo_objective_after,
+        "slo_relative_gain_percent": slo_gain,
+        "slo_throughput_ratio_vs_current": ratio_current,
+        "slo_throughput_ratio_vs_u_strong": ratio_u_strong,
+        "candidate_source": state.candidate_source,
+        "alternate_assignment_source": state.alternate_assignment_source,
+        "seed_branch": seed_branch,
+    }
+
+
 def run_flex_planner(
     context: PlannerContext,
-    u_strong: PlacementPlan,
+    starting_plan: PlacementPlan | E023Plan,
     *,
     arm: Arm,
+    u_strong_plan: E023Plan | None = None,
+    u_strong_c1_p95_ms: float | None = None,
+    seed_branch: str | None = None,
 ) -> tuple[E023Plan, list[dict[str, Any]]]:
+    """Run the frozen FLEX search with full primary-SLO action acceptance."""
+
     if arm not in {Arm.FLEX_FREE, Arm.FLEX_POOL}:
         raise ValueError("FLEX planner arm must be FLEX_FREE or FLEX_POOL")
-    u_nodes = tuple(sorted(base_resident_bytes(u_strong)))
+    if isinstance(starting_plan, E023Plan):
+        seed = starting_plan
+    else:
+        seed = E023Plan(starting_plan.inventory_id, Arm.U_STRONG.value, starting_plan)
+    if u_strong_plan is None:
+        u_strong_plan = E023Plan(
+            seed.inventory_id,
+            Arm.U_STRONG.value,
+            clone_placement(seed.base_plan),
+        )
+    u_nodes = tuple(sorted(u_strong_plan.used_nodes))
     current = E023Plan(
-        u_strong.inventory_id,
+        seed.inventory_id,
         arm.value,
-        clone_placement(u_strong),
-        (),
+        clone_placement(seed.base_plan),
+        tuple(seed.replicas),
         u_strong_used_nodes=u_nodes if arm is Arm.FLEX_FREE else (),
+        metadata={"seed_plan": seed_branch or "U_STRONG"},
+    )
+    branch = seed_branch or ("FLEX_FREE" if arm is Arm.FLEX_FREE else "POOL-U")
+    if u_strong_c1_p95_ms is None:
+        u_c1 = context.serving_runs(
+            [(u_strong_plan, NetworkMode.SHARED_NIC, 1)]
+        )[0]
+        if u_c1.status != "PASS":
+            raise RuntimeError("MODEL_INVALID: U_STRONG C1 serving run is incomplete")
+        u_strong_c1_p95_ms = u_c1.p95_pass_latency_ms
+    u_strong_score = score_plan_under_primary_slo(
+        context,
+        u_strong_plan,
+        u_strong_c1_p95_ms=u_strong_c1_p95_ms,
     )
     rows: list[dict[str, Any]] = []
     maximum = int(FROZEN_CONSTANTS["planner_max_accepted_layer_actions"])
     allowed_nodes = set(u_nodes) if arm is Arm.FLEX_FREE else None
+    primary_mode = "FLEX_POOL" if arm is Arm.FLEX_POOL else "COMPLETION"
     for iteration in range(1, maximum + 1):
         profile = context.profile(current)
-        current_cost = abstract_node_cost(current, context.inventory)
-        current_objective = (
-            profile.target_rows_per_second
-            if arm is Arm.FLEX_FREE
-            else profile.target_rows_per_second / current_cost
+        current_score = score_plan_under_primary_slo(
+            context,
+            current,
+            u_strong_c1_p95_ms=u_strong_c1_p95_ms,
         )
+        current_objective = _objective(current_score, arm)
+        current_c32_objective = _c32_objective(profile, current, context, arm)
         whole_layers, group_candidates = _convertible_layers(
-            context, current, profile, allowed_nodes=allowed_nodes
+            context,
+            current,
+            profile,
+            allowed_nodes=allowed_nodes,
+            primary_selection_mode=primary_mode,
         )
         p8_layers = [
             assignment.layer_id
@@ -850,8 +1250,6 @@ def run_flex_planner(
                 break
             layer_candidates.append(layer_id)
 
-        considered: list[PlannerActionCandidate] = []
-        pending_rows: list[dict[str, Any]] = []
         primary_states: list[_PrimarySearchState] = []
         for layer_id in layer_candidates:
             assignment = current.base_plan.assignments[layer_id]
@@ -871,30 +1269,27 @@ def run_flex_planner(
                         resident,
                         checkpoint,
                         0.0,
+                        "EXISTING_PRIMARY",
+                        abstract_node_cost(current, context.inventory),
                     ),
                 )
             for primary in primary_layouts:
-                if assignment.partition_kind is PartitionKind.WHOLE_LAYER:
-                    base = replace_layer_assignment(
+                base = (
+                    replace_layer_assignment(
                         current.base_plan, make_p8_assignment(layer_id, primary)
                     )
-                    preserved = tuple(
-                        replica for replica in current.replicas if replica.layer_id != layer_id
-                    )
-                else:
-                    base = clone_placement(current.base_plan)
-                    preserved = tuple(
-                        replica for replica in current.replicas if replica.layer_id != layer_id
-                    )
-                existing_layer_replicas = tuple(
-                    replica for replica in current.replicas if replica.layer_id == layer_id
+                    if assignment.partition_kind is PartitionKind.WHOLE_LAYER
+                    else clone_placement(current.base_plan)
                 )
-                primary_plan = E023Plan(
-                    current.inventory_id,
-                    arm.value,
-                    base,
-                    preserved,
-                    u_strong_used_nodes=u_nodes if arm is Arm.FLEX_FREE else (),
+                preserved = tuple(
+                    replica
+                    for replica in current.replicas
+                    if replica.layer_id != layer_id
+                )
+                existing_layer_replicas = tuple(
+                    replica
+                    for replica in current.replicas
+                    if replica.layer_id == layer_id
                 )
                 primary_states.append(
                     _PrimarySearchState(
@@ -906,7 +1301,15 @@ def run_flex_planner(
                         base=base,
                         preserved_replicas=preserved,
                         existing_layer_replicas=existing_layer_replicas,
-                        primary_plan=primary_plan,
+                        primary_plan=E023Plan(
+                            current.inventory_id,
+                            arm.value,
+                            base,
+                            preserved,
+                            u_strong_used_nodes=(
+                                u_nodes if arm is Arm.FLEX_FREE else ()
+                            ),
+                        ),
                     )
                 )
 
@@ -947,110 +1350,139 @@ def run_flex_planner(
                 selected_groups = select_replica_groups(
                     layer_criticality, target, existing_groups
                 )
-                replicas = assign_alternates(
-                    context,
-                    replica_seed_plan,
-                    primary_profile,
-                    layer_id=layer_id,
-                    replicated_groups=selected_groups,
-                    allowed_nodes=allowed_nodes,
+                alternate_candidates, failed_sources = (
+                    generate_alternate_assignment_candidates(
+                        context,
+                        replica_seed_plan,
+                        primary_profile,
+                        layer_id=layer_id,
+                        replicated_groups=selected_groups,
+                        arm=arm,
+                        u_strong_used_nodes=set(u_nodes),
+                    )
                 )
                 action_type = (
                     f"WHOLE_LAYER_TO_WHOLE_EXPERT_P8_PLUS_{target}_REPLICAS"
                     if state.was_whole_layer
                     else f"WHOLE_EXPERT_P8_ADD_TO_{target}_REPLICAS"
                 )
-                if replicas is None:
-                    pending_rows.append(
-                        {
-                            "inventory_id": current.inventory_id,
-                            "arm": arm.value,
-                            "planner_iteration": iteration,
-                            "layer_id": layer_id,
-                            "action_type": action_type,
-                            "replica_count": target,
-                            "primary_group_nodes": "|".join(primary.node_ids),
-                            "replicated_logical_groups": "|".join(
-                                str(group) for group in selected_groups
-                            ),
-                            "alternate_nodes": "",
-                            "added_checkpoint_bytes": 0,
-                            "added_resident_bytes": 0,
-                            "new_nodes_activated": 0,
-                            "expansion_score_before": expansion_before,
-                            "expansion_score_after": expansion_before,
-                            "objective_before": current_objective,
-                            "objective_after": "",
-                            "relative_gain_percent": "",
-                            "accepted": False,
-                            "rejection_reason": "NO_FEASIBLE_ALTERNATE_ASSIGNMENT",
-                        }
-                    )
-                    continue
-                all_replicas = tuple(
-                    replica
-                    for replica in state.primary_plan.replicas
-                    if replica.layer_id != layer_id
-                ) + replicas
-                candidate_plan = E023Plan(
-                    current.inventory_id,
-                    arm.value,
-                    state.base,
-                    all_replicas,
-                    u_strong_used_nodes=u_nodes if arm is Arm.FLEX_FREE else (),
-                )
-                current_layer_replicas = [
-                    replica
-                    for replica in current.replicas
-                    if replica.layer_id == layer_id
-                ]
-                added_checkpoint = sum(
-                    replica.checkpoint_bytes for replica in replicas
-                ) - sum(
-                    replica.checkpoint_bytes for replica in current_layer_replicas
-                )
-                added_resident = sum(
-                    replica.resident_bytes for replica in replicas
-                ) - sum(
-                    replica.resident_bytes for replica in current_layer_replicas
-                )
-                expansion_after = sparse_flexibility_expansion_score(
-                    primary.node_ids,
-                    {
-                        replica.logical_group_id: replica.alternate_node_id
-                        for replica in replicas
-                    },
-                )
-                newly_used = tuple(
-                    sorted(candidate_plan.used_nodes.difference(current.used_nodes))
-                )
-                replica_states.append(
-                    _ReplicaSearchState(
-                        plan=candidate_plan,
+                for failed_source in failed_sources:
+                    failed_state = _ReplicaSearchState(
+                        plan=replica_seed_plan,
                         layer_id=layer_id,
                         action_type=action_type,
                         replica_count=target,
                         primary_group_nodes=primary.node_ids,
                         replicated_logical_groups=selected_groups,
-                        replicas=replicas,
-                        added_checkpoint_bytes=added_checkpoint,
-                        added_resident_bytes=added_resident,
-                        newly_activated_nodes=newly_used,
+                        replicas=(),
+                        added_checkpoint_bytes=0,
+                        added_resident_bytes=0,
+                        newly_activated_nodes=(),
                         expansion_score_before=expansion_before,
-                        expansion_score_after=expansion_after,
+                        expansion_score_after=expansion_before,
+                        candidate_source=primary.candidate_source,
+                        alternate_assignment_source=failed_source,
                     )
-                )
+                    rows.append(
+                        _action_row(
+                            context=context,
+                            current=current,
+                            arm=arm,
+                            iteration=iteration,
+                            seed_branch=branch,
+                            current_profile=profile,
+                            current_c32_objective=current_c32_objective,
+                            current_score=current_score,
+                            u_strong_score=u_strong_score,
+                            state=failed_state,
+                            candidate_profile=None,
+                            candidate_score=None,
+                            accepted=False,
+                            rejection_reason="NO_FEASIBLE_ALTERNATE_ASSIGNMENT",
+                        )
+                    )
+                for alternate in alternate_candidates:
+                    replicas = alternate.replicas
+                    all_replicas = state.preserved_replicas + replicas
+                    candidate_plan = E023Plan(
+                        current.inventory_id,
+                        arm.value,
+                        state.base,
+                        all_replicas,
+                        u_strong_used_nodes=(
+                            u_nodes if arm is Arm.FLEX_FREE else ()
+                        ),
+                    )
+                    added_checkpoint = sum(
+                        replica.checkpoint_bytes for replica in replicas
+                    ) - sum(
+                        replica.checkpoint_bytes
+                        for replica in existing_layer_replicas
+                    )
+                    added_resident = sum(
+                        replica.resident_bytes for replica in replicas
+                    ) - sum(
+                        replica.resident_bytes for replica in existing_layer_replicas
+                    )
+                    expansion_after = sparse_flexibility_expansion_score(
+                        primary.node_ids,
+                        {
+                            replica.logical_group_id: replica.alternate_node_id
+                            for replica in replicas
+                        },
+                    )
+                    replica_states.append(
+                        _ReplicaSearchState(
+                            plan=candidate_plan,
+                            layer_id=layer_id,
+                            action_type=action_type,
+                            replica_count=target,
+                            primary_group_nodes=primary.node_ids,
+                            replicated_logical_groups=selected_groups,
+                            replicas=replicas,
+                            added_checkpoint_bytes=added_checkpoint,
+                            added_resident_bytes=added_resident,
+                            newly_activated_nodes=tuple(
+                                sorted(
+                                    candidate_plan.used_nodes.difference(
+                                        current.used_nodes
+                                    )
+                                )
+                            ),
+                            expansion_score_before=expansion_before,
+                            expansion_score_after=expansion_after,
+                            candidate_source=primary.candidate_source,
+                            alternate_assignment_source=(
+                                alternate.alternate_assignment_source
+                            ),
+                        )
+                    )
 
         replica_profiles = context.profiles([state.plan for state in replica_states])
+        context.serving_runs(
+            [
+                (state.plan, NetworkMode.SHARED_NIC, concurrency)
+                for state in replica_states
+                for concurrency in FROZEN_CONSTANTS["concurrency_levels"]
+            ]
+        )
+        considered: list[PlannerActionCandidate] = []
+        scored: list[tuple[_ReplicaSearchState, PlanningProfile, SLOScore | None]] = []
         for state, candidate_profile in zip(
             replica_states, replica_profiles, strict=True
         ):
-            cost = abstract_node_cost(state.plan, context.inventory)
-            objective = (
-                candidate_profile.target_rows_per_second
-                if arm is Arm.FLEX_FREE
-                else candidate_profile.target_rows_per_second / cost
-            )
+            try:
+                candidate_score = score_plan_under_primary_slo(
+                    context,
+                    state.plan,
+                    u_strong_c1_p95_ms=u_strong_c1_p95_ms,
+                )
+            except NoPrimarySLOEligibleConcurrency:
+                candidate_score = None
+            scored.append((state, candidate_profile, candidate_score))
+            if candidate_score is None:
+                continue
+            objective = _objective(candidate_score, arm)
             considered.append(
                 PlannerActionCandidate(
                     plan=state.plan,
@@ -1068,71 +1500,132 @@ def run_flex_planner(
                     newly_activated_nodes=state.newly_activated_nodes,
                     expansion_score_before=state.expansion_score_before,
                     expansion_score_after=state.expansion_score_after,
-                    target_rows_per_second=candidate_profile.target_rows_per_second,
+                    target_rows_per_second=candidate_score.target_rows_per_second,
                     objective=objective,
                     relative_gain=objective / current_objective - 1.0,
                     throughput_ratio=(
+                        candidate_score.target_rows_per_second
+                        / current_score.target_rows_per_second
+                    ),
+                    throughput_ratio_vs_u_strong=(
+                        candidate_score.target_rows_per_second
+                        / u_strong_score.target_rows_per_second
+                    ),
+                    c32_target_rows_per_second=(
                         candidate_profile.target_rows_per_second
-                        / profile.target_rows_per_second
+                    ),
+                    c32_objective=_c32_objective(
+                        candidate_profile, state.plan, context, arm
+                    ),
+                    candidate_source=state.candidate_source,
+                    alternate_assignment_source=(
+                        state.alternate_assignment_source
                     ),
                 )
             )
         winner = choose_best_action(
             considered,
             current_objective=current_objective,
-            current_throughput=profile.target_rows_per_second,
+            current_throughput=current_score.target_rows_per_second,
+            u_strong_throughput=u_strong_score.target_rows_per_second,
         )
-        for candidate in considered:
-            gain = candidate.objective / current_objective - 1.0
-            throughput_ok = candidate.throughput_ratio >= 1.0 - float(
-                FROZEN_CONSTANTS["planner_local_throughput_regression_limit"]
+        minimum_gain = float(FROZEN_CONSTANTS["planner_minimum_relative_gain"])
+        throughput_floor = 1.0 - float(
+            FROZEN_CONSTANTS["planner_local_throughput_regression_limit"]
+        )
+        qualifying = 0
+        by_hash = {candidate.plan.canonical_sha256: candidate for candidate in considered}
+        for state, candidate_profile, candidate_score in scored:
+            candidate = by_hash.get(state.plan.canonical_sha256)
+            if candidate_score is None or candidate is None:
+                reason = "NO_PRIMARY_SLO_ELIGIBLE_CONCURRENCY"
+                accepted = False
+            else:
+                gain_ok = candidate.relative_gain >= minimum_gain
+                current_guard = candidate.throughput_ratio >= throughput_floor
+                u_guard = (
+                    candidate.throughput_ratio_vs_u_strong >= throughput_floor
+                )
+                if gain_ok and current_guard and u_guard:
+                    qualifying += 1
+                accepted = candidate is winner
+                reason = (
+                    ""
+                    if accepted
+                    else "OBJECTIVE_GAIN_BELOW_0_5_PERCENT"
+                    if not gain_ok
+                    else "LOCAL_THROUGHPUT_REGRESSION_GT_1_PERCENT"
+                    if not current_guard
+                    else "CUMULATIVE_U_STRONG_THROUGHPUT_REGRESSION_GT_1_PERCENT"
+                    if not u_guard
+                    else "QUALIFYING_BUT_NOT_BEST_DETERMINISTIC_ACTION"
+                )
+            rows.append(
+                _action_row(
+                    context=context,
+                    current=current,
+                    arm=arm,
+                    iteration=iteration,
+                    seed_branch=branch,
+                    current_profile=profile,
+                    current_c32_objective=current_c32_objective,
+                    current_score=current_score,
+                    u_strong_score=u_strong_score,
+                    state=state,
+                    candidate_profile=candidate_profile,
+                    candidate_score=candidate_score,
+                    accepted=accepted,
+                    rejection_reason=reason,
+                )
             )
-            gain_ok = (
-                gain
-                >= float(FROZEN_CONSTANTS["planner_minimum_relative_gain"]) - 1e-12
-            )
-            accepted = candidate is winner
-            reason = (
-                ""
-                if accepted
-                else "OBJECTIVE_GAIN_BELOW_0_5_PERCENT"
-                if not gain_ok
-                else "LOCAL_THROUGHPUT_REGRESSION_GT_1_PERCENT"
-                if not throughput_ok
-                else "QUALIFYING_BUT_NOT_BEST_DETERMINISTIC_ACTION"
-            )
-            pending_rows.append(
+        if arm is Arm.FLEX_POOL:
+            context.search_coverage_rows.append(
                 {
                     "inventory_id": current.inventory_id,
-                    "arm": arm.value,
-                    "planner_iteration": iteration,
-                    "layer_id": candidate.layer_id,
-                    "action_type": candidate.action_type,
-                    "replica_count": candidate.replica_count,
-                    "primary_group_nodes": "|".join(candidate.primary_group_nodes),
-                    "replicated_logical_groups": "|".join(
-                        str(group) for group in candidate.replicated_logical_groups
+                    "iteration": iteration,
+                    "seed_branch": branch,
+                    "candidate_layer_count": len(layer_candidates),
+                    "primary_candidates_fastest": sum(
+                        "FASTEST" in state.primary.candidate_source
+                        for state in primary_states
                     ),
-                    "alternate_nodes": "|".join(
-                        f"{group}:{node}" for group, node in candidate.alternate_nodes
+                    "primary_candidates_lowest_cost": sum(
+                        "LOWEST_RESULTING_COST" in state.primary.candidate_source
+                        for state in primary_states
                     ),
-                    "added_checkpoint_bytes": candidate.added_checkpoint_bytes,
-                    "added_resident_bytes": candidate.added_resident_bytes,
-                    "new_nodes_activated": len(candidate.newly_activated_nodes),
-                    "expansion_score_before": candidate.expansion_score_before,
-                    "expansion_score_after": candidate.expansion_score_after,
-                    "objective_before": current_objective,
-                    "objective_after": candidate.objective,
-                    "relative_gain_percent": 100.0 * gain,
-                    "accepted": accepted,
-                    "rejection_reason": reason,
+                    "alternate_candidates_no_new_node": sum(
+                        "NO_NEW_NODE" in state.alternate_assignment_source
+                        for state in replica_states
+                    ),
+                    "alternate_candidates_unrestricted": sum(
+                        "UNRESTRICTED_FASTEST" in state.alternate_assignment_source
+                        for state in replica_states
+                    ),
+                    "full_slo_candidates_evaluated": len(replica_states),
+                    "qualifying_candidates": qualifying,
+                    "accepted_candidate_source": (
+                        ""
+                        if winner is None
+                        else (
+                            winner.candidate_source
+                            + ":"
+                            + winner.alternate_assignment_source
+                        )
+                    ),
+                    "flex_free_in_final_pool_envelope": "",
                 }
             )
-        rows.extend(pending_rows)
         if winner is None:
             break
         current = winner.plan
-    current.planner_actions = tuple(row for row in rows if row["accepted"])
+    accepted_rows = tuple(row for row in rows if row["accepted"])
+    current.planner_actions = accepted_rows
+    current.metadata = {
+        "seed_plan": branch,
+        "newly_accepted_action_count": len(accepted_rows),
+        "planning_concurrency": int(FROZEN_CONSTANTS["planning_concurrency"]),
+        "acceptance_objective": "PRIMARY_SLO",
+    }
     return current, rows
 
 
