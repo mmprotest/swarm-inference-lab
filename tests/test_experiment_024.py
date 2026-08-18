@@ -29,16 +29,23 @@ from swarm_inference.experiments.experiment_024.economics import (
     cost_per_million,
     mechanical_verdict,
     scenario_wedge_pass,
+    whole_layer_incapable_compute_shares,
 )
 from swarm_inference.experiments.experiment_024.geometry import (
     A_BYTES,
     B_BYTES,
     C_BYTES,
     D_BYTES,
+    GEOMETRY,
     H_BYTES,
     assert_frozen_geometry,
 )
-from swarm_inference.experiments.experiment_024.models import Verdict
+from swarm_inference.experiments.experiment_024.models import (
+    CommodityScenario,
+    StageAArm,
+    Verdict,
+)
+from swarm_inference.experiments.experiment_024.stage_a import run_stage_a_cell
 
 
 def test_frozen_communication_geometry() -> None:
@@ -84,7 +91,11 @@ def test_cheap_but_slow_is_not_rejected_by_performance_threshold() -> None:
     assert scenario_wedge_pass(
         cost_per_m=0.05 * 15,
         slo_feasible=True,
-        whole_layer_incapable_compute_share=0.95,
+        layer_zero_uses_exact_whole_candidate=True,
+        p8_layer_count=92,
+        no_whole_layer_execution_on_layers_1_92=True,
+        whole_layer_only_commodity_model_feasible=False,
+        p8_required_whole_layer_incapable_compute_share=0.95,
         global_correctness_pass=True,
     )
 
@@ -93,7 +104,11 @@ def test_fast_but_expensive_does_not_pass() -> None:
     assert not scenario_wedge_pass(
         cost_per_m=1.10 * 15,
         slo_feasible=True,
-        whole_layer_incapable_compute_share=1.0,
+        layer_zero_uses_exact_whole_candidate=True,
+        p8_layer_count=92,
+        no_whole_layer_execution_on_layers_1_92=True,
+        whole_layer_only_commodity_model_feasible=False,
+        p8_required_whole_layer_incapable_compute_share=1.0,
         global_correctness_pass=True,
     )
 
@@ -102,13 +117,21 @@ def test_api_parity_is_not_strictly_cheaper() -> None:
     assert not scenario_wedge_pass(
         cost_per_m=15.0,
         slo_feasible=True,
-        whole_layer_incapable_compute_share=1.0,
+        layer_zero_uses_exact_whole_candidate=True,
+        p8_layer_count=92,
+        no_whole_layer_execution_on_layers_1_92=True,
+        whole_layer_only_commodity_model_feasible=False,
+        p8_required_whole_layer_incapable_compute_share=1.0,
         global_correctness_pass=True,
     )
     assert scenario_wedge_pass(
         cost_per_m=14.99,
         slo_feasible=True,
-        whole_layer_incapable_compute_share=1.0,
+        layer_zero_uses_exact_whole_candidate=True,
+        p8_layer_count=92,
+        no_whole_layer_execution_on_layers_1_92=True,
+        whole_layer_only_commodity_model_feasible=False,
+        p8_required_whole_layer_incapable_compute_share=1.0,
         global_correctness_pass=True,
     )
 
@@ -181,3 +204,46 @@ def test_commodity_heterogeneity_and_locality_are_deterministic() -> None:
         0,
         1,
     )
+
+
+def test_p8_incapable_share_excludes_dense_layer_zero_from_denominator() -> None:
+    overall, p8_required = whole_layer_incapable_compute_shares(
+        (
+            {
+                "layer": 0,
+                "compute_ms": 10.0,
+                "worker_memory_bytes": 10,
+                "whole_layer_resident_bytes": 5,
+            },
+            {
+                "layer": 1,
+                "compute_ms": 90.0,
+                "worker_memory_bytes": 10,
+                "whole_layer_resident_bytes": 20,
+            },
+        )
+    )
+    assert overall == pytest.approx(0.9)
+    assert p8_required == pytest.approx(1.0)
+
+
+def test_stage_a_task_graph_preserves_exact_frozen_moe_bytes() -> None:
+    class StubService:
+        def __init__(self) -> None:
+            self.layer_type_by_id = {layer: "KDA" for layer in range(93)}
+
+        @staticmethod
+        def service_ms(layer: int, operation: str, degree: int, rows: int) -> float:
+            del layer, operation, degree, rows
+            return 0.01
+
+    for arm in StageAArm:
+        row = run_stage_a_cell(
+            service=StubService(),  # type: ignore[arg-type]
+            scenario=CommodityScenario.COMMODITY_REGIONAL,
+            layer=89,
+            rows=1,
+            concurrency=1,
+            arm=arm,
+        )
+        assert row["moe_network_bytes_per_row"] == GEOMETRY[arm].bytes_per_row

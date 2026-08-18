@@ -35,7 +35,7 @@ FAST_FABRIC_SOFTWARE_OVERHEAD_MS = 0.04
 KIMI_OUTPUT_API_PRICE_USD_PER_M = 15.0
 PRIMARY_CONTRIBUTOR_PAYOUT_USD_PER_ACTIVE_NODE_HOUR = 0.15
 PAYOUT_SENSITIVITY_USD_PER_ACTIVE_NODE_HOUR = (0.05, 0.10, 0.15, 0.25, 0.50)
-TARGET_COST_LEVELS_USD_PER_M = (15.0, 12.0, 9.0, 7.5, 5.0, 3.0)
+TARGET_COST_LEVELS_USD_PER_M = (15.0, 12.0, 9.0, 7.50, 5.0, 3.0)
 
 PRIMARY_DECODE_SLO_MULTIPLIER = 4.0
 DECODE_SLO_SENSITIVITY_MULTIPLIERS = (2.0, 8.0)
@@ -49,8 +49,20 @@ WHOLE_LAYER_INCAPABLE_COMPUTE_SHARE_MIN = 0.95
 SWARM_D_MAX_REGRESSION_VS_CURRENT_PERCENT = 5.0
 CALIBRATION_WARMUP = 20
 CALIBRATION_ITERATIONS = 100
+DENSE_LAYER0_CALIBRATION_ITERATIONS = 200
 FUSION_WARMUP = 20
 FUSION_ITERATIONS = 200
+
+COMMODITY_WORKER_MEMORY_BYTES = 10_422_845_440
+LAYER_ZERO_WHOLE_CANDIDATE_ID = "layer-00:WHOLE_LAYER:p1"
+LAYER_ZERO_WHOLE_RESIDENT_BYTES = 2_549_338_530
+P8_REQUIRED_LAYER_IDS = tuple(range(1, 93))
+EXPECTED_CANDIDATE_CATALOG_SHA256 = (
+    "3f1d8e8519fb2b759b7ec5678bfc1458a782a49a6e438eeb1b26d2077258ccd7"
+)
+EXPECTED_REPAIRED_SERVICE_SHA256 = (
+    "ee240937dfc36a6ce04161812f61ff0021359a2861ecb783772d44e2614bcf2b"
+)
 
 CHECKPOINT = Path(r"F:\models\Kimi-K3")
 REPAIRED_SERVICE_RELATIVE_PATH = Path(
@@ -59,6 +71,9 @@ REPAIRED_SERVICE_RELATIVE_PATH = Path(
 )
 CANDIDATE_CATALOG_RELATIVE_PATH = Path(
     "artifacts/experiment-022/completion/rerun/candidate-catalog.json"
+)
+GENERATOR_CONFIG_RELATIVE_PATH = Path(
+    "artifacts/experiment-022/inventories/generator-config.json"
 )
 
 
@@ -74,7 +89,7 @@ def sha256_file(path: Path) -> str:
 
 @dataclass(frozen=True, slots=True)
 class Phase0Audit:
-    """Mechanical immutable-input audit performed before E024 implementation."""
+    """Mechanical immutable-input and corrected-architecture audit."""
 
     status: str
     mandatory_failure_id: str | None
@@ -88,10 +103,21 @@ class Phase0Audit:
     candidate_catalog_sha256: str
     repaired_service_path: str
     repaired_service_sha256: str
-    layer_zero_p8_candidate_count: int
-    layer_zero_admitted_p8_candidate_count: int
-    layer_zero_candidates: tuple[dict[str, Any], ...]
-    complete_p8_only_placement_possible: bool
+    commodity_worker_memory_bytes: int
+    layer_zero_whole_candidate_id: str
+    layer_zero_whole_candidate_admitted: bool
+    layer_zero_whole_resident_bytes: int | None
+    layer_zero_whole_fits_commodity: bool
+    p8_required_layer_count: int
+    p8_required_layer_ids: tuple[int, ...]
+    p8_admitted_candidate_counts_by_layer: dict[int, int]
+    p8_admitted_candidate_ids_by_layer: dict[int, tuple[str, ...]]
+    whole_layer_resident_bytes_by_layer: dict[int, int]
+    whole_layer_feasible_layer_ids_on_commodity: tuple[int, ...]
+    whole_layer_infeasible_layer_ids_on_commodity: tuple[int, ...]
+    complete_commodity_candidate_coverage: bool
+    complete_commodity_architecture_candidate_coverage: bool
+    whole_layer_only_commodity_model_feasible: bool
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -107,45 +133,63 @@ def _checkpoint_layer_count(checkpoint: Path) -> int | None:
     return int(value) if value is not None else None
 
 
-def _catalog_layer_zero_p8(catalog: dict[str, Any]) -> tuple[dict[str, Any], ...]:
-    rows: list[dict[str, Any]] = []
-    for candidate in catalog.get("candidates", []):
-        if int(candidate.get("layer", -1)) != 0 or int(candidate.get("degree", -1)) != DEGREE:
-            continue
-        rows.append(
-            {
-                "candidate_id": str(candidate["candidate_id"]),
-                "candidate_type": str(candidate["candidate_type"]),
-                "correctness_status": str(candidate.get("correctness_status")),
-                "headline_eligible": bool(candidate.get("headline_eligible")),
-                "production_native_binding": bool(
-                    candidate.get("production_native_binding")
-                ),
-                "chunk_sizes_physically_validated": list(
-                    candidate.get("chunk_sizes_physically_validated", [])
-                ),
-                "service_status": str(candidate.get("service_status")),
-            }
-        )
-    return tuple(sorted(rows, key=lambda row: row["candidate_id"]))
-
-
-def _candidate_is_admitted(candidate: dict[str, Any]) -> bool:
+def _candidate_is_physically_admitted(candidate: dict[str, Any]) -> bool:
     return (
-        candidate["headline_eligible"] is True
-        and candidate["production_native_binding"] is True
-        and candidate["correctness_status"] == "PASS"
-        and candidate["chunk_sizes_physically_validated"] == [1, 2, 4]
+        candidate.get("headline_eligible") is True
+        and candidate.get("production_native_binding") is True
+        and candidate.get("correctness_status") == "PASS"
+        and list(candidate.get("chunk_sizes_physically_validated", [])) == [1, 2, 4]
     )
 
 
-def audit_immutable_inputs(repo_root: Path) -> Phase0Audit:
-    """Audit the frozen inputs and fail on the first complete-P8 impossibility.
+def _admitted_p8(candidate: dict[str, Any]) -> bool:
+    return (
+        int(candidate.get("degree", -1)) == DEGREE
+        and candidate.get("candidate_type") != "WHOLE_LAYER"
+        and _candidate_is_physically_admitted(candidate)
+    )
 
-    A valid Stage B placement must choose one physically admitted P8 candidate
-    for every transformer layer.  Network size and memory cannot repair an
-    empty candidate set, so this check soundly precedes placement search.
-    """
+
+def _admitted_whole(candidate: dict[str, Any]) -> bool:
+    return (
+        int(candidate.get("degree", -1)) == 1
+        and candidate.get("candidate_type") == "WHOLE_LAYER"
+        and _candidate_is_physically_admitted(candidate)
+    )
+
+
+def _catalog_candidates_by_layer(catalog: dict[str, Any]) -> dict[int, list[dict[str, Any]]]:
+    result = {layer: [] for layer in range(93)}
+    for candidate in catalog.get("candidates", []):
+        layer = int(candidate.get("layer", -1))
+        if layer in result:
+            result[layer].append(candidate)
+    return result
+
+
+def _whole_candidate(
+    candidates: list[dict[str, Any]], *, candidate_id: str | None = None
+) -> dict[str, Any] | None:
+    rows = [
+        row
+        for row in candidates
+        if _admitted_whole(row)
+        and (candidate_id is None or str(row.get("candidate_id")) == candidate_id)
+    ]
+    if len(rows) != 1:
+        return None
+    return rows[0]
+
+
+def _resident_bytes(candidate: dict[str, Any] | None) -> int | None:
+    if candidate is None:
+        return None
+    values = [int(value) for value in candidate.get("resident_memory_bytes", [])]
+    return values[0] if len(values) == 1 else None
+
+
+def audit_immutable_inputs(repo_root: Path) -> Phase0Audit:
+    """Validate the corrected one-whole-plus-92-P8 commodity architecture."""
 
     repo_root = repo_root.resolve()
     inventories, inventory_audit = load_frozen_inventories(repo_root)
@@ -162,37 +206,127 @@ def audit_immutable_inputs(repo_root: Path) -> Phase0Audit:
 
     catalog_path = repo_root / CANDIDATE_CATALOG_RELATIVE_PATH
     repaired_path = repo_root / REPAIRED_SERVICE_RELATIVE_PATH
-    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
-    layer_zero = _catalog_layer_zero_p8(catalog)
-    admitted = tuple(row for row in layer_zero if _candidate_is_admitted(row))
+    generator_path = repo_root / GENERATOR_CONFIG_RELATIVE_PATH
+    catalog_sha = sha256_file(catalog_path) if catalog_path.is_file() else ""
+    repaired_sha = sha256_file(repaired_path) if repaired_path.is_file() else ""
+    catalog = (
+        json.loads(catalog_path.read_text(encoding="utf-8"))
+        if catalog_path.is_file()
+        else {"candidates": []}
+    )
+    candidates_by_layer = _catalog_candidates_by_layer(catalog)
+
+    commodity_memory = -1
+    if generator_path.is_file():
+        generator = json.loads(generator_path.read_text(encoding="utf-8"))
+        commodity_memory = int(generator["memory_classes_bytes"]["sub_layer"])
+
+    layer_zero = _whole_candidate(
+        candidates_by_layer[0], candidate_id=LAYER_ZERO_WHOLE_CANDIDATE_ID
+    )
+    layer_zero_resident = _resident_bytes(layer_zero)
+    layer_zero_admitted = layer_zero is not None
+    layer_zero_fits = (
+        layer_zero_resident is not None and layer_zero_resident <= commodity_memory
+    )
+
+    p8_rows = {
+        layer: tuple(
+            sorted(
+                (
+                    row
+                    for row in candidates_by_layer[layer]
+                    if _admitted_p8(row)
+                ),
+                key=lambda row: str(row["candidate_id"]),
+            )
+        )
+        for layer in P8_REQUIRED_LAYER_IDS
+    }
+    p8_counts = {layer: len(rows) for layer, rows in p8_rows.items()}
+    p8_ids = {
+        layer: tuple(str(row["candidate_id"]) for row in rows)
+        for layer, rows in p8_rows.items()
+    }
+
+    whole_rows = {
+        layer: _whole_candidate(candidates_by_layer[layer]) for layer in range(93)
+    }
+    whole_resident = {
+        layer: resident
+        for layer, row in whole_rows.items()
+        if (resident := _resident_bytes(row)) is not None
+    }
+    whole_feasible = tuple(
+        layer
+        for layer in range(93)
+        if whole_resident.get(layer, commodity_memory + 1) <= commodity_memory
+    )
+    whole_infeasible = tuple(
+        layer
+        for layer in range(93)
+        if whole_resident.get(layer, 0) > commodity_memory
+    )
 
     checkpoint_exists = CHECKPOINT.is_dir()
     layer_count = _checkpoint_layer_count(CHECKPOINT) if checkpoint_exists else None
     inventory_hashes_valid = (
         inventory_count == 27 and inventory_audit.get("status") == "PASS"
     )
-    base_valid = (
+    historical_valid = (
         checkpoint_exists
         and layer_count == 93
         and inventory_hashes_valid
         and e023_verdict == "NO_WEDGE"
         and repaired_path.is_file()
+        and generator_path.is_file()
+        and catalog_sha == EXPECTED_CANDIDATE_CATALOG_SHA256
+        and repaired_sha == EXPECTED_REPAIRED_SERVICE_SHA256
+        and commodity_memory == COMMODITY_WORKER_MEMORY_BYTES
     )
-    complete_p8 = base_valid and bool(admitted)
+
+    p8_coverage = all(p8_counts[layer] >= 1 for layer in P8_REQUIRED_LAYER_IDS)
+    whole_catalog_coverage = len(whole_resident) == 93
+    layer_zero_values_exact = layer_zero_resident == LAYER_ZERO_WHOLE_RESIDENT_BYTES
+    complete_coverage = (
+        historical_valid
+        and layer_zero_admitted
+        and layer_zero_values_exact
+        and layer_zero_fits
+        and p8_coverage
+        and whole_catalog_coverage
+        and whole_feasible == (0,)
+        and whole_infeasible == P8_REQUIRED_LAYER_IDS
+    )
 
     failure_id: str | None = None
     reason: str | None = None
-    if not base_valid:
+    if not historical_valid or not whole_catalog_coverage:
         failure_id = "HISTORICAL_IMMUTABLE_INPUT_VALIDATION"
-        reason = "One or more frozen historical/checkpoint prerequisites failed."
-    elif not admitted:
-        failure_id = "NO_PRODUCTION_NATIVE_P8_CANDIDATE_FOR_LAYER_0"
+        reason = "One or more frozen historical, checkpoint, catalog, service, or memory prerequisites failed."
+    elif not layer_zero_admitted or not layer_zero_values_exact:
+        failure_id = "NO_ADMITTED_WHOLE_LAYER_CANDIDATE_FOR_DENSE_LAYER_0"
         reason = (
-            "The frozen E022 catalog has no physically admitted, production-native "
-            "degree-8 candidate for transformer layer 0. E024 forbids WHOLE_LAYER "
-            "for every transformer layer, so no complete 93-layer P8-only placement "
-            "can exist at any commodity node budget."
+            "The exact frozen layer-00:WHOLE_LAYER:p1 candidate is missing, not physically "
+            "admitted, or does not carry the frozen resident-memory value."
         )
+    elif not layer_zero_fits:
+        failure_id = "DENSE_LAYER_0_DOES_NOT_FIT_COMMODITY_WORKER"
+        reason = "The admitted dense layer-0 whole candidate exceeds commodity memory."
+    else:
+        missing = next(
+            (layer for layer in P8_REQUIRED_LAYER_IDS if p8_counts[layer] < 1),
+            None,
+        )
+        if missing is not None:
+            failure_id = f"MISSING_ADMITTED_P8_CANDIDATE_FOR_LAYER_{missing}"
+            reason = f"Transformer layer {missing} lacks an admitted degree-8 candidate."
+        elif whole_feasible != (0,) or whole_infeasible != P8_REQUIRED_LAYER_IDS:
+            failure_id = "NON_DENSE_LAYER_WHOLE_FITS_COMMODITY_WORKER"
+            reason = (
+                "The frozen catalog and commodity memory do not yield exactly layer 0 as "
+                "whole-layer feasible and layers 1 through 92 as whole-layer infeasible."
+            )
 
     return Phase0Audit(
         status="PASS" if failure_id is None else "MODEL_INVALID",
@@ -204,18 +338,29 @@ def audit_immutable_inputs(repo_root: Path) -> Phase0Audit:
         e022_inventory_hashes_valid=inventory_hashes_valid,
         e023_final_verdict=e023_verdict,
         candidate_catalog_path=CANDIDATE_CATALOG_RELATIVE_PATH.as_posix(),
-        candidate_catalog_sha256=sha256_file(catalog_path),
+        candidate_catalog_sha256=catalog_sha,
         repaired_service_path=REPAIRED_SERVICE_RELATIVE_PATH.as_posix(),
-        repaired_service_sha256=sha256_file(repaired_path),
-        layer_zero_p8_candidate_count=len(layer_zero),
-        layer_zero_admitted_p8_candidate_count=len(admitted),
-        layer_zero_candidates=layer_zero,
-        complete_p8_only_placement_possible=complete_p8,
+        repaired_service_sha256=repaired_sha,
+        commodity_worker_memory_bytes=commodity_memory,
+        layer_zero_whole_candidate_id=LAYER_ZERO_WHOLE_CANDIDATE_ID,
+        layer_zero_whole_candidate_admitted=layer_zero_admitted,
+        layer_zero_whole_resident_bytes=layer_zero_resident,
+        layer_zero_whole_fits_commodity=layer_zero_fits,
+        p8_required_layer_count=len(P8_REQUIRED_LAYER_IDS),
+        p8_required_layer_ids=P8_REQUIRED_LAYER_IDS,
+        p8_admitted_candidate_counts_by_layer=p8_counts,
+        p8_admitted_candidate_ids_by_layer=p8_ids,
+        whole_layer_resident_bytes_by_layer=whole_resident,
+        whole_layer_feasible_layer_ids_on_commodity=whole_feasible,
+        whole_layer_infeasible_layer_ids_on_commodity=whole_infeasible,
+        complete_commodity_candidate_coverage=complete_coverage,
+        complete_commodity_architecture_candidate_coverage=complete_coverage,
+        whole_layer_only_commodity_model_feasible=len(whole_feasible) == 93,
     )
 
 
 def frozen_constants() -> dict[str, Any]:
-    """Return the preregistered constants in JSON-compatible form."""
+    """Return preregistered scalar and tuple constants in JSON-compatible form."""
 
     return {
         name: list(value) if isinstance(value, tuple) else value
@@ -227,11 +372,14 @@ def frozen_constants() -> dict[str, Any]:
 __all__ = [
     "CALIBRATION_ITERATIONS",
     "CALIBRATION_WARMUP",
+    "CANDIDATE_CATALOG_RELATIVE_PATH",
     "CHECKPOINT",
     "COMMODITY_AVAILABLE_NODE_BUDGETS",
+    "COMMODITY_WORKER_MEMORY_BYTES",
     "COMMUNICATION_LOWER_BOUND_RATIO_MAX",
     "DECODE_CONCURRENCY_LEVELS",
     "DEGREE",
+    "DENSE_LAYER0_CALIBRATION_ITERATIONS",
     "EXPERIMENT_ID",
     "FLOAT_BYTES",
     "FUSION_ITERATIONS",
@@ -239,6 +387,9 @@ __all__ = [
     "HIDDEN",
     "KIMI_OUTPUT_API_PRICE_USD_PER_M",
     "LATENT",
+    "LAYER_ZERO_WHOLE_CANDIDATE_ID",
+    "LAYER_ZERO_WHOLE_RESIDENT_BYTES",
+    "P8_REQUIRED_LAYER_IDS",
     "PAYOUT_SENSITIVITY_USD_PER_ACTIVE_NODE_HOUR",
     "PRIMARY_CONTRIBUTOR_PAYOUT_USD_PER_ACTIVE_NODE_HOUR",
     "PRIMARY_DECODE_SLO_MULTIPLIER",
@@ -250,6 +401,7 @@ __all__ = [
     "STAGE_A_ROWS",
     "TARGET_COST_LEVELS_USD_PER_M",
     "TOPK",
+    "WHOLE_LAYER_INCAPABLE_COMPUTE_SHARE_MIN",
     "Phase0Audit",
     "audit_immutable_inputs",
     "frozen_constants",

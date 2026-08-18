@@ -253,12 +253,15 @@ class PersistentKimiStageExecutor:
             request.stage_count != 93
             or assignment.stage_id != assignment.layer_start
             or assignment.layer_end != assignment.layer_start + 1
-            or assignment.owns_embeddings != (assignment.layer_start == 0)
+            # Endpoint ownership is independent of transformer-layer ownership.
+            # In particular, Experiment 024 executes the admitted transformer-only
+            # layer-0 whole candidate after the endpoint has produced its embedding.
+            or (assignment.owns_embeddings and assignment.layer_start != 0)
             or assignment.owns_final_norm != (assignment.layer_start == 92)
             or assignment.owns_output_projection != (assignment.layer_start == 92)
         ):
             raise ValueError(
-                "persistent Kimi execution requires one checkpoint-aligned non-embedding stage"
+                "persistent Kimi execution requires one checkpoint-aligned transformer stage"
             )
         self.cpu_transport_thread_contract = _configure_kimi_cpu_transport_threads()
         self.request = request

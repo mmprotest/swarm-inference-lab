@@ -17,7 +17,7 @@ from swarm_inference.experiments.experiment_024.runner import run_phase0  # noqa
 def main() -> int:
     result = run_phase0(REPO_ROOT)
     print(json.dumps(result, indent=2, sort_keys=True))
-    return 2 if result["final_verdict"] == "MODEL_INVALID" else 0
+    return 2 if result["status"] != "PASS" else 0
 
 
 if __name__ == "__main__":

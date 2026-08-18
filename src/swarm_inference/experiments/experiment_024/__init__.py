@@ -1,8 +1,8 @@
 """Experiment 024: communication-avoiding Kimi K3 swarm economics.
 
-Experiment 024 fails closed when an immutable input cannot support the frozen
-93-layer, P8-only deployment.  A failed validity gate is evidence, not a
-commercial-performance result.
+The repaired commodity architecture executes the naturally small dense layer 0
+whole on an ordinary worker and executes layers 1 through 92 exclusively with
+physically admitted degree-8 candidates.
 """
 
 from __future__ import annotations

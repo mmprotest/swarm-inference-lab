@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable, Mapping
+from typing import Any
 
 from .freeze import KIMI_OUTPUT_API_PRICE_USD_PER_M
 from .models import CommercialMetrics, Verdict
@@ -81,15 +83,50 @@ def scenario_wedge_pass(
     *,
     cost_per_m: float,
     slo_feasible: bool,
-    whole_layer_incapable_compute_share: float,
+    layer_zero_uses_exact_whole_candidate: bool,
+    p8_layer_count: int,
+    no_whole_layer_execution_on_layers_1_92: bool,
+    whole_layer_only_commodity_model_feasible: bool,
+    p8_required_whole_layer_incapable_compute_share: float,
     global_correctness_pass: bool,
 ) -> bool:
     return (
         slo_feasible
         and cost_per_m < KIMI_OUTPUT_API_PRICE_USD_PER_M
-        and whole_layer_incapable_compute_share >= 0.95
+        and layer_zero_uses_exact_whole_candidate
+        and p8_layer_count == 92
+        and no_whole_layer_execution_on_layers_1_92
+        and not whole_layer_only_commodity_model_feasible
+        and p8_required_whole_layer_incapable_compute_share >= 0.95
         and global_correctness_pass
     )
+
+
+def whole_layer_incapable_compute_shares(
+    rows: Iterable[Mapping[str, Any]],
+) -> tuple[float, float]:
+    """Return overall and authoritative P8-required incapable-compute shares."""
+
+    total = 0.0
+    incapable = 0.0
+    p8_total = 0.0
+    p8_incapable = 0.0
+    for row in rows:
+        layer = int(row["layer"])
+        compute_ms = float(row["compute_ms"])
+        if compute_ms < 0 or not math.isfinite(compute_ms):
+            raise ValueError("transformer compute must be finite and non-negative")
+        worker_memory = int(row["worker_memory_bytes"])
+        whole_resident = int(row["whole_layer_resident_bytes"])
+        is_incapable = worker_memory < whole_resident
+        total += compute_ms
+        incapable += compute_ms if is_incapable else 0.0
+        if 1 <= layer <= 92:
+            p8_total += compute_ms
+            p8_incapable += compute_ms if is_incapable else 0.0
+    if total <= 0 or p8_total <= 0:
+        raise ValueError("compute-share denominators must be positive")
+    return incapable / total, p8_incapable / p8_total
 
 
 def mechanical_verdict(
@@ -117,4 +154,5 @@ __all__ = [
     "max_uniform_payout_per_active_node_hour",
     "mechanical_verdict",
     "scenario_wedge_pass",
+    "whole_layer_incapable_compute_shares",
 ]

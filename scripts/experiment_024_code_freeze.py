@@ -1,4 +1,4 @@
-"""Run complete repaired E024 Stage A."""
+"""Freeze repaired E024 code after calibration and before performance."""
 
 from __future__ import annotations
 
@@ -12,14 +12,24 @@ if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
 from swarm_inference.experiments.experiment_024.authoritative_runner import (  # noqa: E402
-    run_stage_a_phase,
+    run_code_freeze,
 )
 
 
 def main() -> int:
-    result = run_stage_a_phase(REPO_ROOT)
-    print(json.dumps({key: value for key, value in result.items() if key != "authoritative_rows"}, indent=2))
+    result = run_code_freeze(REPO_ROOT)
+    print(
+        json.dumps(
+            {
+                "status": result["status"],
+                "file_count": result["file_count"],
+                "freeze_sha256": result["freeze_sha256"],
+            },
+            indent=2,
+        )
+    )
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
