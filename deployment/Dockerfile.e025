@@ -1,0 +1,78 @@
+# syntax=docker/dockerfile:1.7
+FROM --platform=linux/amd64 nvidia/cuda:13.0.1-devel-ubuntu24.04@sha256:7d2f6a8c2071d911524f95061a0db363e24d27aa51ec831fcccf9e76eb72bc92 AS native
+
+WORKDIR /build
+COPY third_party/colibri/c/backend_cuda.cu third_party/colibri/c/backend_cuda.h third_party/colibri/c/backend_gpu_compat.h ./colibri/
+COPY src/swarm_inference/experiments/experiment_019/native/kda_shard.cu ./kda_shard.cu
+COPY src/swarm_inference/experiments/experiment_020/native/grouped_top16.cu ./grouped_top16.cu
+RUN mkdir -p /out \
+    && nvcc -O3 -std=c++17 \
+       -gencode=arch=compute_86,code=sm_86 \
+       -gencode=arch=compute_89,code=sm_89 \
+       -gencode=arch=compute_120,code=sm_120 \
+       -gencode=arch=compute_120,code=compute_120 \
+       -DCOLI_CUDA_MIN_CC=86 -DCOLI_CUDA_HAS_FORWARD_PTX=1 \
+       -Xcompiler=-fPIC -shared ./colibri/backend_cuda.cu \
+       -o /out/libcoli_cuda-consumer.so \
+    && nvcc -O3 -std=c++17 \
+       -gencode=arch=compute_86,code=sm_86 \
+       -gencode=arch=compute_89,code=sm_89 \
+       -gencode=arch=compute_120,code=sm_120 \
+       -gencode=arch=compute_120,code=compute_120 \
+       -Xcompiler=-fPIC -shared ./kda_shard.cu \
+       -o /out/libe019_kda_shard-consumer.so \
+    && nvcc -O3 -std=c++17 \
+       -gencode=arch=compute_86,code=sm_86 \
+       -gencode=arch=compute_89,code=sm_89 \
+       -gencode=arch=compute_120,code=sm_120 \
+       -gencode=arch=compute_120,code=compute_120 \
+       -Xcompiler=-fPIC -shared ./grouped_top16.cu \
+       -o /out/libe020_grouped_top16-consumer.so \
+    && cuobjdump --list-elf /out/libcoli_cuda-consumer.so \
+    && cuobjdump --list-elf /out/libe019_kda_shard-consumer.so \
+    && cuobjdump --list-elf /out/libe020_grouped_top16-consumer.so \
+    && sha256sum /out/*.so > /out/SHA256SUMS
+
+FROM --platform=linux/amd64 nvidia/cuda:13.0.1-runtime-ubuntu24.04@sha256:c3fde347d52d578c84fd644bc177bc7ec333feaf11550d990da4084d7612e4c7
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG E025_SOURCE_ID=unfrozen
+LABEL org.opencontainers.image.title="Swarm Inference Lab E025 Kimi K3 consumer worker" \
+      org.opencontainers.image.revision="${E025_SOURCE_ID}" \
+      org.opencontainers.image.description="Pinned physical consumer-GPU worker; no model weights or secrets embedded"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl procps python3.12 python3.12-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV VIRTUAL_ENV=/opt/swarm-venv \
+    UV_PROJECT_ENVIRONMENT=/opt/swarm-venv \
+    PATH=/opt/swarm-venv/bin:$PATH \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    SWARM_COLI_CUDA_LIBRARY=/opt/swarm/native/libcoli_cuda-consumer.so \
+    SWARM_KDA_SHARD_LIBRARY=/opt/swarm/native/libe019_kda_shard-consumer.so \
+    SWARM_GROUPED_EXPERT_LIBRARY=/opt/swarm/native/libe020_grouped_top16-consumer.so
+
+RUN python3.12 -m venv "$VIRTUAL_ENV" \
+    && pip install --no-cache-dir uv==0.8.12
+
+WORKDIR /opt/swarm
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+COPY deployment/e025_context /opt/swarm/e025
+COPY --from=native /out/ /opt/swarm/native/
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --extra cuda
+
+RUN useradd --create-home --uid 10001 swarm \
+    && mkdir -p /var/lib/swarm/e025 \
+    && chown -R swarm:swarm /opt/swarm /var/lib/swarm
+USER swarm
+
+EXPOSE 42525-42532/tcp
+HEALTHCHECK --interval=10s --timeout=5s --retries=6 \
+  CMD nvidia-smi --query-gpu=name,memory.total --format=csv,noheader \
+      && python -c "import ctypes, torch; ctypes.CDLL('/opt/swarm/native/libcoli_cuda-consumer.so'); assert torch.cuda.is_available()" \
+      || exit 1
+
+ENTRYPOINT ["python", "-m", "swarm_inference.experiments.experiment_025.supervisor"]

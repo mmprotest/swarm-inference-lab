@@ -11,13 +11,13 @@ SOURCE_ROOT = REPO_ROOT / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from swarm_inference.experiments.experiment_024.authoritative_runner import (  # noqa: E402
-    run_two_token_phase,
+from swarm_inference.experiments.experiment_024.correctness import (  # noqa: E402
+    run_fixed_anchor_two_token_correctness,
 )
 
 
 def main() -> int:
-    result = run_two_token_phase(REPO_ROOT)
+    result = run_fixed_anchor_two_token_correctness(REPO_ROOT)
     print(
         json.dumps(
             {

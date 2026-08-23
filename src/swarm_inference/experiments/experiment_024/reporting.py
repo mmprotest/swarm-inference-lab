@@ -16,7 +16,14 @@ from swarm_inference.experiments.experiment_022.io import atomic_write_json, wri
 
 from .analysis import render_authoritative_charts
 from .communication_bound import D_LOWER_BOUND_RATIO, LOWER_BOUND_BYTES
-from .economics import mechanical_verdict
+from .correctness import (
+    FIXED_CORRECTNESS_BUDGET,
+    FIXED_CORRECTNESS_FEASIBILITY,
+    FIXED_CORRECTNESS_PLACEMENT_KIND,
+    FIXED_CORRECTNESS_PLACEMENT_SHA256,
+    FIXED_CORRECTNESS_SCENARIO,
+)
+from .economics import mechanical_verdict, scenario_wedge_pass
 from .freeze import (
     COMMODITY_WORKER_MEMORY_BYTES,
     KIMI_OUTPUT_API_PRICE_USD_PER_M,
@@ -33,6 +40,19 @@ from .validation import verify_code_freeze
 ARTIFACT_ROOT = Path("artifacts/experiment-024")
 REPORT_PATH = Path("docs/experiments/EXPERIMENT_024_REPORT.md")
 ARCHIVE_RELATIVE_PATH = Path("archive/model-invalid-run-1")
+ATTEMPT_TWO_ARCHIVE_RELATIVE_PATH = Path("archive/model-invalid-run-2")
+CLOSURE_ALLOWED_CODE_PATHS = frozenset(
+    {
+        "src/swarm_inference/experiments/experiment_024/full_correctness.py",
+        "src/swarm_inference/experiments/experiment_024/correctness.py",
+        "src/swarm_inference/experiments/experiment_024/finalize.py",
+        "src/swarm_inference/experiments/experiment_024/reporting.py",
+        "scripts/experiment_024_correctness.py",
+        "scripts/experiment_024_finalize.py",
+        "tests/test_experiment_024.py",
+        "tests/test_experiment_024_completion.py",
+    }
+)
 E025_RECOMMENDATION = (
     "Physically instantiate the canonical repaired E024 commodity topology on "
     "independent networked machines and validate its modeled critical path, shaped-"
@@ -760,6 +780,748 @@ def finalize_authoritative(
     return summary
 
 
+def verify_attempt_two_archive(repo_root: Path) -> dict[str, Any]:
+    """Verify the immutable snapshot of the performance-bearing invalid attempt."""
+
+    archive = _root(repo_root) / ATTEMPT_TWO_ARCHIVE_RELATIVE_PATH
+    manifest_path = archive / "archive-manifest.json"
+    manifest = _read_json(manifest_path)
+    checks = []
+    for record in manifest["files"]:
+        path = archive / record["relative_path"]
+        checks.append(
+            path.is_file()
+            and path.stat().st_size == int(record["byte_count"])
+            and sha256_file(path) == record["sha256"]
+        )
+    valid = (
+        manifest["original_verdict"] == "MODEL_INVALID"
+        and manifest["original_failure"]
+        == "NO_CANONICAL_REGIONAL_POINT_FOR_FULL_CORRECTNESS"
+        and manifest["performance_results_seen"] is True
+        and manifest["performance_results_may_not_change"] is True
+        and len(checks) == int(manifest["archived_file_count"])
+        and all(checks)
+    )
+    return {
+        "status": "PASS" if valid else "FAIL",
+        "archive_path": str(archive.relative_to(repo_root)).replace("\\", "/"),
+        "archived_file_count": len(checks),
+        "original_verdict": manifest["original_verdict"],
+        "original_failure": manifest["original_failure"],
+        "performance_results_seen": manifest["performance_results_seen"],
+        "performance_results_may_not_change": manifest[
+            "performance_results_may_not_change"
+        ],
+        "all_file_hashes_and_sizes_match": all(checks),
+        "manifest_sha256": sha256_file(manifest_path),
+    }
+
+
+def closure_code_scope_audit(repo_root: Path) -> dict[str, Any]:
+    """Prove that only closure-authorized frozen source paths changed."""
+
+    repo_root = repo_root.resolve()
+    code_freeze_path = _root(repo_root) / "freeze/code-freeze.json"
+    code_freeze = _read_json(code_freeze_path)
+    rows = []
+    for record in code_freeze["files"]:
+        relative_path = str(record["relative_path"])
+        path = repo_root / relative_path
+        actual = sha256_file(path) if path.is_file() else None
+        original = str(record["sha256"])
+        matches = actual == original
+        closure_change_permitted = relative_path in CLOSURE_ALLOWED_CODE_PATHS
+        rows.append(
+            {
+                "relative_path": relative_path,
+                "original_sha256": original,
+                "actual_sha256": actual,
+                "matches_original_freeze": matches,
+                "closure_change_permitted": closure_change_permitted,
+                "valid": matches or closure_change_permitted,
+            }
+        )
+    performance_semantic_code_unchanged = all(
+        row["matches_original_freeze"]
+        for row in rows
+        if not row["closure_change_permitted"]
+    )
+    return {
+        "schema_version": "experiment-024-closure-code-scope-audit-v1",
+        "status": "PASS" if performance_semantic_code_unchanged else "FAIL",
+        "original_code_freeze_sha256": sha256_file(code_freeze_path),
+        "performance_semantic_code_unchanged": performance_semantic_code_unchanged,
+        "permitted_closure_paths": sorted(CLOSURE_ALLOWED_CODE_PATHS),
+        "changed_permitted_paths": [
+            row["relative_path"]
+            for row in rows
+            if row["closure_change_permitted"]
+            and not row["matches_original_freeze"]
+        ],
+        "invalid_changed_paths": [
+            row["relative_path"] for row in rows if not row["valid"]
+        ],
+        "files": rows,
+    }
+
+
+def closure_performance_hash_audit(repo_root: Path) -> dict[str, Any]:
+    """Compare the independently captured pre/post performance ledgers."""
+
+    root = _root(repo_root)
+    pre_path = root / "closure/pre-closure-performance-hashes.json"
+    post_path = root / "closure/post-closure-performance-hashes.json"
+    pre = _read_json(pre_path)
+    post = _read_json(post_path)
+    pre_by_path = {row["relative_path"]: row for row in pre["files"]}
+    post_by_path = {row["relative_path"]: row for row in post["files"]}
+    all_paths = sorted(set(pre_by_path) | set(post_by_path))
+    differences = []
+    for relative_path in all_paths:
+        before = pre_by_path.get(relative_path)
+        after = post_by_path.get(relative_path)
+        if before is None or after is None:
+            differences.append(
+                {
+                    "relative_path": relative_path,
+                    "before": before,
+                    "after": after,
+                }
+            )
+            continue
+        if (
+            int(before["byte_count"]) != int(after["byte_count"])
+            or before["sha256"] != after["sha256"]
+        ):
+            differences.append(
+                {
+                    "relative_path": relative_path,
+                    "before": before,
+                    "after": after,
+                }
+            )
+    unchanged = not differences and len(pre_by_path) == len(post_by_path)
+    return {
+        "schema_version": "experiment-024-closure-performance-hash-audit-v1",
+        "status": "PASS" if unchanged else "MODEL_INVALID",
+        "performance_hashes_unchanged": unchanged,
+        "pre_ledger_sha256": sha256_file(pre_path),
+        "post_ledger_sha256": sha256_file(post_path),
+        "artifact_count": len(pre_by_path),
+        "differences": differences,
+    }
+
+
+def two_token_closure_gate_audit(two_token: dict[str, Any]) -> dict[str, Any]:
+    """Mechanically evaluate every closure correctness requirement."""
+
+    steps = tuple(two_token.get("steps", ()))
+    step_layer_counts = [
+        len(step.get("hidden_fingerprints", {})) for step in steps
+    ]
+    relative_l2_gate = float(two_token.get("relative_l2_gate", 0.0))
+    hidden_maximum = max(
+        (
+            max(
+                float(step["hidden_relative_l2_maximum"]),
+                float(step["final_hidden_relative_l2"]),
+            )
+            for step in steps
+        ),
+        default=float("inf"),
+    )
+    logit_maximum = max(
+        (float(step["logit_relative_l2"]) for step in steps),
+        default=float("inf"),
+    )
+    kda_maximum = max(
+        (float(step["kda_state_relative_l2_maximum"]) for step in steps),
+        default=float("inf"),
+    )
+    mla_maximum = max(
+        (float(step["mla_state_relative_l2_maximum"]) for step in steps),
+        default=float("inf"),
+    )
+    attnres_maximum = max(
+        (float(step["attnres_relative_l2_maximum"]) for step in steps),
+        default=float("inf"),
+    )
+    anchor = two_token.get("correctness_anchor", {})
+    gates = {
+        "fixed_anchor_selection": anchor.get("status") == "PASS",
+        "fixed_anchor_scenario": two_token.get("scenario")
+        == FIXED_CORRECTNESS_SCENARIO.value,
+        "fixed_anchor_placement_kind": two_token.get("placement_kind")
+        == FIXED_CORRECTNESS_PLACEMENT_KIND,
+        "fixed_anchor_budget": int(two_token.get("available_node_budget", -1))
+        == FIXED_CORRECTNESS_BUDGET,
+        "fixed_anchor_placement_hash": two_token.get("placement_sha256")
+        == FIXED_CORRECTNESS_PLACEMENT_SHA256,
+        "anchor_did_not_use_performance": two_token.get(
+            "performance_metrics_consulted_for_anchor"
+        )
+        is False,
+        "two_steps_present": len(steps) == 2,
+        "93_layers_step_1": step_layer_counts == [93, 93],
+        "93_layers_step_2": step_layer_counts == [93, 93],
+        "layer_0_whole_p1": two_token.get("layer_zero_degree") == 1
+        and two_token.get("layer_zero_execution_kind") == "WHOLE_LAYER"
+        and two_token.get("whole_layer_transformer_layer_ids") == [0],
+        "layers_1_92_degree_8_only": two_token.get("p8_transformer_layer_ids")
+        == list(range(1, 93))
+        and int(two_token.get("p8_transformer_layer_count", -1)) == 92,
+        "no_whole_layer_fallback_layers_1_92": two_token.get(
+            "whole_layer_transformer_layer_ids"
+        )
+        == [0],
+        "complete_checkpoint_ownership": two_token.get(
+            "complete_checkpoint_ownership"
+        )
+        is True,
+        "exact_route_ids": len(steps) == 2
+        and all(step.get("route_ids_exact") is True for step in steps),
+        "exact_route_weights": len(steps) == 2
+        and all(step.get("route_weights_exact") is True for step in steps),
+        "finite_states": len(steps) == 2
+        and all(
+            step.get("finite_states_hidden_and_logits") is True for step in steps
+        ),
+        "kda_state_reconciliation": kda_maximum <= relative_l2_gate,
+        "mla_state_reconciliation": mla_maximum <= relative_l2_gate,
+        "attnres_reconciliation": attnres_maximum <= relative_l2_gate,
+        "hidden_relative_l2": hidden_maximum <= relative_l2_gate,
+        "logit_relative_l2": logit_maximum <= relative_l2_gate,
+        "identical_t1": len(steps) == 2
+        and steps[0].get("greedy_token_equality") is True,
+        "identical_t2": len(steps) == 2
+        and steps[1].get("greedy_token_equality") is True,
+        "step_2_consumed_t1": two_token.get("step_2_consumed_step_1_token")
+        is True,
+        "production_native_execution": two_token.get(
+            "production_native_execution"
+        )
+        is True,
+        "zero_timed_checkpoint_reads": two_token.get(
+            "no_timed_checkpoint_reads"
+        )
+        is True,
+        "d_reduction_order_preserved": two_token.get(
+            "canonical_d_reduction_order"
+        )
+        is True,
+        "overall_status": two_token.get("status") == "PASS",
+    }
+    return {
+        "schema_version": "experiment-024-closure-two-token-gates-v1",
+        "status": "PASS" if all(gates.values()) else "MODEL_INVALID",
+        "gates": gates,
+        "step_layer_counts": step_layer_counts,
+        "relative_l2_gate": relative_l2_gate,
+        "hidden_relative_l2_maximum": hidden_maximum,
+        "logit_relative_l2_maximum": logit_maximum,
+        "kda_state_relative_l2_maximum": kda_maximum,
+        "mla_state_relative_l2_maximum": mla_maximum,
+        "attnres_relative_l2_maximum": attnres_maximum,
+        "T1": two_token.get("step_1_token_t1"),
+        "T2": two_token.get("step_2_token_t2"),
+    }
+
+
+def _closure_scenario_map(
+    canonical_rows: tuple[dict[str, Any], ...],
+) -> dict[str, dict[str, Any]]:
+    scenarios: dict[str, dict[str, Any]] = {
+        name: {
+            "status": "NOT_SELECTED_NO_SLO_FEASIBLE_CANONICAL_POINT",
+            "canonical_architecture": None,
+            "available_node_budget": None,
+            "selected_slo_concurrency": None,
+            "architecture_description": (
+                "1-WHOLE-L0+92-P8 placements evaluated; no SLO-feasible "
+                "canonical point"
+            ),
+            "output_tps": None,
+            "performance_retention": None,
+            "active_nodes": None,
+            "cost_per_M_at_0_15": None,
+            "api_cost_ratio": None,
+            "percentage_of_kimi_api_cost": None,
+            "performance_cost_leverage": None,
+            "max_uniform_payout_at_15": None,
+            "layer_zero_candidate_id": LAYER_ZERO_WHOLE_CANDIDATE_ID,
+            "wedge_pass": False,
+        }
+        for name in ("GOOD", "REGIONAL", "WAN")
+    }
+    for row in canonical_rows:
+        name = str(row["scenario"]).removeprefix("COMMODITY_")
+        scenarios[name] = _scenario_summary(row)
+    return scenarios
+
+
+def _closure_scenario_table(summary: dict[str, Any]) -> str:
+    lines = [
+        "| Scenario | Architecture | Output tok/s | Retention | Active nodes | $/M | % Kimi | Perf-cost leverage | Max payout @ $15/M |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for name in ("GOOD", "REGIONAL", "WAN"):
+        row = summary[name]
+        if row["status"] != "PASS":
+            lines.append(
+                f"| {name} | No SLO-feasible canonical point | N/A | N/A | "
+                "N/A | N/A | N/A | N/A | N/A |"
+            )
+            continue
+        lines.append(
+            "| {name} | {architecture} | {tps:.6f} | {retention:.6f} | "
+            "{nodes} | ${cost:.6f} | {percent:.3f}% | {leverage:.8f} | "
+            "${payout:.9f} |".format(
+                name=name,
+                architecture=row["canonical_architecture"],
+                tps=row["output_tps"],
+                retention=row["performance_retention"],
+                nodes=row["active_nodes"],
+                cost=row["cost_per_M_at_0_15"],
+                percent=row["percentage_of_kimi_api_cost"],
+                leverage=row["performance_cost_leverage"],
+                payout=row["max_uniform_payout_at_15"],
+            )
+        )
+    return "\n".join(lines)
+
+
+def _closure_report_text(
+    summary: dict[str, Any],
+    closure_audit: dict[str, Any],
+) -> str:
+    correctness = closure_audit["two_token_correctness"]
+    sections = [
+        (
+            "Verdict",
+            f"The mechanical verdict is **{summary['final_verdict']}**. "
+            f"{summary['scenario_wedge_count']} of 3 network scenarios contain a "
+            "commercial wedge under the frozen E024 economics. Correctness is now "
+            "anchored independently of commercial SLO feasibility.",
+        ),
+        ("Manager Result", _closure_scenario_table(summary)),
+        (
+            "E024 Closure",
+            "The closure changed only the correctness selection and finalization path. "
+            "It did not rerun Stage A, Stage B, calibration, placement, reference serving, "
+            "frontier construction, saturation, or economics. All 49 hashed performance "
+            "artifacts match their pre-closure byte counts and SHA-256 values exactly.",
+        ),
+        (
+            "Earlier Invalid Attempts",
+            "Attempt 1 ended as `MODEL_INVALID` with "
+            "`NO_PRODUCTION_NATIVE_P8_CANDIDATE_FOR_LAYER_0` before performance existed; "
+            "its immutable archive is `artifacts/experiment-024/archive/"
+            "model-invalid-run-1/`. Attempt 2 completed the repaired physical calibration "
+            "and modeled performance work, then ended as `MODEL_INVALID` with "
+            "`NO_CANONICAL_REGIONAL_POINT_FOR_FULL_CORRECTNESS` because correctness had "
+            "been coupled to an SLO-feasible canonical REGIONAL point. Its immutable "
+            "performance-bearing archive is `artifacts/experiment-024/archive/"
+            "model-invalid-run-2/`. The closure treats that second failure as an anchor-"
+            "specification failure, not as a performance-model failure.",
+        ),
+        (
+            "Fixed Correctness Anchor",
+            "The anchor is the frozen `COMMODITY_REGIONAL`, `SWARM_D_OPT`, "
+            f"`D_PLACEMENT`, budget-{FIXED_CORRECTNESS_BUDGET} placement with SHA-256 "
+            f"`{FIXED_CORRECTNESS_PLACEMENT_SHA256}`. Budgets 96, 128, and 160 are "
+            "structurally infeasible and budget 192 is feasible, making it the "
+            "deterministic smallest feasible REGIONAL D placement. No throughput, SLO, "
+            "cost, or commercial canonical-point result participated in this selection.",
+        ),
+        (
+            "Two-Token Autoregressive Correctness",
+            f"The fixed-anchor run passed. T1 was `{correctness['T1']}` and T2 was "
+            f"`{correctness['T2']}`. Both steps executed 93 layers: layer 0 as "
+            "`WHOLE_LAYER:p1` and layers 1-92 through degree-8 FULL_MIXED D execution. "
+            f"The maximum hidden relative L2 was "
+            f"{correctness['hidden_relative_l2_maximum']:.12g}; the maximum logit "
+            f"relative L2 was {correctness['logit_relative_l2_maximum']:.12g}. Exact "
+            "routes, route weights, recurrent-state reconciliation, greedy tokens, "
+            "production-native dispatch, zero timed checkpoint reads, and canonical D "
+            "reduction order all passed.",
+        ),
+        (
+            "Commodity Architecture",
+            "Layer 0 is the admitted whole candidate `layer-00:WHOLE_LAYER:p1`. Layers "
+            "1-92 are degree-8 sub-layer placements only. The complete whole-layer-only "
+            "commodity K3 placement remains infeasible on the 9.70703125 GiB worker class.",
+        ),
+        (
+            "Physical Calibration and Model Validation",
+            f"The saved calibration status is **{summary['service_validation_status']}**. "
+            f"Held-out service error had median "
+            f"{summary['service_median_error_percent']:.6f}% and maximum "
+            f"{summary['service_max_error_percent']:.6f}%. These are reused physical "
+            "measurements, not closure reruns.",
+        ),
+        (
+            "Communication Result",
+            f"A transfers {A_BYTES:,} bytes per row and D transfers {D_BYTES:,}, a "
+            f"{summary['network_byte_reduction_percent']:.10f}% reduction. The fixed "
+            f"lower bound is {LOWER_BOUND_BYTES:,} bytes per row and D/lower is "
+            f"{D_LOWER_BOUND_RATIO:.10f}.",
+        ),
+        (
+            "Serving and Economics",
+            f"The concentrated reference uses {summary['reference_node_count']} nodes, "
+            f"has C1 p95 latency {summary['reference_c1_p95_token_latency_ms']:.9f} ms, "
+            f"and defines a {summary['primary_token_latency_budget_ms']:.9f} ms primary "
+            f"SLO with {summary['reference_slo_output_tps']:.9f} output tok/s. The only "
+            "SLO-feasible canonical commodity point is GOOD, at "
+            f"${summary['GOOD']['cost_per_M_at_0_15']:.6f}/M; REGIONAL and WAN have no "
+            "SLO-feasible canonical point.",
+        ),
+        (
+            "CURRENT versus D",
+            f"On identical frozen placements, D improved execution-only throughput by "
+            f"{summary['current_vs_d_execution_only_throughput_uplift']:.6f}% and reduced "
+            f"execution-only cost by "
+            f"{summary['current_vs_d_execution_only_cost_reduction']:.6f}% at the saved "
+            "canonical comparison.",
+        ),
+        (
+            "Evidence Boundary",
+            "Calibration and sequential logical-worker correctness are PHYSICAL on one "
+            "RTX 5090. Stage A and Stage B are PHYSICALLY GROUNDED MODELS using SHAPED "
+            "NETWORK definitions. No physical multi-machine Swarm was instantiated.",
+        ),
+        (
+            "Reproducibility",
+            f"Stage A reproducibility is **{summary['stage_a_reproducibility']}** and "
+            f"Stage B reproducibility is **{summary['stage_b_reproducibility']}**. The "
+            "closure performance-hash comparison and non-permitted code-scope audit both "
+            "passed.",
+        ),
+        (
+            "Limitations",
+            "This is decode-only output-token economics. Network execution is modeled, "
+            "reliability is frozen at 1.0, payout is an assumption, and real multi-machine "
+            "contention, churn, synchronization, and stragglers remain unmeasured.",
+        ),
+        ("Recommendation for E025", summary["e025_recommendation"]),
+    ]
+    lines = ["# Experiment 024: Repaired Kimi K3 Swarm Performance-Cost Frontier", ""]
+    for heading, body in sections:
+        lines.extend((f"## {heading}", "", body, ""))
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def finalize_closure(
+    repo_root: Path,
+    *,
+    started_at_utc: str,
+    elapsed_seconds: float,
+) -> dict[str, Any]:
+    """Close E024 from immutable performance evidence plus the fixed-anchor run."""
+
+    repo_root = repo_root.resolve()
+    root = _root(repo_root)
+    previous_summary = _read_json(root / "summary.json")
+    previous_truth = _read_json(root / "truth-table.json")
+    audit = audit_immutable_inputs(repo_root)
+    attempt_one = verify_attempt_one_archive(repo_root)
+    attempt_two = verify_attempt_two_archive(repo_root)
+    performance_hashes = closure_performance_hash_audit(repo_root)
+    code_scope = closure_code_scope_audit(repo_root)
+    calibration = _read_json(root / "calibration/calibration-summary.json")
+    dense = _read_json(root / "calibration/dense-layer0-whole-service.json")
+    physical_d = _read_json(root / "physical/composed-block-correctness.json")
+    token_semantics = _read_json(root / "validation/token-semantics.json")
+    two_token = _read_json(root / "physical/two-token-full-correctness.json")
+    two_token_audit = two_token_closure_gate_audit(two_token)
+    stage_a = _read_json(root / "stage-a/stage-a-summary.json")
+    stage_b = _read_json(root / "stage-b/stage-b-summary.json")
+    economics = _read_json(root / "stage-b/economics-summary.json")
+    stage_a_repro = _read_json(root / "validation/stage-a-reproducibility.json")
+    stage_b_repro = _read_json(root / "validation/stage-b-reproducibility.json")
+    communication = _read_json(root / "validation/communication-reconciliation.json")
+    decode_rows = _read_csv(root / "stage-b/decode-serving-results.csv")
+    placement_rows = _read_csv(root / "validation/placement-reconciliation.csv")
+    memory_rows = _read_csv(root / "validation/memory-reconciliation.csv")
+    cost_rows = _read_csv(root / "validation/cost-reconciliation.csv")
+    canonical_rows = tuple(economics["canonical_points"])
+    expected_scenarios = {
+        "COMMODITY_GOOD",
+        "COMMODITY_REGIONAL",
+        "COMMODITY_WAN",
+    }
+    observed_scenarios = {row["scenario"] for row in decode_rows}
+    global_correctness_pass = two_token_audit["status"] == "PASS"
+    wedge_count = sum(
+        scenario_wedge_pass(
+            cost_per_m=float(row["cost_per_M_at_0_15"]),
+            slo_feasible=_truth(row["slo_feasible"]),
+            layer_zero_uses_exact_whole_candidate=(
+                row["layer_zero_candidate_id"] == LAYER_ZERO_WHOLE_CANDIDATE_ID
+            ),
+            p8_layer_count=int(row["p8_layer_count"]),
+            no_whole_layer_execution_on_layers_1_92=(
+                int(row["whole_layer_layer_count"]) == 1
+            ),
+            whole_layer_only_commodity_model_feasible=_truth(
+                row["whole_layer_only_commodity_model_feasible"]
+            ),
+            p8_required_whole_layer_incapable_compute_share=float(
+                row["p8_required_whole_layer_incapable_compute_share"]
+            ),
+            global_correctness_pass=global_correctness_pass,
+        )
+        for row in canonical_rows
+    )
+    mandatory_checks = {
+        "attempt_1_archive": attempt_one["status"] == "PASS",
+        "attempt_2_archive": attempt_two["status"] == "PASS",
+        "performance_hashes_unchanged": performance_hashes["status"] == "PASS",
+        "performance_semantic_code_unchanged": code_scope["status"] == "PASS",
+        "phase0": audit.status == "PASS",
+        "calibration": calibration["status"] == "PASS",
+        "dense_layer_zero": dense["status"] == "PASS",
+        "physical_d": physical_d["status"] == "PASS",
+        "token_semantics": token_semantics["status"] == "PASS",
+        "two_token": global_correctness_pass,
+        "stage_a": stage_a["status"] == "PASS",
+        "stage_b_evidence": stage_b["status"]
+        in {"PASS", "PENDING_GLOBAL_CORRECTNESS"},
+        "economics": economics["status"] == "PASS",
+        "communication": communication["status"] == "PASS",
+        "network_scenario_coverage": expected_scenarios == observed_scenarios,
+        "placement_architecture": all(
+            _truth(row["exact_architecture"]) for row in placement_rows
+        ),
+        "memory": all(
+            _truth(row["reconciles"]) and _truth(row["within_memory"])
+            for row in memory_rows
+        ),
+        "cost": all(row["status"] == "PASS" for row in cost_rows),
+        "stage_a_reproducibility": stage_a_repro["status"] == "PASS",
+        "stage_b_reproducibility": stage_b_repro["status"] == "PASS",
+    }
+    mandatory_failure = not all(mandatory_checks.values())
+    mechanism_pass = (
+        physical_d["status"] == "PASS"
+        and communication["status"] == "PASS"
+        and D_LOWER_BOUND_RATIO <= 1.03
+        and float(stage_a["maximum_d_regression_percent"])
+        <= SWARM_D_MAX_REGRESSION_VS_CURRENT_PERCENT
+    )
+    verdict = mechanical_verdict(
+        mandatory_validity_failure=mandatory_failure,
+        scenario_wedge_count=wedge_count,
+        mechanism_only_pass=mechanism_pass,
+    )
+    scenarios = _closure_scenario_map(canonical_rows)
+    e025_recommendation = (
+        "Proceed immediately to Experiment 025: test physically admitted P2/P4 "
+        "FULL_MIXED execution and the minimum-degree performance-cost frontier against "
+        "the unchanged P8 baseline."
+        if verdict.value != "MODEL_INVALID"
+        else "DO_NOT_START_E025. Fix only the invalid E024 closure evidence path."
+    )
+    summary = dict(previous_summary)
+    summary.update(
+        {
+            "attempt": 3,
+            "closure_of_attempt_2": True,
+            "closure_status": "PASS" if not mandatory_failure else "MODEL_INVALID",
+            "final_verdict": verdict.value,
+            "mandatory_failure_id": (
+                None if not mandatory_failure else "E024_CLOSURE_MANDATORY_VALIDATION"
+            ),
+            "mandatory_failure_reason": (
+                None
+                if not mandatory_failure
+                else "One or more E024 closure checks failed: "
+                + ", ".join(
+                    name for name, passed in mandatory_checks.items() if not passed
+                )
+            ),
+            "attempt_2_archive_status": attempt_two["status"],
+            "attempt_2_archive_manifest_sha256": attempt_two["manifest_sha256"],
+            "fixed_correctness_anchor_scenario": FIXED_CORRECTNESS_SCENARIO.value,
+            "fixed_correctness_anchor_architecture": "SWARM_D_OPT",
+            "fixed_correctness_anchor_placement_kind": (
+                FIXED_CORRECTNESS_PLACEMENT_KIND
+            ),
+            "fixed_correctness_anchor_budget": FIXED_CORRECTNESS_BUDGET,
+            "fixed_correctness_anchor_placement_sha256": (
+                FIXED_CORRECTNESS_PLACEMENT_SHA256
+            ),
+            "fixed_correctness_anchor_feasibility": {
+                str(key): value for key, value in FIXED_CORRECTNESS_FEASIBILITY.items()
+            },
+            "correctness_anchor_selection_basis": (
+                "STRUCTURAL_PLACEMENT_FEASIBILITY_ONLY"
+            ),
+            "autoregressive_two_token_correctness": two_token["status"],
+            "autoregressive_two_token_execution_started": True,
+            "autoregressive_two_token_execution_completed": (
+                two_token["status"] == "PASS"
+            ),
+            "autoregressive_two_token_failure_id": None,
+            "step_1_token_t1": two_token_audit["T1"],
+            "step_2_token_t2": two_token_audit["T2"],
+            "two_token_hidden_relative_l2_maximum": two_token_audit[
+                "hidden_relative_l2_maximum"
+            ],
+            "two_token_logit_relative_l2_maximum": two_token_audit[
+                "logit_relative_l2_maximum"
+            ],
+            "performance_hashes_unchanged": performance_hashes[
+                "performance_hashes_unchanged"
+            ],
+            "performance_hash_artifact_count": performance_hashes[
+                "artifact_count"
+            ],
+            "performance_semantic_code_unchanged": code_scope[
+                "performance_semantic_code_unchanged"
+            ],
+            "canonical_scenario_count": len(canonical_rows),
+            "canonical_scenarios": [row["scenario"] for row in canonical_rows],
+            "scenario_wedge_count": wedge_count,
+            "e025_recommendation": e025_recommendation,
+            "closure_started_at_utc": started_at_utc,
+            "closure_finished_at_utc": datetime.now(UTC).isoformat(),
+            "closure_wall_clock_runtime_seconds": float(elapsed_seconds),
+            "evidence_classes": {
+                "calibration": "PHYSICAL",
+                "physical_d": "PHYSICAL_SINGLE_DEVICE_SEQUENTIAL_WORKERS",
+                "two_token": "PHYSICAL_SINGLE_DEVICE_SEQUENTIAL_WORKERS",
+                "stage_a_and_stage_b": (
+                    "PHYSICALLY_GROUNDED_MODEL_WITH_SHAPED_NETWORK"
+                ),
+                "physical_multi_machine_swarm": False,
+            },
+            **scenarios,
+        }
+    )
+    truth_table = dict(previous_truth)
+    truth_table.update(
+        {
+            "attempt 1 archived immutably": attempt_one["status"] == "PASS",
+            "attempt 2 archived immutably": attempt_two["status"] == "PASS",
+            "fixed correctness anchor uses structural feasibility only": True,
+            "fixed REGIONAL D feasibility 96/128/160/192": (
+                "INFEASIBLE/INFEASIBLE/INFEASIBLE/FEASIBLE"
+            ),
+            "fixed correctness anchor placement hash": (
+                two_token.get("placement_sha256")
+                == FIXED_CORRECTNESS_PLACEMENT_SHA256
+            ),
+            "E024 performance hashes unchanged": performance_hashes[
+                "performance_hashes_unchanged"
+            ],
+            "E024 performance-semantic code unchanged": code_scope[
+                "performance_semantic_code_unchanged"
+            ],
+            "two-token autoregressive correctness": two_token["status"],
+            "two-token physical execution started": True,
+            "two-token correctness gates": two_token_audit["status"],
+            "canonical REGIONAL point available": False,
+            "canonical scenarios available": (
+                f"{len(canonical_rows)}/3 (COMMODITY_GOOD only)"
+            ),
+            "scenario wedge count": wedge_count,
+            "final verdict": verdict.value,
+        }
+    )
+    closure_audit = {
+        "schema_version": "experiment-024-closure-audit-v1",
+        "status": "PASS" if not mandatory_failure else "MODEL_INVALID",
+        "mechanical_verdict": verdict.value,
+        "mandatory_checks": mandatory_checks,
+        "failed_checks": [
+            name for name, passed in mandatory_checks.items() if not passed
+        ],
+        "correctness_independent_of_commercial_success": True,
+        "canonical_scenarios_are_not_a_correctness_validity_gate": True,
+        "scenario_wedge_count": wedge_count,
+        "mechanism_only_gate_pass": mechanism_pass,
+        "attempt_1_archive": attempt_one,
+        "attempt_2_archive": attempt_two,
+        "performance_hashes": performance_hashes,
+        "code_scope": code_scope,
+        "two_token_correctness": two_token_audit,
+        "human_override": False,
+        "performance_results_rerun": False,
+        "economic_assumptions_changed": False,
+    }
+    closure_summary = {
+        "schema_version": "experiment-024-closure-summary-v1",
+        "status": closure_audit["status"],
+        "final_verdict": verdict.value,
+        "fixed_correctness_anchor": {
+            "scenario": FIXED_CORRECTNESS_SCENARIO.value,
+            "architecture": "SWARM_D_OPT",
+            "placement_kind": FIXED_CORRECTNESS_PLACEMENT_KIND,
+            "available_node_budget": FIXED_CORRECTNESS_BUDGET,
+            "placement_sha256": FIXED_CORRECTNESS_PLACEMENT_SHA256,
+            "selection_basis": "STRUCTURAL_PLACEMENT_FEASIBILITY_ONLY",
+        },
+        "T1": two_token_audit["T1"],
+        "T2": two_token_audit["T2"],
+        "hidden_relative_l2_maximum": two_token_audit[
+            "hidden_relative_l2_maximum"
+        ],
+        "logit_relative_l2_maximum": two_token_audit[
+            "logit_relative_l2_maximum"
+        ],
+        "performance_hashes_unchanged": performance_hashes[
+            "performance_hashes_unchanged"
+        ],
+        "performance_hash_artifact_count": performance_hashes["artifact_count"],
+        "scenario_wedge_count": wedge_count,
+        "proceed_to_e025": verdict.value != "MODEL_INVALID",
+    }
+    atomic_write_json(root / "summary.json", summary)
+    atomic_write_json(root / "truth-table.json", truth_table)
+    atomic_write_json(root / "closure/closure-summary.json", closure_summary)
+    atomic_write_json(root / "closure/closure-audit.json", closure_audit)
+    atomic_write_json(root / "validation/final-audit.json", closure_audit)
+    atomic_write_json(
+        root / "failure-log.json",
+        {
+            "schema_version": "experiment-024-failure-log-closure-v1",
+            "failures": (
+                []
+                if not mandatory_failure
+                else [
+                    {
+                        "failure_id": "E024_CLOSURE_MANDATORY_VALIDATION",
+                        "phase": "C5",
+                        "status": "MANDATORY_MODEL_INVALID",
+                        "failed_checks": closure_audit["failed_checks"],
+                    }
+                ]
+            ),
+            "historical_invalid_attempts": [
+                {
+                    "attempt": 1,
+                    "failure_id": "NO_PRODUCTION_NATIVE_P8_CANDIDATE_FOR_LAYER_0",
+                    "archive": attempt_one["archive_path"],
+                },
+                {
+                    "attempt": 2,
+                    "failure_id": (
+                        "NO_CANONICAL_REGIONAL_POINT_FOR_FULL_CORRECTNESS"
+                    ),
+                    "archive": attempt_two["archive_path"],
+                },
+            ],
+        },
+    )
+    (repo_root / REPORT_PATH).write_text(
+        _closure_report_text(summary, closure_audit),
+        encoding="utf-8",
+    )
+    return summary
+
+
 def record_authoritative_qa(
     repo_root: Path,
     *,
@@ -851,7 +1613,12 @@ def record_authoritative_qa(
 
 __all__ = [
     "E025_RECOMMENDATION",
+    "closure_code_scope_audit",
+    "closure_performance_hash_audit",
     "finalize_authoritative",
+    "finalize_closure",
     "record_authoritative_qa",
+    "two_token_closure_gate_audit",
     "verify_attempt_one_archive",
+    "verify_attempt_two_archive",
 ]

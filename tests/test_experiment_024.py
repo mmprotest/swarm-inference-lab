@@ -158,6 +158,17 @@ def test_model_invalid_has_first_verdict_precedence() -> None:
     )
 
 
+def test_mechanism_only_remains_valid_without_a_commercial_wedge() -> None:
+    assert (
+        mechanical_verdict(
+            mandatory_validity_failure=False,
+            scenario_wedge_count=0,
+            mechanism_only_pass=True,
+        )
+        is Verdict.MECHANISM_ONLY
+    )
+
+
 def test_decode_unit_and_closed_loop_measurement() -> None:
     builder = DecodeStepTaskBuilder()
     assert builder.build(1).generated_output_tokens == 1

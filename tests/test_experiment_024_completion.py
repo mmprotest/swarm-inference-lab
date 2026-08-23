@@ -12,6 +12,13 @@ import pytest
 from swarm_inference.experiments.experiment_024.commodity_planner import (
     CommodityK3Planner,
 )
+from swarm_inference.experiments.experiment_024.correctness import (
+    FIXED_CORRECTNESS_BUDGET,
+    FIXED_CORRECTNESS_FEASIBILITY,
+    FIXED_CORRECTNESS_PLACEMENT_SHA256,
+    ModelInvalidError,
+    select_fixed_correctness_anchor,
+)
 from swarm_inference.experiments.experiment_024.economics import cost_per_million
 from swarm_inference.experiments.experiment_024.freeze import (
     COMMODITY_WORKER_MEMORY_BYTES,
@@ -25,6 +32,9 @@ from swarm_inference.experiments.experiment_024.placement import (
     CommodityPlacement,
     CommodityPlacementBuilder,
     validate_commodity_architecture,
+)
+from swarm_inference.experiments.experiment_024.reporting import (
+    closure_code_scope_audit,
 )
 from swarm_inference.experiments.experiment_024.service import (
     E024ServiceTable,
@@ -145,6 +155,46 @@ def test_placement_is_deterministic_before_freeze() -> None:
     )
     assert first.placement_sha256 == second.placement_sha256
     assert first.as_dict() == second.as_dict()
+
+
+def test_fixed_correctness_anchor_is_smallest_structurally_feasible_regional_d() -> None:
+    placement, audit = select_fixed_correctness_anchor(REPO_ROOT)
+    assert audit["status"] == "PASS"
+    assert audit["selection_basis"] == "STRUCTURAL_PLACEMENT_FEASIBILITY_ONLY"
+    assert audit["performance_metrics_consulted"] is False
+    assert audit["commercial_slo_consulted"] is False
+    assert audit["canonical_commercial_selection_consulted"] is False
+    assert placement.available_node_budget == FIXED_CORRECTNESS_BUDGET
+    assert placement.placement_sha256 == FIXED_CORRECTNESS_PLACEMENT_SHA256
+    assert [
+        row["observed_feasible"] for row in audit["feasibility_sequence"]
+    ] == list(FIXED_CORRECTNESS_FEASIBILITY.values())
+
+
+def test_fixed_correctness_anchor_fails_closed_on_hash_mismatch(
+    tmp_path: Path,
+) -> None:
+    source = REPO_ROOT / "artifacts/experiment-024/freeze/d-placements.json"
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    for row in payload["placements"]:
+        if (
+            row["scenario"] == "COMMODITY_REGIONAL"
+            and row["placement_kind"] == "D_PLACEMENT"
+            and int(row["available_node_budget"]) == FIXED_CORRECTNESS_BUDGET
+        ):
+            row["placement_sha256"] = "0" * 64
+    target = tmp_path / "artifacts/experiment-024/freeze/d-placements.json"
+    target.parent.mkdir(parents=True)
+    target.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ModelInvalidError, match="STOP E024 CLOSURE"):
+        select_fixed_correctness_anchor(tmp_path)
+
+
+def test_closure_code_scope_preserves_performance_semantics() -> None:
+    audit = closure_code_scope_audit(REPO_ROOT)
+    assert audit["status"] == "PASS"
+    assert audit["performance_semantic_code_unchanged"]
+    assert audit["invalid_changed_paths"] == []
 
 
 def test_dense_layer_zero_service_receipt_and_samples() -> None:
