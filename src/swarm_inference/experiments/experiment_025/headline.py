@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
+from .acquisition import AcquisitionPolicy, FleetAcquisitionController
 from .constants import (
     EVIDENCE_CLASS,
     FULL_FLEET_TTL_SECONDS,
@@ -24,7 +25,7 @@ from .constants import (
     TRANSFORMER_LAYERS,
 )
 from .controller import run_physical_generation
-from .io import atomic_write_json, read_json, sha256_file, utc_now
+from .io import atomic_write_json, canonical_sha256, read_json, sha256_file, utc_now
 from .provisioning import (
     LiveWorker,
     WorkerCompatibilityError,
@@ -373,6 +374,9 @@ def run_headline_stage(
     max_new_tokens: int = 16,
     disk_gb: int = 60,
     vast_executable: str = "vastai",
+    acquisition_policy_path: Path | None = None,
+    acquisition_history_path: Path | None = None,
+    acquisition_event_callback: Callable[..., None] | None = None,
 ) -> dict[str, Any]:
     stage_root.mkdir(parents=True, exist_ok=True)
     go = read_json(full_fleet_go_path)
@@ -387,6 +391,30 @@ def run_headline_stage(
         raise RuntimeError("E025 full fleet GO does not contain all 97 workers")
     image_reference = str(image["immutable_reference"])
     image_digest = str(image["immutable_digest"])
+    acquisition_policy_receipt = (
+        read_json(acquisition_policy_path)
+        if acquisition_policy_path is not None
+        else None
+    )
+    resilient_policy = (
+        AcquisitionPolicy.from_mapping(acquisition_policy_receipt)
+        if acquisition_policy_receipt is not None
+        else None
+    )
+    acquisition_history_receipt = (
+        read_json(acquisition_history_path)
+        if acquisition_history_path is not None
+        else None
+    )
+    history_by_machine = {
+        int(row["machine_id"]): row
+        for row in (acquisition_history_receipt or {}).get("machines", [])
+    }
+    if resilient_policy is not None:
+        if acquisition_policy_receipt.get("status") != "PASS":
+            raise RuntimeError("E025 resilient acquisition policy is not PASS")
+        if not history_by_machine:
+            raise RuntimeError("E025 resilient acquisition has no machine history dataset")
     material = load_transport_material(private_root, run_id)
     ledger_path = stage_root / "instance-ledger.jsonl"
     if ledger_path.is_file() and ledger_path.stat().st_size:
@@ -410,11 +438,19 @@ def run_headline_stage(
         "stop": stage_root / "WATCHDOG_STOP",
         "cleanup": stage_root / "cleanup-verification.json",
     }
+    stage_ttl_seconds = (
+        math.ceil(
+            resilient_policy.acquisition_window_seconds
+            + resilient_policy.inference_cleanup_reserve_seconds
+        )
+        if resilient_policy is not None
+        else FULL_FLEET_TTL_SECONDS
+    )
     watchdog = start_watchdog(
         run_id=run_id,
         stage="full-headline-fleet",
         ledger_path=ledger_path,
-        ttl_seconds=FULL_FLEET_TTL_SECONDS,
+        ttl_seconds=stage_ttl_seconds,
         receipt_path=watchdog_paths["receipt"],
         log_path=watchdog_paths["log"],
         trigger_path=watchdog_paths["trigger"],
@@ -423,7 +459,14 @@ def run_headline_stage(
         vast_executable=vast_executable,
     )
     stage_deadline = float(watchdog["deadline_epoch"])
-    acquisition_deadline = min(stage_deadline - 15 * 60, time.time() + 25 * 60)
+    acquisition_deadline = (
+        min(
+            stage_deadline - resilient_policy.inference_cleanup_reserve_seconds,
+            time.time() + resilient_policy.acquisition_window_seconds,
+        )
+        if resilient_policy is not None
+        else min(stage_deadline - 15 * 60, time.time() + 25 * 60)
+    )
     rows = {str(row["worker_id"]): row for row in plan["workers"]}
     groups = {
         str(row["instance_group_id"]): row for row in plan.get("instance_groups", [])
@@ -447,6 +490,8 @@ def run_headline_stage(
     failures: list[dict[str, Any]] = []
     correctness: dict[str, Any] | None = None
     generation: dict[str, Any] | None = None
+    acquisition_controller: FleetAcquisitionController | None = None
+    acquisition_receipt: dict[str, Any] | None = None
     cleanup: dict[str, Any]
     lifecycle_costs: dict[str, Any] = {}
     local_gpu_process_evidence = {"before_fleet": _local_gpu_process_snapshot()}
@@ -660,45 +705,89 @@ def run_headline_stage(
 
     failure: dict[str, Any] | None = None
     try:
-        with ThreadPoolExecutor(max_workers=16) as pool:
-            future_map = {
-                pool.submit(create_group, group_id): group_id
-                for group_id in initial_group_ids
-            }
-            for future in as_completed(future_map):
-                group_id = future_map[future]
-                instances[group_id] = future.result()
-        fragment_ids = sorted(
-            worker_id
-            for worker_id in rows
-            if specs[worker_id]["role"] == "SUB_LAYER_WORKER"
-        )
-        fragment_group_ids = [str(rows[worker_id]["instance_group_id"]) for worker_id in fragment_ids]
-        backbone_group_ids = sorted(
-            set(groups) - set(fragment_group_ids) - {parent_group_id}
-        )
-
-        def ready_parent_after_fragments(
-            fragments: list[LiveWorker],
-        ) -> list[LiveWorker]:
-            fragment_workers = {worker.worker_id: worker for worker in fragments}
-            expert_endpoints = [
-                fragment_workers[worker_id].expert_endpoint()
+        if resilient_policy is not None:
+            acquisition_controller = FleetAcquisitionController(
+                run_id=run_id,
+                client=client,
+                ledger=ledger,
+                rows=rows,
+                groups=groups,
+                specs=specs,
+                parent_id=parent_id,
+                image_reference=image_reference,
+                image_digest=image_digest,
+                material=material,
+                watchdog_receipt=watchdog_paths["receipt"],
+                go_receipt=full_fleet_go_path,
+                stage_root=stage_root,
+                policy=resilient_policy,
+                history_by_machine=history_by_machine,
+                emit=acquisition_event_callback,
+                create_worker_group_instance_fn=create_worker_group_instance,
+                wait_for_worker_fn=wait_for_worker,
+                deadline_epoch=acquisition_deadline,
+            )
+            try:
+                acquired_workers, acquisition_receipt = acquisition_controller.acquire()
+            except BaseException:
+                acquisition_receipt = acquisition_controller.receipt(success=False)
+                atomic_write_json(
+                    stage_root / "acquisition-receipt.json", acquisition_receipt
+                )
+                raise
+            for worker in acquired_workers:
+                workers[worker.worker_id] = worker
+            for group_id, supervisor in acquisition_controller.supervisors.items():
+                candidate = supervisor.current_candidate
+                if candidate is not None and candidate.instance_id is not None:
+                    instances[group_id] = (candidate.instance_id, candidate.offer)
+            failures.extend(acquisition_receipt.get("failures", []))
+            atomic_write_json(stage_root / "acquisition-receipt.json", acquisition_receipt)
+        else:
+            with ThreadPoolExecutor(max_workers=16) as pool:
+                future_map = {
+                    pool.submit(create_group, group_id): group_id
+                    for group_id in initial_group_ids
+                }
+                for future in as_completed(future_map):
+                    group_id = future_map[future]
+                    instances[group_id] = future.result()
+            fragment_ids = sorted(
+                worker_id
+                for worker_id in rows
+                if specs[worker_id]["role"] == "SUB_LAYER_WORKER"
+            )
+            fragment_group_ids = [
+                str(rows[worker_id]["instance_group_id"])
                 for worker_id in fragment_ids
             ]
-            instances[parent_group_id] = create_group(parent_group_id, expert_endpoints)
-            return ready_group(parent_group_id, expert_endpoints)
-
-        fragment_workers, parent_workers, backbone_workers = (
-            _ready_groups_with_concurrent_backbone(
-                fragment_group_ids=fragment_group_ids,
-                backbone_group_ids=backbone_group_ids,
-                ready_group=ready_group,
-                ready_parent_after_fragments=ready_parent_after_fragments,
+            backbone_group_ids = sorted(
+                set(groups) - set(fragment_group_ids) - {parent_group_id}
             )
-        )
-        for worker in [*fragment_workers, *parent_workers, *backbone_workers]:
-            workers[worker.worker_id] = worker
+
+            def ready_parent_after_fragments(
+                fragments: list[LiveWorker],
+            ) -> list[LiveWorker]:
+                fragment_workers = {worker.worker_id: worker for worker in fragments}
+                expert_endpoints = [
+                    fragment_workers[worker_id].expert_endpoint()
+                    for worker_id in fragment_ids
+                ]
+                instances[parent_group_id] = create_group(
+                    parent_group_id, expert_endpoints
+                )
+                return ready_group(parent_group_id, expert_endpoints)
+
+            fragment_workers, parent_workers, backbone_workers = (
+                _ready_groups_with_concurrent_backbone(
+                    fragment_group_ids=fragment_group_ids,
+                    backbone_group_ids=backbone_group_ids,
+                    ready_group=ready_group,
+                    ready_parent_after_fragments=ready_parent_after_fragments,
+                )
+            )
+            for worker in [*fragment_workers, *parent_workers, *backbone_workers]:
+                workers[worker.worker_id] = worker
         if len(workers) != TRANSFORMER_LAYERS + SUB_LAYER_WORKERS:
             raise RuntimeError("E025 full fleet did not reach 97 READY workers")
         gpu_uuids = [str(worker.ready["gpu"]["gpu_uuid"]) for worker in workers.values()]
@@ -901,6 +990,20 @@ def run_headline_stage(
         ),
     }
     gates = {
+        "G0_simultaneous_current_readiness": resilient_policy is None
+        or (
+            acquisition_receipt is not None
+            and acquisition_receipt.get("status") == "PASS"
+            and int(acquisition_receipt.get("current_ready_role_count", 0)) == 97
+            and acquisition_receipt.get("parent_generation_matches_fragments")
+            is True
+            and int(
+                acquisition_receipt.get("stability_barrier", {}).get(
+                    "completed_health_rounds", 0
+                )
+            )
+            >= resilient_policy.minimum_stability_health_rounds
+        ),
         "G1_authoritative_kimi_k3": correctness is not None
         and correctness.get("model_id") == MODEL_ID
         and correctness.get("model_revision") == MODEL_REVISION,
@@ -971,6 +1074,17 @@ def run_headline_stage(
         "model_id": MODEL_ID,
         "model_revision": MODEL_REVISION,
         "image_digest": image_digest,
+        "controller_acquisition": acquisition_receipt,
+        "acquisition_policy_sha256": (
+            canonical_sha256(acquisition_policy_receipt)
+            if acquisition_policy_receipt is not None
+            else None
+        ),
+        "acquisition_history_sha256": (
+            canonical_sha256(acquisition_history_receipt)
+            if acquisition_history_receipt is not None
+            else None
+        ),
         "physical_worker_count": len(workers),
         "rented_instance_count": len(instances),
         "rented_consumer_gpu_count": rented_gpu_count,

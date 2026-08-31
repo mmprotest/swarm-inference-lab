@@ -356,6 +356,101 @@ def wait_for_worker(
     raise TimeoutError(f"E025 worker {worker_id} was not READY: {last_error}")
 
 
+def probe_worker_liveness(
+    *,
+    client: VastClient,
+    worker: LiveWorker,
+    credential: bytes,
+    certificate: Path,
+    image_digest: str,
+    provider_row: dict[str, Any] | None = None,
+    timeout_seconds: float = 8.0,
+) -> dict[str, Any]:
+    """Revalidate a READY worker without changing worker or model state.
+
+    The authenticated REGISTER action is intentionally reused as the lightweight
+    readiness probe.  It returns the immutable READY receipt and avoids opening a
+    model session or executing CUDA work.  Provider presence, public mapping, and
+    all identity fields that can make a stale endpoint unsafe are checked on every
+    call.
+    """
+
+    row = provider_row
+    if row is None:
+        row = next(
+            (
+                value
+                for value in client.show_instances()
+                if _instance_id(value) == worker.instance_id
+            ),
+            None,
+        )
+    if row is None:
+        raise RuntimeError(f"Vast instance {worker.instance_id} is no longer live")
+    actual_machine = _instance_machine_id(row)
+    if actual_machine != worker.machine_id:
+        raise WorkerCompatibilityError(
+            "READY worker machine ID differs from its frozen physical identity"
+        )
+    status = str(row.get("actual_status", row.get("status", ""))).lower()
+    if status not in {"running", "loading"}:
+        raise RuntimeError(
+            f"READY worker provider state is no longer valid: {status or 'missing'}"
+        )
+    host, port = _public_endpoint(row, 42525 + worker.gpu_slot)
+    if (host, port) != (worker.host, worker.port):
+        raise RuntimeError("READY worker public mapping changed before fleet freeze")
+    ready = _probe_register(
+        host=host,
+        port=port,
+        worker_id=worker.worker_id,
+        credential=credential,
+        certificate=certificate,
+        timeout_seconds=timeout_seconds,
+    )
+    expected = {
+        "worker_id": worker.worker_id,
+        "role": worker.role,
+        "machine_id": str(worker.machine_id),
+        "instance_id": str(worker.instance_id),
+        "image_digest": image_digest,
+        "checkpoint_fingerprint": str(worker.ready.get("checkpoint_fingerprint", "")),
+        "assignment_sha256": str(worker.ready.get("assignment_sha256", "")),
+        "gpu_uuid": str(worker.ready.get("gpu", {}).get("gpu_uuid", "")),
+    }
+    observed = {
+        "worker_id": str(ready.get("worker_id", "")),
+        "role": str(ready.get("role", "")),
+        "machine_id": str(ready.get("machine_id", "")),
+        "instance_id": str(ready.get("instance_id", "")),
+        "image_digest": str(ready.get("image_digest", "")),
+        "checkpoint_fingerprint": str(ready.get("checkpoint_fingerprint", "")),
+        "assignment_sha256": str(ready.get("assignment_sha256", "")),
+        "gpu_uuid": str(ready.get("gpu", {}).get("gpu_uuid", "")),
+    }
+    mismatches = {
+        key: {"expected": value, "observed": observed[key]}
+        for key, value in expected.items()
+        if value != observed[key]
+    }
+    if mismatches:
+        raise WorkerCompatibilityError(
+            f"READY worker identity changed before fleet freeze: {mismatches}"
+        )
+    return {
+        "status": "READY_HEALTHY",
+        "provider_status": status,
+        "host": host,
+        "port": port,
+        "worker_id": worker.worker_id,
+        "instance_id": worker.instance_id,
+        "machine_id": worker.machine_id,
+        "image_digest": image_digest,
+        "checkpoint_fingerprint": observed["checkpoint_fingerprint"],
+        "gpu_uuid": observed["gpu_uuid"],
+    }
+
+
 def provision_worker(
     *,
     client: VastClient,
@@ -506,7 +601,9 @@ __all__ = [
     "WorkerCompatibilityError",
     "create_worker_group_instance",
     "create_worker_instance",
+    "probe_worker_liveness",
     "provision_worker",
+    "wait_for_public_endpoint",
     "wait_for_worker",
     "write_live_endpoints",
 ]

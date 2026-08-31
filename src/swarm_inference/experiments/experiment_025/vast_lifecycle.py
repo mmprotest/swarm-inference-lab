@@ -8,6 +8,7 @@ import os
 import subprocess
 import threading
 import time
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -184,7 +185,9 @@ class Offer:
         required_download_bytes: int,
         disk_gb: float,
         bootstrap_fixed_seconds: float = 90.0,
-    ) -> dict[str, float]:
+        history: Mapping[str, Any] | None = None,
+        scoring_policy: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         transfer_seconds = required_download_bytes * 8 / (self.inet_down_mbps * 1e6)
         bootstrap_seconds = bootstrap_fixed_seconds + transfer_seconds
         active_cost = self.gpu_rental_rate_per_hour * bootstrap_seconds / 3600.0
@@ -202,7 +205,7 @@ class Offer:
             + reliability_penalty
             + slow_disk_penalty
         )
-        return {
+        baseline: dict[str, Any] = {
             "expected_bootstrap_seconds": bootstrap_seconds,
             "expected_active_cost_usd": active_cost,
             "expected_storage_cost_usd": storage_cost,
@@ -210,6 +213,138 @@ class Offer:
             "reliability_penalty": reliability_penalty,
             "slow_disk_penalty": slow_disk_penalty,
             "short_run_acquisition_score": total,
+        }
+        if scoring_policy is None:
+            return baseline
+
+        machine = dict(history or {})
+        prior_weight = float(scoring_policy["provider_reliability_prior_weight"])
+        attempt_count = int(machine.get("attempt_count", 0))
+        ready_success_count = int(machine.get("ready_success_count", 0))
+        provider_probability = min(0.9999, max(0.01, self.reliability))
+        ready_probability = (
+            ready_success_count + prior_weight * provider_probability
+        ) / max(1.0, attempt_count + prior_weight)
+
+        mapping_prior = float(scoring_policy["public_mapping_prior_probability"])
+        mapping_prior_weight = float(
+            scoring_policy["public_mapping_prior_weight"]
+        )
+        mapping_observations = int(
+            machine.get("public_mapping_observation_count", attempt_count)
+        )
+        mapping_successes = int(
+            machine.get("public_mapping_success_count", ready_success_count)
+        )
+        mapping_probability = (
+            mapping_successes + mapping_prior_weight * mapping_prior
+        ) / max(1.0, mapping_observations + mapping_prior_weight)
+
+        healthy_prior = float(scoring_policy["post_ready_health_prior_probability"])
+        healthy_prior_weight = float(
+            scoring_policy["post_ready_health_prior_weight"]
+        )
+        healthy_observations = int(
+            machine.get("post_ready_health_observation_count", ready_success_count)
+        )
+        healthy_successes = int(machine.get("ready_healthy_count", 0))
+        healthy_probability = (
+            healthy_successes + healthy_prior_weight * healthy_prior
+        ) / max(1.0, healthy_observations + healthy_prior_weight)
+
+        probability_floor = float(scoring_policy["probability_floor"])
+        healthy_ready_probability = min(
+            0.9999,
+            max(
+                probability_floor,
+                ready_probability * mapping_probability * healthy_probability,
+            ),
+        )
+
+        observed_ready_seconds = machine.get("median_time_to_ready_seconds")
+        global_ready_seconds = float(
+            scoring_policy["global_median_ready_seconds"]
+        )
+        history_time_prior_weight = float(
+            scoring_policy["history_time_prior_weight"]
+        )
+        if observed_ready_seconds is not None and ready_success_count > 0:
+            expected_ready_seconds = (
+                float(observed_ready_seconds) * ready_success_count
+                + global_ready_seconds * history_time_prior_weight
+            ) / (ready_success_count + history_time_prior_weight)
+        else:
+            expected_ready_seconds = max(bootstrap_seconds, global_ready_seconds)
+
+        observed_download_mbps = machine.get("median_download_throughput_mbps")
+        if observed_download_mbps is not None and float(observed_download_mbps) > 0:
+            empirical_transfer_seconds = (
+                required_download_bytes * 8 / (float(observed_download_mbps) * 1e6)
+            )
+            expected_ready_seconds = max(
+                bootstrap_fixed_seconds + empirical_transfer_seconds,
+                expected_ready_seconds,
+            )
+
+        expected_active_cost = (
+            self.gpu_rental_rate_per_hour * expected_ready_seconds / 3600.0
+        )
+        expected_storage_cost = (
+            self.storage_cost_per_gb_month
+            * disk_gb
+            * expected_ready_seconds
+            / (30.0 * 24.0 * 3600.0)
+        )
+        expected_direct_cost = expected_active_cost + expected_storage_cost + ingress_cost
+        expected_cost_to_healthy = expected_direct_cost / healthy_ready_probability
+        fleet_delay_cost = (
+            expected_ready_seconds
+            / 60.0
+            / healthy_ready_probability
+            * float(scoring_policy["fleet_delay_cost_usd_per_minute"])
+        )
+        repeated_failure_penalty = float(
+            scoring_policy["repeated_attributable_failure_penalty_usd"]
+        ) * int(machine.get("attributable_failure_count", 0))
+        historical_success_credit = min(
+            float(scoring_policy["maximum_historical_success_credit_usd"]),
+            float(scoring_policy["historical_success_credit_usd"])
+            * int(machine.get("ready_healthy_count", 0)),
+        )
+        score = max(
+            0.0,
+            expected_cost_to_healthy
+            + fleet_delay_cost
+            + repeated_failure_penalty
+            - historical_success_credit,
+        )
+        if bool(machine.get("hard_excluded")):
+            score += float(scoring_policy["hard_exclusion_penalty_usd"])
+        return {
+            **baseline,
+            "score_formula_version": str(scoring_policy["formula_version"]),
+            "history_attempt_count": attempt_count,
+            "history_ready_success_count": ready_success_count,
+            "history_ready_healthy_count": int(
+                machine.get("ready_healthy_count", 0)
+            ),
+            "history_attributable_failure_count": int(
+                machine.get("attributable_failure_count", 0)
+            ),
+            "empirical_probability_ready": ready_probability,
+            "empirical_probability_public_mapping": mapping_probability,
+            "empirical_probability_post_ready_health": healthy_probability,
+            "empirical_probability_healthy_ready": healthy_ready_probability,
+            "expected_ready_seconds": expected_ready_seconds,
+            "expected_active_cost_usd": expected_active_cost,
+            "expected_storage_cost_usd": expected_storage_cost,
+            "expected_direct_attempt_cost_usd": expected_direct_cost,
+            "expected_cost_to_healthy_worker_usd": expected_cost_to_healthy,
+            "fleet_tail_delay_cost_usd": fleet_delay_cost,
+            "repeated_attributable_failure_penalty_usd": repeated_failure_penalty,
+            "historical_success_credit_usd": historical_success_credit,
+            "hard_excluded_by_history": bool(machine.get("hard_excluded")),
+            "short_run_acquisition_score": score,
         }
 
 
@@ -718,6 +853,9 @@ def rank_grouped_offers_for_workers(
     alternates_per_group: int = 3,
     reserved_alternate_machines: int = 8,
     excluded_machine_ids: set[int] | None = None,
+    acquisition_history: Mapping[int, Mapping[str, Any]] | None = None,
+    scoring_policy: Mapping[str, Any] | None = None,
+    maximum_candidate_ready_seconds: float = 20 * 60,
 ) -> dict[str, Any]:
     """Pack one isolated worker process per GPU while retaining many machines."""
 
@@ -742,6 +880,21 @@ def rank_grouped_offers_for_workers(
     used_offer_ids: set[int] = set()
     used_machine_ids: set[int] = set()
 
+    def acquisition_score(
+        offer: Offer, *, required_download_bytes: int, disk_gb: float
+    ) -> dict[str, Any]:
+        history = (
+            acquisition_history.get(offer.machine_id)
+            if acquisition_history is not None
+            else None
+        )
+        return offer.acquisition_score(
+            required_download_bytes=required_download_bytes,
+            disk_gb=disk_gb,
+            history=history,
+            scoring_policy=scoring_policy,
+        )
+
     def select_single(worker: dict[str, Any], group_id: str) -> None:
         role = str(worker["role"])
         scored: list[tuple[float, Offer, dict[str, float]]] = []
@@ -750,12 +903,15 @@ def rank_grouped_offers_for_workers(
                 continue
             if not offer.qualifies(role, disk_gb=minimum_disk_gb):
                 continue
-            score = offer.acquisition_score(
+            score = acquisition_score(
+                offer,
                 required_download_bytes=int(worker["download_bytes_cold_cache"]),
                 disk_gb=minimum_disk_gb,
             )
-            bootstrap_limit = 8 * 60 if role == "SUB_LAYER_WORKER" else 4 * 60
-            if float(score["expected_bootstrap_seconds"]) > bootstrap_limit:
+            readiness_estimate = float(
+                score.get("expected_ready_seconds", score["expected_bootstrap_seconds"])
+            )
+            if readiness_estimate > maximum_candidate_ready_seconds:
                 continue
             scored.append(
                 (float(score["short_run_acquisition_score"]), offer, score)
@@ -818,15 +974,23 @@ def rank_grouped_offers_for_workers(
         )
         if offer.disk_space_gb < safe_disk_gb:
             continue
-        score = offer.acquisition_score(
+        score = acquisition_score(
+            offer,
             required_download_bytes=capacity * average_download,
             disk_gb=safe_disk_gb,
         )
-        worst_case_bootstrap = offer.acquisition_score(
+        worst_case_bootstrap = acquisition_score(
+            offer,
             required_download_bytes=capacity * maximum_download,
             disk_gb=safe_disk_gb,
         )
-        if float(worst_case_bootstrap["expected_bootstrap_seconds"]) > 20 * 60:
+        worst_case_ready = float(
+            worst_case_bootstrap.get(
+                "expected_ready_seconds",
+                worst_case_bootstrap["expected_bootstrap_seconds"],
+            )
+        )
+        if worst_case_ready > maximum_candidate_ready_seconds:
             continue
         architecture_penalty = 0.01 * capacity if "5090" in offer.gpu_name else 0.0
         total = float(score["short_run_acquisition_score"]) + architecture_penalty
@@ -912,7 +1076,8 @@ def rank_grouped_offers_for_workers(
         disk = _group_disk_gb(assigned, minimum_disk_gb)
         if len(assigned) != offer.gpu_count or disk > offer.disk_space_gb:
             raise RuntimeError("selected Vast bundle cannot safely hold its assigned workers")
-        actual_score = offer.acquisition_score(
+        actual_score = acquisition_score(
+            offer,
             required_download_bytes=sum(
                 int(worker["download_bytes_cold_cache"]) for worker in assigned
             ),
@@ -956,7 +1121,8 @@ def rank_grouped_offers_for_workers(
                 continue
             if (role != "SUB_LAYER_WORKER" and not _backbone_name(offer.gpu_name)):
                 continue
-            score = offer.acquisition_score(
+            score = acquisition_score(
+                offer,
                 required_download_bytes=sum(
                     int(worker["download_bytes_cold_cache"])
                     for worker in group["workers"]
@@ -1005,7 +1171,16 @@ def rank_grouped_offers_for_workers(
         float(row["selection_score"]["expected_bootstrap_seconds"])
         for row in selected_groups
     )
-    acquisition_feasible = maximum_bootstrap_seconds <= 20 * 60
+    maximum_expected_ready_seconds = max(
+        float(
+            row["selection_score"].get(
+                "expected_ready_seconds",
+                row["selection_score"]["expected_bootstrap_seconds"],
+            )
+        )
+        for row in selected_groups
+    )
+    acquisition_feasible = maximum_expected_ready_seconds <= maximum_candidate_ready_seconds
     return {
         "schema_version": "experiment-025-grouped-fleet-plan-v1",
         "generated_at_utc": utc_now(),
@@ -1054,6 +1229,8 @@ def rank_grouped_offers_for_workers(
             for row in selected_groups
         ),
         "maximum_expected_bootstrap_seconds": maximum_bootstrap_seconds,
+        "maximum_expected_ready_seconds": maximum_expected_ready_seconds,
+        "maximum_candidate_ready_seconds": maximum_candidate_ready_seconds,
         "instance_groups": selected_groups,
         "workers": flattened,
     }
@@ -1065,6 +1242,10 @@ def snapshot_and_rank(
     worker_requirements: list[dict[str, Any]],
     disk_gb: int,
     excluded_machine_ids: set[int] | None = None,
+    acquisition_history: Mapping[int, Mapping[str, Any]] | None = None,
+    scoring_policy: Mapping[str, Any] | None = None,
+    maximum_candidate_ready_seconds: float = 20 * 60,
+    stage_ttl_seconds: float = 45 * 60,
     executable: str = "vastai",
 ) -> dict[str, Any]:
     client = VastClient(executable=executable)
@@ -1083,16 +1264,25 @@ def snapshot_and_rank(
         worker_requirements,
         minimum_disk_gb=disk_gb,
         excluded_machine_ids=excluded_machine_ids,
+        acquisition_history=acquisition_history,
+        scoring_policy=scoring_policy,
+        maximum_candidate_ready_seconds=maximum_candidate_ready_seconds,
     )
     budget = client.user_budget()
     maximum_full_stage_cost = (
         float(plan["total_effective_rate_including_requested_storage_usd_per_hour"])
-        * 0.75
+        * stage_ttl_seconds
+        / 3600.0
         + float(plan["total_expected_ingress_cost_usd"])
     )
-    budget["maximum_45_minute_stage_plus_expected_ingress_usd"] = (
+    budget["maximum_stage_plus_expected_ingress_usd"] = (
         maximum_full_stage_cost
     )
+    if stage_ttl_seconds == 45 * 60:
+        budget["maximum_45_minute_stage_plus_expected_ingress_usd"] = (
+            maximum_full_stage_cost
+        )
+    budget["stage_ttl_seconds"] = stage_ttl_seconds
     budget["required_safety_multiplier"] = 1.10
     budget["sufficient"] = (
         float(budget["conservative_available_usd"])
