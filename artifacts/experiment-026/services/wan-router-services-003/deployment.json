@@ -1,0 +1,145 @@
+{
+  "async_copy": true,
+  "device_ownership": {
+    "0": 50478198,
+    "1": 50478207
+  },
+  "frontend_command": [
+    "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Scripts\\python.exe",
+    "-m",
+    "swarm_inference.experiments.experiment_026.rpc_frontend",
+    "--port",
+    "42646",
+    "--router",
+    "127.0.0.1:42645",
+    "--log",
+    "artifacts\\experiment-026\\services\\wan-router-services-003\\frontend.jsonl",
+    "--async-copy",
+    "--cache-manifests",
+    "artifacts/experiment-026/acquisition/remote-stage-a-all-002.json,artifacts/experiment-026/acquisition/remote-stage-b-all-002.json"
+  ],
+  "frontend_pid": 11696,
+  "local_tunnel_command": [
+    "ssh",
+    "-i",
+    "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.keys\\e026_ed25519",
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "IdentitiesOnly=yes",
+    "-o",
+    "StrictHostKeyChecking=accept-new",
+    "-o",
+    "UserKnownHostsFile=.keys/e026_known_hosts",
+    "-o",
+    "ConnectTimeout=12",
+    "-o",
+    "ServerAliveInterval=10",
+    "-o",
+    "ServerAliveCountMax=3",
+    "-N",
+    "-T",
+    "-o",
+    "ExitOnForwardFailure=yes",
+    "-L",
+    "127.0.0.1:42645:127.0.0.1:50103",
+    "-p",
+    "40304",
+    "root@118.6.123.97"
+  ],
+  "local_tunnel_pid": 15564,
+  "nodes": {
+    "a": {
+      "actual_status": "running",
+      "cpu_name": "AMD Ryzen 5 3500 6-Core Processor",
+      "cpu_ram": 15912,
+      "disk_space": 35.0,
+      "disk_usage": 2.700000047683716,
+      "dph_total": 0.17314814814814813,
+      "extra_env": {},
+      "geolocation": "Japan, JP",
+      "gpu_name": "RTX 3080 Ti",
+      "gpu_ram": 12288,
+      "host": "118.6.123.97",
+      "id": 50478198,
+      "inet_down_cost": 0.00013020833333333333,
+      "inet_up_cost": 0.00013020833333333333,
+      "label": "e026-a-1789033163",
+      "machine_id": 140487,
+      "port": 40304,
+      "ports": {
+        "22/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "40304"
+          }
+        ]
+      },
+      "public_ipaddr": "118.6.123.97",
+      "role": "a",
+      "ssh_host": "ssh4.vast.ai",
+      "ssh_port": 38198,
+      "start_date": 1789033167.1506145,
+      "status_msg": "success, running nvidia/cuda_13.0.2-devel-ubuntu24.04/ssh",
+      "total_flops": 34.89792
+    },
+    "b": {
+      "actual_status": "running",
+      "cpu_name": "Xeon\u00ae E5-2680 v4",
+      "cpu_ram": 64284,
+      "disk_space": 35.0,
+      "disk_usage": 2.4000000953674316,
+      "dph_total": 0.06305555555555556,
+      "extra_env": {},
+      "geolocation": "South Korea, KR",
+      "gpu_name": "RTX 3060",
+      "gpu_ram": 12288,
+      "host": "1.208.108.242",
+      "id": 50478207,
+      "inet_down_cost": 0.00390625,
+      "inet_up_cost": 0.00390625,
+      "label": "e026-b-1789033167",
+      "machine_id": 29808,
+      "port": 58928,
+      "ports": {
+        "22/tcp": [
+          {
+            "HostIp": "0.0.0.0",
+            "HostPort": "58928"
+          },
+          {
+            "HostIp": "::",
+            "HostPort": "58928"
+          }
+        ]
+      },
+      "public_ipaddr": "1.208.108.242",
+      "role": "b",
+      "ssh_host": "ssh5.vast.ai",
+      "ssh_port": 38206,
+      "start_date": 1789033171.2636824,
+      "status_msg": "success, running nvidia/cuda_13.0.2-devel-ubuntu24.04/ssh",
+      "total_flops": 12.386304
+    }
+  },
+  "peer_endpoint": {
+    "host": "ssh5.vast.ai",
+    "port": 38206
+  },
+  "peer_transport": "vast-proxy",
+  "peer_tunnel_command": "nohup ssh -N -T -i /workspace/e026/peer_ed25519 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/workspace/e026/wan-router-services-003-peer-known-hosts -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -L 127.0.0.1:50104:127.0.0.1:50101 -p 38206 root@ssh5.vast.ai > /workspace/e026/wan-router-services-003-peer-tunnel.log 2>&1 < /dev/null & echo $!",
+  "peer_tunnel_node_role": "a",
+  "peer_tunnel_pid": 5064,
+  "required_verified_cache": true,
+  "router_command": "cd /workspace/e026/wan-router-services-003; nohup python3 -m e026_worker.rpc_router --port 50103 --workers 127.0.0.1:50101,127.0.0.1:50104 --log /workspace/e026/wan-router-services-003-routing.jsonl > /workspace/e026/wan-router-services-003-router.log 2>&1 < /dev/null & echo $!",
+  "router_pid": 5077,
+  "source_bundle_sha256": "970695df227764f9433cdf103808b21c6e6dc9328db488da8265c546b4e4f14f",
+  "source_files_sha256": {
+    "__init__.py": "19276512b48bf3ed409736a7780f0022bbb3521befb6b7a5ae4f826f53fb50a6",
+    "io.py": "45c365c2e34491b13fffea15fa6caac5f20834a32c317793159bde29ebf91d93",
+    "rpc_frontend.py": "444b90d28e3edb0488954f52ecec7a72269f851a045d6bd07e3fa120a03961ff",
+    "rpc_replica.py": "402e03538a53dd5a7bfed8120eb50decdff7fdefd68a6bd8c85c823415dac311",
+    "rpc_router.py": "8e281ae23e27db42d389e31d4fe58de86ee7487beae3a973fa14a9559ba137f3"
+  },
+  "timestamp": "2026-09-10T11:03:28.021739+00:00"
+}

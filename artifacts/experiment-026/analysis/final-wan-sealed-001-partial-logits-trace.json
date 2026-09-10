@@ -1,0 +1,5184 @@
+{
+  "classification": "VALID_SEALED_RUN_FAILURE_TRANSPORT_RESET",
+  "compared_tokens": 282,
+  "completed_tokens": 282,
+  "control": "final-local-sealed-control-001",
+  "failure": {
+    "message": "[WinError 10054] An existing connection was forcibly closed by the remote host",
+    "timestamp": "2026-09-10T13:00:51.467098+00:00",
+    "type": "ConnectionResetError"
+  },
+  "first_mismatch": 178,
+  "identical_history_logits": {
+    "first_mismatch_detail": {
+      "local_selected": {
+        "id": 15734,
+        "logprob": -0.7642916440963745,
+        "token": " passes"
+      },
+      "local_top1_margin_logprob": 0.03976249694824219,
+      "local_top2": [
+        {
+          "bytes": [
+            32,
+            112,
+            97,
+            115,
+            115,
+            101,
+            115
+          ],
+          "id": 15734,
+          "logprob": -0.7642916440963745,
+          "token": " passes"
+        },
+        {
+          "bytes": [
+            32,
+            101,
+            110,
+            116,
+            101,
+            114,
+            115
+          ],
+          "id": 27891,
+          "logprob": -0.8040541410446167,
+          "token": " enters"
+        }
+      ],
+      "wan_selected": {
+        "id": 27891,
+        "logprob": -0.7793287038803101,
+        "token": " enters"
+      },
+      "wan_top1_margin_logprob": 0.016004621982574463,
+      "wan_top2": [
+        {
+          "bytes": [
+            32,
+            101,
+            110,
+            116,
+            101,
+            114,
+            115
+          ],
+          "id": 27891,
+          "logprob": -0.7793287038803101,
+          "token": " enters"
+        },
+        {
+          "bytes": [
+            32,
+            112,
+            97,
+            115,
+            115,
+            101,
+            115
+          ],
+          "id": 15734,
+          "logprob": -0.7953333258628845,
+          "token": " passes"
+        }
+      ],
+      "zero_based_token_index": 178
+    },
+    "identical_history_positions": 179,
+    "max_common_top10_logprob_abs_delta": 0.28500795364379883,
+    "mean_common_top10_logprob_abs_delta": 0.04499236183755603,
+    "mean_top10_jaccard": 0.9746063991874049,
+    "scope": "Only positions whose input history is identical, including the first differing decision",
+    "top1_agreement": 0.994413407821229
+  },
+  "last_token_arrival_s": 499.0607589999963,
+  "median_tpot_s": 1.565250300001935,
+  "p95_tpot_s": 2.1130656999957864,
+  "partial_decode_tok_s": 0.5903353469265896,
+  "partial_output_token_hash": "55329b735084bb6e7b20196d9f2a17df2e6000a456af86216833fd5681c76f50",
+  "prefix_equal": false,
+  "prompt_id": "sealed-01-factual",
+  "run_id": "final-wan-sealed-001",
+  "sealed_request_tokens": 512,
+  "terminal_event_observed": false,
+  "trace": {
+    "byte_definition": "RPC protocol bytes, excluding TCP/IP/TLS/SSH framing",
+    "median_single_token_cycle_ms": 1565.0205,
+    "median_single_token_received_bytes": 20497.0,
+    "median_single_token_sent_bytes": 25967.0,
+    "rpc_request_counts_including_startup": {
+      "0": 8,
+      "1": 2,
+      "2": 2,
+      "3": 8,
+      "5": 16,
+      "6": 3263,
+      "7": 98,
+      "8": 285,
+      "9": 285,
+      "10": 8,
+      "11": 10,
+      "13": 64,
+      "14": 11,
+      "15": 1,
+      "16": 562
+    },
+    "steady_single_token_intervals": [
+      {
+        "begin_us": 106808203,
+        "cycle_us": 2941092,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "10": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 412295,
+        "sum_response_wait_us_may_overlap": 2906192
+      },
+      {
+        "begin_us": 109749295,
+        "cycle_us": 1572120,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540724
+      },
+      {
+        "begin_us": 111321415,
+        "cycle_us": 1709485,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536957
+      },
+      {
+        "begin_us": 113030900,
+        "cycle_us": 1553384,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539021
+      },
+      {
+        "begin_us": 114584284,
+        "cycle_us": 1651578,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539949
+      },
+      {
+        "begin_us": 116235862,
+        "cycle_us": 1565367,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1550333
+      },
+      {
+        "begin_us": 117801229,
+        "cycle_us": 1559538,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536692
+      },
+      {
+        "begin_us": 119360767,
+        "cycle_us": 1557226,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535288
+      },
+      {
+        "begin_us": 120917993,
+        "cycle_us": 1710388,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534791
+      },
+      {
+        "begin_us": 122628381,
+        "cycle_us": 1548963,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535460
+      },
+      {
+        "begin_us": 124177344,
+        "cycle_us": 1657341,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538924
+      },
+      {
+        "begin_us": 125834685,
+        "cycle_us": 1552701,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537720
+      },
+      {
+        "begin_us": 127387386,
+        "cycle_us": 1558085,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535603
+      },
+      {
+        "begin_us": 128945471,
+        "cycle_us": 1629395,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1606846
+      },
+      {
+        "begin_us": 130574866,
+        "cycle_us": 1660251,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539958
+      },
+      {
+        "begin_us": 132235117,
+        "cycle_us": 1552441,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538339
+      },
+      {
+        "begin_us": 133787558,
+        "cycle_us": 1646139,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536399
+      },
+      {
+        "begin_us": 135433697,
+        "cycle_us": 1551281,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537381
+      },
+      {
+        "begin_us": 136984978,
+        "cycle_us": 1557283,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534848
+      },
+      {
+        "begin_us": 138542261,
+        "cycle_us": 1560012,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538023
+      },
+      {
+        "begin_us": 140102273,
+        "cycle_us": 1727782,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535970
+      },
+      {
+        "begin_us": 141830055,
+        "cycle_us": 1550509,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535828
+      },
+      {
+        "begin_us": 143380564,
+        "cycle_us": 1652492,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535334
+      },
+      {
+        "begin_us": 145033056,
+        "cycle_us": 1556514,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1541130
+      },
+      {
+        "begin_us": 146589570,
+        "cycle_us": 1560201,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535897
+      },
+      {
+        "begin_us": 148149771,
+        "cycle_us": 1557693,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535642
+      },
+      {
+        "begin_us": 149707464,
+        "cycle_us": 1719624,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534679
+      },
+      {
+        "begin_us": 151427088,
+        "cycle_us": 1548566,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535417
+      },
+      {
+        "begin_us": 152975654,
+        "cycle_us": 1657727,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538861
+      },
+      {
+        "begin_us": 154633381,
+        "cycle_us": 1559615,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1545411
+      },
+      {
+        "begin_us": 156192996,
+        "cycle_us": 1565384,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1541607
+      },
+      {
+        "begin_us": 157758380,
+        "cycle_us": 1564421,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542076
+      },
+      {
+        "begin_us": 159322801,
+        "cycle_us": 1710512,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1600017
+      },
+      {
+        "begin_us": 161033313,
+        "cycle_us": 1552493,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537551
+      },
+      {
+        "begin_us": 162585806,
+        "cycle_us": 1646924,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535465
+      },
+      {
+        "begin_us": 164232730,
+        "cycle_us": 1551794,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536790
+      },
+      {
+        "begin_us": 165784524,
+        "cycle_us": 1557669,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535106
+      },
+      {
+        "begin_us": 167342193,
+        "cycle_us": 1557631,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534574
+      },
+      {
+        "begin_us": 168899824,
+        "cycle_us": 1728328,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535991
+      },
+      {
+        "begin_us": 170628152,
+        "cycle_us": 1548970,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534726
+      },
+      {
+        "begin_us": 172177122,
+        "cycle_us": 1654886,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538193
+      },
+      {
+        "begin_us": 173832008,
+        "cycle_us": 1553667,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539177
+      },
+      {
+        "begin_us": 175385675,
+        "cycle_us": 1557738,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534633
+      },
+      {
+        "begin_us": 176943413,
+        "cycle_us": 1561408,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537966
+      },
+      {
+        "begin_us": 178504821,
+        "cycle_us": 1726555,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540317
+      },
+      {
+        "begin_us": 180231376,
+        "cycle_us": 1551052,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536611
+      },
+      {
+        "begin_us": 181782428,
+        "cycle_us": 1648733,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536386
+      },
+      {
+        "begin_us": 183431161,
+        "cycle_us": 1549834,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535954
+      },
+      {
+        "begin_us": 184980995,
+        "cycle_us": 1557051,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534276
+      },
+      {
+        "begin_us": 186538046,
+        "cycle_us": 1560293,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537965
+      },
+      {
+        "begin_us": 188098339,
+        "cycle_us": 1727464,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542949
+      },
+      {
+        "begin_us": 189825803,
+        "cycle_us": 1596105,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1582674
+      },
+      {
+        "begin_us": 191421908,
+        "cycle_us": 1728773,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535349
+      },
+      {
+        "begin_us": 193150681,
+        "cycle_us": 1554147,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539780
+      },
+      {
+        "begin_us": 194704828,
+        "cycle_us": 1558198,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534515
+      },
+      {
+        "begin_us": 196263026,
+        "cycle_us": 1733709,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539759
+      },
+      {
+        "begin_us": 197996735,
+        "cycle_us": 1556947,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542159
+      },
+      {
+        "begin_us": 199553682,
+        "cycle_us": 1570250,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1547373
+      },
+      {
+        "begin_us": 201123932,
+        "cycle_us": 1703745,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542319
+      },
+      {
+        "begin_us": 202827677,
+        "cycle_us": 1551660,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537053
+      },
+      {
+        "begin_us": 204379337,
+        "cycle_us": 1559923,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537470
+      },
+      {
+        "begin_us": 205939260,
+        "cycle_us": 1687858,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537949
+      },
+      {
+        "begin_us": 207627118,
+        "cycle_us": 1553089,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538105
+      },
+      {
+        "begin_us": 209180207,
+        "cycle_us": 1560647,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538175
+      },
+      {
+        "begin_us": 210740854,
+        "cycle_us": 1685653,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539228
+      },
+      {
+        "begin_us": 212426507,
+        "cycle_us": 1551574,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537413
+      },
+      {
+        "begin_us": 213978081,
+        "cycle_us": 1561128,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538848
+      },
+      {
+        "begin_us": 215539209,
+        "cycle_us": 1686498,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542165
+      },
+      {
+        "begin_us": 217225707,
+        "cycle_us": 1569091,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1554456
+      },
+      {
+        "begin_us": 218794798,
+        "cycle_us": 1560518,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538414
+      },
+      {
+        "begin_us": 220355316,
+        "cycle_us": 1670922,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535896
+      },
+      {
+        "begin_us": 222026238,
+        "cycle_us": 1552163,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538624
+      },
+      {
+        "begin_us": 223578401,
+        "cycle_us": 1560970,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538622
+      },
+      {
+        "begin_us": 225139371,
+        "cycle_us": 1688205,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538159
+      },
+      {
+        "begin_us": 226827576,
+        "cycle_us": 1552475,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537094
+      },
+      {
+        "begin_us": 228380051,
+        "cycle_us": 1564371,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1541709
+      },
+      {
+        "begin_us": 229944422,
+        "cycle_us": 1686657,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540224
+      },
+      {
+        "begin_us": 231631079,
+        "cycle_us": 1553704,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539499
+      },
+      {
+        "begin_us": 233184783,
+        "cycle_us": 1562603,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539647
+      },
+      {
+        "begin_us": 234747386,
+        "cycle_us": 1680107,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539879
+      },
+      {
+        "begin_us": 236427493,
+        "cycle_us": 1553094,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538530
+      },
+      {
+        "begin_us": 237980587,
+        "cycle_us": 1558381,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536442
+      },
+      {
+        "begin_us": 239538968,
+        "cycle_us": 1687918,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1541186
+      },
+      {
+        "begin_us": 241226886,
+        "cycle_us": 1556516,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542121
+      },
+      {
+        "begin_us": 242783402,
+        "cycle_us": 1557759,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535575
+      },
+      {
+        "begin_us": 244341161,
+        "cycle_us": 1688258,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539671
+      },
+      {
+        "begin_us": 246029419,
+        "cycle_us": 1560667,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1546140
+      },
+      {
+        "begin_us": 247590086,
+        "cycle_us": 1563684,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540451
+      },
+      {
+        "begin_us": 249153770,
+        "cycle_us": 1672440,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538328
+      },
+      {
+        "begin_us": 250826210,
+        "cycle_us": 1553330,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537706
+      },
+      {
+        "begin_us": 252379540,
+        "cycle_us": 1560006,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537677
+      },
+      {
+        "begin_us": 253939546,
+        "cycle_us": 1686169,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534397
+      },
+      {
+        "begin_us": 255625715,
+        "cycle_us": 1549830,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535878
+      },
+      {
+        "begin_us": 257175545,
+        "cycle_us": 1559104,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537203
+      },
+      {
+        "begin_us": 258734649,
+        "cycle_us": 1688681,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536712
+      },
+      {
+        "begin_us": 260423330,
+        "cycle_us": 1552963,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537990
+      },
+      {
+        "begin_us": 261976293,
+        "cycle_us": 1561969,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538582
+      },
+      {
+        "begin_us": 263538262,
+        "cycle_us": 1685388,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534954
+      },
+      {
+        "begin_us": 265223650,
+        "cycle_us": 1550713,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536222
+      },
+      {
+        "begin_us": 266774363,
+        "cycle_us": 1559845,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537194
+      },
+      {
+        "begin_us": 268334208,
+        "cycle_us": 1691496,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1541213
+      },
+      {
+        "begin_us": 270025704,
+        "cycle_us": 1550754,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536610
+      },
+      {
+        "begin_us": 271576458,
+        "cycle_us": 1560194,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537325
+      },
+      {
+        "begin_us": 273136652,
+        "cycle_us": 1686773,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538725
+      },
+      {
+        "begin_us": 274823425,
+        "cycle_us": 1555135,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539524
+      },
+      {
+        "begin_us": 276378560,
+        "cycle_us": 1561215,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539209
+      },
+      {
+        "begin_us": 277939775,
+        "cycle_us": 1684656,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540395
+      },
+      {
+        "begin_us": 279624431,
+        "cycle_us": 1550532,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536758
+      },
+      {
+        "begin_us": 281174963,
+        "cycle_us": 1564025,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540614
+      },
+      {
+        "begin_us": 282738988,
+        "cycle_us": 1686188,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534423
+      },
+      {
+        "begin_us": 284425176,
+        "cycle_us": 1551394,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537443
+      },
+      {
+        "begin_us": 285976570,
+        "cycle_us": 1557782,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535488
+      },
+      {
+        "begin_us": 287534352,
+        "cycle_us": 1688282,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540487
+      },
+      {
+        "begin_us": 289222634,
+        "cycle_us": 1549934,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535999
+      },
+      {
+        "begin_us": 290772568,
+        "cycle_us": 1562694,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540442
+      },
+      {
+        "begin_us": 292335262,
+        "cycle_us": 1686506,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535917
+      },
+      {
+        "begin_us": 294021768,
+        "cycle_us": 1552686,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537877
+      },
+      {
+        "begin_us": 295574454,
+        "cycle_us": 1562049,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539681
+      },
+      {
+        "begin_us": 297136503,
+        "cycle_us": 1685366,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538458
+      },
+      {
+        "begin_us": 298821869,
+        "cycle_us": 1553522,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538961
+      },
+      {
+        "begin_us": 300375391,
+        "cycle_us": 1561217,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539179
+      },
+      {
+        "begin_us": 301936608,
+        "cycle_us": 1685004,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538188
+      },
+      {
+        "begin_us": 303621612,
+        "cycle_us": 1551772,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537333
+      },
+      {
+        "begin_us": 305173384,
+        "cycle_us": 1561392,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538070
+      },
+      {
+        "begin_us": 306734776,
+        "cycle_us": 1689045,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537114
+      },
+      {
+        "begin_us": 308423821,
+        "cycle_us": 1550728,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536061
+      },
+      {
+        "begin_us": 309974549,
+        "cycle_us": 1563464,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539567
+      },
+      {
+        "begin_us": 311538013,
+        "cycle_us": 1692481,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540899
+      },
+      {
+        "begin_us": 313230494,
+        "cycle_us": 1554324,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539025
+      },
+      {
+        "begin_us": 314784818,
+        "cycle_us": 1566332,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540975
+      },
+      {
+        "begin_us": 316351150,
+        "cycle_us": 1672138,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536774
+      },
+      {
+        "begin_us": 318023288,
+        "cycle_us": 1548394,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534705
+      },
+      {
+        "begin_us": 319571682,
+        "cycle_us": 1560347,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538476
+      },
+      {
+        "begin_us": 321132029,
+        "cycle_us": 1689337,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540127
+      },
+      {
+        "begin_us": 322821366,
+        "cycle_us": 1553261,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538579
+      },
+      {
+        "begin_us": 324374627,
+        "cycle_us": 1559643,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537139
+      },
+      {
+        "begin_us": 325934270,
+        "cycle_us": 1687415,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542082
+      },
+      {
+        "begin_us": 327621685,
+        "cycle_us": 1553161,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538909
+      },
+      {
+        "begin_us": 329174846,
+        "cycle_us": 1560806,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537900
+      },
+      {
+        "begin_us": 330735652,
+        "cycle_us": 1688810,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1571568
+      },
+      {
+        "begin_us": 332424462,
+        "cycle_us": 1731799,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1717373
+      },
+      {
+        "begin_us": 334156261,
+        "cycle_us": 1985237,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1791470
+      },
+      {
+        "begin_us": 336141498,
+        "cycle_us": 1781240,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1766470
+      },
+      {
+        "begin_us": 337922738,
+        "cycle_us": 1698611,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539829
+      },
+      {
+        "begin_us": 339621349,
+        "cycle_us": 1554830,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540194
+      },
+      {
+        "begin_us": 341176179,
+        "cycle_us": 1565307,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542563
+      },
+      {
+        "begin_us": 342741486,
+        "cycle_us": 1681270,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536782
+      },
+      {
+        "begin_us": 344422756,
+        "cycle_us": 1554112,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537586
+      },
+      {
+        "begin_us": 345976868,
+        "cycle_us": 1561201,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538441
+      },
+      {
+        "begin_us": 347538069,
+        "cycle_us": 1682006,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536799
+      },
+      {
+        "begin_us": 349220075,
+        "cycle_us": 1555171,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540002
+      },
+      {
+        "begin_us": 350775246,
+        "cycle_us": 1561346,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539120
+      },
+      {
+        "begin_us": 352336592,
+        "cycle_us": 1683791,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537101
+      },
+      {
+        "begin_us": 354020383,
+        "cycle_us": 1552218,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538288
+      },
+      {
+        "begin_us": 355572601,
+        "cycle_us": 2779973,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 2586069
+      },
+      {
+        "begin_us": 358352574,
+        "cycle_us": 1550137,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535903
+      },
+      {
+        "begin_us": 359902711,
+        "cycle_us": 1699633,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537564
+      },
+      {
+        "begin_us": 361602344,
+        "cycle_us": 1553432,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538389
+      },
+      {
+        "begin_us": 363155776,
+        "cycle_us": 1560520,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537013
+      },
+      {
+        "begin_us": 364716296,
+        "cycle_us": 1575602,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1553022
+      },
+      {
+        "begin_us": 366291898,
+        "cycle_us": 1561521,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538992
+      },
+      {
+        "begin_us": 367853419,
+        "cycle_us": 1732813,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537016
+      },
+      {
+        "begin_us": 369586232,
+        "cycle_us": 1568546,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1554142
+      },
+      {
+        "begin_us": 371154778,
+        "cycle_us": 1559971,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536258
+      },
+      {
+        "begin_us": 372714749,
+        "cycle_us": 1819753,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1624418
+      },
+      {
+        "begin_us": 374534502,
+        "cycle_us": 1625371,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1611857
+      },
+      {
+        "begin_us": 376159873,
+        "cycle_us": 1856727,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1685072
+      },
+      {
+        "begin_us": 378016600,
+        "cycle_us": 1663190,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1648122
+      },
+      {
+        "begin_us": 379679790,
+        "cycle_us": 1741615,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1717593
+      },
+      {
+        "begin_us": 381421405,
+        "cycle_us": 1732163,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537339
+      },
+      {
+        "begin_us": 383153568,
+        "cycle_us": 1552346,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537694
+      },
+      {
+        "begin_us": 384705914,
+        "cycle_us": 1560539,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537965
+      },
+      {
+        "begin_us": 386266453,
+        "cycle_us": 1557859,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535366
+      },
+      {
+        "begin_us": 387824312,
+        "cycle_us": 1737991,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1543343
+      },
+      {
+        "begin_us": 389562303,
+        "cycle_us": 1555939,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540510
+      },
+      {
+        "begin_us": 391118242,
+        "cycle_us": 1696454,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540292
+      },
+      {
+        "begin_us": 392814696,
+        "cycle_us": 1555449,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1540212
+      },
+      {
+        "begin_us": 394370145,
+        "cycle_us": 1559526,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1537910
+      },
+      {
+        "begin_us": 395929671,
+        "cycle_us": 1559533,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536168
+      },
+      {
+        "begin_us": 397489204,
+        "cycle_us": 1559500,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1535465
+      },
+      {
+        "begin_us": 399048704,
+        "cycle_us": 1770999,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1655560
+      },
+      {
+        "begin_us": 400819703,
+        "cycle_us": 1766198,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1751380
+      },
+      {
+        "begin_us": 402585901,
+        "cycle_us": 1965478,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1771131
+      },
+      {
+        "begin_us": 404551379,
+        "cycle_us": 3866518,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 3619193
+      },
+      {
+        "begin_us": 408417897,
+        "cycle_us": 2343833,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 2320369
+      },
+      {
+        "begin_us": 410761730,
+        "cycle_us": 1681667,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1657986
+      },
+      {
+        "begin_us": 412443397,
+        "cycle_us": 1791623,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1768715
+      },
+      {
+        "begin_us": 414235020,
+        "cycle_us": 1916418,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1723258
+      },
+      {
+        "begin_us": 416151438,
+        "cycle_us": 2484281,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 2462551
+      },
+      {
+        "begin_us": 418635719,
+        "cycle_us": 1782664,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1760592
+      },
+      {
+        "begin_us": 420418383,
+        "cycle_us": 2197949,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 2065444
+      },
+      {
+        "begin_us": 422616332,
+        "cycle_us": 2113103,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 2090068
+      },
+      {
+        "begin_us": 424729435,
+        "cycle_us": 1792642,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1598875
+      },
+      {
+        "begin_us": 426522077,
+        "cycle_us": 1560719,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1544000
+      },
+      {
+        "begin_us": 428082796,
+        "cycle_us": 1562406,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1539020
+      },
+      {
+        "begin_us": 429645202,
+        "cycle_us": 1737274,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1542382
+      },
+      {
+        "begin_us": 431382476,
+        "cycle_us": 1548522,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1534893
+      },
+      {
+        "begin_us": 432930998,
+        "cycle_us": 1561532,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1538648
+      },
+      {
+        "begin_us": 434492530,
+        "cycle_us": 1722909,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1536517
+      },
+      {
+        "begin_us": 436215439,
+        "cycle_us": 1559057,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 25967,
+        "sum_response_wait_us_may_overlap": 1545444
+      },
+      {
+        "begin_us": 437774496,
+        "cycle_us": 4621557,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "10": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 413319,
+        "sum_response_wait_us_may_overlap": 4420786
+      },
+      {
+        "begin_us": 442396053,
+        "cycle_us": 1727661,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1701463
+      },
+      {
+        "begin_us": 444123714,
+        "cycle_us": 1890410,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1705510
+      },
+      {
+        "begin_us": 446014124,
+        "cycle_us": 1714140,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1699275
+      },
+      {
+        "begin_us": 447728264,
+        "cycle_us": 1687100,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1547530
+      },
+      {
+        "begin_us": 449415364,
+        "cycle_us": 1656816,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1640494
+      },
+      {
+        "begin_us": 451072180,
+        "cycle_us": 1764953,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1742492
+      },
+      {
+        "begin_us": 452837133,
+        "cycle_us": 1778507,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1614264
+      },
+      {
+        "begin_us": 454615640,
+        "cycle_us": 1553987,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538842
+      },
+      {
+        "begin_us": 456169627,
+        "cycle_us": 1562603,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1540221
+      },
+      {
+        "begin_us": 457732230,
+        "cycle_us": 1565308,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1542508
+      },
+      {
+        "begin_us": 459297538,
+        "cycle_us": 1715186,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536505
+      },
+      {
+        "begin_us": 461012724,
+        "cycle_us": 1552566,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538224
+      },
+      {
+        "begin_us": 462565290,
+        "cycle_us": 1652776,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538503
+      },
+      {
+        "begin_us": 464218066,
+        "cycle_us": 1555665,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1540501
+      },
+      {
+        "begin_us": 465773731,
+        "cycle_us": 1564734,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1542211
+      },
+      {
+        "begin_us": 467338465,
+        "cycle_us": 1560514,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537355
+      },
+      {
+        "begin_us": 468898979,
+        "cycle_us": 1715777,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1547118
+      },
+      {
+        "begin_us": 470614756,
+        "cycle_us": 1552717,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537975
+      },
+      {
+        "begin_us": 472167473,
+        "cycle_us": 1649646,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536325
+      },
+      {
+        "begin_us": 473817119,
+        "cycle_us": 1553332,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538791
+      },
+      {
+        "begin_us": 475370451,
+        "cycle_us": 1558975,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537038
+      },
+      {
+        "begin_us": 476929426,
+        "cycle_us": 1559494,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536774
+      },
+      {
+        "begin_us": 478488920,
+        "cycle_us": 1723487,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1540713
+      },
+      {
+        "begin_us": 480212407,
+        "cycle_us": 1554884,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1539294
+      },
+      {
+        "begin_us": 481767291,
+        "cycle_us": 1845902,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1655266
+      },
+      {
+        "begin_us": 483613193,
+        "cycle_us": 1553223,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1539092
+      },
+      {
+        "begin_us": 485166416,
+        "cycle_us": 1801812,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1780147
+      },
+      {
+        "begin_us": 486968228,
+        "cycle_us": 1849892,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1742530
+      },
+      {
+        "begin_us": 488818120,
+        "cycle_us": 2645139,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2621218
+      },
+      {
+        "begin_us": 491463259,
+        "cycle_us": 3106263,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2912078
+      },
+      {
+        "begin_us": 494569522,
+        "cycle_us": 1751282,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1737175
+      },
+      {
+        "begin_us": 496320804,
+        "cycle_us": 1891638,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1738056
+      },
+      {
+        "begin_us": 498212442,
+        "cycle_us": 1751034,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1737570
+      },
+      {
+        "begin_us": 499963476,
+        "cycle_us": 1852900,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1733985
+      },
+      {
+        "begin_us": 501816376,
+        "cycle_us": 1557163,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1542676
+      },
+      {
+        "begin_us": 503373539,
+        "cycle_us": 1643651,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536488
+      },
+      {
+        "begin_us": 505017190,
+        "cycle_us": 1552980,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538714
+      },
+      {
+        "begin_us": 506570170,
+        "cycle_us": 1558273,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1535276
+      },
+      {
+        "begin_us": 508128443,
+        "cycle_us": 1560587,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538170
+      },
+      {
+        "begin_us": 509689030,
+        "cycle_us": 1721498,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536320
+      },
+      {
+        "begin_us": 511410528,
+        "cycle_us": 1549427,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1535121
+      },
+      {
+        "begin_us": 512959955,
+        "cycle_us": 1653311,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536796
+      },
+      {
+        "begin_us": 514613266,
+        "cycle_us": 1554532,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1539347
+      },
+      {
+        "begin_us": 516167798,
+        "cycle_us": 1559527,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536511
+      },
+      {
+        "begin_us": 517727325,
+        "cycle_us": 1566002,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538337
+      },
+      {
+        "begin_us": 519293327,
+        "cycle_us": 1717712,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1535430
+      },
+      {
+        "begin_us": 521011039,
+        "cycle_us": 1551162,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537344
+      },
+      {
+        "begin_us": 522562201,
+        "cycle_us": 1655465,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1533893
+      },
+      {
+        "begin_us": 524217666,
+        "cycle_us": 2446984,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2423396
+      },
+      {
+        "begin_us": 526664650,
+        "cycle_us": 1949192,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1926142
+      },
+      {
+        "begin_us": 528613842,
+        "cycle_us": 1985674,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1788727
+      },
+      {
+        "begin_us": 530599516,
+        "cycle_us": 1921413,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1799205
+      },
+      {
+        "begin_us": 532520929,
+        "cycle_us": 1553143,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537989
+      },
+      {
+        "begin_us": 534074072,
+        "cycle_us": 1557077,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1534367
+      },
+      {
+        "begin_us": 535631149,
+        "cycle_us": 1560079,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537703
+      },
+      {
+        "begin_us": 537191228,
+        "cycle_us": 1738025,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1541821
+      },
+      {
+        "begin_us": 538929253,
+        "cycle_us": 1552554,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1539025
+      },
+      {
+        "begin_us": 540481807,
+        "cycle_us": 1699656,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536390
+      },
+      {
+        "begin_us": 542181463,
+        "cycle_us": 1549928,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1535969
+      },
+      {
+        "begin_us": 543731391,
+        "cycle_us": 1564217,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1541227
+      },
+      {
+        "begin_us": 545295608,
+        "cycle_us": 1559103,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536898
+      },
+      {
+        "begin_us": 546854711,
+        "cycle_us": 1567682,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1543815
+      },
+      {
+        "begin_us": 548422393,
+        "cycle_us": 1733540,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537945
+      },
+      {
+        "begin_us": 550155933,
+        "cycle_us": 1549475,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1534456
+      },
+      {
+        "begin_us": 551705408,
+        "cycle_us": 1559612,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537482
+      },
+      {
+        "begin_us": 553265020,
+        "cycle_us": 1731740,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1537906
+      },
+      {
+        "begin_us": 554996760,
+        "cycle_us": 1554826,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1540313
+      },
+      {
+        "begin_us": 556551586,
+        "cycle_us": 3182196,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2986195
+      },
+      {
+        "begin_us": 559733782,
+        "cycle_us": 1557325,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1543106
+      },
+      {
+        "begin_us": 561291107,
+        "cycle_us": 1588213,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1566030
+      },
+      {
+        "begin_us": 562879320,
+        "cycle_us": 1730662,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1536792
+      },
+      {
+        "begin_us": 564609982,
+        "cycle_us": 1553078,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1538262
+      },
+      {
+        "begin_us": 566163060,
+        "cycle_us": 1719071,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1695682
+      },
+      {
+        "begin_us": 567882131,
+        "cycle_us": 2724193,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2529896
+      },
+      {
+        "begin_us": 570606324,
+        "cycle_us": 2077909,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2055503
+      },
+      {
+        "begin_us": 572684233,
+        "cycle_us": 2012697,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1990737
+      },
+      {
+        "begin_us": 574696930,
+        "cycle_us": 1898157,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 1704329
+      },
+      {
+        "begin_us": 576595087,
+        "cycle_us": 2146068,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2122216
+      },
+      {
+        "begin_us": 578741155,
+        "cycle_us": 2154171,
+        "receive_bytes": 20497,
+        "request_counts": {
+          "6": 11,
+          "8": 1,
+          "9": 1,
+          "16": 2
+        },
+        "response_counts": {
+          "8": 1,
+          "9": 1
+        },
+        "send_bytes": 26991,
+        "sum_response_wait_us_may_overlap": 2131950
+      }
+    ],
+    "target_api_calls": 284,
+    "target_tokens_per_api_call": [
+      2,
+      2,
+      56,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "timing_definition": "Client process monotonic clock; wait sums are not a critical-path decomposition",
+    "total_received_protocol_bytes": 6991455,
+    "total_sent_protocol_bytes": 64740815,
+    "trace_events": 5680
+  },
+  "ttft_s": 23.060123999999632,
+  "tunnel_log": "Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.\nHave fun!\nConnection to ssh5.vast.ai closed by remote host.\n",
+  "tunnel_log_sha256": "fb76dfcffc179533c87bc6449d7e885e0b556fb8ee47e5918316c74e2761029d"
+}

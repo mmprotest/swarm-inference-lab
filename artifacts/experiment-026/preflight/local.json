@@ -1,0 +1,56 @@
+{
+  "probes": [
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "d4b4cabd67bb3ef65ce8f2fe997099cb3487822b\n"
+    },
+    {
+      "command": [
+        "git",
+        "status",
+        "--porcelain=v1"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": " M .gitignore\n M third_party/colibri\n?? artifacts/acceptance-native-final/\n?? artifacts/acceptance-rc11-final/\n?? artifacts/acceptance-rc2-final/\n?? artifacts/acceptance-rc3-final/\n?? artifacts/acceptance-rc4-final/\n?? artifacts/acceptance-rc5-final/\n?? artifacts/acceptance-rc6-final/\n?? artifacts/acceptance-rc7-final/\n?? artifacts/acceptance-rc8-final/\n?? artifacts/acceptance/\n?? artifacts/actions-python-versions-manifest.json\n?? artifacts/benchmarks/\n?? artifacts/ci-rc3/\n?? artifacts/ci-rc4/\n?? artifacts/experiment-014/\n?? artifacts/experiment-015-deployment-h014-037-backup/\n?? artifacts/experiment-015-deployment-h014-038-pre-network-backup/\n?? artifacts/experiment-015-deployment-h014-038al-staging/\n?? artifacts/experiment-015-deployment/\n?? artifacts/experiment-015/\n?? artifacts/experiment-016/\n?? artifacts/experiment-017/\n?? artifacts/experiment-018/\n?? artifacts/experiment-019/\n?? artifacts/experiment-020/\n?? artifacts/experiment-021/\n?? artifacts/experiment-022/\n?? artifacts/experiment-023/\n?? artifacts/experiment-024/\n?? artifacts/experiment-026/\n?? artifacts/installer-clean-local.json\n?? artifacts/installer-clean-post-record-fix.json\n?? artifacts/installer-clean-tagged-final.json\n?? artifacts/installer-python-final.xml\n?? artifacts/installer-rollback-logs/\n?? artifacts/installer-smoke-windows-x86_64-cpu.json\n?? artifacts/installer-uninstall-local.json\n?? artifacts/installer-upgrade-local.json\n?? artifacts/integration-failure-final.xml\n?? artifacts/major-model-acceptance/\n?? artifacts/p0_baseline/installer-rollback-logs/\n?? artifacts/p0_baseline/runtime-profiles/\n?? artifacts/pre-physical-acceptance/\n?? artifacts/rc-acceptance-unit-fix.xml\n?? artifacts/rc-corrections-baseline-local-temp.xml\n?? artifacts/rc-corrections-baseline.xml\n?? artifacts/rc-integration-final-1.xml\n?? artifacts/rc-integration-py312-final.xml\n?? artifacts/rc-integration-py312-release-final.xml\n?? artifacts/rc-integration-py312.xml\n?? artifacts/rc-integration-py313-release-final.xml\n?? artifacts/rc-integration-py313.xml\n?? artifacts/rc-integration-release-final.xml\n?? artifacts/rc-integration-uv-final-2.xml\n?? artifacts/rc-integration-uv-final.xml\n?? artifacts/rc-product-process-zero-skip.xml\n?? artifacts/rc-unit-final-1.xml\n?? artifacts/rc-unit-pass-1.xml\n?? artifacts/rc-unit-py312-release-final.xml\n?? artifacts/rc-unit-py312.xml\n?? artifacts/rc-unit-py313-release-final.xml\n?? artifacts/rc-unit-py313.xml\n?? artifacts/rc-unit-release-final.xml\n?? artifacts/rc-unit-uv-final.xml\n?? artifacts/rc-wheel-integration-focused.xml\n?? artifacts/release-identity-final.json\n?? artifacts/release-identity-precommit.json\n?? artifacts/release-identity-rc2.json\n?? artifacts/release-identity-rc3.json\n?? artifacts/release-job-92589678077.log\n?? artifacts/runs/experiment-011-20260804T051700Z.zip.sha256.json\n?? artifacts/runs/experiment-011-bundle-smoke-20260804.zip.sha256.json\n?? artifacts/runs/experiment-011-cleanup-smoke-console.txt\n?? artifacts/runs/experiment-025-20260819T013016Z/\n?? artifacts/unit-final.xml\n?? artifacts/wheel-install-windows-x86_64-cpu.json\n?? artifacts/wheel-isolation-native-final.json\n?? artifacts/wheel-isolation-rc2.json\n?? artifacts/windows-clean-final-commit-rc4.json\n?? artifacts/windows-clean-final-tagged-rc2.json\n?? artifacts/windows-clean-probe-rc10.json\n?? artifacts/windows-clean-probe-rc11.json\n?? artifacts/windows-clean-probe-rc9.json\n?? artifacts/windows-clean-rc2.json\n?? artifacts/windows-clean-retained-rc11.json\n?? artifacts/windows-uninstall-probe-rc11.json\n?? artifacts/windows-uninstall-probe-rc9.json\n?? artifacts/windows-uninstall-rc2.json\n?? artifacts/windows-upgrade-probe-rc11.json\n?? artifacts/windows-upgrade-probe-rc9.json\n?? artifacts/windows-upgrade-rc2.json\n?? docs/experiments/EXPERIMENT_026_PLAN.md\n?? src/swarm_inference/experiments/experiment_026/\n"
+    },
+    {
+      "command": [
+        "nvidia-smi",
+        "--query-gpu=name,uuid,memory.total,memory.used,driver_version,compute_cap",
+        "--format=csv"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "name, uuid, memory.total [MiB], memory.used [MiB], driver_version, compute_cap\nNVIDIA GeForce RTX 5090, GPU-8e79b31d-7efe-e59d-a370-0e0add109e49, 32607 MiB, 1721 MiB, 591.86, 12.0\n"
+    },
+    {
+      "command": [
+        "nvcc",
+        "--version"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Wed_Aug_20_13:58:20_Pacific_Daylight_Time_2025\nCuda compilation tools, release 13.0, V13.0.88\nBuild cuda_13.0.r13.0/compiler.36424714_0\n"
+    },
+    {
+      "command": [
+        "git",
+        "-C",
+        ".runtime/e026-llama.cpp",
+        "rev-parse",
+        "HEAD"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "72797e89198ab564fd0e6baa54ab196e8dd1d884\n"
+    }
+  ],
+  "timestamp": "2026-09-10T08:50:27.121123+00:00"
+}

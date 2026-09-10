@@ -48,24 +48,115 @@ installer/windows/payload/
 .env.*
 !.env.example
 
-# Generated experiment outputs, model shards, profiles, and test evidence.
-# Keep only the placeholder files needed to retain the directory structure.
-artifacts/*
+# Track lightweight experiment evidence and metadata. Keep local runtimes,
+# model payloads, archives, and current files >= 50 MiB out of Git.
 .runtime/
-!artifacts/.gitkeep
-!artifacts/runs/
-!artifacts/models/
-!artifacts/validation/
-!artifacts/p0_baseline/
-artifacts/runs/*
-artifacts/models/*
-artifacts/validation/*
-artifacts/p0_baseline/*
-!artifacts/runs/.gitkeep
-!artifacts/models/.gitkeep
-!artifacts/validation/.gitkeep
-!artifacts/p0_baseline/*.md
-!artifacts/p0_baseline/*.json
+/artifacts/models/
+/artifacts/backend-environments/
+/artifacts/**/*.zip
+/artifacts/**/*.tar
+/artifacts/**/*.tar.gz
+
+# Generated acceptance/CI workspaces are reproducible test output, not sealed
+# experiment evidence. Keep experiment-* trees available for explicit sealing.
+/artifacts/acceptance*/
+/artifacts/major-model-acceptance/
+/artifacts/pre-physical-acceptance/
+/artifacts/ci-*/
+/artifacts/installer-rollback-logs/
+/artifacts/p0_baseline/installer-rollback-logs/
+/artifacts/p0_baseline/runtime-profiles/
+/artifacts/actions-python-versions-manifest.json
+/artifacts/installer-*.json
+/artifacts/installer-*.xml
+/artifacts/integration-*.xml
+/artifacts/rc-*.xml
+/artifacts/release-identity-*.json
+/artifacts/release-job-*.log
+/artifacts/unit-*.xml
+/artifacts/wheel-*.json
+/artifacts/windows-*.json
+
+# Runtime/test state may contain live endpoints or generated credentials and
+# can include permission-protected files. Ignore it wherever a harness nests it.
+/artifacts/**/temp/
+/artifacts/**/tmp/
+/artifacts/**/test-temp/
+/artifacts/**/pytest-temp*/
+/artifacts/**/*-temp/
+/artifacts/**/scratch/
+/artifacts/**/.runtime/
+/artifacts/**/runtime/
+/artifacts/**/pairing-invitations/
+/artifacts/**/replay/
+/artifacts/**/requests/
+/artifacts/**/.cache/
+/artifacts/**/research-cache/
+/artifacts/**/model-cache/
+/artifacts/**/download-cache/
+/artifacts/**/*-env/
+/artifacts/**/credentials/
+/artifacts/**/credential
+/artifacts/**/request-scratch/
+/artifacts/**/replay-scratch/
+/artifacts/**/*.pem
+/artifacts/**/*.key
+/artifacts/**/*.p12
+/artifacts/**/*.pfx
+/artifacts/**/*.uri
+/artifacts/**/*.pid
+/artifacts/**/*.lock
+/artifacts/**/*.tmp
+
+# Bulky generated tensors, checkpoints, telemetry, and debug streams. Keep
+# compact receipts, summaries, manifests, and canonical metrics trackable.
+/artifacts/**/*.npy
+/artifacts/**/*.npz
+/artifacts/**/*.f16
+/artifacts/**/*.f32
+/artifacts/**/*.bf16
+/artifacts/**/*.bin
+/artifacts/**/*.blob
+/artifacts/**/*.dump
+/artifacts/**/*.stdout.log
+/artifacts/**/*.stderr.log
+/artifacts/**/resource-utilization.csv
+/artifacts/**/replica-actions.csv
+/artifacts/**/candidate-catalog.json
+/artifacts/**/inventory-suite.json
+/artifacts/**/full-fleet-offer-snapshot*.json
+/artifacts/**/FULL_FLEET_GO*.json
+/artifacts/**/worker-manifest-1g.json
+/artifacts/**/full-93-sharded*.json
+/artifacts/**/*-raw*.json
+/artifacts/**/*offer-snapshot*.json
+/artifacts/benchmarks/experiment-004/prechange/legacy-one-worker-shards/
+/artifacts/benchmarks/experiment-004/prechange/legacy-process-baseline*
+
+# Oversized generated experiment files (Git cannot ignore by file size).
+/artifacts/benchmarks/experiment-004/prechange/legacy-baseline-trace.json
+/artifacts/experiment-014/deployment/h014-037a-final-physical-placement.json
+/artifacts/experiment-014/deployment/h014-037b4-stale-blocked-package/manifests/k3-3090-placement-manifest.json
+/artifacts/experiment-014/k3-3090-placement-manifest.json
+/artifacts/experiment-014/k3-3090-placement-manifest-73.json
+/artifacts/experiment-014/k3-checkpoint-census.json
+/artifacts/experiment-015-deployment/manifests/k3-3090-placement-manifest.json
+/artifacts/experiment-015-deployment-h014-037-backup/manifests/k3-3090-placement-manifest.json
+/artifacts/experiment-015-deployment-h014-038al-staging/manifests/k3-3090-placement-manifest.json
+/artifacts/experiment-015-deployment-h014-038-pre-network-backup/manifests/k3-3090-placement-manifest.json
+/artifacts/experiment-018/wavefront/event-traces/fine-winning.json
+/artifacts/experiment-019/physical/expert-stripe-raw.json
+/artifacts/experiment-019/physical/shard-service-raw.json
+/artifacts/experiment-019/placement/checkpoint-read-audit.json
+/artifacts/experiment-019/placement/tensor-census.csv
+/artifacts/experiment-019/placement/tensor-coverage.csv
+/artifacts/experiment-019/simulation/event-traces/winning-tier-a.json
+/artifacts/experiment-020/correctness/full-93-sharded.json
+/artifacts/experiment-020/placement/tensor-coverage.csv
+/artifacts/experiment-021/placement/checkpoint-coverage.csv
+/artifacts/experiment-022/correctness/worker-process-full-93-raw.json
+/artifacts/experiment-022/validation/resident-expert-bank-raw.json
+/artifacts/runs/experiment-025-20260819T013016Z/preflight/physical-placement.json
 
 # Local profiler/compiler output and operating-system metadata.
 torchinductor_*/
