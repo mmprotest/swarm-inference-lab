@@ -1,0 +1,45 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/measure_vram.py
+@@
+ import socket
+ import subprocess
+ import time
++import urllib.error
++import urllib.request
+@@
+     parser.add_argument("--configuration", type=Path, required=True)
+     parser.add_argument("--output", type=Path, required=True)
++    parser.add_argument("--port", type=int)
+     args = parser.parse_args()
+     configuration = json.loads(args.configuration.read_text(encoding="utf-8"))
+-    command = configuration["command"]
++    command = list(configuration["command"])
+     port = int(command[command.index("--port") + 1])
++    if args.port is not None:
++        port = args.port
++        command[command.index("--port") + 1] = str(port)
++    try:
++        with socket.create_connection(("127.0.0.1", port), timeout=0.25):
++            raise RuntimeError(f"Refusing occupied measurement port {port}")
++    except ConnectionRefusedError:
++        pass
+@@
+-                try:
+-                    with socket.create_connection(("127.0.0.1", port), timeout=1):
+-                        break
+-                except OSError:
++                try:
++                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as response:
++                        health = json.load(response)
++                        if response.status == 200 and health.get("status") == "ok":
++                            break
++                except (OSError, urllib.error.URLError, json.JSONDecodeError):
+                     if process.poll() is not None:
+                         raise RuntimeError("llama-server exited before readiness")
+                     if time.monotonic() >= deadline:
+                         raise TimeoutError("llama-server readiness")
+                     time.sleep(0.25)
++            if process.poll() is not None:
++                raise RuntimeError("llama-server exited at readiness boundary")
++            time.sleep(0.5)
+*** End Patch

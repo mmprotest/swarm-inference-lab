@@ -1,0 +1,46 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/rpc_router.py
+@@
+         self.tx=[0]*len(peers)
+         self.rx=[0]*len(peers)
++        self.pending_cache=[0]*len(peers)
++
++    def drain_cache(self,worker):
++        count=self.pending_cache[worker]
++        if not count:return
++        start=time.perf_counter()
++        for _ in range(count):
++            data=response(self.peers[worker])
++            self.rx[worker]+=len(data)+8
++            if data!=b"\x01":raise RuntimeError("Required verified cached tensor is unavailable")
++        self.pending_cache[worker]=0
++        self.log({"event":"CACHE_BATCH_DRAIN","worker":worker,"count":count,
++                  "response_bytes":count*9,"elapsed_s":time.perf_counter()-start})
++
++    def defer_cache(self,worker,payload):
++        packet=struct.pack("<BQ",7,len(payload))+payload
++        self.peers[worker].sendall(packet)
++        self.tx[worker]+=len(packet)
++        self.pending_cache[worker]+=1
++        self.log({"event":"CACHE_LOOKUP_ENQUEUED","worker":worker,"pending":self.pending_cache[worker],
++                  "request_bytes":len(packet)})
+ 
+     def send(self,worker,cmd,payload,reply=None):
++        self.drain_cache(worker)
+         packet=struct.pack("<BQ",cmd,len(payload))+payload
+@@
+             self.rewrite(data,0,worker)
+             if cmd==19:
+-                result=self.send(worker,7,data)
+-                if result!=b"\x01":raise RuntimeError("Required verified cached tensor is unavailable")
++                self.defer_cache(worker,data)
+                 self.log({"event":"REQUIRED_CACHE_HIT","worker":worker})
+                 return None
+@@
+     def close(self):
+-        for peer in self.peers:peer.close()
++        for worker,peer in enumerate(self.peers):
++            try:self.drain_cache(worker)
++            finally:peer.close()
+*** End Patch
+

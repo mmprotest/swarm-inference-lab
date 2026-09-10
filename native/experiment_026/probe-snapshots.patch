@@ -1,0 +1,9 @@
+*** Begin Patch
+*** Update File: native/experiment_026/state_probe.cpp
+@@
+         cp.n_seq_max = 1;
++        cp.n_rs_seq = cfg.value("recurrent_snapshots", 0);
+@@
+         if (!ctx) throw std::runtime_error("Context creation failed");
++        if (cfg.value("embeddings_nextn", false)) llama_set_embeddings_nextn(ctx, true, false);
+*** End Patch

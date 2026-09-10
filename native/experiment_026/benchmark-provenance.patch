@@ -1,0 +1,28 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/benchmark.py
+@@
+     parser.add_argument("--tensor-split", default="")
++    parser.add_argument("--topology-class", default="")
++    parser.add_argument("--startup-timeout", type=float, default=1800)
++    parser.add_argument("--residency", default="LOCAL_DISK_PRESENT_OS_PAGE_CACHE_UNCONTROLLED")
+@@
+     config = {"command": command, "model_sha256": model_receipt["sha256"], "spec_type": args.spec_type,
+               "depth": args.depth, "n_predict": args.n_predict, "n_probs": args.n_probs, "rpc": args.rpc,
+               "binary_sha256": file_digest(server), "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()}
++    config["topology_class"] = args.topology_class or ("LOCAL_LOGICAL_RPC" if args.rpc else "LOCAL_SINGLE_MACHINE")
++    config["runtime_files_sha256"] = {p.name: file_digest(p) for p in sorted(args.runtime.glob("*.dll"))}
++    config["llama_commit"] = subprocess.check_output(["git", "-C", ".runtime/e026-llama.cpp", "rev-parse", "HEAD"], text=True).strip()
++    config["llama_diff_sha256"] = digest(subprocess.check_output(["git", "-C", ".runtime/e026-llama.cpp", "diff", "HEAD"], text=True))
++    config["dirty_tree"] = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True)
++    config["instrumentation_environment"] = {k: os.environ.get(k) for k in ("E026_TRACE", "GGML_RPC_NO_RDMA")}
++    config["residency"] = args.residency
++    config["request_timeout"] = 1800
+@@
+-            if time.perf_counter() - start > 600:
+-                raise TimeoutError("Server readiness exceeded 600s")
++            if time.perf_counter() - start > args.startup_timeout:
++                raise TimeoutError("Server readiness exceeded configured timeout")
+@@
+-                                          "residency": "LOCAL_DISK_PRESENT_OS_PAGE_CACHE_UNCONTROLLED"})
++                                          "residency": args.residency})
+*** End Patch

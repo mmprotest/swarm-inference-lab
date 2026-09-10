@@ -1,0 +1,47 @@
+*** Begin Patch
+*** Update File: tests/experiments/test_experiment_026_routing.py
+@@
+-from swarm_inference.experiments.experiment_026.rpc_replica import TENSOR_SIZE
++from swarm_inference.experiments.experiment_026.rpc_replica import TENSOR_SIZE,ReplicaConnection
+@@
+ def test_cache_lookups_pipeline_then_fail_closed_drain():
+@@
+     client.close()
+     server.close()
++
++
++def test_replica_cache_lookup_is_deferred_and_validated_on_both_workers():
++    primary,primary_server=socket.socketpair()
++    standby,standby_server=socket.socketpair()
++    events=[]
++    obj=object.__new__(ReplicaConnection)
++    obj.client=None
++    obj.primary=primary
++    obj.standby=standby
++    obj.log=events.append
++    obj.buffers={}
++    obj.failed=False
++    obj.index=0
++    obj.tx=[0,0]
++    obj.rx=[0,0]
++    obj.cache_hashes=frozenset({42})
++    obj.pending_cache=0
++    def worker(stream):
++        header=stream.recv(9)
++        cmd,size=struct.unpack("<BQ",header)
++        assert cmd==7
++        assert len(stream.recv(size))==312
++        stream.sendall(struct.pack("<Q",1)+b"\x01")
++    threads=[threading.Thread(target=worker,args=(stream,)) for stream in (primary_server,standby_server)]
++    for thread in threads:thread.start()
++    payload=bytearray(312)
++    struct.pack_into("<Q",payload,304,42)
++    assert obj.transact(7,bytes(payload))==b"\x01"
++    assert obj.pending_cache==1
++    obj.drain_cache()
++    assert obj.pending_cache==0
++    assert events[-1]["event"]=="REPLICA_CACHE_BATCH_DRAIN"
++    for thread in threads:thread.join(timeout=2)
++    for stream in (primary,primary_server,standby,standby_server):stream.close()
+*** End Patch
+

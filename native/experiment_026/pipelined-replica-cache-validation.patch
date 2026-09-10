@@ -1,0 +1,96 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/rpc_replica.py
+@@
+-class ReplicaConnection:
+-    def __init__(self, client: socket.socket, primary: tuple, standby: tuple, log):
++class ReplicaConnection:
++    def __init__(self, client: socket.socket, primary: tuple, standby: tuple, log, cache_hashes=frozenset()):
+@@
+         self.index = 0
+         self.tx = [0, 0]
+         self.rx = [0, 0]
++        self.cache_hashes=cache_hashes
++        self.pending_cache=0
++
++    def enqueue_verified_cache(self,payload,translated):
++        standby_packet=struct.pack("<BQ",7,len(translated))+translated
++        primary_packet=struct.pack("<BQ",7,len(payload))+payload
++        self.standby.sendall(standby_packet)
++        self.tx[1]+=len(standby_packet)
++        if not self.failed:
++            try:
++                self.primary.sendall(primary_packet)
++                self.tx[0]+=len(primary_packet)
++            except (OSError,EOFError) as error:self.fail(error)
++        self.pending_cache+=1
++        self.log({"event":"REPLICA_CACHE_LOOKUP_ENQUEUED","command_index":self.index,
++                  "pending":self.pending_cache,"primary_failed":self.failed})
++
++    def drain_cache(self):
++        count=self.pending_cache
++        if not count:return
++        start=time.perf_counter()
++        for _ in range(count):
++            primary_reply=None
++            if not self.failed:
++                try:
++                    primary_reply=response(self.primary)
++                    self.rx[0]+=8+len(primary_reply)
++                except (OSError,EOFError) as error:self.fail(error)
++            standby_reply=response(self.standby)
++            self.rx[1]+=8+len(standby_reply)
++            if standby_reply!=b"\x01" or (primary_reply is not None and primary_reply!=b"\x01"):
++                raise RuntimeError("Required verified replica cache tensor is unavailable")
++        self.pending_cache=0
++        self.log({"event":"REPLICA_CACHE_BATCH_DRAIN","count":count,
++                  "seconds":time.perf_counter()-start,"primary_failed":self.failed})
+@@
+     def transact(self, cmd: int, payload: bytes) -> bytes | None:
+         start = time.perf_counter()
+         translated = self.translate(cmd, payload)
++        cache_key=struct.unpack_from("<Q",payload,304)[0] if cmd==7 and len(payload)>=312 else None
++        if cache_key in self.cache_hashes:
++            self.enqueue_verified_cache(payload,translated)
++            self.index+=1
++            return b"\x01"
++        self.drain_cache()
+@@
+     def run(self):
+         try:
+@@
+         finally:
+-            self.primary.close()
+-            self.standby.close()
++            try:self.drain_cache()
++            finally:
++                self.primary.close()
++                self.standby.close()
+@@
+     parser.add_argument("--log", type=Path, required=True)
++    parser.add_argument("--cache-manifest",type=Path)
+@@
+     primary, standby = endpoint(args.primary), endpoint(args.standby)
++    manifest=json.loads(args.cache_manifest.read_text()) if args.cache_manifest else {"tensors":[]}
++    cache_hashes=frozenset(int(row["rpc_fnv1a"],16) for row in manifest["tensors"])
+@@
+-                ReplicaConnection(self.request, primary, standby, log).run()
++                ReplicaConnection(self.request, primary, standby, log,cache_hashes).run()
+@@
+              "primary": args.primary, "standby": args.standby, "tensor_abi_bytes": TENSOR_SIZE,
+-             "primary_socket_timeout_s":30})
++             "primary_socket_timeout_s":30,"required_cache_hashes":len(cache_hashes)})
+*** Update File: src/swarm_inference/experiments/experiment_026/deploy_replica.py
+@@
+     p.add_argument("--standby",default="127.0.0.1:42643")
++    p.add_argument("--cache-manifest",type=Path,default=Path("artifacts/experiment-026/acquisition/remote-stage-a-all-002.json"))
+@@
+              "--port",str(a.port),"--primary",a.primary,"--standby",a.standby,
+-             "--log",str(folder/"replica.jsonl")]
++             "--log",str(folder/"replica.jsonl"),"--cache-manifest",str(a.cache_manifest)]
+@@
+          "standby_node":inventory["b"],"replication_scope":"ALL_RPC_COMMANDS_AND_MUTABLE_BUFFERS",
+-         "source_sha256":file_digest(Path(__file__).with_name("rpc_replica.py"))}
++         "source_sha256":file_digest(Path(__file__).with_name("rpc_replica.py")),
++         "cache_manifest":str(a.cache_manifest),"cache_manifest_sha256":file_digest(a.cache_manifest)}
+*** End Patch
+

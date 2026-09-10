@@ -1,0 +1,15 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/rpc_replica.py
+@@
+-        self.primary.settimeout(5)
++        # Large disk-cache lookups can exceed five seconds during cold GPU load.
++        # A killed RPC process closes this tunnel immediately; use a conservative
++        # timeout here to avoid misclassifying slow startup as node failure.
++        self.primary.settimeout(30)
+@@
+         log({"event": "REPLICA_PROXY_READY", "listen_port": args.port,
+-             "primary": args.primary, "standby": args.standby, "tensor_abi_bytes": TENSOR_SIZE})
++             "primary": args.primary, "standby": args.standby, "tensor_abi_bytes": TENSOR_SIZE,
++             "primary_socket_timeout_s":30})
+*** End Patch
+

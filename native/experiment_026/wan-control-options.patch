@@ -1,0 +1,56 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/acquire_remote.py
+@@
+     p.add_argument("--run-id",required=True)
++    p.add_argument("--manifest",type=Path)
+@@
+-    manifest=Path(f"artifacts/experiment-026/acquisition/remote-stage-{a.shard}-001.json")
+-    upload(node,manifest,f"/workspace/e026/shard-{a.shard}.json")
++    manifest=a.manifest or Path(f"artifacts/experiment-026/acquisition/remote-stage-{a.shard}-001.json")
++    remote_manifest=f"/workspace/e026/{a.run_id}-manifest.json"
++    upload(node,manifest,remote_manifest)
+@@
+-    command=(f"nohup python3 -u /workspace/e026/acquire-shard.py /workspace/e026/shard-{a.shard}.json "
++    command=(f"nohup python3 -u /workspace/e026/acquire-shard.py {remote_manifest} "
+*** Update File: src/swarm_inference/experiments/experiment_026/deploy_router.py
+@@
+ import subprocess
++import socket
++import struct
++import time
+@@
+     parser.add_argument("--async-copy",action="store_true")
++    parser.add_argument("--cas",action="store_true")
+@@
+-          "-o ExitOnForwardFailure=yes -o ServerAliveInterval=5 -o ServerAliveCountMax=2 "
++          "-o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 "
+@@
+     if args.async_copy:frontend.append("--async-copy")
++    if args.cas:frontend += ["--cache-manifests","artifacts/experiment-026/acquisition/remote-stage-a-all-002.json,artifacts/experiment-026/acquisition/remote-stage-b-all-002.json"]
+@@
+-         "async_copy":args.async_copy,"device_ownership":{"0":a["id"],"1":b["id"]}}
++         "async_copy":args.async_copy,"required_verified_cache":args.cas,"device_ownership":{"0":a["id"],"1":b["id"]}}
+     write_once(folder/"deployment.json",row)
++    from .rpc_replica import response
++    deadline=time.monotonic()+60
++    while True:
++        try:
++            with socket.create_connection(("127.0.0.1",42646),timeout=5) as check:
++                check.sendall(struct.pack("<BQ",14,24)+bytes(24))
++                if response(check)[0]!=6:raise ValueError("Unexpected protocol")
++                check.sendall(struct.pack("<BQ",15,0))
++                if struct.unpack("<I",response(check))[0]!=2:raise ValueError("Missing concrete worker")
++            break
++        except (OSError,EOFError):
++            if time.monotonic()>deadline:raise TimeoutError("Router readiness")
++            time.sleep(.5)
++    write_once(folder/"readiness.json",{"timestamp":utc_now(),"status":"TWO_WORKER_HANDSHAKE_VERIFIED"})
+*** Update File: src/swarm_inference/experiments/experiment_026/benchmark.py
+@@
+     parser.add_argument("--deployment",type=Path)
++    parser.add_argument("--ctx-checkpoints",type=int)
+@@
+     if args.spec_type != "none":
+         command += ["--spec-draft-n-max", str(args.depth)]
++    if args.ctx_checkpoints is not None:command += ["--ctx-checkpoints",str(args.ctx_checkpoints)]
+*** End Patch

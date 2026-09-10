@@ -1,0 +1,19 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/collect_remote.py
+@@
+ def main():
+     p=argparse.ArgumentParser()
+     p.add_argument("--output",type=Path,default=Path("artifacts/experiment-026/remote-collected-final"))
++    p.add_argument("--deployment",type=Path,
++                   help="Use the frozen deployment manifest instead of querying the Vast control plane")
+     a=p.parse_args()
+     root=a.output
+     receipt=[]
+-    for node in nodes():
++    if a.deployment:
++        deployment=json.loads(a.deployment.read_text(encoding="utf-8"))
++        inventory=[deployment["nodes"][role] for role in ("a","b")]
++    else:
++        inventory=nodes()
++    for node in inventory:
+*** End Patch

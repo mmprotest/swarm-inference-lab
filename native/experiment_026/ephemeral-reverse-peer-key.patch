@@ -1,0 +1,25 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/deploy_router.py
+@@
+ import argparse
++import hashlib
+@@
+-        private=Path(".keys/e026_ed25519")
+-        upload(b,private,"/workspace/e026/coordinator_ed25519")
+-        ssh(b,"chmod 600 /workspace/e026/coordinator_ed25519")
++        ssh(b,"test -f /workspace/e026/reverse_peer_ed25519.pub || ssh-keygen -q -t ed25519 -N '' -f /workspace/e026/reverse_peer_ed25519")
++        public=ssh(b,"cat /workspace/e026/reverse_peer_ed25519.pub").stdout.decode().strip()
++        if not public.startswith("ssh-ed25519 "):raise ValueError("Unexpected reverse peer key")
++        authorize=("from pathlib import Path; p=Path('/root/.ssh/authorized_keys'); "
++                   f"key={public!r}; current=p.read_text(); "
++                   "p.open('a').write(key+'\\n') if key not in current.splitlines() else None; p.chmod(0o600)")
++        ssh(a,"python3 -c "+shlex.quote(authorize))
+@@
+-        peer=("nohup ssh -N -T -i /workspace/e026/coordinator_ed25519 -o BatchMode=yes -o IdentitiesOnly=yes "
++        peer=("nohup ssh -N -T -i /workspace/e026/reverse_peer_ed25519 -o BatchMode=yes -o IdentitiesOnly=yes "
+@@
+-         "peer_tunnel_pid":peer_pid,"peer_tunnel_command":peer,"peer_tunnel_node_role":peer_node["role"],
++         "peer_tunnel_pid":peer_pid,"peer_tunnel_command":peer,"peer_tunnel_node_role":peer_node["role"],
++         "peer_public_key_sha256":hashlib.sha256(public.encode()).hexdigest() if args.peer_direction=="b-to-a" else None,
+*** End Patch
+

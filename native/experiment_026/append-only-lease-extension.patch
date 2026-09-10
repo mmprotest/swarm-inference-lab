@@ -1,0 +1,57 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/vast.py
+@@
+ def epoch(value):
+     return datetime.fromisoformat(value).timestamp()
+ 
+ 
++def effective_deadline(label, lease, rows=None):
++    rows=events() if rows is None else rows
++    extensions=[r["new_deadline_epoch"] for r in rows
++                if r["event"]=="LEASE_EXTENDED" and r.get("label")==label]
++    return max([lease["deadline_epoch"],*extensions])
++
++
+ def estimate(now=None):
+@@
+-            worst_remaining += max(0, lease["deadline_epoch"] - now) / 3600 * lease["hourly_usd"]
++            worst_remaining += max(0, effective_deadline(label,lease,rows) - now) / 3600 * lease["hourly_usd"]
+@@
+-                if lease and (over or time.time() >= lease["deadline_epoch"]):
++                if lease and (over or time.time() >= effective_deadline(label,lease)):
+                     destroy(label, instance["id"], "BUDGET_GUARD" if over else "LEASE_EXPIRED")
+@@
+ def create(offer: Offer, role: str, hours=3.0):
+@@
+     return {"label": label, "instance_id": instance_id, "maximum_lease_hours": hours, "hourly_usd": rate}
++
++
++def extend(label, hours):
++    if not guard_alive():raise RuntimeError("Independent budget watchdog is not alive")
++    owned=leases()
++    if label not in owned or not (0 < hours <= 4):raise ValueError("Bounded owned lease required")
++    current=snapshot()
++    if label not in {row.get("label") for row in current["instances"]}:
++        raise RuntimeError("Cannot extend an absent instance")
++    lease=owned[label]
++    old=effective_deadline(label,lease)
++    new=old+hours*3600
++    added=hours*lease["hourly_usd"]
++    projected=current["conservative_spend_usd"]+current["reserved_future_rental_usd"]+added+1.0
++    if projected>SOFT_STOP:raise RuntimeError("Extension exceeds soft budget with teardown allowance")
++    if current["budget"]["conservative_available_usd"]-(current["reserved_future_rental_usd"]+added+1.0)<RESERVE:
++        raise RuntimeError("Extension would breach follow-up reserve")
++    return emit("LEASE_EXTENDED",label=label,previous_deadline_epoch=old,new_deadline_epoch=new,
++                added_hours=hours,added_rental_reserve_usd=added,projected_upper_with_allowance_usd=projected)
+@@
+-    parser.add_argument("action", choices=("status", "watch", "start-watchdog", "create", "destroy"))
++    parser.add_argument("action", choices=("status", "watch", "start-watchdog", "create", "extend", "destroy"))
+@@
+     elif args.action == "create":
+@@
+         print(json.dumps(create(offer, args.role, args.hours)))
++    elif args.action == "extend":
++        print(json.dumps(extend(args.label,args.hours)))
+     else:
+*** End Patch
+

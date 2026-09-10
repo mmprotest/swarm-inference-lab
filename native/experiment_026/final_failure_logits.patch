@@ -1,0 +1,58 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/analyze_final_failure.py
+@@
+ def events(path: Path) -> list[dict]:
+     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+ 
+ 
++def probability_rows(rows: list[dict]) -> list[dict]:
++    return [row["event"]["completion_probabilities"][0] for row in rows
++            if row["event"].get("completion_probabilities") and not row["event"].get("stop")]
++
++
++def compare_logits(reference_rows: list[dict], observed_rows: list[dict], first_mismatch: int | None) -> dict:
++    left = probability_rows(reference_rows)
++    right = probability_rows(observed_rows)
++    count = min(len(left), len(right), first_mismatch + 1 if first_mismatch is not None else len(right))
++    errors=[]
++    jaccards=[]
++    top1=0
++    for a,b in zip(left[:count],right[:count]):
++        atop={item["id"]:item["logprob"] for item in a["top_logprobs"]}
++        btop={item["id"]:item["logprob"] for item in b["top_logprobs"]}
++        common=atop.keys() & btop.keys()
++        errors.extend(abs(atop[token]-btop[token]) for token in common)
++        jaccards.append(len(common)/len(atop.keys() | btop.keys()))
++        top1 += a["top_logprobs"][0]["id"] == b["top_logprobs"][0]["id"]
++    detail=None
++    if first_mismatch is not None and first_mismatch < count:
++        a=left[first_mismatch]
++        b=right[first_mismatch]
++        detail={
++            "zero_based_token_index":first_mismatch,
++            "local_selected":{"id":a["id"],"token":a["token"],"logprob":a["logprob"]},
++            "wan_selected":{"id":b["id"],"token":b["token"],"logprob":b["logprob"]},
++            "local_top2":a["top_logprobs"][:2],
++            "wan_top2":b["top_logprobs"][:2],
++            "local_top1_margin_logprob":a["top_logprobs"][0]["logprob"]-a["top_logprobs"][1]["logprob"],
++            "wan_top1_margin_logprob":b["top_logprobs"][0]["logprob"]-b["top_logprobs"][1]["logprob"],
++        }
++    return {
++        "identical_history_positions":count,
++        "top1_agreement":top1/count if count else None,
++        "mean_common_top10_logprob_abs_delta":statistics.fmean(errors) if errors else None,
++        "max_common_top10_logprob_abs_delta":max(errors) if errors else None,
++        "mean_top10_jaccard":statistics.fmean(jaccards) if jaccards else None,
++        "first_mismatch_detail":detail,
++        "scope":"Only positions whose input history is identical, including the first differing decision",
++    }
++
++
+ def main() -> None:
+@@
+     stream = events(folder / "events.jsonl")
++    reference_stream = events(root / "runs" / args.control / args.prompt_id / "events.jsonl")
+@@
+         "first_mismatch": first_mismatch,
++        "identical_history_logits": compare_logits(reference_stream, stream, first_mismatch),
+*** End Patch

@@ -1,0 +1,59 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/finalize_evidence.py
+@@
+         median_steady = None
+         if trace and trace["median_single_token_sent_bytes"] is not None:
+             median_steady = trace["median_single_token_sent_bytes"] + trace["median_single_token_received_bytes"]
++        if not wan:
++            bytes_per_token = None
++            byte_scope = "none"
++            bytes_measurement = "NOT_APPLICABLE_LOCAL"
++        elif median_steady is not None:
++            bytes_per_token = median_steady
++            byte_scope = "median steady coordinator-to-first-remote RPC protocol bytes"
++            bytes_measurement = "MEASURED_MEDIAN_STEADY_RPC_PROTOCOL"
++        elif trace:
++            bytes_per_token = (client_sent + client_received) / metrics["generated_tokens"]
++            byte_scope = "coordinator RPC protocol total including startup divided by committed tokens"
++            bytes_measurement = "MEASURED_TOTAL_INCLUDING_STARTUP_RPC_PROTOCOL"
++        else:
++            bytes_per_token = None
++            byte_scope = "coordinator-to-first-remote RPC protocol"
++            bytes_measurement = "UNAVAILABLE_NO_PROTOCOL_TRACE"
+@@
+-            "bytes_per_committed_token": median_steady if wan else None,
+-            "byte_scope": "coordinator-to-first-remote RPC protocol" if wan else "none",
+-            "bytes_measurement": ("MEASURED_RPC_PROTOCOL" if trace else
+-                                  "UNAVAILABLE_NO_PROTOCOL_TRACE" if wan else "NOT_APPLICABLE_LOCAL"),
++            "bytes_per_committed_token": bytes_per_token,
++            "byte_scope": byte_scope,
++            "bytes_measurement": bytes_measurement,
+@@
+-    metrics_path = ROOT / "metrics-canonical-v2.jsonl"
++    metrics_path = ROOT / "metrics-canonical-v3.jsonl"
+@@
+-            "best_wan_tok_s": direct_mtp["decode_tok_s"],
++            "best_exact_wan_tok_s": direct["decode_tok_s"],
++            "best_attempted_inexact_mtp_wan_tok_s": direct_mtp["decode_tok_s"],
+@@
+-            "best_speedup_over_ordinary": direct_mtp["decode_tok_s"] / ordinary["decode_tok_s"],
++            "best_attempted_inexact_mtp_speedup_over_ordinary": direct_mtp["decode_tok_s"] / ordinary["decode_tok_s"],
+@@
+-        "supersedes": ["metrics.jsonl", "metrics-canonical.jsonl", "summary.json", "final-receipt.json"],
+-        "reason": "canonical run-directory IDs, normalized final byte field, and complete local host inventory",
++        "supersedes": ["metrics.jsonl", "metrics-canonical.jsonl", "metrics-canonical-v2.jsonl",
++                       "summary.json", "summary-canonical.json", "summary-final.json",
++                       "final-receipt.json", "final-receipt-canonical.json",
++                       "final-receipt-canonical-v2.json"],
++        "reason": "canonical run-directory IDs, consistent byte denominators with explicit scope, complete local host inventory, correct recovery timestamp semantics, and exact-vs-inexact throughput labels",
+     }
+-    write_once(ROOT / "summary-canonical.json", summary)
++    write_once(ROOT / "summary-canonical-v3.json", summary)
+@@
+         "local_host_inventory_source": "resource/local-host-post-run-001.json",
++        "canonicality": {"status": "CANONICAL", "dataset": str(metrics_path)},
+         "timestamp": utc_now(),
+     }
+-    write_once(ROOT / "final-receipt-canonical.json", receipt)
++    write_once(ROOT / "final-receipt-canonical-v3.json", receipt)
+*** End Patch

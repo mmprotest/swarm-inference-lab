@@ -1,0 +1,62 @@
+*** Begin Patch
+*** Update File: .runtime/e026-llama.cpp/src/llama-context.cpp
+@@
+ int32_t llama_decode(
+         llama_context * ctx,
+           llama_batch   batch) {
++    const bool trace = std::getenv("E026_TRACE") != nullptr;
++    const int64_t trace_start = trace ? ggml_time_us() : 0;
+     const int ret = ctx->decode(batch);
++    if (trace) {
++        fprintf(stderr, "E026_DECODE ctx=%p kind=%d n=%d begin_us=%lld end_us=%lld ret=%d\n", (void *) ctx, (int) ctx->get_cparams().ctx_type, batch.n_tokens, (long long) trace_start, (long long) ggml_time_us(), ret);
++    }
+*** Update File: .runtime/e026-llama.cpp/tools/server/server-common.cpp
+@@
+     if (n_draft_tokens > 0) {
+         base["draft_n"]          = n_draft_tokens;
+         base["draft_n_accepted"] = n_draft_accepted;
++        base["draft_verification_steps"] = n_draft_verif_steps;
+     }
+*** Update File: .runtime/e026-llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp
+@@
+ static const char * RPC_DEBUG = std::getenv("GGML_RPC_DEBUG");
++static const bool E026_TRACE = std::getenv("E026_TRACE") != nullptr;
+@@
+ static bool send_rpc_cmd(socket_ptr sock, enum rpc_cmd cmd, const void * input, size_t input_size) {
++    const int64_t trace_start = E026_TRACE ? ggml_time_us() : 0;
+@@
+-    return sock->flush();
++    const bool result = sock->flush();
++    if (E026_TRACE) {
++        fprintf(stderr, "E026_RPC_SEND socket=%p cmd=%d bytes=%zu begin_us=%lld end_us=%lld ok=%d\n", (void *) sock.get(), (int) cmd, input_size + 9, (long long) trace_start, (long long) ggml_time_us(), (int) result);
++    }
++    return result;
+@@
+ static bool send_rpc_cmd(socket_ptr sock, enum rpc_cmd cmd, const void * input, size_t input_size, void * output, size_t output_size) {
++    const int64_t trace_start = E026_TRACE ? ggml_time_us() : 0;
+@@
+     if (!sock->recv_data(output, output_size)) {
+         return false;
+     }
++    if (E026_TRACE) {
++        fprintf(stderr, "E026_RPC_WAIT socket=%p cmd=%d received_bytes=%zu begin_us=%lld end_us=%lld\n", (void *) sock.get(), (int) cmd, output_size + 8, (long long) trace_start, (long long) ggml_time_us());
++    }
+     return true;
+@@
+-    ggml_status status = ggml_backend_graph_compute(backends[device], graph);
++    const int64_t trace_start = E026_TRACE ? ggml_time_us() : 0;
++    ggml_status status = ggml_backend_graph_compute(backends[device], graph);
++    if (E026_TRACE) {
++        fprintf(stderr, "E026_STAGE device=%u nodes=%d begin_us=%lld end_us=%lld reused=0\n", device, graph->n_nodes, (long long) trace_start, (long long) ggml_time_us());
++    }
+     GGML_ASSERT(status == GGML_STATUS_SUCCESS && "Unsuccessful graph computations are not supported with RPC");
+     stored_graphs[device].graph = graph;
+@@
+     LOG_DBG("[%s] device: %u\n", __func__, device);
+-    ggml_status status = ggml_backend_graph_compute(backends[device], graph);
++    const int64_t trace_start = E026_TRACE ? ggml_time_us() : 0;
++    ggml_status status = ggml_backend_graph_compute(backends[device], graph);
++    if (E026_TRACE) {
++        fprintf(stderr, "E026_STAGE device=%u nodes=%d begin_us=%lld end_us=%lld reused=1\n", device, graph->n_nodes, (long long) trace_start, (long long) ggml_time_us());
++    }
+*** End Patch

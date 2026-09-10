@@ -1,0 +1,12 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/local_routed.py
+@@
+     p.add_argument("--async-copy",action="store_true")
++    p.add_argument("--cas",action="store_true")
+@@
+         if a.async_copy:front.append("--async-copy")
++        if a.cas:front += ["--cache-manifests","artifacts/experiment-026/acquisition/remote-stage-a-all-002.json,artifacts/experiment-026/acquisition/remote-stage-b-all-002.json"]
+@@
+-                                        "scope":"ONE_GPU_LOGICAL_ROUTER_VALIDATION","async_copy":a.async_copy})
++                                        "scope":"ONE_GPU_LOGICAL_ROUTER_VALIDATION","async_copy":a.async_copy,"required_cache":a.cas})
+*** End Patch

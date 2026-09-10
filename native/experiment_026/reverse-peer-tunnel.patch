@@ -1,0 +1,55 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/deploy_router.py
+@@
+     parser.add_argument("--async-copy",action="store_true")
+     parser.add_argument("--cas",action="store_true")
++    parser.add_argument("--peer-direction",choices=("a-to-b","b-to-a"),default="a-to-b")
+@@
+-    peer=("nohup ssh -N -T -i /workspace/e026/peer_ed25519 -o BatchMode=yes -o IdentitiesOnly=yes "
+-          "-o StrictHostKeyChecking=yes -o UserKnownHostsFile=/workspace/e026/peer_known_hosts "
+-          "-o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 "
+-          f"-L 127.0.0.1:50104:127.0.0.1:50101 -p {b['port']} root@{b['host']} "
+-          f"> /workspace/e026/{args.run_id}-peer-tunnel.log 2>&1 < /dev/null & echo $!")
+-    peer_pid=int(ssh(a,peer).stdout.strip())
++    if args.peer_direction=="a-to-b":
++        peer_node=a
++        peer=("nohup ssh -N -T -i /workspace/e026/peer_ed25519 -o BatchMode=yes -o IdentitiesOnly=yes "
++              "-o StrictHostKeyChecking=yes -o UserKnownHostsFile=/workspace/e026/peer_known_hosts "
++              "-o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 "
++              f"-L 127.0.0.1:50104:127.0.0.1:50101 -p {b['port']} root@{b['host']} "
++              f"> /workspace/e026/{args.run_id}-peer-tunnel.log 2>&1 < /dev/null & echo $!")
++    else:
++        # The Korea provider's inbound SSH path proved unstable under a sustained
++        # routed decode.  Initiate the same authenticated tunnel from B and expose
++        # the forwarded loopback listener on A.  The model/data path is unchanged.
++        private=Path(".keys/e026_ed25519")
++        upload(b,private,"/workspace/e026/coordinator_ed25519")
++        ssh(b,"chmod 600 /workspace/e026/coordinator_ed25519")
++        prefix=f"[{a['host']}]:{a['port']} "
++        lines=[line for line in Path(".keys/e026_known_hosts").read_text().splitlines() if line.startswith(prefix)]
++        if len(lines)!=1:raise ValueError("Cannot uniquely pin worker A host key")
++        pin=Path(".runtime/experiment-026")/(args.run_id+"-peer-known-hosts")
++        pin.write_text(lines[0]+"\n")
++        upload(b,pin,"/workspace/e026/reverse_peer_known_hosts")
++        peer_node=b
++        peer=("nohup ssh -N -T -i /workspace/e026/coordinator_ed25519 -o BatchMode=yes -o IdentitiesOnly=yes "
++              "-o StrictHostKeyChecking=yes -o UserKnownHostsFile=/workspace/e026/reverse_peer_known_hosts "
++              "-o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 "
++              f"-R 127.0.0.1:50104:127.0.0.1:50101 -p {a['port']} root@{a['host']} "
++              f"> /workspace/e026/{args.run_id}-peer-tunnel.log 2>&1 < /dev/null & echo $!")
++    peer_pid=int(ssh(peer_node,peer).stdout.strip())
+@@
+-         "peer_tunnel_pid":peer_pid,"peer_tunnel_command":peer,"router_pid":router_pid,"router_command":router,
++         "peer_tunnel_pid":peer_pid,"peer_tunnel_command":peer,"peer_tunnel_node_role":peer_node["role"],
++         "peer_direction":args.peer_direction,"router_pid":router_pid,"router_command":router,
+*** Update File: src/swarm_inference/experiments/experiment_026/stop_router.py
+@@
+-    node=next(n for n in nodes() if n["id"]==d["nodes"]["a"]["id"])
+-    for key,expected in (("router_pid","e026_worker.rpc_router"),("peer_tunnel_pid","127.0.0.1:50104:127.0.0.1:50101")):
++    inventory={n["role"]:n for n in nodes()}
++    for key,expected,role in (("router_pid","e026_worker.rpc_router","a"),
++                              ("peer_tunnel_pid","127.0.0.1:50104:127.0.0.1:50101",d.get("peer_tunnel_node_role","a"))):
++        node=inventory[role]
+         pid=d[key]
+*** End Patch
+

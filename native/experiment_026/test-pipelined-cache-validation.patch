@@ -1,0 +1,44 @@
+*** Begin Patch
+*** Update File: tests/experiments/test_experiment_026_routing.py
+@@
+ import struct
++import socket
++import threading
+@@
+ def test_pointer_ownership_is_checked():
+@@
+     obj.rewrite(a,0,0)
+     assert struct.unpack_from("<Q",a,12)[0]==111
++
++
++def test_cache_lookups_pipeline_then_fail_closed_drain():
++    client,server=socket.socketpair()
++    events=[]
++    obj=object.__new__(RoutedConnection)
++    obj.peers=[client]
++    obj.tx=[0]
++    obj.rx=[0]
++    obj.pending_cache=[0]
++    obj.log=events.append
++    def worker():
++        for _ in range(2):
++            header=server.recv(9)
++            cmd,size=struct.unpack("<BQ",header)
++            assert cmd==7
++            assert server.recv(size)==b"lookup"
++        server.sendall(struct.pack("<Q",1)+b"\x01")
++        server.sendall(struct.pack("<Q",1)+b"\x01")
++    thread=threading.Thread(target=worker)
++    thread.start()
++    obj.defer_cache(0,b"lookup")
++    obj.defer_cache(0,b"lookup")
++    assert obj.pending_cache==[2]
++    obj.drain_cache(0)
++    assert obj.pending_cache==[0]
++    assert events[-1]["event"]=="CACHE_BATCH_DRAIN"
++    assert events[-1]["count"]==2
++    thread.join(timeout=2)
++    client.close()
++    server.close()
+*** End Patch
+

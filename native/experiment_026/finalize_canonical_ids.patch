@@ -1,0 +1,29 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/finalize_evidence.py
+@@
+     for metrics_path in sorted(RUNS.glob("*/*/metrics.json")):
+         metrics = load(metrics_path)
+         run_dir = metrics_path.parent.parent
+         prompt_dir = metrics_path.parent
++        # Several legacy metrics records copied the prompt id into run_id.  The
++        # immutable run-directory name is the authoritative execution id.
++        run_id = run_dir.name
+@@
+-        wan = metrics["run_id"].startswith("wan-")
++        wan = run_id.startswith("wan-")
+@@
+-            "run_id": metrics["run_id"],
++            "run_id": run_id,
++            "source_recorded_run_id": metrics.get("run_id"),
+@@
+-            "bytes_per_committed_token": median_steady,
++            "bytes_per_committed_token": median_steady if wan else None,
+@@
+-            "failure_timing": RECOVERY if metrics["run_id"] == "wan-replica-kill-001" else None,
+-            "correctness": correctness(metrics["run_id"], metrics["prompt_id"], output),
++            "failure_timing": RECOVERY if run_id == "wan-replica-kill-001" else None,
++            "correctness": correctness(run_id, metrics["prompt_id"], output),
+@@
+-    metrics_path = ROOT / "metrics.jsonl"
++    metrics_path = ROOT / "metrics-canonical.jsonl"
+*** End Patch

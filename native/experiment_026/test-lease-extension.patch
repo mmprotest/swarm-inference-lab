@@ -1,0 +1,21 @@
+*** Begin Patch
+*** Update File: tests/experiments/test_experiment_026_budget.py
+@@
+ def test_destroy_requires_owned_lease(tmp_path, monkeypatch):
+@@
+     with pytest.raises(ValueError, match="outside E026"):
+         vast.destroy("unrelated-user-instance", 42, "test")
++
++
++def test_append_only_extension_changes_effective_deadline(tmp_path, monkeypatch):
++    monkeypatch.setattr(vast,"ROOT",tmp_path)
++    lease={"hourly_usd":.25,"network_reserve_usd":.3,"deadline_epoch":10800}
++    write_once(tmp_path/"leases/e026-a-test.json",lease)
++    append_event(tmp_path/"ledger.jsonl",{"event":"CREATE_ATTEMPT","label":"e026-a-test",
++                                          "timestamp":"1970-01-01T00:00:00+00:00"})
++    append_event(tmp_path/"ledger.jsonl",{"event":"LEASE_EXTENDED","label":"e026-a-test",
++                                          "new_deadline_epoch":14400})
++    assert vast.effective_deadline("e026-a-test",lease)==14400
++    assert vast.estimate(3600)["reserved_future_rental_usd"]==.75
+*** End Patch
+

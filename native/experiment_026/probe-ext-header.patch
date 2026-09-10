@@ -1,0 +1,15 @@
+*** Begin Patch
+*** Update File: native/experiment_026/state_probe.cpp
+@@
+ #include "llama.h"
++#include "../../.runtime/e026-llama.cpp/src/llama-ext.h"
+*** Update File: src/swarm_inference/experiments/experiment_026/snapshot_control.py
+@@
+-    folder = root / "diagnostics/target-snapshots-4"
++    folder = root / "diagnostics/target-snapshots-4-002"
+@@
+-    write_once(folder / "config.json", config)
++    from .io import file_digest
++    config["probe_sha256"] = file_digest(Path(".runtime/experiment-026/build/bin/e026-probe.exe"))
++    write_once(folder / "config.json", config)
+*** End Patch

@@ -1,0 +1,65 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/local_rpc.py
+@@
+ import argparse
++import json
+@@
+     parser.add_argument("--n-predict", type=int, default=64)
++    parser.add_argument("--replica", action="store_true")
+@@
+-        for index, port in enumerate((42631, 42632)):
++        for index, port in enumerate((42631, 42632, 42633) if args.replica else (42631, 42632)):
+@@
+-        cmd = [sys.executable, "-m", "swarm_inference.experiments.experiment_026.benchmark",
++        if args.replica:
++            log = (root / "replica-proxy.log").open("wb")
++            logs.append(log)
++            proxy = subprocess.Popen([sys.executable, "-m", "swarm_inference.experiments.experiment_026.rpc_replica",
++                                      "--port", "42634", "--primary", "127.0.0.1:42631", "--standby", "127.0.0.1:42633",
++                                      "--log", str(root / "replication.jsonl")], stdout=log, stderr=log, env=env,
++                                     creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
++            processes.append(proxy)
++            time.sleep(1)
++        cmd = [sys.executable, "-m", "swarm_inference.experiments.experiment_026.benchmark",
+@@
+-               "--run-id", args.run_id, "--runtime", str(runtime), "--rpc", "127.0.0.1:42631,127.0.0.1:42632",
+-               "--tensor-split", "1,1,1", "--prompt-ids", "development-01-factual,development-02-code,development-06-retrieval",
++               "--run-id", args.run_id, "--runtime", str(runtime), "--rpc", ("127.0.0.1:42634,127.0.0.1:42632" if args.replica else "127.0.0.1:42631,127.0.0.1:42632"),
++               "--tensor-split", ("1,1,2" if args.replica else "1,1,1"), "--prompt-ids", "development-01-factual,development-02-code,development-06-retrieval",
+@@
+-        result = subprocess.run(cmd, env=env, timeout=900)
++        result = subprocess.Popen(cmd, env=env, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
++        processes.append(result)
++        killed = False
++        while result.poll() is None:
++            if args.replica and not killed:
++                events = Path("artifacts/experiment-026/runs") / args.run_id / "development-01-factual/events.jsonl"
++                if events.exists():
++                    count = 0
++                    for line in events.read_text().splitlines():
++                        try:
++                            count += len(json.loads(line)["event"].get("tokens", []))
++                        except json.JSONDecodeError:
++                            pass
++                    if count >= 20:
++                        stamp = utc_now()
++                        processes[0].kill()
++                        processes[0].wait(timeout=10)
++                        write_once(root / "kill.json", {"timestamp": stamp, "pid": processes[0].pid, "committed_tokens_observed": count,
++                                                        "worker_notice": False, "scope": "LOCAL_PROCESS_FAULT_INJECTION"})
++                        killed = True
++            if time.monotonic() - started > 900:
++                raise TimeoutError("Local distributed trial deadline")
++            time.sleep(.02)
+*** Update File: src/swarm_inference/experiments/experiment_026/snapshot_control.py
+@@
+-    folder = root / "diagnostics/target-snapshots-4-002"
++    folder = root / "diagnostics/target-snapshots-3-matched-prefill-003"
+@@
+-              "n_ctx": 12288, "recurrent_snapshots": 4, "embeddings_nextn": True}
++              "n_ctx": 12288, "recurrent_snapshots": 3, "embeddings_nextn": True}
+@@
+-            out = proc.call({"op": "decode", "tokens": tokens})
++            proc.call({"op": "decode", "tokens": tokens[:-4]})
++            out = proc.call({"op": "decode", "tokens": tokens[-4:]})
+*** End Patch

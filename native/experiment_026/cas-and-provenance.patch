@@ -1,0 +1,82 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/shard_manifest.py
+@@
+     p.add_argument("--output",type=Path,required=True)
++    p.add_argument("--minimum-bytes",type=int,default=10*1024*1024)
+@@
+-        if tensor.n_bytes<=10*1024*1024:continue
++        if tensor.n_bytes<=a.minimum_bytes:continue
+@@
+-                        "model_revision":MODEL_REVISION,"layer_range":[a.first_layer,a.end_layer],
++                        "model_revision":MODEL_REVISION,"layer_range":[a.first_layer,a.end_layer],"minimum_bytes":a.minimum_bytes,
+*** Update File: src/swarm_inference/experiments/experiment_026/rpc_router.py
+@@
+-        if cmd in {6,7,8,12,17}:
++        if cmd in {6,7,8,12,17,19}:
+             worker=self.tensor_worker(data)
+             self.rewrite(data,0,worker)
++            if cmd==19:
++                result=self.send(worker,7,data)
++                if result!=b"\x01":raise RuntimeError("Required verified cached tensor is unavailable")
++                self.log({"event":"REQUIRED_CACHE_HIT","worker":worker})
++                return None
+             return self.send(worker,cmd,data)
+*** Update File: src/swarm_inference/experiments/experiment_026/rpc_frontend.py
+@@
+ import argparse
++import hashlib
++import json
+@@
+     parser.add_argument("--async-copy",action="store_true")
++    parser.add_argument("--cache-manifests",default="")
+@@
+     remote=endpoint(args.router)
++    manifests=[json.loads(Path(path).read_text()) for path in args.cache_manifests.split(",")] if args.cache_manifests else []
++    hashes=[{int(t["rpc_fnv1a"],16) for t in m["tensors"]} for m in manifests]
++    content=[{t["sha256"]:int(t["rpc_fnv1a"],16) for t in m["tensors"]} for m in manifests]
+@@
+             backend=None
++            buffers={}
+@@
+                     payload=exact(self.request,size)
+                     asynchronous=cmd==9 and args.async_copy and copy_size(payload) is not None
+-                    backend.sendall(struct.pack("<BQ",18 if asynchronous else cmd,size)+payload)
+-                    reply=b"\x01" if asynchronous else (response(backend) if cmd in RESPONSE_COMMANDS else None)
++                    wire_cmd=18 if asynchronous else cmd
++                    wire_payload=payload
++                    cache=False
++                    if manifests and cmd in {6,7}:
++                        device=buffers.get(struct.unpack_from("<Q",payload,12)[0])
++                        if device is not None and device<len(manifests):
++                            if cmd==7 and struct.unpack_from("<Q",payload,304)[0] in hashes[device]:
++                                cache=True
++                            elif cmd==6:
++                                key=content[device].get(hashlib.sha256(payload[304:]).hexdigest())
++                                if key is not None:
++                                    wire_payload=payload[:304]+struct.pack("<Q",key)
++                                    cache=True
++                            if cache:wire_cmd=19
++                    backend.sendall(struct.pack("<BQ",wire_cmd,len(wire_payload))+wire_payload)
++                    if asynchronous or (cache and cmd==7):reply=b"\x01"
++                    elif cache:reply=None
++                    else:reply=response(backend) if cmd in RESPONSE_COMMANDS else None
++                    if cmd==0 and reply and struct.unpack_from("<Q",reply)[0]:
++                        buffers[struct.unpack_from("<Q",reply)[0]]=struct.unpack_from("<I",payload)[0]
++                    if cmd==4:buffers.pop(struct.unpack_from("<Q",payload)[0],None)
+                     if reply is not None:self.request.sendall(struct.pack("<Q",len(reply))+reply)
+                     log({"event":"FRONTEND_COMMAND","cmd":cmd,"async_copy":asynchronous,
+-                         "request_bytes":size+9,"elapsed_s":time.perf_counter()-start})
++                         "required_cache":cache,"request_bytes":size+9,"upstream_bytes":len(wire_payload)+9,
++                         "elapsed_s":time.perf_counter()-start})
+*** Update File: src/swarm_inference/experiments/experiment_026/benchmark.py
+@@
+-    row = {"experiment_id": EXPERIMENT_ID, "timestamp": utc_now(), "run_id": folder.name,
++    row = {"experiment_id": EXPERIMENT_ID, "timestamp": utc_now(), "run_id": folder.parent.name,
+@@
+     parser.add_argument("--residency", default="LOCAL_DISK_PRESENT_OS_PAGE_CACHE_UNCONTROLLED")
++    parser.add_argument("--deployment",type=Path)
+@@
+     config["residency"] = args.residency
++    config["deployment"] = json.loads(args.deployment.read_text()) if args.deployment else None
++    config["orchestration_sha256"] = {p.name:file_digest(p) for p in sorted(Path(__file__).parent.glob("*.py"))}
+*** End Patch

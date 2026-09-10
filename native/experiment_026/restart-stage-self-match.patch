@@ -1,0 +1,7 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/restart_stage.py
+@@
+-    check=ssh(node,f"pgrep -af 'ggml-rpc-server.*-p {a.port}'",check=False).stdout.decode().strip()
++    check=ssh(node,f"pgrep -af '[g]gml-rpc-server.*-p {a.port}'",check=False).stdout.decode().strip()
+*** End Patch
+

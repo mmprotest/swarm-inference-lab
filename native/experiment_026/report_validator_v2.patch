@@ -1,0 +1,16 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/validate_report.py
+@@
+     table_count = sum(token.type == "table_open" for token in tokens)
++    verdict_lines = re.findall(r"^`([A-Z_]+)`$", source, flags=re.MULTILINE)
+@@
+-        {"name": "no_competing_verdict", "pass": not any(value in source for value in (
+-            "`INTEGRATED_WAN_SWARM_PROVEN`", "`WAN_INFERENCE_PROVEN_RECOVERY_FAILED`",
+-            "`LATENCY_AMORTIZATION_PROVEN`", "`DISTRIBUTED_CORRECT_BUT_NOT_INTERACTIVE`",
+-            "`INFRASTRUCTURE_INVALID`")), "details": None},
++        {"name": "one_primary_verdict_line", "pass": verdict_lines == ["WAN_SWARM_NOT_VIABLE_UNDER_TESTED_CONDITIONS"],
++         "details": verdict_lines},
+@@
+-    path = ROOT / "validation" / "final-report.json"
++    path = ROOT / "validation" / "final-report-v2.json"
+*** End Patch

@@ -1,0 +1,61 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/finalize_evidence.py
+@@
+-VRAM = load(ROOT / "resource" / "local-vram-post-seal-002" / "receipt.json")
++VRAM = load(ROOT / "resource" / "local-vram-post-seal-002" / "receipt.json")
++LOCAL_HOST = load(ROOT / "resource" / "local-host-post-run-001.json")
+@@
+-     "driver": "591.86", "cpu": None, "ram_mib": None},
++     "driver": "591.86", "cpu": LOCAL_HOST["cpu"], "cpu_cores": LOCAL_HOST["cpu_cores"],
++     "cpu_logical_processors": LOCAL_HOST["cpu_logical_processors"], "ram_mib": LOCAL_HOST["ram_mib"]},
+@@
+-        verifications = timings.get("draft_verification_steps") if proposals is not None else metrics["generated_tokens"]
++        verifications = timings.get("draft_verification_steps") if proposals is not None else metrics["generated_tokens"]
++        traversal_measurement = (
++            "MEASURED_DRAFT_VERIFICATION_COUNTER" if proposals is not None and verifications is not None
++            else "UNAVAILABLE_PRE_COUNTER_BUILD" if proposals is not None
++            else "DERIVED_ONE_TARGET_EVALUATION_PER_COMMITTED_TOKEN"
++        )
+@@
+             "bytes_per_committed_token": median_steady if wan else None,
+             "byte_scope": "coordinator-to-first-remote RPC protocol" if wan else "none",
++            "bytes_measurement": ("MEASURED_RPC_PROTOCOL" if trace else
++                                  "UNAVAILABLE_NO_PROTOCOL_TRACE" if wan else "NOT_APPLICABLE_LOCAL"),
+             "target_traversals": verifications,
++            "target_traversals_measurement": traversal_measurement,
+@@
+         "experiment_id": EXPERIMENT_ID,
+         "run_id": "final-wan-sealed-001",
++        "source_recorded_run_id": None,
+         "prompt_id": "sealed-01-factual",
+@@
+         "median_steady_coordinator_bytes_per_token": steady_coordinator,
+         "median_steady_peer_bytes_per_token": statistics.median(cycles),
+         "median_steady_all_wan_links_bytes_per_token": steady_coordinator + statistics.median(cycles),
++        "bytes_per_committed_token": steady_coordinator + statistics.median(cycles),
++        "byte_scope": "median steady RPC protocol bytes across both physical WAN stage boundaries",
++        "bytes_measurement": "MEASURED_RPC_PROTOCOL",
+         "byte_definition": "RPC protocol bytes excluding TCP/IP/SSH framing; all-WAN total sums local-to-A and A-to-B",
+         "target_traversals": FINAL_PARTIAL["completed_tokens"],
++        "target_traversals_measurement": "DERIVED_ONE_TARGET_EVALUATION_PER_COMMITTED_TOKEN",
+@@
+-    metrics_path = ROOT / "metrics-canonical.jsonl"
++    metrics_path = ROOT / "metrics-canonical-v2.jsonl"
+@@
+-    write_once(ROOT / "summary.json", summary)
++    summary["synthesis_lineage"] = {
++        "canonical_dataset": str(metrics_path),
++        "supersedes": ["metrics.jsonl", "metrics-canonical.jsonl", "summary.json", "final-receipt.json"],
++        "reason": "canonical run-directory IDs, normalized final byte field, and complete local host inventory",
++    }
++    write_once(ROOT / "summary-canonical.json", summary)
+@@
+         "remote_evidence_collection": {"receipt": "remote-collected-final-002/receipt.json",
+                                        "files": len(COLLECTION["files"]), "bytes": COLLECTION["total_bytes"]},
++        "synthesis_lineage": summary["synthesis_lineage"],
++        "local_host_inventory_source": "resource/local-host-post-run-001.json",
+         "timestamp": utc_now(),
+     }
+-    write_once(ROOT / "final-receipt.json", receipt)
++    write_once(ROOT / "final-receipt-canonical.json", receipt)
+*** End Patch

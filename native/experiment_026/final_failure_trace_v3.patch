@@ -1,0 +1,12 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/analyze_final_failure.py
+@@
+     parser.add_argument(
+         "--trace",
+         type=Path,
+-        default=Path("artifacts/experiment-026/remote-collected-final-002/a/wan-router-services-final-001-routing.jsonl"),
++        default=Path("artifacts/experiment-026/runs/final-wan-sealed-001/server.stderr.log"),
+@@
+-    output = root / "analysis" / f"{args.run_id}-partial-logits.json"
++    output = root / "analysis" / f"{args.run_id}-partial-logits-trace.json"
+*** End Patch

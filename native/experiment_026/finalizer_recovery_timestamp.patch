@@ -1,0 +1,23 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/finalize_evidence.py
+@@
+-from datetime import datetime, timezone
++from datetime import datetime, timedelta, timezone
+@@
+     proxy_mtp = next(row for row in rows if row["run_id"] == "wan-routed-cache-pipeline-mtp-k3-001")
+     final = rows[-1]
++    recovery_resumed_at = dt(RECOVERY["failure_injection"]["timestamp"]) + timedelta(
++        seconds=RECOVERY["user_visible_interruption_s"])
+@@
+             "interactive_decode": {"pass": False, "required_tok_s": 8.0, "best_measured_tok_s": direct_mtp["decode_tok_s"],
+-                                   "sealed_partial_tok_s": final["decode_tok_s"]},
++                                   "best_exact_tok_s": direct["decode_tok_s"],
++                                   "best_attempted_inexact_mtp_tok_s": direct_mtp["decode_tok_s"],
++                                   "sealed_partial_tok_s": final["decode_tok_s"]},
+@@
+-        "recovery_completion": {"timestamp": RECOVERY["timestamp"],
++        "recovery_completion": {"timestamp": recovery_resumed_at.isoformat(),
++                                "timestamp_basis": "failure injection wall time plus measured token-stream interruption",
++                                "recovery_receipt_generated_at": RECOVERY["timestamp"],
+                                 "user_visible_interruption_s": RECOVERY["user_visible_interruption_s"],
+*** End Patch

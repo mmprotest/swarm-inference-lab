@@ -1,0 +1,15 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/collect_remote.py
+@@
+-import json
++import argparse
++import json
+@@
+ def main():
+-    root=Path("artifacts/experiment-026/remote-collected")
++    p=argparse.ArgumentParser()
++    p.add_argument("--output",type=Path,default=Path("artifacts/experiment-026/remote-collected-final"))
++    a=p.parse_args()
++    root=a.output
+*** End Patch
+

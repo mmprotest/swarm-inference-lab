@@ -1,0 +1,15 @@
+*** Begin Patch
+*** Update File: src/swarm_inference/experiments/experiment_026/measure_vram.py
+@@
+-    try:
+-        with socket.create_connection(("127.0.0.1", port), timeout=0.25):
+-            raise RuntimeError(f"Refusing occupied measurement port {port}")
+-    except ConnectionRefusedError:
+-        pass
++    vacancy = socket.socket()
++    try:
++        vacancy.bind(("127.0.0.1", port))
++    except OSError as error:
++        raise RuntimeError(f"Refusing occupied measurement port {port}") from error
++    finally:
++        vacancy.close()
