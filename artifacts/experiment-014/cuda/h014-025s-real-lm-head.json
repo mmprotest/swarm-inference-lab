@@ -1,0 +1,178 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "4cd607503425f07795f1adfb6147b78ef8144c396b261be0e57d81974ebf8f79",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_int8_lm_head",
+    "implementation_kind": "generic existing CUDA"
+  },
+  "benchmark": {
+    "batched_event_service_ms_per_call": 1.6171852111816407,
+    "compute_utilization": null,
+    "effective_weight_bandwidth_gbps": 726.6084749448147,
+    "gpu_utilization": null,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 1.5625,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 15.625,
+      "p99_ms": 15.625,
+      "standard_deviation_ms": 4.6875
+    },
+    "independent_reference_ms": 2918.1589,
+    "kernel_count_per_call": 1,
+    "one_time_upload_ms": 102.0556,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "quantization_ms": 6452.0852,
+    "queued_service_ms_per_call": 1.614966,
+    "resident_weight_bytes": 1175060480,
+    "retained_iterations": 100,
+    "utilization_note": "decode GEMV is classified from size response and traffic",
+    "wall": {
+      "maximum_ms": 1.6431,
+      "mean_ms": 1.6291140000000002,
+      "minimum_ms": 1.6235,
+      "p50_ms": 1.62785,
+      "p95_ms": 1.639275,
+      "p99_ms": 1.642605,
+      "standard_deviation_ms": 0.004203689332003499
+    },
+    "warmup_iterations": 20
+  },
+  "checkpoint": {
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "lm_head": {
+      "name": "language_model.lm_head.weight",
+      "runtime_bf16_fingerprint": "sha256:51c582513e88326a7cb535822b0ff87768d541daa26b7c9d03a55011bfc0c09d",
+      "shape": [
+        163840,
+        7168
+      ],
+      "source_bytes": 2348810240,
+      "source_dtype": "BF16",
+      "source_range": [
+        584,
+        2348810824
+      ],
+      "source_raw_sha256": "11c1f1c09a8e0db55547b5e68ebfd1d8e3b503bee56c4e1312ef55ecd3e5580f",
+      "source_shard": "model-00094-of-000096.safetensors"
+    },
+    "path": "F:\\models\\Kimi-K3"
+  },
+  "correctness": {
+    "cuda_argmax_token_id": 11,
+    "cuda_vs_independent_quantized_oracle": {
+      "actual_finite": true,
+      "actual_l2": 1571.3279451283138,
+      "cosine_similarity": 0.9999999999999776,
+      "maximum_absolute_error": 5.9604644775390625e-06,
+      "mean_absolute_error": 6.460814615749655e-07,
+      "reference_finite": true,
+      "reference_l2": 1571.3279469838976,
+      "relative_l2_error": 2.1931909005006456e-07
+    },
+    "cuda_vs_retained_serial_oracle": {
+      "actual_finite": true,
+      "actual_l2": 1571.3279451283138,
+      "cosine_similarity": 0.99999999999996,
+      "maximum_absolute_error": 6.198883056640625e-06,
+      "mean_absolute_error": 8.555820825595361e-07,
+      "reference_finite": true,
+      "reference_l2": 1571.3279447814955,
+      "relative_l2_error": 2.8845312533539024e-07
+    },
+    "expected_generated_token_id": 11,
+    "independent_quantized_vs_retained_serial": {
+      "actual_finite": true,
+      "actual_l2": 1571.3279469838976,
+      "cosine_similarity": 0.9999999999999659,
+      "maximum_absolute_error": 7.62939453125e-06,
+      "mean_absolute_error": 7.792387106686505e-07,
+      "reference_finite": true,
+      "reference_l2": 1571.3279447814955,
+      "relative_l2_error": 2.679307649385036e-07
+    },
+    "production_int8_quantization_vs_source_bf16": {
+      "actual_finite": true,
+      "actual_l2": 1571.3279469838976,
+      "cosine_similarity": 0.9999879390865275,
+      "maximum_absolute_error": 0.11596918106079102,
+      "mean_absolute_error": 0.014642742436700874,
+      "reference_finite": true,
+      "reference_l2": 1571.2783815034936,
+      "relative_l2_error": 0.0049115764202507135
+    },
+    "serial_argmax_token_id": 11
+  },
+  "cycle_id": "H014-025s",
+  "fixture": {
+    "activation_fingerprint": "sha256:6a1195b782d1a175a8195e053655b7ddcf45fe6a7d00280bf9a401e935f0bfc4",
+    "activation_raw_sha256": "a7b4ce8a785f0f59f58591c8ee1982134adc4e46cb3af614fd6ea96ce7337831",
+    "cuda_logits_fingerprint": "sha256:4b833bdbb7a0141b1e42f5130f759cbdb10e8324d9929e1c24174fead9e6c3dd",
+    "dimensions": [
+      163840,
+      7168
+    ],
+    "oracle_logits_row": 1,
+    "oracle_logits_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\prefill-logits.f32",
+    "oracle_logits_source_sha256": "0e681a7ce7a76d25ee50920aafa0dc06f093b2ee6053b14894335e85866748dd",
+    "output_dtype": "float32",
+    "quantized_weight_fingerprint": "sha256:5682746d5e0ff35268f05a80809b57e928e881b0ddd066ebcf690f33317fda2d",
+    "runtime_dtype": "signed int8 with one float32 scale per output row",
+    "scale_fingerprint": "sha256:8f3dad2c2396b7712baf827f388e45f852758b016e476c4c4d419deeef64700f",
+    "serial_logits_fingerprint": "sha256:9b8286ad77ab64062584fdc39cf7852a4cf08a578dc39a70d6b1a248b06a6b06",
+    "trace_row": 187,
+    "trace_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\hidden-trace.f32",
+    "trace_source_sha256": "95012ceb968aaa31f51ccbea38beff44e47dec72572b8c22ca4fe01bbadd56ae"
+  },
+  "hypothesis": "The existing resident int8 CUDA GEMV reproduces retained real Kimi 163840-way serial logits within 3e-4 relative L2 and preserves argmax token 11.",
+  "inspection": {
+    "bottleneck": "WEIGHT_MEMORY_TRAFFIC",
+    "decision": "RETAIN",
+    "persistent_dequantized_weight_bytes": 0,
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_weight_loading": 0
+  },
+  "memory": {
+    "activation_buffer_bytes": 28672,
+    "after_buffers": {
+      "free_bytes": 31252807680,
+      "total_bytes": 34190458880
+    },
+    "after_upload": {
+      "free_bytes": 31252807680,
+      "total_bytes": 34190458880
+    },
+    "before_upload": {
+      "free_bytes": 32429309952,
+      "total_bytes": 34190458880
+    },
+    "expected_resident_weight_bytes": 1175060480,
+    "observed_upload_vram_delta_bytes": 1176502272,
+    "output_buffer_bytes": 655360,
+    "resident_weight_bytes": 1175060480,
+    "workspace_bytes": 0
+  },
+  "schema_version": "experiment-014-k3-cuda-real-lm-head-v1",
+  "status": "PASS"
+}

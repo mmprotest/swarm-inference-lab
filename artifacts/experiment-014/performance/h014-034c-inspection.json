@@ -1,0 +1,45 @@
+{
+  "schema_version": "experiment-014-inspection-v1",
+  "cycle_id": "H014-034c",
+  "status": "BATCH_1_PASS_BATCH_2_HIGH_WATER_GATE_FAIL",
+  "raw_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-034c-contextual-batch-layer91-8k.json",
+    "sha256": "ffcef0de4349bed5bc3d117939a124a901f1458285e16978ca0f46320a2adc02"
+  },
+  "passed_sizes": [1],
+  "executed_sizes": [1, 2],
+  "later_sizes_armed": [],
+  "batch_1": {
+    "status": "PASS",
+    "retained_device_p50_ms": 5.26800012588501,
+    "aggregate_rows_per_second": 189.8253561320868
+  },
+  "batch_2": {
+    "mathematics_and_health_pass": true,
+    "validation_device_ms": 8.548576354980469,
+    "active_prefix_state_exact": true,
+    "full_pair_state_exact": true,
+    "output_bit_exact": true,
+    "safe_fixture_exact": true,
+    "cuda_error_state_ok": true,
+    "nvidia_smi_measured": true,
+    "free_before_sessions_bytes": 14186184704,
+    "free_after_session_close_bytes": 14184087552,
+    "persistent_high_water_delta_bytes": 2097152
+  },
+  "inspection": {
+    "failed_gate": "session_memory_recovered",
+    "state_leak_observed": false,
+    "mechanism": "first-use native batch-2 scratch reserve remains at its persistent high-water mark",
+    "minimum_fix": "prime and repeat each size before taking the session-memory baseline; require the repeated high-water mark to be stable"
+  },
+  "health_after_process_close": {
+    "name": "NVIDIA GeForce RTX 5090",
+    "memory_used_mib": 1870,
+    "memory_free_mib": 30318,
+    "temperature_c": 44,
+    "pstate": "P8",
+    "nvidia_smi_status": "MEASURED"
+  },
+  "decision": "RETAIN_BATCH_1_MODIFY_WARM_BASELINE_AND_RERUN_AS_H014-034d"
+}

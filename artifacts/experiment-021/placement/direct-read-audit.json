@@ -1,0 +1,263 @@
+{
+  "bytes_read": 696418304,
+  "checkpoint_index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+  "large_full_tensor_materializations": 0,
+  "reads": [
+    {
+      "byte_ranges": {
+        "kind": "contiguous",
+        "length": 293601280,
+        "offset": 584
+      },
+      "bytes_read": 293601280,
+      "dtype": "BF16",
+      "file": "model-00094-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_lm_head",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 0,
+        "start": 0,
+        "stop": 20480
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        163840,
+        7168
+      ],
+      "source_tensor_bytes": 2348810240,
+      "tensor": "language_model.lm_head.weight",
+      "worker_id": "machine-0368.worker"
+    },
+    {
+      "byte_ranges": {
+        "kind": "contiguous",
+        "length": 293601280,
+        "offset": 2348810824
+      },
+      "bytes_read": 293601280,
+      "dtype": "BF16",
+      "file": "model-00094-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_embedding",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 0,
+        "start": 0,
+        "stop": 20480
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        163840,
+        7168
+      ],
+      "source_tensor_bytes": 2348810240,
+      "tensor": "language_model.model.embed_tokens.weight",
+      "worker_id": "machine-0000.worker"
+    },
+    {
+      "byte_ranges": {
+        "base_offset": 657264,
+        "kind": "strided",
+        "last_range_stop": 485040240,
+        "range_count": 7168,
+        "range_length": 8448,
+        "stride": 67584
+      },
+      "bytes_read": 60555264,
+      "dtype": "BF16",
+      "file": "model-00001-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_dense_mlp",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 1,
+        "start": 0,
+        "stop": 4224
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        7168,
+        33792
+      ],
+      "source_tensor_bytes": 484442112,
+      "tensor": "language_model.model.layers.0.mlp.down_proj.weight",
+      "worker_id": "machine-0000.worker"
+    },
+    {
+      "byte_ranges": {
+        "kind": "contiguous",
+        "length": 22020096,
+        "offset": 1460412272
+      },
+      "bytes_read": 22020096,
+      "dtype": "BF16",
+      "file": "model-00001-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_attention",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 0,
+        "start": 0,
+        "stop": 1536
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        12288,
+        7168
+      ],
+      "source_tensor_bytes": 176160768,
+      "tensor": "language_model.model.layers.0.self_attn.g_proj.weight",
+      "worker_id": "machine-0000.worker"
+    },
+    {
+      "byte_ranges": {
+        "base_offset": 117074960,
+        "kind": "strided",
+        "last_range_stop": 205144592,
+        "range_count": 7168,
+        "range_length": 1536,
+        "stride": 12288
+      },
+      "bytes_read": 11010048,
+      "dtype": "BF16",
+      "file": "model-00002-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_shared_expert",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 1,
+        "start": 0,
+        "stop": 768
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        7168,
+        6144
+      ],
+      "source_tensor_bytes": 88080384,
+      "tensor": "language_model.model.layers.1.block_sparse_moe.shared_experts.down_proj.weight",
+      "worker_id": "machine-0000.worker"
+    },
+    {
+      "byte_ranges": {
+        "kind": "contiguous",
+        "length": 7340032,
+        "offset": 33569072
+      },
+      "bytes_read": 7340032,
+      "dtype": "BF16",
+      "file": "model-00095-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_multimodal_projector",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 0,
+        "start": 0,
+        "stop": 896
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        7168,
+        4096
+      ],
+      "source_tensor_bytes": 58720256,
+      "tensor": "mm_projector.proj.2.weight",
+      "worker_id": "machine-0048.worker"
+    },
+    {
+      "byte_ranges": {
+        "kind": "contiguous",
+        "length": 6422528,
+        "offset": 14307344
+      },
+      "bytes_read": 6422528,
+      "dtype": "BF16",
+      "file": "model-00002-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_latent_moe_projection",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 0,
+        "start": 0,
+        "stop": 448
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        3584,
+        7168
+      ],
+      "source_tensor_bytes": 51380224,
+      "tensor": "language_model.model.layers.1.block_sparse_moe.routed_expert_down_proj.weight",
+      "worker_id": "machine-0000.worker"
+    },
+    {
+      "byte_ranges": {
+        "kind": "contiguous",
+        "length": 1179648,
+        "offset": 19946464
+      },
+      "bytes_read": 1179648,
+      "dtype": "BF16",
+      "file": "model-00096-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_vision",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 0,
+        "start": 0,
+        "stop": 576
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        4608,
+        1024
+      ],
+      "source_tensor_bytes": 9437184,
+      "tensor": "vision_tower.encoder.blocks.0.wqkv.weight",
+      "worker_id": "machine-0112.worker"
+    },
+    {
+      "byte_ranges": {
+        "kind": "contiguous",
+        "length": 688128,
+        "offset": 1268562960
+      },
+      "bytes_read": 688128,
+      "dtype": "U8",
+      "file": "model-00002-of-000096.safetensors",
+      "full_source_tensor_materialized": false,
+      "purpose": "e021_direct_read_routed_expert",
+      "read_mechanism": "read_only_memmap_then_assigned_slice_copy",
+      "requested_shard": {
+        "axis": 0,
+        "start": 0,
+        "stop": 384
+      },
+      "source_fraction_read": 0.125,
+      "source_shape": [
+        3072,
+        1792
+      ],
+      "source_tensor_bytes": 5505024,
+      "tensor": "language_model.model.layers.1.block_sparse_moe.experts.0.w1.weight_packed",
+      "worker_id": "machine-0000.worker"
+    }
+  ],
+  "representative_roles": {
+    "attention": "language_model.model.layers.0.self_attn.g_proj.weight",
+    "dense_mlp": "language_model.model.layers.0.mlp.down_proj.weight",
+    "embedding": "language_model.model.embed_tokens.weight",
+    "latent_moe_projection": "language_model.model.layers.1.block_sparse_moe.routed_expert_down_proj.weight",
+    "lm_head": "language_model.lm_head.weight",
+    "multimodal_projector": "mm_projector.proj.2.weight",
+    "routed_expert": "language_model.model.layers.1.block_sparse_moe.experts.0.w1.weight_packed",
+    "shared_expert": "language_model.model.layers.1.block_sparse_moe.shared_experts.down_proj.weight",
+    "vision": "vision_tower.encoder.blocks.0.wqkv.weight"
+  },
+  "request_count": 9,
+  "schema_version": "experiment-021-direct-read-audit-v1",
+  "source_bytes_addressed": 5571346432,
+  "status": "PASS",
+  "violations": []
+}

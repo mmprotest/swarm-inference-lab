@@ -1,0 +1,256 @@
+{
+  "backend": {
+    "cpu_mathematical_fallbacks": 0,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044"
+  },
+  "checkpoint": {
+    "content_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "model_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "path": "F:\\models\\Kimi-K3"
+  },
+  "cycle_id": "H014-026f",
+  "hypothesis": "A registered stage-zero worker keeps embedding and dense layer-0 weights resident, executes successive token IDs on CUDA, emits the complete canonical boundary, advances state, and performs no warm reconstruction.",
+  "inspection": {
+    "actual_bottleneck": "production implementation still inherits experiment-module base code",
+    "canonical_boundary": "float32 [1,9,7168]",
+    "warm_path_model_materialization": 0,
+    "warm_path_weight_loading": 0
+  },
+  "prior_stage_regression": {
+    "pass": true,
+    "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\h014-026f-nonfinal-regression.json",
+    "sha256": "97947e5d81e4f517d3469c257c18cc1800ea8feeb7b0d4497f12c8068ee84d90"
+  },
+  "schema_version": "experiment-014-k3-persistent-stage-zero-v2",
+  "stage": {
+    "assignment": {
+      "owned_tensor_count": 24,
+      "ownership_hash": "ac734dfd8a6008268a2c826a17e81edac513afbb87d6c12e287454fd97f781ef",
+      "source_weight_bytes": 4690023424,
+      "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e"
+    },
+    "attention_type": "KDA",
+    "backend": {
+      "cpu_mathematical_fallbacks": 0,
+      "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+      "identity": "nvidia_cuda_persistent_kimi_stage",
+      "implementation_class": "swarm_inference.execution.kimi_k3_stage.PersistentKimiStageExecutor"
+    },
+    "benchmark": {
+      "device": {
+        "maximum_ms": 2.728991985321045,
+        "mean_ms": 2.5429972807566323,
+        "minimum_ms": 2.2226879596710205,
+        "p50_ms": 2.677311897277832,
+        "p95_ms": 2.723823976516724,
+        "p99_ms": 2.727958383560181,
+        "standard_deviation_ms": 0.22747344717685594
+      },
+      "instrumentation_mode": "production-minimal plus lifecycle counters",
+      "retained_generations": 3,
+      "wall": {
+        "maximum_ms": 2.9363,
+        "mean_ms": 2.7581666666666664,
+        "minimum_ms": 2.4794,
+        "p50_ms": 2.8588,
+        "p95_ms": 2.92855,
+        "p99_ms": 2.93475,
+        "standard_deviation_ms": 0.199640849749967
+      },
+      "warmup_generations": 1,
+      "wire": [
+        {
+          "forwarded_payload_bytes": 258048,
+          "forwarded_wire_bytes": 259595,
+          "incoming_payload_bytes": 8,
+          "incoming_wire_bytes": 1158
+        },
+        {
+          "forwarded_payload_bytes": 258048,
+          "forwarded_wire_bytes": 259593,
+          "incoming_payload_bytes": 8,
+          "incoming_wire_bytes": 1157
+        },
+        {
+          "forwarded_payload_bytes": 258048,
+          "forwarded_wire_bytes": 259593,
+          "incoming_payload_bytes": 8,
+          "incoming_wire_bytes": 1158
+        }
+      ]
+    },
+    "correctness": {
+      "maximum_boundary_relative_l2_error": 2.751786728581615e-07,
+      "pass": true,
+      "positions": [
+        {
+          "boundary_dtype": "float32",
+          "boundary_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.609735785540215,
+            "cosine_similarity": 0.9999999999999635,
+            "maximum_absolute_error": 8.940696716308594e-08,
+            "mean_absolute_error": 9.223751498038404e-10,
+            "reference_finite": true,
+            "reference_l2": 3.6097356165115255,
+            "relative_l2_error": 2.751786728581615e-07
+          },
+          "boundary_shape": [
+            1,
+            9,
+            7168
+          ],
+          "expected_expert_ids": [],
+          "expected_output_fingerprint": "sha256:eac99f5a75496f838bdb4027e839ff6dc43811e8846c004b8f16107fc83f88fc",
+          "input_fingerprint": "sha256:fa4fb4f309e4087f9aa3079f621d6848dfd3c8514fd15db64e091ae499d07593",
+          "output_fingerprint": "sha256:f3f4e632e75260c8effc711ee4603b8fe990f05376931efdb9f106d550d5ef22",
+          "position": 0,
+          "residual_rows_bit_exact": true,
+          "routing_equality": true,
+          "selected_expert_ids": [],
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e"
+        },
+        {
+          "boundary_dtype": "float32",
+          "boundary_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.132597644215904,
+            "cosine_similarity": 0.9999999999999817,
+            "maximum_absolute_error": 5.960464477539063e-08,
+            "mean_absolute_error": 4.0920500145335927e-10,
+            "reference_finite": true,
+            "reference_l2": 2.132597685397348,
+            "relative_l2_error": 1.9350966185253025e-07
+          },
+          "boundary_shape": [
+            1,
+            9,
+            7168
+          ],
+          "expected_expert_ids": [],
+          "expected_output_fingerprint": "sha256:34437bd09b0c029b1f55cc3691b26715e0d90a21f3c68d891c6aec2be956cc84",
+          "input_fingerprint": "sha256:2994f7b9d45142b0188bf2ed7bff39aac3cb80a3f94d0bb55ddb6055844a5e5e",
+          "output_fingerprint": "sha256:19578e9b29bdf141ca173fe1e3131f60cd06d8346734067275c3bce8e55568e6",
+          "position": 1,
+          "residual_rows_bit_exact": true,
+          "routing_equality": true,
+          "selected_expert_ids": [],
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e"
+        },
+        {
+          "boundary_dtype": "float32",
+          "boundary_metrics": {
+            "actual_finite": true,
+            "actual_l2": 1.8166190060749157,
+            "cosine_similarity": 0.9999999999999828,
+            "maximum_absolute_error": 5.960464477539063e-08,
+            "mean_absolute_error": 3.37318208638617e-10,
+            "reference_finite": true,
+            "reference_l2": 1.8166190424883075,
+            "relative_l2_error": 1.8785890160758023e-07
+          },
+          "boundary_shape": [
+            1,
+            9,
+            7168
+          ],
+          "expected_expert_ids": [],
+          "expected_output_fingerprint": "sha256:c11ba20e317add469bb1ef07ebce227bd08316fdffe17182d9a2fce2ce448132",
+          "input_fingerprint": "sha256:7ba37e4b07bd59b05fb8efc0d31a6bd2c591297bb83f6020be5afcd9a86ac555",
+          "output_fingerprint": "sha256:db0143a30157de91003eae3297c988616866720581ffbee697ab810c7eb1a1cc",
+          "position": 2,
+          "residual_rows_bit_exact": true,
+          "routing_equality": true,
+          "selected_expert_ids": [],
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e"
+        }
+      ],
+      "relative_error_gate": 3e-05,
+      "residual_rows_bit_exact": true,
+      "routing_equality": true,
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 3,
+        "fingerprint": "sha256:08b38c78893d7165f550b24b0e2b4638aea1e3e47fbdb34a39cd62e90806d6fd",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "layer": 0,
+    "lifecycle": {
+      "pass": true,
+      "per_generation_deltas": [
+        {
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "position": 0
+        },
+        {
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "position": 1
+        },
+        {
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "position": 2
+        }
+      ],
+      "warm_delta": {
+        "connection_establishment": 0,
+        "model_materialization": 0,
+        "persistent_buffer_allocation": 0,
+        "process_creation": 0,
+        "task_creation": 0,
+        "thread_creation": 0,
+        "topology_rebuilds": 0,
+        "weight_loading": 0
+      }
+    },
+    "load": {
+      "accepted": true,
+      "elapsed_ms": 14480.5995,
+      "memory_after": {
+        "free_bytes": 29394731008,
+        "total_bytes": 34190458880
+      },
+      "memory_before": {
+        "free_bytes": 32429309952,
+        "total_bytes": 34190458880
+      },
+      "resident_device_bytes": 3034578944,
+      "resident_expert_count": 0,
+      "route_accepted": true,
+      "tracked_device_bytes": 3018802944
+    },
+    "status": "PASS"
+  },
+  "status": "PASS"
+}

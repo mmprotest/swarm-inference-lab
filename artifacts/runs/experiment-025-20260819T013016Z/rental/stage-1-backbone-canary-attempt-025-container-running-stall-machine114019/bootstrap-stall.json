@@ -1,0 +1,38 @@
+{
+  "schema_version": "experiment-025-stage1-bootstrap-stall-v1",
+  "run_id": "20260819T013016Z",
+  "status": "ABORTED_CLEANED",
+  "classification": "BOOTSTRAP_NO_PROGRESS_HOST_OR_NETWORK",
+  "instance_id": 48452481,
+  "machine_id": 114019,
+  "gpu_model": "RTX 3090",
+  "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "last_substantive_progress_utc": "2026-08-23T07:38:46.892629+00:00",
+  "last_substantive_bootstrap_stage": "CONTAINER_RUNNING",
+  "observed_milestones": [
+    "CONTAINER_BOOTSTRAP",
+    "CONTAINER_RUNNING_EXACT_IMMUTABLE_DIGEST"
+  ],
+  "unobserved_milestones": [
+    "MODEL_DOWNLOAD",
+    "PACKAGE_READY",
+    "GPU_LOAD",
+    "WORKER_LISTENING",
+    "WORKER_READY"
+  ],
+  "empty_log_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+  "empty_log_treated_as_substantive_progress": false,
+  "abort_reason": "more than four minutes without substantive bootstrap progress",
+  "worker_ready": false,
+  "model_compute_attempted": false,
+  "source_or_image_defect_claimed": false,
+  "machine_blacklist_for_ranked_alternate_retry": true,
+  "cleanup_receipts": [
+    "progress-stall-emergency-cleanup.json",
+    "cleanup-verification.json"
+  ],
+  "zero_live_e025_instances": true,
+  "estimated_active_cost_usd": 0.02077100974074074,
+  "estimated_storage_cost_usd": 0.002596376217592592,
+  "provider_invoice_claimed": false
+}

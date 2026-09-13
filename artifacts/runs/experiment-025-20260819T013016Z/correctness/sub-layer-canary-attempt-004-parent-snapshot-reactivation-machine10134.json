@@ -1,0 +1,163 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-23T07:01:32.779440+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "physical-sub-layer-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48450071,
+      48450072,
+      48450073,
+      48450074,
+      48450261
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "PHYSICAL_OR_RUNTIME_DEFECT_REQUIRES_OFFLINE_REVIEW",
+    "error": "fatal bootstrap marker: refusing to replace activated snapshot",
+    "error_type": "RuntimeError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\run-stage2-progress-aware.py\", line 146, in observed_wait_for_worker\n    worker = _original_wait_worker(**kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 353, in wait_for_worker\n    raise RuntimeError(f\"E025 worker {worker_id} readiness was aborted\")\nRuntimeError: E025 worker e025-stage-089-parent readiness was aborted\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 770, in run_sub_layer_canary_stage\n    worker = future.result()\n             ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 449, in result\n    return self.__get_result()\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 401, in __get_result\n    raise self._exception\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\thread.py\", line 58, in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 745, in await_parent\n    return wait_for_worker(\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\run-stage2-progress-aware.py\", line 150, in observed_wait_for_worker\n    raise RuntimeError(str(reason)) from exc\nRuntimeError: fatal bootstrap marker: refusing to replace activated snapshot\n"
+  },
+  "fragments": [
+    {
+      "gpu_slot": 0,
+      "host": "47.186.47.78",
+      "instance_id": "48450072",
+      "layer": 89,
+      "machine_id": "56939",
+      "port": 20061,
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-02",
+      "worker_index": 2
+    },
+    {
+      "gpu_slot": 0,
+      "host": "24.37.233.234",
+      "instance_id": "48450074",
+      "layer": 89,
+      "machine_id": "51857",
+      "port": 47111,
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-01",
+      "worker_index": 1
+    },
+    {
+      "gpu_slot": 0,
+      "host": "70.29.205.185",
+      "instance_id": "48450071",
+      "layer": 89,
+      "machine_id": "86690",
+      "port": 51506,
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-00",
+      "worker_index": 0
+    }
+  ],
+  "generated_at_utc": "2026-08-23T07:01:32.807834+00:00",
+  "image_digest": "sha256:c0dde46b26d724e4adb57a83ec89c57d21376489902b0a4efbd3282d2e477881",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:c0dde46b26d724e4adb57a83ec89c57d21376489902b0a4efbd3282d2e477881",
+  "parent": null,
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0.16823750780477778,
+    "estimated_storage_cost_usd": 0.016210602250771602,
+    "generated_at_utc": "2026-08-23T07:01:32.801255+00:00",
+    "instance_count": 5,
+    "instances": [
+      {
+        "active_rental_rate_usd_per_hour": 0.12893333333333332,
+        "created_at_utc": "2026-08-23T06:43:24.017882+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T07:01:31.037979+00:00",
+        "elapsed_seconds": 1087.020097,
+        "estimated_active_cost_usd": 0.03893142347403703,
+        "estimated_storage_cost_usd": 0.005032500449074074,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3080 Ti",
+        "instance_id": 48450071,
+        "machine_id": 86690,
+        "offer_id": 46730905,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.19999999999999998
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.084,
+        "created_at_utc": "2026-08-23T06:43:24.049696+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T07:01:31.081537+00:00",
+        "elapsed_seconds": 1087.031841,
+        "estimated_active_cost_usd": 0.02536407629,
+        "estimated_storage_cost_usd": 0.0033550365462962956,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3070",
+        "instance_id": 48450072,
+        "machine_id": 56939,
+        "offer_id": 46113147,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.12000000000000001,
+        "created_at_utc": "2026-08-23T06:43:24.097183+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T07:01:31.055986+00:00",
+        "elapsed_seconds": 1086.958803,
+        "estimated_active_cost_usd": 0.0362319601,
+        "estimated_storage_cost_usd": 0.0015096650041666665,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3080 Ti",
+        "instance_id": 48450073,
+        "machine_id": 144751,
+        "offer_id": 47053973,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.05999999999999999
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.10666666666666667,
+        "created_at_utc": "2026-08-23T06:43:24.148491+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T07:01:31.000426+00:00",
+        "elapsed_seconds": 1086.851935,
+        "estimated_active_cost_usd": 0.03220302029629629,
+        "estimated_storage_cost_usd": 0.0033544812808641964,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3080",
+        "instance_id": 48450074,
+        "machine_id": 51857,
+        "offer_id": 45587623,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.16,
+        "created_at_utc": "2026-08-23T06:48:12.173415+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T07:01:31.081537+00:00",
+        "elapsed_seconds": 798.908122,
+        "estimated_active_cost_usd": 0.035507027644444446,
+        "estimated_storage_cost_usd": 0.002958918970370371,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3090",
+        "instance_id": 48450261,
+        "machine_id": 10134,
+        "offer_id": 47929856,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.16000000000000003
+      }
+    ],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "PASS",
+    "total_elapsed_instance_seconds": 5146.770798
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-sub-layer-canary-stage-v1",
+  "status": "FAIL"
+}

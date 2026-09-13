@@ -1,0 +1,40 @@
+{
+  "binary_output_name": "libcoli_cuda-sm86.so",
+  "build_arguments": [
+    "nvcc",
+    "-O3",
+    "-std=c++17",
+    "-shared",
+    "-Xcompiler=-fPIC,-Wall,-Wextra",
+    "-gencode=arch=compute_86,code=sm_86",
+    "-gencode=arch=compute_86,code=compute_86",
+    "-DCOLI_CUDA_BUILDING_DLL",
+    "-DCOLI_CUDA_MIN_CC=86",
+    "-DCOLI_CUDA_HAS_FORWARD_PTX=1",
+    "backend_cuda.cu",
+    "-lcudart",
+    "-o",
+    "libcoli_cuda-sm86.so"
+  ],
+  "physical_qualification_required": true,
+  "placement_sha256": "d0dc1305d23849a4a7147062cc0b6f1ec3e183208bf65d723ce5f48cbd0a3201",
+  "schema_version": "experiment-015-k3-native-source-manifest-v1",
+  "source_bundle_sha256": "2032325c0a4a4fa9f4f785a38d8adc3f60245b2ce857c59ee8d21a524cc1fe8e",
+  "source_files": {
+    "backend_cuda.cu": {
+      "bytes": 175806,
+      "sha256": "8dd70504db0fe7bc43b4d9769c6472281578cbc49f5e61970bed94868404c6a8"
+    },
+    "backend_cuda.h": {
+      "bytes": 17653,
+      "sha256": "b2a5b735d2fee2b4934f19c42618ed0d064000076667df7d107d793e44b92ca7"
+    },
+    "backend_gpu_compat.h": {
+      "bytes": 5045,
+      "sha256": "bc1cd457b42800fd6754a7f59b9269e5a956d164c9ce0f34f8cbcf2319f3d455"
+    }
+  },
+  "status": "PASS",
+  "target": "linux-x86_64 CUDA sm_86 SASS plus compute_86 PTX",
+  "windows_reference_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+}

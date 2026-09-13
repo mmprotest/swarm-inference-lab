@@ -1,0 +1,414 @@
+{
+  "acceptance_gates": {
+    "exact_shared_tensor_ownership_resolved": true,
+    "parent_coordinator_retains_positive_headroom_over_shared_weights": true,
+    "real_shared_phase_measured_all_batches": true,
+    "remote_best_case_does_not_beat_parent_overlap": true,
+    "remote_placement_adds_tensor_payload": true
+  },
+  "batch8_context": {
+    "distributed_complete_layer_p50_ms": 17.4095,
+    "parent_overlap_capacity_gain_upper_bound": 1.0823168836336057,
+    "parent_perfect_overlap_projection_p50_ms": 16.0854,
+    "routed_collective_p50_ms": 7.1793,
+    "shared_expert_device_p50_ms": 1.3166719675064087,
+    "shared_expert_wall_p50_ms": 1.3241
+  },
+  "cycle_id": "H014-SUB-007",
+  "decision": {
+    "four_way_replication": "REJECT_DOMINATED",
+    "next_hypothesis": "Overlap parent-resident shared-expert CUDA with the persistent routed collective without changing placement or numerical semantics.",
+    "remote_shared_worker": "REJECT_DOMINATED",
+    "shared_expert_placement": "RETAIN_PARENT"
+  },
+  "fine_network_join": {
+    "maximum_viable_rtt_ms_at_100gbps": 0.6461381024968426,
+    "minimum_viable_bandwidth_gbps_at_0_25ms": 1.9863508523457518,
+    "physical_multi_gpu_measurement": false
+  },
+  "hypothesis": "Keeping the fused shared experts on the parent is lower-latency and lower-network-cost than remote or replicated placement; parent compute can overlap routed-worker service without another fine-edge payload.",
+  "hypothesis_supported": true,
+  "inspection": {
+    "actual_bottleneck": "Remote shared placement cannot beat the zero-network parent-overlap lower bound. It adds 57,344 tensor bytes/row and two messages; replication adds 222,953,472 weight bytes versus one parent copy.",
+    "important_limit": "Overlap values are analytical projections joined from real timings, not a physical multi-GPU overlap measurement."
+  },
+  "placements": {
+    "four_way_replication": {
+      "each_worker_bytes_lower_bound": 4009148416,
+      "extra_weight_bytes_vs_parent": 222953472,
+      "group_shared_weight_bytes": 297271296,
+      "limitation": "replication does not remove input/output transfer or improve the zero-network parent overlap bound",
+      "remote_messages_per_batch8": 2,
+      "remote_tensor_bytes_per_row": 57344,
+      "shared_weight_copies": 4
+    },
+    "one_routed_worker": {
+      "incremental_group_weight_bytes": 74317824,
+      "limitation": "adds shared compute to one already route-imbalanced worker",
+      "parent_bytes_after_weight_move_lower_bound": 351404032,
+      "remote_messages_per_batch8": 2,
+      "remote_tensor_bytes_per_row": 57344,
+      "selected_worker_bytes_lower_bound": 4009148416,
+      "selected_worker_fraction_of_complete_layer_percent": 21.93335173818265,
+      "shared_weight_copies": 1
+    },
+    "parent_resident": {
+      "current_serial_complete_p50_ms": 17.4095,
+      "incremental_group_weight_bytes": 74317824,
+      "parent_shared_resident_weight_bytes": 74317824,
+      "perfect_overlap_projection_p50_ms": 16.0854,
+      "remote_messages_per_batch8": 0,
+      "remote_tensor_bytes_per_row": 0,
+      "shared_weight_copies": 1
+    },
+    "separate_shared_worker": {
+      "best_case_projection_equals_parent_overlap": true,
+      "incremental_group_weight_bytes": 74317824,
+      "minimum_worker_bytes_excluding_cuda_context": 74776576,
+      "minimum_worker_gib_excluding_cuda_context": 0.06964111328125,
+      "remote_messages_per_batch8": 2,
+      "remote_tensor_bytes_per_row": 57344,
+      "shared_weight_copies": 1
+    }
+  },
+  "real_shared_expert_timing": {
+    "1": {
+      "device": {
+        "maximum_ms": 0.6947839856147766,
+        "mean_ms": 0.3326399952173233,
+        "minimum_ms": 0.24137599766254425,
+        "p50_ms": 0.24211199581623077,
+        "p95_ms": 0.6043967872858046,
+        "p99_ms": 0.6767065459489822,
+        "standard_deviation_ms": 0.18107259393981023
+      },
+      "wall": {
+        "maximum_ms": 0.7032,
+        "mean_ms": 0.33930000000000005,
+        "minimum_ms": 0.2475,
+        "p50_ms": 0.2483,
+        "p95_ms": 0.6123999999999999,
+        "p99_ms": 0.68504,
+        "standard_deviation_ms": 0.18195079554648835
+      }
+    },
+    "2": {
+      "device": {
+        "maximum_ms": 0.3803200125694275,
+        "mean_ms": 0.3709568023681641,
+        "minimum_ms": 0.36611199378967285,
+        "p50_ms": 0.36924800276756287,
+        "p95_ms": 0.3785728096961975,
+        "p99_ms": 0.37997057199478146,
+        "standard_deviation_ms": 0.0050252726421100725
+      },
+      "wall": {
+        "maximum_ms": 0.3917,
+        "mean_ms": 0.37864,
+        "minimum_ms": 0.3739,
+        "p50_ms": 0.3752,
+        "p95_ms": 0.389,
+        "p99_ms": 0.39116,
+        "standard_deviation_ms": 0.006704804247701794
+      }
+    },
+    "4": {
+      "device": {
+        "maximum_ms": 0.6929600238800049,
+        "mean_ms": 0.6808768033981323,
+        "minimum_ms": 0.6728640198707581,
+        "p50_ms": 0.6748480200767517,
+        "p95_ms": 0.6923776149749756,
+        "p99_ms": 0.6928435420989991,
+        "standard_deviation_ms": 0.008748605883540737
+      },
+      "wall": {
+        "maximum_ms": 0.7011,
+        "mean_ms": 0.6885399999999999,
+        "minimum_ms": 0.6789,
+        "p50_ms": 0.6842,
+        "p95_ms": 0.7003999999999999,
+        "p99_ms": 0.7009599999999999,
+        "standard_deviation_ms": 0.009055075924585062
+      }
+    },
+    "8": {
+      "device": {
+        "maximum_ms": 1.7683199644088745,
+        "mean_ms": 1.402675175666809,
+        "minimum_ms": 1.304479956626892,
+        "p50_ms": 1.3166719675064087,
+        "p95_ms": 1.6780607700347898,
+        "p99_ms": 1.7502681255340575,
+        "standard_deviation_ms": 0.18289221184563811
+      },
+      "wall": {
+        "maximum_ms": 1.7875,
+        "mean_ms": 1.41578,
+        "minimum_ms": 1.3195,
+        "p50_ms": 1.3241,
+        "p95_ms": 1.69522,
+        "p99_ms": 1.769044,
+        "standard_deviation_ms": 0.18587327295767944
+      }
+    }
+  },
+  "remote_transport": {
+    "bandwidth_sweep_at_0_25ms": [
+      {
+        "bandwidth_gbps": 1.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 5.244116,
+        "rtt_ms": 0.25,
+        "tensor_transmission_ms": 3.670016
+      },
+      {
+        "bandwidth_gbps": 2.5,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 3.0421063999999998,
+        "rtt_ms": 0.25,
+        "tensor_transmission_ms": 1.4680064
+      },
+      {
+        "bandwidth_gbps": 5.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 2.3081032,
+        "rtt_ms": 0.25,
+        "tensor_transmission_ms": 0.7340032
+      },
+      {
+        "bandwidth_gbps": 10.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 1.9411016,
+        "rtt_ms": 0.25,
+        "tensor_transmission_ms": 0.3670016
+      },
+      {
+        "bandwidth_gbps": 25.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 1.72090064,
+        "rtt_ms": 0.25,
+        "tensor_transmission_ms": 0.14680064
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 1.6108001600000001,
+        "rtt_ms": 0.25,
+        "tensor_transmission_ms": 0.03670016
+      }
+    ],
+    "input_activation_bytes_per_row": 28672,
+    "maximum_rtt_hidden_by_routed_collective_at_100gbps_ms": 5.81849984,
+    "messages_batch8": 2,
+    "method": "Optimistic lower bound: shared compute + one RTT + tensor serialization; zero framing/serialization/software overhead, overlapped against the measured routed collective.",
+    "returned_output_bytes_per_row": 28672,
+    "rtt_sweep_at_100gbps": [
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 1.3608001600000001,
+        "rtt_ms": 0.0,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 1.4608001600000002,
+        "rtt_ms": 0.1,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 1.6108001600000001,
+        "rtt_ms": 0.25,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 1.8608001600000001,
+        "rtt_ms": 0.5,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 2.36080016,
+        "rtt_ms": 1.0,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 3.36080016,
+        "rtt_ms": 2.0,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 0.0,
+        "hidden_by_routed_collective": true,
+        "projected_complete_layer_p50_ms": 16.0854,
+        "relative_to_current_parent_serial": 1.0823168836336057,
+        "remote_shared_service_ms": 6.360800159999999,
+        "rtt_ms": 5.0,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 4.181500160000001,
+        "hidden_by_routed_collective": false,
+        "projected_complete_layer_p50_ms": 20.26690016,
+        "relative_to_current_parent_serial": 0.8590114848624193,
+        "remote_shared_service_ms": 11.36080016,
+        "rtt_ms": 10.0,
+        "tensor_transmission_ms": 0.03670016
+      },
+      {
+        "bandwidth_gbps": 100.0,
+        "beats_parent_overlap_projection": false,
+        "exposed_after_routed_ms": 14.18150016,
+        "hidden_by_routed_collective": false,
+        "projected_complete_layer_p50_ms": 30.26690016,
+        "relative_to_current_parent_serial": 0.5751993070967992,
+        "remote_shared_service_ms": 21.36080016,
+        "rtt_ms": 20.0,
+        "tensor_transmission_ms": 0.03670016
+      }
+    ],
+    "synchronization_points": 2,
+    "tensor_bytes_batch8": 458752,
+    "tensor_bytes_per_row": 57344
+  },
+  "schema_version": "experiment-014-k3-shared-expert-placement-v1",
+  "shared_tensor_ownership": {
+    "layer": 89,
+    "runtime_grouped_int4_resident_weight_bytes": 74317824,
+    "runtime_grouped_int4_resident_weight_gib": 0.0692138671875,
+    "safetensors_shard": "F:\\models\\Kimi-K3\\model-00090-of-000096.safetensors",
+    "safetensors_shard_size_bytes": 16990916912,
+    "selected_header_metadata_sha256": "8692c313b5da3818b2a921978fb61c276b5a7723b5333f05ffff3f1c35c9f242",
+    "source_bytes": 264241152,
+    "tensors": [
+      {
+        "data_offsets": [
+          204336640,
+          292417024
+        ],
+        "dtype": "BF16",
+        "grouped_int4_packed_bytes": 22020096,
+        "grouped_int4_scale_bytes": 2752512,
+        "name": "language_model.model.layers.89.block_sparse_moe.shared_experts.gate_proj.weight",
+        "resident_tensor_bytes": 24772608,
+        "shape": [
+          6144,
+          7168
+        ],
+        "source_bytes": 88080384
+      },
+      {
+        "data_offsets": [
+          292417024,
+          380497408
+        ],
+        "dtype": "BF16",
+        "grouped_int4_packed_bytes": 22020096,
+        "grouped_int4_scale_bytes": 2752512,
+        "name": "language_model.model.layers.89.block_sparse_moe.shared_experts.up_proj.weight",
+        "resident_tensor_bytes": 24772608,
+        "shape": [
+          6144,
+          7168
+        ],
+        "source_bytes": 88080384
+      },
+      {
+        "data_offsets": [
+          116256256,
+          204336640
+        ],
+        "dtype": "BF16",
+        "grouped_int4_packed_bytes": 22020096,
+        "grouped_int4_scale_bytes": 2752512,
+        "name": "language_model.model.layers.89.block_sparse_moe.shared_experts.down_proj.weight",
+        "resident_tensor_bytes": 24772608,
+        "shape": [
+          7168,
+          6144
+        ],
+        "source_bytes": 88080384
+      }
+    ]
+  },
+  "sources": {
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "complete_batch_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-030e-complete-stage-batch-layer89.json",
+      "sha256": "bc1dda9a5bb990a5dabb72d177ca8d8c4503b2effd1abce713d419cace1f261a"
+    },
+    "distributed_batch_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-006f-single-interval-four-worker-batch.json",
+      "sha256": "6119f19e5e5af23818cdc32e8750024c545a8d27bcdbc221d883366ee95ba108"
+    },
+    "fine_network_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-005-scaling-network.json",
+      "sha256": "dbb6cb5e71c563d523012f894f8732c524ec7cdc185ddba6a5781f0865004b96"
+    }
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,219 @@
+{
+  "acceptance_gates": {
+    "canonical_transport_bit_exact": true,
+    "cpu_pool_1_by_1": true,
+    "idle_control_stable": true
+  },
+  "canonical_transport": {
+    "after": {
+      "os": [
+        2996,
+        4788,
+        6464,
+        16180,
+        16308,
+        16780,
+        26900,
+        27696,
+        28988,
+        29316,
+        29708,
+        30052,
+        31832,
+        32260,
+        33584,
+        33876,
+        34128,
+        34168,
+        34220,
+        34644,
+        34940,
+        35504,
+        35552
+      ],
+      "python_native": [
+        28988
+      ]
+    },
+    "before": {
+      "os": [
+        2996,
+        4788,
+        6464,
+        16180,
+        16308,
+        16780,
+        26900,
+        27696,
+        28988,
+        29316,
+        29708,
+        30052,
+        31832,
+        32260,
+        33584,
+        33876,
+        34128,
+        34168,
+        34220,
+        34644,
+        34940,
+        35504,
+        35552
+      ],
+      "python_native": [
+        28988
+      ]
+    },
+    "bit_exact": true,
+    "delayed_os_added": [],
+    "delayed_python_native_added": [],
+    "encoded_bytes": 258048,
+    "immediate": {
+      "os": [
+        2996,
+        4788,
+        6464,
+        16180,
+        16308,
+        16780,
+        26900,
+        27696,
+        28988,
+        29316,
+        29708,
+        30052,
+        31832,
+        32260,
+        33584,
+        33876,
+        34128,
+        34168,
+        34220,
+        34644,
+        34940,
+        35504,
+        35552
+      ],
+      "python_native": [
+        28988
+      ]
+    },
+    "immediate_os_added": [],
+    "mode": "transport",
+    "raw_bytes": 258048,
+    "round_trips": 250,
+    "torch_interop_threads": 1,
+    "torch_intraop_threads": 1,
+    "transitions": []
+  },
+  "cycle_id": "H014-038p",
+  "decision": "HYPOTHESIS_FALSIFIED_INSTRUMENT_END_TO_END_PHASES",
+  "hypothesis": "The 1/1 canonical pack/unpack path asynchronously creates exactly one persistent non-Python OS thread during the next one second.",
+  "hypothesis_reproduced": false,
+  "idle_control": {
+    "after": {
+      "os": [
+        3308,
+        3524,
+        5528,
+        16164,
+        25176,
+        25352,
+        27552,
+        29200,
+        29436,
+        29924,
+        30424,
+        31780,
+        32164,
+        32240,
+        32272,
+        32416,
+        32544,
+        33276,
+        34580,
+        34596,
+        34908,
+        35328,
+        36632
+      ],
+      "python_native": [
+        35328
+      ]
+    },
+    "before": {
+      "os": [
+        3308,
+        3524,
+        5528,
+        16164,
+        25176,
+        25352,
+        27552,
+        29200,
+        29436,
+        29924,
+        30424,
+        31780,
+        32164,
+        32240,
+        32272,
+        32416,
+        32544,
+        33276,
+        34580,
+        34596,
+        34908,
+        35328,
+        36632
+      ],
+      "python_native": [
+        35328
+      ]
+    },
+    "bit_exact": true,
+    "delayed_os_added": [],
+    "delayed_python_native_added": [],
+    "encoded_bytes": null,
+    "immediate": {
+      "os": [
+        3308,
+        3524,
+        5528,
+        16164,
+        25176,
+        25352,
+        27552,
+        29200,
+        29436,
+        29924,
+        30424,
+        31780,
+        32164,
+        32240,
+        32272,
+        32416,
+        32544,
+        33276,
+        34580,
+        34596,
+        34908,
+        35328,
+        36632
+      ],
+      "python_native": [
+        35328
+      ]
+    },
+    "immediate_os_added": [],
+    "mode": "idle",
+    "raw_bytes": null,
+    "round_trips": 0,
+    "torch_interop_threads": 1,
+    "torch_intraop_threads": 1,
+    "transitions": []
+  },
+  "schema_version": "experiment-014-h014-038p-delayed-transport-thread-v1",
+  "status": "PASS"
+}

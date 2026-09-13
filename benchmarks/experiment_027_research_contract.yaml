@@ -1,0 +1,60 @@
+experiment_id: E027_STATE_LOCAL_WAN_STAGE_PROTOCOL
+evidence_class: PHYSICAL
+primary_question: >-
+  Can Qwen3.8-27B Q4_K_M sustain at least 8 committed output tokens per
+  second across three physical Internet-connected GPUs when WAN-visible
+  llama.cpp backend operations are replaced by persistent state-local stages?
+hypothesis: >-
+  A persistent stage process that owns a contiguous layer interval and its
+  live hybrid GDN/KV state, and exchanges one coarse hidden-state work unit at
+  each stage boundary, will remove fine-grained WAN synchronization. Exact
+  multi-token verification will amortize the remaining stage traversal enough
+  to reach the interactive gate.
+fixed_inputs:
+  model: Qwen3.8-27B
+  format: GGUF
+  quantization: Q4_K_M
+  model_sha256: 31629f53165ab6a7dad8c9847dcfd1fdf55829dac1e6e748f4a68581b0033d34
+  physical_machines: 3
+  topology:
+    - local RTX 5090
+    - Vast GPU node A
+    - Vast GPU node B
+  network: real WAN
+  partitioning: contiguous model stages
+predeclared_gates:
+  correctness: exact optimized greedy tokens equal target-only distributed greedy tokens
+  stage_protocol: no remote ggml backend operations; weights and live state remain resident
+  synchronization: committed_tokens_per_target_traversal >= 2.5
+  performance_pass_tok_s: 8.0
+  performance_strong_tok_s: 12.0
+  performance_exceptional_tok_s: 20.0
+  meaningful_floor_tok_s: 5.0
+  vast_spend_ceiling_usd: 10.0
+measurement:
+  primary: median committed output tokens per second
+  explanatory: committed output tokens per expensive target traversal
+  secondary:
+    - median and p95 TPOT
+    - per-stage compute time
+    - WAN wait fraction
+    - serialization time
+    - pipeline idle time
+    - WAN messages and bytes per committed token
+    - remote GPU utilization
+arms:
+  - target-only state-local K=1
+  - exact multi-token K=2
+  - exact multi-token K=4
+  - exact multi-token K=8
+stop_conditions:
+  - correctness and median committed throughput >= 8 tok/s
+  - a measured architectural limit prevents 8 tok/s
+  - coarse stage execution remains synchronization dominated after lean attempts
+  - total Vast spend reaches 10 USD
+excluded:
+  - rerun or audit of E026
+  - activation or KV compression
+  - cold-start optimization
+  - broad scheduler or infrastructure work
+

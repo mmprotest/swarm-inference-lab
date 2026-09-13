@@ -1,0 +1,111 @@
+{
+  "batches": {},
+  "configuration": {
+    "advance_policy": "arm next size only after prior exact and health PASS",
+    "batches": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "context": 8192,
+    "device": 0,
+    "layer": 91,
+    "retained_rounds": 20,
+    "warmup_rounds": 5
+  },
+  "cuda_error_state_after_failure": true,
+  "cycle_id": "H014-034a",
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "expected_8k_decode": {
+    "output_fingerprint": "sha256:6ccb821731eb240fd5601a00199293dc542ea3dc76b14ec4b9eda1c56bb40aa4",
+    "state_fingerprint": "sha256:ea16b2ad5c2cbb06badae158a1d70a5b217f248d7e4f3174b9f9044ba87a98c3"
+  },
+  "failure": {
+    "message": "'_CudaRuntime' object has no attribute 'device_shared_memory_limits'",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\contextual_batch.py\", line 508, in benchmark_contextual_batch\n    \"device_shared_memory_limits\": executor.runtime.device_shared_memory_limits(),\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: '_CudaRuntime' object has no attribute 'device_shared_memory_limits'\n",
+    "type": "AttributeError"
+  },
+  "free_vram_after_failure": 14186184704,
+  "gpu_health_after_failure": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "12425",
+    "memory.total": "32607",
+    "memory.used": "19763",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "44",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30318",
+    "memory.total": "32607",
+    "memory.used": "1870",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "43",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": {
+    "minimum_batch8_capacity_gain": 1.25,
+    "prediction": "The guarded batch-1 MLA absorb used once per independent row safely supports real 8K complete-stage batches 1/2/4/8, preserves exact output/route/state, and batch 8 retains >=1.25x aggregate device capacity versus batch 1 at the same context."
+  },
+  "implementation": {
+    "cuda_change": false,
+    "old_batch_and_ragged_abis_modified": false,
+    "production_path": "session-owned cache append and guarded batch-1 MLA absorb per row; row-cooperative dense/router/expert execution"
+  },
+  "progress": [
+    {
+      "phase": "preregistered"
+    }
+  ],
+  "provenance": {
+    "candidate_sha_exact": true,
+    "long_context_context_pass": true,
+    "long_context_layer_exact": true,
+    "long_context_status_pass": true,
+    "pass": true,
+    "reference_status_pass": true
+  },
+  "schema_version": "experiment-014-k3-contextual-batch-v1",
+  "sources": {
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "cuda_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+      "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+    },
+    "long_context_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-033c-prefill-layer91-mla16k.json",
+      "sha256": "8ff01603baf239b89e595a789a84503d03acd7ec5601e9931dde51bda45f2b48"
+    },
+    "oracle_trace": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0\\hidden-trace.f32",
+      "sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d"
+    },
+    "reference_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-030f-complete-stage-batch-layer91.json",
+      "sha256": "8c1093c3a8d5acb4c43d208be5c43719489c278b2d199e022f378eb62c541640"
+    }
+  },
+  "status": "FAIL"
+}

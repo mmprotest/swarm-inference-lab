@@ -1,0 +1,183 @@
+{
+  "schema_version": "experiment-023-repair-protocol-v1",
+  "experiment_id": "023",
+  "protocol_status": "PREREGISTERED_BEFORE_REPAIRED_HEADLINE",
+  "preregistered_at_utc": "2026-08-16T00:13:12.0626949+00:00",
+  "original_verdict": "MODEL_INVALID",
+  "original_verdict_is_permanent": true,
+  "source_attempt": "deterministic-run-1",
+  "source_attempt_immutable": true,
+  "source_attempt_file_count": 147,
+  "source_attempt_tree_sha256": "b5df96da1a1a62b66b4b78a61f26be9ffc289326d3c9f4de8aa9fe25300dd3b7",
+  "published_archive": {
+    "path": "artifacts/experiment-023/archive/model-invalid-run-1",
+    "archived_file_count": 164,
+    "archive_manifest_sha256": "97868c59904da914a9bd4e9732d07a7df633d7542fe6c7173bb1515800b5b2b8"
+  },
+  "scientific_question": "On the same frozen Kimi K3 resource inventories and physically grounded service model repaired in Experiment 022, can selective duplicate residency of stateless WHOLE_EXPERT:p8 expert groups, combined with non-clairvoyant queue-aware runtime routing, improve latency-constrained steady-state serving throughput per abstract cost unit by at least 20% relative to the strongest unique-residency baseline?",
+  "hypothesis_plain_language": "Extra heterogeneous resources should create alternative execution paths rather than additional mandatory dependencies.",
+  "frozen_preregistration_hypothesis": "A heterogeneous resource pool is more useful when excess memory creates alternative execution paths than when every additional worker creates another mandatory dependency.",
+  "hypothesis_unchanged": true,
+  "repair_scope": "Repair only the invalid planner objective, FLEX_POOL feasible-set search, correctness execution, analysis publication, and finalization path. No scientific input, threshold, baseline construction, routing policy, shared-NIC model, inference technique, or physical method changes.",
+  "authoritative_attempt": "deterministic-run-2",
+  "reproducibility_attempt": "deterministic-run-3",
+  "control_pilot_attempt": "repair-control-pilot-v1",
+  "frozen_constants_canonical_sha256_from_run_1": "0b5e502e22bb0fca8cbb0dc0d8d0f80b3abd3610c34f2634e399900fc9c45f4b",
+  "frozen_constants": {
+    "experiment_id": "023",
+    "seed": 23023,
+    "target_rows": 17,
+    "admitted_partition_degree": 8,
+    "replicable_partition_kind": "WHOLE_EXPERT",
+    "maximum_copies_per_logical_expert_group": 2,
+    "replica_count_options": [
+      2,
+      4,
+      8
+    ],
+    "concurrency_levels": [
+      1,
+      8,
+      32,
+      64,
+      128
+    ],
+    "planning_concurrency": 32,
+    "planner_candidate_layers": 12,
+    "planner_primary_groups_per_layer": 2,
+    "planner_max_accepted_layer_actions": 6,
+    "planner_minimum_relative_gain": 0.005,
+    "planner_local_throughput_regression_limit": 0.01,
+    "economic_fastest_throughput_floor": 0.95,
+    "primary_latency_multiplier": 2.0,
+    "latency_sensitivity_multipliers": [
+      1.5,
+      2.0,
+      4.0
+    ],
+    "whole_expert_relative_l2_gate": 2e-06,
+    "replica_memory_error_percent_max": 5.0,
+    "general_wedge_efficiency_median_percent_min": 20.0,
+    "general_wedge_min_cases_ge_20": 12,
+    "family_wedge_efficiency_median_percent_min": 20.0,
+    "headline_regression_percent_max": 5.0,
+    "hedge_seed_count": 32,
+    "hedge_seed_start": 23023000,
+    "hedge_extra_compute_percent_max": 15.0,
+    "hedge_p95_latency_improvement_percent_min": 20.0
+  },
+  "frozen_constants_unchanged": true,
+  "frozen_input_verification": {
+    "status": "PASS",
+    "freeze_files": [
+      {
+        "path": "artifacts/experiment-023/freeze/e022-input-hashes.json",
+        "bytes": 39322,
+        "sha256": "711868f999ca6a31fe8fa2e60c98e70fae048f0452bcc51b24e1b5929bf07102"
+      },
+      {
+        "path": "artifacts/experiment-023/freeze/e023-frozen-inputs.json",
+        "bytes": 2322,
+        "sha256": "673c1fca9418032d2734bff5cad9da1690aa9ae1d3db5a07ff7b31f00848b068"
+      },
+      {
+        "path": "artifacts/experiment-023/freeze/headline-cohorts.json",
+        "bytes": 1111,
+        "sha256": "980462eabd3316456b54f517e287d81378aaa3064926ab4ac06cc07b81ad5f0a"
+      }
+    ],
+    "e022_file_count": 181,
+    "e022_file_hash_mismatches": 0,
+    "e022_inputs_canonical_sha256": "4887745f5e40bb943faba1ff705e19deaa42bfa04a444a45229de9550d2eec6b",
+    "e022_inventory_suite_sha256": "3e949a8eee0a71e128493f64e0be903bd373d3baad4be86a8869d87279d4bb49",
+    "e022_inputs_unchanged": true
+  },
+  "physical_validation_reuse": {
+    "status": "PASS",
+    "method_unchanged": true,
+    "artifact_hashes_match_run_1": true,
+    "case_count": 12,
+    "passed_case_count": 12,
+    "maximum_a_b_relative_l2": 0.0,
+    "maximum_replica_memory_error_percent": 3.8087815298161036,
+    "service_sample_count": 2400,
+    "hedge_service_drift": true,
+    "maximum_absolute_service_drift_percent": 71.93110756234796,
+    "hedging_conclusion": "SUPPRESSED",
+    "files": [
+      {
+        "path": "artifacts/experiment-023/physical/duplicate-expert-group-correctness.json",
+        "bytes": 29043,
+        "sha256": "43db4d540b141e2d5b51bfee2eae9255d9b54afc8428f6fc512c3e4de4d922ad"
+      },
+      {
+        "path": "artifacts/experiment-023/physical/duplicate-expert-group-services.csv",
+        "bytes": 2584,
+        "sha256": "505cd79f7138f9816f7cf829a3f06192b9ab9e0b995745f1893ca60efdc0d0d3"
+      },
+      {
+        "path": "artifacts/experiment-023/physical/service-samples.csv",
+        "bytes": 155629,
+        "sha256": "e6a4a1964515916caac9775cead25d8d4899684542d6ad4191aa84f284d02762"
+      },
+      {
+        "path": "artifacts/experiment-023/physical/gpu-samples.csv",
+        "bytes": 4392,
+        "sha256": "2b67191c5237bdc6e624d73588d7fb35e29b4579c0031ea71f527806ac303900"
+      }
+    ]
+  },
+  "repair_algorithm": {
+    "canonical_primary_slo_scorer": [
+      "Use one public score_plan_under_primary_slo implementation for planner acceptance, branch and envelope selection, saturation summaries, headline analysis, and negative-control analysis.",
+      "Evaluate SHARED_NIC at exactly concurrency 1, 8, 32, 64, and 128; require every ServingRun PASS.",
+      "Set the latency budget to 2.0 times U_STRONG C1 p95; retain p95-eligible runs; maximize target rows per second; when points are within 0.5 percent of the maximum choose the smallest concurrency.",
+      "Compute abstract node cost with the existing function and efficiency as target rows per second divided by abstract cost."
+    ],
+    "action_acceptance": [
+      "C32 remains a frozen search heuristic and diagnostic only.",
+      "FLEX_FREE maximizes primary-SLO raw throughput; FLEX_POOL maximizes primary-SLO throughput per abstract cost.",
+      "Require at least 0.5 percent true SLO objective gain, candidate SLO throughput at least 99 percent of current SLO throughput, and candidate SLO throughput at least 99 percent of original U_STRONG SLO throughput.",
+      "Reject candidates with no primary-SLO-eligible concurrency using NO_PRIMARY_SLO_ELIGIBLE_CONCURRENCY.",
+      "Choose qualifying actions deterministically by SLO objective gain, added replica bytes, newly activated nodes, layer ID, replica count, primary tuple, then alternate map."
+    ],
+    "primary_candidate_generation": [
+      "FLEX_FREE retains at most two completion-ranked P8 primary groups restricted to U_STRONG used nodes.",
+      "FLEX_POOL forms the raw feasible group set, then retains the FASTEST group and the LOWEST_RESULTING_COST group, deduplicated, preserving the frozen maximum of two."
+    ],
+    "alternate_candidate_generation": [
+      "FLEX_FREE retains its deterministic greedy assignment within the already-active node set.",
+      "FLEX_POOL evaluates at most two unique maps per primary layout and replica count: NO_NEW_NODE and UNRESTRICTED_FASTEST, using the frozen deterministic group-cost tie-breaks."
+    ],
+    "flex_pool_superset": [
+      "Run FLEX_FREE first.",
+      "Run POOL-U from U_STRONG and POOL-FREE from the final FLEX_FREE plan with the node restriction removed; inherited FLEX_FREE actions are not counted as new FLEX_POOL actions.",
+      "Select the final FLEX_POOL envelope from exactly U_STRONG clone, FLEX_FREE clone, POOL-U, and POOL-FREE after the cumulative 99 percent U_STRONG throughput guard.",
+      "Choose maximum primary-SLO efficiency, then higher throughput, lower cost, fewer replicas, fewer used nodes, and canonical plan SHA-256.",
+      "Audit all 27 inventories at 1e-12 relative numerical tolerance and require FLEX_FREE to be present in every final pool envelope."
+    ],
+    "ablations": "Derive FLEX_FREE_NO_ALT and FLEX_POOL_NO_ALT only by removing alternate residency from their repaired parent plans; preserve P8 and all base placement details.",
+    "correctness": "Wrap Experiment 022 production-native 93-layer manifest correctness with replica-aware physical-destination dispatch. For groups with alternates force the alternate when (layer_id + logical_group_id + chunk_index) modulo 2 equals 1, without changing logical ownership, routes, weights, reduction slots, or canonical group order.",
+    "unchanged_runtime": "Do not change select_fork_join_routes, SHARED_NIC semantics, E022 services, workload, warm-up, quantiles, K3 semantics, or the admitted P8 partition degree.",
+    "generalized_finalization": "Finalize an explicitly supplied authoritative and reproducibility attempt, collect every validity failure, and call the unchanged E023 verdict tree without expected-outcome special cases."
+  },
+  "immutable_scientific_inputs": [
+    "artifacts/experiment-023/freeze",
+    "artifacts/experiment-023/physical",
+    "artifacts/experiment-022",
+    "src/swarm_inference/experiments/experiment_023/freeze.py",
+    "the 27 inventories and their 18 headline, 3 control, and 6 capacity cohort membership",
+    "U_STRONG baseline construction",
+    "routing.py::select_fork_join_routes",
+    "SHARED_NIC semantics"
+  ],
+  "stop_conditions": [
+    "FROZEN_CONSTANTS canonical SHA-256 changes",
+    "any repaired U_STRONG canonical plan hash differs from deterministic-run-1",
+    "any control violates the frozen minus-5-percent efficiency or raw-throughput guard",
+    "any FLEX_POOL superset invariant fails",
+    "any final correctness representative fails",
+    "deterministic-run-2 and deterministic-run-3 fail the frozen reproducibility comparison",
+    "any other mandatory validity gate fails"
+  ]
+}

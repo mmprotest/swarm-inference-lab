@@ -1,0 +1,40 @@
+{
+  "baseline_stage_time_definition": "sum of retained Kimi compute divided by 93 paid stages and full dependency latency",
+  "baseline_useful_target_stage_occupancy_percent": 0.7634616908366593,
+  "cycle_id": "H015-002A",
+  "decision": "STOP_UNTIL_STANDARD_DSPARK_ACCEPTANCE_AND_GPU_DRAFT_LATENCY_PASS",
+  "early_cancellation": {
+    "corrupted_state_count": 0,
+    "cuda_work_avoided": "NOT_ESTABLISHED",
+    "layers_avoided": "NOT_ESTABLISHED",
+    "messages_avoided": "NOT_ESTABLISHED",
+    "note": "zero refers to transaction unit tests, not a distributed cancellation run",
+    "status": "NOT_BENCHMARKED"
+  },
+  "limitation": "the pinned public DSpark runtime does not currently support pipeline parallelism, and Swarm lacks representative target acceptance plus a GPU draft timing",
+  "rows": [
+    {
+      "accepted_output_tok_s": 0.9502949393520926,
+      "draft_target_overlap_fraction": 0.0,
+      "evidence_class": "PROJECTED",
+      "mode": "ordinary autoregressive, one dependency-bound stream",
+      "useful_target_stage_occupancy_fraction": 0.007634616908366593
+    },
+    {
+      "accepted_output_tok_s": "NOT_ESTABLISHED",
+      "draft_target_overlap_fraction": 0.0,
+      "evidence_class": "PROJECTED",
+      "mode": "synchronous DSpark draft-then-verify",
+      "useful_target_stage_occupancy_fraction": "NOT_ESTABLISHED"
+    },
+    {
+      "accepted_output_tok_s": "NOT_ESTABLISHED",
+      "draft_target_overlap_fraction": "NOT_ESTABLISHED",
+      "evidence_class": "PROJECTED",
+      "mode": "asynchronous pipeline-aware DSpark",
+      "useful_target_stage_occupancy_fraction": "NOT_ESTABLISHED"
+    }
+  ],
+  "schema_version": "experiment-015-pipeline-occupancy-v1",
+  "status": "PASS"
+}

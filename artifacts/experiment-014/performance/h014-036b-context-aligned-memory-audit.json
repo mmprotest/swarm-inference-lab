@@ -1,0 +1,76 @@
+{
+  "acceptance_gates": {
+    "all_roles_use_eight_stream_state": true,
+    "all_roles_leave_at_least_one_gib_after_safety": true,
+    "final_kda_endpoint_is_peak_worker": true,
+    "mla_eight_k_state_accounted_separately": true,
+    "no_model_change_required": true
+  },
+  "benchmark": {
+    "batch": 8,
+    "context_tokens": 8192,
+    "physical_vram_bytes": 25769803776,
+    "roles": [
+      {
+        "planned_total_vram_bytes": 7897520538,
+        "remaining_unallocated_bytes": 17872283238,
+        "resident_device_bytes": 3034578944,
+        "role": "stage_zero",
+        "state_bytes": 55050240
+      },
+      {
+        "planned_total_vram_bytes": 23141718426,
+        "remaining_unallocated_bytes": 2628085350,
+        "resident_device_bytes": 18278776832,
+        "role": "KDA",
+        "state_bytes": 55050240
+      },
+      {
+        "planned_total_vram_bytes": 23202029978,
+        "remaining_unallocated_bytes": 2567773798,
+        "resident_device_bytes": 18243125248,
+        "role": "Gated_MLA",
+        "state_bytes": 151013376
+      },
+      {
+        "planned_total_vram_bytes": 24269986202,
+        "remaining_unallocated_bytes": 1499817574,
+        "resident_device_bytes": 19407044608,
+        "role": "final",
+        "state_bytes": 55050240
+      }
+    ]
+  },
+  "bottleneck": "The final KDA layer plus norm/head resident weights remain the peak VRAM worker; Gated-MLA has 95,963,136 more state bytes at 8K but 1,163,919,360 fewer resident bytes.",
+  "cycle_id": "H014-036b",
+  "decision": "RETAIN_H014_036A_MEMORY_CERTIFICATE_UNCHANGED",
+  "hypothesis": "Evaluating production 8K state by worker role will show that the final KDA endpoint, not a Gated-MLA worker, remains the maximum 24-GiB placement and retains at least 1 GiB unallocated after the separate 10% safety reserve.",
+  "implementation": "No runtime or capacity-model change. Audited stage-zero, KDA, Gated-MLA and final role totals with their own measured eight-stream 8K state and retained resident-byte receipts.",
+  "inspection": "The suspected context mismatch was falsified. H014-036a's 55,050,240-byte state belongs to the peak final KDA endpoint. The Gated-MLA role correctly requires 151,013,376 bytes, but its planned total is 1,067,956,224 bytes below the final endpoint.",
+  "redesign": "Proceed to H014-037a using role-specific KDA and Gated-MLA state values in every worker row.",
+  "result": "PASS",
+  "schema_version": "experiment-014-context-aligned-memory-audit-v1",
+  "source_artifacts": {
+    "capacity_topology": {
+      "path": "artifacts/experiment-014/performance/h014-036a-capacity-topology-economics.json",
+      "sha256": "fe1f0e0af7dc8769b8e4a308a23d43e1b74cad7f2e045f95b16efe097d0e884e"
+    },
+    "final_stage": {
+      "path": "artifacts/experiment-014/persistent/h014-027w-regression-final-stage.json",
+      "sha256": "f258dd02007e0fee6ec6765512f76b6cd4e107b49bfcff484a84365bd6c4ec97"
+    },
+    "kda_batch": {
+      "path": "artifacts/experiment-014/performance/h014-030e-complete-stage-batch-layer89.json",
+      "sha256": "bc1dda9a5bb990a5dabb72d177ca8d8c4503b2effd1abce713d419cace1f261a"
+    },
+    "mla_batch": {
+      "path": "artifacts/experiment-014/performance/h014-030f-complete-stage-batch-layer91.json",
+      "sha256": "8c1093c3a8d5acb4c43d208be5c43719489c278b2d199e022f378eb62c541640"
+    },
+    "stage_zero": {
+      "path": "artifacts/experiment-014/persistent/h014-027w-regression-stage-zero.json",
+      "sha256": "8f7ef623040fca10cd57d531a6f8c0dc3f727cdf63f86a2948cf872426c67515"
+    }
+  },
+  "status": "PASS"
+}

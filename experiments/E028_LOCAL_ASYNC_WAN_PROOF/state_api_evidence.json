@@ -1,0 +1,7 @@
+{
+  "source": ".runtime\\e027-llama.cpp\\src\\llama-memory-hybrid.cpp",
+  "llama_commit": "f1b6fbf35cfa010b0a8d6301fdfccbb7f41bd903",
+  "source_sha256": "393dfde776354ed1892268781a04ff90f8ebb7676a6da371eed9a7288ef6ce4a",
+  "state_write_excerpt": "void llama_memory_hybrid::state_write(llama_io_write_i & io, llama_seq_id seq_id, llama_state_seq_flags flags) const {\n    if ((flags & LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY) == 0) {\n        mem_attn->state_write(io, seq_id, flags);\n    }\n    mem_recr->state_write(io, seq_id, flags);\n}",
+  "interpretation": "Full sequence export includes attention and recurrent state. PARTIAL_ONLY skips attention and exports recurrent state; stress hashes both exports."
+}

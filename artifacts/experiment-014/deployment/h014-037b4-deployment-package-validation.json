@@ -1,0 +1,121 @@
+{
+  "acceptance_gates": {
+    "absolute_placement": true,
+    "broadened_native_source": true,
+    "changed_byte": true,
+    "logical_certificate": true,
+    "missing_placement": true,
+    "placement_hash_mismatch": true,
+    "relaxed_cost_guard": true,
+    "removed_file": true,
+    "repository_checkout_dependency": true,
+    "traversal_placement": true,
+    "unqualified_fleet_launch": true
+  },
+  "cycle_id": "H014-037b4",
+  "fleet_activation_allowed": false,
+  "hypothesis": "The no-checkout Experiment 015 package is closed under its SHA-256 lock and rejects path, source, cost, certificate, and activation bypass tampering.",
+  "negative_controls": {
+    "absolute_placement": {
+      "error": "distribution placement reference must be one sibling filename",
+      "expected": "one sibling",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "broadened_native_source": {
+      "error": "native source allowlist is incomplete or expanded",
+      "expected": "native source allowlist",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "changed_byte": {
+      "error": "package size/link identity differs: README.md",
+      "expected": "package size/link identity differs",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "logical_certificate": {
+      "error": "a physical certificate may not be manufactured in the static package",
+      "expected": "physical certificate",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "missing_placement": {
+      "error": "distribution placement manifest is absent or linked",
+      "expected": "absent or linked",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "placement_hash_mismatch": {
+      "error": "distribution placement manifest SHA-256 differs",
+      "expected": "SHA-256 differs",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "relaxed_cost_guard": {
+      "error": "cost guard is missing or relaxed",
+      "expected": "cost guard",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "removed_file": {
+      "error": "package file set differs from package lock",
+      "expected": "package file set differs",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "repository_checkout_dependency": {
+      "error": "deployment depends on a repository checkout",
+      "expected": "repository checkout",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "traversal_placement": {
+      "error": "distribution placement reference must be one sibling filename",
+      "expected": "one sibling",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "unqualified_fleet_launch": {
+      "error": "fleet activation has an unqualified bypass",
+      "expected": "unqualified bypass",
+      "rejected": true,
+      "validator_rejected": true
+    }
+  },
+  "physical_3090_canary": "NOT_RUN",
+  "positive_validation": {
+    "acceptance_gates": {
+      "all_93_pre_canary_requirements_exact": true,
+      "certificate_only_fleet_binding": true,
+      "coarse_and_fine_network_classes_separate": true,
+      "cost_guard_exact": true,
+      "exact_93_worker_placement": true,
+      "four_role_canary_required": true,
+      "logical_execution_plan_portable": true,
+      "native_build_contract_exact": true,
+      "native_source_allowlist_exact": true,
+      "no_repository_checkout": true,
+      "package_lock_exact": true,
+      "physical_canary_fixture_exact": true,
+      "physical_certificate_not_manufactured": true,
+      "portable_worker_scoped_distribution": true,
+      "release_pre_canary_fail_closed": true,
+      "wheel_contains_production_canary": true
+    },
+    "distribution_sha256": "6bb6ca101bf0e9717bdeb2633d1c60845e38085757d0f3d79f6c674d8a099a6c",
+    "file_count": 142,
+    "fleet_activation_allowed": false,
+    "native_source_manifest_sha256": "fe4aa93071ea2db342bd213a533d7beb1ef684e4292a94a5ff4e6301eda4ac95",
+    "package_bytes": 276970080,
+    "package_directory": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment",
+    "package_lock_sha256": "7d41d6d5b4bbf3716ca56c41dd320aa04c202b457e186f227b14f6bd6479b73d",
+    "physical_canary_status": "NOT_RUN",
+    "placement_sha256": "82c0f28046db559c490bdc36104100503608ec61d76052b6eef4d5cf532c85e0",
+    "schema_version": "experiment-014-k3-deployment-package-validation-v1",
+    "status": "PASS",
+    "wheel_sha256": "6e01d24aeb6dafda1273aa288f261b78a4ea3488e512b133a75163fdf5a0d2a0"
+  },
+  "schema_version": "experiment-014-k3-deployment-package-validation-v1",
+  "status": "PASS"
+}

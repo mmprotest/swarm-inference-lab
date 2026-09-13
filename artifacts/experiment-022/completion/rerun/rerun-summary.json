@@ -1,0 +1,463 @@
+{
+  "ablation_row_count": 135,
+  "candidate_catalog_fair_chunk_4_comparison": true,
+  "candidate_catalog_status": "PASS",
+  "dominance_pass": true,
+  "dynamic_expected_row_count": 25,
+  "dynamic_failed_row_count": 4,
+  "dynamic_failed_scenarios": [
+    {
+      "changed_capability": "dynamic-useful",
+      "inventory_id": "full-mixed-01",
+      "reason": "nominally useful joined node was not admitted because every discovered joined-node plan was slower than the retained plan",
+      "scenario": "JOIN_USEFUL"
+    },
+    {
+      "changed_capability": "dynamic-useful",
+      "inventory_id": "full-mixed-02",
+      "reason": "nominally useful joined node was not admitted because every discovered joined-node plan was slower than the retained plan",
+      "scenario": "JOIN_USEFUL"
+    },
+    {
+      "changed_capability": "dynamic-useful",
+      "inventory_id": "full-mixed-03",
+      "reason": "nominally useful joined node was not admitted because every discovered joined-node plan was slower than the retained plan",
+      "scenario": "JOIN_USEFUL"
+    },
+    {
+      "changed_capability": "dynamic-useful",
+      "inventory_id": "full-mixed-05",
+      "reason": "nominally useful joined node was not admitted because every discovered joined-node plan was slower than the retained plan",
+      "scenario": "JOIN_USEFUL"
+    }
+  ],
+  "dynamic_row_count": 25,
+  "dynamic_status": "FAIL",
+  "failure_reasons": [
+    "dynamic-adaptation-gate"
+  ],
+  "final_correctness_status": "PASS",
+  "headline": {
+    "a_feasible_inventory_count": 21,
+    "capacity_unlocks": 6,
+    "heterogeneous_a_feasible_inventory_count": 18,
+    "largest_uplift_percent": 0.0,
+    "median_uplift_percent": 0.0,
+    "p25_uplift_percent": 0.0,
+    "p75_uplift_percent": 0.0,
+    "regression_population": "all A-feasible inventories",
+    "regressions_gt_1_percent": 0,
+    "target_crossings": 0,
+    "uplift_population": "A-feasible heterogeneous inventories; coarse-friendly controls excluded",
+    "wins_ge_10_percent": 0,
+    "wins_ge_20_percent": 0
+  },
+  "inventory_audit": {
+    "frozen_value_hashes": {
+      "outcome_categories": "647d4a4a9c2aa0b8a34b0b1be5186afc187898f3208ffe2315ffbc97aaee2976",
+      "planner_settings": "a7a7d65b9687c32307ec517d661b3d748457fd8603adc60b0c9607256045dc8a",
+      "thresholds": "7f13d084f59c55eafd78404ff410e6569b2bd9ec66f11204af1e35e67ca782f9"
+    },
+    "immutable_core_files": [
+      {
+        "path": "artifacts/experiment-022/inventories/generator-config.json",
+        "sha256": "d74aed540fad40e5ddd1366897b09c6b6ffe8a20bf0347b55f20a567e17624fd"
+      },
+      {
+        "path": "artifacts/experiment-022/inventories/seeds.json",
+        "sha256": "a958b3f389b55d957ca558c56a2a91ee20598d755d14002531b7dfe07624a741"
+      },
+      {
+        "path": "artifacts/experiment-022/inventories/inventory-suite.json",
+        "sha256": "d98f46070c8f8580fcc4c04ecd61c2085ba7cdf4ce7af87d87369c78eb865a18"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/candidate-catalog.json",
+        "sha256": "1d76cb231fa1de199ab090896e5ffae6f0cfe860481ef996644c592fa1f4671e"
+      },
+      {
+        "path": "artifacts/experiment-022/correctness/full-93-representative.json",
+        "sha256": "b54d5071b2b1585fc1ac6ad650b4d27d5ae54ed8f369ef06058b538d8d79720c"
+      },
+      {
+        "path": "src/swarm_inference/experiments/experiment_022/models.py",
+        "sha256": "92df1190f1fae9a3d33926957b576c8c167cbf2b77ddecbf70a82608eb86eed0"
+      },
+      {
+        "path": "src/swarm_inference/experiments/experiment_022/finalize.py",
+        "sha256": "09bab58b27b72518c7f14ee45a3ba18196c0f75069cd62184c04a44a5b7aa62f"
+      }
+    ],
+    "immutable_original_diagnostics": [
+      {
+        "path": "artifacts/experiment-022/summary.json",
+        "sha256": "bd3b1d9da2bfac65d68b7a891d70cfacfb24daa81707176aef3147cd09729c94"
+      },
+      {
+        "path": "artifacts/experiment-022/failure-log.json",
+        "sha256": "15bca87588930588eaff2dccf9d5fb1e7ef6fc2d952b8d4c710d775cb2171468"
+      },
+      {
+        "path": "artifacts/experiment-022/truth-table.json",
+        "sha256": "981416e81abe47cd4675809e942c7a4b820f67276e5cc53978aba36f76ef79f0"
+      },
+      {
+        "path": "artifacts/experiment-022/run-result.json",
+        "sha256": "6c019717a086ed9b03d71fe2bf0ef02ab18440337b859f91dc3922d0eb6b6a06"
+      },
+      {
+        "path": "artifacts/experiment-022/validation/model-validation.json",
+        "sha256": "061a37b08b7679ab64e17401147326f9a6d0d069a14ff184b501714abc9ba854"
+      },
+      {
+        "path": "artifacts/experiment-022/validation/ordered-dag-validation.csv",
+        "sha256": "155b1930eeda641a387e749d870f74e292b2dc0faf49f30ae493360a31fe68ed"
+      },
+      {
+        "path": "artifacts/experiment-022/validation/heldout-validation.csv",
+        "sha256": "010b8581140d26d858dead84feb302da2c5ab083b66c5354aab854b7584efa1d"
+      },
+      {
+        "path": "artifacts/experiment-022/validation/optimizer-small-oracle.csv",
+        "sha256": "d36892981747bf8fe11330d3eedca411a051211b84dd64fb12e52c6b107b843f"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/whole-layer-results.csv",
+        "sha256": "2ebbf8aaa19f704dedcbb83b91a3dcaf3fe49a1720a619d271528d897654bc5e"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/adaptive-results.csv",
+        "sha256": "f112a2d2a28c2d0ce3bd730e076fb1b58230988174f359516779a0bd7b69cb6e"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/ablation-results.csv",
+        "sha256": "fb03193ec33f8bc916bfb98c99811eae65e7a5f0392f7f0f2fcf9bba6c100b0d"
+      }
+    ],
+    "immutable_selected_manifests": [
+      {
+        "path": "artifacts/experiment-022/planner/placements/coarse-friendly-01-A.json",
+        "selection_id": "representative-01",
+        "sha256": "26c29e191ffba37914352bb85a107b297d730b8ae0398cff524c2a429b05b4af"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/placements/coarse-friendly-01-E.json",
+        "selection_id": "representative-02",
+        "sha256": "8f5c5021ad2e2e8f0c638c432523de840fc3e766d15bd4daf741d5da42e002e9"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/placements/memory-fragmented-02-E.json",
+        "selection_id": "representative-03",
+        "sha256": "ad586dd5f7c1f9daea7b400c2f329174b0e44d897ee9a07098af34dcff522689"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/placements/memory-fragmented-02-E.json",
+        "selection_id": "representative-04",
+        "sha256": "ad586dd5f7c1f9daea7b400c2f329174b0e44d897ee9a07098af34dcff522689"
+      },
+      {
+        "path": "artifacts/experiment-022/planner/placements/full-mixed-01-E.json",
+        "selection_id": "representative-05",
+        "sha256": "c89b11b83a960799be778fa86eaff541491039fb3f2572e90b9e572fbdb2648c"
+      }
+    ],
+    "inventories": [
+      {
+        "canonical_sha256": "fb5e2ee23aea505a9911f34c568e0e7ea046ddd56ed9639d26ce32cc7f54f5fd",
+        "inventory_id": "coarse-friendly-01",
+        "path": "artifacts/experiment-022/inventories/coarse-friendly/coarse-friendly-01.json",
+        "raw_sha256": "c371ce1068a1ea31bb903db0e42e17e6c97108f848d51805dc7e86facbb808e6",
+        "seed": 22000
+      },
+      {
+        "canonical_sha256": "7f1cf9376eefeface2f7b1b9409ff6c576715850cc129b0c186f26d94dad17e4",
+        "inventory_id": "coarse-friendly-02",
+        "path": "artifacts/experiment-022/inventories/coarse-friendly/coarse-friendly-02.json",
+        "raw_sha256": "f2703a94f750b7a25d1df0df5c62a64069f2191017499e36f1bcba8314acabc0",
+        "seed": 22001
+      },
+      {
+        "canonical_sha256": "2fe195b57cb721167b86df7a3ad713b9d335f02a21427d3eb8e846df0d51dcd5",
+        "inventory_id": "coarse-friendly-03",
+        "path": "artifacts/experiment-022/inventories/coarse-friendly/coarse-friendly-03.json",
+        "raw_sha256": "8e11c8b342c0e34d9f998f5930ce0e5fabd8c58b54ab05fecd84965a36594173",
+        "seed": 22002
+      },
+      {
+        "canonical_sha256": "5fb90b6aba71315ed8ece9d50124e8a8c6f1b268376a9ddb10dd87bf9c67baa5",
+        "inventory_id": "memory-fragmented-01",
+        "path": "artifacts/experiment-022/inventories/memory-fragmented/memory-fragmented-01.json",
+        "raw_sha256": "5149ca9d61f085bdcb22c62c4ece7c256f65090a7cbacadb38d3aa4e7154072b",
+        "seed": 22100
+      },
+      {
+        "canonical_sha256": "e3726f3b825ed62b4802b5971bea3737d8f552f1b121e7c1ae866aec61ac8e42",
+        "inventory_id": "memory-fragmented-02",
+        "path": "artifacts/experiment-022/inventories/memory-fragmented/memory-fragmented-02.json",
+        "raw_sha256": "dbe1ababd48533e8f88d11b3d4d92d33434b2e869558af136348602a3dce3b62",
+        "seed": 22101
+      },
+      {
+        "canonical_sha256": "5ab9caff2e0ecd8b6195766b57c3e2facc097e15deb127baf148b46962de5cb5",
+        "inventory_id": "memory-fragmented-03",
+        "path": "artifacts/experiment-022/inventories/memory-fragmented/memory-fragmented-03.json",
+        "raw_sha256": "05b00fd263684d749fc8371b2956d6aeca3143c80c98c742e01c3399f6ef16ea",
+        "seed": 22102
+      },
+      {
+        "canonical_sha256": "718a00f1948cc01245a5fa6a0dc431dc427ae9184c02f598a4a9e12cc4d9689d",
+        "inventory_id": "memory-fragmented-04",
+        "path": "artifacts/experiment-022/inventories/memory-fragmented/memory-fragmented-04.json",
+        "raw_sha256": "5bd2392bc44d1763913423b7b41dfefda7c5d7ff4c9b262dd5fa584ea6c51072",
+        "seed": 22103
+      },
+      {
+        "canonical_sha256": "ccc17eda47e3d62bc6d359193ada02fb7557b349a3ad254b8abdaf56b76c1ef5",
+        "inventory_id": "memory-fragmented-05",
+        "path": "artifacts/experiment-022/inventories/memory-fragmented/memory-fragmented-05.json",
+        "raw_sha256": "7b814d4a42cdc81bc3a45d3a784036f735e3fde9274fbc1ddfb48fab558700d3",
+        "seed": 22104
+      },
+      {
+        "canonical_sha256": "b616ebcf0210fa8245940944ea95825677e73e623f9fc9b17ad63cffa0cb54ec",
+        "inventory_id": "memory-fragmented-06",
+        "path": "artifacts/experiment-022/inventories/memory-fragmented/memory-fragmented-06.json",
+        "raw_sha256": "66f3ac3303503d61b2e5d6d71250aaa593aa13f170dbeb1fa3c4d3d02d165533",
+        "seed": 22105
+      },
+      {
+        "canonical_sha256": "1a961f0d2c5d41765532723a727fe9e4a97fc3ba46926bce8bd32b77ee7629f2",
+        "inventory_id": "compute-heterogeneous-01",
+        "path": "artifacts/experiment-022/inventories/compute-heterogeneous/compute-heterogeneous-01.json",
+        "raw_sha256": "b2a7b35719c37e9eed92464900882fef293daadf7be9b7feb861b0f9929a9ca9",
+        "seed": 22200
+      },
+      {
+        "canonical_sha256": "bbac82d83cce120929cad687933727f8b95eea0f5e0d079de55eb1c72f1cbf93",
+        "inventory_id": "compute-heterogeneous-02",
+        "path": "artifacts/experiment-022/inventories/compute-heterogeneous/compute-heterogeneous-02.json",
+        "raw_sha256": "ae9084f65548888e86acc0c65abd3add3c62ad0e578159abeb0aa69a2503e2d4",
+        "seed": 22201
+      },
+      {
+        "canonical_sha256": "de12659d72d1a82a9d6243ad87935c7c26dfb81012c695c93936cacf3f4484f8",
+        "inventory_id": "compute-heterogeneous-03",
+        "path": "artifacts/experiment-022/inventories/compute-heterogeneous/compute-heterogeneous-03.json",
+        "raw_sha256": "b5b3274263e4df2c22d2b89f2377924c338f7a44a57ba41a2724d4e3399c750c",
+        "seed": 22202
+      },
+      {
+        "canonical_sha256": "41a019ce6827b9badd09dc10bcfd67ae5ba9e3f31dc09991fc6ff86151b515ec",
+        "inventory_id": "compute-heterogeneous-04",
+        "path": "artifacts/experiment-022/inventories/compute-heterogeneous/compute-heterogeneous-04.json",
+        "raw_sha256": "fbb30f2810f30ffd4b988ff46a44b5a7e484cc21aa6368d55b9f729ebb61c010",
+        "seed": 22203
+      },
+      {
+        "canonical_sha256": "5c4336d0d0afe99f92a08a160adc98d6146adafb8af02e70eeaa3352c96df085",
+        "inventory_id": "compute-heterogeneous-05",
+        "path": "artifacts/experiment-022/inventories/compute-heterogeneous/compute-heterogeneous-05.json",
+        "raw_sha256": "6cc8aa1d733aa98233dce4d8cd911f9113ac107486de76db2ef5db613b2fa8f4",
+        "seed": 22204
+      },
+      {
+        "canonical_sha256": "3750ebf599e1361259f147a1c291c1c4f626a160f23b1e009f9d536424ec28a0",
+        "inventory_id": "compute-heterogeneous-06",
+        "path": "artifacts/experiment-022/inventories/compute-heterogeneous/compute-heterogeneous-06.json",
+        "raw_sha256": "265febc6fa0ac064c31b444ab18907621cfafbc67911b89c2c84dd07bde43389",
+        "seed": 22205
+      },
+      {
+        "canonical_sha256": "ff86eb933f8d3fa20bb0f384209fffc1ea1f8a41ab76ddfac0ed55a70f0b9120",
+        "inventory_id": "network-heterogeneous-01",
+        "path": "artifacts/experiment-022/inventories/network-heterogeneous/network-heterogeneous-01.json",
+        "raw_sha256": "20bd973ff992f7be9d77b3ae74756215366a6a09624f0bcde2d7581da9cb58bd",
+        "seed": 22300
+      },
+      {
+        "canonical_sha256": "2662e005a56f3e6d4cf6b34f9feeb7bf0032380fae97d1985da4e1d90a703796",
+        "inventory_id": "network-heterogeneous-02",
+        "path": "artifacts/experiment-022/inventories/network-heterogeneous/network-heterogeneous-02.json",
+        "raw_sha256": "b4ba8382920711c8a8224a2c5e37a565e64f08ea059a497e5fd1df29ffb46ddc",
+        "seed": 22301
+      },
+      {
+        "canonical_sha256": "8a2ea65e6583a8b1182f83c5b34b2cf8a14f5b4e7ad507e7562248bcd689abdb",
+        "inventory_id": "network-heterogeneous-03",
+        "path": "artifacts/experiment-022/inventories/network-heterogeneous/network-heterogeneous-03.json",
+        "raw_sha256": "8a93e6e28ad65ce624ca83613c00b85ce308f2756c6733edf1464295e0a4f1a1",
+        "seed": 22302
+      },
+      {
+        "canonical_sha256": "7e3191f4302c7cb6812251f4d77fe855055ae8703e2b04b1b50a7c8d8da16632",
+        "inventory_id": "network-heterogeneous-04",
+        "path": "artifacts/experiment-022/inventories/network-heterogeneous/network-heterogeneous-04.json",
+        "raw_sha256": "6e2115ba9c13cce558f83fffb6450d39a52967aa20fe0eed6e7666ff6d69cd9d",
+        "seed": 22303
+      },
+      {
+        "canonical_sha256": "1822785eb3af33ac6910aa4f265e9aca811e9a9966e499548904b0a720b3b209",
+        "inventory_id": "network-heterogeneous-05",
+        "path": "artifacts/experiment-022/inventories/network-heterogeneous/network-heterogeneous-05.json",
+        "raw_sha256": "5c24e2e8ec56f54da735d8c9fea665f1a953d773507185559773113efe3fb7a9",
+        "seed": 22304
+      },
+      {
+        "canonical_sha256": "59403ca4a7d4652588dc40f388434c5de1768cb323842e41741d17f49991a244",
+        "inventory_id": "network-heterogeneous-06",
+        "path": "artifacts/experiment-022/inventories/network-heterogeneous/network-heterogeneous-06.json",
+        "raw_sha256": "a8df97f4370b2b8917cb9d8f240cd6e836303d088600990c792c92a82e992748",
+        "seed": 22305
+      },
+      {
+        "canonical_sha256": "8d2dcc3dc204f59fadb46067c65631ba091a42438e06f17ded623a8681b72672",
+        "inventory_id": "full-mixed-01",
+        "path": "artifacts/experiment-022/inventories/full-mixed/full-mixed-01.json",
+        "raw_sha256": "b1246f1e0157aacc74d2d744a8704dd347ae1146ff1e6ab6ba0bfee0d8167f23",
+        "seed": 22400
+      },
+      {
+        "canonical_sha256": "c3a3a800b1594e3d816aaa14b43192d0336b5ca9a6cc06fd0090cdae004041b0",
+        "inventory_id": "full-mixed-02",
+        "path": "artifacts/experiment-022/inventories/full-mixed/full-mixed-02.json",
+        "raw_sha256": "6ffe6759cdbabc2f3fe6be73f208058844eb9fdd8e0fc4bc6d66dc0dc9b5e28a",
+        "seed": 22401
+      },
+      {
+        "canonical_sha256": "a414d4b0e0234950937f78e6964520b124e27a442ac9253b9861cc38e5ad680c",
+        "inventory_id": "full-mixed-03",
+        "path": "artifacts/experiment-022/inventories/full-mixed/full-mixed-03.json",
+        "raw_sha256": "691b21d83da2b18989dddd7a0801c87eedd2c997897eeeabc4d60a91cca63fcf",
+        "seed": 22402
+      },
+      {
+        "canonical_sha256": "eb75f1e2b135deb6cdc278790a5f93b70f717703b9f2942d280b9f4d38477c69",
+        "inventory_id": "full-mixed-04",
+        "path": "artifacts/experiment-022/inventories/full-mixed/full-mixed-04.json",
+        "raw_sha256": "1a63e2e20cd88ab47e5f87d5aaf703224c5ab4669e0f76a64b7264bc8606b950",
+        "seed": 22403
+      },
+      {
+        "canonical_sha256": "2be3b738ba7fd10fd3a3fab8996e1a59eaf0b1a78ab6622b1e03655e0f572287",
+        "inventory_id": "full-mixed-05",
+        "path": "artifacts/experiment-022/inventories/full-mixed/full-mixed-05.json",
+        "raw_sha256": "13884b0ffd63f4c10c5e734bd0820b1e14f3d7535fea1d1accbbd7f2fcbe94ba",
+        "seed": 22404
+      },
+      {
+        "canonical_sha256": "e21b2e1f4839c5bea0e098b9c120b8043779fe819c5140e745aff46289e95d7d",
+        "inventory_id": "full-mixed-06",
+        "path": "artifacts/experiment-022/inventories/full-mixed/full-mixed-06.json",
+        "raw_sha256": "7b746df23b2c62b9312fd144927eb0e57cf9a9f08d5417a182a69a936bbcb652",
+        "seed": 22405
+      }
+    ],
+    "inventory_count": 27,
+    "inventory_ids": [
+      "coarse-friendly-01",
+      "coarse-friendly-02",
+      "coarse-friendly-03",
+      "memory-fragmented-01",
+      "memory-fragmented-02",
+      "memory-fragmented-03",
+      "memory-fragmented-04",
+      "memory-fragmented-05",
+      "memory-fragmented-06",
+      "compute-heterogeneous-01",
+      "compute-heterogeneous-02",
+      "compute-heterogeneous-03",
+      "compute-heterogeneous-04",
+      "compute-heterogeneous-05",
+      "compute-heterogeneous-06",
+      "network-heterogeneous-01",
+      "network-heterogeneous-02",
+      "network-heterogeneous-03",
+      "network-heterogeneous-04",
+      "network-heterogeneous-05",
+      "network-heterogeneous-06",
+      "full-mixed-01",
+      "full-mixed-02",
+      "full-mixed-03",
+      "full-mixed-04",
+      "full-mixed-05",
+      "full-mixed-06"
+    ],
+    "regenerated": false,
+    "seeds": [
+      22000,
+      22001,
+      22002,
+      22100,
+      22101,
+      22102,
+      22103,
+      22104,
+      22105,
+      22200,
+      22201,
+      22202,
+      22203,
+      22204,
+      22205,
+      22300,
+      22301,
+      22302,
+      22303,
+      22304,
+      22305,
+      22400,
+      22401,
+      22402,
+      22403,
+      22404,
+      22405
+    ],
+    "status": "PASS",
+    "suite_canonical_sha256": "3e949a8eee0a71e128493f64e0be903bd373d3baad4be86a8869d87279d4bb49",
+    "suite_raw_sha256": "d98f46070c8f8580fcc4c04ecd61c2085ba7cdf4ce7af87d87369c78eb865a18"
+  },
+  "inventory_count": 27,
+  "optimizer_configuration": {
+    "candidate_groups_per_action": 4,
+    "exact_evaluation_budget": 6,
+    "proposal_budget": 24,
+    "randomization": 0.08,
+    "restarts": 3,
+    "seed": 22022
+  },
+  "optimizer_same_for_all_arms": true,
+  "planner_e_contains_planner_a": true,
+  "planner_e_seeded_with_a": true,
+  "schema_version": "experiment-022-completion-frozen-rerun-v1",
+  "service_manifest": {
+    "artificial_barrier_rows": 0,
+    "chunks": [
+      1,
+      2,
+      4
+    ],
+    "cost_owners": [
+      "worker_compute",
+      "worker_software_overhead",
+      "collective_compute"
+    ],
+    "global_correction_factor": false,
+    "row_count": 2016,
+    "schema_version": "experiment-022-completion-repaired-service-v1",
+    "service_csv": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\completion\\validation\\repaired-resident-service.csv",
+    "source_files": [
+      "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\validation\\resident-shard-results.csv",
+      "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\completion\\physical\\resident-kda-traces.json",
+      "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\completion\\physical\\resident-mla-traces.json",
+      "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\completion\\physical\\execute-shard-bindings-chunk-1.json",
+      "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\completion\\physical\\execute-shard-bindings-chunk-2.json",
+      "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\completion\\physical\\execute-shard-bindings-chunk-4.json",
+      "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-022\\completion\\physical\\whole-expert-services.json"
+    ],
+    "status": "PASS",
+    "sublayer_partition_degrees": [
+      8
+    ]
+  },
+  "status": "FAIL"
+}

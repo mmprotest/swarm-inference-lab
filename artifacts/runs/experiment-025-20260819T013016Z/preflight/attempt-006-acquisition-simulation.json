@@ -1,0 +1,6160 @@
+{
+  "artifact_sha256": "a36ea1b38259e02942c58f3303901811b202ca5c9f860d4b87c2ee70821bd8f3",
+  "assumptions": {
+    "candidate_sampling": "nonparametric bootstrap stratified by instance capacity and fragment/backbone role",
+    "cost": "observed per-instance active/storage rates plus assigned bytes times advertised ingress; partial transfers prorated by observed lifetime",
+    "finite_frozen_candidate_limit": 4,
+    "full_group_post_ready_churn": "conservative scenario assumption; Attempt 005 retained zero observed complete-group losses but did lose partial READY roles",
+    "hedge_detection_true_positive_probability": 0.7,
+    "hedge_false_positive_probability": 0.03,
+    "hedge_warning_seconds": 120,
+    "live_refresh_candidate_limit": 12,
+    "maximum_concurrent_hedges": 3,
+    "parent_mapping_delay_seconds": 45,
+    "reliability_scoring_reweighting": "3.0x for candidates whose machine reached healthy READY in retained E025 history (including Attempt 005), 0.25x for candidates with attributable physical failure and no positive evidence, 1.0x otherwise; the pre-Attempt-005 subset is reported separately as a historical predictiveness check",
+    "right_censoring": {
+      "BASE": {
+        "censored_probability": 0.5,
+        "churn_probability": 0.015
+      },
+      "OPTIMISTIC": {
+        "censored_probability": 0.7,
+        "churn_probability": 0.005
+      },
+      "PESSIMISTIC": {
+        "censored_probability": 0.25,
+        "churn_probability": 0.03
+      }
+    },
+    "stability_barrier_seconds": 30
+  },
+  "credibility_rule_declared_before_live_preflight": {
+    "base_p90_acquisition_cost_usd_maximum": 45.0,
+    "base_probability_minimum": 0.6,
+    "pessimistic_probability_minimum": 0.25,
+    "selection": "shortest acquisition window, then lowest base median cost"
+  },
+  "decision": "NO_GO_NO_PAID_INSTANCES",
+  "evidence_class": "PHYSICALLY_GROUNDED_MODEL",
+  "generated_at_utc": "2026-08-24T08:28:28.911463+00:00",
+  "iterations_per_policy_window_scenario": 1000,
+  "limitations": [
+    "The fleet-level result is a projection, not a physical swarm execution.",
+    "Only one 97-role acquisition trace exists under the final Attempt 005 image/controller lineage.",
+    "Right-censored hosts require explicit sensitivity assumptions; probabilities are likelihood estimates, not guarantees.",
+    "Marketplace capacity and account budget are intentionally excluded until the fresh read-only GO gate."
+  ],
+  "physical_input_summary": {
+    "attempt_005_candidate_instance_count": 65,
+    "candidate_failure_duration_seconds": {
+      "count": 26,
+      "maximum": 1453.245482,
+      "median": 660.032674,
+      "minimum": 300.952417,
+      "p90": 1030.7065029999999
+    },
+    "candidate_outcomes": {
+      "FAILURE": 26,
+      "RIGHT_CENSORED": 9,
+      "SUCCESS": 30
+    },
+    "candidate_success_duration_seconds": {
+      "count": 30,
+      "maximum": 1476.962635,
+      "median": 828.895127,
+      "minimum": 501.813682,
+      "p90": 1215.2250942
+    },
+    "history_predictiveness_on_attempt_005": {
+      "attempt_005_candidate_count": 65,
+      "prior_negative_attempt_005_candidates": 0,
+      "prior_negative_success_count": 0,
+      "prior_positive_attempt_005_candidates": 16,
+      "prior_positive_success_count": 11,
+      "prior_unseen_attempt_005_candidates": 49,
+      "prior_unseen_success_count": 19
+    },
+    "required_instance_group_count": 46,
+    "required_physical_role_count": 97
+  },
+  "policy_comparisons": [
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "attempt-005-current",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 26.863263759340267,
+            "median": 20.72907795448294,
+            "minimum": 15.24888759556718,
+            "p90": 23.150997066116837
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 45.277757655147916,
+            "median": 31.200582053532848,
+            "minimum": 21.76534378616088,
+            "p90": 36.198811207824185
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.738929522147675,
+            "median": 9.720459314578086,
+            "minimum": 3.272815078888377,
+            "p90": 14.270327695201768
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 22.255838107824584,
+            "median": 10.312691499104282,
+            "minimum": 3.865997381058609,
+            "p90": 14.87841599930046
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 81.0,
+            "median": 52.0,
+            "minimum": 24.0,
+            "p90": 64.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 49.0,
+            "median": 28.0,
+            "minimum": 15.0,
+            "p90": 36.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7990972423650072,
+            "median": 0.5973317337003776,
+            "minimum": 0.42704196553889884,
+            "p90": 0.6776296547742459
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 25.90554933492506,
+            "median": 20.103007931286932,
+            "minimum": 15.683435554683529,
+            "p90": 22.386229877039042
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.86572522525631,
+            "median": 31.82904596103853,
+            "minimum": 22.765834049078876,
+            "p90": 37.07550705151668
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 26.770685233105066,
+            "median": 11.190241095008332,
+            "minimum": 3.5184898401262985,
+            "p90": 16.03051754233243
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 27.31597866783043,
+            "median": 11.784375395625375,
+            "minimum": 4.136590339049139,
+            "p90": 16.59181728849592
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 82.0,
+            "median": 55.0,
+            "minimum": 31.0,
+            "p90": 66.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 42.0,
+            "median": 27.0,
+            "minimum": 12.0,
+            "p90": 34.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7680434119662464,
+            "median": 0.5776707622795499,
+            "minimum": 0.4194631752583554,
+            "p90": 0.6555627661523038
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.974834423401063,
+            "median": 21.83136040388583,
+            "minimum": 15.83104755489732,
+            "p90": 24.415794333798182
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 43.340120008661586,
+            "median": 29.79193173149878,
+            "minimum": 21.61225453130283,
+            "p90": 34.09957497426211
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 18.347140008545093,
+            "median": 7.007872746838698,
+            "minimum": 2.1922667991416547,
+            "p90": 10.756098662358738
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 19.000416997781663,
+            "median": 7.642729260424852,
+            "minimum": 2.926368851234495,
+            "p90": 11.372457064121948
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 72.0,
+            "median": 48.0,
+            "minimum": 25.0,
+            "p90": 59.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 48.0,
+            "median": 31.0,
+            "minimum": 17.0,
+            "p90": 37.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8806639968409389,
+            "median": 0.6289408613692287,
+            "minimum": 0.44855538224286956,
+            "p90": 0.7276402112164362
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": true,
+      "policy_id": "continuous-ready-liveness",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.674363250220892,
+            "median": 20.784400552728627,
+            "minimum": 15.920584826987145,
+            "p90": 23.12272639916164
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 45.86214157517854,
+            "median": 31.126155949341022,
+            "minimum": 22.1357673367199,
+            "p90": 36.16716362131526
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.730703350332444,
+            "median": 9.530421407601894,
+            "minimum": 3.2083759466651767,
+            "p90": 14.3855737995136
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 22.308718328616234,
+            "median": 10.146760510920362,
+            "minimum": 3.774343667377208,
+            "p90": 14.970376475328159
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 78.0,
+            "median": 53.0,
+            "minimum": 29.0,
+            "p90": 64.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 47.0,
+            "median": 29.0,
+            "minimum": 13.0,
+            "p90": 36.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8787891056131683,
+            "median": 0.6012518235285942,
+            "minimum": 0.4376782872137185,
+            "p90": 0.6872129778219133
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 26.316304897502654,
+            "median": 20.087499871263155,
+            "minimum": 14.90785969093322,
+            "p90": 22.441913556592336
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 48.27401909041295,
+            "median": 32.279281306921504,
+            "minimum": 20.90614725167231,
+            "p90": 37.79872788665409
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.729616880091832,
+            "median": 11.482201356165927,
+            "minimum": 3.9665864641662973,
+            "p90": 16.471313189056993
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 26.186696465745342,
+            "median": 12.067807158542195,
+            "minimum": 4.520436865781139,
+            "p90": 17.037321624084928
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 82.0,
+            "median": 57.0,
+            "minimum": 32.0,
+            "p90": 67.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 47.0,
+            "median": 27.0,
+            "minimum": 14.0,
+            "p90": 33.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7727970143969694,
+            "median": 0.5740531924010832,
+            "minimum": 0.40387419581291534,
+            "p90": 0.6501009344998844
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 28.01086870821416,
+            "median": 21.898452654528043,
+            "minimum": 15.817506284705486,
+            "p90": 24.469699699159897
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 41.970323529202595,
+            "median": 29.724724606352495,
+            "minimum": 21.693270597679806,
+            "p90": 34.542780949733206
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 18.087628263551355,
+            "median": 7.0968513667548265,
+            "minimum": 2.560142214967178,
+            "p90": 10.96543512199262
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 18.690859962071073,
+            "median": 7.720190077607501,
+            "minimum": 3.323387614146922,
+            "p90": 11.585701766698165
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 78.0,
+            "median": 48.0,
+            "minimum": 27.0,
+            "p90": 60.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 31.0,
+            "minimum": 15.0,
+            "p90": 37.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8670656446792144,
+            "median": 0.6235530182495714,
+            "minimum": 0.4475943405113393,
+            "p90": 0.7146250077667026
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "early-parallel-parent",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.743890165943093,
+            "median": 20.953636252051858,
+            "minimum": 15.709047304759935,
+            "p90": 23.38490656557506
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 43.68670253764643,
+            "median": 31.240603478674107,
+            "minimum": 21.649545646978446,
+            "p90": 36.145547479558694
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.602228910400648,
+            "median": 9.54552932715141,
+            "minimum": 3.4722962236930384,
+            "p90": 13.974295517754626
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 22.169018011815552,
+            "median": 10.18158896887066,
+            "minimum": 3.9668442548679934,
+            "p90": 14.507719712365152
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 83.0,
+            "median": 53.0,
+            "minimum": 29.0,
+            "p90": 64.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 50.0,
+            "median": 30.0,
+            "minimum": 14.0,
+            "p90": 36.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7848738901186848,
+            "median": 0.6026147376139559,
+            "minimum": 0.39409362259673936,
+            "p90": 0.6838878091290301
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 26.406813204473128,
+            "median": 20.15232984244457,
+            "minimum": 15.465883102854972,
+            "p90": 22.45955869742467
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.676354165232496,
+            "median": 32.198696175162155,
+            "minimum": 22.56908124506878,
+            "p90": 37.7250346189181
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.353551548657304,
+            "median": 11.372169486722344,
+            "minimum": 3.7815343363093348,
+            "p90": 16.46464709471848
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.917487254788632,
+            "median": 11.978026151521934,
+            "minimum": 4.457653507695884,
+            "p90": 17.07530008967741
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 80.0,
+            "median": 56.0,
+            "minimum": 30.0,
+            "p90": 67.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 44.0,
+            "median": 28.0,
+            "minimum": 13.0,
+            "p90": 34.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7874752973586612,
+            "median": 0.5840908863169856,
+            "minimum": 0.4204666058580751,
+            "p90": 0.6595065628735997
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.691331843721734,
+            "median": 21.914053234596388,
+            "minimum": 15.97370040683544,
+            "p90": 24.35053810244612
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 41.290331635206776,
+            "median": 30.029835590009654,
+            "minimum": 21.793068919477747,
+            "p90": 34.23985591395896
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 17.77641150771252,
+            "median": 7.141792759341626,
+            "minimum": 2.933356967336064,
+            "p90": 10.82003614800136
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 18.408829480219783,
+            "median": 7.78754326037374,
+            "minimum": 3.609105439715951,
+            "p90": 11.451044825719292
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 77.0,
+            "median": 49.0,
+            "minimum": 25.0,
+            "p90": 60.10000000000002
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 48.0,
+            "median": 32.0,
+            "minimum": 13.0,
+            "p90": 38.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8838406747100384,
+            "median": 0.6319323415330858,
+            "minimum": 0.443961068790961,
+            "p90": 0.7184522046881034
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": true,
+      "liveness_recovery": false,
+      "policy_id": "live-alternate-refresh",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.558490587311194,
+            "median": 20.787505148917035,
+            "minimum": 15.42234963133619,
+            "p90": 23.162124823092633
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 43.47856375237063,
+            "median": 31.107249050445347,
+            "minimum": 22.113323809447778,
+            "p90": 36.25752725991233
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.42243732260639,
+            "median": 9.505230811866138,
+            "minimum": 3.244548508356835,
+            "p90": 14.012436746715721
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.96334810619182,
+            "median": 10.129665030010079,
+            "minimum": 3.7617632967429913,
+            "p90": 14.593601715523784
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 78.0,
+            "median": 53.0,
+            "minimum": 27.0,
+            "p90": 63.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 44.0,
+            "median": 29.0,
+            "minimum": 14.0,
+            "p90": 35.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8148186438655499,
+            "median": 0.5977448494831754,
+            "minimum": 0.4460191116234484,
+            "p90": 0.685037574909451
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.170178218416435,
+            "median": 20.169654942790146,
+            "minimum": 15.560998595251299,
+            "p90": 22.419901933423052
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 47.05004200804643,
+            "median": 32.02219727102467,
+            "minimum": 22.18348402945295,
+            "p90": 37.62790153001465
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.997273389722096,
+            "median": 11.0547603615732,
+            "minimum": 3.364023603522721,
+            "p90": 16.17947824693014
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 26.62586897334192,
+            "median": 11.676692872742482,
+            "minimum": 3.9389131409664246,
+            "p90": 16.71201420832692
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 82.0,
+            "median": 54.5,
+            "minimum": 30.0,
+            "p90": 67.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 27.0,
+            "minimum": 13.0,
+            "p90": 34.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7674367119115681,
+            "median": 0.5792732922565242,
+            "minimum": 0.37670571885559384,
+            "p90": 0.6572560501198568
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 28.20526585905594,
+            "median": 21.855903729947997,
+            "minimum": 16.525227594362466,
+            "p90": 24.327662468086434
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 39.889581483908835,
+            "median": 29.639978035788765,
+            "minimum": 21.265487707124965,
+            "p90": 34.26452238280417
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 16.38179289277901,
+            "median": 7.089258526419453,
+            "minimum": 2.524714617075325,
+            "p90": 10.912541216714942
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 16.905334489475216,
+            "median": 7.702902854579914,
+            "minimum": 3.2059677399818542,
+            "p90": 11.458660504039235
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 79.0,
+            "median": 49.0,
+            "minimum": 28.0,
+            "p90": 60.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 31.0,
+            "minimum": 15.0,
+            "p90": 37.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8730152032899815,
+            "median": 0.6262706335330552,
+            "minimum": 0.4625603650155506,
+            "p90": 0.717406883247864
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "reliability-aware-scoring",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 24.910990322842256,
+            "median": 20.093501869068035,
+            "minimum": 15.540213962055182,
+            "p90": 22.177226948475145
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 41.99728693315933,
+            "median": 30.265276541613424,
+            "minimum": 21.74750338364074,
+            "p90": 35.15883966207744
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 20.361114695842573,
+            "median": 9.382100481389688,
+            "minimum": 3.6809747438842533,
+            "p90": 13.754265795941008
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 20.974821708679823,
+            "median": 9.969792716577295,
+            "minimum": 4.248163317851564,
+            "p90": 14.26876759107132
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 93.0,
+            "median": 71.0,
+            "minimum": 38.0,
+            "p90": 81.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 31.0,
+            "median": 19.0,
+            "minimum": 7.0,
+            "p90": 24.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.768653693259949,
+            "median": 0.5625351417349977,
+            "minimum": 0.36262409128440076,
+            "p90": 0.6455817556098119
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 24.453482162751172,
+            "median": 19.542407369374196,
+            "minimum": 14.248084310556335,
+            "p90": 21.778599862265406
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 44.58297013490723,
+            "median": 30.806176030261437,
+            "minimum": 21.636857351297706,
+            "p90": 35.8428308709458
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 23.704577363552076,
+            "median": 10.525786942489951,
+            "minimum": 3.8761305542038387,
+            "p90": 15.177743212048014
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.17450376469512,
+            "median": 11.067855214049233,
+            "minimum": 4.392841214815636,
+            "p90": 15.71184491667518
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 92.0,
+            "median": 72.0,
+            "minimum": 43.0,
+            "p90": 82.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 39.0,
+            "median": 18.0,
+            "minimum": 5.0,
+            "p90": 24.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7769873102515796,
+            "median": 0.5505295485787272,
+            "minimum": 0.3653818248311243,
+            "p90": 0.633704931902201
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 25.73710923564667,
+            "median": 20.8114824164426,
+            "minimum": 15.334862189735029,
+            "p90": 23.157544161052616
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 40.01093387826193,
+            "median": 29.523932831574168,
+            "minimum": 21.21222019840313,
+            "p90": 33.93965159449082
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 17.68587006600553,
+            "median": 7.992026170525741,
+            "minimum": 3.501100029820365,
+            "p90": 11.495392158331434
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 18.221068745335263,
+            "median": 8.595523808482207,
+            "minimum": 4.128976292710006,
+            "p90": 12.107608483885787
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 94.0,
+            "median": 68.0,
+            "minimum": 44.0,
+            "p90": 78.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 34.0,
+            "median": 20.0,
+            "minimum": 6.0,
+            "p90": 25.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8243977338728794,
+            "median": 0.5833011258750155,
+            "minimum": 0.4103191916963371,
+            "p90": 0.6751576372325746
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": true,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "bounded-hedging",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.197519363784643,
+            "median": 22.402326109257515,
+            "minimum": 16.728490569625947,
+            "p90": 24.996694247552963
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 48.929947922005844,
+            "median": 33.074236830952245,
+            "minimum": 21.30583589879093,
+            "p90": 38.93421857085018
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 13.0,
+            "median": 9.0,
+            "minimum": 5.0,
+            "p90": 11.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 26.301633033285587,
+            "median": 9.954638479627839,
+            "minimum": 3.282798685243696,
+            "p90": 14.951601915905206
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 26.81566105941247,
+            "median": 10.58023243084751,
+            "minimum": 3.9114865913269448,
+            "p90": 15.533922042737451
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 50.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 80.0,
+            "median": 55.0,
+            "minimum": 31.0,
+            "p90": 66.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 48.0,
+            "median": 34.0,
+            "minimum": 15.0,
+            "p90": 40.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8853711439368871,
+            "median": 0.6398460813441934,
+            "minimum": 0.4101751249166078,
+            "p90": 0.7231744316834419
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.628808651856723,
+            "median": 21.447603558259033,
+            "minimum": 16.53348460854429,
+            "p90": 24.016137903612
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 50.40107770985072,
+            "median": 34.326481613859265,
+            "minimum": 23.30518188349636,
+            "p90": 40.22151327817222
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 15.0,
+            "median": 9.0,
+            "minimum": 4.0,
+            "p90": 10.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 26.80825179854436,
+            "median": 11.824221583622826,
+            "minimum": 3.574330987275175,
+            "p90": 17.202689272274544
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 27.3262359244068,
+            "median": 12.439337808966503,
+            "minimum": 4.243191438656166,
+            "p90": 17.819885150081582
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 50.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 83.0,
+            "median": 58.0,
+            "minimum": 32.0,
+            "p90": 69.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 48.0,
+            "median": 32.0,
+            "minimum": 19.0,
+            "p90": 38.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8179086276304802,
+            "median": 0.6171653146780961,
+            "minimum": 0.4501573930613664,
+            "p90": 0.700599102999511
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 30.17298058267359,
+            "median": 23.509879587774357,
+            "minimum": 17.494766941772443,
+            "p90": 26.27154671900396
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 49.74423751981579,
+            "median": 32.20732412126307,
+            "minimum": 23.60181051159077,
+            "p90": 36.6799473215746
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 14.0,
+            "median": 9.0,
+            "minimum": 4.0,
+            "p90": 11.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.38182370544566,
+            "median": 7.771858817544494,
+            "minimum": 2.0601953083808935,
+            "p90": 11.674289249256363
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 22.053872016404025,
+            "median": 8.450972303125997,
+            "minimum": 2.8706451350788833,
+            "p90": 12.308051160200664
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 50.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 80.0,
+            "median": 50.0,
+            "minimum": 26.0,
+            "p90": 62.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 51.0,
+            "median": 36.0,
+            "minimum": 21.0,
+            "p90": 43.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8989968641864039,
+            "median": 0.6718629753555649,
+            "minimum": 0.48154430161285583,
+            "p90": 0.7681550293659636
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": false,
+      "live_refresh": true,
+      "liveness_recovery": true,
+      "policy_id": "combined-without-hedging",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 26.27408302499281,
+            "median": 20.19155542081544,
+            "minimum": 15.127917153147644,
+            "p90": 22.387981772804743
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 45.2568993420296,
+            "median": 30.257180362810995,
+            "minimum": 21.940610184947545,
+            "p90": 35.18924266998275
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 22.800996130100696,
+            "median": 9.249634185751997,
+            "minimum": 4.121239607882234,
+            "p90": 13.957212180664353
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 23.385825556536783,
+            "median": 9.849663422666143,
+            "minimum": 4.646557570970113,
+            "p90": 14.492077501956153
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 91.0,
+            "median": 71.0,
+            "minimum": 43.0,
+            "p90": 81.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 33.0,
+            "median": 19.0,
+            "minimum": 7.0,
+            "p90": 25.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7987147133433897,
+            "median": 0.5643723438616052,
+            "minimum": 0.3731735842189159,
+            "p90": 0.6592211649312433
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 24.871092509710827,
+            "median": 19.66780189714582,
+            "minimum": 14.607511465667168,
+            "p90": 21.7139898481668
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 44.65578880670307,
+            "median": 31.11769881818811,
+            "minimum": 21.077742290845237,
+            "p90": 36.27323716300706
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 23.904552932966517,
+            "median": 10.641701454055038,
+            "minimum": 3.6588799006470625,
+            "p90": 15.437719449178969
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.433449218157804,
+            "median": 11.196629467280939,
+            "minimum": 4.274866960690041,
+            "p90": 15.930027246079302
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 93.0,
+            "median": 73.0,
+            "minimum": 44.0,
+            "p90": 83.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 34.0,
+            "median": 18.0,
+            "minimum": 7.0,
+            "p90": 23.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.7757057360947717,
+            "median": 0.5506539413162639,
+            "minimum": 0.3930193408516056,
+            "p90": 0.6362115334697654
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.173761464648063,
+            "median": 20.817208273584956,
+            "minimum": 15.661073245532256,
+            "p90": 23.09990833505497
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 40.63199324488828,
+            "median": 29.71608117222221,
+            "minimum": 20.156200283566626,
+            "p90": 33.985966887742485
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 17.281504652642884,
+            "median": 8.03503566015933,
+            "minimum": 3.7017147577985354,
+            "p90": 11.762856791915056
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 17.821879354341128,
+            "median": 8.650157228255175,
+            "minimum": 4.32929170266433,
+            "p90": 12.376721661497811
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 91.0,
+            "median": 69.0,
+            "minimum": 44.0,
+            "p90": 79.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 36.0,
+            "median": 20.0,
+            "minimum": 8.0,
+            "p90": 26.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8335765027508295,
+            "median": 0.5869572694269425,
+            "minimum": 0.3670515228504482,
+            "p90": 0.6845015552085925
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 1800,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": true,
+      "live_refresh": true,
+      "liveness_recovery": true,
+      "policy_id": "combined-bounded-hedging",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 1,
+            "maximum": 1718.710498694905,
+            "median": 1718.710498694905,
+            "minimum": 1718.710498694905,
+            "p90": 1718.710498694905
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 42.02865307634572,
+            "median": 21.942394581929022,
+            "minimum": 14.367725570931606,
+            "p90": 24.270217292694323
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 55.79820331452653,
+            "median": 32.8735540762241,
+            "minimum": 23.233183405796883,
+            "p90": 37.83033628777482
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.001,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 13.0,
+            "median": 8.0,
+            "minimum": 4.0,
+            "p90": 10.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 22.623510901559182,
+            "median": 10.203769760270067,
+            "minimum": 4.032742552508858,
+            "p90": 14.365159227520836
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 23.187181463941503,
+            "median": 10.834567927274705,
+            "minimum": 4.756046968212266,
+            "p90": 14.98798956086875
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0001765418290572713,
+            0.0056427029601604705
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 54.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 74.0,
+            "minimum": 42.0,
+            "p90": 85.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 40.0,
+            "median": 24.0,
+            "minimum": 11.0,
+            "p90": 30.0
+          },
+          "simulated_full_simultaneous_readiness_count": 1,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9072836186021495,
+            "median": 0.6082364400021882,
+            "minimum": 0.41205148090275734,
+            "p90": 0.7104052587343992
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.926133228827574,
+            "median": 21.205950227098754,
+            "minimum": 16.535905473205595,
+            "p90": 23.589642210778695
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 49.59024726869906,
+            "median": 33.56681619354153,
+            "minimum": 22.658951317012423,
+            "p90": 39.090437321616875
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 13.0,
+            "median": 8.0,
+            "minimum": 3.0,
+            "p90": 10.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 26.87221048769844,
+            "median": 11.496492189771281,
+            "minimum": 4.0173688435486365,
+            "p90": 16.709372402037456
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 27.439507325576695,
+            "median": 12.078884542152915,
+            "minimum": 4.606508642401463,
+            "p90": 17.282279777962184
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 95.0,
+            "median": 76.0,
+            "minimum": 43.0,
+            "p90": 86.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 36.0,
+            "median": 23.0,
+            "minimum": 9.0,
+            "p90": 29.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8461885470032229,
+            "median": 0.5825921349790706,
+            "minimum": 0.39929086326699115,
+            "p90": 0.6799329638766178
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 28.671328413837106,
+            "median": 22.553799661393995,
+            "minimum": 17.9257260667072,
+            "p90": 25.09170109463888
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 42.82416105023494,
+            "median": 32.03133825393914,
+            "minimum": 24.28686414978918,
+            "p90": 36.546124528107036
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 14.0,
+            "median": 8.0,
+            "minimum": 4.0,
+            "p90": 10.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 18.725466848360252,
+            "median": 8.52624926923701,
+            "minimum": 3.953592467342249,
+            "p90": 12.264635266813908
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 19.38995427583573,
+            "median": 9.163209655848718,
+            "minimum": 4.636100090432308,
+            "p90": 12.903494569404126
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 95.0,
+            "median": 72.0,
+            "minimum": 44.0,
+            "p90": 82.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 25.0,
+            "minimum": 12.0,
+            "p90": 31.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8957265043005639,
+            "median": 0.6274403379642275,
+            "minimum": 0.4009967493444222,
+            "p90": 0.7303109742977439
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "attempt-005-current",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 28.183889782245156,
+            "median": 22.54682462731948,
+            "minimum": 16.01259076737077,
+            "p90": 25.116665332822823
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 48.02814660440538,
+            "median": 33.46311507551376,
+            "minimum": 23.315891361343173,
+            "p90": 38.91682291294336
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.433040168181915,
+            "median": 10.11747963729679,
+            "minimum": 3.7353669182064717,
+            "p90": 14.953447061286875
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.02837945566607,
+            "median": 10.796954912297924,
+            "minimum": 4.425699080531216,
+            "p90": 15.599724602148404
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 84.0,
+            "median": 59.0,
+            "minimum": 32.0,
+            "p90": 71.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 32.0,
+            "minimum": 14.0,
+            "p90": 39.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9346490645527771,
+            "median": 0.6410670485459689,
+            "minimum": 0.448382930196214,
+            "p90": 0.7284967530261177
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.253893461765223,
+            "median": 21.562784864297257,
+            "minimum": 15.527216507508822,
+            "p90": 24.149048835617965
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 51.29793077857555,
+            "median": 34.17484901432662,
+            "minimum": 24.44415510922846,
+            "p90": 40.20162110776434
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 26.38944878886815,
+            "median": 11.925393229407383,
+            "minimum": 3.870018267504833,
+            "p90": 17.49659293290222
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 26.938987650869187,
+            "median": 12.527944170905752,
+            "minimum": 4.555315863379859,
+            "p90": 18.13019150824404
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 86.0,
+            "median": 61.0,
+            "minimum": 36.0,
+            "p90": 73.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 51.0,
+            "median": 30.0,
+            "minimum": 12.0,
+            "p90": 37.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.810653699848995,
+            "median": 0.6181536581853868,
+            "minimum": 0.43631136810805915,
+            "p90": 0.7020989584205267
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 30.895290083646522,
+            "median": 23.726133052104977,
+            "minimum": 18.205482179080803,
+            "p90": 26.41270937425469
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 41.73697692645597,
+            "median": 32.48942026445886,
+            "minimum": 24.510960908370087,
+            "p90": 37.14072471806829
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 17.399192256032297,
+            "median": 7.893352630663243,
+            "minimum": 2.6308005303088025,
+            "p90": 11.810918690052905
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 18.031463206827897,
+            "median": 8.586954953030446,
+            "minimum": 3.338075929138652,
+            "p90": 12.410009220653198
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 82.0,
+            "median": 54.0,
+            "minimum": 28.0,
+            "p90": 67.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 55.0,
+            "median": 34.0,
+            "minimum": 16.0,
+            "p90": 42.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9520661633113777,
+            "median": 0.6748935430040499,
+            "minimum": 0.4396347228694978,
+            "p90": 0.7694889813675173
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": true,
+      "policy_id": "continuous-ready-liveness",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 28.692988532069563,
+            "median": 22.513075119995026,
+            "minimum": 16.931003998392736,
+            "p90": 24.957288897149784
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 48.99607991980544,
+            "median": 33.57451743220015,
+            "minimum": 24.63361908428075,
+            "p90": 38.63103898686173
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 23.552596744707976,
+            "median": 10.254909338574043,
+            "minimum": 3.3506290761163404,
+            "p90": 15.10526074971129
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.14328926067508,
+            "median": 10.887468207078651,
+            "minimum": 4.121651100604493,
+            "p90": 15.708950962779857
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 86.0,
+            "median": 58.0,
+            "minimum": 32.0,
+            "p90": 69.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 48.0,
+            "median": 32.0,
+            "minimum": 16.0,
+            "p90": 39.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8616664543550997,
+            "median": 0.6370446283837109,
+            "minimum": 0.4467205056865184,
+            "p90": 0.7283751359528325
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.85597957816455,
+            "median": 21.662678836973875,
+            "minimum": 16.55296403152601,
+            "p90": 24.030032840120846
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 48.849907481443736,
+            "median": 34.74988161641524,
+            "minimum": 23.74980151613847,
+            "p90": 40.15823948796933
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.45934289915692,
+            "median": 12.163252334196855,
+            "minimum": 3.6121697687139775,
+            "p90": 17.54317833189404
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.071171595895848,
+            "median": 12.786427213119566,
+            "minimum": 4.170243482605992,
+            "p90": 18.154353434651387
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 91.0,
+            "median": 63.0,
+            "minimum": 35.0,
+            "p90": 74.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 48.0,
+            "median": 30.0,
+            "minimum": 15.0,
+            "p90": 37.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8282981131037948,
+            "median": 0.612981311619692,
+            "minimum": 0.43369297041830607,
+            "p90": 0.6985790090440889
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.982239830766176,
+            "median": 23.766489769203105,
+            "minimum": 18.22921919936469,
+            "p90": 26.41464982586358
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 44.23483749565372,
+            "median": 32.27703586050312,
+            "minimum": 23.665359522503515,
+            "p90": 36.87607325755246
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 19.203155489260578,
+            "median": 7.6071583075150535,
+            "minimum": 2.7715939475187774,
+            "p90": 11.50268239350198
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 19.89217572079346,
+            "median": 8.317556680001672,
+            "minimum": 3.3743867419816813,
+            "p90": 12.194582046071305
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 77.0,
+            "median": 53.0,
+            "minimum": 28.0,
+            "p90": 64.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 35.0,
+            "minimum": 17.0,
+            "p90": 42.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.883043355909364,
+            "median": 0.6695513004457732,
+            "minimum": 0.4222043028238532,
+            "p90": 0.7697499790108703
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "early-parallel-parent",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.559040298199754,
+            "median": 22.53721947212358,
+            "minimum": 17.05838416822902,
+            "p90": 25.060378156277878
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 44.62018722496994,
+            "median": 33.6051299814837,
+            "minimum": 24.387713580022172,
+            "p90": 39.097948972719806
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.012223845795702,
+            "median": 10.244871925601885,
+            "minimum": 3.1780288617393095,
+            "p90": 15.216142824960407
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.609460992718702,
+            "median": 10.90395013755702,
+            "minimum": 3.8680771258286013,
+            "p90": 15.883033027711658
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 84.0,
+            "median": 59.0,
+            "minimum": 31.0,
+            "p90": 70.10000000000002
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 51.0,
+            "median": 33.0,
+            "minimum": 14.0,
+            "p90": 40.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8531035992221214,
+            "median": 0.6428050568636061,
+            "minimum": 0.47548346143053444,
+            "p90": 0.7283818825329924
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 28.201905965338078,
+            "median": 21.67616860691337,
+            "minimum": 15.833657089855727,
+            "p90": 24.304262959547223
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 50.57525102516125,
+            "median": 34.442011305128965,
+            "minimum": 24.81779949736594,
+            "p90": 40.24719950122969
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.966034989806445,
+            "median": 11.842012862540155,
+            "minimum": 3.917892634132741,
+            "p90": 17.30968865986076
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 26.590708669621122,
+            "median": 12.464609364292107,
+            "minimum": 4.641690967147763,
+            "p90": 17.90596542493392
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 89.0,
+            "median": 63.0,
+            "minimum": 36.0,
+            "p90": 74.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 48.0,
+            "median": 31.0,
+            "minimum": 16.0,
+            "p90": 38.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8553654481439191,
+            "median": 0.6230942760439171,
+            "minimum": 0.43882374912089755,
+            "p90": 0.7112827845658634
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 30.735483132401857,
+            "median": 23.85380018922607,
+            "minimum": 18.026310414694436,
+            "p90": 26.47154607567528
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.42590399779354,
+            "median": 32.61722302638658,
+            "minimum": 23.565051540909874,
+            "p90": 37.27267134878829
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.412122390898677,
+            "median": 7.89546676223505,
+            "minimum": 3.063876011807078,
+            "p90": 11.752570490183237
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 22.097551338144825,
+            "median": 8.565271956067766,
+            "minimum": 3.747007918558108,
+            "p90": 12.4004861903746
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 80.0,
+            "median": 54.0,
+            "minimum": 35.0,
+            "p90": 65.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 56.0,
+            "median": 35.0,
+            "minimum": 18.0,
+            "p90": 43.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9091105948083805,
+            "median": 0.678478054897115,
+            "minimum": 0.49719582499092874,
+            "p90": 0.7739430698816042
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": true,
+      "liveness_recovery": false,
+      "policy_id": "live-alternate-refresh",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 28.581197751575036,
+            "median": 22.52354793058725,
+            "minimum": 17.314105947382053,
+            "p90": 25.052072299627252
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.92893985167488,
+            "median": 33.668451504476465,
+            "minimum": 23.670116782623694,
+            "p90": 39.0749454503844
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.334050430310743,
+            "median": 10.269099059893689,
+            "minimum": 3.4498436148021,
+            "p90": 15.139502276498316
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.986871479146554,
+            "median": 10.939067105504483,
+            "minimum": 4.115809331618445,
+            "p90": 15.77909061896549
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 86.0,
+            "median": 58.0,
+            "minimum": 36.0,
+            "p90": 70.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 49.0,
+            "median": 32.0,
+            "minimum": 16.0,
+            "p90": 40.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9110733821070461,
+            "median": 0.6460539490790616,
+            "minimum": 0.4605443346212404,
+            "p90": 0.728481845453047
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.04376617368724,
+            "median": 21.67858794637268,
+            "minimum": 15.809918611265731,
+            "p90": 24.088484133069173
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 49.277609327222066,
+            "median": 34.419504843215094,
+            "minimum": 23.437326155952512,
+            "p90": 40.037579529860515
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 26.617400505392517,
+            "median": 12.012962289143232,
+            "minimum": 3.9560872228138746,
+            "p90": 17.12604255296188
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 27.16001203581513,
+            "median": 12.651024852553,
+            "minimum": 4.626400852224819,
+            "p90": 17.695980288841827
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 86.0,
+            "median": 61.0,
+            "minimum": 36.0,
+            "p90": 73.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 49.0,
+            "median": 30.0,
+            "minimum": 15.0,
+            "p90": 37.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8398129539792076,
+            "median": 0.6185583271675674,
+            "minimum": 0.4519963659108504,
+            "p90": 0.7060026260955645
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 30.10432269626161,
+            "median": 23.856756311588562,
+            "minimum": 18.16515641166085,
+            "p90": 26.643846668514342
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 44.26630327482192,
+            "median": 32.586518897769494,
+            "minimum": 22.712969666518152,
+            "p90": 36.88181158246436
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 18.01232576390683,
+            "median": 7.717216336026729,
+            "minimum": 3.079818260358585,
+            "p90": 11.660488549509415
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 18.63622911207812,
+            "median": 8.387697993594571,
+            "minimum": 3.8537936668726354,
+            "p90": 12.299835967178838
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 79.0,
+            "median": 54.0,
+            "minimum": 30.0,
+            "p90": 65.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 54.0,
+            "median": 35.0,
+            "minimum": 17.0,
+            "p90": 43.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9298583024399572,
+            "median": 0.6821065651424347,
+            "minimum": 0.482761012506424,
+            "p90": 0.7687159837974278
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "reliability-aware-scoring",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 26.44204670287925,
+            "median": 21.19360945800726,
+            "minimum": 16.261875245280333,
+            "p90": 23.643227300792947
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 45.29466114800728,
+            "median": 31.981405059658282,
+            "minimum": 22.007724095883344,
+            "p90": 36.87722585918393
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 23.746938834497385,
+            "median": 9.894956839388833,
+            "minimum": 3.8572750211629385,
+            "p90": 14.417255910442023
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.28644251474918,
+            "median": 10.481405560233899,
+            "minimum": 4.457436985460983,
+            "p90": 15.012152075512915
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 95.0,
+            "median": 76.0,
+            "minimum": 50.0,
+            "p90": 86.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 38.0,
+            "median": 20.0,
+            "minimum": 8.0,
+            "p90": 26.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8205702014836331,
+            "median": 0.5875879548007985,
+            "minimum": 0.3793357470809568,
+            "p90": 0.6845928253256226
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 26.755252133790872,
+            "median": 20.544223027632295,
+            "minimum": 15.488964708693267,
+            "p90": 22.850789030198296
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 44.907985011891796,
+            "median": 32.05213274589881,
+            "minimum": 21.586143154238776,
+            "p90": 37.59885105520063
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 22.959170328707295,
+            "median": 10.788668379281251,
+            "minimum": 3.95897296615398,
+            "p90": 15.691421825130877
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 23.5264567243706,
+            "median": 11.34172199234779,
+            "minimum": 4.60308366023484,
+            "p90": 16.293212515129035
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 79.0,
+            "minimum": 51.0,
+            "p90": 88.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 37.0,
+            "median": 19.0,
+            "minimum": 4.0,
+            "p90": 25.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8285096848530615,
+            "median": 0.5736506343763712,
+            "minimum": 0.40437869798876697,
+            "p90": 0.6651464257271772
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.937999729490485,
+            "median": 21.997932187710752,
+            "minimum": 16.489380982859448,
+            "p90": 24.474022689539105
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 43.000361008189536,
+            "median": 31.001995494577052,
+            "minimum": 22.404831885813188,
+            "p90": 35.72599961276684
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.155354261381337,
+            "median": 8.306120227932677,
+            "minimum": 3.44693482143867,
+            "p90": 12.09807934033776
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.859053224488424,
+            "median": 8.900626452683175,
+            "minimum": 4.079163059405662,
+            "p90": 12.701190747461693
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 93.0,
+            "median": 74.0,
+            "minimum": 48.0,
+            "p90": 83.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 34.0,
+            "median": 22.0,
+            "minimum": 10.0,
+            "p90": 28.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8359309337138117,
+            "median": 0.6125732898581464,
+            "minimum": 0.4210042243076006,
+            "p90": 0.7081206620944043
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": true,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "bounded-hedging",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 31.763668446409802,
+            "median": 24.38729144891784,
+            "minimum": 16.69586078553917,
+            "p90": 27.080067152751113
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 52.57433599659416,
+            "median": 36.37717252691962,
+            "minimum": 22.47497843226555,
+            "p90": 41.88203362816799
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 15.0,
+            "median": 10.0,
+            "minimum": 5.0,
+            "p90": 12.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.40688365013832,
+            "median": 11.130943586563301,
+            "minimum": 4.022265127134756,
+            "p90": 15.992735035526053
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.998648157446766,
+            "median": 11.850756372873654,
+            "minimum": 4.769896265329298,
+            "p90": 16.64773553460874
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 50.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 89.0,
+            "median": 61.0,
+            "minimum": 35.0,
+            "p90": 72.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 54.0,
+            "median": 37.0,
+            "minimum": 21.0,
+            "p90": 44.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9209208938236554,
+            "median": 0.6883481178265312,
+            "minimum": 0.4951423793187688,
+            "p90": 0.7757507625305526
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.294134111127523,
+            "median": 23.386786548615728,
+            "minimum": 18.238623576463635,
+            "p90": 26.081128057773313
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 52.86174469026069,
+            "median": 36.82700636631719,
+            "minimum": 26.0408447557902,
+            "p90": 43.028228171895584
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 16.0,
+            "median": 10.0,
+            "minimum": 5.0,
+            "p90": 12.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 27.357539299267753,
+            "median": 12.797014098342316,
+            "minimum": 4.262785844179429,
+            "p90": 18.03612388958424
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 27.94265221493798,
+            "median": 13.470759096539968,
+            "minimum": 4.948388258066953,
+            "p90": 18.6923019716924
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 50.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 90.0,
+            "median": 64.0,
+            "minimum": 37.0,
+            "p90": 75.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 35.0,
+            "minimum": 18.0,
+            "p90": 41.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8819900276757171,
+            "median": 0.6546303356521355,
+            "minimum": 0.4639745285404708,
+            "p90": 0.7438950832013597
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 32.48493753200675,
+            "median": 25.837829919870007,
+            "minimum": 20.053488219227667,
+            "p90": 28.647433201131804
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.666837841442586,
+            "median": 35.01144370346046,
+            "minimum": 26.50605542566304,
+            "p90": 39.81167117108092
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 16.0,
+            "median": 10.0,
+            "minimum": 6.0,
+            "p90": 12.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 19.04564132727808,
+            "median": 8.202006592448699,
+            "minimum": 3.268846086606022,
+            "p90": 12.237108162687521
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 19.684910806999667,
+            "median": 8.949357165914398,
+            "minimum": 4.100156726627983,
+            "p90": 12.918890337638084
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 54.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 86.0,
+            "median": 56.0,
+            "minimum": 31.0,
+            "p90": 67.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 61.0,
+            "median": 40.0,
+            "minimum": 19.0,
+            "p90": 46.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9937600690010091,
+            "median": 0.7215917519483694,
+            "minimum": 0.5235446879488126,
+            "p90": 0.8232131176459598
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": false,
+      "live_refresh": true,
+      "liveness_recovery": true,
+      "policy_id": "combined-without-hedging",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 26.96011225433505,
+            "median": 21.470350622131065,
+            "minimum": 16.188219077266325,
+            "p90": 23.653736951288742
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 43.40615872856145,
+            "median": 32.276001976644196,
+            "minimum": 22.20201623139048,
+            "p90": 37.447064474204865
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.25229340147398,
+            "median": 9.92608683674268,
+            "minimum": 4.061950845340657,
+            "p90": 14.516139457591091
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.817738660670717,
+            "median": 10.531015557305263,
+            "minimum": 4.6307792792135505,
+            "p90": 15.148631306430058
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 96.0,
+            "median": 77.0,
+            "minimum": 52.0,
+            "p90": 87.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 36.0,
+            "median": 20.0,
+            "minimum": 4.0,
+            "p90": 26.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8171683457816986,
+            "median": 0.5942257254984995,
+            "minimum": 0.3905240595204493,
+            "p90": 0.6855871452202412
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.550262330397292,
+            "median": 20.788055816909264,
+            "minimum": 15.853980038687816,
+            "p90": 23.114341464839704
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.54027558997532,
+            "median": 32.460022897098646,
+            "minimum": 23.37336498010359,
+            "p90": 37.805185278474575
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.61096548489917,
+            "median": 10.905401051570426,
+            "minimum": 4.1869468714121085,
+            "p90": 15.799668733493636
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.19266264322932,
+            "median": 11.540735134186523,
+            "minimum": 4.6603639343600545,
+            "p90": 16.364780063293598
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 96.0,
+            "median": 79.0,
+            "minimum": 55.0,
+            "p90": 88.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 44.0,
+            "median": 19.0,
+            "minimum": 6.0,
+            "p90": 26.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.801200027062472,
+            "median": 0.5769352556352147,
+            "minimum": 0.3939712613086674,
+            "p90": 0.6647104720690312
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 27.741857496019858,
+            "median": 22.357366439374964,
+            "minimum": 17.51693367308156,
+            "p90": 24.79870472202459
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 42.85254588034698,
+            "median": 31.6190426000665,
+            "minimum": 23.445537611565758,
+            "p90": 36.2365948920472
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 17.256513119209444,
+            "median": 8.543115130777108,
+            "minimum": 3.4711369391658193,
+            "p90": 12.206223558279609
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 17.84495193208047,
+            "median": 9.184183383395009,
+            "minimum": 4.157733662585933,
+            "p90": 12.795405726735362
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 94.0,
+            "median": 74.0,
+            "minimum": 43.0,
+            "p90": 83.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 41.0,
+            "median": 22.0,
+            "minimum": 7.0,
+            "p90": 28.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9212487183304243,
+            "median": 0.6189751436258846,
+            "minimum": 0.38767056975114955,
+            "p90": 0.7163975209862115
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2100,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": true,
+      "live_refresh": true,
+      "liveness_recovery": true,
+      "policy_id": "combined-bounded-hedging",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 1,
+            "maximum": 2002.904737,
+            "median": 2002.904737,
+            "minimum": 2002.904737,
+            "p90": 2002.904737
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 47.86807282408837,
+            "median": 23.182903256918046,
+            "minimum": 18.06725049290635,
+            "p90": 25.93411369020715
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 63.19701730472778,
+            "median": 34.85185655856097,
+            "minimum": 25.477946349133255,
+            "p90": 40.44831143401247
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.001,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 14.0,
+            "median": 9.0,
+            "minimum": 4.0,
+            "p90": 11.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.150237100641572,
+            "median": 10.819867341123093,
+            "minimum": 3.960474965154849,
+            "p90": 15.416576390514834
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.844579763983734,
+            "median": 11.44649429976985,
+            "minimum": 4.619208651545222,
+            "p90": 16.070861723286797
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0001765418290572713,
+            0.0056427029601604705
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 80.0,
+            "minimum": 47.0,
+            "p90": 89.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 42.0,
+            "median": 25.0,
+            "minimum": 10.0,
+            "p90": 33.0
+          },
+          "simulated_full_simultaneous_readiness_count": 1,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.930773926134831,
+            "median": 0.6334319191933513,
+            "minimum": 0.42814024128679323,
+            "p90": 0.7370371284815727
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 4,
+            "maximum": 2047.5942129999999,
+            "median": 1926.014772760856,
+            "minimum": 1678.5526180000002,
+            "p90": 2020.3441475939826
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 46.76158075873194,
+            "median": 22.48061600360731,
+            "minimum": 17.36634498442556,
+            "p90": 25.05122403632745
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 64.33216170473781,
+            "median": 35.09194562679389,
+            "minimum": 24.122807407987253,
+            "p90": 40.639959053103496
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.004,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 15.0,
+            "median": 9.0,
+            "minimum": 4.0,
+            "p90": 11.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.309990302291954,
+            "median": 11.799200389185796,
+            "minimum": 4.50677350147195,
+            "p90": 16.973144493996497
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.8412753281656,
+            "median": 12.416467263754496,
+            "minimum": 5.061871452850601,
+            "p90": 17.573833314913013
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0015565629678934295,
+            0.010239720429805971
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 82.0,
+            "minimum": 57.0,
+            "p90": 90.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 44.0,
+            "median": 24.0,
+            "minimum": 7.0,
+            "p90": 31.0
+          },
+          "simulated_full_simultaneous_readiness_count": 4,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9070174156298321,
+            "median": 0.6149871863849152,
+            "minimum": 0.4004979389438166,
+            "p90": 0.7218791013429899
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 31.80897405941064,
+            "median": 24.137380789301364,
+            "minimum": 18.721765165080782,
+            "p90": 27.0724899016235
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.613739997209,
+            "median": 33.86148074762767,
+            "minimum": 24.573333336198797,
+            "p90": 39.19784577859526
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 14.0,
+            "median": 9.0,
+            "minimum": 5.0,
+            "p90": 11.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 22.21458547040096,
+            "median": 8.92750735415181,
+            "minimum": 3.90700791671279,
+            "p90": 12.640935555847259
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 22.835606488931973,
+            "median": 9.632404082766346,
+            "minimum": 4.45235293807831,
+            "p90": 13.241619773622826
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 96.0,
+            "median": 77.0,
+            "minimum": 45.0,
+            "p90": 86.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 27.0,
+            "minimum": 11.0,
+            "p90": 34.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9775156884216556,
+            "median": 0.660354101107113,
+            "minimum": 0.39727917336480323,
+            "p90": 0.7770400833205229
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "attempt-005-current",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 31.156240373059504,
+            "median": 23.84867478749976,
+            "minimum": 15.98142926788586,
+            "p90": 26.636312497979333
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 50.56501690967194,
+            "median": 35.44848352882423,
+            "minimum": 25.19023096836371,
+            "p90": 41.18787598180449
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.61880023537809,
+            "median": 10.785405413729285,
+            "minimum": 3.7897893498066506,
+            "p90": 15.573900167727205
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 26.27207234657753,
+            "median": 11.463723883294936,
+            "minimum": 4.541618921046074,
+            "p90": 16.220187576908476
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 89.0,
+            "median": 63.0,
+            "minimum": 35.0,
+            "p90": 74.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 34.0,
+            "minimum": 15.0,
+            "p90": 42.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8871781650690916,
+            "median": 0.6729757523826523,
+            "minimum": 0.46466116027958043,
+            "p90": 0.7582361033415301
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 30.04444848819598,
+            "median": 22.78793433476808,
+            "minimum": 16.910644486530195,
+            "p90": 25.521937038979605
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 56.10268154973899,
+            "median": 36.2888884971014,
+            "minimum": 25.773933483834163,
+            "p90": 41.862592875744625
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 29.917217937794664,
+            "median": 12.651921693036787,
+            "minimum": 4.772247360107851,
+            "p90": 17.944977875012334
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 30.632222784145107,
+            "median": 13.298774892285483,
+            "minimum": 5.31677726278569,
+            "p90": 18.603138957873405
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 89.0,
+            "median": 68.0,
+            "minimum": 41.0,
+            "p90": 79.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 49.0,
+            "median": 31.0,
+            "minimum": 15.0,
+            "p90": 39.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9052646237966573,
+            "median": 0.6451905483252469,
+            "minimum": 0.4408021955705915,
+            "p90": 0.7287681941272727
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 32.77808802785955,
+            "median": 25.36041305075516,
+            "minimum": 19.133388150300824,
+            "p90": 28.156622701603187
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 48.54082156094161,
+            "median": 34.61910198648036,
+            "minimum": 25.761157067738605,
+            "p90": 39.48661113277919
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.103591425434697,
+            "median": 8.470016558687613,
+            "minimum": 3.37716508949245,
+            "p90": 12.479680823424948
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.699245855405746,
+            "median": 9.16397050296613,
+            "minimum": 4.085876351618172,
+            "p90": 13.242175263833188
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 84.0,
+            "median": 59.0,
+            "minimum": 33.0,
+            "p90": 70.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 54.0,
+            "median": 38.0,
+            "minimum": 18.0,
+            "p90": 45.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.977909051560724,
+            "median": 0.7123766763659108,
+            "minimum": 0.4575729614439933,
+            "p90": 0.8135067514620845
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": true,
+      "policy_id": "continuous-ready-liveness",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.488180644512866,
+            "median": 23.86301383113167,
+            "minimum": 18.43782294748486,
+            "p90": 26.481982658421174
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 50.73570494468818,
+            "median": 35.47816724711676,
+            "minimum": 25.417318580569564,
+            "p90": 41.28912372946852
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 23.44686395410783,
+            "median": 10.868045218608232,
+            "minimum": 3.4166276737671653,
+            "p90": 16.048946070276536
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.17821920601689,
+            "median": 11.51826736798725,
+            "minimum": 4.023413597747436,
+            "p90": 16.753830306412375
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 89.0,
+            "median": 64.0,
+            "minimum": 34.0,
+            "p90": 75.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 57.0,
+            "median": 34.0,
+            "minimum": 12.0,
+            "p90": 42.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9259075579302303,
+            "median": 0.6693109656079986,
+            "minimum": 0.4584224885359006,
+            "p90": 0.7672078692048255
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.330688005355487,
+            "median": 22.888790936311857,
+            "minimum": 17.323336796881804,
+            "p90": 25.66820779634259
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 52.22186962411047,
+            "median": 36.51916656865338,
+            "minimum": 25.19626948988798,
+            "p90": 42.69432173855881
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 30.447412549184115,
+            "median": 12.86519365348132,
+            "minimum": 3.667129189588634,
+            "p90": 18.366725100343793
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 31.090485775513372,
+            "median": 13.553725924441675,
+            "minimum": 4.399805210340276,
+            "p90": 18.997334200978692
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 93.0,
+            "median": 68.0,
+            "minimum": 45.0,
+            "p90": 78.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 51.0,
+            "median": 32.0,
+            "minimum": 17.0,
+            "p90": 39.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.909204484052323,
+            "median": 0.6462181009292494,
+            "minimum": 0.4232596017875058,
+            "p90": 0.7341792847589244
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 32.08276653315781,
+            "median": 25.146099423634748,
+            "minimum": 19.310104538756516,
+            "p90": 28.246272374818062
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 45.86192303562956,
+            "median": 34.531738237357104,
+            "minimum": 24.917165030808217,
+            "p90": 39.05207384700446
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 19.846826376668155,
+            "median": 8.042354441072778,
+            "minimum": 3.261344509716301,
+            "p90": 12.364828999873366
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 20.62299293213013,
+            "median": 8.761660355593225,
+            "minimum": 3.9843841880784745,
+            "p90": 13.05158271319419
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 87.0,
+            "median": 58.0,
+            "minimum": 32.0,
+            "p90": 70.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 62.0,
+            "median": 37.0,
+            "minimum": 19.0,
+            "p90": 45.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9598724587802115,
+            "median": 0.7089041725042249,
+            "minimum": 0.4413580833685098,
+            "p90": 0.8087228018691319
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "early-parallel-parent",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 30.80671553583696,
+            "median": 23.983260499360796,
+            "minimum": 17.993899472414647,
+            "p90": 26.74186417114223
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 51.25052840935831,
+            "median": 35.83983279026469,
+            "minimum": 25.473610497095915,
+            "p90": 41.25269549816674
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.65289541028325,
+            "median": 11.01770039683676,
+            "minimum": 3.655128975443279,
+            "p90": 15.542662573665876
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 26.276252894640763,
+            "median": 11.708234033758242,
+            "minimum": 4.376921374108659,
+            "p90": 16.249515806272683
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 86.0,
+            "median": 65.0,
+            "minimum": 36.0,
+            "p90": 75.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 35.0,
+            "minimum": 19.0,
+            "p90": 42.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9429117453064865,
+            "median": 0.6721517860555974,
+            "minimum": 0.467426904896908,
+            "p90": 0.766471135104944
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.783428450415176,
+            "median": 22.77007511669163,
+            "minimum": 17.931294855810386,
+            "p90": 25.546580427407278
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 52.44513252755765,
+            "median": 36.379401862855445,
+            "minimum": 25.42878716412145,
+            "p90": 42.21940456367257
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 26.887157568654008,
+            "median": 12.887746196342018,
+            "minimum": 4.621667958462454,
+            "p90": 18.332002472144325
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 27.544923646255015,
+            "median": 13.567883663233353,
+            "minimum": 5.295588608446033,
+            "p90": 18.932380897501112
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 95.0,
+            "median": 68.0,
+            "minimum": 42.0,
+            "p90": 79.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 33.0,
+            "minimum": 14.0,
+            "p90": 39.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9080238169035961,
+            "median": 0.6465828106271794,
+            "minimum": 0.4641190395597808,
+            "p90": 0.7385917701901303
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 35.34519875475212,
+            "median": 25.365574143741753,
+            "minimum": 19.31248523455515,
+            "p90": 28.119645374311165
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 49.331750665576905,
+            "median": 34.819486160619476,
+            "minimum": 26.067209199637993,
+            "p90": 39.45159686695101
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 21.90935518743823,
+            "median": 8.566744227007884,
+            "minimum": 3.1253899912819167,
+            "p90": 12.250099677225801
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 22.553211297493636,
+            "median": 9.27448319282222,
+            "minimum": 3.955973111056111,
+            "p90": 12.951502426303843
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 89.0,
+            "median": 59.0,
+            "minimum": 37.0,
+            "p90": 71.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 58.0,
+            "median": 38.0,
+            "minimum": 15.0,
+            "p90": 45.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9455603602256484,
+            "median": 0.712305384596045,
+            "minimum": 0.5255383992733088,
+            "p90": 0.8065400057959968
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": true,
+      "liveness_recovery": false,
+      "policy_id": "live-alternate-refresh",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 31.613191074714496,
+            "median": 24.300638137508884,
+            "minimum": 18.7774218890327,
+            "p90": 27.049803532762038
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 48.846198058308744,
+            "median": 36.074825015149216,
+            "minimum": 25.163152520478558,
+            "p90": 41.35264242080339
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 22.410618382734313,
+            "median": 11.027540113893469,
+            "minimum": 3.521884957472011,
+            "p90": 15.544117533556562
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 23.133099227934785,
+            "median": 11.679108505628493,
+            "minimum": 4.302432717430097,
+            "p90": 16.295926484482187
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 88.0,
+            "median": 64.0,
+            "minimum": 35.0,
+            "p90": 74.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 35.5,
+            "minimum": 16.0,
+            "p90": 43.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8908917590123688,
+            "median": 0.6796811904424327,
+            "minimum": 0.4951872220310513,
+            "p90": 0.7700588176302012
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 30.18636480561956,
+            "median": 23.01302634866854,
+            "minimum": 17.372040715991357,
+            "p90": 25.752133329903618
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 52.21503233363201,
+            "median": 36.89721925910919,
+            "minimum": 24.6753520409779,
+            "p90": 42.62290020293899
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 28.33082005361445,
+            "median": 12.90765102235176,
+            "minimum": 4.171859135552612,
+            "p90": 18.283841600755252
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 28.851534774294052,
+            "median": 13.561292630570449,
+            "minimum": 4.856015302392101,
+            "p90": 18.925847285882178
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 92.0,
+            "median": 68.0,
+            "minimum": 42.0,
+            "p90": 78.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 51.0,
+            "median": 33.0,
+            "minimum": 14.0,
+            "p90": 41.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8560066732782056,
+            "median": 0.6529664729427278,
+            "minimum": 0.48366743795403916,
+            "p90": 0.7429055875591208
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 34.35716276376523,
+            "median": 25.67547115745851,
+            "minimum": 18.831039139547354,
+            "p90": 28.518277890884423
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.19239277916731,
+            "median": 35.02911321168636,
+            "minimum": 25.36392337246383,
+            "p90": 39.79410274349748
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 19.054904878235515,
+            "median": 8.455309614561529,
+            "minimum": 3.315689747209513,
+            "p90": 12.19423384354859
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 19.869316062875317,
+            "median": 9.183492871297444,
+            "minimum": 4.015295925592232,
+            "p90": 12.873960976675964
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 81.0,
+            "median": 58.0,
+            "minimum": 35.0,
+            "p90": 69.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 58.0,
+            "median": 38.0,
+            "minimum": 21.0,
+            "p90": 47.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9577619195728696,
+            "median": 0.7223577795512893,
+            "minimum": 0.44820195711192184,
+            "p90": 0.8209823529797853
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": false,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "reliability-aware-scoring",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 1,
+            "maximum": 2015.709752,
+            "median": 2015.709752,
+            "minimum": 2015.709752,
+            "p90": 2015.709752
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 48.52690027231999,
+            "median": 22.016500383100073,
+            "minimum": 15.807756602410182,
+            "p90": 24.633150150558162
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 67.39645848108833,
+            "median": 32.8034776627618,
+            "minimum": 22.67720208241039,
+            "p90": 38.39273720679538
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.001,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 22.441574166616356,
+            "median": 10.047201963591085,
+            "minimum": 4.065728612568083,
+            "p90": 14.720079705233124
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 23.053154151280996,
+            "median": 10.66034797626726,
+            "minimum": 4.7622259638357916,
+            "p90": 15.359660547015059
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0001765418290572713,
+            0.0056427029601604705
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 81.0,
+            "minimum": 54.0,
+            "p90": 89.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 36.0,
+            "median": 21.0,
+            "minimum": 8.0,
+            "p90": 27.0
+          },
+          "simulated_full_simultaneous_readiness_count": 1,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8835351195414111,
+            "median": 0.6048872882810814,
+            "minimum": 0.3983706619598401,
+            "p90": 0.7023916910035646
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 7,
+            "maximum": 2398.227379,
+            "median": 2114.1320779999996,
+            "minimum": 1904.3422799999998,
+            "p90": 2378.943178
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 48.34171738140184,
+            "median": 21.20928841486075,
+            "minimum": 15.368312476668057,
+            "p90": 23.547013550607968
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 67.10880170206048,
+            "median": 33.46662686022265,
+            "minimum": 22.57816570354552,
+            "p90": 38.89178429996366
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.007,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.846859193323105,
+            "median": 11.377383264904438,
+            "minimum": 4.1746495072907965,
+            "p90": 16.613716514328274
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.46453823250542,
+            "median": 11.978068163272386,
+            "minimum": 4.795623389942116,
+            "p90": 17.20880513578139
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0033948250792319975,
+            0.01437849692694906
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 83.0,
+            "minimum": 60.0,
+            "p90": 92.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 38.0,
+            "median": 19.0,
+            "minimum": 6.0,
+            "p90": 25.0
+          },
+          "simulated_full_simultaneous_readiness_count": 7,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9985409564766717,
+            "median": 0.583784124078288,
+            "minimum": 0.35878700427323124,
+            "p90": 0.6789216159157337
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 29.843906970909703,
+            "median": 22.80545606202272,
+            "minimum": 17.148421658183704,
+            "p90": 25.51770983199369
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 46.531552003876556,
+            "median": 32.378873005228094,
+            "minimum": 22.757790672175894,
+            "p90": 37.12234462532728
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 20.773146264519326,
+            "median": 8.739731045823905,
+            "minimum": 3.467678255235489,
+            "p90": 12.383221843046563
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.387827138054345,
+            "median": 9.383987894881761,
+            "minimum": 4.133791703204194,
+            "p90": 13.050128193433483
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 45.0,
+            "minimum": 45.0,
+            "p90": 45.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 78.0,
+            "minimum": 51.0,
+            "p90": 87.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 38.0,
+            "median": 23.0,
+            "minimum": 7.0,
+            "p90": 29.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.8976464640560659,
+            "median": 0.6278233024925257,
+            "minimum": 0.4084107884905292,
+            "p90": 0.725433791454086
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": false,
+      "hedging": true,
+      "live_refresh": false,
+      "liveness_recovery": false,
+      "policy_id": "bounded-hedging",
+      "reliability_scoring": false,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 34.0226329507266,
+            "median": 25.859409643797992,
+            "minimum": 18.61079162682955,
+            "p90": 28.950839877031434
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 51.969949248876176,
+            "median": 38.330392569216905,
+            "minimum": 27.04339485283671,
+            "p90": 44.026346041662634
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 16.0,
+            "median": 11.0,
+            "minimum": 6.0,
+            "p90": 13.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 23.691151889501285,
+            "median": 11.608217649457377,
+            "minimum": 4.2859994981736245,
+            "p90": 16.648800401874713
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 24.30071409166264,
+            "median": 12.3029764825776,
+            "minimum": 5.130465651923139,
+            "p90": 17.3416464185654
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 50.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 89.0,
+            "median": 66.0,
+            "minimum": 38.0,
+            "p90": 77.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 60.0,
+            "median": 40.0,
+            "minimum": 20.0,
+            "p90": 47.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9746019837178524,
+            "median": 0.71624145832504,
+            "minimum": 0.4867755185072748,
+            "p90": 0.8272953025688037
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 1,
+            "maximum": 2233.275999,
+            "median": 2233.275999,
+            "minimum": 2233.275999,
+            "p90": 2233.275999
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 39.70981836810088,
+            "median": 24.73274340224691,
+            "minimum": 17.798871306551575,
+            "p90": 27.500620413327862
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 66.00056831256026,
+            "median": 39.447038536413515,
+            "minimum": 28.9255617359114,
+            "p90": 45.35089089317893
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.001,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 17.0,
+            "median": 11.0,
+            "minimum": 6.0,
+            "p90": 13.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 33.82947013350318,
+            "median": 13.924471546691162,
+            "minimum": 4.809979201807581,
+            "p90": 19.35185659053556
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 34.40933040859638,
+            "median": 14.616523005422007,
+            "minimum": 5.454027012700671,
+            "p90": 20.105840476156256
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0001765418290572713,
+            0.0056427029601604705
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 50.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 71.0,
+            "minimum": 39.0,
+            "p90": 81.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 56.0,
+            "median": 36.0,
+            "minimum": 21.0,
+            "p90": 44.0
+          },
+          "simulated_full_simultaneous_readiness_count": 1,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 1.1452699378826523,
+            "median": 0.6874891614027197,
+            "minimum": 0.46135527462074677,
+            "p90": 0.778604833704428
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 36.013008632879824,
+            "median": 27.41585246443721,
+            "minimum": 18.42803916584229,
+            "p90": 30.62286435772731
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 52.29212623557157,
+            "median": 37.11039095972929,
+            "minimum": 26.35458397022663,
+            "p90": 42.42750870031109
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 16.0,
+            "median": 11.0,
+            "minimum": 6.0,
+            "p90": 13.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 20.53660215923429,
+            "median": 8.787643182183814,
+            "minimum": 3.1970314581798625,
+            "p90": 13.267067539323104
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.318992975473464,
+            "median": 9.555995507042049,
+            "minimum": 3.9330364976216767,
+            "p90": 13.999495612749326
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 54.0,
+            "median": 49.0,
+            "minimum": 48.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 91.0,
+            "median": 61.0,
+            "minimum": 36.0,
+            "p90": 72.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 61.0,
+            "median": 43.0,
+            "minimum": 24.0,
+            "p90": 50.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 1.0293998215098386,
+            "median": 0.7640945207333476,
+            "minimum": 0.5383829512689868,
+            "p90": 0.8590578139720646
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": false,
+      "live_refresh": true,
+      "liveness_recovery": true,
+      "policy_id": "combined-without-hedging",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 1,
+            "maximum": 2395.7856043160955,
+            "median": 2395.7856043160955,
+            "minimum": 2395.7856043160955,
+            "p90": 2395.7856043160955
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 46.734249999860424,
+            "median": 22.62793721807692,
+            "minimum": 17.19422731781702,
+            "p90": 24.99498046697777
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 55.25767725309735,
+            "median": 33.682362297927384,
+            "minimum": 24.31224068038184,
+            "p90": 38.820289863515384
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.001,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 23.291784086430123,
+            "median": 10.302033709832987,
+            "minimum": 4.46184971766449,
+            "p90": 14.877572126911902
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 23.746729517013954,
+            "median": 10.909181676827473,
+            "minimum": 5.042191811010076,
+            "p90": 15.499064996454884
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0001765418290572713,
+            0.0056427029601604705
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 81.0,
+            "minimum": 55.0,
+            "p90": 89.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 39.0,
+            "median": 22.0,
+            "minimum": 7.0,
+            "p90": 29.0
+          },
+          "simulated_full_simultaneous_readiness_count": 1,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9808821035718239,
+            "median": 0.6195262697398075,
+            "minimum": 0.41293699980502035,
+            "p90": 0.7203118380722715
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 6,
+            "maximum": 2359.808057,
+            "median": 2270.699593521673,
+            "minimum": 1850.834926,
+            "p90": 2349.4811275
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 53.91500375351147,
+            "median": 21.697946882878462,
+            "minimum": 15.81330454512378,
+            "p90": 24.001255957130883
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 70.52919042856055,
+            "median": 33.7031778482728,
+            "minimum": 23.57713434753352,
+            "p90": 39.21556122988531
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.006,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 25.45229301073699,
+            "median": 11.391410624512528,
+            "minimum": 4.244522644602614,
+            "p90": 16.44393337806921
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.988707610809865,
+            "median": 11.966045761623878,
+            "minimum": 4.795831730736733,
+            "p90": 17.07096455386118
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0027526315709082315,
+            0.013028344232445605
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 84.0,
+            "minimum": 61.0,
+            "p90": 92.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 38.0,
+            "median": 20.0,
+            "minimum": 7.0,
+            "p90": 26.0
+          },
+          "simulated_full_simultaneous_readiness_count": 6,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 1.0421581501435992,
+            "median": 0.5913854755428782,
+            "minimum": 0.40862313724756655,
+            "p90": 0.6973461919705837
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 32.25424110769216,
+            "median": 23.412559627539217,
+            "minimum": 17.91586833472452,
+            "p90": 26.00897110460129
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 43.058684483769255,
+            "median": 32.942640852002995,
+            "minimum": 23.810251697840446,
+            "p90": 37.69264450331396
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 0.0,
+            "median": 0.0,
+            "minimum": 0.0,
+            "p90": 0.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 20.350283101624502,
+            "median": 8.678802466406339,
+            "minimum": 4.085986854958388,
+            "p90": 12.320900268183705
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 21.030876996587054,
+            "median": 9.299422596829716,
+            "minimum": 4.778814277578618,
+            "p90": 12.998240076391237
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 46.0,
+            "median": 46.0,
+            "minimum": 46.0,
+            "p90": 46.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 95.0,
+            "median": 79.0,
+            "minimum": 54.0,
+            "p90": 87.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 43.0,
+            "median": 23.0,
+            "minimum": 8.0,
+            "p90": 30.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 0.9383265136743819,
+            "median": 0.6346335217450383,
+            "minimum": 0.42382833173409035,
+            "p90": 0.7462670449837385
+          }
+        }
+      }
+    },
+    {
+      "acquisition_window_seconds": 2400,
+      "credible_path": false,
+      "early_parent": true,
+      "hedging": true,
+      "live_refresh": true,
+      "liveness_recovery": true,
+      "policy_id": "combined-bounded-hedging",
+      "reliability_scoring": true,
+      "scenario_results": {
+        "BASE": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 9,
+            "maximum": 2396.3054155052578,
+            "median": 2191.894143,
+            "minimum": 1936.4489976438558,
+            "p90": 2353.990152484283
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 64.06226754203148,
+            "median": 24.369852811659875,
+            "minimum": 18.204021919386882,
+            "p90": 27.19336428103821
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 82.2079974948255,
+            "median": 36.42309396067482,
+            "minimum": 26.811360267056056,
+            "p90": 41.96361031701956
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.009,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 17.0,
+            "median": 9.0,
+            "minimum": 4.0,
+            "p90": 12.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.972446405208583,
+            "median": 11.120670976942957,
+            "minimum": 4.280893256244425,
+            "p90": 15.813767867222383
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.54871636867398,
+            "median": 11.78413733514843,
+            "minimum": 5.0019319390555825,
+            "p90": 16.448741778593742
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.004742006589011481,
+            0.017016007822824013
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 54.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 85.0,
+            "minimum": 59.0,
+            "p90": 92.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 44.0,
+            "median": 26.0,
+            "minimum": 14.0,
+            "p90": 34.0
+          },
+          "simulated_full_simultaneous_readiness_count": 9,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 1.0557429995548107,
+            "median": 0.6603102536169867,
+            "minimum": 0.44548419417856233,
+            "p90": 0.7725479848115223
+          }
+        },
+        "OPTIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 26,
+            "maximum": 2393.86519609761,
+            "median": 2251.436046,
+            "minimum": 1873.9572830000002,
+            "p90": 2357.542415198948
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 58.18735325152322,
+            "median": 23.708122060726936,
+            "minimum": 19.04340938258267,
+            "p90": 26.68727269297669
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 77.62222651885284,
+            "median": 36.86317974548749,
+            "minimum": 26.65254092720706,
+            "p90": 43.09778702101853
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.026,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 16.0,
+            "median": 9.0,
+            "minimum": 4.0,
+            "p90": 11.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 24.45502384257591,
+            "median": 12.374711142355398,
+            "minimum": 4.7893180199978795,
+            "p90": 17.5110733249229
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 25.237156965282995,
+            "median": 13.003599840753642,
+            "minimum": 5.54269179229782,
+            "p90": 18.19913558188487
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.01780381535792082,
+            0.0378240845019774
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 97.0,
+            "median": 86.0,
+            "minimum": 64.0,
+            "p90": 93.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 45.0,
+            "median": 25.0,
+            "minimum": 12.0,
+            "p90": 33.0
+          },
+          "simulated_full_simultaneous_readiness_count": 26,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 1.1817564252577895,
+            "median": 0.6455540657979254,
+            "minimum": 0.3906109047744679,
+            "p90": 0.7599731218090657
+          }
+        },
+        "PESSIMISTIC": {
+          "acquisition_time_seconds_conditional_on_success": {
+            "count": 0,
+            "maximum": null,
+            "median": null,
+            "minimum": null,
+            "p90": null
+          },
+          "active_rental_cost_usd": {
+            "count": 1000,
+            "maximum": 34.29542651235987,
+            "median": 25.78070083620173,
+            "minimum": 19.359748556432862,
+            "p90": 28.778568888951728
+          },
+          "active_storage_ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 49.69671200290889,
+            "median": 36.098528042848514,
+            "minimum": 26.528260058000075,
+            "p90": 41.493235175082994
+          },
+          "estimated_probability_full_simultaneous_readiness": 0.0,
+          "hedge_count": {
+            "count": 1000,
+            "maximum": 15.0,
+            "median": 10.0,
+            "minimum": 5.0,
+            "p90": 12.0
+          },
+          "ingress_cost_usd": {
+            "count": 1000,
+            "maximum": 19.930615520716902,
+            "median": 9.502385250064918,
+            "minimum": 3.9866420678494316,
+            "p90": 13.747405726793014
+          },
+          "ingress_plus_storage_cost_usd": {
+            "count": 1000,
+            "maximum": 20.648636386934914,
+            "median": 10.177098865737015,
+            "minimum": 4.698189805191861,
+            "p90": 14.37634574426711
+          },
+          "likelihood_band": "VERY_LOW",
+          "monte_carlo_95_percent_interval": [
+            0.0,
+            0.003826898586390522
+          ],
+          "peak_paid_instance_count": {
+            "count": 1000,
+            "maximum": 53.0,
+            "median": 50.0,
+            "minimum": 49.0,
+            "p90": 51.0
+          },
+          "peak_ready_role_count": {
+            "count": 1000,
+            "maximum": 96.0,
+            "median": 81.0,
+            "minimum": 57.0,
+            "p90": 89.0
+          },
+          "replacement_count": {
+            "count": 1000,
+            "maximum": 52.0,
+            "median": 28.0,
+            "minimum": 13.0,
+            "p90": 36.0
+          },
+          "simulated_full_simultaneous_readiness_count": 0,
+          "simulation_count": 1000,
+          "storage_cost_usd": {
+            "count": 1000,
+            "maximum": 1.0195896793968475,
+            "median": 0.6889042453829269,
+            "minimum": 0.42168070631638493,
+            "p90": 0.8139750250740854
+          }
+        }
+      }
+    }
+  ],
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-attempt-006-acquisition-simulation-v1",
+  "seed": 25006,
+  "selected_policy": null,
+  "status": "NO_GO",
+  "validation": {
+    "absolute_peak_ready_role_error": 6.0,
+    "absolute_replacement_count_error": 9.0,
+    "absolute_total_cost_error_usd": 0.4029215902010925,
+    "modeled_likelihood_band": "VERY_LOW",
+    "modeled_median_cost_usd": {
+      "active_rental": 20.72907795448294,
+      "ingress": 9.720459314578086,
+      "storage": 0.5973317337003776,
+      "total": 31.200582053532848
+    },
+    "modeled_median_peak_ready_roles": 52.0,
+    "modeled_median_replacement_count": 28.0,
+    "observed_attempt_status": "INCOMPLETE",
+    "observed_cost_estimate_lower_bound_usd": {
+      "active_rental": 24.138600594924075,
+      "completed_download_ingress": 5.966582905155479,
+      "storage": 0.692476963252201,
+      "total": 30.797660463331756
+    },
+    "observed_peak_ready_roles": 46,
+    "observed_replacement_count": 19,
+    "policy": "Attempt 005 policy at 1800 seconds",
+    "validation_note": "No correction factor or outcome normalization was applied."
+  }
+}

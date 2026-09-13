@@ -1,0 +1,21 @@
+{
+  "schema_version": "experiment-014-invalid-benchmark-inspection-v1",
+  "intended_cycle_id": "H014-027e",
+  "source": {
+    "path": "h014-027e-integrated-readiness.json",
+    "sha256": "fdda336522ff94eee634ce9feb423c1f3ac9b7f3cf43db453fd58d8250f405f8",
+    "embedded_cycle_id": "H014-027d"
+  },
+  "retained_as_gate_evidence": false,
+  "diagnostic_observations_only": {
+    "layer_1_first_three_median_ms": 14.835935592651367,
+    "layer_1_steady_ratio": 4.924615263591667,
+    "layer_3_first_three_median_ms": 30.664735794067383,
+    "layer_3_steady_ratio": 11.229213697980715,
+    "prepare_warmup_time_and_memory_gates_passed": true,
+    "correctness_and_lifecycle_gates_passed": true
+  },
+  "inspection": "Moving the warmup within the executor constructor is insufficient; readiness must be invoked by the worker lifecycle after loader validation. The raw receipt is excluded from retained gate evidence because its embedded cycle ID is wrong.",
+  "decision": "MODIFY",
+  "status": "INVALID_PROVENANCE"
+}

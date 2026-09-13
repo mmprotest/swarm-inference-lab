@@ -1,0 +1,31 @@
+{
+  "schema_version": "experiment-014-inspection-v1",
+  "cycle_id": "H014-034a",
+  "status": "HARNESS_FAIL_BEFORE_CONTEXTUAL_BATCH_EXECUTION",
+  "raw_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-034a-contextual-batch-layer91-8k.json",
+    "sha256": "f9a013e5e45e9ec00cfb1ce607957ed2850a3b91216bc8e359987a4f555b20da"
+  },
+  "failure": {
+    "type": "AttributeError",
+    "message": "'_CudaRuntime' object has no attribute 'device_shared_memory_limits'",
+    "location": "load evidence recorder",
+    "contextual_batch_sizes_executed": [],
+    "unsafe_cuda_launch_attempted": false
+  },
+  "inspection": {
+    "actual_runtime_attribute": "shared_memory_limits",
+    "cuda_arithmetic_implicated": false,
+    "batch_guard_implicated": false,
+    "minimum_fix": "read the existing shared_memory_limits property"
+  },
+  "health_after_process_close": {
+    "name": "NVIDIA GeForce RTX 5090",
+    "memory_used_mib": 1870,
+    "memory_free_mib": 30318,
+    "temperature_c": 43,
+    "pstate": "P8",
+    "nvidia_smi_status": "MEASURED"
+  },
+  "decision": "MODIFY_RECORDER_ONLY_AND_RERUN_AS_H014-034b"
+}

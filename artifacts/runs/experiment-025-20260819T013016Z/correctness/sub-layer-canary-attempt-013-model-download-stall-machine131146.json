@@ -1,0 +1,163 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-23T10:09:41.815583+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "physical-sub-layer-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48459470,
+      48459471,
+      48459472,
+      48459473,
+      48459905
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "PHYSICAL_OR_RUNTIME_DEFECT_REQUIRES_OFFLINE_REVIEW",
+    "error": "no bootstrap progress for 274.8 seconds",
+    "error_type": "RuntimeError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\run-stage2-progress-aware.py\", line 177, in observed_wait_for_worker\n    worker = _original_wait_worker(**kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 353, in wait_for_worker\n    raise RuntimeError(f\"E025 worker {worker_id} readiness was aborted\")\nRuntimeError: E025 worker e025-layer-089-sub-02 readiness was aborted\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 770, in run_sub_layer_canary_stage\n    worker = future.result()\n             ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 449, in result\n    return self.__get_result()\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 401, in __get_result\n    raise self._exception\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\thread.py\", line 58, in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 726, in await_fragment\n    return wait_for_worker(\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\run-stage2-progress-aware.py\", line 181, in observed_wait_for_worker\n    raise RuntimeError(str(reason)) from exc\nRuntimeError: no bootstrap progress for 274.8 seconds\n"
+  },
+  "fragments": [
+    {
+      "gpu_slot": 0,
+      "host": "47.186.47.78",
+      "instance_id": "48459470",
+      "layer": 89,
+      "machine_id": "56939",
+      "port": 20084,
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-01",
+      "worker_index": 1
+    },
+    {
+      "gpu_slot": 0,
+      "host": "24.37.233.234",
+      "instance_id": "48459472",
+      "layer": 89,
+      "machine_id": "117724",
+      "port": 47065,
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-00",
+      "worker_index": 0
+    },
+    {
+      "gpu_slot": 0,
+      "host": "82.225.150.130",
+      "instance_id": "48459473",
+      "layer": 89,
+      "machine_id": "141803",
+      "port": 15170,
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-03",
+      "worker_index": 3
+    }
+  ],
+  "generated_at_utc": "2026-08-23T10:09:41.838121+00:00",
+  "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "parent": null,
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0.08733005391296296,
+    "estimated_storage_cost_usd": 0.022807944024691353,
+    "generated_at_utc": "2026-08-23T10:09:41.833121+00:00",
+    "instance_count": 5,
+    "instances": [
+      {
+        "active_rental_rate_usd_per_hour": 0.084,
+        "created_at_utc": "2026-08-23T09:53:35.301935+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T10:09:39.957000+00:00",
+        "elapsed_seconds": 964.655065,
+        "estimated_active_cost_usd": 0.022508618183333336,
+        "estimated_storage_cost_usd": 0.0029773304475308638,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3070",
+        "instance_id": 48459470,
+        "machine_id": 56939,
+        "offer_id": 46113147,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.05333333333333334,
+        "created_at_utc": "2026-08-23T09:53:35.475227+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T10:09:40.050189+00:00",
+        "elapsed_seconds": 964.574962,
+        "estimated_active_cost_usd": 0.014289999437037038,
+        "estimated_storage_cost_usd": 0.008931249648148147,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3060",
+        "instance_id": 48459471,
+        "machine_id": 131146,
+        "offer_id": 43655097,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.39999999999999997
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.07333333333333333,
+        "created_at_utc": "2026-08-23T09:53:35.387845+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T10:09:39.949487+00:00",
+        "elapsed_seconds": 964.561642,
+        "estimated_active_cost_usd": 0.01964847789259259,
+        "estimated_storage_cost_usd": 0.002977042104938271,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3070",
+        "instance_id": 48459472,
+        "machine_id": 117724,
+        "offer_id": 45948114,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.05333333333333334,
+        "created_at_utc": "2026-08-23T09:53:35.434824+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T10:09:39.899982+00:00",
+        "elapsed_seconds": 964.465158,
+        "estimated_active_cost_usd": 0.014288372711111112,
+        "estimated_storage_cost_usd": 0.004465116472222221,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3070",
+        "instance_id": 48459473,
+        "machine_id": 141803,
+        "offer_id": 48094856,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.19999999999999998
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.16,
+        "created_at_utc": "2026-08-23T10:03:26.586477+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T10:09:39.964655+00:00",
+        "elapsed_seconds": 373.378178,
+        "estimated_active_cost_usd": 0.01659458568888889,
+        "estimated_storage_cost_usd": 0.003457205351851851,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3090",
+        "instance_id": 48459905,
+        "machine_id": 27710,
+        "offer_id": 45640045,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.39999999999999997
+      }
+    ],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "PASS",
+    "total_elapsed_instance_seconds": 4231.635005
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-sub-layer-canary-stage-v1",
+  "status": "FAIL"
+}

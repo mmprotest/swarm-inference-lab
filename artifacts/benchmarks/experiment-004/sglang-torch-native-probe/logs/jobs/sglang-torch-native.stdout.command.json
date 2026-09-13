@@ -1,0 +1,28 @@
+{
+  "command": [
+    "docker",
+    "run",
+    "--rm",
+    "--gpus",
+    "all",
+    "--shm-size",
+    "16g",
+    "--ipc=host",
+    "-v",
+    "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab:/workspace",
+    "-v",
+    "C:\\Users\\Simon\\.cache\\huggingface:/root/.cache/huggingface",
+    "--entrypoint",
+    "python3",
+    "lmsysorg/sglang:v0.5.16",
+    "/workspace/scripts/sglang_engine_benchmark.py",
+    "--job",
+    "/workspace/artifacts/benchmarks/experiment-004/sglang-torch-native-probe/logs/jobs/sglang-torch-native.job.json",
+    "--output",
+    "/workspace/artifacts/benchmarks/experiment-004/sglang-torch-native-probe/logs/jobs/sglang-torch-native.result.json"
+  ],
+  "cwd": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab",
+  "finished_unix_seconds": 1785458991.8329647,
+  "return_code": 1,
+  "started_unix_seconds": 1785458928.1572132
+}

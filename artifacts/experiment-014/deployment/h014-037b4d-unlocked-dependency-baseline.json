@@ -1,0 +1,10 @@
+{
+  "cycle_id": "H014-037b4d",
+  "status": "FAIL",
+  "package_lock_sha256": "3f964d58cdd27c04e1f6d7cd1796906b2fd6686fbbdae757d16e3700b0411659",
+  "release_archive_sha256": "ef42d1def3668ba274cb13282f083f6bff44d365dec8560fc5e4f3af6a60ab82",
+  "inspection": "The wheel was hash-locked but install-worker.sh asked pip to resolve the wheel's ranged dependencies at deployment time.",
+  "bottleneck": "Dependency versions and wheel files were not locked for the clean Linux CUDA environment.",
+  "decision": "REJECT_AS_FINAL_PACKAGE",
+  "redesign": "Export uv.lock with exact package hashes, require Python 3.11, install dependencies with --require-hashes, then install the local release wheel with --no-deps."
+}

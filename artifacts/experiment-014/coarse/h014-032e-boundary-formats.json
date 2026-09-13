@@ -1,0 +1,1160 @@
+{
+  "configuration": {
+    "destination_layer": 1,
+    "device": 0,
+    "formats": [
+      "fp32",
+      "fp16",
+      "bf16"
+    ],
+    "positions": 3,
+    "source_layer": 0,
+    "timing_iterations": 100
+  },
+  "cycle_id": "H014-032e",
+  "decision": {
+    "bf16": "REJECT_NUMERICAL",
+    "fp16": "REJECT_NUMERICAL",
+    "next_hypothesis": "Retain FP32 coarse boundaries; do not weaken numerical gates.",
+    "production_boundary_format": "FP32"
+  },
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "execution_pass": true,
+  "formats": {
+    "bf16": {
+      "exact_routes": true,
+      "host_timing": {
+        "codec_service": {
+          "maximum_ms": 0.1883,
+          "mean_ms": 0.145832,
+          "minimum_ms": 0.1411,
+          "p50_ms": 0.14405,
+          "p95_ms": 0.15619999999999998,
+          "p99_ms": 0.1707770000000001,
+          "standard_deviation_ms": 0.0065078703121681835
+        },
+        "decode": {
+          "maximum_ms": 0.0397,
+          "mean_ms": 0.033212,
+          "minimum_ms": 0.0314,
+          "p50_ms": 0.033100000000000004,
+          "p95_ms": 0.035335,
+          "p99_ms": 0.038809,
+          "standard_deviation_ms": 0.0014506743259601722
+        },
+        "encode": {
+          "maximum_ms": 0.1516,
+          "mean_ms": 0.108308,
+          "minimum_ms": 0.1051,
+          "p50_ms": 0.10655,
+          "p95_ms": 0.11595,
+          "p99_ms": 0.12496900000000015,
+          "standard_deviation_ms": 0.005650781892800324
+        },
+        "iterations": 100,
+        "payload_bytes": 129024,
+        "serialization": {
+          "maximum_ms": 0.0071,
+          "mean_ms": 0.004312,
+          "minimum_ms": 0.004,
+          "p50_ms": 0.0042,
+          "p95_ms": 0.0048,
+          "p99_ms": 0.005615000000000008,
+          "standard_deviation_ms": 0.00035979994441355886
+        },
+        "wire_bytes": 129093
+      },
+      "maximum_graph_relative_l2_error": 0.0013920319666474808,
+      "output_bit_exact_to_fp32": [
+        false,
+        false,
+        false
+      ],
+      "pass": false,
+      "payload_bytes": 129024,
+      "positions": [
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.609735785540215,
+            "cosine_similarity": 0.9999989404525047,
+            "maximum_absolute_error": 0.0004686713218688965,
+            "mean_absolute_error": 4.6727360640149515e-06,
+            "reference_finite": true,
+            "reference_l2": 3.6096473697121776,
+            "relative_l2_error": 0.001455935049473041
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.783053273546312,
+            "cosine_similarity": 0.9999990313695436,
+            "maximum_absolute_error": 0.00045606493949890137,
+            "mean_absolute_error": 4.714334968484186e-06,
+            "reference_finite": true,
+            "reference_l2": 3.7829729404652914,
+            "relative_l2_error": 0.0013920319666474808
+          },
+          "output_fingerprint": "sha256:f11b2534a21f624d60715953b3835dafcddc014d225cb882a77c67fddcc4fedc",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.7830534509865066,
+            "cosine_similarity": 0.999999031372473,
+            "maximum_absolute_error": 0.0004560202360153198,
+            "mean_absolute_error": 4.714325996246771e-06,
+            "reference_finite": true,
+            "reference_l2": 3.7829729404652914,
+            "relative_l2_error": 0.0013920306110723067
+          },
+          "payload_bytes": 129024,
+          "payload_sha256": "d502bd74b43ba77492b3abef62d7b4059a899ca0ab145e3ddfe281a2ccc800b8",
+          "position": 0,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            295,
+            809,
+            873,
+            596,
+            203,
+            162,
+            419,
+            498,
+            334,
+            472,
+            103,
+            85,
+            866,
+            293,
+            457,
+            148
+          ],
+          "selected_weights": [
+            0.08429350703954697,
+            0.07980476319789886,
+            0.07556915283203125,
+            0.07271013408899307,
+            0.06908056885004044,
+            0.06771735846996307,
+            0.06876365095376968,
+            0.06362810730934143,
+            0.061059433966875076,
+            0.04988444969058037,
+            0.05087307468056679,
+            0.05201565846800804,
+            0.05907044932246208,
+            0.05004578456282616,
+            0.04827170819044113,
+            0.047212135046720505
+          ],
+          "stage1_device_ms": 3.427488088607788,
+          "wire_bytes": 129093
+        },
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.132597644215904,
+            "cosine_similarity": 0.9999996982528225,
+            "maximum_absolute_error": 0.00036343932151794434,
+            "mean_absolute_error": 1.4346595788891946e-06,
+            "reference_finite": true,
+            "reference_l2": 2.132549029390606,
+            "relative_l2_error": 0.0007771922518934529
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.731450702770314,
+            "cosine_similarity": 0.9999997935328666,
+            "maximum_absolute_error": 0.000387340784072876,
+            "mean_absolute_error": 1.6100610927034204e-06,
+            "reference_finite": true,
+            "reference_l2": 2.731350912901952,
+            "relative_l2_error": 0.0006436490962938057
+          },
+          "output_fingerprint": "sha256:350c8d86082b60dfc39db76ea7265875b68126978a24ad5edb4f58ea24ac640e",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.7314505684683814,
+            "cosine_similarity": 0.9999997935273273,
+            "maximum_absolute_error": 0.00038737058639526367,
+            "mean_absolute_error": 1.6100817151348723e-06,
+            "reference_finite": true,
+            "reference_l2": 2.731350912901952,
+            "relative_l2_error": 0.0006436548978796009
+          },
+          "payload_bytes": 129024,
+          "payload_sha256": "938cf934a59963199abf2d69b82bb6c61bd6dce0b9c96de2393c26b6a7d20b8e",
+          "position": 1,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            362,
+            334,
+            472,
+            558,
+            140,
+            796,
+            782,
+            511,
+            692,
+            649,
+            169,
+            322,
+            642,
+            749,
+            68,
+            335
+          ],
+          "selected_weights": [
+            0.17445671558380127,
+            0.12761396169662476,
+            0.05038550868630409,
+            0.05080326274037361,
+            0.06626021862030029,
+            0.04282151907682419,
+            0.05023406818509102,
+            0.040952835232019424,
+            0.042205918580293655,
+            0.06601938605308533,
+            0.04574117437005043,
+            0.051843080669641495,
+            0.056933578103780746,
+            0.04336847737431526,
+            0.05455261841416359,
+            0.035807784646749496
+          ],
+          "stage1_device_ms": 3.4036800861358643,
+          "wire_bytes": 129093
+        },
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 1.8166190060749157,
+            "cosine_similarity": 0.9999996724389566,
+            "maximum_absolute_error": 0.0004146099090576172,
+            "mean_absolute_error": 1.2306495979453122e-06,
+            "reference_finite": true,
+            "reference_l2": 1.8166353062868066,
+            "relative_l2_error": 0.000809442227233685
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.330321573761313,
+            "cosine_similarity": 0.9999997626293803,
+            "maximum_absolute_error": 0.00038048624992370605,
+            "mean_absolute_error": 1.484970307988728e-06,
+            "reference_finite": true,
+            "reference_l2": 2.330393354807664,
+            "relative_l2_error": 0.0006896922411328356
+          },
+          "output_fingerprint": "sha256:a26fccf42ceb2e121ef104719d35b040d1a8e7e1cb1b2131af806148906fa93b",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.330321516785278,
+            "cosine_similarity": 0.9999997626315434,
+            "maximum_absolute_error": 0.00038051605224609375,
+            "mean_absolute_error": 1.484957114450755e-06,
+            "reference_finite": true,
+            "reference_l2": 2.330393354807664,
+            "relative_l2_error": 0.0006896901890518619
+          },
+          "payload_bytes": 129024,
+          "payload_sha256": "fca6bc4301e5700d4d1a94cd3c63528a4bfec16d025ceb5de6065b77ca55754b",
+          "position": 2,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            798,
+            48,
+            294,
+            630,
+            465,
+            371,
+            782,
+            541,
+            411,
+            626,
+            577,
+            52,
+            33,
+            655,
+            115,
+            549
+          ],
+          "selected_weights": [
+            0.1519356518983841,
+            0.09986687451601028,
+            0.11227340996265411,
+            0.11105546355247498,
+            0.05072480067610741,
+            0.09278615564107895,
+            0.04501006379723549,
+            0.04786541685461998,
+            0.04818864166736603,
+            0.059800732880830765,
+            0.03747674450278282,
+            0.03180111572146416,
+            0.028005214408040047,
+            0.023135803639888763,
+            0.039782457053661346,
+            0.020291533321142197
+          ],
+          "stage1_device_ms": 3.5270400047302246,
+          "wire_bytes": 129093
+        }
+      ],
+      "routes_exact_to_fp32": [
+        true,
+        true,
+        true
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 3,
+        "fingerprint": "sha256:4ec361c2d98523338b8a059e0e3df41cb146a4c4bf0ad418212c6e379ceb6330",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "wire_bytes": 129093
+    },
+    "fp16": {
+      "exact_routes": true,
+      "host_timing": {
+        "codec_service": {
+          "maximum_ms": 0.259,
+          "mean_ms": 0.186743,
+          "minimum_ms": 0.17880000000000001,
+          "p50_ms": 0.1815,
+          "p95_ms": 0.231415,
+          "p99_ms": 0.24791200000000005,
+          "standard_deviation_ms": 0.01569411517098049
+        },
+        "decode": {
+          "maximum_ms": 0.113,
+          "mean_ms": 0.071271,
+          "minimum_ms": 0.069,
+          "p50_ms": 0.0694,
+          "p95_ms": 0.08220999999999999,
+          "p99_ms": 0.09755600000000007,
+          "standard_deviation_ms": 0.0060291175971281235
+        },
+        "encode": {
+          "maximum_ms": 0.1604,
+          "mean_ms": 0.11104699999999999,
+          "minimum_ms": 0.1057,
+          "p50_ms": 0.1077,
+          "p95_ms": 0.14028500000000002,
+          "p99_ms": 0.15307400000000004,
+          "standard_deviation_ms": 0.010615059632427884
+        },
+        "iterations": 100,
+        "payload_bytes": 129024,
+        "serialization": {
+          "maximum_ms": 0.0085,
+          "mean_ms": 0.004425,
+          "minimum_ms": 0.004,
+          "p50_ms": 0.0042,
+          "p95_ms": 0.0058,
+          "p99_ms": 0.008104000000000002,
+          "standard_deviation_ms": 0.0007427482749895821
+        },
+        "wire_bytes": 129093
+      },
+      "maximum_graph_relative_l2_error": 0.00017285353272016696,
+      "output_bit_exact_to_fp32": [
+        false,
+        false,
+        false
+      ],
+      "pass": false,
+      "payload_bytes": 129024,
+      "positions": [
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.609735785540215,
+            "cosine_similarity": 0.9999999836837473,
+            "maximum_absolute_error": 4.175305366516113e-05,
+            "mean_absolute_error": 5.82016280221733e-07,
+            "reference_finite": true,
+            "reference_l2": 3.6097292260327025,
+            "relative_l2_error": 0.0001806539983479924
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.783053273546312,
+            "cosine_similarity": 0.9999999850655868,
+            "maximum_absolute_error": 4.279613494873047e-05,
+            "mean_absolute_error": 5.871591605725934e-07,
+            "reference_finite": true,
+            "reference_l2": 3.7830416597413845,
+            "relative_l2_error": 0.00017285353272016696
+          },
+          "output_fingerprint": "sha256:612fe59b6527849834dff7900838ecc442cb7338ae200df89d5f122013ee2fbd",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.7830534509865066,
+            "cosine_similarity": 0.9999999850654638,
+            "maximum_absolute_error": 4.279613494873047e-05,
+            "mean_absolute_error": 5.871477684296325e-07,
+            "reference_finite": true,
+            "reference_l2": 3.7830416597413845,
+            "relative_l2_error": 0.00017285508837323687
+          },
+          "payload_bytes": 129024,
+          "payload_sha256": "0fe94e03cd618941fb3c0ba1c29ed04e4545f2ad9ecdad6d0566b0886cd9c6fc",
+          "position": 0,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            295,
+            809,
+            873,
+            596,
+            203,
+            162,
+            419,
+            498,
+            334,
+            472,
+            103,
+            85,
+            866,
+            293,
+            457,
+            148
+          ],
+          "selected_weights": [
+            0.08426783978939056,
+            0.07978866994380951,
+            0.07554992288351059,
+            0.07269277423620224,
+            0.0690837875008583,
+            0.06773584336042404,
+            0.06875993311405182,
+            0.06360669434070587,
+            0.061013150960206985,
+            0.049874335527420044,
+            0.05096753314137459,
+            0.05202244967222214,
+            0.05906291678547859,
+            0.05005906894803047,
+            0.04828768968582153,
+            0.04722730070352554
+          ],
+          "stage1_device_ms": 3.436255931854248,
+          "wire_bytes": 129093
+        },
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.132597644215904,
+            "cosine_similarity": 0.9999999951329854,
+            "maximum_absolute_error": 6.102025508880615e-05,
+            "mean_absolute_error": 1.777188467640949e-07,
+            "reference_finite": true,
+            "reference_l2": 2.1326014832955145,
+            "relative_l2_error": 9.867751664283113e-05
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.731450702770314,
+            "cosine_similarity": 0.999999996601567,
+            "maximum_absolute_error": 6.890296936035156e-05,
+            "mean_absolute_error": 2.0030244022852877e-07,
+            "reference_finite": true,
+            "reference_l2": 2.7314636005013373,
+            "relative_l2_error": 8.257802689082458e-05
+          },
+          "output_fingerprint": "sha256:32955e3785c4b7dc016c52d966922537ebf233ca644bd1c4a8688121ebb49981",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.7314505684683814,
+            "cosine_similarity": 0.9999999966020721,
+            "maximum_absolute_error": 6.890296936035156e-05,
+            "mean_absolute_error": 2.002901656591608e-07,
+            "reference_finite": true,
+            "reference_l2": 2.7314636005013373,
+            "relative_l2_error": 8.257473526577972e-05
+          },
+          "payload_bytes": 129024,
+          "payload_sha256": "2e8d8b09ea37d4382a54bd9a5163b4c3e6e4a1891615614618c9e09486e79c0a",
+          "position": 1,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            362,
+            334,
+            472,
+            558,
+            140,
+            796,
+            782,
+            511,
+            692,
+            649,
+            169,
+            322,
+            642,
+            749,
+            68,
+            335
+          ],
+          "selected_weights": [
+            0.17455777525901794,
+            0.1276511549949646,
+            0.05035541206598282,
+            0.050774890929460526,
+            0.06625586748123169,
+            0.042781226336956024,
+            0.05022139847278595,
+            0.040936823934316635,
+            0.042195647954940796,
+            0.06606274843215942,
+            0.04572393745183945,
+            0.05184808745980263,
+            0.05690917745232582,
+            0.04337306320667267,
+            0.054570477455854416,
+            0.03578227385878563
+          ],
+          "stage1_device_ms": 3.392767906188965,
+          "wire_bytes": 129093
+        },
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 1.8166190060749157,
+            "cosine_similarity": 0.999999994624321,
+            "maximum_absolute_error": 4.839897155761719e-05,
+            "mean_absolute_error": 1.534379088124773e-07,
+            "reference_finite": true,
+            "reference_l2": 1.816616539996801,
+            "relative_l2_error": 0.00010369771282218243
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.330321573761313,
+            "cosine_similarity": 0.9999999957945858,
+            "maximum_absolute_error": 4.938244819641113e-05,
+            "mean_absolute_error": 1.977412269059728e-07,
+            "reference_finite": true,
+            "reference_l2": 2.3303222544995608,
+            "relative_l2_error": 9.171102476018327e-05
+          },
+          "output_fingerprint": "sha256:7b3cd6c16761d548ac4206cd0b50b03429c830f4befba36299b5723b53fd5b2b",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.330321516785278,
+            "cosine_similarity": 0.9999999957957342,
+            "maximum_absolute_error": 4.941225051879883e-05,
+            "mean_absolute_error": 1.9770613511759115e-07,
+            "reference_finite": true,
+            "reference_l2": 2.3303222544995608,
+            "relative_l2_error": 9.169858447241239e-05
+          },
+          "payload_bytes": 129024,
+          "payload_sha256": "220a91a76e492e5617ec8550c8006640cd1a01dca0e0601feb49756697749216",
+          "position": 2,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            798,
+            48,
+            294,
+            630,
+            465,
+            371,
+            782,
+            541,
+            411,
+            626,
+            577,
+            52,
+            33,
+            655,
+            115,
+            549
+          ],
+          "selected_weights": [
+            0.15187497437000275,
+            0.09988406300544739,
+            0.11224096268415451,
+            0.1110270693898201,
+            0.050756826996803284,
+            0.09275700151920319,
+            0.045008253306150436,
+            0.047872744500637054,
+            0.04817813262343407,
+            0.05980706587433815,
+            0.03749336302280426,
+            0.0318090096116066,
+            0.02802286297082901,
+            0.02315538376569748,
+            0.03980910778045654,
+            0.02030317112803459
+          ],
+          "stage1_device_ms": 3.4402880668640137,
+          "wire_bytes": 129093
+        }
+      ],
+      "routes_exact_to_fp32": [
+        true,
+        true,
+        true
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 3,
+        "fingerprint": "sha256:52aba0f1b8543ea5231cd1110a9315e3851ee69f6dffedb9dd1963c581f12df9",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "wire_bytes": 129093
+    },
+    "fp32": {
+      "exact_routes": true,
+      "host_timing": {
+        "codec_service": {
+          "maximum_ms": 0.0501,
+          "mean_ms": 0.018971000000000002,
+          "minimum_ms": 0.0165,
+          "p50_ms": 0.018099999999999998,
+          "p95_ms": 0.026449999999999998,
+          "p99_ms": 0.04079400000000005,
+          "standard_deviation_ms": 0.004789056170061069
+        },
+        "decode": {
+          "maximum_ms": 0.0166,
+          "mean_ms": 0.005675,
+          "minimum_ms": 0.0051,
+          "p50_ms": 0.005350000000000001,
+          "p95_ms": 0.006305,
+          "p99_ms": 0.014323000000000011,
+          "standard_deviation_ms": 0.0014430783069535763
+        },
+        "encode": {
+          "maximum_ms": 0.0237,
+          "mean_ms": 0.006077,
+          "minimum_ms": 0.0045,
+          "p50_ms": 0.0055,
+          "p95_ms": 0.010374999999999992,
+          "p99_ms": 0.02053200000000002,
+          "standard_deviation_ms": 0.0029910819112822706
+        },
+        "iterations": 100,
+        "payload_bytes": 258048,
+        "serialization": {
+          "maximum_ms": 0.0153,
+          "mean_ms": 0.007219,
+          "minimum_ms": 0.0067,
+          "p50_ms": 0.007,
+          "p95_ms": 0.0088,
+          "p99_ms": 0.014211000000000007,
+          "standard_deviation_ms": 0.001207037281942857
+        },
+        "wire_bytes": 258117
+      },
+      "maximum_graph_relative_l2_error": 2.7521485882090636e-07,
+      "output_bit_exact_to_fp32": [
+        true,
+        true,
+        true
+      ],
+      "pass": true,
+      "payload_bytes": 258048,
+      "positions": [
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.609735785540215,
+            "cosine_similarity": 1.0,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 3.609735785540215,
+            "relative_l2_error": 0.0
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.783053273546312,
+            "cosine_similarity": 0.9999999999999636,
+            "maximum_absolute_error": 9.685754776000977e-08,
+            "mean_absolute_error": 9.77217770548397e-10,
+            "reference_finite": true,
+            "reference_l2": 3.7830534509865066,
+            "relative_l2_error": 2.7521485882090636e-07
+          },
+          "output_fingerprint": "sha256:67894d37d6681b5b100461a65a0e241d7c835642ce490fe7ac223a2cfec714e2",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.7830534509865066,
+            "cosine_similarity": 0.9999999999999999,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 3.7830534509865066,
+            "relative_l2_error": 0.0
+          },
+          "payload_bytes": 258048,
+          "payload_sha256": "d66b31a381837d34f110180f46eb93f3729d165abec423f87372ae0b0d585b88",
+          "position": 0,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            295,
+            809,
+            873,
+            596,
+            203,
+            162,
+            419,
+            498,
+            334,
+            472,
+            103,
+            85,
+            866,
+            293,
+            457,
+            148
+          ],
+          "selected_weights": [
+            0.0842689797282219,
+            0.0797879546880722,
+            0.07554943859577179,
+            0.07269509881734848,
+            0.06908498704433441,
+            0.06773506850004196,
+            0.06875980645418167,
+            0.0636030063033104,
+            0.061012234538793564,
+            0.04987487196922302,
+            0.05096795782446861,
+            0.05202246457338333,
+            0.05906308814883232,
+            0.05005806311964989,
+            0.04828751087188721,
+            0.04722951352596283
+          ],
+          "stage1_device_ms": 3.454495906829834,
+          "wire_bytes": 258117
+        },
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.132597644215904,
+            "cosine_similarity": 1.0000000000000002,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 2.132597644215904,
+            "relative_l2_error": 0.0
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.731450702770314,
+            "cosine_similarity": 0.9999999999999751,
+            "maximum_absolute_error": 7.450580596923828e-08,
+            "mean_absolute_error": 6.388370185584155e-10,
+            "reference_finite": true,
+            "reference_l2": 2.7314505684683814,
+            "relative_l2_error": 2.3011016184008774e-07
+          },
+          "output_fingerprint": "sha256:0bf3b8237e11b7ea5e690c3055e2aea6674e94642117a293609d57d1f274f109",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.7314505684683814,
+            "cosine_similarity": 1.0000000000000002,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 2.7314505684683814,
+            "relative_l2_error": 0.0
+          },
+          "payload_bytes": 258048,
+          "payload_sha256": "69d057b75a5ccdf2788e161389378dea4de9328667629152254f8906b3072b61",
+          "position": 1,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            362,
+            334,
+            472,
+            558,
+            140,
+            796,
+            782,
+            511,
+            692,
+            649,
+            169,
+            322,
+            642,
+            749,
+            68,
+            335
+          ],
+          "selected_weights": [
+            0.1745520681142807,
+            0.12764357030391693,
+            0.05035530403256416,
+            0.050780002027750015,
+            0.06625796109437943,
+            0.042779386043548584,
+            0.05021971836686134,
+            0.040944959968328476,
+            0.0421953946352005,
+            0.06606119871139526,
+            0.045724838972091675,
+            0.05184750258922577,
+            0.056909285485744476,
+            0.0433737076818943,
+            0.054571423679590225,
+            0.03578369319438934
+          ],
+          "stage1_device_ms": 3.4223361015319824,
+          "wire_bytes": 258117
+        },
+        {
+          "decoded_input_metrics": {
+            "actual_finite": true,
+            "actual_l2": 1.8166190060749157,
+            "cosine_similarity": 1.0,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 1.8166190060749157,
+            "relative_l2_error": 0.0
+          },
+          "graph_output_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.330321573761313,
+            "cosine_similarity": 0.999999999999975,
+            "maximum_absolute_error": 3.725290298461914e-08,
+            "mean_absolute_error": 5.405714394631408e-10,
+            "reference_finite": true,
+            "reference_l2": 2.330321516785278,
+            "relative_l2_error": 2.275400301995323e-07
+          },
+          "output_fingerprint": "sha256:1e909b37d9767efbbb027a0d904ff36c13ae06c5371d34a9358ed31e253093ef",
+          "output_vs_fp32_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.330321516785278,
+            "cosine_similarity": 1.0000000000000002,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 2.330321516785278,
+            "relative_l2_error": 0.0
+          },
+          "payload_bytes": 258048,
+          "payload_sha256": "8dc457c33171f1d4691e018ef3c4d688a479d286ceb9d1fb49ed83b46a82d992",
+          "position": 2,
+          "routes_match_graph_oracle": true,
+          "selected_expert_ids": [
+            798,
+            48,
+            294,
+            630,
+            465,
+            371,
+            782,
+            541,
+            411,
+            626,
+            577,
+            52,
+            33,
+            655,
+            115,
+            549
+          ],
+          "selected_weights": [
+            0.15186645090579987,
+            0.09988213330507278,
+            0.11223626136779785,
+            0.11101426929235458,
+            0.05076594278216362,
+            0.09274803847074509,
+            0.04501883313059807,
+            0.047873515635728836,
+            0.048177313059568405,
+            0.059805288910865784,
+            0.03749476745724678,
+            0.031813278794288635,
+            0.028026428073644638,
+            0.02315828762948513,
+            0.039813559502363205,
+            0.02030559815466404
+          ],
+          "stage1_device_ms": 3.4315199851989746,
+          "wire_bytes": 258117
+        }
+      ],
+      "routes_exact_to_fp32": [
+        true,
+        true,
+        true
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 3,
+        "fingerprint": "sha256:0c2c9a4550946e017434fdb99d9fc45e3dd302b8fa631280155720fbd99f364f",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "wire_bytes": 258117
+    }
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30318",
+    "memory.total": "32607",
+    "memory.used": "1870",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "48",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": {
+    "prediction": "FP16 halves the actual real stage-0 boundary while preserving exact layer-1 routes and graph-relative output error <=3e-5; BF16 is characterized under the same gate.",
+    "relative_l2_gate": 3e-05
+  },
+  "hypothesis_supported": false,
+  "inspection": {
+    "actual_bottleneck": "numerical precision",
+    "bf16_supported": false,
+    "fp16_payload_reduction_percent": 50.0
+  },
+  "lifecycle_delta": {
+    "stage0_model_materialization": 0,
+    "stage0_persistent_buffer_allocation": 0,
+    "stage0_weight_loading": 0,
+    "stage1_model_materialization": 0,
+    "stage1_persistent_buffer_allocation": 0,
+    "stage1_weight_loading": 0
+  },
+  "lifecycle_deltas_zero": true,
+  "load": {
+    "stage0_prepare": {
+      "count": 1,
+      "maximum_temporary_device_bytes": 8388608,
+      "measured_device_ms": 15.370784521102905,
+      "measured_wall_ms": 23.3577,
+      "primitive": "isolated assigned-stage Kimi CUDA fixture",
+      "stage_fixture": {
+        "active_sessions_after": 0,
+        "cpu_mathematical_fallbacks": 0,
+        "device": {
+          "maximum_ms": 2.7374401092529297,
+          "mean_ms": 2.195826360157558,
+          "minimum_ms": 2.0819520950317383,
+          "p50_ms": 2.099936008453369,
+          "p95_ms": 2.5712161064147945,
+          "p99_ms": 2.7041953086853026,
+          "standard_deviation_ms": 0.22356046610959365
+        },
+        "device_ms_values": [
+          2.7374401092529297,
+          2.1833600997924805,
+          2.0841920375823975,
+          2.1006081104278564,
+          2.083296060562134,
+          2.0819520950317383,
+          2.099936008453369
+        ],
+        "free_bytes_after_close": 11105468416,
+        "free_bytes_before": 11105468416,
+        "input": "int64 token ID 0",
+        "iterations": 7,
+        "last_selected_expert_ids": [],
+        "measured_device_ms": 15.370784521102905,
+        "measured_wall_ms": 23.3577,
+        "output_fingerprint": "sha256:f7d8cd53fac9f0d68d52960c1bf3a685583c5663d89bc28d2b3078002685f647",
+        "output_finite": true,
+        "research_records_removed": true,
+        "serving_execute_count_restored": true,
+        "temporary_device_bytes": 8388608,
+        "temporary_memory_recovered": true
+      },
+      "temporary_device_bytes": 8388608,
+      "temporary_memory_recovered": true,
+      "total_measured_wall_ms": 23.3577
+    },
+    "stage0_resident_device_bytes": 3045064704,
+    "stage0_weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e",
+    "stage1_prepare": {
+      "count": 1,
+      "maximum_temporary_device_bytes": 6291456,
+      "measured_device_ms": 206.57257652282715,
+      "measured_wall_ms": 220.0781,
+      "primitive": "isolated assigned-stage Kimi CUDA fixture",
+      "stage_fixture": {
+        "active_sessions_after": 0,
+        "cpu_mathematical_fallbacks": 0,
+        "device": {
+          "maximum_ms": 29.907392501831055,
+          "mean_ms": 29.51036807468959,
+          "minimum_ms": 29.038400650024414,
+          "p50_ms": 29.50707244873047,
+          "p95_ms": 29.84522247314453,
+          "p99_ms": 29.89495849609375,
+          "standard_deviation_ms": 0.24704536857001888
+        },
+        "device_ms_values": [
+          29.907392501831055,
+          29.418432235717773,
+          29.467679977416992,
+          29.700159072875977,
+          29.038400650024414,
+          29.50707244873047,
+          29.53343963623047
+        ],
+        "free_bytes_after_close": 14150533120,
+        "free_bytes_before": 14150533120,
+        "input": "float32 zero [1,9,7168]",
+        "iterations": 7,
+        "last_selected_expert_ids": [
+          767,
+          788,
+          679,
+          731,
+          353,
+          220,
+          801,
+          564,
+          553,
+          156,
+          79,
+          468,
+          485,
+          656,
+          210,
+          592
+        ],
+        "measured_device_ms": 206.57257652282715,
+        "measured_wall_ms": 220.0781,
+        "output_fingerprint": "sha256:f04993ef97d6659709c4fcd6d7d95df637093b52cd06a4893ac0701c14926511",
+        "output_finite": true,
+        "research_records_removed": true,
+        "serving_execute_count_restored": true,
+        "temporary_device_bytes": 6291456,
+        "temporary_memory_recovered": true
+      },
+      "temporary_device_bytes": 6291456,
+      "temporary_memory_recovered": true,
+      "total_measured_wall_ms": 220.0781
+    },
+    "stage1_resident_device_bytes": 18278776832,
+    "stage1_weight_fingerprint": "sha256:3fee8b4f4d928a49884eb67bd9bcc7b87f99ce52504368a2dbc34d62e3e0f242",
+    "sum_resident_device_bytes": 21323841536,
+    "wall_ms": 33749.3747
+  },
+  "post_run_checks": {
+    "nvidia_smi": {
+      "compute_cap": "12.0",
+      "driver_version": "591.86",
+      "index": "0",
+      "memory.free": "9487",
+      "memory.total": "32607",
+      "memory.used": "22701",
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci.bus_id": "00000000:02:00.0",
+      "pstate": "P1",
+      "status": "MEASURED",
+      "temperature.gpu": "50",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "stage0_cuda_error_state_ok": true,
+    "stage0_memory": {
+      "free_bytes": 11105468416,
+      "total_bytes": 34190458880
+    },
+    "stage1_cuda_error_state_ok": true,
+    "stage1_memory": {
+      "free_bytes": 11105468416,
+      "total_bytes": 34190458880
+    }
+  },
+  "progress": [
+    {
+      "phase": "preregistered"
+    },
+    {
+      "phase": "gpu_health_before",
+      "status": "MEASURED"
+    },
+    {
+      "phase": "both_stages_loaded",
+      "sum_resident_device_bytes": 21323841536
+    },
+    {
+      "bf16_supported": false,
+      "fp16_supported": false,
+      "phase": "format_execution_complete"
+    },
+    {
+      "phase": "complete",
+      "status": "PASS"
+    }
+  ],
+  "provenance": {
+    "coarse_hypothesis_supported": true,
+    "coarse_status": "PASS",
+    "graph_status": "PASS",
+    "pass": true,
+    "routes_matches": true,
+    "trace_matches": true
+  },
+  "schema_version": "experiment-014-k3-coarse-boundary-format-v1",
+  "sources": {
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "coarse_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\coarse\\h014-032c-stage0-stage1-tcp.json",
+      "sha256": "3afdd18261f1764b8fcc7597890754768c07f3418fb69a816d8ede607de5f970"
+    },
+    "cuda_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-030d-row-reuse-dense-candidate.dll",
+      "sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120"
+    },
+    "graph_certification": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-027w-regression-full-93-layer.json",
+      "sha256": "0c0a655a0f577d17b0bf68b81fff676cb42f225425b7800c839a86469cc74199"
+    },
+    "oracle_routes": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0\\routes.txt",
+      "sha256": "c734d864e8ac40ada5fd1fbd6c64da5959b9610561313ec63e7b79a499a91288"
+    },
+    "oracle_trace": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0\\hidden-trace.f32",
+      "sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d"
+    }
+  },
+  "state_isolation": {
+    "all_finite": true,
+    "all_positions_three": true,
+    "stage0": {
+      "attention_type": "KDA",
+      "bytes": 6881280,
+      "cache_sequence_length": 3,
+      "fingerprint": "sha256:08b38c78893d7165f550b24b0e2b4638aea1e3e47fbdb34a39cd62e90806d6fd",
+      "finite": true,
+      "nonzero_prefix": true,
+      "zero_suffix": true
+    },
+    "stage1_fingerprints_unique": true
+  },
+  "status": "PASS"
+}

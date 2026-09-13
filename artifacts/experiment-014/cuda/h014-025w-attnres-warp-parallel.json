@@ -1,0 +1,231 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "567f8d1d61612e279765952dfab7b232a5101e6eb3e28b13837ee8bdf7e916c6",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_kimi_attnres_plus_rmsnorm",
+    "implementation_kind": "custom Kimi CUDA plus generic existing CUDA"
+  },
+  "benchmark": {
+    "attnres_batched_device_service_ms": 0.06748831939697265,
+    "attnres_device_service_reduction_percent": 15.771737567616716,
+    "attnres_plus_norm_batched_device_service_ms": 0.07973356628417969,
+    "baseline_attnres_batched_device_service_ms": 0.08012550354003906,
+    "bytes_read_per_call": 344064,
+    "bytes_written_per_call": 57344,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.0625,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "standard_deviation_ms": 0.9862333648787187
+    },
+    "kernel_count_per_call": 2,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "queued_service_ms_per_call": 0.07971120000000001,
+    "retained_iterations": 500,
+    "wall": {
+      "maximum_ms": 0.1114,
+      "mean_ms": 0.08783619999999999,
+      "minimum_ms": 0.0858,
+      "p50_ms": 0.087,
+      "p95_ms": 0.09133499999999997,
+      "p99_ms": 0.0941,
+      "standard_deviation_ms": 0.0019140714615708578
+    },
+    "warmup_iterations": 50
+  },
+  "checkpoint": {
+    "attn_res_norm": {
+      "name": "language_model.model.output_attn_res_norm.weight",
+      "runtime_f32_fingerprint": "sha256:2a2382a2bd9de3447c9f0ed3bf44a136578a500be46569ad2bdb72c29b9ce2af",
+      "shape": [
+        7168
+      ],
+      "source_bytes": 14336,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "18d259ce8db56f89c14d0b06352480dac58960bec41ce8ecb42382b955b3ad09",
+      "source_shard": "model-00094-of-000096.safetensors"
+    },
+    "attn_res_proj": {
+      "name": "language_model.model.output_attn_res_proj.weight",
+      "runtime_f32_fingerprint": "sha256:1c6792b2fb1bd1a39bf137a7a912b75fc2b8c625c2f8478af0922c99019a930a",
+      "shape": [
+        1,
+        7168
+      ],
+      "source_bytes": 14336,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "748c9d88bf501cf4548babe29415413e33c813b7dec96d5380632809eae7b35b",
+      "source_shard": "model-00094-of-000096.safetensors"
+    },
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "embedding": {
+      "name": "language_model.model.embed_tokens.weight",
+      "runtime_bf16_fingerprint": "sha256:189a447d192905e9b2abede9eb81570830e06ce4c4ada968fbe467b00db4f81d",
+      "shape": [
+        163840,
+        7168
+      ],
+      "source_bytes": 2348810240,
+      "source_dtype": "BF16",
+      "source_range": [
+        2348810824,
+        4697621064
+      ],
+      "source_raw_sha256": "4a79cdabdab6826b994aff69d90a72aa35dae32e90f8acaf1ce312c7bdc4a487",
+      "source_shard": "model-00094-of-000096.safetensors"
+    },
+    "final_norm": {
+      "name": "language_model.model.norm.weight",
+      "runtime_f32_fingerprint": "sha256:e336fcd4b49e590a311e49c464b19880ae2f65f468bc7bc66fd48be7d9d35681",
+      "shape": [
+        7168
+      ],
+      "source_bytes": 14336,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "582007975240ff40346b88582607814fdbcb18f4308055e1085819c6a0f35b36",
+      "source_shard": "model-00094-of-000096.safetensors"
+    },
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "path": "F:\\models\\Kimi-K3"
+  },
+  "correctness": {
+    "cuda_final_vs_independent_reference": {
+      "actual_finite": true,
+      "actual_l2": 52.8472074239812,
+      "cosine_similarity": 0.9999999999999992,
+      "maximum_absolute_error": 7.152557373046875e-07,
+      "mean_absolute_error": 1.1703112383949182e-08,
+      "reference_finite": true,
+      "reference_l2": 52.84720735823636,
+      "relative_l2_error": 4.944522418242502e-08
+    },
+    "cuda_final_vs_retained_serial": {
+      "actual_finite": true,
+      "actual_l2": 52.8472074239812,
+      "cosine_similarity": 0.9999999999999999,
+      "maximum_absolute_error": 4.76837158203125e-07,
+      "mean_absolute_error": 1.4129731035999222e-09,
+      "reference_finite": true,
+      "reference_l2": 52.847207388115656,
+      "relative_l2_error": 1.611882154891595e-08
+    },
+    "cuda_mix_vs_independent_reference": {
+      "actual_finite": true,
+      "actual_l2": 68.1340881279305,
+      "cosine_similarity": 0.9999999999999992,
+      "maximum_absolute_error": 1.9073486328125e-06,
+      "mean_absolute_error": 1.3017285027672187e-08,
+      "reference_finite": true,
+      "reference_l2": 68.1340884451301,
+      "relative_l2_error": 4.959515573048664e-08
+    },
+    "fixture_reconstruction_vs_serial": {
+      "actual_finite": true,
+      "actual_l2": 52.84720735823636,
+      "cosine_similarity": 0.999999999999999,
+      "maximum_absolute_error": 7.152557373046875e-07,
+      "mean_absolute_error": 1.1605983222092879e-08,
+      "reference_finite": true,
+      "reference_l2": 52.847207388115656,
+      "relative_l2_error": 4.988563413611164e-08
+    },
+    "repeat_bit_exact": true
+  },
+  "cycle_id": "H014-025w",
+  "fixture": {
+    "block_residuals_fingerprint": "sha256:f5ebb0dda9b74501bbbbb2cb52d8576a6e6aaf9173f19658dc7eff1ea5a5b101",
+    "cuda_final_fingerprint": "sha256:c9ef109cfd0d50a8f05b3a6d7bfe995273c517f3a255091e8428997fd7468c4b",
+    "cuda_mix_fingerprint": "sha256:e71760bc9117edfafed34087b1b1a38abb65a470b8a5367612f0a413c2342a83",
+    "dimensions": {
+      "block_residuals": [
+        8,
+        7168
+      ],
+      "hidden": 7168
+    },
+    "dtype": "float32",
+    "prefix_fingerprint": "sha256:b4b4e47789d853356abf11b327ac8e6c4ad18262d81b1cd7b49bf76b1adf091f",
+    "prefix_row": 280,
+    "probabilities": [
+      0.0015602469211444259,
+      0.011110675521194935,
+      0.002341167302802205,
+      0.005752846132963896,
+      0.00641819229349494,
+      0.011209752410650253,
+      0.024801531806588173,
+      0.09402826428413391,
+      0.8427773714065552
+    ],
+    "reference_mix_fingerprint": "sha256:dbed9140f5d1d93bf8eb700ff48f84ee19c87c6f5d30d9323025ac6a91d5fc16",
+    "score_weight_fingerprint": "sha256:cc3c9f0b240a422092eb853b360eb086df4273d69c551679bf8e180c82f59f7d",
+    "scores": [
+      -4.0664215087890625,
+      -2.1033589839935303,
+      -3.6606154441833496,
+      -2.761570930480957,
+      -2.6521289348602295,
+      -2.0944809913635254,
+      -1.300359845161438,
+      0.032330043613910675,
+      2.2254374027252197
+    ],
+    "serial_final_fingerprint": "sha256:bcccebf78e5b5d0e6c5b0b65c8bfd4f972ab8e21410b1ea3afa170c1ff6018d6",
+    "serial_final_row": 281,
+    "snapshot_rows": [
+      199,
+      211,
+      223,
+      235,
+      247,
+      259,
+      271
+    ],
+    "token_id": 11,
+    "trace_base_row": 188,
+    "trace_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\hidden-trace.f32",
+    "trace_source_sha256": "95012ceb968aaa31f51ccbea38beff44e47dec72572b8c22ca4fe01bbadd56ae",
+    "trace_step": 2
+  },
+  "hypothesis": "One-warp-per-candidate AttnRes score reduction lowers mix device service at least 40% versus H014-025v while preserving the 2e-6 serial correctness and bit-repeatability gates.",
+  "inspection": {
+    "bottleneck": "ATTNRES_CORRECTNESS_OR_SPEED_GATE",
+    "decision": "MODIFY",
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_state_reconstruction": 0
+  },
+  "memory": {
+    "final_norm_weight_bytes": 28672,
+    "mix_bytes": 28672,
+    "output_bytes": 28672,
+    "persistent_block_residual_bytes": 229376,
+    "persistent_score_weight_bytes": 28672,
+    "prefix_bytes": 28672,
+    "workspace_bytes": 0
+  },
+  "schema_version": "experiment-014-k3-cuda-real-attnres-v1",
+  "status": "FAIL"
+}

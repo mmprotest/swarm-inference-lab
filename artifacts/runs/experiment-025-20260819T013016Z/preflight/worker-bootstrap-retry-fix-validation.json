@@ -1,0 +1,80 @@
+{
+  "schema_version": "experiment-025-scoped-source-change-validation-v1",
+  "recorded_at_utc": "2026-08-23T07:19:24.7661692Z",
+  "status": "PASS",
+  "change_classification": "WORKER_BOOTSTRAP_EXACT_SNAPSHOT_REUSE_FIX",
+  "parent_source_tree_sha256": "e68fd3556486042c6faec0bd0c6791e9e7960ab7d86b4124ac5f07e6c43d765a",
+  "source_tree_sha256": "8b485f44a8244bd36ce969d145771f2e844d4132043926c8d24307e1eb5e4269",
+  "changed_files": {
+    "src/swarm_inference/experiments/experiment_025/bootstrap.py": {
+      "before_sha256": "8dccad0e7c1ed94f76748873fc5e06465564b7e3152f3224d84eeed575c90854",
+      "after_sha256": "f37cfedc3b9615ccd993e0fc49c213a44102335a989a291b46a58bfd20dd4151"
+    },
+    "tests/test_experiment_025.py": {
+      "before_sha256": "1b17b18d0fe7a3f8c5903cc598aa91591798042315cd2f254a339f86005dedba",
+      "after_sha256": "2f76ffc4ccf18c6876b0873acbb3d3c44a3e75d114960570419e5212ed33f640"
+    }
+  },
+  "triggering_evidence": {
+    "classification": "SYSTEMATIC_NON_IDEMPOTENT_CONTAINER_RESTART_CASCADE",
+    "initial_failure_stage": "GPU_LOAD",
+    "initial_failure": "native MXFP4 CUDA tensor upload failed after CUDA out of memory",
+    "restart_failure": "refusing to replace activated snapshot",
+    "terminal_restart_failure": "no space left on device while rematerializing package",
+    "retained_stage_1_artifact": "rental/stage-1-backbone-canary-attempt-024-gpu-load-oom-machine56698/bootstrap-defect.json",
+    "retained_stage_2_artifact": "rental/stage-2-sub-layer-canary-attempt-004-parent-snapshot-reactivation-machine10134",
+    "worker_ready_was_not_claimed": true
+  },
+  "focused_tests": {
+    "passed": 2,
+    "failed": 0,
+    "status": "PASS",
+    "tests": [
+      "test_prepare_worker_reuses_only_an_exact_verified_snapshot",
+      "test_prepare_worker_rejects_corrupt_existing_snapshot_without_reacquiring"
+    ]
+  },
+  "changed_file_compile": {
+    "files": [
+      "src/swarm_inference/experiments/experiment_025/bootstrap.py",
+      "tests/test_experiment_025.py"
+    ],
+    "status": "PASS"
+  },
+  "ruff": {
+    "files": [
+      "src/swarm_inference/experiments/experiment_025/bootstrap.py",
+      "tests/test_experiment_025.py"
+    ],
+    "status": "PASS"
+  },
+  "semantic_guards": {
+    "initial_acquisition_and_atomic_activation_path_unchanged": true,
+    "reuse_requires_existing_atomic_snapshot_and_prior_passing_bootstrap_receipt": true,
+    "current_distribution_and_placement_hashes_verified": true,
+    "config_index_model_identity_tokenizer_and_weight_hashes_verified": true,
+    "verified_restart_downloaded_bytes": 0,
+    "invalid_or_corrupt_existing_snapshot_fails_closed": true,
+    "gpu_load_oom_remains_fatal_to_progress_observer": true,
+    "model_execution_changed": false,
+    "native_cuda_changed": false,
+    "checkpoint_changed": false,
+    "placement_changed": false
+  },
+  "stage_2_failure_reclassification": {
+    "artifact": "preflight/run-stage2-progress-aware.py",
+    "attempt_004_physical_machines_blacklisted": false,
+    "attempt_003_lost_id_parent_temporarily_excluded": true,
+    "offline_validation_status": "PASS"
+  },
+  "full_repository_tests_rerun": false,
+  "full_repository_tests_retained_as_historical_parent_evidence": true,
+  "full_repository_rerun_prohibited_by_resume_instruction": true,
+  "paid_resources_used_for_fix_or_validation": false,
+  "zero_live_e025_instances_before_fix": true,
+  "physical_recertification_required": [
+    "local RTX 5090 immutable-image canary",
+    "physical Stage 1",
+    "physical Stage 2"
+  ]
+}

@@ -1,0 +1,3297 @@
+{
+  "claim_boundary": "deterministic independent-resource execution using physical real-K3 service and shaped communication",
+  "configuration": {
+    "accepted_rows": 5,
+    "actual_chunk_rows": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "attnres_cache": false,
+    "block_candidates": 4,
+    "maximum_chunk_rows": 1
+  },
+  "event_run": {
+    "critical_path": [
+      "control:bulk-dispatch",
+      "compute:c00:q000",
+      "handoff:c00-c01:q000",
+      "compute:c01:q000",
+      "handoff:c01-c02:q000",
+      "compute:c02:q000",
+      "handoff:c02-c03:q000",
+      "compute:c03:q000",
+      "handoff:c03-c04:q000",
+      "compute:c04:q000",
+      "handoff:c04-c05:q000",
+      "compute:c05:q000",
+      "handoff:c05-c06:q000",
+      "compute:c06:q000",
+      "handoff:c06-c07:q000",
+      "compute:c07:q000",
+      "handoff:c07-c08:q000",
+      "compute:c08:q000",
+      "handoff:c08-c09:q000",
+      "compute:c09:q000",
+      "compute:c09:q001",
+      "compute:c09:q002",
+      "compute:c09:q003",
+      "compute:c09:q004",
+      "handoff:c09-c10:q004",
+      "compute:c10:q004",
+      "handoff:c10-c11:q004",
+      "compute:c11:q004"
+    ],
+    "makespan_ms": 1581.9149043421933,
+    "peak_concurrency": 5,
+    "records": [
+      {
+        "critical_predecessor": null,
+        "dependencies": [],
+        "duration_ms": 0.17535,
+        "finish_ms": 0.17535,
+        "kind": "control",
+        "metadata": {},
+        "ready_ms": 0.0,
+        "resource_id": "coordinator",
+        "start_ms": 0.0,
+        "task_id": "control:bulk-dispatch"
+      },
+      {
+        "critical_predecessor": "control:bulk-dispatch",
+        "dependencies": [
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 109.68273331763405,
+        "finish_ms": 109.85808331763404,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 0,
+          "compute_ms": 103.95777939763404,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [],
+          "rows": 1
+        },
+        "ready_ms": 0.17535,
+        "resource_id": "microcell:00",
+        "start_ms": 0.17535,
+        "task_id": "compute:c00:q000"
+      },
+      {
+        "critical_predecessor": "compute:c00:q000",
+        "dependencies": [
+          "compute:c00:q000",
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 109.68273331763405,
+        "finish_ms": 219.54081663526807,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 1,
+          "compute_ms": 103.95777939763404,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [],
+          "rows": 1
+        },
+        "ready_ms": 109.85808331763404,
+        "resource_id": "microcell:00",
+        "start_ms": 109.85808331763404,
+        "task_id": "compute:c00:q001"
+      },
+      {
+        "critical_predecessor": "compute:c00:q000",
+        "dependencies": [
+          "compute:c00:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 113.17490971763404,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 109.85808331763404,
+        "resource_id": "coarse-link:00",
+        "start_ms": 109.85808331763404,
+        "task_id": "handoff:c00-c01:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q000"
+        ],
+        "duration_ms": 89.071394279766,
+        "finish_ms": 202.24630399740005,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 0,
+          "compute_ms": 83.34644035976599,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 1
+        },
+        "ready_ms": 113.17490971763404,
+        "resource_id": "microcell:01",
+        "start_ms": 113.17490971763404,
+        "task_id": "compute:c01:q000"
+      },
+      {
+        "critical_predecessor": "compute:c01:q000",
+        "dependencies": [
+          "compute:c01:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 205.56313039740004,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 202.24630399740005,
+        "resource_id": "coarse-link:01",
+        "start_ms": 202.24630399740005,
+        "task_id": "handoff:c01-c02:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q000"
+        ],
+        "duration_ms": 93.0241122176365,
+        "finish_ms": 298.58724261503653,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 0,
+          "compute_ms": 87.2991582976365,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 205.56313039740004,
+        "resource_id": "microcell:02",
+        "start_ms": 205.56313039740004,
+        "task_id": "compute:c02:q000"
+      },
+      {
+        "critical_predecessor": "compute:c00:q001",
+        "dependencies": [
+          "compute:c00:q001",
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 109.68273331763405,
+        "finish_ms": 329.2235499529021,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 2,
+          "compute_ms": 103.95777939763404,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [],
+          "rows": 1
+        },
+        "ready_ms": 219.54081663526807,
+        "resource_id": "microcell:00",
+        "start_ms": 219.54081663526807,
+        "task_id": "compute:c00:q002"
+      },
+      {
+        "critical_predecessor": "compute:c00:q001",
+        "dependencies": [
+          "compute:c00:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 222.85764303526807,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 219.54081663526807,
+        "resource_id": "coarse-link:00",
+        "start_ms": 219.54081663526807,
+        "task_id": "handoff:c00-c01:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q001",
+        "dependencies": [
+          "compute:c01:q000",
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q001"
+        ],
+        "duration_ms": 89.071394279766,
+        "finish_ms": 311.92903731503407,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 1,
+          "compute_ms": 83.34644035976599,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 1
+        },
+        "ready_ms": 222.85764303526807,
+        "resource_id": "microcell:01",
+        "start_ms": 222.85764303526807,
+        "task_id": "compute:c01:q001"
+      },
+      {
+        "critical_predecessor": "compute:c02:q000",
+        "dependencies": [
+          "compute:c02:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 301.90406901503655,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 298.58724261503653,
+        "resource_id": "coarse-link:02",
+        "start_ms": 298.58724261503653,
+        "task_id": "handoff:c02-c03:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q000"
+        ],
+        "duration_ms": 92.22156003895357,
+        "finish_ms": 394.1256290539901,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 0,
+          "compute_ms": 86.49660611895357,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 301.90406901503655,
+        "resource_id": "microcell:03",
+        "start_ms": 301.90406901503655,
+        "task_id": "compute:c03:q000"
+      },
+      {
+        "critical_predecessor": "compute:c01:q001",
+        "dependencies": [
+          "compute:c01:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 315.2458637150341,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 311.92903731503407,
+        "resource_id": "coarse-link:01",
+        "start_ms": 311.92903731503407,
+        "task_id": "handoff:c01-c02:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q001",
+        "dependencies": [
+          "compute:c02:q000",
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q001"
+        ],
+        "duration_ms": 93.0241122176365,
+        "finish_ms": 408.2699759326706,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 1,
+          "compute_ms": 87.2991582976365,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 315.2458637150341,
+        "resource_id": "microcell:02",
+        "start_ms": 315.2458637150341,
+        "task_id": "compute:c02:q001"
+      },
+      {
+        "critical_predecessor": "compute:c00:q002",
+        "dependencies": [
+          "compute:c00:q002",
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 109.68273331763405,
+        "finish_ms": 438.90628327053616,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 3,
+          "compute_ms": 103.95777939763404,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [],
+          "rows": 1
+        },
+        "ready_ms": 329.2235499529021,
+        "resource_id": "microcell:00",
+        "start_ms": 329.2235499529021,
+        "task_id": "compute:c00:q003"
+      },
+      {
+        "critical_predecessor": "compute:c00:q002",
+        "dependencies": [
+          "compute:c00:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 332.5403763529021,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 329.2235499529021,
+        "resource_id": "coarse-link:00",
+        "start_ms": 329.2235499529021,
+        "task_id": "handoff:c00-c01:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q002",
+        "dependencies": [
+          "compute:c01:q001",
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q002"
+        ],
+        "duration_ms": 89.071394279766,
+        "finish_ms": 421.61177063266814,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 2,
+          "compute_ms": 83.34644035976599,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 1
+        },
+        "ready_ms": 332.5403763529021,
+        "resource_id": "microcell:01",
+        "start_ms": 332.5403763529021,
+        "task_id": "compute:c01:q002"
+      },
+      {
+        "critical_predecessor": "compute:c03:q000",
+        "dependencies": [
+          "compute:c03:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 397.44245545399014,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 394.1256290539901,
+        "resource_id": "coarse-link:03",
+        "start_ms": 394.1256290539901,
+        "task_id": "handoff:c03-c04:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q000"
+        ],
+        "duration_ms": 77.33596562803586,
+        "finish_ms": 474.778421082026,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 0,
+          "compute_ms": 71.61101170803586,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 1
+        },
+        "ready_ms": 397.44245545399014,
+        "resource_id": "microcell:04",
+        "start_ms": 397.44245545399014,
+        "task_id": "compute:c04:q000"
+      },
+      {
+        "critical_predecessor": "compute:c02:q001",
+        "dependencies": [
+          "compute:c02:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 411.58680233267063,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 408.2699759326706,
+        "resource_id": "coarse-link:02",
+        "start_ms": 408.2699759326706,
+        "task_id": "handoff:c02-c03:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q001",
+        "dependencies": [
+          "compute:c03:q000",
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q001"
+        ],
+        "duration_ms": 92.22156003895357,
+        "finish_ms": 503.8083623716242,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 1,
+          "compute_ms": 86.49660611895357,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 411.58680233267063,
+        "resource_id": "microcell:03",
+        "start_ms": 411.58680233267063,
+        "task_id": "compute:c03:q001"
+      },
+      {
+        "critical_predecessor": "compute:c01:q002",
+        "dependencies": [
+          "compute:c01:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 424.92859703266816,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 421.61177063266814,
+        "resource_id": "coarse-link:01",
+        "start_ms": 421.61177063266814,
+        "task_id": "handoff:c01-c02:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q002",
+        "dependencies": [
+          "compute:c02:q001",
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q002"
+        ],
+        "duration_ms": 93.0241122176365,
+        "finish_ms": 517.9527092503047,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 2,
+          "compute_ms": 87.2991582976365,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 424.92859703266816,
+        "resource_id": "microcell:02",
+        "start_ms": 424.92859703266816,
+        "task_id": "compute:c02:q002"
+      },
+      {
+        "critical_predecessor": "compute:c00:q003",
+        "dependencies": [
+          "compute:c00:q003",
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 109.68273331763405,
+        "finish_ms": 548.5890165881702,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 4,
+          "compute_ms": 103.95777939763404,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [],
+          "rows": 1
+        },
+        "ready_ms": 438.90628327053616,
+        "resource_id": "microcell:00",
+        "start_ms": 438.90628327053616,
+        "task_id": "compute:c00:q004"
+      },
+      {
+        "critical_predecessor": "compute:c00:q003",
+        "dependencies": [
+          "compute:c00:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 442.2231096705362,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 438.90628327053616,
+        "resource_id": "coarse-link:00",
+        "start_ms": 438.90628327053616,
+        "task_id": "handoff:c00-c01:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q003",
+        "dependencies": [
+          "compute:c01:q002",
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q003"
+        ],
+        "duration_ms": 89.071394279766,
+        "finish_ms": 531.2945039503022,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 3,
+          "compute_ms": 83.34644035976599,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 1
+        },
+        "ready_ms": 442.2231096705362,
+        "resource_id": "microcell:01",
+        "start_ms": 442.2231096705362,
+        "task_id": "compute:c01:q003"
+      },
+      {
+        "critical_predecessor": "compute:c04:q000",
+        "dependencies": [
+          "compute:c04:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 478.095247482026,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 474.778421082026,
+        "resource_id": "coarse-link:04",
+        "start_ms": 474.778421082026,
+        "task_id": "handoff:c04-c05:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q000"
+        ],
+        "duration_ms": 84.13467567118369,
+        "finish_ms": 562.2299231532097,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 0,
+          "compute_ms": 78.40972175118368,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 478.095247482026,
+        "resource_id": "microcell:05",
+        "start_ms": 478.095247482026,
+        "task_id": "compute:c05:q000"
+      },
+      {
+        "critical_predecessor": "compute:c03:q001",
+        "dependencies": [
+          "compute:c03:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 507.1251887716242,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 503.8083623716242,
+        "resource_id": "coarse-link:03",
+        "start_ms": 503.8083623716242,
+        "task_id": "handoff:c03-c04:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q001",
+        "dependencies": [
+          "compute:c04:q000",
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q001"
+        ],
+        "duration_ms": 77.33596562803586,
+        "finish_ms": 584.46115439966,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 1,
+          "compute_ms": 71.61101170803586,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 1
+        },
+        "ready_ms": 507.1251887716242,
+        "resource_id": "microcell:04",
+        "start_ms": 507.1251887716242,
+        "task_id": "compute:c04:q001"
+      },
+      {
+        "critical_predecessor": "compute:c02:q002",
+        "dependencies": [
+          "compute:c02:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 521.2695356503046,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 517.9527092503047,
+        "resource_id": "coarse-link:02",
+        "start_ms": 517.9527092503047,
+        "task_id": "handoff:c02-c03:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q002",
+        "dependencies": [
+          "compute:c03:q001",
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q002"
+        ],
+        "duration_ms": 92.22156003895357,
+        "finish_ms": 613.4910956892583,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 2,
+          "compute_ms": 86.49660611895357,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 521.2695356503046,
+        "resource_id": "microcell:03",
+        "start_ms": 521.2695356503046,
+        "task_id": "compute:c03:q002"
+      },
+      {
+        "critical_predecessor": "compute:c01:q003",
+        "dependencies": [
+          "compute:c01:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 534.6113303503022,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 531.2945039503022,
+        "resource_id": "coarse-link:01",
+        "start_ms": 531.2945039503022,
+        "task_id": "handoff:c01-c02:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q003",
+        "dependencies": [
+          "compute:c02:q002",
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q003"
+        ],
+        "duration_ms": 93.0241122176365,
+        "finish_ms": 627.6354425679386,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 3,
+          "compute_ms": 87.2991582976365,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 534.6113303503022,
+        "resource_id": "microcell:02",
+        "start_ms": 534.6113303503022,
+        "task_id": "compute:c02:q003"
+      },
+      {
+        "critical_predecessor": "compute:c00:q004",
+        "dependencies": [
+          "compute:c00:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 551.9058429881702,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 548.5890165881702,
+        "resource_id": "coarse-link:00",
+        "start_ms": 548.5890165881702,
+        "task_id": "handoff:c00-c01:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q004",
+        "dependencies": [
+          "compute:c01:q003",
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q004"
+        ],
+        "duration_ms": 89.071394279766,
+        "finish_ms": 640.9772372679362,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 4,
+          "compute_ms": 83.34644035976599,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 1
+        },
+        "ready_ms": 551.9058429881702,
+        "resource_id": "microcell:01",
+        "start_ms": 551.9058429881702,
+        "task_id": "compute:c01:q004"
+      },
+      {
+        "critical_predecessor": "compute:c05:q000",
+        "dependencies": [
+          "compute:c05:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 565.5467495532097,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 562.2299231532097,
+        "resource_id": "coarse-link:05",
+        "start_ms": 562.2299231532097,
+        "task_id": "handoff:c05-c06:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q000"
+        ],
+        "duration_ms": 77.99973720251246,
+        "finish_ms": 643.5464867557222,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 0,
+          "compute_ms": 72.27478328251246,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 565.5467495532097,
+        "resource_id": "microcell:06",
+        "start_ms": 565.5467495532097,
+        "task_id": "compute:c06:q000"
+      },
+      {
+        "critical_predecessor": "compute:c04:q001",
+        "dependencies": [
+          "compute:c04:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 587.77798079966,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 584.46115439966,
+        "resource_id": "coarse-link:04",
+        "start_ms": 584.46115439966,
+        "task_id": "handoff:c04-c05:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q001",
+        "dependencies": [
+          "compute:c05:q000",
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q001"
+        ],
+        "duration_ms": 84.13467567118369,
+        "finish_ms": 671.9126564708437,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 1,
+          "compute_ms": 78.40972175118368,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 587.77798079966,
+        "resource_id": "microcell:05",
+        "start_ms": 587.77798079966,
+        "task_id": "compute:c05:q001"
+      },
+      {
+        "critical_predecessor": "compute:c03:q002",
+        "dependencies": [
+          "compute:c03:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 616.8079220892582,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 613.4910956892583,
+        "resource_id": "coarse-link:03",
+        "start_ms": 613.4910956892583,
+        "task_id": "handoff:c03-c04:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q002",
+        "dependencies": [
+          "compute:c04:q001",
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q002"
+        ],
+        "duration_ms": 77.33596562803586,
+        "finish_ms": 694.1438877172941,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 2,
+          "compute_ms": 71.61101170803586,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 1
+        },
+        "ready_ms": 616.8079220892582,
+        "resource_id": "microcell:04",
+        "start_ms": 616.8079220892582,
+        "task_id": "compute:c04:q002"
+      },
+      {
+        "critical_predecessor": "compute:c02:q003",
+        "dependencies": [
+          "compute:c02:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 630.9522689679386,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 627.6354425679386,
+        "resource_id": "coarse-link:02",
+        "start_ms": 627.6354425679386,
+        "task_id": "handoff:c02-c03:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q003",
+        "dependencies": [
+          "compute:c03:q002",
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q003"
+        ],
+        "duration_ms": 92.22156003895357,
+        "finish_ms": 723.1738290068922,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 3,
+          "compute_ms": 86.49660611895357,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 630.9522689679386,
+        "resource_id": "microcell:03",
+        "start_ms": 630.9522689679386,
+        "task_id": "compute:c03:q003"
+      },
+      {
+        "critical_predecessor": "compute:c01:q004",
+        "dependencies": [
+          "compute:c01:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 644.2940636679361,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 640.9772372679362,
+        "resource_id": "coarse-link:01",
+        "start_ms": 640.9772372679362,
+        "task_id": "handoff:c01-c02:q004"
+      },
+      {
+        "critical_predecessor": "compute:c06:q000",
+        "dependencies": [
+          "compute:c06:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 646.8633131557222,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 643.5464867557222,
+        "resource_id": "coarse-link:06",
+        "start_ms": 643.5464867557222,
+        "task_id": "handoff:c06-c07:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q004",
+        "dependencies": [
+          "compute:c02:q003",
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q004"
+        ],
+        "duration_ms": 93.0241122176365,
+        "finish_ms": 737.3181758855726,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 4,
+          "compute_ms": 87.2991582976365,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 644.2940636679361,
+        "resource_id": "microcell:02",
+        "start_ms": 644.2940636679361,
+        "task_id": "compute:c02:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q000"
+        ],
+        "duration_ms": 90.45612119590403,
+        "finish_ms": 737.3194343516262,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 0,
+          "compute_ms": 84.73116727590403,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 1
+        },
+        "ready_ms": 646.8633131557222,
+        "resource_id": "microcell:07",
+        "start_ms": 646.8633131557222,
+        "task_id": "compute:c07:q000"
+      },
+      {
+        "critical_predecessor": "compute:c05:q001",
+        "dependencies": [
+          "compute:c05:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 675.2294828708436,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 671.9126564708437,
+        "resource_id": "coarse-link:05",
+        "start_ms": 671.9126564708437,
+        "task_id": "handoff:c05-c06:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q001",
+        "dependencies": [
+          "compute:c06:q000",
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q001"
+        ],
+        "duration_ms": 77.99973720251246,
+        "finish_ms": 753.2292200733561,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 1,
+          "compute_ms": 72.27478328251246,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 675.2294828708436,
+        "resource_id": "microcell:06",
+        "start_ms": 675.2294828708436,
+        "task_id": "compute:c06:q001"
+      },
+      {
+        "critical_predecessor": "compute:c04:q002",
+        "dependencies": [
+          "compute:c04:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 697.4607141172941,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 694.1438877172941,
+        "resource_id": "coarse-link:04",
+        "start_ms": 694.1438877172941,
+        "task_id": "handoff:c04-c05:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q002",
+        "dependencies": [
+          "compute:c05:q001",
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q002"
+        ],
+        "duration_ms": 84.13467567118369,
+        "finish_ms": 781.5953897884777,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 2,
+          "compute_ms": 78.40972175118368,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 697.4607141172941,
+        "resource_id": "microcell:05",
+        "start_ms": 697.4607141172941,
+        "task_id": "compute:c05:q002"
+      },
+      {
+        "critical_predecessor": "compute:c03:q003",
+        "dependencies": [
+          "compute:c03:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 726.4906554068922,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 723.1738290068922,
+        "resource_id": "coarse-link:03",
+        "start_ms": 723.1738290068922,
+        "task_id": "handoff:c03-c04:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q003",
+        "dependencies": [
+          "compute:c04:q002",
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q003"
+        ],
+        "duration_ms": 77.33596562803586,
+        "finish_ms": 803.826621034928,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 3,
+          "compute_ms": 71.61101170803586,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 1
+        },
+        "ready_ms": 726.4906554068922,
+        "resource_id": "microcell:04",
+        "start_ms": 726.4906554068922,
+        "task_id": "compute:c04:q003"
+      },
+      {
+        "critical_predecessor": "compute:c02:q004",
+        "dependencies": [
+          "compute:c02:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 740.6350022855726,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 737.3181758855726,
+        "resource_id": "coarse-link:02",
+        "start_ms": 737.3181758855726,
+        "task_id": "handoff:c02-c03:q004"
+      },
+      {
+        "critical_predecessor": "compute:c07:q000",
+        "dependencies": [
+          "compute:c07:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 740.6362607516262,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 737.3194343516262,
+        "resource_id": "coarse-link:07",
+        "start_ms": 737.3194343516262,
+        "task_id": "handoff:c07-c08:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q004",
+        "dependencies": [
+          "compute:c03:q003",
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q004"
+        ],
+        "duration_ms": 92.22156003895357,
+        "finish_ms": 832.8565623245262,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 4,
+          "compute_ms": 86.49660611895357,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 1
+        },
+        "ready_ms": 740.6350022855726,
+        "resource_id": "microcell:03",
+        "start_ms": 740.6350022855726,
+        "task_id": "compute:c03:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q000"
+        ],
+        "duration_ms": 78.11322498661778,
+        "finish_ms": 818.749485738244,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 0,
+          "compute_ms": 72.38827106661778,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 740.6362607516262,
+        "resource_id": "microcell:08",
+        "start_ms": 740.6362607516262,
+        "task_id": "compute:c08:q000"
+      },
+      {
+        "critical_predecessor": "compute:c06:q001",
+        "dependencies": [
+          "compute:c06:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 756.5460464733561,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 753.2292200733561,
+        "resource_id": "coarse-link:06",
+        "start_ms": 753.2292200733561,
+        "task_id": "handoff:c06-c07:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q001",
+        "dependencies": [
+          "compute:c07:q000",
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q001"
+        ],
+        "duration_ms": 90.45612119590403,
+        "finish_ms": 847.0021676692602,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 1,
+          "compute_ms": 84.73116727590403,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 1
+        },
+        "ready_ms": 756.5460464733561,
+        "resource_id": "microcell:07",
+        "start_ms": 756.5460464733561,
+        "task_id": "compute:c07:q001"
+      },
+      {
+        "critical_predecessor": "compute:c05:q002",
+        "dependencies": [
+          "compute:c05:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 784.9122161884777,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 781.5953897884777,
+        "resource_id": "coarse-link:05",
+        "start_ms": 781.5953897884777,
+        "task_id": "handoff:c05-c06:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q002",
+        "dependencies": [
+          "compute:c06:q001",
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q002"
+        ],
+        "duration_ms": 77.99973720251246,
+        "finish_ms": 862.9119533909902,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 2,
+          "compute_ms": 72.27478328251246,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 784.9122161884777,
+        "resource_id": "microcell:06",
+        "start_ms": 784.9122161884777,
+        "task_id": "compute:c06:q002"
+      },
+      {
+        "critical_predecessor": "compute:c04:q003",
+        "dependencies": [
+          "compute:c04:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 807.143447434928,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 803.826621034928,
+        "resource_id": "coarse-link:04",
+        "start_ms": 803.826621034928,
+        "task_id": "handoff:c04-c05:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q003",
+        "dependencies": [
+          "compute:c05:q002",
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q003"
+        ],
+        "duration_ms": 84.13467567118369,
+        "finish_ms": 891.2781231061117,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 3,
+          "compute_ms": 78.40972175118368,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 807.143447434928,
+        "resource_id": "microcell:05",
+        "start_ms": 807.143447434928,
+        "task_id": "compute:c05:q003"
+      },
+      {
+        "critical_predecessor": "compute:c08:q000",
+        "dependencies": [
+          "compute:c08:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 822.0663121382439,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 818.749485738244,
+        "resource_id": "coarse-link:08",
+        "start_ms": 818.749485738244,
+        "task_id": "handoff:c08-c09:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c08-c09:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q000"
+        ],
+        "duration_ms": 124.86755278722485,
+        "finish_ms": 946.9338649254688,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 0,
+          "compute_ms": 119.14259886722485,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 822.0663121382439,
+        "resource_id": "microcell:09",
+        "start_ms": 822.0663121382439,
+        "task_id": "compute:c09:q000"
+      },
+      {
+        "critical_predecessor": "compute:c03:q004",
+        "dependencies": [
+          "compute:c03:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 836.1733887245261,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 832.8565623245262,
+        "resource_id": "coarse-link:03",
+        "start_ms": 832.8565623245262,
+        "task_id": "handoff:c03-c04:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q004",
+        "dependencies": [
+          "compute:c04:q003",
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q004"
+        ],
+        "duration_ms": 77.33596562803586,
+        "finish_ms": 913.509354352562,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 4,
+          "compute_ms": 71.61101170803586,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 1
+        },
+        "ready_ms": 836.1733887245261,
+        "resource_id": "microcell:04",
+        "start_ms": 836.1733887245261,
+        "task_id": "compute:c04:q004"
+      },
+      {
+        "critical_predecessor": "compute:c07:q001",
+        "dependencies": [
+          "compute:c07:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 850.3189940692602,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 847.0021676692602,
+        "resource_id": "coarse-link:07",
+        "start_ms": 847.0021676692602,
+        "task_id": "handoff:c07-c08:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q001",
+        "dependencies": [
+          "compute:c08:q000",
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q001"
+        ],
+        "duration_ms": 78.11322498661778,
+        "finish_ms": 928.4322190558779,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 1,
+          "compute_ms": 72.38827106661778,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 850.3189940692602,
+        "resource_id": "microcell:08",
+        "start_ms": 850.3189940692602,
+        "task_id": "compute:c08:q001"
+      },
+      {
+        "critical_predecessor": "compute:c06:q002",
+        "dependencies": [
+          "compute:c06:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 866.2287797909902,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 862.9119533909902,
+        "resource_id": "coarse-link:06",
+        "start_ms": 862.9119533909902,
+        "task_id": "handoff:c06-c07:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q002",
+        "dependencies": [
+          "compute:c07:q001",
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q002"
+        ],
+        "duration_ms": 90.45612119590403,
+        "finish_ms": 956.6849009868943,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 2,
+          "compute_ms": 84.73116727590403,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 1
+        },
+        "ready_ms": 866.2287797909902,
+        "resource_id": "microcell:07",
+        "start_ms": 866.2287797909902,
+        "task_id": "compute:c07:q002"
+      },
+      {
+        "critical_predecessor": "compute:c05:q003",
+        "dependencies": [
+          "compute:c05:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 894.5949495061117,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 891.2781231061117,
+        "resource_id": "coarse-link:05",
+        "start_ms": 891.2781231061117,
+        "task_id": "handoff:c05-c06:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q003",
+        "dependencies": [
+          "compute:c06:q002",
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q003"
+        ],
+        "duration_ms": 77.99973720251246,
+        "finish_ms": 972.5946867086242,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 3,
+          "compute_ms": 72.27478328251246,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 894.5949495061117,
+        "resource_id": "microcell:06",
+        "start_ms": 894.5949495061117,
+        "task_id": "compute:c06:q003"
+      },
+      {
+        "critical_predecessor": "compute:c04:q004",
+        "dependencies": [
+          "compute:c04:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 916.826180752562,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 913.509354352562,
+        "resource_id": "coarse-link:04",
+        "start_ms": 913.509354352562,
+        "task_id": "handoff:c04-c05:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q004",
+        "dependencies": [
+          "compute:c05:q003",
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q004"
+        ],
+        "duration_ms": 84.13467567118369,
+        "finish_ms": 1000.9608564237457,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 4,
+          "compute_ms": 78.40972175118368,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 916.826180752562,
+        "resource_id": "microcell:05",
+        "start_ms": 916.826180752562,
+        "task_id": "compute:c05:q004"
+      },
+      {
+        "critical_predecessor": "compute:c08:q001",
+        "dependencies": [
+          "compute:c08:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 931.7490454558779,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 928.4322190558779,
+        "resource_id": "coarse-link:08",
+        "start_ms": 928.4322190558779,
+        "task_id": "handoff:c08-c09:q001"
+      },
+      {
+        "critical_predecessor": "compute:c09:q000",
+        "dependencies": [
+          "compute:c09:q000",
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q001"
+        ],
+        "duration_ms": 124.86755278722485,
+        "finish_ms": 1071.8014177126936,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 1,
+          "compute_ms": 119.14259886722485,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 946.9338649254688,
+        "resource_id": "microcell:09",
+        "start_ms": 946.9338649254688,
+        "task_id": "compute:c09:q001"
+      },
+      {
+        "critical_predecessor": "compute:c09:q000",
+        "dependencies": [
+          "compute:c09:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 950.2506913254688,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 946.9338649254688,
+        "resource_id": "coarse-link:09",
+        "start_ms": 946.9338649254688,
+        "task_id": "handoff:c09-c10:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q000"
+        ],
+        "duration_ms": 78.86475164996651,
+        "finish_ms": 1029.1154429754354,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 0,
+          "compute_ms": 73.1397977299665,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 1
+        },
+        "ready_ms": 950.2506913254688,
+        "resource_id": "microcell:10",
+        "start_ms": 950.2506913254688,
+        "task_id": "compute:c10:q000"
+      },
+      {
+        "critical_predecessor": "compute:c07:q002",
+        "dependencies": [
+          "compute:c07:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 960.0017273868942,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 956.6849009868943,
+        "resource_id": "coarse-link:07",
+        "start_ms": 956.6849009868943,
+        "task_id": "handoff:c07-c08:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q002",
+        "dependencies": [
+          "compute:c08:q001",
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q002"
+        ],
+        "duration_ms": 78.11322498661778,
+        "finish_ms": 1038.114952373512,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 2,
+          "compute_ms": 72.38827106661778,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 960.0017273868942,
+        "resource_id": "microcell:08",
+        "start_ms": 960.0017273868942,
+        "task_id": "compute:c08:q002"
+      },
+      {
+        "critical_predecessor": "compute:c06:q003",
+        "dependencies": [
+          "compute:c06:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 975.9115131086241,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 972.5946867086242,
+        "resource_id": "coarse-link:06",
+        "start_ms": 972.5946867086242,
+        "task_id": "handoff:c06-c07:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q003",
+        "dependencies": [
+          "compute:c07:q002",
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q003"
+        ],
+        "duration_ms": 90.45612119590403,
+        "finish_ms": 1066.367634304528,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 3,
+          "compute_ms": 84.73116727590403,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 1
+        },
+        "ready_ms": 975.9115131086241,
+        "resource_id": "microcell:07",
+        "start_ms": 975.9115131086241,
+        "task_id": "compute:c07:q003"
+      },
+      {
+        "critical_predecessor": "compute:c05:q004",
+        "dependencies": [
+          "compute:c05:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1004.2776828237456,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 1000.9608564237457,
+        "resource_id": "coarse-link:05",
+        "start_ms": 1000.9608564237457,
+        "task_id": "handoff:c05-c06:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q004",
+        "dependencies": [
+          "compute:c06:q003",
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q004"
+        ],
+        "duration_ms": 77.99973720251246,
+        "finish_ms": 1082.2774200262581,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 4,
+          "compute_ms": 72.27478328251246,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1004.2776828237456,
+        "resource_id": "microcell:06",
+        "start_ms": 1004.2776828237456,
+        "task_id": "compute:c06:q004"
+      },
+      {
+        "critical_predecessor": "compute:c10:q000",
+        "dependencies": [
+          "compute:c10:q000"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1032.4322693754355,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 0,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1029.1154429754354,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1029.1154429754354,
+        "task_id": "handoff:c10-c11:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q000"
+        ],
+        "duration_ms": 50.01242381785829,
+        "finish_ms": 1082.4446931932937,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 0,
+          "compute_ms": 46.74102157785829,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.27140224,
+          "internal_payload_bytes": 1032192,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1032.4322693754355,
+        "resource_id": "microcell:11",
+        "start_ms": 1032.4322693754355,
+        "task_id": "compute:c11:q000"
+      },
+      {
+        "critical_predecessor": "compute:c08:q002",
+        "dependencies": [
+          "compute:c08:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1041.4317787735122,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 1038.114952373512,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1038.114952373512,
+        "task_id": "handoff:c08-c09:q002"
+      },
+      {
+        "critical_predecessor": "compute:c07:q003",
+        "dependencies": [
+          "compute:c07:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1069.6844607045282,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 1066.367634304528,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1066.367634304528,
+        "task_id": "handoff:c07-c08:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q003",
+        "dependencies": [
+          "compute:c08:q002",
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q003"
+        ],
+        "duration_ms": 78.11322498661778,
+        "finish_ms": 1147.797685691146,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 3,
+          "compute_ms": 72.38827106661778,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1069.6844607045282,
+        "resource_id": "microcell:08",
+        "start_ms": 1069.6844607045282,
+        "task_id": "compute:c08:q003"
+      },
+      {
+        "critical_predecessor": "compute:c09:q001",
+        "dependencies": [
+          "compute:c09:q001",
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q002"
+        ],
+        "duration_ms": 124.86755278722485,
+        "finish_ms": 1196.6689704999185,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 2,
+          "compute_ms": 119.14259886722485,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1071.8014177126936,
+        "resource_id": "microcell:09",
+        "start_ms": 1071.8014177126936,
+        "task_id": "compute:c09:q002"
+      },
+      {
+        "critical_predecessor": "compute:c09:q001",
+        "dependencies": [
+          "compute:c09:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1075.1182441126937,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1071.8014177126936,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1071.8014177126936,
+        "task_id": "handoff:c09-c10:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q001",
+        "dependencies": [
+          "compute:c10:q000",
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q001"
+        ],
+        "duration_ms": 78.86475164996651,
+        "finish_ms": 1153.9829957626603,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 1,
+          "compute_ms": 73.1397977299665,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1075.1182441126937,
+        "resource_id": "microcell:10",
+        "start_ms": 1075.1182441126937,
+        "task_id": "compute:c10:q001"
+      },
+      {
+        "critical_predecessor": "compute:c06:q004",
+        "dependencies": [
+          "compute:c06:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1085.5942464262582,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 1082.2774200262581,
+        "resource_id": "coarse-link:06",
+        "start_ms": 1082.2774200262581,
+        "task_id": "handoff:c06-c07:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q004",
+        "dependencies": [
+          "compute:c07:q003",
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q004"
+        ],
+        "duration_ms": 90.45612119590403,
+        "finish_ms": 1176.0503676221622,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 4,
+          "compute_ms": 84.73116727590403,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1085.5942464262582,
+        "resource_id": "microcell:07",
+        "start_ms": 1085.5942464262582,
+        "task_id": "compute:c07:q004"
+      },
+      {
+        "critical_predecessor": "compute:c08:q003",
+        "dependencies": [
+          "compute:c08:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1151.114512091146,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 1147.797685691146,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1147.797685691146,
+        "task_id": "handoff:c08-c09:q003"
+      },
+      {
+        "critical_predecessor": "compute:c10:q001",
+        "dependencies": [
+          "compute:c10:q001"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1157.2998221626603,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 1,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1153.9829957626603,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1153.9829957626603,
+        "task_id": "handoff:c10-c11:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q001",
+        "dependencies": [
+          "compute:c11:q000",
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q001"
+        ],
+        "duration_ms": 50.01242381785829,
+        "finish_ms": 1207.3122459805186,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 1,
+          "compute_ms": 46.74102157785829,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.27140224,
+          "internal_payload_bytes": 1032192,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1157.2998221626603,
+        "resource_id": "microcell:11",
+        "start_ms": 1157.2998221626603,
+        "task_id": "compute:c11:q001"
+      },
+      {
+        "critical_predecessor": "compute:c07:q004",
+        "dependencies": [
+          "compute:c07:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1179.3671940221623,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 1176.0503676221622,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1176.0503676221622,
+        "task_id": "handoff:c07-c08:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q004",
+        "dependencies": [
+          "compute:c08:q003",
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q004"
+        ],
+        "duration_ms": 78.11322498661778,
+        "finish_ms": 1257.48041900878,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 4,
+          "compute_ms": 72.38827106661778,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1179.3671940221623,
+        "resource_id": "microcell:08",
+        "start_ms": 1179.3671940221623,
+        "task_id": "compute:c08:q004"
+      },
+      {
+        "critical_predecessor": "compute:c09:q002",
+        "dependencies": [
+          "compute:c09:q002",
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q003"
+        ],
+        "duration_ms": 124.86755278722485,
+        "finish_ms": 1321.5365232871434,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 3,
+          "compute_ms": 119.14259886722485,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1196.6689704999185,
+        "resource_id": "microcell:09",
+        "start_ms": 1196.6689704999185,
+        "task_id": "compute:c09:q003"
+      },
+      {
+        "critical_predecessor": "compute:c09:q002",
+        "dependencies": [
+          "compute:c09:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1199.9857968999186,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1196.6689704999185,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1196.6689704999185,
+        "task_id": "handoff:c09-c10:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q002",
+        "dependencies": [
+          "compute:c10:q001",
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q002"
+        ],
+        "duration_ms": 78.86475164996651,
+        "finish_ms": 1278.8505485498852,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 2,
+          "compute_ms": 73.1397977299665,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1199.9857968999186,
+        "resource_id": "microcell:10",
+        "start_ms": 1199.9857968999186,
+        "task_id": "compute:c10:q002"
+      },
+      {
+        "critical_predecessor": "compute:c08:q004",
+        "dependencies": [
+          "compute:c08:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1260.79724540878,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 1257.48041900878,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1257.48041900878,
+        "task_id": "handoff:c08-c09:q004"
+      },
+      {
+        "critical_predecessor": "compute:c10:q002",
+        "dependencies": [
+          "compute:c10:q002"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1282.1673749498852,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 2,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1278.8505485498852,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1278.8505485498852,
+        "task_id": "handoff:c10-c11:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q002",
+        "dependencies": [
+          "compute:c11:q001",
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q002"
+        ],
+        "duration_ms": 50.01242381785829,
+        "finish_ms": 1332.1797987677435,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 2,
+          "compute_ms": 46.74102157785829,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.27140224,
+          "internal_payload_bytes": 1032192,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1282.1673749498852,
+        "resource_id": "microcell:11",
+        "start_ms": 1282.1673749498852,
+        "task_id": "compute:c11:q002"
+      },
+      {
+        "critical_predecessor": "compute:c09:q003",
+        "dependencies": [
+          "compute:c09:q003",
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q004"
+        ],
+        "duration_ms": 124.86755278722485,
+        "finish_ms": 1446.4040760743683,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 4,
+          "compute_ms": 119.14259886722485,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1321.5365232871434,
+        "resource_id": "microcell:09",
+        "start_ms": 1321.5365232871434,
+        "task_id": "compute:c09:q004"
+      },
+      {
+        "critical_predecessor": "compute:c09:q003",
+        "dependencies": [
+          "compute:c09:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1324.8533496871435,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1321.5365232871434,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1321.5365232871434,
+        "task_id": "handoff:c09-c10:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q003",
+        "dependencies": [
+          "compute:c10:q002",
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q003"
+        ],
+        "duration_ms": 78.86475164996651,
+        "finish_ms": 1403.71810133711,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 3,
+          "compute_ms": 73.1397977299665,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1324.8533496871435,
+        "resource_id": "microcell:10",
+        "start_ms": 1324.8533496871435,
+        "task_id": "compute:c10:q003"
+      },
+      {
+        "critical_predecessor": "compute:c10:q003",
+        "dependencies": [
+          "compute:c10:q003"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1407.0349277371101,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 3,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1403.71810133711,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1403.71810133711,
+        "task_id": "handoff:c10-c11:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q003",
+        "dependencies": [
+          "compute:c11:q002",
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q003"
+        ],
+        "duration_ms": 50.01242381785829,
+        "finish_ms": 1457.0473515549684,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 3,
+          "compute_ms": 46.74102157785829,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.27140224,
+          "internal_payload_bytes": 1032192,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1407.0349277371101,
+        "resource_id": "microcell:11",
+        "start_ms": 1407.0349277371101,
+        "task_id": "compute:c11:q003"
+      },
+      {
+        "critical_predecessor": "compute:c09:q004",
+        "dependencies": [
+          "compute:c09:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1449.7209024743684,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1446.4040760743683,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1446.4040760743683,
+        "task_id": "handoff:c09-c10:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q004",
+        "dependencies": [
+          "compute:c10:q003",
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q004"
+        ],
+        "duration_ms": 78.86475164996651,
+        "finish_ms": 1528.585654124335,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 4,
+          "compute_ms": 73.1397977299665,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.72495392,
+          "internal_payload_bytes": 1806336,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1449.7209024743684,
+        "resource_id": "microcell:10",
+        "start_ms": 1449.7209024743684,
+        "task_id": "compute:c10:q004"
+      },
+      {
+        "critical_predecessor": "compute:c10:q004",
+        "dependencies": [
+          "compute:c10:q004"
+        ],
+        "duration_ms": 3.3168264,
+        "finish_ms": 1531.902480524335,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "chunk": 4,
+          "payload_bytes": 258048,
+          "rows": 1,
+          "seed_object_bytes": 0,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1528.585654124335,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1528.585654124335,
+        "task_id": "handoff:c10-c11:q004"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q004",
+        "dependencies": [
+          "compute:c11:q003",
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q004"
+        ],
+        "duration_ms": 50.01242381785829,
+        "finish_ms": 1581.9149043421933,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 0,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 4,
+          "compute_ms": 46.74102157785829,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.27140224,
+          "internal_payload_bytes": 1032192,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 1
+        },
+        "ready_ms": 1531.902480524335,
+        "resource_id": "microcell:11",
+        "start_ms": 1531.902480524335,
+        "task_id": "compute:c11:q004"
+      }
+    ],
+    "resource_utilization": {
+      "coarse-link:00": 0.010483580345869596,
+      "coarse-link:01": 0.010483580345869596,
+      "coarse-link:02": 0.010483580345869596,
+      "coarse-link:03": 0.010483580345869596,
+      "coarse-link:04": 0.010483580345869596,
+      "coarse-link:05": 0.010483580345869596,
+      "coarse-link:06": 0.010483580345869596,
+      "coarse-link:07": 0.010483580345869596,
+      "coarse-link:08": 0.010483580345869596,
+      "coarse-link:09": 0.010483580345869596,
+      "coarse-link:10": 0.010483580345869596,
+      "coordinator": 0.00011084667039844074,
+      "microcell:00": 0.34667709690504295,
+      "microcell:01": 0.28153029608379754,
+      "microcell:02": 0.2940237555202714,
+      "microcell:03": 0.29148710776355574,
+      "microcell:04": 0.244437818417908,
+      "microcell:05": 0.2659266798746338,
+      "microcell:06": 0.2465358186727087,
+      "microcell:07": 0.2859070388287363,
+      "microcell:08": 0.24689452249360894,
+      "microcell:09": 0.39467215475521567,
+      "microcell:10": 0.2492698925634081,
+      "microcell:11": 0.15807558194369162
+    },
+    "scheduler_cpu_ms": 0.4162,
+    "serial_sum_ms": 5411.522065966448
+  },
+  "result": {
+    "accepted_rows": 5,
+    "block_candidates": 4,
+    "bytes": 14192640,
+    "cache_enabled": false,
+    "chunk_size": 1,
+    "compute_only_wavefront_ms": 1456.1087529024403,
+    "critical_path_communication_ms": 36.485090400000004,
+    "critical_path_fraction": 0.2923234692677314,
+    "drain_ms": 50.012423817858235,
+    "evidence_class": "VALIDATED INDEPENDENT-RESOURCE MODEL + SHAPED NETWORK",
+    "fill_ms": 1032.4322693754355,
+    "ideal_balanced_compute_pipeline_ms": 1306.0511432443911,
+    "ideal_balanced_pipeline_ms": 1394.3790037243914,
+    "loss_communication_ms": 125.63080143975297,
+    "loss_control_plane_ms": 0.17535,
+    "loss_explicit_state_barrier_ms": 0.0,
+    "loss_fill_drain_ms": 897.9101609805189,
+    "loss_stage_imbalance_ms": 150.05760965804916,
+    "max_chunks_in_flight": 5,
+    "median_steady_utilization": 0.2737284879792157,
+    "messages": 55,
+    "messages_per_accepted_token": 11.0,
+    "network": {
+      "cache_hits": 0,
+      "cache_misses": 0,
+      "cache_reference_bytes": 0,
+      "cache_seed_bytes": 0,
+      "cached_attnres_total_bytes": 0,
+      "cached_total_bytes": 0,
+      "coarse_boundary_bytes": 14192640,
+      "current_attnres_bytes": 105512960,
+      "current_total_bytes": 118702080,
+      "internal_boundary_bytes": 104509440,
+      "invalidations": 0,
+      "steady_state_attnres_reduction_fraction": 1.0,
+      "total_attnres_reduction_fraction": 1.0
+    },
+    "oracle_tok_s_per_user": 3.160726273123488,
+    "pipeline_efficiency": 0.8814500703526876,
+    "pipeline_efficiency_definition": "balanced pipeline latency using the mean measured stage compute service for each actual chunk, excluding handoff, divided by observed event-DAG makespan including communication",
+    "result_class": "B_wavefront_only",
+    "scheduler_overhead_ms": 0.17535,
+    "serial_baseline_ms": 2221.4136161386446,
+    "serial_baseline_oracle_tok_s_per_user": 2.250819011675643,
+    "serial_waits": 27,
+    "serial_waits_per_accepted_token": 5.4,
+    "simulation_cpu_ms": 0.4162,
+    "slowest_stage": 9,
+    "speedup_vs_corresponding_serial": 1.4042560760007339,
+    "stage_utilization": {
+      "0": 0.34667709690504295,
+      "1": 0.28153029608379754,
+      "2": 0.2940237555202714,
+      "3": 0.29148710776355574,
+      "4": 0.244437818417908,
+      "5": 0.2659266798746338,
+      "6": 0.2465358186727087,
+      "7": 0.2859070388287363,
+      "8": 0.24689452249360894,
+      "9": 0.39467215475521567,
+      "10": 0.2492698925634081,
+      "11": 0.15807558194369162
+    },
+    "steady_stage_period_ms": 124.8675527872249,
+    "steady_stage_utilization": {
+      "0": 0.34667709690504295,
+      "1": 0.28153029608379754,
+      "2": 0.2940237555202714,
+      "3": 0.29148710776355574,
+      "4": 0.244437818417908,
+      "5": 0.2659266798746338,
+      "6": 0.2465358186727087,
+      "7": 0.2859070388287363,
+      "8": 0.24689452249360894,
+      "9": 0.39467215475521567,
+      "10": 0.2492698925634081,
+      "11": 0.15807558194369162
+    },
+    "total_ms": 1581.9149043421933,
+    "useful_parallelism": 3.3635480711209254,
+    "worker_idle_ms_by_microcell": {
+      "0": 1033.501237754023,
+      "1": 1136.5579329433633,
+      "2": 1116.7943432540108,
+      "3": 1120.8071041474254,
+      "4": 1195.235076202014,
+      "5": 1161.2415259862748,
+      "6": 1191.916218329631,
+      "7": 1129.634298362673,
+      "8": 1191.3487794091043,
+      "9": 957.577140406069,
+      "10": 1187.5911460923608,
+      "11": 1331.8527852529019
+    }
+  },
+  "schema_version": "experiment-018-event-trace-v1"
+}

@@ -1,0 +1,10 @@
+set(TARGET llama-e027-stage)
+add_executable(${TARGET} e027-stage.cpp)
+install(TARGETS ${TARGET} RUNTIME)
+target_link_libraries(${TARGET} PRIVATE llama ${CMAKE_THREAD_LIBS_INIT})
+if (WIN32)
+    target_link_libraries(${TARGET} PRIVATE ws2_32)
+endif()
+target_include_directories(${TARGET} PRIVATE ../../src)
+target_compile_features(${TARGET} PRIVATE cxx_std_17)
+

@@ -1,0 +1,6327 @@
+{
+  "batch8_evaluation": {
+    "capacity_gain_vs_distributed_batch1": 2.017165606987937,
+    "effective_weight_reuse_rows_per_native_call": 2.0915032679738563,
+    "gates": {
+      "capacity_gain_vs_distributed_batch1_at_least_1_5": true,
+      "effective_weight_reuse_at_least_2": true,
+      "message_reduction_at_least_75_percent": true,
+      "resident_batch_throughput_retention_at_least_50_percent": true
+    },
+    "message_reduction_percent_vs_batch1_per_row": 87.5,
+    "resident_batch_throughput_retention_percent": 70.57864400736823
+  },
+  "batches": {
+    "1": {
+      "correctness": {
+        "comparisons": [
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "reference_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "reference_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "reference_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "row": 0
+          }
+        ],
+        "external_records": [
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 18.4877,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 1.3156,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 1.004800000000003,
+            "framing_bytes": 32,
+            "generation": 1,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 0,
+            "request_bytes": 58391,
+            "response_bytes": 231908,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 19.8133,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 290299,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 18.172672271728516,
+            "worker_compute_critical_wall_ms": 18.8085,
+            "worker_compute_total_device_ms": 44.88681674003601,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_ms": 3.1079680919647217,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "native_expert_calls": 2,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 3.6989
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_ms": 18.172672271728516,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "native_expert_calls": 6,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 18.8085
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_ms": 9.103936195373535,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "native_expert_calls": 4,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 10.4402
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_ms": 14.502240180969238,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "native_expert_calls": 4,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 16.3745
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 47.166,
+            "critical_path_payload_bytes": 86016,
+            "dispatch_ms": 1.2482,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 0.7325000000000017,
+            "framing_bytes": 32,
+            "generation": 2,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:402877d5b6038194739f6fe2649b11728cc730b71b73a7fccd692a5ba2a66df8",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 0,
+            "request_bytes": 58394,
+            "response_bytes": 231911,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 48.4193,
+            "selected_expert_ids": [
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 290305,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 47.56003189086914,
+            "worker_compute_critical_wall_ms": 47.6868,
+            "worker_compute_total_device_ms": 163.80012893676758,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 86016,
+                "device_ms": 47.19833755493164,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 5
+                },
+                "native_expert_calls": 5,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 71680,
+                "tasks": 5,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 5,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 47.377
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_ms": 47.56003189086914,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "native_expert_calls": 4,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 47.6868
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 57344,
+                "device_ms": 35.121726989746094,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 3
+                },
+                "native_expert_calls": 3,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 43008,
+                "tasks": 3,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 3,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 35.2706
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_ms": 33.9200325012207,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "native_expert_calls": 4,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 34.0934
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 24.2565,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 0.8286,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 0.5546000000000006,
+            "framing_bytes": 32,
+            "generation": 3,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:2983cab770aba5940242499f08b66cf79e4dedb387fdc203f6951cba823a8ee3",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 0,
+            "request_bytes": 58392,
+            "response_bytes": 231909,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 25.0938,
+            "selected_expert_ids": [
+              [
+                832,
+                186,
+                756,
+                888,
+                62,
+                692,
+                51,
+                777,
+                569,
+                757,
+                504,
+                624,
+                885,
+                31,
+                350,
+                263
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 290301,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 24.378368377685547,
+            "worker_compute_critical_wall_ms": 24.5392,
+            "worker_compute_total_device_ms": 78.62992000579834,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_ms": 24.378368377685547,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "native_expert_calls": 6,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 24.5392
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_ms": 22.284927368164062,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "native_expert_calls": 4,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 22.4267
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 57344,
+                "device_ms": 13.220576286315918,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 3
+                },
+                "native_expert_calls": 3,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 43008,
+                "tasks": 3,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 3,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 13.3385
+              },
+              {
+                "activation_rows": 1,
+                "critical_payload_bytes": 57344,
+                "device_ms": 18.746047973632812,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 3
+                },
+                "native_expert_calls": 3,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 43008,
+                "tasks": 3,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 3,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 18.8903
+              }
+            ],
+            "workers_contacted": 4
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "observed_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "pass": true,
+        "reference_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_device_rows_per_second": 195.6316209204505,
+        "aggregate_wall_rows_per_second": 188.52984427434865,
+        "batch": 1,
+        "communication": {
+          "mean_critical_path_payload_bytes": 100352.0,
+          "mean_input_activation_bytes": 57344.0,
+          "mean_messages": 8.0,
+          "mean_messages_per_row": 8.0,
+          "mean_total_transport_bytes": 290301.5,
+          "mean_transport_bytes_per_row": 290301.5,
+          "returned_expert_output_bytes": 229376,
+          "synchronization_points": 2
+        },
+        "critical_worker_device": {
+          "maximum_ms": 2.569823980331421,
+          "mean_ms": 2.3227743983268736,
+          "minimum_ms": 2.098720073699951,
+          "p50_ms": 2.303679943084717,
+          "p95_ms": 2.5386640191078187,
+          "p99_ms": 2.5635919880867,
+          "standard_deviation_ms": 0.11066870274662119
+        },
+        "device": {
+          "maximum_ms": 5.902656078338623,
+          "mean_ms": 5.189638423919678,
+          "minimum_ms": 4.907199859619141,
+          "p50_ms": 5.111648082733154,
+          "p95_ms": 5.5114688158035285,
+          "p99_ms": 5.824418625831604,
+          "standard_deviation_ms": 0.23593030802592804
+        },
+        "expert_collective_roundtrip": {
+          "maximum_ms": 3.4689,
+          "mean_ms": 2.907505,
+          "minimum_ms": 2.6344,
+          "p50_ms": 2.8432500000000003,
+          "p95_ms": 3.2142999999999997,
+          "p99_ms": 3.4179799999999996,
+          "standard_deviation_ms": 0.1996616299517762
+        },
+        "exposed_coordination": {
+          "maximum_ms": 0.9783,
+          "mean_ms": 0.49403500000000006,
+          "minimum_ms": 0.2846000000000002,
+          "p50_ms": 0.4646999999999999,
+          "p95_ms": 0.6720200000000002,
+          "p99_ms": 0.9170439999999995,
+          "standard_deviation_ms": 0.1407785966509114
+        },
+        "external_phase_wall": {
+          "maximum_ms": 3.402,
+          "mean_ms": 3.2479666666666667,
+          "minimum_ms": 3.0951,
+          "p50_ms": 3.2468,
+          "p95_ms": 3.38648,
+          "p99_ms": 3.398896,
+          "standard_deviation_ms": 0.12529411620485445
+        },
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "load_balance": {
+          "worker_activation_rows_max": 1,
+          "worker_activation_rows_mean": 1.0,
+          "worker_activation_rows_min": 1,
+          "worker_tasks_max": 6,
+          "worker_tasks_mean": 4.0,
+          "worker_tasks_min": 2
+        },
+        "per_row_wall_service_ms": 5.3042,
+        "routing_and_reuse": {
+          "avoided_expert_weight_launches": 0,
+          "effective_weight_reuse_rows_per_native_call": 1.0,
+          "mean_repeated_expert_hits": 0.0,
+          "mean_unique_experts": 16.0,
+          "native_expert_calls": 320,
+          "total_selections": 320
+        },
+        "state_bytes_each": 6881280,
+        "state_bytes_total": 6881280,
+        "wall": {
+          "maximum_ms": 6.4093,
+          "mean_ms": 5.399115,
+          "minimum_ms": 5.0896,
+          "p50_ms": 5.3042,
+          "p95_ms": 5.705350000000001,
+          "p99_ms": 6.268509999999999,
+          "standard_deviation_ms": 0.2825800422446709
+        }
+      },
+      "post_batch_safe_fixture": {
+        "coordinator_cuda_error_state_ok": true,
+        "free_vram_bytes": 32001490944,
+        "metrics": {
+          "actual_finite": true,
+          "actual_l2": 813.3831033969739,
+          "cosine_similarity": 1.0,
+          "maximum_absolute_error": 0.0,
+          "mean_absolute_error": 0.0,
+          "reference_finite": true,
+          "reference_l2": 813.3831033969739,
+          "relative_l2_error": 0.0
+        },
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "10394",
+          "memory.total": "32607",
+          "memory.used": "21794",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P8",
+          "status": "MEASURED",
+          "temperature.gpu": "50",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "pass": true,
+        "worker_health": [
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 32,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 0
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 32,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 1
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 32,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 32,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 3
+          }
+        ]
+      },
+      "resident_reference": {
+        "aggregate_device_rows_per_second": 302.55940282536386,
+        "aggregate_wall_rows_per_second": 284.29282160625445,
+        "device": {
+          "maximum_ms": 3.603071928024292,
+          "mean_ms": 3.3183151960372923,
+          "minimum_ms": 3.2639999389648438,
+          "p50_ms": 3.3051360845565796,
+          "p95_ms": 3.35142080783844,
+          "p99_ms": 3.552741703987121,
+          "standard_deviation_ms": 0.06915445603358455
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 1.192031979560852,
+          "mean_ms": 1.1887679894765217,
+          "minimum_ms": 1.1840319633483887,
+          "p50_ms": 1.1902400255203247,
+          "p95_ms": 1.1918527841567994,
+          "p99_ms": 1.1919961404800417,
+          "standard_deviation_ms": 0.0034278499029382244
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 1.0,
+          "mean_unique_experts": 16.0
+        },
+        "wall": {
+          "maximum_ms": 3.8273,
+          "mean_ms": 3.5289050000000004,
+          "minimum_ms": 3.4614,
+          "p50_ms": 3.5175,
+          "p95_ms": 3.5851450000000002,
+          "p99_ms": 3.7788689999999994,
+          "standard_deviation_ms": 0.07313111837651606
+        }
+      },
+      "status": "PASS"
+    },
+    "2": {
+      "correctness": {
+        "comparisons": [
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "reference_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "reference_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "reference_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "reference_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "reference_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "reference_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "row": 1
+          }
+        ],
+        "external_records": [
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 2,
+            "batch": 2,
+            "collection_ms": 4.2804,
+            "critical_path_payload_bytes": 172032,
+            "dispatch_ms": 0.9187,
+            "effective_weight_reuse_rows_per_native_call": 1.0666666666666667,
+            "exposed_loopback_and_coordination_ms": 0.9171000000000005,
+            "framing_bytes": 32,
+            "generation": 33,
+            "input_activation_bytes": 114688,
+            "messages": 8,
+            "native_expert_calls": 30,
+            "output_fingerprint": "sha256:9c70e2fe4eb744a5795f3c6479ce08d7c5ba00a407d33e2a04fd0aac117d2945",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 2,
+            "request_bytes": 115885,
+            "response_bytes": 461460,
+            "returned_expert_output_bytes": 458752,
+            "root_messages": 8,
+            "roundtrip_ms": 5.2144,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ],
+              [
+                888,
+                832,
+                692,
+                263,
+                62,
+                895,
+                662,
+                757,
+                885,
+                138,
+                399,
+                569,
+                504,
+                379,
+                478,
+                673
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 32,
+            "total_transport_bytes": 577345,
+            "unique_experts": 30,
+            "worker_compute_critical_device_ms": 4.116672039031982,
+            "worker_compute_critical_wall_ms": 4.2973,
+            "worker_compute_total_device_ms": 14.895519971847534,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 114688,
+                "device_ms": 3.0724799633026123,
+                "execute_count": 33,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "native_expert_calls": 6,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 3.1978
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 172032,
+                "device_ms": 4.116672039031982,
+                "execute_count": 33,
+                "expert_group_size_histogram": {
+                  "1": 6,
+                  "2": 2
+                },
+                "native_expert_calls": 8,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 2,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 143360,
+                "tasks": 10,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 4.2973
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 143360,
+                "device_ms": 3.844223976135254,
+                "execute_count": 33,
+                "expert_group_size_histogram": {
+                  "1": 8
+                },
+                "native_expert_calls": 8,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 114688,
+                "tasks": 8,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 4.0924
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 143360,
+                "device_ms": 3.8621439933776855,
+                "execute_count": 33,
+                "expert_group_size_histogram": {
+                  "1": 8
+                },
+                "native_expert_calls": 8,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 114688,
+                "tasks": 8,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 4.0389
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 11,
+            "batch": 2,
+            "collection_ms": 3.1105,
+            "critical_path_payload_bytes": 186368,
+            "dispatch_ms": 0.4835,
+            "effective_weight_reuse_rows_per_native_call": 1.5238095238095237,
+            "exposed_loopback_and_coordination_ms": 0.6392000000000002,
+            "framing_bytes": 32,
+            "generation": 34,
+            "input_activation_bytes": 114688,
+            "messages": 8,
+            "native_expert_calls": 21,
+            "output_fingerprint": "sha256:cfb9379557a9f77286927f85b84a664d2c4d4f116f76b2ff42966a64f18a08e0",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 11,
+            "request_bytes": 115886,
+            "response_bytes": 461482,
+            "returned_expert_output_bytes": 458752,
+            "root_messages": 8,
+            "roundtrip_ms": 3.5988,
+            "selected_expert_ids": [
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                888,
+                756,
+                62,
+                51,
+                692,
+                504,
+                777,
+                757,
+                569,
+                624,
+                359,
+                263,
+                350,
+                31
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 32,
+            "total_transport_bytes": 577368,
+            "unique_experts": 21,
+            "worker_compute_critical_device_ms": 2.7839999198913574,
+            "worker_compute_critical_wall_ms": 2.9596,
+            "worker_compute_total_device_ms": 10.097919702529907,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 186368,
+                "device_ms": 2.600735902786255,
+                "execute_count": 34,
+                "expert_group_size_histogram": {
+                  "1": 1,
+                  "2": 5
+                },
+                "native_expert_calls": 6,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 5,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 157696,
+                "tasks": 11,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 2.7548
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 129024,
+                "device_ms": 2.12172794342041,
+                "execute_count": 34,
+                "expert_group_size_histogram": {
+                  "1": 1,
+                  "2": 3
+                },
+                "native_expert_calls": 4,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 3,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 100352,
+                "tasks": 7,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 2.2302
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 114688,
+                "device_ms": 2.5914559364318848,
+                "execute_count": 34,
+                "expert_group_size_histogram": {
+                  "1": 4,
+                  "2": 1
+                },
+                "native_expert_calls": 5,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 1,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 5,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 2.7154
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 143360,
+                "device_ms": 2.7839999198913574,
+                "execute_count": 34,
+                "expert_group_size_histogram": {
+                  "1": 4,
+                  "2": 2
+                },
+                "native_expert_calls": 6,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 2,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 114688,
+                "tasks": 8,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 2.9596
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 1,
+            "batch": 2,
+            "collection_ms": 4.5112,
+            "critical_path_payload_bytes": 172032,
+            "dispatch_ms": 0.4184,
+            "effective_weight_reuse_rows_per_native_call": 1.032258064516129,
+            "exposed_loopback_and_coordination_ms": 0.6779999999999999,
+            "framing_bytes": 32,
+            "generation": 35,
+            "input_activation_bytes": 114688,
+            "messages": 8,
+            "native_expert_calls": 31,
+            "output_fingerprint": "sha256:f6593ea6f63ad51ef6013a9642892b63b1520c8b65e31e2adb5260a2066444cb",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 1,
+            "request_bytes": 115882,
+            "response_bytes": 461457,
+            "returned_expert_output_bytes": 458752,
+            "root_messages": 8,
+            "roundtrip_ms": 4.9338,
+            "selected_expert_ids": [
+              [
+                832,
+                186,
+                756,
+                888,
+                62,
+                692,
+                51,
+                777,
+                569,
+                757,
+                504,
+                624,
+                885,
+                31,
+                350,
+                263
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                233,
+                173,
+                586,
+                45,
+                885,
+                673,
+                120,
+                103
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 32,
+            "total_transport_bytes": 577339,
+            "unique_experts": 31,
+            "worker_compute_critical_device_ms": 4.150976181030273,
+            "worker_compute_critical_wall_ms": 4.2558,
+            "worker_compute_total_device_ms": 15.30947232246399,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 143360,
+                "device_ms": 4.122879981994629,
+                "execute_count": 35,
+                "expert_group_size_histogram": {
+                  "1": 8
+                },
+                "native_expert_calls": 8,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 114688,
+                "tasks": 8,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 4.2095
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 172032,
+                "device_ms": 4.150976181030273,
+                "execute_count": 35,
+                "expert_group_size_histogram": {
+                  "1": 8,
+                  "2": 1
+                },
+                "native_expert_calls": 9,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 1,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 143360,
+                "tasks": 10,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 4.2558
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 114688,
+                "device_ms": 3.047840118408203,
+                "execute_count": 35,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "native_expert_calls": 6,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 3.1411
+              },
+              {
+                "activation_rows": 2,
+                "critical_payload_bytes": 143360,
+                "device_ms": 3.987776041030884,
+                "execute_count": 35,
+                "expert_group_size_histogram": {
+                  "1": 8
+                },
+                "native_expert_calls": 8,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 28672,
+                "returned_output_bytes": 114688,
+                "tasks": 8,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 4.0864
+              }
+            ],
+            "workers_contacted": 4
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "observed_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "pass": true,
+        "reference_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_device_rows_per_second": 245.8331401606263,
+        "aggregate_wall_rows_per_second": 233.97149057387358,
+        "batch": 2,
+        "communication": {
+          "mean_critical_path_payload_bytes": 177766.4,
+          "mean_input_activation_bytes": 114688.0,
+          "mean_messages": 8.0,
+          "mean_messages_per_row": 4.0,
+          "mean_total_transport_bytes": 577345.95,
+          "mean_transport_bytes_per_row": 288672.975,
+          "returned_expert_output_bytes": 458752,
+          "synchronization_points": 2
+        },
+        "critical_worker_device": {
+          "maximum_ms": 4.615071773529053,
+          "mean_ms": 3.788068783283234,
+          "minimum_ms": 2.319551944732666,
+          "p50_ms": 4.236271858215332,
+          "p95_ms": 4.604675078392029,
+          "p99_ms": 4.612992434501648,
+          "standard_deviation_ms": 0.8230697920524783
+        },
+        "device": {
+          "maximum_ms": 8.741215705871582,
+          "mean_ms": 7.740276741981506,
+          "minimum_ms": 6.04915189743042,
+          "p50_ms": 8.135599613189697,
+          "p95_ms": 8.612776136398315,
+          "p99_ms": 8.715527791976928,
+          "standard_deviation_ms": 0.8624908967494809
+        },
+        "expert_collective_roundtrip": {
+          "maximum_ms": 5.5263,
+          "mean_ms": 4.59989,
+          "minimum_ms": 3.1121,
+          "p50_ms": 5.0617,
+          "p95_ms": 5.358055,
+          "p99_ms": 5.4926509999999995,
+          "standard_deviation_ms": 0.8299633949157034
+        },
+        "exposed_coordination": {
+          "maximum_ms": 0.9077000000000002,
+          "mean_ms": 0.670005,
+          "minimum_ms": 0.47859999999999925,
+          "p50_ms": 0.6571500000000003,
+          "p95_ms": 0.85678,
+          "p99_ms": 0.8975160000000001,
+          "standard_deviation_ms": 0.12278854374492768
+        },
+        "external_phase_wall": {
+          "maximum_ms": 5.4338,
+          "mean_ms": 4.823133333333334,
+          "minimum_ms": 3.9557,
+          "p50_ms": 5.0799,
+          "p95_ms": 5.398409999999999,
+          "p99_ms": 5.426722,
+          "standard_deviation_ms": 0.6301543426459548
+        },
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "load_balance": {
+          "worker_activation_rows_max": 2,
+          "worker_activation_rows_mean": 2.0,
+          "worker_activation_rows_min": 2,
+          "worker_tasks_max": 12,
+          "worker_tasks_mean": 8.0,
+          "worker_tasks_min": 5
+        },
+        "per_row_wall_service_ms": 4.274025,
+        "routing_and_reuse": {
+          "avoided_expert_weight_launches": 91,
+          "effective_weight_reuse_rows_per_native_call": 1.1657559198542806,
+          "mean_repeated_expert_hits": 4.55,
+          "mean_unique_experts": 27.45,
+          "native_expert_calls": 549,
+          "total_selections": 640
+        },
+        "state_bytes_each": 6881280,
+        "state_bytes_total": 13762560,
+        "wall": {
+          "maximum_ms": 9.238,
+          "mean_ms": 8.183045,
+          "minimum_ms": 6.4065,
+          "p50_ms": 8.54805,
+          "p95_ms": 9.202375,
+          "p99_ms": 9.230875,
+          "standard_deviation_ms": 0.8762216771314209
+        }
+      },
+      "post_batch_safe_fixture": {
+        "coordinator_cuda_error_state_ok": true,
+        "free_vram_bytes": 31999393792,
+        "metrics": {
+          "actual_finite": true,
+          "actual_l2": 813.3831033969739,
+          "cosine_similarity": 1.0,
+          "maximum_absolute_error": 0.0,
+          "mean_absolute_error": 0.0,
+          "reference_finite": true,
+          "reference_l2": 813.3831033969739,
+          "relative_l2_error": 0.0
+        },
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "10392",
+          "memory.total": "32607",
+          "memory.used": "21796",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "53",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "pass": true,
+        "worker_health": [
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 64,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 0
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 64,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 1
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 64,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 64,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 3
+          }
+        ]
+      },
+      "resident_reference": {
+        "aggregate_device_rows_per_second": 385.1522184523485,
+        "aggregate_wall_rows_per_second": 364.85697606538236,
+        "device": {
+          "maximum_ms": 5.311776161193848,
+          "mean_ms": 4.954571223258972,
+          "minimum_ms": 4.280992031097412,
+          "p50_ms": 5.192752122879028,
+          "p95_ms": 5.262132859230041,
+          "p99_ms": 5.301847500801086,
+          "standard_deviation_ms": 0.40522262438874035
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 2.295488119125366,
+          "mean_ms": 2.0267200469970703,
+          "minimum_ms": 1.4932479858398438,
+          "p50_ms": 2.291424036026001,
+          "p95_ms": 2.2950817108154298,
+          "p99_ms": 2.295406837463379,
+          "standard_deviation_ms": 0.37722536077643243
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 1.1657559198542806,
+          "mean_unique_experts": 27.45
+        },
+        "wall": {
+          "maximum_ms": 5.5826,
+          "mean_ms": 5.2482,
+          "minimum_ms": 4.6032,
+          "p50_ms": 5.4816,
+          "p95_ms": 5.558185,
+          "p99_ms": 5.577717000000001,
+          "standard_deviation_ms": 0.398648990968245
+        }
+      },
+      "status": "PASS"
+    },
+    "4": {
+      "correctness": {
+        "comparisons": [
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "reference_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "reference_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "reference_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "row": 2
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "reference_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "row": 3
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "reference_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "reference_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "reference_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "row": 2
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "reference_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "row": 3
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "reference_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "reference_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "reference_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "row": 2
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "reference_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "row": 3
+          }
+        ],
+        "external_records": [
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 24,
+            "batch": 4,
+            "collection_ms": 6.0859,
+            "critical_path_payload_bytes": 329728,
+            "dispatch_ms": 0.8227,
+            "effective_weight_reuse_rows_per_native_call": 1.6,
+            "exposed_loopback_and_coordination_ms": 1.0369000000000002,
+            "framing_bytes": 32,
+            "generation": 65,
+            "input_activation_bytes": 229376,
+            "messages": 8,
+            "native_expert_calls": 40,
+            "output_fingerprint": "sha256:6081a9644d279b78f0e256a5b358e6ea41abf159c1ae26907c3f6e985099576f",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 26,
+            "request_bytes": 230873,
+            "response_bytes": 920519,
+            "returned_expert_output_bytes": 917504,
+            "root_messages": 8,
+            "roundtrip_ms": 6.9383,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ],
+              [
+                888,
+                832,
+                692,
+                263,
+                62,
+                895,
+                662,
+                757,
+                885,
+                138,
+                399,
+                569,
+                504,
+                379,
+                478,
+                673
+              ],
+              [
+                832,
+                186,
+                756,
+                62,
+                888,
+                51,
+                504,
+                692,
+                777,
+                569,
+                757,
+                359,
+                624,
+                263,
+                540,
+                350
+              ],
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 64,
+            "total_transport_bytes": 1151392,
+            "unique_experts": 38,
+            "worker_compute_critical_device_ms": 5.724800109863281,
+            "worker_compute_critical_wall_ms": 5.9014,
+            "worker_compute_total_device_ms": 21.5000319480896,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 272384,
+                "device_ms": 5.1253437995910645,
+                "execute_count": 65,
+                "expert_group_size_histogram": {
+                  "1": 3,
+                  "2": 6
+                },
+                "native_expert_calls": 9,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 6,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 215040,
+                "tasks": 15,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 5.2959
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 329728,
+                "device_ms": 5.724800109863281,
+                "execute_count": 65,
+                "expert_group_size_histogram": {
+                  "1": 1,
+                  "2": 6,
+                  "3": 2
+                },
+                "native_expert_calls": 11,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 10,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 272384,
+                "tasks": 19,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 5.9014
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 272384,
+                "device_ms": 5.2881598472595215,
+                "execute_count": 65,
+                "expert_group_size_histogram": {
+                  "1": 5,
+                  "2": 5
+                },
+                "native_expert_calls": 10,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 5,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 215040,
+                "tasks": 15,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 5.5282
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 272384,
+                "device_ms": 5.361728191375732,
+                "execute_count": 65,
+                "expert_group_size_histogram": {
+                  "1": 5,
+                  "2": 5
+                },
+                "native_expert_calls": 10,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 5,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 215040,
+                "tasks": 15,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 5.6605
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 16,
+            "batch": 4,
+            "collection_ms": 6.6804,
+            "critical_path_payload_bytes": 329728,
+            "dispatch_ms": 0.5657,
+            "effective_weight_reuse_rows_per_native_call": 1.3333333333333333,
+            "exposed_loopback_and_coordination_ms": 0.7393000000000001,
+            "framing_bytes": 32,
+            "generation": 66,
+            "input_activation_bytes": 229376,
+            "messages": 8,
+            "native_expert_calls": 48,
+            "output_fingerprint": "sha256:aedbb3fba97e2f84644d87474eb046f8d33266af91f0ca4e0c94104c67f7de5a",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 28,
+            "request_bytes": 230875,
+            "response_bytes": 920527,
+            "returned_expert_output_bytes": 917504,
+            "root_messages": 8,
+            "roundtrip_ms": 7.2531,
+            "selected_expert_ids": [
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                888,
+                756,
+                62,
+                51,
+                692,
+                504,
+                777,
+                757,
+                569,
+                624,
+                359,
+                263,
+                350,
+                31
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                173,
+                233,
+                586,
+                45,
+                885,
+                673,
+                248,
+                656
+              ],
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 64,
+            "total_transport_bytes": 1151402,
+            "unique_experts": 36,
+            "worker_compute_critical_device_ms": 6.358496189117432,
+            "worker_compute_critical_wall_ms": 6.5138,
+            "worker_compute_total_device_ms": 23.39363193511963,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 329728,
+                "device_ms": 6.358496189117432,
+                "execute_count": 66,
+                "expert_group_size_histogram": {
+                  "1": 4,
+                  "3": 5
+                },
+                "native_expert_calls": 14,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 10,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 272384,
+                "tasks": 19,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 6.5138
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 301056,
+                "device_ms": 6.229695796966553,
+                "execute_count": 66,
+                "expert_group_size_histogram": {
+                  "1": 5,
+                  "3": 4
+                },
+                "native_expert_calls": 13,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 8,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 243712,
+                "tasks": 17,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 6.4239
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 229376,
+                "device_ms": 4.731103897094727,
+                "execute_count": 66,
+                "expert_group_size_histogram": {
+                  "1": 5,
+                  "2": 2,
+                  "3": 1
+                },
+                "native_expert_calls": 9,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 4,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 172032,
+                "tasks": 12,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 4.8945
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 286720,
+                "device_ms": 6.074336051940918,
+                "execute_count": 66,
+                "expert_group_size_histogram": {
+                  "1": 6,
+                  "2": 2,
+                  "3": 2
+                },
+                "native_expert_calls": 12,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 6,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 229376,
+                "tasks": 16,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 6.3431
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 18,
+            "batch": 4,
+            "collection_ms": 7.3056,
+            "critical_path_payload_bytes": 329728,
+            "dispatch_ms": 0.415,
+            "effective_weight_reuse_rows_per_native_call": 1.391304347826087,
+            "exposed_loopback_and_coordination_ms": 0.7728000000000002,
+            "framing_bytes": 32,
+            "generation": 67,
+            "input_activation_bytes": 229376,
+            "messages": 8,
+            "native_expert_calls": 46,
+            "output_fingerprint": "sha256:b210b859a4af68f54147816098b30d88942d1d40c371698bac902eef1a13be3e",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 29,
+            "request_bytes": 230872,
+            "response_bytes": 920536,
+            "returned_expert_output_bytes": 917504,
+            "root_messages": 8,
+            "roundtrip_ms": 7.7247,
+            "selected_expert_ids": [
+              [
+                832,
+                186,
+                756,
+                888,
+                62,
+                692,
+                51,
+                777,
+                569,
+                757,
+                504,
+                624,
+                885,
+                31,
+                350,
+                263
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                233,
+                173,
+                586,
+                45,
+                885,
+                673,
+                120,
+                103
+              ],
+              [
+                888,
+                692,
+                832,
+                62,
+                263,
+                757,
+                662,
+                895,
+                504,
+                885,
+                777,
+                756,
+                51,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                756,
+                888,
+                62,
+                692,
+                51,
+                777,
+                569,
+                757,
+                504,
+                624,
+                885,
+                31,
+                350,
+                263
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 64,
+            "total_transport_bytes": 1151408,
+            "unique_experts": 35,
+            "worker_compute_critical_device_ms": 6.7808637619018555,
+            "worker_compute_critical_wall_ms": 6.9519,
+            "worker_compute_total_device_ms": 25.02131175994873,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 329728,
+                "device_ms": 6.570015907287598,
+                "execute_count": 67,
+                "expert_group_size_histogram": {
+                  "1": 2,
+                  "2": 1,
+                  "3": 5
+                },
+                "native_expert_calls": 13,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 11,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 272384,
+                "tasks": 19,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 6.7451
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 315392,
+                "device_ms": 6.7808637619018555,
+                "execute_count": 67,
+                "expert_group_size_histogram": {
+                  "1": 5,
+                  "3": 3,
+                  "4": 1
+                },
+                "native_expert_calls": 12,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 9,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 258048,
+                "tasks": 18,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 6.9519
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 229376,
+                "device_ms": 5.2057600021362305,
+                "execute_count": 67,
+                "expert_group_size_histogram": {
+                  "1": 5,
+                  "2": 2,
+                  "3": 1
+                },
+                "native_expert_calls": 9,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 4,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 172032,
+                "tasks": 12,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 5.3468
+              },
+              {
+                "activation_rows": 4,
+                "critical_payload_bytes": 272384,
+                "device_ms": 6.464672088623047,
+                "execute_count": 67,
+                "expert_group_size_histogram": {
+                  "1": 7,
+                  "2": 1,
+                  "3": 2
+                },
+                "native_expert_calls": 12,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 5,
+                "request_activation_bytes": 57344,
+                "returned_output_bytes": 215040,
+                "tasks": 15,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 6.6038
+              }
+            ],
+            "workers_contacted": 4
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "observed_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:4505ba75e066d50ea8a3ebcb5bb3ffc25940842508636af7a2848fda555c2578",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "pass": true,
+        "reference_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:4505ba75e066d50ea8a3ebcb5bb3ffc25940842508636af7a2848fda555c2578",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_device_rows_per_second": 341.63459900022514,
+        "aggregate_wall_rows_per_second": 324.3501846768864,
+        "batch": 4,
+        "communication": {
+          "mean_critical_path_payload_bytes": 340480.0,
+          "mean_input_activation_bytes": 229376.0,
+          "mean_messages": 8.0,
+          "mean_messages_per_row": 2.0,
+          "mean_total_transport_bytes": 1151400.2,
+          "mean_transport_bytes_per_row": 287850.05,
+          "returned_expert_output_bytes": 917504,
+          "synchronization_points": 2
+        },
+        "critical_worker_device": {
+          "maximum_ms": 6.530176162719727,
+          "mean_ms": 5.767854380607605,
+          "minimum_ms": 4.419871807098389,
+          "p50_ms": 6.189119815826416,
+          "p95_ms": 6.433199834823608,
+          "p99_ms": 6.510780897140503,
+          "standard_deviation_ms": 0.7214821448685352
+        },
+        "device": {
+          "maximum_ms": 13.110591888427734,
+          "mean_ms": 11.473721599578857,
+          "minimum_ms": 10.038240432739258,
+          "p50_ms": 11.708415985107422,
+          "p95_ms": 12.633950233459473,
+          "p99_ms": 13.015263557434082,
+          "standard_deviation_ms": 0.8449857920966647
+        },
+        "expert_collective_roundtrip": {
+          "maximum_ms": 7.7342,
+          "mean_ms": 6.692095,
+          "minimum_ms": 5.5105,
+          "p50_ms": 7.046799999999999,
+          "p95_ms": 7.444355,
+          "p99_ms": 7.676231,
+          "standard_deviation_ms": 0.7343117427053718
+        },
+        "exposed_coordination": {
+          "maximum_ms": 1.0168000000000008,
+          "mean_ms": 0.7622499999999999,
+          "minimum_ms": 0.5094999999999992,
+          "p50_ms": 0.7461499999999996,
+          "p95_ms": 0.9378550000000001,
+          "p99_ms": 1.0010110000000005,
+          "standard_deviation_ms": 0.11868322754290113
+        },
+        "external_phase_wall": {
+          "maximum_ms": 8.3013,
+          "mean_ms": 7.333066666666666,
+          "minimum_ms": 5.9646,
+          "p50_ms": 7.7333,
+          "p95_ms": 8.2445,
+          "p99_ms": 8.28994,
+          "standard_deviation_ms": 0.9950483282512238
+        },
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "load_balance": {
+          "worker_activation_rows_max": 4,
+          "worker_activation_rows_mean": 4.0,
+          "worker_activation_rows_min": 4,
+          "worker_tasks_max": 20,
+          "worker_tasks_mean": 16.0,
+          "worker_tasks_min": 10
+        },
+        "per_row_wall_service_ms": 3.0830875,
+        "routing_and_reuse": {
+          "avoided_expert_weight_launches": 437,
+          "effective_weight_reuse_rows_per_native_call": 1.5183867141162515,
+          "mean_repeated_expert_hits": 29.25,
+          "mean_unique_experts": 34.75,
+          "native_expert_calls": 843,
+          "total_selections": 1280
+        },
+        "state_bytes_each": 6881280,
+        "state_bytes_total": 27525120,
+        "wall": {
+          "maximum_ms": 13.8701,
+          "mean_ms": 12.09829,
+          "minimum_ms": 10.6701,
+          "p50_ms": 12.33235,
+          "p95_ms": 13.237115000000001,
+          "p99_ms": 13.743502999999999,
+          "standard_deviation_ms": 0.8305388774163435
+        }
+      },
+      "post_batch_safe_fixture": {
+        "coordinator_cuda_error_state_ok": true,
+        "free_vram_bytes": 31997296640,
+        "metrics": {
+          "actual_finite": true,
+          "actual_l2": 813.3831033969739,
+          "cosine_similarity": 1.0,
+          "maximum_absolute_error": 0.0,
+          "mean_absolute_error": 0.0,
+          "reference_finite": true,
+          "reference_l2": 813.3831033969739,
+          "relative_l2_error": 0.0
+        },
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "10390",
+          "memory.total": "32607",
+          "memory.used": "21798",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "56",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "pass": true,
+        "worker_health": [
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 96,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 0
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 96,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 1
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 96,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 96,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 3
+          }
+        ]
+      },
+      "resident_reference": {
+        "aggregate_device_rows_per_second": 487.89247182622285,
+        "aggregate_wall_rows_per_second": 459.6670861128827,
+        "device": {
+          "maximum_ms": 8.391072273254395,
+          "mean_ms": 7.98725917339325,
+          "minimum_ms": 7.430240154266357,
+          "p50_ms": 8.198527812957764,
+          "p95_ms": 8.366812562942505,
+          "p99_ms": 8.386220331192018,
+          "standard_deviation_ms": 0.3741866422463329
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 3.3665919303894043,
+          "mean_ms": 3.1058239936828613,
+          "minimum_ms": 2.593280076980591,
+          "p50_ms": 3.357599973678589,
+          "p95_ms": 3.3656927347183228,
+          "p99_ms": 3.366412091255188,
+          "standard_deviation_ms": 0.36244187003596434
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ],
+            [
+              832,
+              186,
+              756,
+              62,
+              888,
+              51,
+              504,
+              692,
+              777,
+              569,
+              757,
+              359,
+              624,
+              263,
+              540,
+              350
+            ],
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              173,
+              233,
+              586,
+              45,
+              885,
+              673,
+              248,
+              656
+            ],
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ],
+            [
+              888,
+              692,
+              832,
+              62,
+              263,
+              757,
+              662,
+              895,
+              504,
+              885,
+              777,
+              756,
+              51,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 1.5183867141162515,
+          "mean_unique_experts": 34.75
+        },
+        "wall": {
+          "maximum_ms": 8.9854,
+          "mean_ms": 8.53055,
+          "minimum_ms": 7.9163,
+          "p50_ms": 8.70195,
+          "p95_ms": 8.981124999999999,
+          "p99_ms": 8.984545,
+          "standard_deviation_ms": 0.38911082932758373
+        }
+      },
+      "status": "PASS"
+    },
+    "8": {
+      "correctness": {
+        "comparisons": [
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "reference_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "reference_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "reference_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "row": 2
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "reference_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "row": 3
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "reference_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "row": 4
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "reference_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "row": 5
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "reference_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "row": 6
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "reference_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "row": 7
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "reference_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "reference_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "reference_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "row": 2
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "reference_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "row": 3
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "reference_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "row": 4
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "reference_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "row": 5
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "reference_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "row": 6
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "reference_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "row": 7
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "reference_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "row": 0
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "reference_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "row": 1
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "reference_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "row": 2
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "reference_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "row": 3
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "reference_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "row": 4
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "reference_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "row": 5
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "reference_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "row": 6
+          },
+          {
+            "all_16_executed_exactly_once": true,
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "output_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "reference_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "row": 7
+          }
+        ],
+        "external_records": [
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 60,
+            "batch": 8,
+            "collection_ms": 10.2563,
+            "critical_path_payload_bytes": 630784,
+            "dispatch_ms": 1.4132,
+            "effective_weight_reuse_rows_per_native_call": 1.8823529411764706,
+            "exposed_loopback_and_coordination_ms": 1.8610000000000007,
+            "framing_bytes": 32,
+            "generation": 97,
+            "input_activation_bytes": 458752,
+            "messages": 8,
+            "native_expert_calls": 68,
+            "output_fingerprint": "sha256:3e2adc7d04b1a0fb70dd01e60e21d1e364f40f9c901c96ad6408c4c920096246",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 90,
+            "request_bytes": 460881,
+            "response_bytes": 1838611,
+            "returned_expert_output_bytes": 1835008,
+            "root_messages": 8,
+            "roundtrip_ms": 11.7116,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ],
+              [
+                888,
+                832,
+                692,
+                263,
+                62,
+                895,
+                662,
+                757,
+                885,
+                138,
+                399,
+                569,
+                504,
+                379,
+                478,
+                673
+              ],
+              [
+                832,
+                186,
+                756,
+                62,
+                888,
+                51,
+                504,
+                692,
+                777,
+                569,
+                757,
+                359,
+                624,
+                263,
+                540,
+                350
+              ],
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ],
+              [
+                888,
+                832,
+                692,
+                263,
+                62,
+                895,
+                662,
+                757,
+                885,
+                138,
+                399,
+                569,
+                504,
+                379,
+                478,
+                673
+              ],
+              [
+                832,
+                186,
+                756,
+                62,
+                888,
+                51,
+                504,
+                692,
+                777,
+                569,
+                757,
+                359,
+                624,
+                263,
+                540,
+                350
+              ],
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ],
+              [
+                888,
+                832,
+                692,
+                263,
+                62,
+                895,
+                662,
+                757,
+                885,
+                138,
+                399,
+                569,
+                504,
+                379,
+                478,
+                673
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 128,
+            "total_transport_bytes": 2299492,
+            "unique_experts": 38,
+            "worker_compute_critical_device_ms": 9.491552352905273,
+            "worker_compute_critical_wall_ms": 9.8506,
+            "worker_compute_total_device_ms": 34.561888694763184,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 573440,
+                "device_ms": 7.277088165283203,
+                "execute_count": 97,
+                "expert_group_size_histogram": {
+                  "2": 3,
+                  "3": 2,
+                  "5": 4
+                },
+                "native_expert_calls": 15,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 23,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 458752,
+                "tasks": 32,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 7.5209
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 630784,
+                "device_ms": 8.631744384765625,
+                "execute_count": 97,
+                "expert_group_size_histogram": {
+                  "2": 1,
+                  "3": 4,
+                  "5": 2,
+                  "6": 2
+                },
+                "native_expert_calls": 17,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 27,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 516096,
+                "tasks": 36,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 8.934
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 544768,
+                "device_ms": 9.491552352905273,
+                "execute_count": 97,
+                "expert_group_size_histogram": {
+                  "2": 2,
+                  "3": 7,
+                  "5": 1
+                },
+                "native_expert_calls": 18,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 20,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 430080,
+                "tasks": 30,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 9.8506
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 544768,
+                "device_ms": 9.161503791809082,
+                "execute_count": 97,
+                "expert_group_size_histogram": {
+                  "2": 2,
+                  "3": 7,
+                  "5": 1
+                },
+                "native_expert_calls": 18,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 20,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 430080,
+                "tasks": 30,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 9.5011
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 71,
+            "batch": 8,
+            "collection_ms": 9.2366,
+            "critical_path_payload_bytes": 673792,
+            "dispatch_ms": 0.5272,
+            "effective_weight_reuse_rows_per_native_call": 2.245614035087719,
+            "exposed_loopback_and_coordination_ms": 1.7081,
+            "framing_bytes": 32,
+            "generation": 98,
+            "input_activation_bytes": 458752,
+            "messages": 8,
+            "native_expert_calls": 57,
+            "output_fingerprint": "sha256:dc5dae5fa108dd7553b87faf79597f6468e786cd773002ad555b656dd67796bb",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 92,
+            "request_bytes": 460880,
+            "response_bytes": 1838604,
+            "returned_expert_output_bytes": 1835008,
+            "root_messages": 8,
+            "roundtrip_ms": 9.7792,
+            "selected_expert_ids": [
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                888,
+                756,
+                62,
+                51,
+                692,
+                504,
+                777,
+                757,
+                569,
+                624,
+                359,
+                263,
+                350,
+                31
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                173,
+                233,
+                586,
+                45,
+                885,
+                673,
+                248,
+                656
+              ],
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                888,
+                756,
+                62,
+                51,
+                692,
+                504,
+                777,
+                757,
+                569,
+                624,
+                359,
+                263,
+                350,
+                31
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                173,
+                233,
+                586,
+                45,
+                885,
+                673,
+                248,
+                656
+              ],
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                888,
+                756,
+                62,
+                51,
+                692,
+                504,
+                777,
+                757,
+                569,
+                624,
+                359,
+                263,
+                350,
+                31
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 128,
+            "total_transport_bytes": 2299484,
+            "unique_experts": 36,
+            "worker_compute_critical_device_ms": 7.7724480628967285,
+            "worker_compute_critical_wall_ms": 8.0711,
+            "worker_compute_total_device_ms": 29.046112060546875,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 673792,
+                "device_ms": 7.7724480628967285,
+                "execute_count": 98,
+                "expert_group_size_histogram": {
+                  "2": 3,
+                  "3": 1,
+                  "6": 5
+                },
+                "native_expert_calls": 15,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 30,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 559104,
+                "tasks": 39,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 8.0711
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 587776,
+                "device_ms": 6.685664176940918,
+                "execute_count": 98,
+                "expert_group_size_histogram": {
+                  "2": 5,
+                  "5": 1,
+                  "6": 3
+                },
+                "native_expert_calls": 13,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 24,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 473088,
+                "tasks": 33,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 6.911
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 458752,
+                "device_ms": 6.9688639640808105,
+                "execute_count": 98,
+                "expert_group_size_histogram": {
+                  "2": 3,
+                  "3": 4,
+                  "6": 1
+                },
+                "native_expert_calls": 13,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 16,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 344064,
+                "tasks": 24,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 7.2188
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 573440,
+                "device_ms": 7.619135856628418,
+                "execute_count": 98,
+                "expert_group_size_histogram": {
+                  "2": 4,
+                  "3": 4,
+                  "6": 2
+                },
+                "native_expert_calls": 16,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 22,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 458752,
+                "tasks": 32,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 7.9812
+              }
+            ],
+            "workers_contacted": 4
+          },
+          {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 63,
+            "batch": 8,
+            "collection_ms": 10.1334,
+            "critical_path_payload_bytes": 659456,
+            "dispatch_ms": 0.7292,
+            "effective_weight_reuse_rows_per_native_call": 1.9692307692307693,
+            "exposed_loopback_and_coordination_ms": 1.4426000000000005,
+            "framing_bytes": 32,
+            "generation": 99,
+            "input_activation_bytes": 458752,
+            "messages": 8,
+            "native_expert_calls": 65,
+            "output_fingerprint": "sha256:8e932810e7cfb9155c50815078b3ff249a21d59827df6b8431806b8daaab80f5",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "repeated_expert_hits": 93,
+            "request_bytes": 460874,
+            "response_bytes": 1838592,
+            "returned_expert_output_bytes": 1835008,
+            "root_messages": 8,
+            "roundtrip_ms": 10.8779,
+            "selected_expert_ids": [
+              [
+                832,
+                186,
+                756,
+                888,
+                62,
+                692,
+                51,
+                777,
+                569,
+                757,
+                504,
+                624,
+                885,
+                31,
+                350,
+                263
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                233,
+                173,
+                586,
+                45,
+                885,
+                673,
+                120,
+                103
+              ],
+              [
+                888,
+                692,
+                832,
+                62,
+                263,
+                757,
+                662,
+                895,
+                504,
+                885,
+                777,
+                756,
+                51,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                756,
+                888,
+                62,
+                692,
+                51,
+                777,
+                569,
+                757,
+                504,
+                624,
+                885,
+                31,
+                350,
+                263
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                233,
+                173,
+                586,
+                45,
+                885,
+                673,
+                120,
+                103
+              ],
+              [
+                888,
+                692,
+                832,
+                62,
+                263,
+                757,
+                662,
+                895,
+                504,
+                885,
+                777,
+                756,
+                51,
+                399,
+                569,
+                478
+              ],
+              [
+                832,
+                186,
+                756,
+                888,
+                62,
+                692,
+                51,
+                777,
+                569,
+                757,
+                504,
+                624,
+                885,
+                31,
+                350,
+                263
+              ],
+              [
+                803,
+                501,
+                567,
+                190,
+                282,
+                347,
+                843,
+                388,
+                233,
+                173,
+                586,
+                45,
+                885,
+                673,
+                120,
+                103
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 128,
+            "total_transport_bytes": 2299466,
+            "unique_experts": 35,
+            "worker_compute_critical_device_ms": 9.165632247924805,
+            "worker_compute_critical_wall_ms": 9.4353,
+            "worker_compute_total_device_ms": 33.624191761016846,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 602112,
+                "device_ms": 7.9733757972717285,
+                "execute_count": 99,
+                "expert_group_size_histogram": {
+                  "3": 3,
+                  "5": 5
+                },
+                "native_expert_calls": 16,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 26,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 487424,
+                "tasks": 34,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 8.3017
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 659456,
+                "device_ms": 9.165632247924805,
+                "execute_count": 99,
+                "expert_group_size_histogram": {
+                  "3": 5,
+                  "5": 3,
+                  "8": 1
+                },
+                "native_expert_calls": 17,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 29,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 544768,
+                "tasks": 38,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 9,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 9.4353
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 458752,
+                "device_ms": 7.805376052856445,
+                "execute_count": 99,
+                "expert_group_size_histogram": {
+                  "2": 2,
+                  "3": 5,
+                  "5": 1
+                },
+                "native_expert_calls": 14,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 16,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 344064,
+                "tasks": 24,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 8,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 8.036
+              },
+              {
+                "activation_rows": 8,
+                "critical_payload_bytes": 573440,
+                "device_ms": 8.679807662963867,
+                "execute_count": 99,
+                "expert_group_size_histogram": {
+                  "2": 2,
+                  "3": 6,
+                  "5": 2
+                },
+                "native_expert_calls": 18,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 22,
+                "request_activation_bytes": 114688,
+                "returned_output_bytes": 458752,
+                "tasks": 32,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 10,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 8.9965
+              }
+            ],
+            "workers_contacted": 4
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "observed_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:4505ba75e066d50ea8a3ebcb5bb3ffc25940842508636af7a2848fda555c2578",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:4505ba75e066d50ea8a3ebcb5bb3ffc25940842508636af7a2848fda555c2578",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "pass": true,
+        "reference_states": [
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:4505ba75e066d50ea8a3ebcb5bb3ffc25940842508636af7a2848fda555c2578",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:4505ba75e066d50ea8a3ebcb5bb3ffc25940842508636af7a2848fda555c2578",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:c74d94df92b5e7783ffc2c5d1560d603ad9ee6e44dfc93fc080ffc7a5929ca16",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          },
+          {
+            "attention_type": "KDA",
+            "bytes": 6881280,
+            "cache_sequence_length": 3,
+            "fingerprint": "sha256:a06f9ffd08f55236b03ae2f4004049f86e4dc003c013480007591d9d727460d3",
+            "finite": true,
+            "nonzero_prefix": true,
+            "zero_suffix": true
+          }
+        ],
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_device_rows_per_second": 409.43736460151206,
+        "aggregate_wall_rows_per_second": 380.29591776100773,
+        "batch": 8,
+        "communication": {
+          "mean_critical_path_payload_bytes": 670924.8,
+          "mean_input_activation_bytes": 458752.0,
+          "mean_messages": 8.0,
+          "mean_messages_per_row": 1.0,
+          "mean_total_transport_bytes": 2299476.1,
+          "mean_transport_bytes_per_row": 287434.5125,
+          "returned_expert_output_bytes": 1835008,
+          "synchronization_points": 2
+        },
+        "critical_worker_device": {
+          "maximum_ms": 9.23788833618164,
+          "mean_ms": 8.250276827812195,
+          "minimum_ms": 6.616960048675537,
+          "p50_ms": 8.64408016204834,
+          "p95_ms": 9.149333190917968,
+          "p99_ms": 9.220177307128907,
+          "standard_deviation_ms": 0.9124148348103622
+        },
+        "device": {
+          "maximum_ms": 20.69878387451172,
+          "mean_ms": 19.17534875869751,
+          "minimum_ms": 17.281248092651367,
+          "p50_ms": 19.539008140563965,
+          "p95_ms": 20.45157165527344,
+          "p99_ms": 20.649341430664062,
+          "standard_deviation_ms": 0.9990558517085888
+        },
+        "expert_collective_roundtrip": {
+          "maximum_ms": 11.3394,
+          "mean_ms": 10.21853,
+          "minimum_ms": 8.5002,
+          "p50_ms": 10.680399999999999,
+          "p95_ms": 11.32971,
+          "p99_ms": 11.337461999999999,
+          "standard_deviation_ms": 0.948103568235032
+        },
+        "exposed_coordination": {
+          "maximum_ms": 2.052200000000001,
+          "mean_ms": 1.680775,
+          "minimum_ms": 1.2551999999999994,
+          "p50_ms": 1.7117500000000003,
+          "p95_ms": 2.0141050000000003,
+          "p99_ms": 2.044581000000001,
+          "standard_deviation_ms": 0.18883158600986247
+        },
+        "external_phase_wall": {
+          "maximum_ms": 12.5516,
+          "mean_ms": 11.986433333333332,
+          "minimum_ms": 10.8632,
+          "p50_ms": 12.5445,
+          "p95_ms": 12.550889999999999,
+          "p99_ms": 12.551458,
+          "standard_deviation_ms": 0.794251195921178
+        },
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "load_balance": {
+          "worker_activation_rows_max": 8,
+          "worker_activation_rows_mean": 8.0,
+          "worker_activation_rows_min": 8,
+          "worker_tasks_max": 40,
+          "worker_tasks_mean": 32.0,
+          "worker_tasks_min": 21
+        },
+        "per_row_wall_service_ms": 2.6295312500000003,
+        "routing_and_reuse": {
+          "avoided_expert_weight_launches": 1336,
+          "effective_weight_reuse_rows_per_native_call": 2.0915032679738563,
+          "mean_repeated_expert_hits": 93.25,
+          "mean_unique_experts": 34.75,
+          "native_expert_calls": 1224,
+          "total_selections": 2560
+        },
+        "state_bytes_each": 6881280,
+        "state_bytes_total": 55050240,
+        "wall": {
+          "maximum_ms": 22.4024,
+          "mean_ms": 20.69092,
+          "minimum_ms": 18.7972,
+          "p50_ms": 21.036250000000003,
+          "p95_ms": 21.845035000000003,
+          "p99_ms": 22.290927,
+          "standard_deviation_ms": 1.010520412262909
+        }
+      },
+      "post_batch_safe_fixture": {
+        "coordinator_cuda_error_state_ok": true,
+        "free_vram_bytes": 31997296640,
+        "metrics": {
+          "actual_finite": true,
+          "actual_l2": 813.3831033969739,
+          "cosine_similarity": 1.0,
+          "maximum_absolute_error": 0.0,
+          "mean_absolute_error": 0.0,
+          "reference_finite": true,
+          "reference_l2": 813.3831033969739,
+          "relative_l2_error": 0.0
+        },
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "10388",
+          "memory.total": "32607",
+          "memory.used": "21800",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "58",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "pass": true,
+        "worker_health": [
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 128,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 0
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 128,
+            "memory": {
+              "free_bytes": 27960279040,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 1
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 128,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "execute_count": 128,
+            "memory": {
+              "free_bytes": 27962376192,
+              "total_bytes": 34190458880
+            },
+            "response_bytes": 145,
+            "worker_id": 3
+          }
+        ]
+      },
+      "resident_reference": {
+        "aggregate_device_rows_per_second": 590.1620129876183,
+        "aggregate_wall_rows_per_second": 538.8257639539034,
+        "device": {
+          "maximum_ms": 13.79366397857666,
+          "mean_ms": 13.33847360610962,
+          "minimum_ms": 12.601183891296387,
+          "p50_ms": 13.555599689483643,
+          "p95_ms": 13.772384071350096,
+          "p99_ms": 13.789407997131349,
+          "standard_deviation_ms": 0.4186225414322915
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 4.7684478759765625,
+          "mean_ms": 4.507765293121338,
+          "minimum_ms": 4.014143943786621,
+          "p50_ms": 4.74070405960083,
+          "p95_ms": 4.76567349433899,
+          "p99_ms": 4.767892999649049,
+          "standard_deviation_ms": 0.3492267240881798
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ],
+            [
+              832,
+              186,
+              756,
+              62,
+              888,
+              51,
+              504,
+              692,
+              777,
+              569,
+              757,
+              359,
+              624,
+              263,
+              540,
+              350
+            ],
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ],
+            [
+              832,
+              186,
+              756,
+              62,
+              888,
+              51,
+              504,
+              692,
+              777,
+              569,
+              757,
+              359,
+              624,
+              263,
+              540,
+              350
+            ],
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              173,
+              233,
+              586,
+              45,
+              885,
+              673,
+              248,
+              656
+            ],
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              173,
+              233,
+              586,
+              45,
+              885,
+              673,
+              248,
+              656
+            ],
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ],
+            [
+              888,
+              692,
+              832,
+              62,
+              263,
+              757,
+              662,
+              895,
+              504,
+              885,
+              777,
+              756,
+              51,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ],
+            [
+              888,
+              692,
+              832,
+              62,
+              263,
+              757,
+              662,
+              895,
+              504,
+              885,
+              777,
+              756,
+              51,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 2.0915032679738563,
+          "mean_unique_experts": 34.75
+        },
+        "wall": {
+          "maximum_ms": 15.0337,
+          "mean_ms": 14.620740000000001,
+          "minimum_ms": 13.8131,
+          "p50_ms": 14.847100000000001,
+          "p95_ms": 15.03009,
+          "p99_ms": 15.032978,
+          "standard_deviation_ms": 0.43873159608124873
+        }
+      },
+      "status": "PASS"
+    }
+  },
+  "configuration": {
+    "batches": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "layer": 89,
+    "ownership": "expert_id modulo 4; 224 experts/worker",
+    "retained_calls": 20,
+    "shared_expert_placement": "parent coordinator",
+    "warmup_calls": 5,
+    "workers": 4
+  },
+  "cycle_id": "H014-SUB-006c",
+  "decision": {
+    "next_hypothesis": "H014-SUB-006d: upload each sparse activation row once per worker, gather into persistent task buffers on device, execute grouped experts at stable offsets, and download one contiguous result buffer; predict >=1.25x batch-8 distributed capacity with exact output/state and unchanged messages/bytes.",
+    "sub_layer_batch": "RETAIN"
+  },
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "distributed_residency": {
+    "all_workers_less_than_complete_layer": true,
+    "coordinator_resident_device_bytes": 425721856,
+    "workers": [
+      {
+        "batch_capacity": 8,
+        "fraction_of_complete_layer_percent": 21.514223124139512,
+        "owned_experts": 224,
+        "tracked_worker_bytes": 3932536832,
+        "worker_id": 0
+      },
+      {
+        "batch_capacity": 8,
+        "fraction_of_complete_layer_percent": 21.514223124139512,
+        "owned_experts": 224,
+        "tracked_worker_bytes": 3932536832,
+        "worker_id": 1
+      },
+      {
+        "batch_capacity": 8,
+        "fraction_of_complete_layer_percent": 21.514223124139512,
+        "owned_experts": 224,
+        "tracked_worker_bytes": 3932536832,
+        "worker_id": 2
+      },
+      {
+        "batch_capacity": 8,
+        "fraction_of_complete_layer_percent": 21.514223124139512,
+        "owned_experts": 224,
+        "tracked_worker_bytes": 3932536832,
+        "worker_id": 3
+      }
+    ]
+  },
+  "execution_pass": true,
+  "gpu_health_after": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "10388",
+    "memory.total": "32607",
+    "memory.used": "21800",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P1",
+    "status": "MEASURED",
+    "temperature.gpu": "58",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30318",
+    "memory.total": "32607",
+    "memory.used": "1870",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "48",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": {
+    "minimum_capacity_gain_vs_distributed_batch1": 1.5,
+    "minimum_effective_weight_reuse": 2.0,
+    "minimum_message_reduction_percent": 75.0,
+    "minimum_resident_batch_throughput_retention_percent": 50.0,
+    "prediction": "Four persistent expert workers execute batches 1/2/4/8 exactly; batch 8 obtains >=2.0 rows/native call, >=75% messages/row reduction, >=50% resident-batch throughput and >=1.5x capacity vs serial distributed rows."
+  },
+  "hypothesis_supported": true,
+  "inspection": {
+    "actual_bottleneck": "The batch-8 external phase is the complete-layer bottleneck: 12.5445 ms profiled wall inside a 21.03625 ms layer. The worker critical path is 8.64408 ms inside a 10.6804 ms collective, while exposed loopback/coordination is 1.71175 ms. EXECUTE_BATCH currently performs per-expert host gather, H2D upload, execution and D2H download instead of one worker-level transfer pair; returned expert rows remain 1,835,008 bytes at batch 8.",
+    "fixture_limitation": "Three retained real boundaries are row-rotated; route overlap is real for this trace but not a production prompt distribution."
+  },
+  "progress": [
+    {
+      "phase": "preregistered"
+    },
+    {
+      "phase": "gpu_health_before",
+      "status": "MEASURED"
+    },
+    {
+      "gpu_health": "MEASURED",
+      "phase": "resident_reference_released",
+      "resident_device_bytes": 18278776832
+    },
+    {
+      "phase": "worker_0_ready",
+      "tracked_worker_bytes": 3932536832
+    },
+    {
+      "phase": "worker_1_ready",
+      "tracked_worker_bytes": 3932536832
+    },
+    {
+      "phase": "worker_2_ready",
+      "tracked_worker_bytes": 3932536832
+    },
+    {
+      "phase": "worker_3_ready",
+      "tracked_worker_bytes": 3932536832
+    },
+    {
+      "phase": "coordinator_and_collective_ready"
+    },
+    {
+      "phase": "armed_batch_1",
+      "prior_batches": []
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_1_persisted_and_checked",
+      "status": "PASS",
+      "wall_p50_ms": 5.3042
+    },
+    {
+      "phase": "armed_batch_2",
+      "prior_batches": [
+        1
+      ]
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_2_persisted_and_checked",
+      "status": "PASS",
+      "wall_p50_ms": 8.54805
+    },
+    {
+      "phase": "armed_batch_4",
+      "prior_batches": [
+        1,
+        2
+      ]
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_4_persisted_and_checked",
+      "status": "PASS",
+      "wall_p50_ms": 12.33235
+    },
+    {
+      "phase": "armed_batch_8",
+      "prior_batches": [
+        1,
+        2,
+        4
+      ]
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_8_persisted_and_checked",
+      "status": "PASS",
+      "wall_p50_ms": 21.036250000000003
+    },
+    {
+      "phase": "complete",
+      "status": "PASS"
+    }
+  ],
+  "provenance": {
+    "graph_status": "PASS",
+    "pass": true,
+    "trace_matches": true
+  },
+  "resident_reference": {
+    "batches": {
+      "1": {
+        "aggregate_device_rows_per_second": 302.55940282536386,
+        "aggregate_wall_rows_per_second": 284.29282160625445,
+        "device": {
+          "maximum_ms": 3.603071928024292,
+          "mean_ms": 3.3183151960372923,
+          "minimum_ms": 3.2639999389648438,
+          "p50_ms": 3.3051360845565796,
+          "p95_ms": 3.35142080783844,
+          "p99_ms": 3.552741703987121,
+          "standard_deviation_ms": 0.06915445603358455
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 1.192031979560852,
+          "mean_ms": 1.1887679894765217,
+          "minimum_ms": 1.1840319633483887,
+          "p50_ms": 1.1902400255203247,
+          "p95_ms": 1.1918527841567994,
+          "p99_ms": 1.1919961404800417,
+          "standard_deviation_ms": 0.0034278499029382244
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 1.0,
+          "mean_unique_experts": 16.0
+        },
+        "wall": {
+          "maximum_ms": 3.8273,
+          "mean_ms": 3.5289050000000004,
+          "minimum_ms": 3.4614,
+          "p50_ms": 3.5175,
+          "p95_ms": 3.5851450000000002,
+          "p99_ms": 3.7788689999999994,
+          "standard_deviation_ms": 0.07313111837651606
+        }
+      },
+      "2": {
+        "aggregate_device_rows_per_second": 385.1522184523485,
+        "aggregate_wall_rows_per_second": 364.85697606538236,
+        "device": {
+          "maximum_ms": 5.311776161193848,
+          "mean_ms": 4.954571223258972,
+          "minimum_ms": 4.280992031097412,
+          "p50_ms": 5.192752122879028,
+          "p95_ms": 5.262132859230041,
+          "p99_ms": 5.301847500801086,
+          "standard_deviation_ms": 0.40522262438874035
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 2.295488119125366,
+          "mean_ms": 2.0267200469970703,
+          "minimum_ms": 1.4932479858398438,
+          "p50_ms": 2.291424036026001,
+          "p95_ms": 2.2950817108154298,
+          "p99_ms": 2.295406837463379,
+          "standard_deviation_ms": 0.37722536077643243
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 1.1657559198542806,
+          "mean_unique_experts": 27.45
+        },
+        "wall": {
+          "maximum_ms": 5.5826,
+          "mean_ms": 5.2482,
+          "minimum_ms": 4.6032,
+          "p50_ms": 5.4816,
+          "p95_ms": 5.558185,
+          "p99_ms": 5.577717000000001,
+          "standard_deviation_ms": 0.398648990968245
+        }
+      },
+      "4": {
+        "aggregate_device_rows_per_second": 487.89247182622285,
+        "aggregate_wall_rows_per_second": 459.6670861128827,
+        "device": {
+          "maximum_ms": 8.391072273254395,
+          "mean_ms": 7.98725917339325,
+          "minimum_ms": 7.430240154266357,
+          "p50_ms": 8.198527812957764,
+          "p95_ms": 8.366812562942505,
+          "p99_ms": 8.386220331192018,
+          "standard_deviation_ms": 0.3741866422463329
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 3.3665919303894043,
+          "mean_ms": 3.1058239936828613,
+          "minimum_ms": 2.593280076980591,
+          "p50_ms": 3.357599973678589,
+          "p95_ms": 3.3656927347183228,
+          "p99_ms": 3.366412091255188,
+          "standard_deviation_ms": 0.36244187003596434
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ],
+            [
+              832,
+              186,
+              756,
+              62,
+              888,
+              51,
+              504,
+              692,
+              777,
+              569,
+              757,
+              359,
+              624,
+              263,
+              540,
+              350
+            ],
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              173,
+              233,
+              586,
+              45,
+              885,
+              673,
+              248,
+              656
+            ],
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ],
+            [
+              888,
+              692,
+              832,
+              62,
+              263,
+              757,
+              662,
+              895,
+              504,
+              885,
+              777,
+              756,
+              51,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 1.5183867141162515,
+          "mean_unique_experts": 34.75
+        },
+        "wall": {
+          "maximum_ms": 8.9854,
+          "mean_ms": 8.53055,
+          "minimum_ms": 7.9163,
+          "p50_ms": 8.70195,
+          "p95_ms": 8.981124999999999,
+          "p99_ms": 8.984545,
+          "standard_deviation_ms": 0.38911082932758373
+        }
+      },
+      "8": {
+        "aggregate_device_rows_per_second": 590.1620129876183,
+        "aggregate_wall_rows_per_second": 538.8257639539034,
+        "device": {
+          "maximum_ms": 13.79366397857666,
+          "mean_ms": 13.33847360610962,
+          "minimum_ms": 12.601183891296387,
+          "p50_ms": 13.555599689483643,
+          "p95_ms": 13.772384071350096,
+          "p99_ms": 13.789407997131349,
+          "standard_deviation_ms": 0.4186225414322915
+        },
+        "routed_expert_phase_device": {
+          "maximum_ms": 4.7684478759765625,
+          "mean_ms": 4.507765293121338,
+          "minimum_ms": 4.014143943786621,
+          "p50_ms": 4.74070405960083,
+          "p95_ms": 4.76567349433899,
+          "p99_ms": 4.767892999649049,
+          "standard_deviation_ms": 0.3492267240881798
+        },
+        "routes": [
+          [
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ],
+            [
+              832,
+              186,
+              756,
+              62,
+              888,
+              51,
+              504,
+              692,
+              777,
+              569,
+              757,
+              359,
+              624,
+              263,
+              540,
+              350
+            ],
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ],
+            [
+              832,
+              186,
+              756,
+              62,
+              888,
+              51,
+              504,
+              692,
+              777,
+              569,
+              757,
+              359,
+              624,
+              263,
+              540,
+              350
+            ],
+            [
+              803,
+              567,
+              190,
+              501,
+              347,
+              282,
+              843,
+              388,
+              173,
+              233,
+              885,
+              45,
+              586,
+              673,
+              120,
+              546
+            ],
+            [
+              888,
+              832,
+              692,
+              263,
+              62,
+              895,
+              662,
+              757,
+              885,
+              138,
+              399,
+              569,
+              504,
+              379,
+              478,
+              673
+            ]
+          ],
+          [
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              173,
+              233,
+              586,
+              45,
+              885,
+              673,
+              248,
+              656
+            ],
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              173,
+              233,
+              586,
+              45,
+              885,
+              673,
+              248,
+              656
+            ],
+            [
+              888,
+              692,
+              62,
+              757,
+              263,
+              832,
+              662,
+              504,
+              777,
+              895,
+              885,
+              51,
+              756,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              888,
+              756,
+              62,
+              51,
+              692,
+              504,
+              777,
+              757,
+              569,
+              624,
+              359,
+              263,
+              350,
+              31
+            ]
+          ],
+          [
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ],
+            [
+              888,
+              692,
+              832,
+              62,
+              263,
+              757,
+              662,
+              895,
+              504,
+              885,
+              777,
+              756,
+              51,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ],
+            [
+              888,
+              692,
+              832,
+              62,
+              263,
+              757,
+              662,
+              895,
+              504,
+              885,
+              777,
+              756,
+              51,
+              399,
+              569,
+              478
+            ],
+            [
+              832,
+              186,
+              756,
+              888,
+              62,
+              692,
+              51,
+              777,
+              569,
+              757,
+              504,
+              624,
+              885,
+              31,
+              350,
+              263
+            ],
+            [
+              803,
+              501,
+              567,
+              190,
+              282,
+              347,
+              843,
+              388,
+              233,
+              173,
+              586,
+              45,
+              885,
+              673,
+              120,
+              103
+            ]
+          ]
+        ],
+        "routing": {
+          "effective_weight_reuse_rows_per_native_call": 2.0915032679738563,
+          "mean_unique_experts": 34.75
+        },
+        "wall": {
+          "maximum_ms": 15.0337,
+          "mean_ms": 14.620740000000001,
+          "minimum_ms": 13.8131,
+          "p50_ms": 14.847100000000001,
+          "p95_ms": 15.03009,
+          "p99_ms": 15.032978,
+          "standard_deviation_ms": 0.43873159608124873
+        }
+      }
+    },
+    "prepare": {
+      "count": 1,
+      "maximum_temporary_device_bytes": 6291456,
+      "measured_device_ms": 178.82755208015442,
+      "measured_wall_ms": 189.09,
+      "primitive": "isolated assigned-stage Kimi CUDA fixture",
+      "stage_fixture": {
+        "active_sessions_after": 0,
+        "cpu_mathematical_fallbacks": 0,
+        "device": {
+          "maximum_ms": 30.16022491455078,
+          "mean_ms": 25.546793154307775,
+          "minimum_ms": 3.038975954055786,
+          "p50_ms": 29.6845760345459,
+          "p95_ms": 30.090816497802734,
+          "p99_ms": 30.146343231201172,
+          "standard_deviation_ms": 9.258846430359451
+        },
+        "device_ms_values": [
+          30.16022491455078,
+          29.6845760345459,
+          29.75503921508789,
+          29.928863525390625,
+          29.68230438232422,
+          26.57756805419922,
+          3.038975954055786
+        ],
+        "free_bytes_after_close": 14150533120,
+        "free_bytes_before": 14150533120,
+        "input": "float32 zero [1,9,7168]",
+        "iterations": 7,
+        "last_selected_expert_ids": [
+          728,
+          878,
+          28,
+          122,
+          814,
+          287,
+          4,
+          475,
+          297,
+          107,
+          866,
+          546,
+          467,
+          544,
+          778,
+          189
+        ],
+        "measured_device_ms": 178.82755208015442,
+        "measured_wall_ms": 189.09,
+        "output_fingerprint": "sha256:f04993ef97d6659709c4fcd6d7d95df637093b52cd06a4893ac0701c14926511",
+        "output_finite": true,
+        "research_records_removed": true,
+        "serving_execute_count_restored": true,
+        "temporary_device_bytes": 6291456,
+        "temporary_memory_recovered": true
+      },
+      "temporary_device_bytes": 6291456,
+      "temporary_memory_recovered": true,
+      "total_measured_wall_ms": 189.09
+    },
+    "resident_device_bytes": 18278776832,
+    "status": "PASS",
+    "tracked_device_bytes": 16125740288,
+    "weight_fingerprint": "sha256:3f75cb42b481a2411696ad288a83b26ebe26918fa63653d09e47780dc02e26a0"
+  },
+  "schema_version": "experiment-014-k3-real-expert-microwork-batch-v1",
+  "sources": {
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "cuda_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-030d-row-reuse-dense-candidate.dll",
+      "sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120"
+    },
+    "graph_certification": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-027w-regression-full-93-layer.json",
+      "sha256": "0c0a655a0f577d17b0bf68b81fff676cb42f225425b7800c839a86469cc74199"
+    },
+    "oracle_trace": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0\\hidden-trace.f32",
+      "sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d"
+    }
+  },
+  "status": "PASS",
+  "worker_shutdown": [
+    {
+      "cuda_error_state_ok": true,
+      "drained_result_frames": 0,
+      "execute_count": 128,
+      "exit_code": 0,
+      "kind": "CLOSED",
+      "worker_id": 3
+    },
+    {
+      "cuda_error_state_ok": true,
+      "drained_result_frames": 0,
+      "execute_count": 128,
+      "exit_code": 0,
+      "kind": "CLOSED",
+      "worker_id": 2
+    },
+    {
+      "cuda_error_state_ok": true,
+      "drained_result_frames": 0,
+      "execute_count": 128,
+      "exit_code": 0,
+      "kind": "CLOSED",
+      "worker_id": 1
+    },
+    {
+      "cuda_error_state_ok": true,
+      "drained_result_frames": 0,
+      "execute_count": 128,
+      "exit_code": 0,
+      "kind": "CLOSED",
+      "worker_id": 0
+    }
+  ]
+}

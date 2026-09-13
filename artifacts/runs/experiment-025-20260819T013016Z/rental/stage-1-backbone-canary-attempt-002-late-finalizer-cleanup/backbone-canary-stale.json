@@ -1,0 +1,41 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-19T04:34:36.726169+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "single-backbone-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "INCOMPLETE_TIMEOUT",
+    "error": "E025 worker e025-stage-001 was not READY: instance absent from live query",
+    "error_type": "TimeoutError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 302, in run_backbone_canary_stage\n    worker = provision_worker(\n             ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 286, in provision_worker\n    return wait_for_worker(\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 246, in wait_for_worker\n    raise TimeoutError(f\"E025 worker {worker_id} was not READY: {last_error}\")\nTimeoutError: E025 worker e025-stage-001 was not READY: instance absent from live query\n"
+  },
+  "generated_at_utc": "2026-08-19T04:34:36.740302+00:00",
+  "image_digest": "sha256:289d79a6f8120d00485d00e2f8bc389111c4b33abbb5e1af8200d8ab58750de8",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:289d79a6f8120d00485d00e2f8bc389111c4b33abbb5e1af8200d8ab58750de8",
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0,
+    "estimated_storage_cost_usd": 0,
+    "generated_at_utc": "2026-08-19T04:34:36.735301+00:00",
+    "instance_count": 0,
+    "instances": [],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "INCOMPLETE",
+    "total_elapsed_instance_seconds": 0
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-backbone-canary-stage-v1",
+  "status": "FAIL",
+  "worker": null
+}

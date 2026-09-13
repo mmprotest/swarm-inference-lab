@@ -1,0 +1,947 @@
+{
+  "backend": {
+    "cpu_mathematical_fallbacks": 0,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+    "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "checkpoint": {
+    "content_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "model_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "path": "F:\\models\\Kimi-K3"
+  },
+  "cycle_id": "H014-038e",
+  "final_stage_regression": {
+    "pass": true,
+    "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\h014-038-regression-final-stage.json",
+    "sha256": "b849fd1559af72880a6761332f2e5e725cff6ba0d503e5b764304d34a5d01149"
+  },
+  "hypothesis": "One production registered Kimi executor can retain representative KDA and Gated-MLA stages, emit the complete canonical boundary, preserve state, and execute without warm reconstruction.",
+  "inspection": {
+    "actual_bottleneck": "pending retained measurements",
+    "canonical_boundary": "float32 [1,9,7168]",
+    "materialized_stage_classes": [
+      "KDA+MoE",
+      "Gated_MLA+MoE"
+    ]
+  },
+  "schema_version": "experiment-014-k3-persistent-nonfinal-stages-v1",
+  "stages": [
+    {
+      "assignment": {
+        "assignment_sha256": "93cad06ed4355963171a15f5aebe3bb92b66778ad72f6ab848066b07db7fdb15",
+        "identity_manifest": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\identities\\h014-038\\k3-worker-001-model-identity.json",
+        "manifest_sha256": "64ece306608a7c53c224e1a28e0a98f7e355f61c80a9ceb409c758a49b7c6fd8",
+        "owned_tensor_count": 5404,
+        "ownership_hash": "917ba2ee62e5ca9b4e3ffbca9c5930de6e5f8b73f98aca4677c2c6776c171152",
+        "source_weight_bytes": 16990092800,
+        "weight_fingerprint": "sha256:3fee8b4f4d928a49884eb67bd9bcc7b87f99ce52504368a2dbc34d62e3e0f242",
+        "worker_id": "k3-worker-001"
+      },
+      "attention_type": "KDA",
+      "backend": {
+        "cpu_mathematical_fallbacks": 0,
+        "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "identity": "nvidia_cuda_persistent_kimi_stage",
+        "implementation_class": "swarm_inference.execution.kimi_k3_stage.PersistentKimiStageExecutor"
+      },
+      "benchmark": {
+        "device": {
+          "maximum_ms": 3.1034560203552246,
+          "mean_ms": 3.0822506745656333,
+          "minimum_ms": 3.065279960632324,
+          "p50_ms": 3.0780160427093506,
+          "p95_ms": 3.1009120225906375,
+          "p99_ms": 3.1029472208023074,
+          "standard_deviation_ms": 0.015870348960882925
+        },
+        "instrumentation_mode": "production-minimal plus lifecycle counters",
+        "retained_generations": 3,
+        "wall": {
+          "maximum_ms": 3.2531,
+          "mean_ms": 3.2281999999999997,
+          "minimum_ms": 3.2148,
+          "p50_ms": 3.2167,
+          "p95_ms": 3.2494599999999996,
+          "p99_ms": 3.252372,
+          "standard_deviation_ms": 0.017624036616696714
+        },
+        "warmup_generations": 1,
+        "wire": [
+          {
+            "forwarded_payload_bytes": 258048,
+            "forwarded_wire_bytes": 260039,
+            "incoming_payload_bytes": 258048,
+            "incoming_wire_bytes": 259229
+          },
+          {
+            "forwarded_payload_bytes": 258048,
+            "forwarded_wire_bytes": 260043,
+            "incoming_payload_bytes": 258048,
+            "incoming_wire_bytes": 259227
+          },
+          {
+            "forwarded_payload_bytes": 258048,
+            "forwarded_wire_bytes": 260042,
+            "incoming_payload_bytes": 258048,
+            "incoming_wire_bytes": 259227
+          }
+        ]
+      },
+      "correctness": {
+        "maximum_boundary_relative_l2_error": 1.6191261392026143e-07,
+        "pass": true,
+        "positions": [
+          {
+            "boundary_dtype": "float32",
+            "boundary_metrics": {
+              "actual_finite": true,
+              "actual_l2": 3.7830532707166658,
+              "cosine_similarity": 0.9999999999999972,
+              "maximum_absolute_error": 3.725290298461914e-08,
+              "mean_absolute_error": 2.6595321359641346e-10,
+              "reference_finite": true,
+              "reference_l2": 3.783053273546312,
+              "relative_l2_error": 7.743282860223226e-08
+            },
+            "boundary_shape": [
+              1,
+              9,
+              7168
+            ],
+            "expected_expert_ids": [
+              295,
+              809,
+              873,
+              596,
+              203,
+              162,
+              419,
+              498,
+              334,
+              472,
+              103,
+              85,
+              866,
+              293,
+              457,
+              148
+            ],
+            "expected_output_fingerprint": "sha256:85c1d9e90ccf53622f786615b38c4447fa8b53adc81f04d74aa4ea359816426e",
+            "input_fingerprint": "sha256:eac99f5a75496f838bdb4027e839ff6dc43811e8846c004b8f16107fc83f88fc",
+            "output_fingerprint": "sha256:80c104cb434f723069fa0aaaa1679b0364189910b4667f2f2fb777430af5a31c",
+            "position": 0,
+            "residual_rows_bit_exact": true,
+            "routing_equality": true,
+            "selected_expert_ids": [
+              295,
+              809,
+              873,
+              596,
+              203,
+              162,
+              419,
+              498,
+              334,
+              472,
+              103,
+              85,
+              866,
+              293,
+              457,
+              148
+            ],
+            "weight_fingerprint": "sha256:3fee8b4f4d928a49884eb67bd9bcc7b87f99ce52504368a2dbc34d62e3e0f242"
+          },
+          {
+            "boundary_dtype": "float32",
+            "boundary_metrics": {
+              "actual_finite": true,
+              "actual_l2": 2.7314506558828926,
+              "cosine_similarity": 0.9999999999999892,
+              "maximum_absolute_error": 5.960464477539063e-08,
+              "mean_absolute_error": 4.091435902597686e-10,
+              "reference_finite": true,
+              "reference_l2": 2.731450702770314,
+              "relative_l2_error": 1.4933588876775161e-07
+            },
+            "boundary_shape": [
+              1,
+              9,
+              7168
+            ],
+            "expected_expert_ids": [
+              362,
+              334,
+              472,
+              558,
+              140,
+              796,
+              782,
+              511,
+              692,
+              649,
+              169,
+              322,
+              642,
+              749,
+              68,
+              335
+            ],
+            "expected_output_fingerprint": "sha256:c565bf72ecbf9237ef8d82565596fba04e62a0320aca5d0fb709828fe07a04fd",
+            "input_fingerprint": "sha256:34437bd09b0c029b1f55cc3691b26715e0d90a21f3c68d891c6aec2be956cc84",
+            "output_fingerprint": "sha256:9a9e07a525cb6b8ee40a159dc75fdd6ebceabb160af3af3785d7391b0dea411f",
+            "position": 1,
+            "residual_rows_bit_exact": true,
+            "routing_equality": true,
+            "selected_expert_ids": [
+              362,
+              334,
+              472,
+              558,
+              140,
+              796,
+              782,
+              511,
+              692,
+              649,
+              169,
+              322,
+              642,
+              749,
+              68,
+              335
+            ],
+            "weight_fingerprint": "sha256:3fee8b4f4d928a49884eb67bd9bcc7b87f99ce52504368a2dbc34d62e3e0f242"
+          },
+          {
+            "boundary_dtype": "float32",
+            "boundary_metrics": {
+              "actual_finite": true,
+              "actual_l2": 2.3303215825827417,
+              "cosine_similarity": 0.9999999999999872,
+              "maximum_absolute_error": 1.862645149230957e-08,
+              "mean_absolute_error": 3.853464989781117e-10,
+              "reference_finite": true,
+              "reference_l2": 2.330321573761313,
+              "relative_l2_error": 1.6191261392026143e-07
+            },
+            "boundary_shape": [
+              1,
+              9,
+              7168
+            ],
+            "expected_expert_ids": [
+              798,
+              48,
+              294,
+              630,
+              465,
+              371,
+              782,
+              541,
+              411,
+              626,
+              577,
+              52,
+              33,
+              655,
+              115,
+              549
+            ],
+            "expected_output_fingerprint": "sha256:01daf4f26ae6604a2aaaf26d3a4da015b12882f5d3e34159d87df7474fb74acc",
+            "input_fingerprint": "sha256:c11ba20e317add469bb1ef07ebce227bd08316fdffe17182d9a2fce2ce448132",
+            "output_fingerprint": "sha256:d1ad1480d01cda7c0f6c237e51db86c00b268d948bb7f64991a07eb8dc55ae11",
+            "position": 2,
+            "residual_rows_bit_exact": true,
+            "routing_equality": true,
+            "selected_expert_ids": [
+              798,
+              48,
+              294,
+              630,
+              465,
+              371,
+              782,
+              541,
+              411,
+              626,
+              577,
+              52,
+              33,
+              655,
+              115,
+              549
+            ],
+            "weight_fingerprint": "sha256:3fee8b4f4d928a49884eb67bd9bcc7b87f99ce52504368a2dbc34d62e3e0f242"
+          }
+        ],
+        "relative_error_gate": 3e-05,
+        "residual_rows_bit_exact": true,
+        "routing_equality": true,
+        "state": {
+          "active_prefix_fingerprint": "sha256:3105e1d8f0f31f1b4254e269473c05bb787c2662b69fa76b82531cbe08dfca8e",
+          "attention_type": "KDA",
+          "bytes": 6881280,
+          "cache_sequence_length": 3,
+          "fingerprint": "sha256:3105e1d8f0f31f1b4254e269473c05bb787c2662b69fa76b82531cbe08dfca8e",
+          "finite": true,
+          "nonzero_prefix": true,
+          "zero_suffix": true
+        }
+      },
+      "layer": 1,
+      "lifecycle": {
+        "pass": true,
+        "per_generation_deltas": [
+          {
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "position": 0
+          },
+          {
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "position": 1
+          },
+          {
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "position": 2
+          }
+        ],
+        "warm_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        }
+      },
+      "load": {
+        "accepted": true,
+        "elapsed_ms": 23180.5875,
+        "memory_after": {
+          "free_bytes": 14158921728,
+          "total_bytes": 34190458880
+        },
+        "memory_before": {
+          "free_bytes": 32429309952,
+          "total_bytes": 34190458880
+        },
+        "resident_device_bytes": 18270388224,
+        "resident_expert_count": 896,
+        "route_accepted": true,
+        "tracked_device_bytes": 16119130368
+      },
+      "prepare": {
+        "count": 1,
+        "maximum_temporary_device_bytes": 8388608,
+        "measured_device_ms": 206.8309783935547,
+        "measured_wall_ms": 223.0002,
+        "pass": true,
+        "primitive": "isolated assigned-stage Kimi CUDA fixture",
+        "stage_fixture": {
+          "active_sessions_after": 0,
+          "cpu_mathematical_fallbacks": 0,
+          "device": {
+            "maximum_ms": 30.330528259277344,
+            "mean_ms": 29.54728262765067,
+            "minimum_ms": 29.286495208740234,
+            "p50_ms": 29.37494468688965,
+            "p95_ms": 30.129610061645508,
+            "p99_ms": 30.29034461975098,
+            "standard_deviation_ms": 0.3381734165373763
+          },
+          "device_ms_values": [
+            30.330528259277344,
+            29.363136291503906,
+            29.66080093383789,
+            29.365760803222656,
+            29.37494468688965,
+            29.286495208740234,
+            29.449312210083008
+          ],
+          "free_bytes_after_close": 14158921728,
+          "free_bytes_before": 14158921728,
+          "input": "float32 zero [1,9,7168]",
+          "iterations": 7,
+          "last_selected_expert_ids": [
+            767,
+            788,
+            679,
+            731,
+            353,
+            220,
+            801,
+            564,
+            553,
+            156,
+            79,
+            468,
+            485,
+            656,
+            210,
+            592
+          ],
+          "measured_device_ms": 206.8309783935547,
+          "measured_wall_ms": 223.0002,
+          "output_fingerprint": "sha256:f04993ef97d6659709c4fcd6d7d95df637093b52cd06a4893ac0701c14926511",
+          "output_finite": true,
+          "research_records_removed": true,
+          "serving_execute_count_restored": true,
+          "temporary_device_bytes": 8388608,
+          "temporary_memory_recovered": true
+        },
+        "temporary_device_bytes": 8388608,
+        "temporary_memory_recovered": true,
+        "total_measured_wall_ms": 223.0002
+      },
+      "production_batch": {
+        "batch_8": {
+          "all_selected_experts_executed_once": true,
+          "device_ms": 10.655903816223145,
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "maximum_relative_l2_error": 7.743282860223226e-08,
+          "pass": true,
+          "routing_equality": true,
+          "rows_per_second": 750.7575272798871,
+          "state_fingerprints_equal_for_equal_inputs": true
+        },
+        "batch_9_guard": {
+          "cuda_error_state_ok": true,
+          "execution_records_delta": 0,
+          "pass": true,
+          "rejection": "Kimi complete-stage batch rejected before CUDA work: requested=9, certified_max=8",
+          "requested_batch": 9
+        },
+        "certified_batch": 8,
+        "memory": {
+          "after_batch_close": {
+            "free_bytes": 14148435968,
+            "total_bytes": 34190458880
+          },
+          "after_safe_close": {
+            "free_bytes": 14148435968,
+            "total_bytes": 34190458880
+          },
+          "before": {
+            "free_bytes": 14150533120,
+            "total_bytes": 34190458880
+          },
+          "recovered_within_1_mib": false
+        },
+        "native_supported_batches": [
+          1,
+          2,
+          4,
+          8,
+          16
+        ],
+        "pass": false,
+        "post_guard_batch_1": {
+          "all_selected_experts_executed_once": true,
+          "pass": true,
+          "relative_l2_error": 7.743282860223226e-08,
+          "routed_expert_execution_count": 16,
+          "routing_equality": true
+        }
+      },
+      "status": "FAIL"
+    },
+    {
+      "assignment": {
+        "assignment_sha256": "a353515f1d0bf2a11ec9f5861046ac5ffd988f741d73b9cec2b011313d97fd86",
+        "identity_manifest": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\identities\\h014-038\\k3-worker-003-model-identity.json",
+        "manifest_sha256": "109f00a2aebabbfa1a78b219326a46ef01e70608e1aafca5053320acc0ec037e",
+        "owned_tensor_count": 5398,
+        "ownership_hash": "a77b6a9c44667da5cc247cd5ebbe3c8c86050715a47019ccb3460f02535c4934",
+        "source_weight_bytes": 16566684160,
+        "weight_fingerprint": "sha256:2b3137e028e21fc5d51552e48f204054181274a94aec7221fe50f3f75aebf181",
+        "worker_id": "k3-worker-003"
+      },
+      "attention_type": "Gated_MLA",
+      "backend": {
+        "cpu_mathematical_fallbacks": 0,
+        "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "identity": "nvidia_cuda_persistent_kimi_stage",
+        "implementation_class": "swarm_inference.execution.kimi_k3_stage.PersistentKimiStageExecutor"
+      },
+      "benchmark": {
+        "device": {
+          "maximum_ms": 14.2957763671875,
+          "mean_ms": 14.10321076711019,
+          "minimum_ms": 13.766464233398438,
+          "p50_ms": 14.247391700744629,
+          "p95_ms": 14.290937900543213,
+          "p99_ms": 14.294808673858643,
+          "standard_deviation_ms": 0.2389336588007317
+        },
+        "instrumentation_mode": "production-minimal plus lifecycle counters",
+        "retained_generations": 3,
+        "wall": {
+          "maximum_ms": 15.5028,
+          "mean_ms": 14.892766666666667,
+          "minimum_ms": 14.4851,
+          "p50_ms": 14.6904,
+          "p95_ms": 15.421560000000001,
+          "p99_ms": 15.486552000000001,
+          "standard_deviation_ms": 0.43942577934795307
+        },
+        "warmup_generations": 1,
+        "wire": [
+          {
+            "forwarded_payload_bytes": 258048,
+            "forwarded_wire_bytes": 260042,
+            "incoming_payload_bytes": 258048,
+            "incoming_wire_bytes": 259228
+          },
+          {
+            "forwarded_payload_bytes": 258048,
+            "forwarded_wire_bytes": 260040,
+            "incoming_payload_bytes": 258048,
+            "incoming_wire_bytes": 259227
+          },
+          {
+            "forwarded_payload_bytes": 258048,
+            "forwarded_wire_bytes": 260037,
+            "incoming_payload_bytes": 258048,
+            "incoming_wire_bytes": 259227
+          }
+        ]
+      },
+      "correctness": {
+        "maximum_boundary_relative_l2_error": 3.0016791641951867e-07,
+        "pass": true,
+        "positions": [
+          {
+            "boundary_dtype": "float32",
+            "boundary_metrics": {
+              "actual_finite": true,
+              "actual_l2": 31.602174684713642,
+              "cosine_similarity": 0.9999999999999731,
+              "maximum_absolute_error": 5.960464477539062e-07,
+              "mean_absolute_error": 8.067723279560191e-09,
+              "reference_finite": true,
+              "reference_l2": 31.602171010836518,
+              "relative_l2_error": 2.599615125032661e-07
+            },
+            "boundary_shape": [
+              1,
+              9,
+              7168
+            ],
+            "expected_expert_ids": [
+              165,
+              43,
+              396,
+              870,
+              481,
+              686,
+              841,
+              335,
+              855,
+              632,
+              629,
+              337,
+              611,
+              209,
+              199,
+              713
+            ],
+            "expected_output_fingerprint": "sha256:30bf6b2a1cc4dcc21aef0f2f71c399d41803f88c1a5c76b0a97a35ee826c2ad3",
+            "input_fingerprint": "sha256:df26849ca1042f026d38fe519d9bd9af99082af3fbaf9e39b44e4eed76c2a619",
+            "output_fingerprint": "sha256:65743714460e72e612c6c5dd1c0301cf7fb2d66732f4e22507712aef5e880196",
+            "position": 0,
+            "residual_rows_bit_exact": true,
+            "routing_equality": true,
+            "selected_expert_ids": [
+              165,
+              43,
+              396,
+              870,
+              481,
+              686,
+              841,
+              335,
+              855,
+              632,
+              629,
+              337,
+              611,
+              209,
+              199,
+              713
+            ],
+            "weight_fingerprint": "sha256:2b3137e028e21fc5d51552e48f204054181274a94aec7221fe50f3f75aebf181"
+          },
+          {
+            "boundary_dtype": "float32",
+            "boundary_metrics": {
+              "actual_finite": true,
+              "actual_l2": 5.672731881274216,
+              "cosine_similarity": 0.9999999999999674,
+              "maximum_absolute_error": 2.384185791015625e-07,
+              "mean_absolute_error": 1.4783439375663412e-09,
+              "reference_finite": true,
+              "reference_l2": 5.6727319561571115,
+              "relative_l2_error": 2.574903253537045e-07
+            },
+            "boundary_shape": [
+              1,
+              9,
+              7168
+            ],
+            "expected_expert_ids": [
+              477,
+              165,
+              263,
+              464,
+              723,
+              657,
+              870,
+              599,
+              71,
+              635,
+              524,
+              65,
+              622,
+              704,
+              354,
+              754
+            ],
+            "expected_output_fingerprint": "sha256:d83dceff9cc9f0525b7c57777b0ee02b3469d12d8811430ff82e003d8ef15285",
+            "input_fingerprint": "sha256:274b85bd93a7ce0edf80c3c8ee49ae181e8ffb23892a79d316de1205ee42b9f2",
+            "output_fingerprint": "sha256:6dad7df9d3d49b663c326664119f23ba155f898abad0dc0894b13c714fe0c6c9",
+            "position": 1,
+            "residual_rows_bit_exact": true,
+            "routing_equality": true,
+            "selected_expert_ids": [
+              477,
+              165,
+              263,
+              464,
+              723,
+              657,
+              870,
+              599,
+              71,
+              635,
+              524,
+              65,
+              622,
+              704,
+              354,
+              754
+            ],
+            "weight_fingerprint": "sha256:2b3137e028e21fc5d51552e48f204054181274a94aec7221fe50f3f75aebf181"
+          },
+          {
+            "boundary_dtype": "float32",
+            "boundary_metrics": {
+              "actual_finite": true,
+              "actual_l2": 4.913829792405221,
+              "cosine_similarity": 0.999999999999956,
+              "maximum_absolute_error": 1.1920928955078125e-07,
+              "mean_absolute_error": 1.5155637450493125e-09,
+              "reference_finite": true,
+              "reference_l2": 4.913829997244165,
+              "relative_l2_error": 3.0016791641951867e-07
+            },
+            "boundary_shape": [
+              1,
+              9,
+              7168
+            ],
+            "expected_expert_ids": [
+              635,
+              477,
+              263,
+              723,
+              870,
+              768,
+              54,
+              599,
+              832,
+              484,
+              71,
+              754,
+              401,
+              888,
+              751,
+              289
+            ],
+            "expected_output_fingerprint": "sha256:a7229fadf45909c293e5a6266fe2bb630e298c8ae8d27cef78d019e52285b02b",
+            "input_fingerprint": "sha256:3a39cc2b3c585cdcf182649e53bf12e5727010726dfc300010276b9f807efc1f",
+            "output_fingerprint": "sha256:24a5316295d47624e7b34ba50766f12e80b7af5117834df9d3e8707ada045005",
+            "position": 2,
+            "residual_rows_bit_exact": true,
+            "routing_equality": true,
+            "selected_expert_ids": [
+              635,
+              477,
+              263,
+              723,
+              870,
+              768,
+              54,
+              599,
+              832,
+              484,
+              71,
+              754,
+              401,
+              888,
+              751,
+              289
+            ],
+            "weight_fingerprint": "sha256:2b3137e028e21fc5d51552e48f204054181274a94aec7221fe50f3f75aebf181"
+          }
+        ],
+        "relative_error_gate": 3e-05,
+        "residual_rows_bit_exact": true,
+        "routing_equality": true,
+        "state": {
+          "active_prefix_fingerprint": "sha256:0c9cf2783b8bac8b66794d2be19428a9312f6c69a6595a73ed922857995c80ea",
+          "attention_type": "Gated_MLA",
+          "bytes": 6912,
+          "cache_sequence_length": 3,
+          "fingerprint": "sha256:0c9cf2783b8bac8b66794d2be19428a9312f6c69a6595a73ed922857995c80ea",
+          "finite": true,
+          "nonzero_prefix": true,
+          "zero_suffix": true
+        }
+      },
+      "layer": 3,
+      "lifecycle": {
+        "pass": true,
+        "per_generation_deltas": [
+          {
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "position": 0
+          },
+          {
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "position": 1
+          },
+          {
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "position": 2
+          }
+        ],
+        "warm_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        }
+      },
+      "load": {
+        "accepted": true,
+        "elapsed_ms": 18964.741,
+        "memory_after": {
+          "free_bytes": 14192476160,
+          "total_bytes": 34190458880
+        },
+        "memory_before": {
+          "free_bytes": 32427212800,
+          "total_bytes": 34190458880
+        },
+        "resident_device_bytes": 18234736640,
+        "resident_expert_count": 896,
+        "route_accepted": true,
+        "tracked_device_bytes": 16089538304
+      },
+      "prepare": {
+        "count": 1,
+        "maximum_temporary_device_bytes": 2097152,
+        "measured_device_ms": 135.36095905303955,
+        "measured_wall_ms": 146.0166,
+        "pass": true,
+        "primitive": "isolated assigned-stage Kimi CUDA fixture",
+        "stage_fixture": {
+          "active_sessions_after": 0,
+          "cpu_mathematical_fallbacks": 0,
+          "device": {
+            "maximum_ms": 26.78281593322754,
+            "mean_ms": 19.337279864719935,
+            "minimum_ms": 11.924384117126465,
+            "p50_ms": 19.81510353088379,
+            "p95_ms": 26.752201271057128,
+            "p99_ms": 26.776693000793458,
+            "standard_deviation_ms": 6.7771354066439455
+          },
+          "device_ms_values": [
+            26.255264282226562,
+            26.680767059326172,
+            26.78281593322754,
+            19.81510353088379,
+            11.976320266723633,
+            11.924384117126465,
+            11.92630386352539
+          ],
+          "free_bytes_after_close": 14192476160,
+          "free_bytes_before": 14192476160,
+          "input": "float32 zero [1,9,7168]",
+          "iterations": 7,
+          "last_selected_expert_ids": [
+            89,
+            354,
+            721,
+            248,
+            573,
+            679,
+            207,
+            640,
+            386,
+            141,
+            251,
+            887,
+            313,
+            375,
+            476,
+            353
+          ],
+          "measured_device_ms": 135.36095905303955,
+          "measured_wall_ms": 146.0166,
+          "output_fingerprint": "sha256:f04993ef97d6659709c4fcd6d7d95df637093b52cd06a4893ac0701c14926511",
+          "output_finite": true,
+          "research_records_removed": true,
+          "serving_execute_count_restored": true,
+          "temporary_device_bytes": 2097152,
+          "temporary_memory_recovered": true
+        },
+        "temporary_device_bytes": 2097152,
+        "temporary_memory_recovered": true,
+        "total_measured_wall_ms": 146.0166
+      },
+      "production_batch": {
+        "batch_8": {
+          "all_selected_experts_executed_once": true,
+          "device_ms": 24.120159149169922,
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "maximum_relative_l2_error": 2.599615125032661e-07,
+          "pass": true,
+          "routing_equality": true,
+          "rows_per_second": 331.6727700893016,
+          "state_fingerprints_equal_for_equal_inputs": true
+        },
+        "batch_9_guard": {
+          "cuda_error_state_ok": true,
+          "execution_records_delta": 0,
+          "pass": true,
+          "rejection": "Kimi complete-stage batch rejected before CUDA work: requested=9, certified_max=8",
+          "requested_batch": 9
+        },
+        "certified_batch": 8,
+        "memory": {
+          "after_batch_close": {
+            "free_bytes": 14188281856,
+            "total_bytes": 34190458880
+          },
+          "after_safe_close": {
+            "free_bytes": 14188281856,
+            "total_bytes": 34190458880
+          },
+          "before": {
+            "free_bytes": 14190379008,
+            "total_bytes": 34190458880
+          },
+          "recovered_within_1_mib": false
+        },
+        "native_supported_batches": [
+          1,
+          2,
+          4,
+          8,
+          16
+        ],
+        "pass": false,
+        "post_guard_batch_1": {
+          "all_selected_experts_executed_once": true,
+          "pass": true,
+          "relative_l2_error": 2.599615125032661e-07,
+          "routed_expert_execution_count": 16,
+          "routing_equality": true
+        }
+      },
+      "status": "FAIL"
+    }
+  ],
+  "status": "FAIL"
+}

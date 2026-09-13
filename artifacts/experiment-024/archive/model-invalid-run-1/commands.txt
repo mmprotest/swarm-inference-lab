@@ -1,0 +1,6 @@
+python scripts/experiment_024_freeze.py
+python -m compileall src/swarm_inference/experiments/experiment_024 scripts
+pytest -q tests/test_experiment_024.py tests/test_experiment_024_completion.py tests/test_experiment_023.py tests/test_experiment_023_completion.py tests/test_experiment_022.py tests/test_experiment_022_completion.py
+pytest -q
+python -m ruff check src/swarm_inference/experiments/experiment_024 scripts/experiment_024_*.py tests/test_experiment_024*.py
+python -m ruff check .

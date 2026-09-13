@@ -1,0 +1,65 @@
+{
+  "benchmark": {
+    "batches_requested": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "checkpoint": "F:\\models\\Kimi-K3",
+    "device": "NVIDIA GeForce RTX 5090",
+    "elapsed_wall_seconds_before_failure": 101.1,
+    "iterations_per_size": 100,
+    "layer": 89,
+    "primitives_requested": [
+      "latent_down_dense",
+      "selected_mxfp4_routed_expert",
+      "shared_expert"
+    ],
+    "selected_expert_id": 803,
+    "warmup_calls_per_size": 20
+  },
+  "cycle_id": "H014-027v",
+  "decision": "HALT_GPU_WORK_HARDEN_DIAGNOSTIC_REQUIRE_REBOOT",
+  "hypothesis": "The unchanged row-parallel primitives remain below 1.25x row-throughput speedup at batch 2/4/8/16 for every tested class, with correct outputs and plateauing per-row latency.",
+  "implementation": "Benchmark-only batch sweep over unchanged registered layer-89 resident handles and duplicated oracle-derived activations.",
+  "inspection": {
+    "cuda_exception": "KimiCudaError: resident Kimi CUDA expert rejected execution",
+    "cuda_runtime_error": "Kimi resident expert MLP launch: unknown error",
+    "failure_location": "selected_mxfp4_routed_expert warmup; exact batch was not emitted by the first harness",
+    "nvidia_smi_after_failure": "No devices were found; GPU is lost at PCI 0000:02:00.0; reboot required",
+    "system_event_evidence": {
+      "event_14_count_in_one_hour_query": 60,
+      "event_153_count_in_one_hour_query": 601,
+      "first_observed_local": "2026-08-11T13:33:28+10:00",
+      "last_observed_local": "2026-08-11T13:33:32+10:00",
+      "provider": "nvlddmkm"
+    },
+    "trace_inference": "The Python stack had advanced past construction of the latent-down result and failed while evaluating the selected-expert primitive. No dense timing is retained because the enclosing result was never serialized.",
+    "actual_bottleneck": "UNBOUNDED_NATIVE_EXPERT_BATCH_CAN_LOSE_THE_GPU"
+  },
+  "redesign": "After reboot, H014-027w runs one process-isolated batch-4 real expert diagnostic with explicit batch progress and an early device-health gate; no multi-size sweep is permitted until the first unsupported size is known.",
+  "result": {
+    "execution_pass": false,
+    "hypothesis_supported": null,
+    "retained_scaling_measurements": false,
+    "system_device_recovery_required": "REBOOT"
+  },
+  "schema_version": "experiment-014-k3-batch-scaling-failure-v1",
+  "sources": {
+    "batch2_profile": {
+      "path": "artifacts/experiment-014/performance/h014-027u-batch2-primitives.json",
+      "sha256": "cff15d163098dc83d4dc8d1b4c6bb6b0d99856ab3e292972062a25a78ad5b1d4"
+    },
+    "cuda_library": {
+      "path": "artifacts/experiment-015-deployment/native/windows/coli_cuda-sm86.dll",
+      "sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044"
+    },
+    "native_source": {
+      "path": "third_party/colibri/c/backend_cuda.cu",
+      "sha256": "6b3769f6b2ed19be94aa5c640e7e4fc2e39c5f398358ab4f915368cdc61952f0"
+    }
+  },
+  "status": "FAIL"
+}

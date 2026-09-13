@@ -1,0 +1,146 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "4cd607503425f07795f1adfb6147b78ef8144c396b261be0e57d81974ebf8f79",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_bf16_embedding",
+    "implementation_kind": "custom Kimi CUDA"
+  },
+  "benchmark": {
+    "batched_event_service_ms_per_call": 0.007292799949645996,
+    "bytes_touched_per_call": 43012,
+    "compute_utilization": null,
+    "effective_bytes_touched_service_bandwidth_gbps": 5.8978719143513425,
+    "gpu_utilization": null,
+    "host_cpu": {
+      "maximum_ms": 0.0,
+      "mean_ms": 0.0,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "standard_deviation_ms": 0.0
+    },
+    "kernel_count_per_call": 1,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "queued_service_ms_per_call": 0.0080252,
+    "retained_iterations": 500,
+    "timed_batch": 1,
+    "utilization_note": "one-row gather is a launch-scale operation",
+    "wall": {
+      "maximum_ms": 0.0491,
+      "mean_ms": 0.012478,
+      "minimum_ms": 0.0091,
+      "p50_ms": 0.0101,
+      "p95_ms": 0.0286,
+      "p99_ms": 0.032750999999999954,
+      "standard_deviation_ms": 0.006060468298737317
+    },
+    "warmup_iterations": 50
+  },
+  "checkpoint": {
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "embedding": {
+      "name": "language_model.model.embed_tokens.weight",
+      "runtime_bf16_fingerprint": "sha256:189a447d192905e9b2abede9eb81570830e06ce4c4ada968fbe467b00db4f81d",
+      "shape": [
+        163840,
+        7168
+      ],
+      "source_bytes": 2348810240,
+      "source_dtype": "BF16",
+      "source_range": [
+        2348810824,
+        4697621064
+      ],
+      "source_raw_sha256": "4a79cdabdab6826b994aff69d90a72aa35dae32e90f8acaf1ce312c7bdc4a487",
+      "source_shard": "model-00094-of-000096.safetensors"
+    },
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "path": "F:\\models\\Kimi-K3"
+  },
+  "correctness": {
+    "actual_finite": true,
+    "actual_l2": 4.0283314151676155,
+    "bit_exact": true,
+    "cosine_similarity": 1.0000000000000002,
+    "maximum_absolute_error": 0.0,
+    "mean_absolute_error": 0.0,
+    "reference_finite": true,
+    "reference_l2": 4.0283314151676155,
+    "relative_l2_error": 0.0
+  },
+  "cycle_id": "H014-025r",
+  "fixture": {
+    "actual_generated_token_id": 11,
+    "cuda_output_fingerprint": "sha256:14d8192064b0889bd3f42e95c05194c82de88d5e22e3947f62b68b28bf6b9424",
+    "dimensions": [
+      163840,
+      7168
+    ],
+    "output_dtype": "float32",
+    "reference_output_fingerprint": "sha256:14d8192064b0889bd3f42e95c05194c82de88d5e22e3947f62b68b28bf6b9424",
+    "selected_bf16_fingerprint": "sha256:5a9d0d976dc4c2c89d23857c579d26e419cbd376954d38d615f753d142f1fd04",
+    "token_id_fingerprint": "sha256:95e3b7b455a9a264c5059adc6c10b44f90bd89aaac8a547c6c5d37216925cfca",
+    "token_ids": [
+      11,
+      163584,
+      163586,
+      163839,
+      0,
+      163838
+    ]
+  },
+  "hypothesis": "A fully resident BF16 Kimi embedding table can gather actual and boundary token IDs on CUDA with bit-exact FP32 output and no warm-path host transfer.",
+  "inspection": {
+    "bottleneck": "ONE_TIME_TABLE_UPLOAD",
+    "decision": "RETAIN",
+    "invalid_token_behavior": "device writes NaN; caller must validate token range",
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_weight_loading": 0
+  },
+  "memory": {
+    "after_buffers": {
+      "free_bytes": 30078402560,
+      "total_bytes": 34190458880
+    },
+    "after_upload": {
+      "free_bytes": 30080499712,
+      "total_bytes": 34190458880
+    },
+    "before_upload": {
+      "free_bytes": 32429309952,
+      "total_bytes": 34190458880
+    },
+    "embedding_resident_bytes": 2348810240,
+    "expected_embedding_resident_bytes": 2348810240,
+    "observed_upload_vram_delta_bytes": 2348810240,
+    "output_buffer_bytes": 172032,
+    "persistent_dequantized_weight_bytes": 0,
+    "token_buffer_bytes": 24,
+    "upload_effective_gbps": 2.91113244268702,
+    "upload_ms": 806.8373,
+    "workspace_bytes": 0
+  },
+  "schema_version": "experiment-014-k3-cuda-real-embedding-v1",
+  "status": "PASS"
+}

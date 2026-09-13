@@ -1,0 +1,34 @@
+{
+  "schema_version": "experiment-014-k3-mla-shared-memory-capability-v1",
+  "cycle_id": "H014-033c",
+  "status": "PASS",
+  "binary": {
+    "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+    "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+    "minimum_compute_capability": 86,
+    "forward_ptx": true
+  },
+  "device": {
+    "name": "NVIDIA GeForce RTX 5090",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49",
+    "compute_capability": "12.0",
+    "default_shared_memory_per_block_bytes": 49152,
+    "optin_shared_memory_per_block_bytes": 101376
+  },
+  "requested": {
+    "kv_lora": 512,
+    "context_length": 16385,
+    "formula": "(2*K+T)*sizeof(float)",
+    "dynamic_shared_memory_bytes": 69636,
+    "headroom_bytes": 31740
+  },
+  "gates": {
+    "optin_capacity_sufficient": true,
+    "pre_sm86_rejected": true,
+    "sm86_accepted": true,
+    "sm120_accepted": true,
+    "cuda_error_state_ok": true,
+    "nvidia_smi_after_query": true
+  },
+  "decision": "Advance incrementally to the real layer-91 1K/4K/8K/16K benchmark. This receipt certifies capacity only, not a successful long-context kernel launch."
+}

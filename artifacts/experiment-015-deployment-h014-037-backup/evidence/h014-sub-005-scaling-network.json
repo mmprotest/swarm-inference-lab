@@ -1,0 +1,831 @@
+{
+  "artifacts": {
+    "network_matrix_csv": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-005-network-matrix.csv",
+    "scaling_chart": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\charts\\h014-sub-layer-scaling.png"
+  },
+  "best_projected_topology": {
+    "maximum_useful_rtt_ms_at_100gbps": 0.6461381024968426,
+    "minimum_useful_bandwidth_gbps_at_0_25ms": 1.9863508523457518,
+    "worker_bytes": 3930830848,
+    "worker_fraction_percent": 21.504889983220515,
+    "workers": 4
+  },
+  "cycle_id": "H014-SUB-005",
+  "decision": "RETAIN_ONLY_INSIDE_FAST_EXPERT_DOMAINS",
+  "hypothesis": {
+    "prediction": "Real measured microwork payloads will define a non-empty low-latency network region retaining at least 90% of resident complete-layer capacity.",
+    "useful_capacity_retention": 0.9
+  },
+  "hypothesis_supported": true,
+  "inspection": {
+    "actual_bottleneck": "As worker count rises, selected-expert compute shrinks but fanout, framing, serialization, and collection grow; useful operation is therefore confined to a sub-millisecond low-latency domain.",
+    "maximum_viable_definition": "at least 90% resident complete-layer throughput",
+    "strict_break_even_also_reported": true
+  },
+  "method": {
+    "bandwidth_profiles_gbps": [
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.5,
+      5.0,
+      10.0,
+      25.0,
+      100.0
+    ],
+    "class": "COUNTERFACTUAL_PHYSICAL_LINK_REPLAY",
+    "conservative_assumption": "Measured loopback coordination is retained and physical link cost is added.",
+    "formula": "parent nonexpert p50 + measured critical worker device p50 + measured loopback coordination base + RTT + critical payload / bandwidth",
+    "physical_multi_gpu_measurement": false,
+    "rtt_profiles_ms": [
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      20.0
+    ]
+  },
+  "network_matrix_rows": 288,
+  "scaling_curve": [
+    {
+      "bandwidth_sweep_at_0_25ms": [
+        {
+          "bandwidth_gbps": 0.1,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 15.95795199373245,
+          "rtt_ms": 0.25,
+          "transmission_ms": 12.61568,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.20450305911947428
+        },
+        {
+          "bandwidth_gbps": 0.25,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 8.388543993732451,
+          "rtt_ms": 0.25,
+          "transmission_ms": 5.046272,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.38903652438829733
+        },
+        {
+          "bandwidth_gbps": 0.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 5.865407993732452,
+          "rtt_ms": 0.25,
+          "transmission_ms": 2.523136,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.5563892577442517
+        },
+        {
+          "bandwidth_gbps": 1.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.603839993732452,
+          "rtt_ms": 0.25,
+          "transmission_ms": 1.261568,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.7088539142200372
+        },
+        {
+          "bandwidth_gbps": 2.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.846899193732452,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.5046272,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8483326013109377
+        },
+        {
+          "bandwidth_gbps": 5.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.594585593732452,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.2523136,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9078793409983552
+        },
+        {
+          "bandwidth_gbps": 10.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.468428793732452,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.1261568,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9409015419019544
+        },
+        {
+          "bandwidth_gbps": 25.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.392734713732452,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.05046272,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.961893656698486
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.3548876737324522,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9727449373496537
+        }
+      ],
+      "critical_path_payload_bytes": 157696,
+      "critical_worker_device_p50_ms": 0.6603839993476868,
+      "critical_worker_device_p95_ms": 0.8392143845558164,
+      "critical_worker_device_p99_ms": 0.9526844775676728,
+      "distributed_layer_p50_ms": 4.1461500000000004,
+      "distributed_layer_p95_ms": 4.65053,
+      "distributed_layer_p99_ms": 5.120849000000001,
+      "distributed_layers_per_second": 241.1876077807122,
+      "expert_roundtrip_p50_ms": 1.7260499999999999,
+      "expert_roundtrip_p95_ms": 2.1063649999999994,
+      "expert_roundtrip_p99_ms": 2.237349,
+      "loopback_coordination_base_p50_ms": 0.3521500000000001,
+      "maximum_break_even_rtt_ms_at_100gbps": 0.15856232626754765,
+      "maximum_selected_on_one_worker": 10,
+      "maximum_useful_rtt_ms_at_100gbps": 0.5211678818231033,
+      "maximum_useful_tested_rtt_ms_at_100gbps": 0.5,
+      "mean_total_transport_bytes": 259522.66666666666,
+      "mean_workers_contacted": 2.0,
+      "minimum_useful_bandwidth_gbps_at_0_25ms": 4.445528810391067,
+      "minimum_useful_tested_bandwidth_gbps_at_0_25ms": 5.0,
+      "parent_nonexpert_p50_ms": 2.0797379943847654,
+      "reference_expert_p50_ms": 1.1837120056152344,
+      "reference_layer_p50_ms": 3.2634499999999997,
+      "rtt_sweep_100gbps": [
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": true,
+          "projected_distributed_layer_p50_ms": 3.2048876737324523,
+          "rtt_ms": 0.1,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 1.018272817093569
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.3548876737324522,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9727449373496537
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.6048876737324522,
+          "rtt_ms": 0.5,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9052847953570402
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.104887673732452,
+          "rtt_ms": 1.0,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.795015664102848
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 5.104887673732452,
+          "rtt_ms": 2.0,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.639279492238841
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 8.104887673732453,
+          "rtt_ms": 5.0,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.40265209480653047
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 13.104887673732453,
+          "rtt_ms": 10.0,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.24902540801942824
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 23.104887673732453,
+          "rtt_ms": 20.0,
+          "transmission_ms": 0.01261568,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.14124500608198842
+        }
+      ],
+      "same_gpu_relative_throughput": 0.7871036986119652,
+      "sub_layer_efficiency": 0.3428962097318254,
+      "synchronization_points": 2,
+      "worker_bytes": 7861417984,
+      "worker_fraction_percent": 43.00844666059545,
+      "worker_gib": 7.321516036987305,
+      "workers": 2
+    },
+    {
+      "bandwidth_sweep_at_0_25ms": [
+        {
+          "bandwidth_gbps": 0.1,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 11.71271595972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 8.02816,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.3141756372009109
+        },
+        {
+          "bandwidth_gbps": 0.25,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 6.8958199597253795,
+          "rtt_ms": 0.25,
+          "transmission_ms": 3.211264,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.533634871776227
+        },
+        {
+          "bandwidth_gbps": 0.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 5.29018795972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 1.605632,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.6955991030970903
+        },
+        {
+          "bandwidth_gbps": 1.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.48737195972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.802816,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8200456822004123
+        },
+        {
+          "bandwidth_gbps": 2.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.00568235972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.3211264,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9186574644556393
+        },
+        {
+          "bandwidth_gbps": 5.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.84511915972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.1605632,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9570184556420396
+        },
+        {
+          "bandwidth_gbps": 10.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.7648375597253803,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.0802816,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9774259690153592
+        },
+        {
+          "bandwidth_gbps": 25.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.71666859972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.03211264,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9900936554504483
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.69258411972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.996551434087214
+        }
+      ],
+      "critical_path_payload_bytes": 100352,
+      "critical_worker_device_p50_ms": 0.4780320078134537,
+      "critical_worker_device_p95_ms": 1.3798367857933034,
+      "critical_worker_device_p99_ms": 1.5971773278713226,
+      "distributed_layer_p50_ms": 4.5222999999999995,
+      "distributed_layer_p95_ms": 5.366124999999999,
+      "distributed_layer_p99_ms": 5.667664,
+      "distributed_layers_per_second": 221.12641797315527,
+      "expert_roundtrip_p50_ms": 1.8746999999999998,
+      "expert_roundtrip_p95_ms": 2.27247,
+      "expert_roundtrip_p99_ms": 2.333627,
+      "loopback_coordination_base_p50_ms": 0.46204999999999996,
+      "maximum_break_even_rtt_ms_at_100gbps": 0.23726588027461998,
+      "maximum_selected_on_one_worker": 6,
+      "maximum_useful_rtt_ms_at_100gbps": 0.6461381024968426,
+      "maximum_useful_tested_rtt_ms_at_100gbps": 0.5,
+      "mean_total_transport_bytes": 289550.6,
+      "mean_workers_contacted": 4.0,
+      "minimum_useful_bandwidth_gbps_at_0_25ms": 1.9863508523457518,
+      "minimum_useful_tested_bandwidth_gbps_at_0_25ms": 2.5,
+      "parent_nonexpert_p50_ms": 2.4944739519119263,
+      "reference_expert_p50_ms": 1.1853760480880737,
+      "reference_layer_p50_ms": 3.67985,
+      "rtt_sweep_100gbps": [
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": true,
+          "projected_distributed_layer_p50_ms": 3.54258411972538,
+          "rtt_ms": 0.1,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 1.0387473876796074
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.69258411972538,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.996551434087214
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.94258411972538,
+          "rtt_ms": 0.5,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9333599203601316
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.44258411972538,
+          "rtt_ms": 1.0,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8283129594915744
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 5.44258411972538,
+          "rtt_ms": 2.0,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.6761218419506352
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 8.44258411972538,
+          "rtt_ms": 5.0,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.4358677328902585
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 13.44258411972538,
+          "rtt_ms": 10.0,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.27374572978124506
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 23.442584119725378,
+          "rtt_ms": 20.0,
+          "transmission_ms": 0.00802816,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.15697288239241725
+        }
+      ],
+      "same_gpu_relative_throughput": 0.8137120491785155,
+      "sub_layer_efficiency": 0.15807543181416678,
+      "synchronization_points": 2,
+      "worker_bytes": 3930830848,
+      "worker_fraction_percent": 21.504889983220515,
+      "worker_gib": 3.6608715057373047,
+      "workers": 4
+    },
+    {
+      "bandwidth_sweep_at_0_25ms": [
+        {
+          "bandwidth_gbps": 0.1,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 9.517665957212447,
+          "rtt_ms": 0.25,
+          "transmission_ms": 5.7344,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.38536759080313765
+        },
+        {
+          "bandwidth_gbps": 0.25,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 6.077025957212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 2.29376,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.6035518073848136
+        },
+        {
+          "bandwidth_gbps": 0.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.9301459572124475,
+          "rtt_ms": 0.25,
+          "transmission_ms": 1.14688,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.7439536337933917
+        },
+        {
+          "bandwidth_gbps": 1.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.356705957212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.57344,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8418745804793236
+        },
+        {
+          "bandwidth_gbps": 2.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.012641957212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.229376,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9140611196090848
+        },
+        {
+          "bandwidth_gbps": 5.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.897953957212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.114688,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9409551883529587
+        },
+        {
+          "bandwidth_gbps": 10.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.840609957212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.057344,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9550045541886072
+        },
+        {
+          "bandwidth_gbps": 25.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.806203557212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.0229376,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9636373737946345
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.789000357212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9680125769896694
+        }
+      ],
+      "critical_path_payload_bytes": 71680,
+      "critical_worker_device_p50_ms": 0.2900319993495941,
+      "critical_worker_device_p95_ms": 1.485926395654677,
+      "critical_worker_device_p99_ms": 1.792955175638199,
+      "distributed_layer_p50_ms": 4.618449999999999,
+      "distributed_layer_p95_ms": 5.331144999999999,
+      "distributed_layer_p99_ms": 7.078535000000002,
+      "distributed_layers_per_second": 216.5228594008813,
+      "expert_roundtrip_p50_ms": 2.0455,
+      "expert_roundtrip_p95_ms": 2.4842649999999997,
+      "expert_roundtrip_p99_ms": 3.6580800000000013,
+      "loopback_coordination_base_p50_ms": 0.7590500000000001,
+      "maximum_break_even_rtt_ms_at_100gbps": 0.12879964278755165,
+      "maximum_selected_on_one_worker": 4,
+      "maximum_useful_rtt_ms_at_100gbps": 0.5363329761208849,
+      "maximum_useful_tested_rtt_ms_at_100gbps": 0.5,
+      "mean_total_transport_bytes": 347608.26666666666,
+      "mean_workers_contacted": 7.866666666666666,
+      "minimum_useful_bandwidth_gbps_at_0_25ms": 1.963382585265725,
+      "minimum_useful_tested_bandwidth_gbps_at_0_25ms": 2.5,
+      "parent_nonexpert_p50_ms": 2.4841839578628537,
+      "reference_expert_p50_ms": 1.183616042137146,
+      "reference_layer_p50_ms": 3.6677999999999997,
+      "rtt_sweep_100gbps": [
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": true,
+          "projected_distributed_layer_p50_ms": 3.6390003572124483,
+          "rtt_ms": 0.1,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 1.0079141632208062
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.789000357212448,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9680125769896694
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.039000357212448,
+          "rtt_ms": 0.5,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9080959830692773
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.539000357212448,
+          "rtt_ms": 1.0,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.808063386505772
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 5.539000357212448,
+          "rtt_ms": 2.0,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.662177245615101
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 8.539000357212448,
+          "rtt_ms": 5.0,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.4295350563959165
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 13.539000357212448,
+          "rtt_ms": 10.0,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.2709062636257412
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 23.53900035721245,
+          "rtt_ms": 20.0,
+          "transmission_ms": 0.0057344,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.15581800179871147
+        }
+      ],
+      "same_gpu_relative_throughput": 0.7941625437105523,
+      "sub_layer_efficiency": 0.07233048411984515,
+      "synchronization_points": 2,
+      "worker_bytes": 1965537280,
+      "worker_fraction_percent": 10.753111644533043,
+      "worker_gib": 1.8305492401123047,
+      "workers": 8
+    },
+    {
+      "bandwidth_sweep_at_0_25ms": [
+        {
+          "bandwidth_gbps": 0.1,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 7.2925140018248555,
+          "rtt_ms": 0.25,
+          "transmission_ms": 3.44064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.5060874753310673
+        },
+        {
+          "bandwidth_gbps": 0.25,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 5.228130001824855,
+          "rtt_ms": 0.25,
+          "transmission_ms": 1.376256,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.705921619912243
+        },
+        {
+          "bandwidth_gbps": 0.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.540002001824855,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.688128,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8129181437621705
+        },
+        {
+          "bandwidth_gbps": 1.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.195938001824856,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.344064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8795768665778424
+        },
+        {
+          "bandwidth_gbps": 2.5,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.989499601824855,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.1376256,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9250909558461524
+        },
+        {
+          "bandwidth_gbps": 5.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.9206868018248553,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.0688128,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9413274220940611
+        },
+        {
+          "bandwidth_gbps": 10.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.8862804018248553,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.0344064,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9496612746385993
+        },
+        {
+          "bandwidth_gbps": 25.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.8656365618248554,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.01376256,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9547327952262927
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.8553146418248554,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9572889226631541
+        }
+      ],
+      "critical_path_payload_bytes": 43008,
+      "critical_worker_device_p50_ms": 0.16017600148916245,
+      "critical_worker_device_p95_ms": 1.0573488056659697,
+      "critical_worker_device_p99_ms": 1.3428738844394688,
+      "distributed_layer_p50_ms": 5.1531,
+      "distributed_layer_p95_ms": 5.69781,
+      "distributed_layer_p99_ms": 5.760975,
+      "distributed_layers_per_second": 194.05794570258678,
+      "expert_roundtrip_p50_ms": 2.4166,
+      "expert_roundtrip_p95_ms": 2.800275,
+      "expert_roundtrip_p99_ms": 2.832909,
+      "loopback_coordination_base_p50_ms": 0.9329999999999998,
+      "maximum_break_even_rtt_ms_at_100gbps": 0.08533535817514437,
+      "maximum_selected_on_one_worker": 2,
+      "maximum_useful_rtt_ms_at_100gbps": 0.49540758039736676,
+      "maximum_useful_tested_rtt_ms_at_100gbps": 0.25,
+      "mean_total_transport_bytes": 392660.26666666666,
+      "mean_workers_contacted": 10.866666666666667,
+      "minimum_useful_bandwidth_gbps_at_0_25ms": 1.3826259213370722,
+      "minimum_useful_tested_bandwidth_gbps_at_0_25ms": 2.5,
+      "parent_nonexpert_p50_ms": 2.508698000335693,
+      "reference_expert_p50_ms": 1.1819519996643066,
+      "reference_layer_p50_ms": 3.6906499999999998,
+      "rtt_sweep_100gbps": [
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.7053146418248555,
+          "rtt_ms": 0.1,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.996042268135795
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 3.8553146418248554,
+          "rtt_ms": 0.25,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": true,
+          "whole_layer_relative_throughput": 0.9572889226631541
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.105314641824855,
+          "rtt_ms": 0.5,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8989932129439577
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 4.605314641824855,
+          "rtt_ms": 1.0,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.8013893266883455
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 5.605314641824855,
+          "rtt_ms": 2.0,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.6584197740590132
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 8.605314641824856,
+          "rtt_ms": 5.0,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.4288803086945993
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 13.605314641824856,
+          "rtt_ms": 10.0,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.2712653177938544
+        },
+        {
+          "bandwidth_gbps": 100.0,
+          "break_even_vs_resident": false,
+          "projected_distributed_layer_p50_ms": 23.605314641824855,
+          "rtt_ms": 20.0,
+          "transmission_ms": 0.00344064,
+          "useful_90_percent_capacity": false,
+          "whole_layer_relative_throughput": 0.1563482654647931
+        }
+      ],
+      "same_gpu_relative_throughput": 0.7161999573072518,
+      "sub_layer_efficiency": 0.030568567400074142,
+      "synchronization_points": 2,
+      "worker_bytes": 982890496,
+      "worker_fraction_percent": 5.377222475189307,
+      "worker_gib": 0.9153881072998047,
+      "workers": 16
+    }
+  ],
+  "schema_version": "experiment-014-k3-sub-layer-scaling-network-v1",
+  "sources": {
+    "16": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-004-sixteen-worker-real-expert.json",
+      "sha256": "865c3a191fd1ddc4ad1303ea2b15defd627f09ee2293719fc88b6d340e7bc79c"
+    },
+    "2": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-001b-two-worker-real-expert.json",
+      "sha256": "5d9bd1b3be529a160e54fcc1938840dd836d4d46400a5cc9210512fbc9e1d53f"
+    },
+    "4": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-002-four-worker-real-expert.json",
+      "sha256": "02f9b8297e9e9a39d1cf9910d77f720a83373d914710d0fd01125481c5c0e5bf"
+    },
+    "8": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-003-eight-worker-real-expert.json",
+      "sha256": "bbdb57c24275b5a849594c77914341dbe64c363f54eb6a0ef3dbe84328430a85"
+    }
+  },
+  "status": "PASS"
+}

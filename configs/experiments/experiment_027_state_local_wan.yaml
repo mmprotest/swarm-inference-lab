@@ -1,0 +1,36 @@
+experiment_id: E027_STATE_LOCAL_WAN_STAGE_PROTOCOL
+model_path: .runtime/experiment-026/models/Qwen3.8-27B-Q4_K_M.gguf
+model_sha256: 31629f53165ab6a7dad8c9847dcfd1fdf55829dac1e6e748f4a68581b0033d34
+layer_ranges:
+  - [0, 22]
+  - [22, 44]
+  - [44, 64]
+context_tokens: 4096
+batch_tokens: 512
+recurrent_rollback_snapshots: 0
+serial_blocks: true
+local_sequence_checkpoints: 9
+top_k_validation: 16
+output_tokens_per_lane: 64
+warmup_tokens: 2
+arms: [1, 2, 4, 8]
+prompts:
+  - prompt_id: e027-factual
+    category: factual
+    content: >-
+      Write a detailed textbook explanation of the water cycle, including
+      evaporation, condensation, precipitation, groundwater, glaciers, and
+      the role of the Sun. Use complete paragraphs.
+  - prompt_id: e027-code
+    category: code
+    content: >-
+      Implement a self-contained Python module for a bounded LRU cache with
+      get, put, deletion, iteration, expiry using an injected monotonic clock,
+      and examples. Explain invariants and edge cases after the code.
+  - prompt_id: e027-reasoning
+    category: reasoning
+    content: >-
+      A warehouse has three packing lines with different rates and scheduled
+      maintenance windows. Explain step by step how to allocate a fixed daily
+      workload while minimizing the completion time, state your assumptions,
+      and check the resulting schedule.

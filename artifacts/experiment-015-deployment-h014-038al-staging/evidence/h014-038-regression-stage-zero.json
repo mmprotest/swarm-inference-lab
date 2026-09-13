@@ -1,0 +1,1917 @@
+{
+  "backend": {
+    "cpu_mathematical_fallbacks": 0,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+    "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "checkpoint": {
+    "content_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "model_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "path": "F:\\models\\Kimi-K3"
+  },
+  "cycle_id": "H014-038w",
+  "hypothesis": "A registered stage-zero worker keeps embedding and dense layer-0 weights resident, executes successive token IDs on CUDA, emits the complete canonical boundary, advances state, and performs no warm reconstruction.",
+  "inspection": {
+    "actual_bottleneck": "production implementation still inherits experiment-module base code",
+    "canonical_boundary": "float32 [1,9,7168]",
+    "warm_path_model_materialization": 0,
+    "warm_path_weight_loading": 0
+  },
+  "prior_stage_regression": {
+    "pass": true,
+    "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\h014-038-regression-nonfinal-stages.json",
+    "sha256": "87315dfe3d3c55e2ed67369544d78b8df81d2879cc90d34276da5759333bbfab"
+  },
+  "schema_version": "experiment-014-k3-persistent-stage-zero-v2",
+  "stage": {
+    "assignment": {
+      "assignment_sha256": "ba23635700c947546d23107ce20827c4b302f45b035f7d7589862a1292f1c154",
+      "identity_manifest": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\identities\\h014-038\\k3-worker-000-model-identity.json",
+      "manifest_sha256": "853def453d12e5a974dd9e4007bdccc2260e694b4e48fd7c16e5a20d01fdd833",
+      "owned_tensor_count": 24,
+      "ownership_hash": "77117bc143f9515ada0c6e599515c160083bd85c189b3c036b9ac62b4a6c975d",
+      "source_weight_bytes": 4690023424,
+      "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e",
+      "worker_id": "k3-worker-000"
+    },
+    "attention_type": "KDA",
+    "backend": {
+      "cpu_mathematical_fallbacks": 0,
+      "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+      "identity": "nvidia_cuda_persistent_kimi_stage",
+      "implementation_class": "swarm_inference.execution.kimi_k3_stage.PersistentKimiStageExecutor"
+    },
+    "benchmark": {
+      "device": {
+        "maximum_ms": 14.229984283447266,
+        "mean_ms": 13.902485529581705,
+        "minimum_ms": 13.711968421936035,
+        "p50_ms": 13.765503883361816,
+        "p95_ms": 14.18353624343872,
+        "p99_ms": 14.220694675445557,
+        "standard_deviation_ms": 0.2326056559145238
+      },
+      "instrumentation_mode": "production-minimal plus lifecycle counters",
+      "retained_generations": 3,
+      "wall": {
+        "maximum_ms": 14.45,
+        "mean_ms": 14.188133333333333,
+        "minimum_ms": 13.9222,
+        "p50_ms": 14.1922,
+        "p95_ms": 14.424219999999998,
+        "p99_ms": 14.444844,
+        "standard_deviation_ms": 0.2154926345737956
+      },
+      "warmup_generations": 1,
+      "wire": [
+        {
+          "forwarded_payload_bytes": 258048,
+          "forwarded_wire_bytes": 259596,
+          "incoming_payload_bytes": 8,
+          "incoming_wire_bytes": 1158
+        },
+        {
+          "forwarded_payload_bytes": 258048,
+          "forwarded_wire_bytes": 259595,
+          "incoming_payload_bytes": 8,
+          "incoming_wire_bytes": 1157
+        },
+        {
+          "forwarded_payload_bytes": 258048,
+          "forwarded_wire_bytes": 259595,
+          "incoming_payload_bytes": 8,
+          "incoming_wire_bytes": 1157
+        }
+      ]
+    },
+    "correctness": {
+      "maximum_boundary_relative_l2_error": 2.751786728581615e-07,
+      "pass": true,
+      "positions": [
+        {
+          "boundary_dtype": "float32",
+          "boundary_metrics": {
+            "actual_finite": true,
+            "actual_l2": 3.609735785540215,
+            "cosine_similarity": 0.9999999999999635,
+            "maximum_absolute_error": 8.940696716308594e-08,
+            "mean_absolute_error": 9.223751498038404e-10,
+            "reference_finite": true,
+            "reference_l2": 3.6097356165115255,
+            "relative_l2_error": 2.751786728581615e-07
+          },
+          "boundary_shape": [
+            1,
+            9,
+            7168
+          ],
+          "expected_expert_ids": [],
+          "expected_output_fingerprint": "sha256:eac99f5a75496f838bdb4027e839ff6dc43811e8846c004b8f16107fc83f88fc",
+          "host_thread_ident": 28536,
+          "host_thread_name": "stage-compute-k3-worker-000_0",
+          "host_thread_native_id": 28536,
+          "input_fingerprint": "sha256:fa4fb4f309e4087f9aa3079f621d6848dfd3c8514fd15db64e091ae499d07593",
+          "output_fingerprint": "sha256:f3f4e632e75260c8effc711ee4603b8fe990f05376931efdb9f106d550d5ef22",
+          "position": 0,
+          "residual_rows_bit_exact": true,
+          "routing_equality": true,
+          "selected_expert_ids": [],
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e"
+        },
+        {
+          "boundary_dtype": "float32",
+          "boundary_metrics": {
+            "actual_finite": true,
+            "actual_l2": 2.132597644215904,
+            "cosine_similarity": 0.9999999999999817,
+            "maximum_absolute_error": 5.960464477539063e-08,
+            "mean_absolute_error": 4.0920500145335927e-10,
+            "reference_finite": true,
+            "reference_l2": 2.132597685397348,
+            "relative_l2_error": 1.9350966185253025e-07
+          },
+          "boundary_shape": [
+            1,
+            9,
+            7168
+          ],
+          "expected_expert_ids": [],
+          "expected_output_fingerprint": "sha256:34437bd09b0c029b1f55cc3691b26715e0d90a21f3c68d891c6aec2be956cc84",
+          "host_thread_ident": 28536,
+          "host_thread_name": "stage-compute-k3-worker-000_0",
+          "host_thread_native_id": 28536,
+          "input_fingerprint": "sha256:2994f7b9d45142b0188bf2ed7bff39aac3cb80a3f94d0bb55ddb6055844a5e5e",
+          "output_fingerprint": "sha256:19578e9b29bdf141ca173fe1e3131f60cd06d8346734067275c3bce8e55568e6",
+          "position": 1,
+          "residual_rows_bit_exact": true,
+          "routing_equality": true,
+          "selected_expert_ids": [],
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e"
+        },
+        {
+          "boundary_dtype": "float32",
+          "boundary_metrics": {
+            "actual_finite": true,
+            "actual_l2": 1.8166190060749157,
+            "cosine_similarity": 0.9999999999999828,
+            "maximum_absolute_error": 5.960464477539063e-08,
+            "mean_absolute_error": 3.37318208638617e-10,
+            "reference_finite": true,
+            "reference_l2": 1.8166190424883075,
+            "relative_l2_error": 1.8785890160758023e-07
+          },
+          "boundary_shape": [
+            1,
+            9,
+            7168
+          ],
+          "expected_expert_ids": [],
+          "expected_output_fingerprint": "sha256:c11ba20e317add469bb1ef07ebce227bd08316fdffe17182d9a2fce2ce448132",
+          "host_thread_ident": 28536,
+          "host_thread_name": "stage-compute-k3-worker-000_0",
+          "host_thread_native_id": 28536,
+          "input_fingerprint": "sha256:7ba37e4b07bd59b05fb8efc0d31a6bd2c591297bb83f6020be5afcd9a86ac555",
+          "output_fingerprint": "sha256:db0143a30157de91003eae3297c988616866720581ffbee697ab810c7eb1a1cc",
+          "position": 2,
+          "residual_rows_bit_exact": true,
+          "routing_equality": true,
+          "selected_expert_ids": [],
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e"
+        }
+      ],
+      "relative_error_gate": 3e-05,
+      "residual_rows_bit_exact": true,
+      "routing_equality": true,
+      "state": {
+        "active_prefix_fingerprint": "sha256:08b38c78893d7165f550b24b0e2b4638aea1e3e47fbdb34a39cd62e90806d6fd",
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 3,
+        "fingerprint": "sha256:08b38c78893d7165f550b24b0e2b4638aea1e3e47fbdb34a39cd62e90806d6fd",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "layer": 0,
+    "lifecycle": {
+      "after": {
+        "asyncio_task_ids": [
+          2619950416128,
+          2619950420352,
+          2619950420736
+        ],
+        "child_process_ids": [],
+        "compute_executor": {
+          "closed": false,
+          "max_workers": 1,
+          "submission_count": 9,
+          "thread_ident": 28536,
+          "thread_native_id": 28536,
+          "thread_start_count": 1
+        },
+        "connection_count": 1,
+        "connection_metrics": {
+          "active_connections": 1,
+          "backpressure_events": 0,
+          "connection_evictions": 0,
+          "connection_reuses": 4,
+          "connections_created": 1,
+          "failures": 0,
+          "fault_injections": 0,
+          "messages_received": 4,
+          "messages_sent": 4,
+          "payload_bytes_sent": 1032192,
+          "queue_capacity": 1,
+          "reconnects": 0,
+          "response_timeouts": 0,
+          "wire_bytes_sent": 1038379
+        },
+        "executor": {
+          "active_sessions": 1,
+          "backend_identity": "nvidia_cuda_persistent_kimi_stage",
+          "batch_capacity": 8,
+          "batch_execute_count": 0,
+          "batch_supported_sizes": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "batch_workspace_bytes": 6609920,
+          "complete_expert_ownership": false,
+          "cpu_mathematical_fallbacks": 0,
+          "cpu_transport_threads": {
+            "interop_threads": 1,
+            "intraop_threads": 1
+          },
+          "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+          "execute_count": 4,
+          "measured_free_memory_delta_bytes": 3040870400,
+          "model_materialization_count": 1,
+          "native_batch_supported_sizes": [
+            1,
+            2,
+            4,
+            8,
+            16
+          ],
+          "owned_expert_ids": [],
+          "persistent_buffer_allocation_count": 103,
+          "prepare_warmup": {
+            "count": 1,
+            "cpu_transport_threads": {
+              "interop_threads": 1,
+              "intraop_threads": 1
+            },
+            "maximum_temporary_device_bytes": 8388608,
+            "measured_device_ms": 14.984863758087158,
+            "measured_wall_ms": 3697.5964,
+            "primitive": "isolated assigned-stage Kimi CUDA fixture",
+            "stage_fixture": {
+              "active_sessions_after": 0,
+              "canonical_transport_round_trip": {
+                "compression_mode": "none",
+                "decode_ns": 63200,
+                "dtype": "float32",
+                "encode_ns": 1000,
+                "encoded_bytes": 258048,
+                "final_warm_iteration": 7,
+                "os_thread_count_after_final_warm": 27,
+                "os_thread_count_after_round_trip": 27,
+                "os_thread_count_before": 27,
+                "os_thread_ids_added_by_final_warm": [],
+                "os_thread_ids_added_by_round_trip": [],
+                "pass": true,
+                "python_thread_count_after_round_trip": 2,
+                "python_thread_count_before": 2,
+                "python_thread_ids_added_by_round_trip": [],
+                "raw_bytes": 258048,
+                "raw_checksum": "becf792ddd03ed53132aa103fa17dbccad9ed6a2594057762a622136d8568cd8",
+                "shape": [
+                  1,
+                  9,
+                  7168
+                ],
+                "source_iteration": 6
+              },
+              "cpu_mathematical_fallbacks": 0,
+              "cpu_transport_threads": {
+                "interop_threads": 1,
+                "intraop_threads": 1
+              },
+              "device": {
+                "maximum_ms": 2.2411201000213623,
+                "mean_ms": 2.1406948225838796,
+                "minimum_ms": 2.0833919048309326,
+                "p50_ms": 2.10262393951416,
+                "p95_ms": 2.2384608507156374,
+                "p99_ms": 2.2405882501602172,
+                "standard_deviation_ms": 0.06194711095404165
+              },
+              "device_ms_values": [
+                2.2322559356689453,
+                2.127487897872925,
+                2.10262393951416,
+                2.0833919048309326,
+                2.1009600162506104,
+                2.0970239639282227,
+                2.2411201000213623
+              ],
+              "free_bytes_after_close": 29386342400,
+              "free_bytes_before": 29388439552,
+              "host_thread_idents": [
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536
+              ],
+              "host_thread_native_ids": [
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536
+              ],
+              "input": "int64 token ID 0",
+              "iterations": 7,
+              "last_selected_expert_ids": [],
+              "measured_device_ms": 14.984863758087158,
+              "measured_wall_ms": 3697.5964,
+              "memory_recovery_tolerance_bytes": 4194304,
+              "output_fingerprint": "sha256:f7d8cd53fac9f0d68d52960c1bf3a685583c5663d89bc28d2b3078002685f647",
+              "output_finite": true,
+              "research_records_removed": true,
+              "retained_after_close_bytes": 2097152,
+              "serving_execute_count_restored": true,
+              "single_host_thread": true,
+              "temporary_device_bytes": 8388608,
+              "temporary_memory_recovered": true,
+              "thread_quiescence": {
+                "elapsed_ms": 3561.611899996933,
+                "final_thread_count": 27,
+                "final_thread_ids": [
+                  1836,
+                  5528,
+                  8352,
+                  17816,
+                  18896,
+                  20880,
+                  22044,
+                  23872,
+                  24504,
+                  25596,
+                  27644,
+                  28536,
+                  29708,
+                  30268,
+                  30512,
+                  31500,
+                  31840,
+                  32600,
+                  32700,
+                  32844,
+                  32848,
+                  32908,
+                  32988,
+                  34316,
+                  34328,
+                  35900,
+                  36604
+                ],
+                "minimum_observation_ms": 3500.0,
+                "pass": true,
+                "required_stable_samples": 20,
+                "sample_count": 41,
+                "sample_interval_ms": 50.0,
+                "stable_samples_observed": 41,
+                "timeout_ms": 8000.0,
+                "transitions": [
+                  {
+                    "added_thread_ids": [],
+                    "elapsed_ms": 41.95890000119107,
+                    "removed_thread_ids": [],
+                    "sample": 1,
+                    "thread_count": 27
+                  }
+                ]
+              }
+            },
+            "temporary_device_bytes": 8388608,
+            "temporary_memory_recovered": true,
+            "total_measured_wall_ms": 3697.5964
+          },
+          "prepare_warmup_count": 1,
+          "resident_device_bytes": 3040870400,
+          "resident_expert_count": 0,
+          "session_close_count": 2,
+          "session_open_count": 3,
+          "shared_memory_limits": {
+            "default_per_block_bytes": 49152,
+            "optin_per_block_bytes": 101376
+          },
+          "tracked_device_bytes": 3025412864,
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e",
+          "weight_load_count": 1
+        },
+        "os_thread_ids": [
+          1836,
+          5528,
+          8352,
+          17816,
+          18896,
+          20880,
+          22044,
+          23872,
+          24504,
+          25596,
+          27644,
+          28536,
+          29708,
+          30268,
+          30512,
+          31500,
+          31840,
+          32600,
+          32700,
+          32844,
+          32848,
+          32908,
+          32988,
+          34316,
+          34328,
+          35900,
+          36604
+        ],
+        "os_thread_metadata": [
+          {
+            "description": "",
+            "start_address": "0x00007ff62b9a12a0",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+            "system_time_s": 2.0,
+            "thread_id": 24504,
+            "user_time_s": 1.796875
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 34316,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 30512,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32908,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32988,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 30268,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 31500,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 36604,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 29708,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32700,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 22044,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32600,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 17816,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 5528,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 35900,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 34328,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 8352,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 20880,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 23872,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 25596,
+            "user_time_s": 0.015625
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 31840,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 27644,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 18896,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca04a75d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\mswsock.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32848,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca1a9cd00",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ucrtbase.dll",
+            "system_time_s": 5.75,
+            "thread_id": 28536,
+            "user_time_s": 9.0625
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc0a1e3568",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\DriverStore\\FileRepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvcuda64.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32844,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc0a1e3568",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\DriverStore\\FileRepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvcuda64.dll",
+            "system_time_s": 0.0,
+            "thread_id": 1836,
+            "user_time_s": 0.0
+          }
+        ],
+        "process_id": 29784,
+        "python_native_thread_ids": [
+          24504,
+          28536
+        ],
+        "python_thread_ids": [
+          24504,
+          28536
+        ],
+        "python_threads": [
+          {
+            "ident": 24504,
+            "name": "MainThread",
+            "native_id": 24504
+          },
+          {
+            "ident": 28536,
+            "name": "stage-compute-k3-worker-000_0",
+            "native_id": 28536
+          }
+        ],
+        "route_generation": 1,
+        "runtime_load_count": 1,
+        "topology_id": "h014-038w-layer-0"
+      },
+      "before": {
+        "asyncio_task_ids": [
+          2619950416128,
+          2619950420352,
+          2619950420736
+        ],
+        "child_process_ids": [],
+        "compute_executor": {
+          "closed": false,
+          "max_workers": 1,
+          "submission_count": 6,
+          "thread_ident": 28536,
+          "thread_native_id": 28536,
+          "thread_start_count": 1
+        },
+        "connection_count": 1,
+        "connection_metrics": {
+          "active_connections": 1,
+          "backpressure_events": 0,
+          "connection_evictions": 0,
+          "connection_reuses": 1,
+          "connections_created": 1,
+          "failures": 0,
+          "fault_injections": 0,
+          "messages_received": 1,
+          "messages_sent": 1,
+          "payload_bytes_sent": 258048,
+          "queue_capacity": 1,
+          "reconnects": 0,
+          "response_timeouts": 0,
+          "wire_bytes_sent": 259593
+        },
+        "executor": {
+          "active_sessions": 1,
+          "backend_identity": "nvidia_cuda_persistent_kimi_stage",
+          "batch_capacity": 8,
+          "batch_execute_count": 0,
+          "batch_supported_sizes": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "batch_workspace_bytes": 6609920,
+          "complete_expert_ownership": false,
+          "cpu_mathematical_fallbacks": 0,
+          "cpu_transport_threads": {
+            "interop_threads": 1,
+            "intraop_threads": 1
+          },
+          "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+          "execute_count": 1,
+          "measured_free_memory_delta_bytes": 3040870400,
+          "model_materialization_count": 1,
+          "native_batch_supported_sizes": [
+            1,
+            2,
+            4,
+            8,
+            16
+          ],
+          "owned_expert_ids": [],
+          "persistent_buffer_allocation_count": 103,
+          "prepare_warmup": {
+            "count": 1,
+            "cpu_transport_threads": {
+              "interop_threads": 1,
+              "intraop_threads": 1
+            },
+            "maximum_temporary_device_bytes": 8388608,
+            "measured_device_ms": 14.984863758087158,
+            "measured_wall_ms": 3697.5964,
+            "primitive": "isolated assigned-stage Kimi CUDA fixture",
+            "stage_fixture": {
+              "active_sessions_after": 0,
+              "canonical_transport_round_trip": {
+                "compression_mode": "none",
+                "decode_ns": 63200,
+                "dtype": "float32",
+                "encode_ns": 1000,
+                "encoded_bytes": 258048,
+                "final_warm_iteration": 7,
+                "os_thread_count_after_final_warm": 27,
+                "os_thread_count_after_round_trip": 27,
+                "os_thread_count_before": 27,
+                "os_thread_ids_added_by_final_warm": [],
+                "os_thread_ids_added_by_round_trip": [],
+                "pass": true,
+                "python_thread_count_after_round_trip": 2,
+                "python_thread_count_before": 2,
+                "python_thread_ids_added_by_round_trip": [],
+                "raw_bytes": 258048,
+                "raw_checksum": "becf792ddd03ed53132aa103fa17dbccad9ed6a2594057762a622136d8568cd8",
+                "shape": [
+                  1,
+                  9,
+                  7168
+                ],
+                "source_iteration": 6
+              },
+              "cpu_mathematical_fallbacks": 0,
+              "cpu_transport_threads": {
+                "interop_threads": 1,
+                "intraop_threads": 1
+              },
+              "device": {
+                "maximum_ms": 2.2411201000213623,
+                "mean_ms": 2.1406948225838796,
+                "minimum_ms": 2.0833919048309326,
+                "p50_ms": 2.10262393951416,
+                "p95_ms": 2.2384608507156374,
+                "p99_ms": 2.2405882501602172,
+                "standard_deviation_ms": 0.06194711095404165
+              },
+              "device_ms_values": [
+                2.2322559356689453,
+                2.127487897872925,
+                2.10262393951416,
+                2.0833919048309326,
+                2.1009600162506104,
+                2.0970239639282227,
+                2.2411201000213623
+              ],
+              "free_bytes_after_close": 29386342400,
+              "free_bytes_before": 29388439552,
+              "host_thread_idents": [
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536
+              ],
+              "host_thread_native_ids": [
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536
+              ],
+              "input": "int64 token ID 0",
+              "iterations": 7,
+              "last_selected_expert_ids": [],
+              "measured_device_ms": 14.984863758087158,
+              "measured_wall_ms": 3697.5964,
+              "memory_recovery_tolerance_bytes": 4194304,
+              "output_fingerprint": "sha256:f7d8cd53fac9f0d68d52960c1bf3a685583c5663d89bc28d2b3078002685f647",
+              "output_finite": true,
+              "research_records_removed": true,
+              "retained_after_close_bytes": 2097152,
+              "serving_execute_count_restored": true,
+              "single_host_thread": true,
+              "temporary_device_bytes": 8388608,
+              "temporary_memory_recovered": true,
+              "thread_quiescence": {
+                "elapsed_ms": 3561.611899996933,
+                "final_thread_count": 27,
+                "final_thread_ids": [
+                  1836,
+                  5528,
+                  8352,
+                  17816,
+                  18896,
+                  20880,
+                  22044,
+                  23872,
+                  24504,
+                  25596,
+                  27644,
+                  28536,
+                  29708,
+                  30268,
+                  30512,
+                  31500,
+                  31840,
+                  32600,
+                  32700,
+                  32844,
+                  32848,
+                  32908,
+                  32988,
+                  34316,
+                  34328,
+                  35900,
+                  36604
+                ],
+                "minimum_observation_ms": 3500.0,
+                "pass": true,
+                "required_stable_samples": 20,
+                "sample_count": 41,
+                "sample_interval_ms": 50.0,
+                "stable_samples_observed": 41,
+                "timeout_ms": 8000.0,
+                "transitions": [
+                  {
+                    "added_thread_ids": [],
+                    "elapsed_ms": 41.95890000119107,
+                    "removed_thread_ids": [],
+                    "sample": 1,
+                    "thread_count": 27
+                  }
+                ]
+              }
+            },
+            "temporary_device_bytes": 8388608,
+            "temporary_memory_recovered": true,
+            "total_measured_wall_ms": 3697.5964
+          },
+          "prepare_warmup_count": 1,
+          "resident_device_bytes": 3040870400,
+          "resident_expert_count": 0,
+          "session_close_count": 2,
+          "session_open_count": 3,
+          "shared_memory_limits": {
+            "default_per_block_bytes": 49152,
+            "optin_per_block_bytes": 101376
+          },
+          "tracked_device_bytes": 3025412864,
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e",
+          "weight_load_count": 1
+        },
+        "os_thread_ids": [
+          1836,
+          5528,
+          8352,
+          17816,
+          18896,
+          20880,
+          22044,
+          23872,
+          24504,
+          25596,
+          27644,
+          28536,
+          29708,
+          30268,
+          30512,
+          31500,
+          31840,
+          32600,
+          32700,
+          32844,
+          32848,
+          32908,
+          32988,
+          34316,
+          34328,
+          35900,
+          36604
+        ],
+        "os_thread_metadata": [
+          {
+            "description": "",
+            "start_address": "0x00007ff62b9a12a0",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+            "system_time_s": 0.828125,
+            "thread_id": 24504,
+            "user_time_s": 1.71875
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 34316,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 30512,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32908,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32988,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 30268,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 31500,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 36604,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 29708,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32700,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 22044,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32600,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 17816,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 5528,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 35900,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 34328,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 8352,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 20880,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 23872,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 25596,
+            "user_time_s": 0.015625
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 31840,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 27644,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 18896,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca04a75d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\mswsock.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32848,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca1a9cd00",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ucrtbase.dll",
+            "system_time_s": 5.75,
+            "thread_id": 28536,
+            "user_time_s": 9.046875
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc0a1e3568",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\DriverStore\\FileRepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvcuda64.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32844,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc0a1e3568",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\DriverStore\\FileRepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvcuda64.dll",
+            "system_time_s": 0.0,
+            "thread_id": 1836,
+            "user_time_s": 0.0
+          }
+        ],
+        "process_id": 29784,
+        "python_native_thread_ids": [
+          24504,
+          28536
+        ],
+        "python_thread_ids": [
+          24504,
+          28536
+        ],
+        "python_threads": [
+          {
+            "ident": 24504,
+            "name": "MainThread",
+            "native_id": 24504
+          },
+          {
+            "ident": 28536,
+            "name": "stage-compute-k3-worker-000_0",
+            "native_id": 28536
+          }
+        ],
+        "route_generation": 1,
+        "runtime_load_count": 1,
+        "topology_id": "h014-038w-layer-0"
+      },
+      "compute_thread_consistent": true,
+      "compute_thread_ident": 28536,
+      "compute_thread_native_id": 28536,
+      "immediate_after": {
+        "asyncio_task_ids": [
+          2619950416128,
+          2619950420352,
+          2619950420736
+        ],
+        "child_process_ids": [],
+        "compute_executor": {
+          "closed": false,
+          "max_workers": 1,
+          "submission_count": 9,
+          "thread_ident": 28536,
+          "thread_native_id": 28536,
+          "thread_start_count": 1
+        },
+        "connection_count": 1,
+        "connection_metrics": {
+          "active_connections": 1,
+          "backpressure_events": 0,
+          "connection_evictions": 0,
+          "connection_reuses": 4,
+          "connections_created": 1,
+          "failures": 0,
+          "fault_injections": 0,
+          "messages_received": 4,
+          "messages_sent": 4,
+          "payload_bytes_sent": 1032192,
+          "queue_capacity": 1,
+          "reconnects": 0,
+          "response_timeouts": 0,
+          "wire_bytes_sent": 1038379
+        },
+        "executor": {
+          "active_sessions": 1,
+          "backend_identity": "nvidia_cuda_persistent_kimi_stage",
+          "batch_capacity": 8,
+          "batch_execute_count": 0,
+          "batch_supported_sizes": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "batch_workspace_bytes": 6609920,
+          "complete_expert_ownership": false,
+          "cpu_mathematical_fallbacks": 0,
+          "cpu_transport_threads": {
+            "interop_threads": 1,
+            "intraop_threads": 1
+          },
+          "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+          "execute_count": 4,
+          "measured_free_memory_delta_bytes": 3040870400,
+          "model_materialization_count": 1,
+          "native_batch_supported_sizes": [
+            1,
+            2,
+            4,
+            8,
+            16
+          ],
+          "owned_expert_ids": [],
+          "persistent_buffer_allocation_count": 103,
+          "prepare_warmup": {
+            "count": 1,
+            "cpu_transport_threads": {
+              "interop_threads": 1,
+              "intraop_threads": 1
+            },
+            "maximum_temporary_device_bytes": 8388608,
+            "measured_device_ms": 14.984863758087158,
+            "measured_wall_ms": 3697.5964,
+            "primitive": "isolated assigned-stage Kimi CUDA fixture",
+            "stage_fixture": {
+              "active_sessions_after": 0,
+              "canonical_transport_round_trip": {
+                "compression_mode": "none",
+                "decode_ns": 63200,
+                "dtype": "float32",
+                "encode_ns": 1000,
+                "encoded_bytes": 258048,
+                "final_warm_iteration": 7,
+                "os_thread_count_after_final_warm": 27,
+                "os_thread_count_after_round_trip": 27,
+                "os_thread_count_before": 27,
+                "os_thread_ids_added_by_final_warm": [],
+                "os_thread_ids_added_by_round_trip": [],
+                "pass": true,
+                "python_thread_count_after_round_trip": 2,
+                "python_thread_count_before": 2,
+                "python_thread_ids_added_by_round_trip": [],
+                "raw_bytes": 258048,
+                "raw_checksum": "becf792ddd03ed53132aa103fa17dbccad9ed6a2594057762a622136d8568cd8",
+                "shape": [
+                  1,
+                  9,
+                  7168
+                ],
+                "source_iteration": 6
+              },
+              "cpu_mathematical_fallbacks": 0,
+              "cpu_transport_threads": {
+                "interop_threads": 1,
+                "intraop_threads": 1
+              },
+              "device": {
+                "maximum_ms": 2.2411201000213623,
+                "mean_ms": 2.1406948225838796,
+                "minimum_ms": 2.0833919048309326,
+                "p50_ms": 2.10262393951416,
+                "p95_ms": 2.2384608507156374,
+                "p99_ms": 2.2405882501602172,
+                "standard_deviation_ms": 0.06194711095404165
+              },
+              "device_ms_values": [
+                2.2322559356689453,
+                2.127487897872925,
+                2.10262393951416,
+                2.0833919048309326,
+                2.1009600162506104,
+                2.0970239639282227,
+                2.2411201000213623
+              ],
+              "free_bytes_after_close": 29386342400,
+              "free_bytes_before": 29388439552,
+              "host_thread_idents": [
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536
+              ],
+              "host_thread_native_ids": [
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536,
+                28536
+              ],
+              "input": "int64 token ID 0",
+              "iterations": 7,
+              "last_selected_expert_ids": [],
+              "measured_device_ms": 14.984863758087158,
+              "measured_wall_ms": 3697.5964,
+              "memory_recovery_tolerance_bytes": 4194304,
+              "output_fingerprint": "sha256:f7d8cd53fac9f0d68d52960c1bf3a685583c5663d89bc28d2b3078002685f647",
+              "output_finite": true,
+              "research_records_removed": true,
+              "retained_after_close_bytes": 2097152,
+              "serving_execute_count_restored": true,
+              "single_host_thread": true,
+              "temporary_device_bytes": 8388608,
+              "temporary_memory_recovered": true,
+              "thread_quiescence": {
+                "elapsed_ms": 3561.611899996933,
+                "final_thread_count": 27,
+                "final_thread_ids": [
+                  1836,
+                  5528,
+                  8352,
+                  17816,
+                  18896,
+                  20880,
+                  22044,
+                  23872,
+                  24504,
+                  25596,
+                  27644,
+                  28536,
+                  29708,
+                  30268,
+                  30512,
+                  31500,
+                  31840,
+                  32600,
+                  32700,
+                  32844,
+                  32848,
+                  32908,
+                  32988,
+                  34316,
+                  34328,
+                  35900,
+                  36604
+                ],
+                "minimum_observation_ms": 3500.0,
+                "pass": true,
+                "required_stable_samples": 20,
+                "sample_count": 41,
+                "sample_interval_ms": 50.0,
+                "stable_samples_observed": 41,
+                "timeout_ms": 8000.0,
+                "transitions": [
+                  {
+                    "added_thread_ids": [],
+                    "elapsed_ms": 41.95890000119107,
+                    "removed_thread_ids": [],
+                    "sample": 1,
+                    "thread_count": 27
+                  }
+                ]
+              }
+            },
+            "temporary_device_bytes": 8388608,
+            "temporary_memory_recovered": true,
+            "total_measured_wall_ms": 3697.5964
+          },
+          "prepare_warmup_count": 1,
+          "resident_device_bytes": 3040870400,
+          "resident_expert_count": 0,
+          "session_close_count": 2,
+          "session_open_count": 3,
+          "shared_memory_limits": {
+            "default_per_block_bytes": 49152,
+            "optin_per_block_bytes": 101376
+          },
+          "tracked_device_bytes": 3025412864,
+          "weight_fingerprint": "sha256:4b7cd9c26959b06341e8370312bf783846f6fd6d94bbff8a4e959ea777b4817e",
+          "weight_load_count": 1
+        },
+        "os_thread_ids": [
+          1836,
+          5528,
+          8352,
+          17816,
+          18896,
+          20880,
+          22044,
+          23872,
+          24504,
+          25596,
+          27644,
+          28536,
+          29708,
+          30268,
+          30512,
+          31500,
+          31840,
+          32600,
+          32700,
+          32844,
+          32848,
+          32908,
+          32988,
+          34316,
+          34328,
+          35900,
+          36604
+        ],
+        "os_thread_metadata": [
+          {
+            "description": "",
+            "start_address": "0x00007ff62b9a12a0",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+            "system_time_s": 1.109375,
+            "thread_id": 24504,
+            "user_time_s": 1.71875
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 34316,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 30512,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca40902d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ntdll.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32908,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32988,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 30268,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 31500,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 36604,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 29708,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32700,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 22044,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32600,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 17816,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 5528,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 35900,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 34328,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 8352,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 20880,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 23872,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 25596,
+            "user_time_s": 0.015625
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 31840,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 27644,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc1e167700",
+            "start_module": "\\Device\\HarddiskVolume3\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.venv\\Lib\\site-packages\\numpy.libs\\libscipy_openblas64_-63c857e738469261263c764a36be9436.dll",
+            "system_time_s": 0.0,
+            "thread_id": 18896,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca04a75d0",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\mswsock.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32848,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffca1a9cd00",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\ucrtbase.dll",
+            "system_time_s": 5.75,
+            "thread_id": 28536,
+            "user_time_s": 9.0625
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc0a1e3568",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\DriverStore\\FileRepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvcuda64.dll",
+            "system_time_s": 0.0,
+            "thread_id": 32844,
+            "user_time_s": 0.0
+          },
+          {
+            "description": "",
+            "start_address": "0x00007ffc0a1e3568",
+            "start_module": "\\Device\\HarddiskVolume3\\Windows\\System32\\DriverStore\\FileRepository\\nv_dispig.inf_amd64_f4c7a2fd13e0f763\\nvcuda64.dll",
+            "system_time_s": 0.0,
+            "thread_id": 1836,
+            "user_time_s": 0.0
+          }
+        ],
+        "process_id": 29784,
+        "python_native_thread_ids": [
+          24504,
+          28536
+        ],
+        "python_thread_ids": [
+          24504,
+          28536
+        ],
+        "python_threads": [
+          {
+            "ident": 24504,
+            "name": "MainThread",
+            "native_id": 24504
+          },
+          {
+            "ident": 28536,
+            "name": "stage-compute-k3-worker-000_0",
+            "native_id": 28536
+          }
+        ],
+        "route_generation": 1,
+        "runtime_load_count": 1,
+        "topology_id": "h014-038w-layer-0"
+      },
+      "pass": true,
+      "per_generation_deltas": [
+        {
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "position": 0
+        },
+        {
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "position": 1
+        },
+        {
+          "lifecycle_delta": {
+            "connection_establishment": 0,
+            "model_materialization": 0,
+            "persistent_buffer_allocation": 0,
+            "process_creation": 0,
+            "task_creation": 0,
+            "thread_creation": 0,
+            "topology_rebuilds": 0,
+            "weight_loading": 0
+          },
+          "position": 2
+        }
+      ],
+      "post_generation_thread_observation": {
+        "duration_ms": 1000,
+        "sample_interval_ms": 50,
+        "samples": 20,
+        "transitions": []
+      },
+      "warm_delta": {
+        "connection_establishment": 0,
+        "model_materialization": 0,
+        "persistent_buffer_allocation": 0,
+        "process_creation": 0,
+        "task_creation": 0,
+        "thread_creation": 0,
+        "topology_rebuilds": 0,
+        "weight_loading": 0
+      }
+    },
+    "load": {
+      "accepted": true,
+      "elapsed_ms": 12446.2412,
+      "memory_after": {
+        "free_bytes": 29388439552,
+        "total_bytes": 34190458880
+      },
+      "memory_before": {
+        "free_bytes": 32429309952,
+        "total_bytes": 34190458880
+      },
+      "resident_device_bytes": 3040870400,
+      "resident_expert_count": 0,
+      "route_accepted": true,
+      "tracked_device_bytes": 3025412864
+    },
+    "prepare": {
+      "count": 1,
+      "cpu_transport_threads": {
+        "interop_threads": 1,
+        "intraop_threads": 1
+      },
+      "maximum_temporary_device_bytes": 8388608,
+      "measured_device_ms": 14.984863758087158,
+      "measured_wall_ms": 3697.5964,
+      "pass": true,
+      "primitive": "isolated assigned-stage Kimi CUDA fixture",
+      "stage_fixture": {
+        "active_sessions_after": 0,
+        "canonical_transport_round_trip": {
+          "compression_mode": "none",
+          "decode_ns": 63200,
+          "dtype": "float32",
+          "encode_ns": 1000,
+          "encoded_bytes": 258048,
+          "final_warm_iteration": 7,
+          "os_thread_count_after_final_warm": 27,
+          "os_thread_count_after_round_trip": 27,
+          "os_thread_count_before": 27,
+          "os_thread_ids_added_by_final_warm": [],
+          "os_thread_ids_added_by_round_trip": [],
+          "pass": true,
+          "python_thread_count_after_round_trip": 2,
+          "python_thread_count_before": 2,
+          "python_thread_ids_added_by_round_trip": [],
+          "raw_bytes": 258048,
+          "raw_checksum": "becf792ddd03ed53132aa103fa17dbccad9ed6a2594057762a622136d8568cd8",
+          "shape": [
+            1,
+            9,
+            7168
+          ],
+          "source_iteration": 6
+        },
+        "cpu_mathematical_fallbacks": 0,
+        "cpu_transport_threads": {
+          "interop_threads": 1,
+          "intraop_threads": 1
+        },
+        "device": {
+          "maximum_ms": 2.2411201000213623,
+          "mean_ms": 2.1406948225838796,
+          "minimum_ms": 2.0833919048309326,
+          "p50_ms": 2.10262393951416,
+          "p95_ms": 2.2384608507156374,
+          "p99_ms": 2.2405882501602172,
+          "standard_deviation_ms": 0.06194711095404165
+        },
+        "device_ms_values": [
+          2.2322559356689453,
+          2.127487897872925,
+          2.10262393951416,
+          2.0833919048309326,
+          2.1009600162506104,
+          2.0970239639282227,
+          2.2411201000213623
+        ],
+        "free_bytes_after_close": 29386342400,
+        "free_bytes_before": 29388439552,
+        "host_thread_idents": [
+          28536,
+          28536,
+          28536,
+          28536,
+          28536,
+          28536,
+          28536
+        ],
+        "host_thread_native_ids": [
+          28536,
+          28536,
+          28536,
+          28536,
+          28536,
+          28536,
+          28536
+        ],
+        "input": "int64 token ID 0",
+        "iterations": 7,
+        "last_selected_expert_ids": [],
+        "measured_device_ms": 14.984863758087158,
+        "measured_wall_ms": 3697.5964,
+        "memory_recovery_tolerance_bytes": 4194304,
+        "output_fingerprint": "sha256:f7d8cd53fac9f0d68d52960c1bf3a685583c5663d89bc28d2b3078002685f647",
+        "output_finite": true,
+        "research_records_removed": true,
+        "retained_after_close_bytes": 2097152,
+        "serving_execute_count_restored": true,
+        "single_host_thread": true,
+        "temporary_device_bytes": 8388608,
+        "temporary_memory_recovered": true,
+        "thread_quiescence": {
+          "elapsed_ms": 3561.611899996933,
+          "final_thread_count": 27,
+          "final_thread_ids": [
+            1836,
+            5528,
+            8352,
+            17816,
+            18896,
+            20880,
+            22044,
+            23872,
+            24504,
+            25596,
+            27644,
+            28536,
+            29708,
+            30268,
+            30512,
+            31500,
+            31840,
+            32600,
+            32700,
+            32844,
+            32848,
+            32908,
+            32988,
+            34316,
+            34328,
+            35900,
+            36604
+          ],
+          "minimum_observation_ms": 3500.0,
+          "pass": true,
+          "required_stable_samples": 20,
+          "sample_count": 41,
+          "sample_interval_ms": 50.0,
+          "stable_samples_observed": 41,
+          "timeout_ms": 8000.0,
+          "transitions": [
+            {
+              "added_thread_ids": [],
+              "elapsed_ms": 41.95890000119107,
+              "removed_thread_ids": [],
+              "sample": 1,
+              "thread_count": 27
+            }
+          ]
+        }
+      },
+      "temporary_device_bytes": 8388608,
+      "temporary_memory_recovered": true,
+      "total_measured_wall_ms": 3697.5964
+    },
+    "production_batch": null,
+    "status": "PASS"
+  },
+  "status": "PASS"
+}

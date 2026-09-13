@@ -1,0 +1,239 @@
+{
+  "experiment": "014-kimi-k3-precluster-certification",
+  "fail_count": 0,
+  "full_fleet_activation_allowed": false,
+  "gates": [
+    {
+      "detail": "497,052/497,052 required tensors classified; zero unclassified.",
+      "evidence": "artifacts/experiment-014/k3-checkpoint-census.json",
+      "id": 1,
+      "name": "checkpoint_understanding",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "93/93 real layers plus norm, head and sampling execute.",
+      "evidence": "artifacts/experiment-014/cuda/h014-038-regression-full-93-layer.json",
+      "id": 2,
+      "name": "full_real_graph",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "KDA and MLA state advance on decode.",
+      "evidence": "artifacts/experiment-014/cuda/h014-038-regression-full-93-layer.json",
+      "id": 3,
+      "name": "stateful_decode",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "11/11 Kimi-critical operation classes execute on CUDA with no CPU math fallback.",
+      "evidence": "artifacts/experiment-014/k3-cuda-operation-matrix.json",
+      "id": 4,
+      "name": "complete_cuda_graph",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "sm_86 cubin and compute_86 PTX are present on the exact final binary; physical execution is deferred.",
+      "evidence": "artifacts/experiment-014/rtx3090-sm86-certification.json",
+      "id": 5,
+      "name": "sm86_package_precanary",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "All four canonical stage roles execute real assigned weights and state with zero warm lifecycle recreation.",
+      "evidence": "artifacts/experiment-014/persistent/h014-038-regression-nonfinal-stages.json",
+      "id": 6,
+      "name": "canonical_persistent_kimi_runtime",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Seven assigned-stage calls plus measured post-call quiescence contain late native initialization.",
+      "evidence": "artifacts/experiment-014/persistent/h014-038u-final-repeat-2.json",
+      "id": 7,
+      "name": "ready_semantics",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Incremental batch 1/2/4/8 passes; production batch is 8 and batch 9 rejects before CUDA.",
+      "evidence": "artifacts/experiment-014/performance/h014-038ah2-complete-stage-batch-layer89.json",
+      "id": 8,
+      "name": "safe_batching",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Late KDA and Gated-MLA complete stages are characterized through batch 8.",
+      "evidence": "artifacts/experiment-014/performance/h014-038ah2-complete-stage-batch-layer91.json",
+      "id": 9,
+      "name": "complete_stage_performance",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "All 16 real selected experts execute exactly once under exact ownership and deterministic reduction.",
+      "evidence": "artifacts/experiment-014/sub-layer/h014-sub-011-promoted-four-worker-real-expert.json",
+      "id": 10,
+      "name": "real_sub_layer_microwork_correctness",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "2/4/8/16-worker scaling is measured; four workers retain 78.809% exact-run layer throughput.",
+      "evidence": "artifacts/experiment-014/sub-layer/h014-sub-005-scaling-network.json",
+      "id": 11,
+      "name": "sub_layer_efficiency_characterized",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Smallest tested worker is 0.983 GB (5.377%); four-worker exact execution is 3.931 GB per worker.",
+      "evidence": "artifacts/experiment-014/sub-layer/h014-sub-005-scaling-network.json",
+      "id": 12,
+      "name": "sub_layer_memory_reduction_characterized",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Two persistent real CUDA stages exchange the exact canonical boundary.",
+      "evidence": "artifacts/experiment-014/coarse/h014-038ae-promoted-stage0-stage1-tcp.json",
+      "id": 13,
+      "name": "coarse_distributed_kimi_slice",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Coarse payload is 258,048 bytes and mean one-way wire traffic is 258,283 bytes.",
+      "evidence": "artifacts/experiment-014/coarse/h014-038ae-promoted-stage0-stage1-tcp.json",
+      "id": 14,
+      "name": "real_tensor_traffic",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Coupled admission is at most 5 ms RTT and at least 10 Gbps for >=90% capacity retention.",
+      "evidence": "artifacts/experiment-014/coarse/h014-038ah-network-analysis.json",
+      "id": 15,
+      "name": "coarse_network_requirements",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Useful fine work is confined to the tested <=0.5 ms, >=2.5 Gbps expert domain.",
+      "evidence": "artifacts/experiment-014/sub-layer/h014-sub-005-scaling-network.json",
+      "id": 16,
+      "name": "sub_layer_network_requirements",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "All 93 planned 24 GiB workers are feasible with measured runtime reserves and zero orphan tensors.",
+      "evidence": "artifacts/experiment-014/deployment/h014-037a-final-physical-placement.json",
+      "id": 17,
+      "name": "runtime_safe_placement",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Local held-out median absolute percentage error is 0.553%; RTX 3090 transfer remains a physical canary risk.",
+      "evidence": "artifacts/experiment-014/performance/h014-038ak-final-capacity-topology-economics.json",
+      "id": 18,
+      "name": "validated_capacity_model",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Candidate B: 93-worker whole-layer topology.",
+      "evidence": "artifacts/experiment-014/performance/h014-038ak-final-capacity-topology-economics.json",
+      "id": 19,
+      "name": "final_topology_chosen",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "All requested GPU prices and utilization sensitivities are reported.",
+      "evidence": "artifacts/experiment-014/performance/h014-038ak-final-capacity-topology-economics.json",
+      "id": 20,
+      "name": "economics_completed",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "5/10/20/30 tok/s targets are evaluated; sequential cadence is explicitly below target.",
+      "evidence": "artifacts/experiment-014/performance/h014-038ak-final-capacity-topology-economics.json",
+      "id": 21,
+      "name": "serving_frontier",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Targeted resume, retry, hashes, corruption rejection, cache and atomic activation pass.",
+      "evidence": "artifacts/experiment-014/distribution/h014-037a-remote-acquisition-fixture.json",
+      "id": 22,
+      "name": "remote_shard_distribution",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "No-checkout, hash-locked Linux install/build/prepare/qualify scripts validate locally.",
+      "evidence": "artifacts/experiment-015-deployment",
+      "id": 23,
+      "name": "clean_bootstrap",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Whole-stage and optional expert-group faults fail closed; retry, duplicate, stale and cancellation paths pass.",
+      "evidence": "artifacts/experiment-014/deployment/h014-037b-coarse-stage-recovery.json",
+      "id": 24,
+      "name": "recovery",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "93/93 logical workers reach READY; 576 events execute with no impossible route.",
+      "evidence": "artifacts/experiment-014/deployment/h014-037b-final-logical-rehearsal.json",
+      "id": 25,
+      "name": "final_logical_rehearsal",
+      "satisfied": true,
+      "status": "PASS"
+    },
+    {
+      "detail": "Four-role physical canary fixtures and launcher are ready; physical status remains NOT_RUN.",
+      "evidence": "artifacts/experiment-014/deployment/h014-037b4-physical-canary-fixtures.json",
+      "id": 26,
+      "name": "rtx3090_canary",
+      "satisfied": true,
+      "status": "READY"
+    },
+    {
+      "detail": "Canonical 155-file package and archive pass positive validation and all 16 tamper controls.",
+      "evidence": "artifacts/experiment-015-deployment/RELEASE.json",
+      "id": 27,
+      "name": "experiment_015_deployment_package",
+      "satisfied": true,
+      "status": "READY"
+    },
+    {
+      "detail": "First-party Ruff passes; pytest: 1,091 passed, 13 explicitly skipped, zero failures.",
+      "evidence": "artifacts/experiment-014/regression/h014-038af-full-pytest.xml",
+      "id": 28,
+      "name": "full_regressions",
+      "satisfied": true,
+      "status": "PASS"
+    }
+  ],
+  "pass_count": 26,
+  "ready_count": 2,
+  "ready_to_rent_single_canary": true,
+  "satisfied_count": 28,
+  "schema_version": "experiment-014-final-acceptance-gates-v2",
+  "status": "PASS",
+  "terminal_statement": "PRE-CLUSTER CERTIFICATION COMPLETE. Experiment 015 is the full physical Kimi K3 cluster test. No further synthetic architecture experiment is required.",
+  "verdict": "PASS"
+}

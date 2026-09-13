@@ -1,0 +1,64 @@
+{
+  "schema_version": "experiment-022-final-manifest-lifecycle-repairs-v1",
+  "status": "PASS",
+  "evidence_class": "PHYSICAL RTX 5090 authenticated manifest execution",
+  "manifest": {
+    "inventory_id": "memory-fragmented-02",
+    "manifest_id": "memory-fragmented-02-E",
+    "manifest_sha256": "8273a2b3d8b8f5f505b1094b6b9ef30244b15ee3a162d496446a5cede788ca35"
+  },
+  "preserved_failed_attempts": [
+    {
+      "attempt": 1,
+      "receipt": "artifacts/experiment-022/completion/correctness/final-representative-03-attempt-01-failed.json",
+      "receipt_sha256": "2360d31da9689c5e32da2fce53eba93e0a758eb2a4d9abfadf77b296d2f48b72",
+      "last_completed_layer": 71,
+      "failure": "KimiCudaError: CUDA memory query failed",
+      "root_cause": "Closing the nested full-mixed graph globally shut down the outer resident CUDA runtime before layer 72."
+    },
+    {
+      "attempt": 2,
+      "receipt": "artifacts/experiment-022/completion/correctness/final-representative-03-attempt-02-failed.json",
+      "receipt_sha256": "8afa7bcd08a9e48a2399a49d23cd53cd49ecdba28fba238a44dc4df03c5c8dfe",
+      "last_completed_layer": 75,
+      "failure": "KimiCudaError: native MXFP4 CUDA tensor upload failed",
+      "root_cause": "Closing nested whole-expert groups globally shut down the persistent expert worker runtime before layer 76."
+    }
+  ],
+  "repairs": [
+    {
+      "component": "_CudaRuntime.close",
+      "change": "Added explicit shutdown ownership so nested graphs release their handles without globally shutting down an outer resident runtime."
+    },
+    {
+      "component": "PreparedWholeExpertGroup.close",
+      "change": "Added explicit shutdown ownership so nested whole-expert groups do not terminate the persistent expert worker runtime."
+    }
+  ],
+  "focused_physical_transition_receipts": [
+    {
+      "path": "artifacts/experiment-022/completion/validation/final-manifest-layer-71-72-transition.json",
+      "status": "PASS",
+      "layers": [71, 72],
+      "maximum_relative_l2": 7.829896126747434e-07,
+      "timed_checkpoint_reads": 0
+    },
+    {
+      "path": "artifacts/experiment-022/completion/validation/final-manifest-layer-75-76-transition.json",
+      "status": "PASS",
+      "layers": [75, 76],
+      "maximum_relative_l2": 5.85401510473443e-07,
+      "timed_checkpoint_reads": 0
+    }
+  ],
+  "clean_full_execution": {
+    "receipt": "artifacts/experiment-022/completion/correctness/final-representative-03.json",
+    "receipt_sha256": "71188401db1116caf672ede29bca2da0a8614250b291918092b8e82199c273fa",
+    "status": "PASS",
+    "complete_transformer_layers": 93,
+    "endpoint_executed": true,
+    "maximum_layer_relative_l2": 1.28009031e-06,
+    "route_equality": true,
+    "ordered_expert_equality": true
+  }
+}

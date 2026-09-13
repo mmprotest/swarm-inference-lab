@@ -1,0 +1,25 @@
+{
+  "schema_version": "experiment-025-transport-material-rotation-v1",
+  "run_id": "20260819T013016Z",
+  "status": "PASS",
+  "reason": "The attempt-002 diagnostic output exposed the run-scoped transport credential and TLS private key after the only instance using them had been destroyed.",
+  "compromise_scope": "DESTROYED_STAGE_1_INSTANCE_ONLY",
+  "old_material": {
+    "credential_sha256": "3a5ae1631b3229468344f9d250cad52a5e9a375350058654c76f28a804f5e3de",
+    "certificate_sha256": "92aca5ae3de92e73b072056f277eff600b15130770452e790869071c681fa8cb",
+    "private_key_sha256": "65d36835cd6d77345d6e4139404e2958ab06f1dba9509b4151532eb0e83c87b6",
+    "deleted": true,
+    "recoverable_from_workspace": false
+  },
+  "new_material": {
+    "generated_at_utc": "2026-08-19T04:30:51.878919+00:00",
+    "credential_sha256": "5c73e4b45b5736b36e0a161fdf4fea199127e727f79bfb6b35db1fad79c2e518",
+    "certificate_sha256": "1be7a48889a8853ff871bc4cbfebda43322557c340bca2295cf49cc5e0cc2308",
+    "private_key_sha256": "efbcdbf092d646d3ec1c46f66210f4d7d8161b57e26f8ded048f186a006c514e",
+    "credential_bytes": 48,
+    "stored_only_under_ignored_private_directory": true
+  },
+  "vast_instances_using_old_material": 0,
+  "vast_instances_live_after_rotation": 0,
+  "secret_values_persisted_to_public_artifacts": false
+}

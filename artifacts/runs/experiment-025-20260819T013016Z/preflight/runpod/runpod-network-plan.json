@@ -1,0 +1,90 @@
+{
+  "controller_options": [
+    {
+      "option": "PUBLIC_CONTROL_PUBLIC_DATA",
+      "preference": 1,
+      "reason": "minimum-change local controller if public TCP passes P2"
+    },
+    {
+      "option": "HYBRID_PUBLIC_CONTROL_PRIVATE_WORKER_DATA",
+      "preference": 2,
+      "reason": "only if P2 proves both identities and current protocol separation is safe"
+    },
+    {
+      "option": "CONTROLLER_COLOCATED_ON_BACKBONE_POD",
+      "preference": 3,
+      "reason": "fallback only; controller performs no model compute"
+    }
+  ],
+  "evidence_class": "DESIGN_ONLY_NOT_PHYSICALLY_VALIDATED",
+  "generated_at_utc": "2026-08-28T04:52:25.549578+00:00",
+  "modes": {
+    "POD_LOCAL": {
+      "endpoint": "127.0.0.1:<internal_worker_port>",
+      "use": "adjacent logical stages inside the same Pod where protocol routing permits"
+    },
+    "RUNPOD_GLOBAL_PRIVATE": {
+      "controller_on_windows_reachable": false,
+      "documented_interpod_mbps": 100,
+      "endpoint": "<POD_ID>.runpod.internal:<internal_worker_port>",
+      "worker_to_worker_candidate": true
+    },
+    "RUNPOD_PUBLIC_TCP": {
+      "controller_on_windows_reachable": true,
+      "endpoint": "<publicIp>:<portMappings[internal_worker_port]>",
+      "secure_cloud_documentation": "Secure Cloud always has a public IP; mappings still require P2 proof."
+    }
+  },
+  "network_volume_decision": {
+    "decision": "DIRECT_SELECTIVE_CHECKPOINT_DOWNLOAD_FOR_FIRST_RUNPOD_ATTEMPT",
+    "direct_download": {
+      "pros": [
+        "parallel per-Pod acquisition",
+        "no provider data-transfer fee under current documentation",
+        "no datacenter lock",
+        "preserves physically validated E025 acquisition semantics"
+      ]
+    },
+    "network_volume": {
+      "future_hook": "create payload supports optional networkVolumeId without changing provider records",
+      "potential_pros": [
+        "single pre-stage",
+        "persistent replacement data"
+      ],
+      "risks": [
+        "datacenter restriction",
+        "shared I/O bottleneck",
+        "storage cost",
+        "new component before public proof",
+        "many-Pod contention"
+      ]
+    },
+    "network_volumes_created": 0,
+    "selected": false
+  },
+  "schema_version": "experiment-025-runpod-network-plan-v1",
+  "selected_mode": null,
+  "selection_gate": "P2_TWO_POD_NETWORK_CANARY",
+  "status": "REQUIRES_PAID_TWO_POD_CANARY",
+  "timeouts": {
+    "cleanup_reserve_seconds": 900,
+    "full_acquisition_hard_limit_seconds": 7200,
+    "hard_pod_bootstrap_timeout_seconds": 7200,
+    "healthy_progress_extends_no_progress_deadline": true,
+    "inference_reserve_seconds": 1800,
+    "no_progress_timeout_seconds": 900,
+    "progress_events": [
+      "POD_ALLOCATED",
+      "CONTAINER_RUNNING",
+      "MODEL_DOWNLOAD_BYTES",
+      "MODEL_DOWNLOAD_COMPLETE",
+      "SNAPSHOT_ACTIVATED",
+      "GPU_LOAD",
+      "WORKER_LISTENING",
+      "WORKER_READY"
+    ],
+    "status": "PROVISIONAL_PENDING_P1_P3_P5",
+    "values_are_assumptions_not_measurements": true
+  },
+  "tls_auth_required_all_modes": true
+}

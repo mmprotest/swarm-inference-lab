@@ -1,0 +1,526 @@
+{
+  "bottleneck": "Fail-closed safety is resolved; existing batch execution still lacks cross-row weight reuse.",
+  "candidate": {
+    "batch4_rejection": {
+      "certified_max": 2,
+      "cuda_synchronize_after_rejection": "PASS",
+      "error": "Kimi CUDA expert batch rejected before launch: requested=4, certified_max=2",
+      "expected_error": "Kimi CUDA expert batch rejected before launch: requested=4, certified_max=2",
+      "memory": {
+        "explicit_caller_io_bytes": 114688,
+        "free_after_free_bytes": 32406241280,
+        "free_after_request_bytes": 32406241280,
+        "free_before_bytes": 32406241280,
+        "free_before_request_bytes": 32406241280,
+        "persistent_growth_bytes": 0,
+        "request_growth_bytes": 0,
+        "stability_tolerance_bytes": 4194304
+      },
+      "native_call_attempts": 0,
+      "native_sentinel_armed": true,
+      "pass": true,
+      "requested_batch": 4,
+      "stats_after": {
+        "calls": 0,
+        "d2h_bytes": 0,
+        "d2h_ms": 0.0,
+        "down_ms": 0.0,
+        "gate_ms": 0.0,
+        "gate_up_pair_ms": 0.0,
+        "h2d_bytes": 0,
+        "h2d_ms": 0.0,
+        "kernel_ms": 0.0,
+        "rows": 0,
+        "situ_ms": 0.0,
+        "up_ms": 0.0
+      },
+      "stats_before": {
+        "calls": 0,
+        "d2h_bytes": 0,
+        "d2h_ms": 0.0,
+        "down_ms": 0.0,
+        "gate_ms": 0.0,
+        "gate_up_pair_ms": 0.0,
+        "h2d_bytes": 0,
+        "h2d_ms": 0.0,
+        "kernel_ms": 0.0,
+        "rows": 0,
+        "situ_ms": 0.0,
+        "up_ms": 0.0
+      },
+      "stats_unchanged": true
+    },
+    "binary_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "capability_source": "native_export",
+    "forward_ptx": true,
+    "max_certified_batch": 2,
+    "minimum_compute_capability": 86,
+    "modes": {
+      "batch1_post": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.09254399687051773,
+          "mean_ms": 0.0741132801771164,
+          "minimum_ms": 0.07235199958086014,
+          "p50_ms": 0.0735040009021759,
+          "p95_ms": 0.07568000219762325,
+          "p99_ms": 0.08620800025761131,
+          "standard_deviation_ms": 0.002568652736769204
+        },
+        "input_fingerprint": "sha256:bf56b72faa785af5de420d6a2634cfae384eb19812d31a51ad8a448cb7411672",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:9111f30453e84c06cca09ab7b4ab19e2e99ae9798b9207a4301ac5637a22add9",
+        "output_finite": true,
+        "retained_calls": 100,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.143,
+          "mean_ms": 0.08115,
+          "minimum_ms": 0.0792,
+          "p50_ms": 0.0799,
+          "p95_ms": 0.08222,
+          "p99_ms": 0.10854800000000019,
+          "standard_deviation_ms": 0.006942816431391514
+        },
+        "warmup_calls": 20
+      },
+      "batch1_pre": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.1181119978427887,
+          "mean_ms": 0.07414496026933193,
+          "minimum_ms": 0.0729919970035553,
+          "p50_ms": 0.0735040009021759,
+          "p95_ms": 0.07451680079102516,
+          "p99_ms": 0.08335903875529783,
+          "standard_deviation_ms": 0.0045395546473418055
+        },
+        "input_fingerprint": "sha256:be3a6409db2b7336d84e2777ac18d8bd02c025e0bbd4766efc7c9d211d23bea9",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32408338432,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32408338432,
+          "persistent_growth_bytes": 2097152
+        },
+        "output_fingerprint": "sha256:51e1ee0fb13fdaca391cfb6e0e5c81c5ed4233ae918784af00b3176fa30ded34",
+        "output_finite": true,
+        "retained_calls": 100,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.2667,
+          "mean_ms": 0.082827,
+          "minimum_ms": 0.0793,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.081925,
+          "p99_ms": 0.12522900000000073,
+          "standard_deviation_ms": 0.019314926119454873
+        },
+        "warmup_calls": 20
+      },
+      "batch2": {
+        "batch": 2,
+        "device": {
+          "maximum_ms": 0.47283199429512024,
+          "mean_ms": 0.13271456107497215,
+          "minimum_ms": 0.1284160017967224,
+          "p50_ms": 0.1289920061826706,
+          "p95_ms": 0.130856005102396,
+          "p99_ms": 0.14164927512407474,
+          "standard_deviation_ms": 0.03420707162572789
+        },
+        "input_fingerprint": "sha256:520e6d56a3170de60d8fe544c61849c7dddd9ccbdc9737569f85e8c86c25909c",
+        "memory": {
+          "explicit_io_bytes": 57344,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:344f20b3403a17577b42966f6f785a59fb0f41409e5a508b6378bca2b5a1f503",
+        "output_finite": true,
+        "retained_calls": 100,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4797,
+          "mean_ms": 0.13904799999999998,
+          "minimum_ms": 0.1346,
+          "p50_ms": 0.1351,
+          "p95_ms": 0.138485,
+          "p99_ms": 0.15379200000000168,
+          "standard_deviation_ms": 0.0342915455469712
+        },
+        "warmup_calls": 20
+      }
+    }
+  },
+  "comparison": {
+    "candidate_batch2_vs_candidate_serial_rows": {
+      "actual_finite": true,
+      "actual_l2": 8.879487730462964,
+      "bit_exact": true,
+      "cosine_similarity": 1.0000000000000002,
+      "maximum_absolute_error": 0.0,
+      "mean_absolute_error": 0.0,
+      "reference_finite": true,
+      "reference_l2": 8.879487730462964,
+      "relative_l2_error": 0.0
+    },
+    "candidate_vs_retained_bit_exact": {
+      "batch1_post": true,
+      "batch1_pre": true,
+      "batch2": true
+    },
+    "pass": true,
+    "performance": {
+      "candidate_batch1_device_p50_ms": 0.0735040009021759,
+      "candidate_batch2_device_p50_ms": 0.1289920061826706,
+      "candidate_over_retained_batch1_ratio": 0.9995648356836766,
+      "candidate_over_retained_batch2_ratio": 0.9995040874967468,
+      "maximum_allowed_regression_ratio": 1.2,
+      "retained_batch1_device_p50_ms": 0.07353600114583969,
+      "retained_batch2_device_p50_ms": 0.12905600666999817
+    }
+  },
+  "configuration": {
+    "batch_sequence": [
+      1,
+      2,
+      4,
+      1
+    ],
+    "cpu_mathematical_fallbacks": 0,
+    "device": 0,
+    "expert_id": 803,
+    "layer": 89,
+    "retained_calls": 100,
+    "unsafe_multi_size_sweep_run": false,
+    "warmup_calls": 20
+  },
+  "cycle_id": "H014-027w",
+  "decision": "PROMOTE_CANDIDATE_PENDING_P0_P1_NATIVE_REGRESSIONS",
+  "device_identity_before": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "fixture": {
+    "activation_fingerprint": "sha256:faef5d1a5818639c9251ce4eada6d8895961946a5ed984eebd5c61d8576cb545",
+    "activation_shape": [
+      4,
+      3584
+    ],
+    "expert_source_bytes": 17547264,
+    "expert_source_shards": [
+      "model-00090-of-000096.safetensors"
+    ],
+    "real_checkpoint_weights": true
+  },
+  "gates": {
+    "batch4_prelaunch_rejection": true,
+    "gpu_health": true,
+    "native_capability_query": true,
+    "post_rejection_real_batch1": true,
+    "real_batch1": true,
+    "real_batch2": true,
+    "retained_binary_equivalence": true,
+    "source_integrity": true
+  },
+  "gpu_health_after_rejection_and_batch1": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30155",
+    "memory.total": "32607",
+    "memory.used": "2033",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P0",
+    "status": "MEASURED",
+    "temperature.gpu": "50",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30672",
+    "memory.total": "32607",
+    "memory.used": "1516",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P3",
+    "status": "MEASURED",
+    "temperature.gpu": "49",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_final": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30167",
+    "memory.total": "32607",
+    "memory.used": "2021",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P0",
+    "status": "MEASURED",
+    "temperature.gpu": "50",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "health_gate": {
+    "observed_uuids": [
+      "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    ],
+    "pass": true,
+    "same_gpu_uuid": true
+  },
+  "hypothesis": "The max_certified_batch=2 contract preserves real expert batch 1/2, rejects batch 4 before the native CUDA boundary, and leaves the GPU healthy for a subsequent real batch-1 fixture.",
+  "hypothesis_supported": true,
+  "implementation": "Quarantined candidate; production API sequence 1 -> 2 -> rejected 4 -> 1; a native-call sentinel makes the rejection test physically incapable of launching batch 4; retained binary executed separately at only batch 1/2.",
+  "inspection": "The bounded candidate path remained within batch 1/2, the armed sentinel observed zero native batch-4 calls, and the post-rejection real batch-1 fixture plus nvidia-smi determine whether CUDA remained healthy.",
+  "invalidated_attempt": {
+    "cause": "Harness uploaded handles as gate/down/up instead of the certified gate/up/down ABI; native dimension validation rejected batch 1.",
+    "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027w-invalid-harness-handle-order.json",
+    "post_cleanup_nvidia_smi": {
+      "compute_cap": "12.0",
+      "driver_version": "591.86",
+      "index": "0",
+      "memory.free": "30672",
+      "memory.total": "32607",
+      "memory.used": "1516",
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci.bus_id": "00000000:02:00.0",
+      "pstate": "P3",
+      "status": "MEASURED",
+      "temperature.gpu": "49",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "result": "INVALID_FIXTURE_NOT_CANDIDATE_EVIDENCE",
+    "sha256": "a513ac981d7ae69b6ef44d262d5d509700193ec87dd003e57dfd7138ad25b053"
+  },
+  "progress": [
+    {
+      "phase": "gpu_identity_and_nvidia_smi_before",
+      "status": "MEASURED"
+    },
+    {
+      "capability_source": "native_export",
+      "max_certified_batch": 2,
+      "phase": "candidate_cuda_initialization"
+    },
+    {
+      "output_fingerprint": "sha256:51e1ee0fb13fdaca391cfb6e0e5c81c5ed4233ae918784af00b3176fa30ded34",
+      "phase": "candidate_real_expert_batch1"
+    },
+    {
+      "output_fingerprint": "sha256:344f20b3403a17577b42966f6f785a59fb0f41409e5a508b6378bca2b5a1f503",
+      "phase": "candidate_real_expert_batch2"
+    },
+    {
+      "native_call_attempts": 0,
+      "passed": true,
+      "phase": "candidate_batch4_rejected_before_native_boundary"
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "output_fingerprint": "sha256:9111f30453e84c06cca09ab7b4ab19e2e99ae9798b9207a4301ac5637a22add9",
+      "phase": "candidate_post_rejection_batch1_and_health"
+    },
+    {
+      "passed": true,
+      "phase": "retained_binary_batch1_batch2_comparison"
+    },
+    {
+      "phase": "final_h014_027w_gate",
+      "status": "PASS"
+    }
+  ],
+  "redesign": "After exact-binary P0/P1 regression certification, H014-028 may test a new row-cooperative kernel incrementally; do not reopen the old sweep.",
+  "retained_binary_control": {
+    "binary_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+    "capability_source": "legacy_python_safety_ceiling",
+    "max_certified_batch": 2,
+    "modes": {
+      "batch1_post": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.40934398770332336,
+          "mean_ms": 0.077221120595932,
+          "minimum_ms": 0.07238399982452393,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07587999664247036,
+          "p99_ms": 0.08256479993462731,
+          "standard_deviation_ms": 0.0333940051868103
+        },
+        "input_fingerprint": "sha256:bf56b72faa785af5de420d6a2634cfae384eb19812d31a51ad8a448cb7411672",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:9111f30453e84c06cca09ab7b4ab19e2e99ae9798b9207a4301ac5637a22add9",
+        "output_finite": true,
+        "retained_calls": 100,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4183,
+          "mean_ms": 0.08362699999999998,
+          "minimum_ms": 0.079,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.081915,
+          "p99_ms": 0.09288700000000168,
+          "standard_deviation_ms": 0.033663380266990416
+        },
+        "warmup_calls": 20
+      },
+      "batch1_pre": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.07561600208282471,
+          "mean_ms": 0.0735833603143692,
+          "minimum_ms": 0.07248000055551529,
+          "p50_ms": 0.0735040009021759,
+          "p95_ms": 0.0742751993238926,
+          "p99_ms": 0.07555264160037041,
+          "standard_deviation_ms": 0.0004859888249057198
+        },
+        "input_fingerprint": "sha256:be3a6409db2b7336d84e2777ac18d8bd02c025e0bbd4766efc7c9d211d23bea9",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:51e1ee0fb13fdaca391cfb6e0e5c81c5ed4233ae918784af00b3176fa30ded34",
+        "output_finite": true,
+        "retained_calls": 100,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.0997,
+          "mean_ms": 0.08016899999999999,
+          "minimum_ms": 0.0787,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.08150500000000001,
+          "p99_ms": 0.08425600000000008,
+          "standard_deviation_ms": 0.002084403751675764
+        },
+        "warmup_calls": 20
+      },
+      "batch2": {
+        "batch": 2,
+        "device": {
+          "maximum_ms": 0.5039680004119873,
+          "mean_ms": 0.13295840129256248,
+          "minimum_ms": 0.1279039978981018,
+          "p50_ms": 0.12905600666999817,
+          "p95_ms": 0.13057439625263215,
+          "p99_ms": 0.14192896232009122,
+          "standard_deviation_ms": 0.03730236446279225
+        },
+        "input_fingerprint": "sha256:520e6d56a3170de60d8fe544c61849c7dddd9ccbdc9737569f85e8c86c25909c",
+        "memory": {
+          "explicit_io_bytes": 57344,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:344f20b3403a17577b42966f6f785a59fb0f41409e5a508b6378bca2b5a1f503",
+        "output_finite": true,
+        "retained_calls": 100,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.5154,
+          "mean_ms": 0.139265,
+          "minimum_ms": 0.134,
+          "p50_ms": 0.1351,
+          "p95_ms": 0.13711,
+          "p99_ms": 0.15405000000000188,
+          "standard_deviation_ms": 0.03783891482323455
+        },
+        "warmup_calls": 20
+      }
+    }
+  },
+  "schema_version": "experiment-014-k3-failclosed-batch-validation-v1",
+  "source_integrity": {
+    "all_match": true,
+    "artifacts": {
+      "candidate_binary": {
+        "actual_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+        "expected_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+        "match": true,
+        "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-027w-candidate.dll"
+      },
+      "cuda_binding": {
+        "actual_sha256": "d0734f0c38d78c49b4fd104db59978093c673af705e21acb004d049a297a815f",
+        "expected_sha256": "d0734f0c38d78c49b4fd104db59978093c673af705e21acb004d049a297a815f",
+        "match": true,
+        "path": "src/swarm_inference/experiments/experiment_014/cuda.py"
+      },
+      "deployment_binary_unchanged": {
+        "actual_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+        "expected_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+        "match": true,
+        "path": "artifacts/experiment-015-deployment/native/windows/coli_cuda-sm86.dll"
+      },
+      "native_header": {
+        "actual_sha256": "c4bc12591ec66be54eca4479327612979841684fe98f1a9d3a1f01bdcc8b594d",
+        "expected_sha256": "c4bc12591ec66be54eca4479327612979841684fe98f1a9d3a1f01bdcc8b594d",
+        "match": true,
+        "path": "third_party/colibri/c/backend_cuda.h"
+      },
+      "native_source": {
+        "actual_sha256": "a08bb7c8afbec55a334b7770a7dee5ed5f9b1ca72b702cc45f4ba2b7b7a09a6d",
+        "expected_sha256": "a08bb7c8afbec55a334b7770a7dee5ed5f9b1ca72b702cc45f4ba2b7b7a09a6d",
+        "match": true,
+        "path": "third_party/colibri/c/backend_cuda.cu"
+      },
+      "preflight_test": {
+        "actual_sha256": "eb029b5ea88542ad533eeb0e2437cc15d9b63322a7404a5a2a61e7fa4cdf7b32",
+        "expected_sha256": "eb029b5ea88542ad533eeb0e2437cc15d9b63322a7404a5a2a61e7fa4cdf7b32",
+        "match": true,
+        "path": "tests/unit/test_experiment_014_full_cuda.py"
+      }
+    }
+  },
+  "sources": {
+    "candidate_build_receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027w-failclosed-batch-candidate.json",
+    "candidate_build_receipt_sha256": "eb10c0c5fd278e49b103dd0842afc0c7819355449ccada9ae61f505d827ee22f",
+    "candidate_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-027w-candidate.dll",
+    "checkpoint": "F:\\models\\Kimi-K3",
+    "retained_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll"
+  },
+  "status": "PASS"
+}

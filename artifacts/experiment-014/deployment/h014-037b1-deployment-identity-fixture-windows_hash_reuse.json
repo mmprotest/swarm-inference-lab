@@ -1,0 +1,74 @@
+{
+  "acceptance_gates": {
+    "all_11_kimi_operation_classes_pass": true,
+    "all_four_stage_roles_pass": true,
+    "binary_hash_exact": true,
+    "compute86_ptx_present": true,
+    "compute_capability_sm86": true,
+    "cuda_error_state_clear": true,
+    "exact_rtx_3090": true,
+    "full_graph_correctness_reference_pass": true,
+    "linux_elf_x86_64": true,
+    "nvidia_smi_healthy_after": true,
+    "over_limit_batch_rejected_before_cuda": true,
+    "post_canary_safe_fixture_pass": true,
+    "prepare_exactly_seven_calls": true,
+    "production_batch_8_pass": true,
+    "sm86_sass_present": true,
+    "stateful_decode_pass": true,
+    "vram_at_least_24_gib": true,
+    "warm_lifecycle_deltas_zero": true
+  },
+  "binary": {
+    "bytes": 123456,
+    "elf_magic": true,
+    "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+    "worker_local_path": "/opt/swarm/runtime/libcoli_cuda-sm86.so"
+  },
+  "build_arguments": [
+    "nvcc",
+    "-O3",
+    "-std=c++17",
+    "-shared",
+    "-Xcompiler=-fPIC,-Wall,-Wextra",
+    "-gencode=arch=compute_86,code=sm_86",
+    "-gencode=arch=compute_86,code=compute_86",
+    "-DCOLI_CUDA_BUILDING_DLL",
+    "-DCOLI_CUDA_MIN_CC=86",
+    "-DCOLI_CUDA_HAS_FORWARD_PTX=1",
+    "backend_cuda.cu",
+    "-lcudart",
+    "-o",
+    "libcoli_cuda-sm86.so"
+  ],
+  "disclosure": "logical certificate accepted only inside H014-037b3 fixture",
+  "evidence_kind": "logical_fixture",
+  "operation_classes": [
+    "mxfp4_routed_expert",
+    "router_top16",
+    "grouped_int4_dense",
+    "final_rmsnorm",
+    "embedding",
+    "lm_head",
+    "shared_expert",
+    "moe_reduction",
+    "attnres",
+    "kda_stage",
+    "gated_mla_stage"
+  ],
+  "platform": "linux-x86_64",
+  "references": {
+    "placement_sha256": "943fe0748b055d11f097827bd9e483c3209b6b696bde319e8230083825fda982",
+    "source_bundle_sha256": "2032325c0a4a4fa9f4f785a38d8adc3f60245b2ce857c59ee8d21a524cc1fe8e",
+    "source_manifest_sha256": "779705ede213842680aafd79f97f1387567fe744780d401308269709d389bc17",
+    "windows_reference_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "schema_version": "experiment-015-k3-linux-runtime-qualification-v1",
+  "stage_roles": [
+    "stage_zero_embedding_dense",
+    "kda_moe",
+    "gated_mla_moe",
+    "final_norm_head_sampling"
+  ],
+  "status": "PASS"
+}

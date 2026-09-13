@@ -1,0 +1,515 @@
+{
+  "backend": {
+    "cpu_mathematical_fallbacks": 0,
+    "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_persistent_kimi_stage",
+    "target_binary": "sm_86+compute_86 PTX"
+  },
+  "benchmark": {
+    "primitives": [
+      {
+        "correctness": {
+          "batch2_output_fingerprint": "sha256:856b506e78851b461c5470ff798b066ef8a5ea1f370e8bb6a67f72da4840488d",
+          "batch2_vs_serial_post": {
+            "actual_finite": true,
+            "actual_l2": 27.35453628182373,
+            "cosine_similarity": 1.0,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 27.35453628182373,
+            "relative_l2_error": 0.0
+          },
+          "pass": true,
+          "serial_output_fingerprint": "sha256:856b506e78851b461c5470ff798b066ef8a5ea1f370e8bb6a67f72da4840488d",
+          "serial_pre_vs_post": {
+            "actual_finite": true,
+            "actual_l2": 27.35453628182373,
+            "cosine_similarity": 1.0,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 27.35453628182373,
+            "relative_l2_error": 0.0
+          }
+        },
+        "dimensions": {
+          "batch": 2,
+          "input": 7168,
+          "output": 3584
+        },
+        "hypothesis_supported": false,
+        "input_fingerprint": "sha256:523dc4b0b83ea728c025f2a2f56f0c6f5698a432372dd2244f218357012bdf29",
+        "memory": {
+          "free_bytes_after_free": 14165213184,
+          "free_bytes_before": 14165213184,
+          "temporary_device_bytes": 0,
+          "temporary_memory_recovered": true
+        },
+        "modes": {
+          "batch2": {
+            "device": {
+              "maximum_ms": 0.22470399737358093,
+              "mean_ms": 0.06625152021646499,
+              "minimum_ms": 0.06371200084686279,
+              "p50_ms": 0.06470400094985962,
+              "p95_ms": 0.06515199691057205,
+              "p99_ms": 0.06687423788011156,
+              "standard_deviation_ms": 0.01592806941631423
+            },
+            "mode": "batch2",
+            "native_calls_per_pair": 1,
+            "output_fingerprint": "sha256:856b506e78851b461c5470ff798b066ef8a5ea1f370e8bb6a67f72da4840488d",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.2315,
+              "mean_ms": 0.073111,
+              "minimum_ms": 0.0706,
+              "p50_ms": 0.0715,
+              "p95_ms": 0.072,
+              "p99_ms": 0.07498100000000082,
+              "standard_deviation_ms": 0.015922857124272643
+            },
+            "warmup_pairs": 20
+          },
+          "serial_post": {
+            "device": {
+              "maximum_ms": 0.08076799660921097,
+              "mean_ms": 0.07176288038492203,
+              "minimum_ms": 0.06998399645090103,
+              "p50_ms": 0.07180800288915634,
+              "p95_ms": 0.07251200079917908,
+              "p99_ms": 0.07484384313225749,
+              "standard_deviation_ms": 0.0011388229414443026
+            },
+            "mode": "serial_batch1_pair",
+            "native_calls_per_pair": 2,
+            "output_fingerprint": "sha256:856b506e78851b461c5470ff798b066ef8a5ea1f370e8bb6a67f72da4840488d",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.0929,
+              "mean_ms": 0.078773,
+              "minimum_ms": 0.077,
+              "p50_ms": 0.0788,
+              "p95_ms": 0.07960500000000001,
+              "p99_ms": 0.08191100000000005,
+              "standard_deviation_ms": 0.0015903367567908374
+            },
+            "warmup_pairs": 20
+          },
+          "serial_pre": {
+            "device": {
+              "maximum_ms": 0.07379200309515,
+              "mean_ms": 0.07154912032186984,
+              "minimum_ms": 0.06985600292682648,
+              "p50_ms": 0.07174400240182877,
+              "p95_ms": 0.07257600128650665,
+              "p99_ms": 0.0737286426126957,
+              "standard_deviation_ms": 0.0007908479551291174
+            },
+            "mode": "serial_batch1_pair",
+            "native_calls_per_pair": 2,
+            "output_fingerprint": "sha256:856b506e78851b461c5470ff798b066ef8a5ea1f370e8bb6a67f72da4840488d",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.0996,
+              "mean_ms": 0.078978,
+              "minimum_ms": 0.0766,
+              "p50_ms": 0.0787,
+              "p95_ms": 0.08050500000000001,
+              "p99_ms": 0.097917,
+              "standard_deviation_ms": 0.0030522640776970787
+            },
+            "warmup_pairs": 20
+          }
+        },
+        "no_weight_or_layout_conversion": true,
+        "performance": {
+          "batch2_effective_weight_bandwidth_gbps": 1588.1621923137498,
+          "batch2_pair_device_p50_ms": 0.06470400094985962,
+          "batch2_pair_wall_p50_ms": 0.0715,
+          "batch2_rows_per_second": 30909.989655042176,
+          "device_pair_throughput_speedup": 1.1092977496262273,
+          "serial_effective_weight_bandwidth_gbps": 1431.6825152208896,
+          "serial_pair_device_p50_ms": 0.07177600264549255,
+          "serial_pair_wall_p50_ms": 0.07875,
+          "serial_rows_per_second": 27864.466204368622,
+          "wall_pair_throughput_speedup": 1.1013986013986015
+        },
+        "primitive": "latent_down_dense",
+        "status": "PASS",
+        "timed_transfer_gate": true,
+        "weight_source_bytes": 51380224
+      },
+      {
+        "correctness": {
+          "batch2_output_fingerprint": "sha256:3e17c299d486b41d554f4196ab0ec567882be96f21f0b8a0db9d8402a99594c5",
+          "batch2_vs_serial_post": {
+            "actual_finite": true,
+            "actual_l2": 61.057754816189366,
+            "cosine_similarity": 1.0,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 61.057754816189366,
+            "relative_l2_error": 0.0
+          },
+          "pass": true,
+          "serial_output_fingerprint": "sha256:3e17c299d486b41d554f4196ab0ec567882be96f21f0b8a0db9d8402a99594c5",
+          "serial_pre_vs_post": {
+            "actual_finite": true,
+            "actual_l2": 61.057754816189366,
+            "cosine_similarity": 1.0,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 61.057754816189366,
+            "relative_l2_error": 0.0
+          }
+        },
+        "dimensions": {
+          "batch": 2,
+          "input": 3584,
+          "output": 3584
+        },
+        "hypothesis_supported": false,
+        "input_fingerprint": "sha256:856b506e78851b461c5470ff798b066ef8a5ea1f370e8bb6a67f72da4840488d",
+        "memory": {
+          "free_bytes_after_free": 14165213184,
+          "free_bytes_before": 14165213184,
+          "temporary_device_bytes": 0,
+          "temporary_memory_recovered": true
+        },
+        "modes": {
+          "batch2": {
+            "device": {
+              "maximum_ms": 0.29734399914741516,
+              "mean_ms": 0.13146271884441377,
+              "minimum_ms": 0.12876799702644348,
+              "p50_ms": 0.12931199371814728,
+              "p95_ms": 0.13129759430885315,
+              "p99_ms": 0.14550176098942835,
+              "standard_deviation_ms": 0.016758654740954844
+            },
+            "mode": "batch2",
+            "native_calls_per_pair": 1,
+            "output_fingerprint": "sha256:3e17c299d486b41d554f4196ab0ec567882be96f21f0b8a0db9d8402a99594c5",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.3059,
+              "mean_ms": 0.138473,
+              "minimum_ms": 0.1356,
+              "p50_ms": 0.1362,
+              "p95_ms": 0.138705,
+              "p99_ms": 0.1529450000000008,
+              "standard_deviation_ms": 0.01693227601357833
+            },
+            "warmup_pairs": 20
+          },
+          "serial_post": {
+            "device": {
+              "maximum_ms": 0.15494400262832642,
+              "mean_ms": 0.14624128118157387,
+              "minimum_ms": 0.14531199634075165,
+              "p50_ms": 0.14633600413799286,
+              "p95_ms": 0.14685119315981865,
+              "p99_ms": 0.1474675247073174,
+              "standard_deviation_ms": 0.0010078011362548661
+            },
+            "mode": "serial_batch1_pair",
+            "native_calls_per_pair": 2,
+            "output_fingerprint": "sha256:3e17c299d486b41d554f4196ab0ec567882be96f21f0b8a0db9d8402a99594c5",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.1617,
+              "mean_ms": 0.153237,
+              "minimum_ms": 0.1523,
+              "p50_ms": 0.15335,
+              "p95_ms": 0.154005,
+              "p99_ms": 0.15625500000000003,
+              "standard_deviation_ms": 0.001055713502802725
+            },
+            "warmup_pairs": 20
+          },
+          "serial_pre": {
+            "device": {
+              "maximum_ms": 0.31513598561286926,
+              "mean_ms": 0.148107201308012,
+              "minimum_ms": 0.14534400403499603,
+              "p50_ms": 0.14628800004720688,
+              "p95_ms": 0.14705759510397912,
+              "p99_ms": 0.16247007593512613,
+              "standard_deviation_ms": 0.01691823117452896
+            },
+            "mode": "serial_batch1_pair",
+            "native_calls_per_pair": 2,
+            "output_fingerprint": "sha256:3e17c299d486b41d554f4196ab0ec567882be96f21f0b8a0db9d8402a99594c5",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.323,
+              "mean_ms": 0.155107,
+              "minimum_ms": 0.1522,
+              "p50_ms": 0.1533,
+              "p95_ms": 0.154315,
+              "p99_ms": 0.1694510000000008,
+              "standard_deviation_ms": 0.017011221325936597
+            },
+            "warmup_pairs": 20
+          }
+        },
+        "no_weight_or_layout_conversion": true,
+        "performance": {
+          "batch2_effective_weight_bandwidth_gbps": 271.39422253819083,
+          "batch2_pair_device_p50_ms": 0.12931199371814728,
+          "batch2_pair_wall_p50_ms": 0.1362,
+          "batch2_rows_per_second": 15466.469447213585,
+          "device_pair_throughput_speedup": 1.131465055062923,
+          "serial_effective_weight_bandwidth_gbps": 239.86089656396686,
+          "serial_pair_device_p50_ms": 0.14631200209259987,
+          "serial_pair_wall_p50_ms": 0.153325,
+          "serial_rows_per_second": 13669.418580809343,
+          "wall_pair_throughput_speedup": 1.1257342143906022
+        },
+        "primitive": "selected_mxfp4_routed_expert",
+        "status": "PASS",
+        "timed_transfer_gate": true,
+        "weight_source_bytes": 17547264
+      },
+      {
+        "correctness": {
+          "batch2_output_fingerprint": "sha256:fb9c9bcedf6363f4d3050bc86da588e93131eabcd8264c7a265d692bcc60a9a1",
+          "batch2_vs_serial_post": {
+            "actual_finite": true,
+            "actual_l2": 205.614910509301,
+            "cosine_similarity": 0.9999999999999998,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 205.614910509301,
+            "relative_l2_error": 0.0
+          },
+          "pass": true,
+          "serial_output_fingerprint": "sha256:fb9c9bcedf6363f4d3050bc86da588e93131eabcd8264c7a265d692bcc60a9a1",
+          "serial_pre_vs_post": {
+            "actual_finite": true,
+            "actual_l2": 205.614910509301,
+            "cosine_similarity": 0.9999999999999998,
+            "maximum_absolute_error": 0.0,
+            "mean_absolute_error": 0.0,
+            "reference_finite": true,
+            "reference_l2": 205.614910509301,
+            "relative_l2_error": 0.0
+          }
+        },
+        "dimensions": {
+          "batch": 2,
+          "input": 7168,
+          "output": 7168
+        },
+        "hypothesis_supported": false,
+        "input_fingerprint": "sha256:523dc4b0b83ea728c025f2a2f56f0c6f5698a432372dd2244f218357012bdf29",
+        "memory": {
+          "free_bytes_after_free": 14165213184,
+          "free_bytes_before": 14165213184,
+          "temporary_device_bytes": 0,
+          "temporary_memory_recovered": true
+        },
+        "modes": {
+          "batch2": {
+            "device": {
+              "maximum_ms": 0.7135040163993835,
+              "mean_ms": 0.31016704201698303,
+              "minimum_ms": 0.2987520098686218,
+              "p50_ms": 0.301472008228302,
+              "p95_ms": 0.3046623960137367,
+              "p99_ms": 0.671559701561928,
+              "standard_deviation_ms": 0.05504596108214669
+            },
+            "mode": "batch2",
+            "native_calls_per_pair": 1,
+            "output_fingerprint": "sha256:fb9c9bcedf6363f4d3050bc86da588e93131eabcd8264c7a265d692bcc60a9a1",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.7213,
+              "mean_ms": 0.317326,
+              "minimum_ms": 0.3055,
+              "p50_ms": 0.3086,
+              "p95_ms": 0.312445,
+              "p99_ms": 0.6792250000000002,
+              "standard_deviation_ms": 0.05515160853501918
+            },
+            "warmup_pairs": 20
+          },
+          "serial_post": {
+            "device": {
+              "maximum_ms": 0.77183997631073,
+              "mean_ms": 0.33111232101917265,
+              "minimum_ms": 0.3232319951057434,
+              "p50_ms": 0.3245440125465393,
+              "p95_ms": 0.3334191903471947,
+              "p99_ms": 0.5145350486040129,
+              "standard_deviation_ms": 0.048094016705189105
+            },
+            "mode": "serial_batch1_pair",
+            "native_calls_per_pair": 2,
+            "output_fingerprint": "sha256:fb9c9bcedf6363f4d3050bc86da588e93131eabcd8264c7a265d692bcc60a9a1",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.7792,
+              "mean_ms": 0.33825099999999997,
+              "minimum_ms": 0.3304,
+              "p50_ms": 0.3316,
+              "p95_ms": 0.34104000000000007,
+              "p99_ms": 0.5217010000000014,
+              "standard_deviation_ms": 0.0481228874757116
+            },
+            "warmup_pairs": 20
+          },
+          "serial_pre": {
+            "device": {
+              "maximum_ms": 0.7807999849319458,
+              "mean_ms": 0.32795136064291003,
+              "minimum_ms": 0.3202880024909973,
+              "p50_ms": 0.3227840065956116,
+              "p95_ms": 0.3288831979036331,
+              "p99_ms": 0.34127166688442456,
+              "standard_deviation_ms": 0.045609553806793324
+            },
+            "mode": "serial_batch1_pair",
+            "native_calls_per_pair": 2,
+            "output_fingerprint": "sha256:fb9c9bcedf6363f4d3050bc86da588e93131eabcd8264c7a265d692bcc60a9a1",
+            "retained_pairs": 100,
+            "rows_per_pair": 2,
+            "timed_d2h_bytes": 0,
+            "timed_h2d_bytes": 0,
+            "wall": {
+              "maximum_ms": 0.7883,
+              "mean_ms": 0.337083,
+              "minimum_ms": 0.3272,
+              "p50_ms": 0.33045,
+              "p95_ms": 0.341325,
+              "p99_ms": 0.5349590000000013,
+              "standard_deviation_ms": 0.04969056863228675
+            },
+            "warmup_pairs": 20
+          }
+        },
+        "no_weight_or_layout_conversion": true,
+        "performance": {
+          "batch2_effective_weight_bandwidth_gbps": 1753.006214758702,
+          "batch2_pair_device_p50_ms": 0.301472008228302,
+          "batch2_pair_wall_p50_ms": 0.3086,
+          "batch2_rows_per_second": 6634.115093317116,
+          "device_pair_throughput_speedup": 1.0736121455295036,
+          "serial_effective_weight_bandwidth_gbps": 1632.8114599468533,
+          "serial_pair_device_p50_ms": 0.32366400957107544,
+          "serial_pair_wall_p50_ms": 0.331025,
+          "serial_rows_per_second": 6179.2474320837555,
+          "wall_pair_throughput_speedup": 1.0726668826960468
+        },
+        "primitive": "shared_expert",
+        "status": "PASS",
+        "timed_transfer_gate": true,
+        "weight_source_bytes": 264241152
+      }
+    ],
+    "retained_pairs_per_mode": 100,
+    "warmup_pairs_per_mode": 20
+  },
+  "cycle_id": "H014-027u",
+  "decision": "PROFILE_FAILING_BATCH2_PRIMITIVE",
+  "fixture": {
+    "attention_type": "KDA",
+    "input_boundary_fingerprint": "sha256:6fc552fa9256fabe7fe525e1f69aa4e4091a250912c2bd9f313727209aa40387",
+    "layer": 89,
+    "observed_output_fingerprint": "sha256:4f848b37deb0737875aa04c81c2f6495b3ec45b1c1d012ff8c17bef05f8765e7",
+    "oracle_metrics": {
+      "actual_finite": true,
+      "actual_l2": 813.3831091340937,
+      "cosine_similarity": 0.9999999999999981,
+      "maximum_absolute_error": 5.7220458984375e-06,
+      "mean_absolute_error": 4.672126254133348e-08,
+      "reference_finite": true,
+      "reference_l2": 813.3831033969739,
+      "relative_l2_error": 6.138932386793345e-08
+    },
+    "oracle_output_fingerprint": "sha256:1b980cae255ae8b83acd428124edde87b3158e1200fc78a594852a34cda00bdb",
+    "routing_equality": true,
+    "selected_expert_id": 803,
+    "selected_expert_ids": [
+      803,
+      567,
+      190,
+      501,
+      347,
+      282,
+      843,
+      388,
+      173,
+      233,
+      885,
+      45,
+      586,
+      673,
+      120,
+      546
+    ],
+    "stage_weight_fingerprint": "sha256:3f75cb42b481a2411696ad288a83b26ebe26918fa63653d09e47780dc02e26a0"
+  },
+  "hypothesis": "Existing resident batch=2 dense, routed-expert, and shared-expert primitives provide at least 1.5x pair throughput with <=1e-6 relative error and no timed transfers or conversion.",
+  "implementation": "Benchmark-only contiguous two-row adapter over unchanged registered layer-89 resident handles; no kernel, stage, state, or scheduler change.",
+  "inspection": {
+    "actual_bottleneck": "GENERIC_BATCH_PRIMITIVE_OR_CORRECTNESS_LIMIT",
+    "timed_layout_conversions": 0,
+    "timed_weight_uploads": 0
+  },
+  "redesign": "Form the next hypothesis from the failing primitive timing/output.",
+  "result": {
+    "execution_pass": true,
+    "hypothesis_supported": false
+  },
+  "schema_version": "experiment-014-k3-batch2-primitives-v1",
+  "sources": {
+    "depth_profile": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027m-depth-profile.json",
+      "sha256": "c01b2dddd56dd1f7a80d9b36445e0d9b7a11c54449e1a2773d71326904b3baec"
+    },
+    "reset_contract": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027t-reset-contract.json",
+      "sha256": "a4454e4ce8eee6c67f7c7f0302e1eca1809f902e85655cc052d396b4c6770201"
+    }
+  },
+  "status": "PASS"
+}

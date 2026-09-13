@@ -1,0 +1,72 @@
+{
+  "benchmark": {
+    "trace_validations": [
+      {
+        "all_correctness_and_memory_gates_pass": true,
+        "all_retained_lifecycle_deltas_zero": true,
+        "cycle_id": "H014-027p",
+        "first_reset_cleanup_thread_ids": [],
+        "first_reset_close_thread_ids": [
+          508508,
+          861152
+        ],
+        "first_reset_thread_count": 2,
+        "first_reset_thread_ids": [
+          508508,
+          861152
+        ],
+        "first_reset_threads_persisted": true,
+        "no_threads_during_open_warmup_or_retained_execute": true,
+        "no_threads_outside_first_reset": true,
+        "repeated_reset_created_zero_threads": true,
+        "status": "PASS"
+      },
+      {
+        "all_correctness_and_memory_gates_pass": true,
+        "all_retained_lifecycle_deltas_zero": true,
+        "cycle_id": "H014-027s",
+        "first_reset_cleanup_thread_ids": [
+          506716,
+          1184344
+        ],
+        "first_reset_close_thread_ids": [],
+        "first_reset_thread_count": 2,
+        "first_reset_thread_ids": [
+          506716,
+          1184344
+        ],
+        "first_reset_threads_persisted": true,
+        "no_threads_during_open_warmup_or_retained_execute": true,
+        "no_threads_outside_first_reset": true,
+        "repeated_reset_created_zero_threads": true,
+        "status": "PASS"
+      }
+    ]
+  },
+  "cycle_id": "H014-027t",
+  "decision": "RETAIN_RESET_CONTRACT_AND_IMPLEMENT_BATCH2",
+  "hypothesis": "Across H014-027p and H014-027s, exactly two persistent parent threads appear only in the first sustained eight-session close-plus-cleanup RESET boundary; open, warmup, retained EXECUTE, and repeat RESET create zero.",
+  "implementation": "Evidence-only mechanical validation of two immutable real-weight request lifecycle receipts; no CUDA execution or runtime change.",
+  "inspection": {
+    "actual_bottleneck": "SYNCHRONOUS_SERIAL_SCHEDULER",
+    "reset_activity_classification": "BOUNDED_REQUEST_SPECIFIC_TEARDOWN"
+  },
+  "redesign": "H014-027u tests the minimum real batch-2 canonical CUDA stage path.",
+  "result": {
+    "hypothesis_supported": true
+  },
+  "schema_version": "experiment-014-k3-reset-contract-v1",
+  "sources": [
+    {
+      "cycle_id": "H014-027p",
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027p-request-lifecycle-trace.json",
+      "sha256": "9d37dc6101b004b99d19b3ec56a51e0bb399f0a2ed99f6584e78c067177573c3"
+    },
+    {
+      "cycle_id": "H014-027s",
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027s-request-lifecycle.json",
+      "sha256": "731dc8cb458501276f5296746333a44d9c1245747150463562f2af608f80736b"
+    }
+  ],
+  "status": "PASS"
+}

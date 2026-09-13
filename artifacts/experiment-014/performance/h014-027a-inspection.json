@@ -1,0 +1,57 @@
+{
+  "schema_version": "experiment-014-k3-resident-stage-profile-inspection-v1",
+  "cycle_id": "H014-027a",
+  "source": {
+    "path": "h014-027a-resident-stage-profile.json",
+    "sha256": "d05f8d18ffc3ab51d38ddd9bcada7b0a3818a52fe010aa1631f5cad3fe37054f"
+  },
+  "derived_attribution": [
+    {
+      "layer": 1,
+      "attention_type": "KDA",
+      "production_wall_p50_ms": 3.20425,
+      "production_wall_p95_ms": 3.58331,
+      "production_wall_p99_ms": 3.649325,
+      "production_device_mean_ms": 3.052501118183136,
+      "expert_percent": 47.7265698884287,
+      "dense_percent": 30.773316823612685,
+      "router_percent": 13.364432274382404,
+      "other_percent": 8.135681013576213,
+      "composite_weight_read_percent": 91.86431898642379,
+      "expert_effective_source_weight_bandwidth_gbps": 374.09194487174113
+    },
+    {
+      "layer": 3,
+      "attention_type": "Gated_MLA",
+      "production_wall_p50_ms": 2.92015,
+      "production_wall_p95_ms": 3.15752,
+      "production_wall_p99_ms": 3.321944,
+      "production_device_mean_ms": 2.756366410255432,
+      "expert_percent": 52.34091919492811,
+      "dense_percent": 18.34138728538557,
+      "router_percent": 14.984260480201957,
+      "other_percent": 14.333433039484361,
+      "composite_weight_read_percent": 85.66656696051564,
+      "expert_effective_source_weight_bandwidth_gbps": 377.7601281907247
+    }
+  ],
+  "inspection": {
+    "expert_only_hypothesis_supported": false,
+    "production_telemetry_overhead_gate_supported": true,
+    "production_telemetry_overhead_percent": {
+      "layer_1": 0.31149234574083806,
+      "layer_3": -0.11629696772759157
+    },
+    "detailed_telemetry_overhead_percent": {
+      "layer_1": 6.378549290924451,
+      "layer_3": 5.411229498383818
+    },
+    "actual_bottleneck": "mixed weight-reading decode kernels; experts are the largest component but do not dominate alone",
+    "service_rate_source": "production/minimal telemetry only",
+    "detailed_mode_use": "phase attribution only",
+    "early_three_call_result_is_not_steady_state": true
+  },
+  "decision": "RETAIN_MEASUREMENT_CONTROLS_AND_FALSIFY_EXPERT_ONLY_DESIGN",
+  "redesign": "H014-027b tests whether fixed expert-set reuse explains the cold-to-warm service gap by sweeping a 16-expert versus 896-expert resident working set.",
+  "status": "PASS"
+}

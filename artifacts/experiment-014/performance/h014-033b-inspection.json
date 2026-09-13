@@ -1,0 +1,30 @@
+{
+  "schema_version": "experiment-014-k3-cycle-inspection-v1",
+  "cycle_id": "H014-033b",
+  "status": "FAIL",
+  "hypothesis_result": "FALSIFIED_BEFORE_16K",
+  "raw_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-033b-prefill-layer91-mla.json",
+    "sha256": "904719c775946fa188a672f7f976064832c60095be6a3a7f1103b45da1c82842"
+  },
+  "completed_contexts": [1024, 4096],
+  "failed_context": {
+    "prefill_tokens_completed": 8192,
+    "decode_position": 8192,
+    "requested_attention_context": 8193,
+    "error": "resident Kimi MLA absorb attention rejected execution"
+  },
+  "source_inspection": {
+    "path": "third_party/colibri/c/backend_cuda.cu",
+    "guard": "T < 1 || T > 8192",
+    "kernel_shared_layout": "qa[K] + cl[K] + scores[T]",
+    "shared_bytes_formula": "(2*K+T)*sizeof(float)",
+    "shared_bytes_at_t8193_k512": 36868,
+    "shared_bytes_at_t16385_k512": 69636,
+    "softmax_execution": "one CUDA thread performs max, exp, sum and normalization"
+  },
+  "inspection": "The 8K prompt itself completed. The mandatory post-prefill decode increased T from 8192 to 8193 and was rejected by the explicit native guard before a kernel launch. CUDA and nvidia-smi remained healthy after close. This is a fail-closed context-capacity limit, not OOM, numerical divergence or recurrence of H014-027v.",
+  "bottleneck": "The batch-1 MLA kernel retains the complete T-element score vector in dynamic shared memory and serializes softmax on thread 0. The wrapper has no opt-in shared-memory capacity check or launch configuration above T=8192.",
+  "decision": "RETAIN the failed receipt and the 8192 guard in the certified H014-030d binary. Do not claim 8K+decode or 16K prefill support from this binary.",
+  "redesign": "H014-033c will query the actual per-block opt-in shared-memory limit, opt in only when the requested allocation fits, and incrementally retest 1K, 4K, 8K and 16K with exact safe-fixture, CUDA-health and sm_86 lineage gates."
+}

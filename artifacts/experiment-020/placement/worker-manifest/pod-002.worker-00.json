@@ -1,0 +1,244 @@
+{
+  "AttnRes_ownership": [
+    {
+      "bytes": 3899392,
+      "layers": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "owner": "pod-002.worker-00",
+      "queued_chunks": 17
+    }
+  ],
+  "KDA_state": [
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 16,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 17,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 18,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 20,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 21,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 22,
+      "type": "KDA_recurrent_and_conv_heads"
+    }
+  ],
+  "MLA_state": [
+    {
+      "bytes": 9437184,
+      "layer": 19,
+      "maximum_context": 4096,
+      "type": "MLA_compressed_cache_replica_for_owned_heads"
+    },
+    {
+      "bytes": 9437184,
+      "layer": 23,
+      "maximum_context": 4096,
+      "type": "MLA_compressed_cache_replica_for_owned_heads"
+    }
+  ],
+  "all_checkpoint_hashes_available": true,
+  "attention_heads": [
+    {
+      "layer": 16,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 17,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 18,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 19,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 20,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 21,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 22,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 23,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    }
+  ],
+  "checkpoint_byte_ranges": {
+    "artifact": "placement/tensor-coverage.csv",
+    "assigned_checkpoint_bytes": 16901643776,
+    "encoding": "safetensors-row-major-contiguous-or-strided-v1",
+    "logical_range_count": 51566685,
+    "worker_filter": "pod-002.worker-00"
+  },
+  "checkpoint_hash_source": "pod-bundles.json/local_huggingface_download_lfs_metadata",
+  "checkpoint_hashes": {
+    "model-00017-of-000096.safetensors": "622bfa605205f4ef65e44dac07246bea79e18123ae8b84ab33eec89b6364c3a9",
+    "model-00018-of-000096.safetensors": "838b265ebb86a1320e589685779125d224663160823873b9e5930cf63fafe796",
+    "model-00019-of-000096.safetensors": "599a8ecf88f21d4c91295b4160e7564e501807535e522195ee45050a04f17ded",
+    "model-00020-of-000096.safetensors": "8e01b61ab76655ca0c5bd6645303a00c05fb58da94e00f978a9ef1e8114a6f0f",
+    "model-00021-of-000096.safetensors": "1944265bd024ea6caa23796326e420260a801e5c52e6253155f22ce97e9578d0",
+    "model-00022-of-000096.safetensors": "2d32d3e3c8da0764f73830289c6a22224f755c0cf058df0262fb0f83b3777029",
+    "model-00023-of-000096.safetensors": "c291f2ec15788cb24cdf791c6d68dbf8803b26d01415cff3fab367cba581a169",
+    "model-00024-of-000096.safetensors": "278855ab81d42337e2a1857f136d740911fe3f5b1813dc21ce2cb03dc5c3cde3",
+    "model-00095-of-000096.safetensors": "01d41139abb8cf3b5288a97318cc4ab92676671b4eb141031cd80d7c3ced6122",
+    "model-00096-of-000096.safetensors": "9d10c74fc10161bef9463a8541a634a97f521f43c99368ea7243ce0c79cdbf7c"
+  },
+  "expert_stripes": [
+    {
+      "expert_ids": "0..895",
+      "layer": 16,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 17,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 18,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 19,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 20,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 21,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 22,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 23,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    }
+  ],
+  "gpu_index": 0,
+  "largest_expert_fraction": 0.125,
+  "largest_layer_fraction": 0.1257659202426487,
+  "largest_shared_expert_fraction": 0.125,
+  "layers": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "memory_bytes": {
+    "activations": 172032,
+    "allocator_allowance": 740010584,
+    "collective_buffers": 57344,
+    "cuda_workspace": 536870912,
+    "persistent_state": 27934720,
+    "scales": 924844032,
+    "scratch": 61440,
+    "static_weights": 15976799744,
+    "transport_buffers": 57344
+  },
+  "peak_total_bytes": 18206808152,
+  "peak_total_gib": 16.956411443650723,
+  "pod": "pod-002",
+  "schema_version": "experiment-020-worker-manifest-v1",
+  "tensor_slices": {
+    "artifact": "placement/tensor-coverage.csv",
+    "encoding": "checkpoint-coverage-csv-filter-v1",
+    "worker_filter": "pod-002.worker-00"
+  },
+  "whole_layer": false,
+  "whole_routed_expert": false,
+  "whole_shared_expert": false,
+  "worker_id": "pod-002.worker-00"
+}

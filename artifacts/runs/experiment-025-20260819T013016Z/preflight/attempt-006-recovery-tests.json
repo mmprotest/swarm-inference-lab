@@ -1,0 +1,121 @@
+{
+  "schema_version": "experiment-025-attempt-006-recovery-tests-v1",
+  "generated_at_utc": "2026-08-24T08:28:37.7942165Z",
+  "status": "PASS",
+  "run_id": "20260819T013016Z",
+  "attempt": 6,
+  "scope": "focused controller acquisition, recovery, generation, hedge, readiness-barrier, compatibility, and cleanup tests only",
+  "full_repository_test_suite_run": false,
+  "full_repository_test_suite_reason": "Explicitly prohibited by the Attempt 006 mission.",
+  "test_runs": [
+    {
+      "name": "attempt-006 acquisition controller recovery tests",
+      "command": "$env:PYTHONPATH=(Resolve-Path src).Path; .\\.venv\\Scripts\\python.exe -m pytest -q tests\\test_experiment_025_acquisition.py --basetemp .test-temp\\e025-acquisition-final",
+      "status": "PASS",
+      "passed": 13,
+      "failed": 0,
+      "duration_seconds": 8.28,
+      "warning": "PytestConfigWarning: unknown asyncio_mode configuration option"
+    },
+    {
+      "name": "existing E025 focused compatibility regressions",
+      "command": "$env:PYTHONPATH=(Resolve-Path src).Path; .\\.venv\\Scripts\\python.exe -m pytest -q tests/test_experiment_025.py::{eight named focused tests}",
+      "status": "PASS",
+      "passed": 8,
+      "failed": 0,
+      "duration_seconds": 2.95,
+      "execution_note": "Run outside the filesystem sandbox because PyTorch c10.dll was denied inside it; no network/provider operation was performed."
+    }
+  ],
+  "final_combined_verification": {
+    "status": "PASS",
+    "passed": 21,
+    "failed": 0,
+    "duration_seconds": 9.43,
+    "scope": "all 13 new Attempt 006 acquisition tests plus the eight named existing E025 compatibility regressions in one final run"
+  },
+  "focused_cases": {
+    "parent_concurrency": {
+      "status": "PASS",
+      "tests": [
+        "test_parent_bootstrap_starts_from_mappings_before_fragments_ready",
+        "test_fragment_replacement_advances_generation_and_stales_parent",
+        "test_fragment_ready_loss_restarts_parent_on_current_generation"
+      ],
+      "assertion": "Parent creation starts from four public fragment mappings before fragment WORKER_READY; replacement increments the endpoint generation and replaces a stale parent with exactly the current four endpoints."
+    },
+    "ready_churn": {
+      "status": "PASS",
+      "tests": [
+        "test_ready_worker_loss_removes_count_and_replaces_only_affected_group",
+        "test_ready_liveness_probe_is_authenticated_and_identity_fail_closed"
+      ],
+      "assertion": "A lost READY worker leaves the current registry, only its group is replaced, and unrelated healthy groups remain retained."
+    },
+    "dynamic_alternates": {
+      "status": "PASS",
+      "tests": [
+        "test_dynamic_refresh_is_compatible_exclusive_and_auditable"
+      ],
+      "assertion": "A fresh exact-constraint query is audited; active, failed, and incompatible offers or machines cannot be selected."
+    },
+    "reliability_scoring": {
+      "status": "PASS",
+      "tests": [
+        "test_reliability_score_prefers_proven_ready_machine_over_cheaper_dud"
+      ],
+      "assertion": "Expected healthy-READY cost and time can outrank raw advertised GPU price."
+    },
+    "hedging": {
+      "status": "PASS",
+      "tests": [
+        "test_slow_primary_hedges_first_healthy_wins_and_loser_is_destroyed",
+        "test_hedge_limiter_and_cost_guard_enforce_caps",
+        "test_cancelled_create_is_destroyed_after_provider_id_becomes_known"
+      ],
+      "assertion": "At most one duplicate per group is launched under policy, the first authenticated healthy candidate wins singular ownership, cost/concurrency caps hold, and all losing or late-created instances are destroyed."
+    },
+    "fleet_readiness_barrier": {
+      "status": "PASS",
+      "tests": [
+        "test_simultaneous_ready_and_stability_barrier_reject_historical_readiness"
+      ],
+      "assertion": "Historical READY events cannot satisfy the gate; all 97 current healthy roles and matching parent/fragment generations must survive the 30-second, three-round barrier."
+    },
+    "dud_and_abort_cleanup": {
+      "status": "PASS",
+      "tests": [
+        "test_hard_dud_is_destroyed_then_replaced",
+        "test_abort_cleans_every_created_candidate",
+        "test_cancelled_create_is_destroyed_after_provider_id_becomes_known"
+      ],
+      "assertion": "Duds, hedge losers, stale candidates, abort paths, and late provider creates converge to zero controller-attributable live instances."
+    },
+    "existing_contract_regressions": {
+      "status": "PASS",
+      "tests": [
+        "test_offer_plan_prioritizes_cost_and_distinct_sub_layer_machines",
+        "test_vast_raw_offer_units_and_verification_are_normalized",
+        "test_vast_deverified_machine_is_rejected",
+        "test_grouped_plan_uses_every_rented_gpu_and_preserves_machine_diversity",
+        "test_worker_readiness_fails_fast_after_seen_instance_disappears",
+        "test_worker_readiness_bounds_initial_instance_absence",
+        "test_public_endpoint_is_frozen_before_authenticated_readiness",
+        "test_lifecycle_ledger_is_hash_chained_and_create_requires_arming"
+      ]
+    }
+  },
+  "source_boundary": {
+    "immutable_worker_image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+    "worker_executed_files_changed": false,
+    "worker_canary_chain_remains_valid": true,
+    "controller_source_sha256": "23cd686ec9d4b41b3288f98647df1bcd57119dc8ebf13b498394cece5dfdb963",
+    "source_boundary_artifact": "attempt-006-source-boundary.json"
+  },
+  "evidence_hashes": {
+    "acquisition_policy_file_sha256": "3350f604c57d194bcbde368dcb47be3455edbbe28e4829a4477026a2bafe87fe",
+    "acquisition_simulation_file_sha256": "8ba48d5ce1413221e48050e065f3339c70607d3f5ccaf574d1fa9da6027f3e27",
+    "executed_analysis_notebook_sha256": "621fe8adf2a1535feffcb2ca704d16b0b911b4d2c0288bdf0d9f705fa31bd658"
+  },
+  "go_gate_implication": "Focused repair tests pass, but this artifact does not override the offline acquisition simulation NO_GO."
+}

@@ -1,0 +1,29 @@
+{
+  "decision": "TOPOLOGY_ACCEPTED only if every required path satisfies its RTT, bandwidth, and jitter gate",
+  "decision_scope": "conservative +20% compute and 10% jitter, block-16/chunk-1",
+  "frozen_before_E021": true,
+  "inter_pod": {
+    "compute_degradation_percent": 20,
+    "decision": "TOPOLOGY_ACCEPTED when every required measured path satisfies both thresholds; otherwise TOPOLOGY_REJECTED",
+    "jitter_fraction": 0.1,
+    "link": "inter_pod",
+    "maximum_rtt_ms": 10.0,
+    "minimum_bandwidth_gbps_at_maximum_rtt": 1.0,
+    "predicted_tok_s_at_gate": 12.505966174031931,
+    "status": "PREREGISTERED"
+  },
+  "intra_pod": {
+    "compute_degradation_percent": 20,
+    "decision": "TOPOLOGY_ACCEPTED when every required measured path satisfies both thresholds; otherwise TOPOLOGY_REJECTED",
+    "jitter_fraction": 0.1,
+    "link": "intra_pod",
+    "maximum_rtt_ms": 1.0,
+    "minimum_bandwidth_gbps_at_maximum_rtt": 5.0,
+    "predicted_tok_s_at_gate": 5.022447304995814,
+    "status": "PREREGISTERED"
+  },
+  "maximum_jitter_fraction": 0.1,
+  "model_validation_status": "FAIL",
+  "readiness_use": "INVALID_PENDING_PHYSICAL_SINGLE_RESOURCE_REPLAY",
+  "schema_version": "experiment-020-e021-topology-gates-v1"
+}

@@ -1,0 +1,263 @@
+{
+  "best_degree_by_operation": [
+    {
+      "admitted": true,
+      "collective": "all-gather projected rows",
+      "collective_payload_bytes": 49152,
+      "degree": 1,
+      "evidence_class": "MEASURED",
+      "full_stage_measured": true,
+      "ideal_local_compute_ms": 0.10387732982635497,
+      "measured_tp1_ms": 0.10387732982635497,
+      "operation": "KDA q projection",
+      "operation_latency_ms": 0.10387732982635497,
+      "operation_speedup": 1.0,
+      "shaped_collective_ms": 0.0
+    },
+    {
+      "admitted": true,
+      "collective": "all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 1,
+      "evidence_class": "MEASURED",
+      "full_stage_measured": true,
+      "ideal_local_compute_ms": 0.10265706380208334,
+      "measured_tp1_ms": 0.10265706380208334,
+      "operation": "KDA output projection",
+      "operation_latency_ms": 0.10265706380208334,
+      "operation_speedup": 1.0,
+      "shaped_collective_ms": 0.0
+    },
+    {
+      "admitted": true,
+      "collective": "lower-bound all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 1,
+      "evidence_class": "MEASURED",
+      "full_stage_measured": true,
+      "ideal_local_compute_ms": 0.23119893074035644,
+      "measured_tp1_ms": 0.23119893074035644,
+      "operation": "MLA five-projection group",
+      "operation_latency_ms": 0.23119893074035644,
+      "operation_speedup": 1.0,
+      "shaped_collective_ms": 0.0
+    },
+    {
+      "admitted": false,
+      "collective": "all-gather FP32 vocabulary logits",
+      "collective_payload_bytes": 655360,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.403217,
+      "measured_tp1_ms": 1.612868,
+      "operation": "LM head",
+      "operation_latency_ms": 0.9877898,
+      "operation_speedup": 1.6328048740734111,
+      "shaped_collective_ms": 0.5845728
+    }
+  ],
+  "cycle_id": "H015-007A",
+  "decision": "STOP_NO_COMPLETE_STAGE_TP_IMPLEMENTATION",
+  "evidence_class": "SHAPED",
+  "method": "real Kimi TP1 CUDA operation time divided by degree plus a shaped collective; no physical or same-GPU sharded kernel is claimed",
+  "network": {
+    "bandwidth_gbps": 25.0,
+    "domain": "internal_microwork",
+    "rtt_ms": 0.25,
+    "software_base_ms": 0.02
+  },
+  "retained_operations": [],
+  "rows": [
+    {
+      "admitted": true,
+      "collective": "all-gather projected rows",
+      "collective_payload_bytes": 49152,
+      "degree": 1,
+      "evidence_class": "MEASURED",
+      "full_stage_measured": true,
+      "ideal_local_compute_ms": 0.10387732982635497,
+      "measured_tp1_ms": 0.10387732982635497,
+      "operation": "KDA q projection",
+      "operation_latency_ms": 0.10387732982635497,
+      "operation_speedup": 1.0,
+      "shaped_collective_ms": 0.0
+    },
+    {
+      "admitted": false,
+      "collective": "all-gather projected rows",
+      "collective_payload_bytes": 49152,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.05193866491317749,
+      "measured_tp1_ms": 0.10387732982635497,
+      "operation": "KDA q projection",
+      "operation_latency_ms": 0.21266730491317748,
+      "operation_speedup": 0.4884499282518459,
+      "shaped_collective_ms": 0.16072863999999998
+    },
+    {
+      "admitted": false,
+      "collective": "all-gather projected rows",
+      "collective_payload_bytes": 49152,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.025969332456588744,
+      "measured_tp1_ms": 0.10387732982635497,
+      "operation": "KDA q projection",
+      "operation_latency_ms": 0.31956229245658874,
+      "operation_speedup": 0.3250612862606945,
+      "shaped_collective_ms": 0.29359296
+    },
+    {
+      "admitted": true,
+      "collective": "all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 1,
+      "evidence_class": "MEASURED",
+      "full_stage_measured": true,
+      "ideal_local_compute_ms": 0.10265706380208334,
+      "measured_tp1_ms": 0.10265706380208334,
+      "operation": "KDA output projection",
+      "operation_latency_ms": 0.10265706380208334,
+      "operation_speedup": 1.0,
+      "shaped_collective_ms": 0.0
+    },
+    {
+      "admitted": false,
+      "collective": "all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.05132853190104167,
+      "measured_tp1_ms": 0.10265706380208334,
+      "operation": "KDA output projection",
+      "operation_latency_ms": 0.20550357190104165,
+      "operation_speedup": 0.4995390729827163,
+      "shaped_collective_ms": 0.15417503999999999
+    },
+    {
+      "admitted": false,
+      "collective": "all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.025664265950520834,
+      "measured_tp1_ms": 0.10265706380208334,
+      "operation": "KDA output projection",
+      "operation_latency_ms": 0.30942682595052085,
+      "operation_speedup": 0.3317652355665465,
+      "shaped_collective_ms": 0.28376256
+    },
+    {
+      "admitted": true,
+      "collective": "lower-bound all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 1,
+      "evidence_class": "MEASURED",
+      "full_stage_measured": true,
+      "ideal_local_compute_ms": 0.23119893074035644,
+      "measured_tp1_ms": 0.23119893074035644,
+      "operation": "MLA five-projection group",
+      "operation_latency_ms": 0.23119893074035644,
+      "operation_speedup": 1.0,
+      "shaped_collective_ms": 0.0
+    },
+    {
+      "admitted": false,
+      "collective": "lower-bound all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.11559946537017822,
+      "measured_tp1_ms": 0.23119893074035644,
+      "operation": "MLA five-projection group",
+      "operation_latency_ms": 0.2697745053701782,
+      "operation_speedup": 0.857008079481457,
+      "shaped_collective_ms": 0.15417503999999999
+    },
+    {
+      "admitted": false,
+      "collective": "lower-bound all-reduce hidden row",
+      "collective_payload_bytes": 28672,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.05779973268508911,
+      "measured_tp1_ms": 0.23119893074035644,
+      "operation": "MLA five-projection group",
+      "operation_latency_ms": 0.3415622926850891,
+      "operation_speedup": 0.676886575865432,
+      "shaped_collective_ms": 0.28376256
+    },
+    {
+      "admitted": true,
+      "collective": "all-gather FP32 vocabulary logits",
+      "collective_payload_bytes": 655360,
+      "degree": 1,
+      "evidence_class": "MEASURED",
+      "full_stage_measured": true,
+      "ideal_local_compute_ms": 1.612868,
+      "measured_tp1_ms": 1.612868,
+      "operation": "LM head",
+      "operation_latency_ms": 1.612868,
+      "operation_speedup": 1.0,
+      "shaped_collective_ms": 0.0
+    },
+    {
+      "admitted": false,
+      "collective": "all-gather FP32 vocabulary logits",
+      "collective_payload_bytes": 655360,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.806434,
+      "measured_tp1_ms": 1.612868,
+      "operation": "LM head",
+      "operation_latency_ms": 1.1611492,
+      "operation_speedup": 1.3890273532462494,
+      "shaped_collective_ms": 0.3547152
+    },
+    {
+      "admitted": false,
+      "collective": "all-gather FP32 vocabulary logits",
+      "collective_payload_bytes": 655360,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "full_stage_measured": false,
+      "ideal_local_compute_ms": 0.403217,
+      "measured_tp1_ms": 1.612868,
+      "operation": "LM head",
+      "operation_latency_ms": 0.9877898,
+      "operation_speedup": 1.6328048740734111,
+      "shaped_collective_ms": 0.5845728
+    }
+  ],
+  "schema_version": "experiment-015-targeted-tp-v1",
+  "sources": {
+    "kda": {
+      "bytes": 16063,
+      "path": "artifacts/experiment-014/cuda/h014-038-regression-kda-stage.json",
+      "sha256": "2dfa7919ac99bef2827096dcfd3d43d531472fff1a64e9c2eda4b09baa6a7ac7"
+    },
+    "lm_head": {
+      "bytes": 7020,
+      "path": "artifacts/experiment-014/cuda/h014-038-regression-lm-head.json",
+      "sha256": "cd5fbc091159d597458e988370ec580636421ce249d060da6352b004538af740"
+    },
+    "mla": {
+      "bytes": 15306,
+      "path": "artifacts/experiment-014/cuda/h014-038-regression-mla-stage.json",
+      "sha256": "97624dfcd02c4260d75e000d14536fad731054c4af2a6eb04d77d0cd7137b114"
+    }
+  },
+  "status": "PASS",
+  "useful_operation_sensitivity": [
+    "LM head"
+  ]
+}

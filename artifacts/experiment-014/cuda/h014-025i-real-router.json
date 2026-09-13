@@ -1,0 +1,150 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "75fdc10871ba56c67cd40a7eaf15f6d874dd39e268f93b96bd28a70df32d2fd8",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_router"
+  },
+  "benchmark": {
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 4.0625,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 15.625,
+      "p99_ms": 15.625,
+      "standard_deviation_ms": 6.853660062331659
+    },
+    "kernel_count_per_call": 2,
+    "per_call_d2h_bytes": 132,
+    "per_call_h2d_bytes": 0,
+    "resident_weight_bytes": 25693696,
+    "retained_iterations": 500,
+    "wall": {
+      "maximum_ms": 4.4074,
+      "mean_ms": 4.1235778,
+      "minimum_ms": 4.0092,
+      "p50_ms": 4.1091999999999995,
+      "p95_ms": 4.256595,
+      "p99_ms": 4.320377,
+      "standard_deviation_ms": 0.07744694007615796
+    },
+    "warmup_iterations": 50
+  },
+  "checkpoint": {
+    "bias": {
+      "name": "language_model.model.layers.1.block_sparse_moe.gate.e_score_correction_bias",
+      "runtime_f32_fingerprint": "sha256:26c3322fe1dafc49080600bd18ae434d86524779c4b5e2c7ec4effcf1da71906",
+      "shape": [
+        896
+      ],
+      "source_bytes": 3584,
+      "source_dtype": "F32",
+      "source_raw_sha256": "853727cc546c18e82efe23f124519049f001feb3d429123876ba8ec5484e5a1d",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "layer": 1,
+    "path": "F:\\models\\Kimi-K3",
+    "router": {
+      "name": "language_model.model.layers.1.block_sparse_moe.gate.weight",
+      "runtime_f32_fingerprint": "sha256:c6264960ed4924607aee26bc16dd0c996c2e2a60b1fdd9b2d269aeb84bc87f7a",
+      "shape": [
+        896,
+        7168
+      ],
+      "source_bytes": 12845056,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "25ebb27dfe797648f0d815f433fb2cf36f5617987bc2208e01d071588e79a957",
+      "source_shard": "model-00002-of-000096.safetensors"
+    }
+  },
+  "correctness": {
+    "cuda_expert_ids": [
+      878,
+      704,
+      325,
+      513,
+      468,
+      805,
+      788,
+      187,
+      83,
+      142,
+      412,
+      533,
+      84,
+      263,
+      564,
+      144
+    ],
+    "cuda_keff": 16,
+    "cuda_weight_fingerprint": "sha256:e1c433aaa1b879f23acd2adecc0ca55e40f4fddca8bdf536895fd96c1b0fdee9",
+    "reference_expert_ids": [
+      878,
+      704,
+      325,
+      513,
+      468,
+      805,
+      788,
+      187,
+      83,
+      142,
+      412,
+      533,
+      84,
+      263,
+      564,
+      144
+    ],
+    "reference_keff": 16,
+    "reference_weight_fingerprint": "sha256:366ede48922e995942cdbe5d29829d35bda7a568f4e716f96b36e0d83544290e",
+    "routing_equality": true,
+    "selected_weight_metrics": {
+      "actual_finite": true,
+      "actual_l2": 0.2500517939048185,
+      "cosine_similarity": 0.9999999999999987,
+      "maximum_absolute_error": 7.450580596923828e-09,
+      "mean_absolute_error": 1.3969838619232178e-09,
+      "reference_finite": true,
+      "reference_l2": 0.25005179571731095,
+      "relative_l2_error": 5.160844417349462e-08
+    },
+    "selection_margin": 0.00034296512603759766
+  },
+  "cycle_id": "H014-025i",
+  "fixture": {
+    "activation_dimensions": [
+      7168
+    ],
+    "activation_dtype": "float32",
+    "activation_fingerprint": "sha256:807662647a7f0786a78fa973f05f3f232159efef5a8a5fd3586f1c3f00b2d631",
+    "activation_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\independent-reference\\x0.f32",
+    "activation_source_sha256": "fc4d010e5214195c5fb78d834f24e43c9627085cf60673b0f3e3cad1ad1a5158"
+  },
+  "hypothesis": "The existing resident CUDA router exactly reproduces Kimi top-16 IDs and keff with selected-weight relative L2 <=1e-4 on real router weights and activation.",
+  "inspection": {
+    "bottleneck": "PENDING_ROUTER_TIMING_INSPECTION",
+    "decision": "RETAIN"
+  },
+  "schema_version": "experiment-014-k3-cuda-router-v1",
+  "status": "PASS"
+}

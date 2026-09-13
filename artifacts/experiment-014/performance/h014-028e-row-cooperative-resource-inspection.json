@@ -1,0 +1,243 @@
+{
+  "benchmark": {
+    "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-028d-b16-candidate.dll",
+    "binary_sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff",
+    "cuobjdump": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.0\\bin\\cuobjdump.exe",
+    "scaling": {
+      "16": {
+        "aggregate_rows_per_second_p50": 89831.11738462669,
+        "aggregate_speedup": 6.637172240463272,
+        "binary_sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff",
+        "bit_exact": true,
+        "device_p50_ms": 0.1781120002269745,
+        "device_p95_ms": 0.18028960153460502,
+        "device_p99_ms": 0.18164127722382545,
+        "gpu_health": true,
+        "ideal_efficiency_percent": 41.48232650289545,
+        "per_row_service_ms_p50": 0.011132000014185905,
+        "receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-028d-row-cooperative-batch16.json",
+        "receipt_sha256": "9505e06e2fcae2ad8e7620bc3eb324f3d196b9702c274a9543544a0cab60180f"
+      },
+      "2": {
+        "aggregate_rows_per_second_p50": 25216.864904634553,
+        "aggregate_speedup": 1.9114383536839779,
+        "binary_sha256": "e0f94e1d930417ab609d2c2be483eb0045faadba70833161a62199cf190f2119",
+        "bit_exact": true,
+        "device_p50_ms": 0.07931200042366982,
+        "device_p95_ms": 0.09216160140931606,
+        "device_p99_ms": 0.3697241580486296,
+        "gpu_health": true,
+        "ideal_efficiency_percent": 95.5719176841989,
+        "per_row_service_ms_p50": 0.03965600021183491,
+        "receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-028a-row-cooperative-batch2.json",
+        "receipt_sha256": "4c90e0b97f402a4bc2af585d696f2d97f90ccd7b32f17ff2a5fba25bcf8546c2"
+      },
+      "4": {
+        "aggregate_rows_per_second_p50": 49761.14579369018,
+        "aggregate_speedup": 3.6620223194862747,
+        "binary_sha256": "7f7f2ad7c62227eab84381e840120160d71642957e174591303b27ab4999d360",
+        "bit_exact": true,
+        "device_p50_ms": 0.08038400113582611,
+        "device_p95_ms": 0.08211199939250946,
+        "device_p99_ms": 0.08632832147181031,
+        "gpu_health": true,
+        "ideal_efficiency_percent": 91.55055798715686,
+        "per_row_service_ms_p50": 0.020096000283956528,
+        "receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-028b-row-cooperative-batch4.json",
+        "receipt_sha256": "401a84a554324501c1e27dcefa287292fbc1753b01187f67a8320dd08b1b8ff7"
+      },
+      "8": {
+        "aggregate_rows_per_second_p50": 73003.35818004693,
+        "aggregate_speedup": 5.361366655027967,
+        "binary_sha256": "70d654782d932473bdcae6bbbc8fe79543ce431321d008a04cda678e3c9da398",
+        "bit_exact": true,
+        "device_p50_ms": 0.10958399996161461,
+        "device_p95_ms": 0.11145919933915138,
+        "device_p99_ms": 0.11427231840789318,
+        "gpu_health": true,
+        "ideal_efficiency_percent": 67.0170831878496,
+        "per_row_service_ms_p50": 0.013697999995201826,
+        "receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-028c-row-cooperative-batch8.json",
+        "receipt_sha256": "16181f5879a725c85f8b26ccf836456203849328b15fb3f61428fa592ad542e4"
+      }
+    },
+    "sm86_limits": {
+      "blocks_per_sm": 16,
+      "registers_per_sm": 65536,
+      "shared_bytes_per_sm": 102400,
+      "threads_per_sm": 1536,
+      "warps_per_sm": 48
+    },
+    "threads_per_block": 256
+  },
+  "bottleneck": "Batch-16 fused gate/up occupancy pressure; no compiler local-memory spill.",
+  "compiled_resources": {
+    "kernels": {
+      "pair_batch16": {
+        "function": "_Z22mxfp4_matmul_pair_rowsILi16EEvPfS0_PKfPKhS4_S4_S4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 56,
+        "shared_bytes_per_block": 32768,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 24,
+          "blocks_limited_by_registers": 4,
+          "blocks_limited_by_shared_memory": 3,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 3,
+          "warp_occupancy_percent_upper_bound": 50.0
+        }
+      },
+      "pair_batch2": {
+        "function": "_Z22mxfp4_matmul_pair_rowsILi2EEvPfS0_PKfPKhS4_S4_S4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 32,
+        "shared_bytes_per_block": 4096,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 48,
+          "blocks_limited_by_registers": 8,
+          "blocks_limited_by_shared_memory": 25,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 6,
+          "warp_occupancy_percent_upper_bound": 100.0
+        }
+      },
+      "pair_batch4": {
+        "function": "_Z22mxfp4_matmul_pair_rowsILi4EEvPfS0_PKfPKhS4_S4_S4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 36,
+        "shared_bytes_per_block": 8192,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 48,
+          "blocks_limited_by_registers": 7,
+          "blocks_limited_by_shared_memory": 12,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 6,
+          "warp_occupancy_percent_upper_bound": 100.0
+        }
+      },
+      "pair_batch8": {
+        "function": "_Z22mxfp4_matmul_pair_rowsILi8EEvPfS0_PKfPKhS4_S4_S4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 40,
+        "shared_bytes_per_block": 16384,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 48,
+          "blocks_limited_by_registers": 6,
+          "blocks_limited_by_shared_memory": 6,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 6,
+          "warp_occupancy_percent_upper_bound": 100.0
+        }
+      },
+      "single_batch16": {
+        "function": "_Z17mxfp4_matmul_rowsILi16EEvPfPKfPKhS4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 40,
+        "shared_bytes_per_block": 16384,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 48,
+          "blocks_limited_by_registers": 6,
+          "blocks_limited_by_shared_memory": 6,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 6,
+          "warp_occupancy_percent_upper_bound": 100.0
+        }
+      },
+      "single_batch2": {
+        "function": "_Z17mxfp4_matmul_rowsILi2EEvPfPKfPKhS4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 22,
+        "shared_bytes_per_block": 2048,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 48,
+          "blocks_limited_by_registers": 11,
+          "blocks_limited_by_shared_memory": 50,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 6,
+          "warp_occupancy_percent_upper_bound": 100.0
+        }
+      },
+      "single_batch4": {
+        "function": "_Z17mxfp4_matmul_rowsILi4EEvPfPKfPKhS4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 32,
+        "shared_bytes_per_block": 4096,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 48,
+          "blocks_limited_by_registers": 8,
+          "blocks_limited_by_shared_memory": 25,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 6,
+          "warp_occupancy_percent_upper_bound": 100.0
+        }
+      },
+      "single_batch8": {
+        "function": "_Z17mxfp4_matmul_rowsILi8EEvPfPKfPKhS4_iiyi",
+        "local_bytes_per_thread": 0,
+        "registers_per_thread": 39,
+        "shared_bytes_per_block": 8192,
+        "stack_bytes_per_thread": 0,
+        "theoretical_sm86": {
+          "active_warps_per_sm": 48,
+          "blocks_limited_by_registers": 6,
+          "blocks_limited_by_shared_memory": 12,
+          "blocks_limited_by_threads": 6,
+          "qualification": "static resource upper bound; allocation granularity and runtime scheduler effects can only reduce this value",
+          "resident_blocks_per_sm": 6,
+          "warp_occupancy_percent_upper_bound": 100.0
+        }
+      }
+    },
+    "returncode": 0,
+    "stderr": ""
+  },
+  "cycle_id": "H014-028e",
+  "decision": "Retain batch 8 as the primitive efficiency candidate and batch 16 as a safe capacity comparator; select only from complete-stage evidence.",
+  "gates": {
+    "all_eight_row_kernels_present": true,
+    "all_outputs_bit_exact_and_gpu_healthy": true,
+    "no_pair16_local_or_stack_spill": true,
+    "observed_ideal_efficiency_drops_by_at_least_20_points": true,
+    "pair16_register_jump": true,
+    "pair16_shared_memory_doubles": true,
+    "pair16_theoretical_occupancy_at_most_50_percent": true,
+    "pair8_theoretical_occupancy_100_percent": true,
+    "resource_dump_pass": true,
+    "single_projection_remains_full_occupancy_upper_bound": true
+  },
+  "generated_at_utc": "2026-08-11T09:22:51.469345+00:00",
+  "hardware_counter_attempt": {
+    "command": [
+      "C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2025.3.1\\target\\windows-desktop-win7-x64\\ncu.exe",
+      "--query-metrics"
+    ],
+    "diagnostic": "==WARNING== Could not deploy stock section files to \"C:\\Users\\Simon\\Documents/NVIDIA Nsight Compute/2025.3.1/Sections\".\nSet the HOME environment variable to a writable directory.\n==WARNING== Using \"C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2025.3.1\\target\\windows-desktop-win7-x64\\..\\..\\sections\" instead.\n==WARNING== See https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#faq.\nDevice NVIDIA GeForce RTX 5090 (GB202)\n==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM",
+    "hardware_dram_counters_retained": false,
+    "inference_prohibited": "No DRAM-byte or achieved-occupancy value is inferred from the blocked counter attempt.",
+    "permission_blocked": true,
+    "returncode": 0,
+    "status": "BLOCKED_NVGPUCTRPERM"
+  },
+  "hypothesis": "The batch-16 efficiency bend is consistent with the fused gate/up kernel crossing an sm_86 residency boundary: its theoretical warp occupancy upper bound falls from 100% at batch 8 to <=50% at batch 16, while the down kernel remains at 100% and no local spill occurs.",
+  "hypothesis_supported": true,
+  "implementation": "Evidence-only cuobjdump resource parsing and sm_86 occupancy-bound calculation over the exact batch-16 candidate; no CUDA kernel executed.",
+  "inspection": "The fused pair, not the single down projection, crosses the resource boundary. Nsight counters were requested but permission-blocked; the receipt therefore distinguishes compiled-resource evidence from unmeasured achieved occupancy and DRAM traffic.",
+  "redesign": "Benchmark complete layer-89 KDA+MoE and late Gated-MLA+MoE at batch 1/8/16; do not attempt any larger expert batch.",
+  "result": "SUPPORTED: pair-kernel static residency falls 6 -> 3 blocks/SM and 100% -> 50% theoretical warp occupancy from batch 8 to 16; registers rise 40 -> 56 and shared memory 16,384 -> 32,768 bytes.",
+  "schema_version": "experiment-014-k3-row-cooperative-resource-inspection-v1",
+  "status": "PASS"
+}

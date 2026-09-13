@@ -1,0 +1,3998 @@
+{
+  "batches": {
+    "1": {
+      "correctness": {
+        "all_16_experts_executed_once": true,
+        "comparisons": [
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "pass": true,
+        "positions": 3,
+        "routing_equality": true,
+        "rows": 1,
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_rows_per_second": 305.64438870761546,
+        "batch": 1,
+        "device": {
+          "maximum_ms": 3.7036800384521484,
+          "mean_ms": 3.325063042640686,
+          "minimum_ms": 3.2162559032440186,
+          "p50_ms": 3.2717760801315308,
+          "p95_ms": 3.626478385925293,
+          "p99_ms": 3.674609279632568,
+          "standard_deviation_ms": 0.12227421495367295
+        },
+        "ideal_parallel_capacity_retention_percent": 92.89388951187777,
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "memory": {
+          "free_bytes_after_close": 14156824576,
+          "free_bytes_after_open": 14148435968,
+          "free_bytes_after_run": 14148435968,
+          "free_bytes_before_open": 14156824576,
+          "persistent_batch_workspace_bytes": 8486912,
+          "resident_stage_bytes": 18272485376,
+          "session_allocation_free_delta_bytes": 8388608,
+          "session_state_bytes_each": 6881280,
+          "state_evidence": [
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            }
+          ]
+        },
+        "per_row_device_service_ms": 3.2717760801315308,
+        "phase_decomposition": {
+          "attention_and_pre_moe": {
+            "device": {
+              "maximum_ms": 1.0762239694595337,
+              "mean_ms": 1.0491456031799316,
+              "minimum_ms": 1.0325440168380737,
+              "p50_ms": 1.0427520275115967,
+              "p95_ms": 1.0724927663803099,
+              "p99_ms": 1.075477728843689,
+              "standard_deviation_ms": 0.01598157253433935
+            },
+            "wall": {
+              "maximum_ms": 1.0997,
+              "mean_ms": 1.0724399999999998,
+              "minimum_ms": 1.0549,
+              "p50_ms": 1.0662,
+              "p95_ms": 1.09596,
+              "p99_ms": 1.0989519999999997,
+              "standard_deviation_ms": 0.016173632863398346
+            }
+          },
+          "expert_collection": {
+            "device": {
+              "maximum_ms": 0.13606399297714233,
+              "mean_ms": 0.12716799676418306,
+              "minimum_ms": 0.12099199742078781,
+              "p50_ms": 0.12534399330615997,
+              "p95_ms": 0.13502719402313232,
+              "p99_ms": 0.13585663318634034,
+              "standard_deviation_ms": 0.005578911657595674
+            },
+            "wall": {
+              "maximum_ms": 0.1435,
+              "mean_ms": 0.13542,
+              "minimum_ms": 0.1293,
+              "p50_ms": 0.1341,
+              "p95_ms": 0.14257999999999998,
+              "p99_ms": 0.143316,
+              "standard_deviation_ms": 0.005168520097668187
+            }
+          },
+          "expert_dispatch": {
+            "device": {
+              "maximum_ms": 0.14895999431610107,
+              "mean_ms": 0.12147199958562852,
+              "minimum_ms": 0.09257599711418152,
+              "p50_ms": 0.11321599781513214,
+              "p95_ms": 0.147148796916008,
+              "p99_ms": 0.14859775483608248,
+              "standard_deviation_ms": 0.020373252465358094
+            },
+            "wall": {
+              "maximum_ms": 0.1557,
+              "mean_ms": 0.12814,
+              "minimum_ms": 0.1002,
+              "p50_ms": 0.1198,
+              "p95_ms": 0.1538,
+              "p99_ms": 0.15531999999999999,
+              "standard_deviation_ms": 0.020115426915678424
+            }
+          },
+          "latent_down": {
+            "device": {
+              "maximum_ms": 0.0846719965338707,
+              "mean_ms": 0.0678592011332512,
+              "minimum_ms": 0.06304000318050385,
+              "p50_ms": 0.06387200206518173,
+              "p95_ms": 0.0806591972708702,
+              "p99_ms": 0.0838694366812706,
+              "standard_deviation_ms": 0.00842584980663778
+            },
+            "wall": {
+              "maximum_ms": 0.1011,
+              "mean_ms": 0.07946,
+              "minimum_ms": 0.0733,
+              "p50_ms": 0.0744,
+              "p95_ms": 0.09587999999999999,
+              "p99_ms": 0.10005599999999999,
+              "standard_deviation_ms": 0.01083745357544843
+            }
+          },
+          "latent_up": {
+            "device": {
+              "maximum_ms": 0.08380799740552902,
+              "mean_ms": 0.06767359972000123,
+              "minimum_ms": 0.06255999952554703,
+              "p50_ms": 0.06297600269317627,
+              "p95_ms": 0.08030079752206802,
+              "p99_ms": 0.08310655742883682,
+              "standard_deviation_ms": 0.00818195251694737
+            },
+            "wall": {
+              "maximum_ms": 0.0898,
+              "mean_ms": 0.07374,
+              "minimum_ms": 0.0688,
+              "p50_ms": 0.0689,
+              "p95_ms": 0.0863,
+              "p99_ms": 0.08910000000000001,
+              "standard_deviation_ms": 0.008139434869817438
+            }
+          },
+          "reduction": {
+            "device": {
+              "maximum_ms": 0.05347200110554695,
+              "mean_ms": 0.04083200059831142,
+              "minimum_ms": 0.031168000772595406,
+              "p50_ms": 0.034272000193595886,
+              "p95_ms": 0.05336320102214813,
+              "p99_ms": 0.05345024108886719,
+              "standard_deviation_ms": 0.010148531708537186
+            },
+            "wall": {
+              "maximum_ms": 0.0611,
+              "mean_ms": 0.04766,
+              "minimum_ms": 0.0385,
+              "p50_ms": 0.0402,
+              "p95_ms": 0.06074,
+              "p99_ms": 0.061028,
+              "standard_deviation_ms": 0.010268904518009698
+            }
+          },
+          "residual": {
+            "device": {
+              "maximum_ms": 0.037248000502586365,
+              "mean_ms": 0.021382400020956992,
+              "minimum_ms": 0.01679999940097332,
+              "p50_ms": 0.017343999817967415,
+              "p95_ms": 0.033440000563859935,
+              "p99_ms": 0.036486400514841075,
+              "standard_deviation_ms": 0.007945682103350105
+            },
+            "wall": {
+              "maximum_ms": 0.0435,
+              "mean_ms": 0.02768,
+              "minimum_ms": 0.0229,
+              "p50_ms": 0.0243,
+              "p95_ms": 0.03971999999999999,
+              "p99_ms": 0.042744,
+              "standard_deviation_ms": 0.007937354723079975
+            }
+          },
+          "routed_expert_compute": {
+            "device": {
+              "maximum_ms": 1.5202239751815796,
+              "mean_ms": 1.2513792037963867,
+              "minimum_ms": 1.1808960437774658,
+              "p50_ms": 1.1832959651947021,
+              "p95_ms": 1.4543743848800659,
+              "p99_ms": 1.507054057121277,
+              "standard_deviation_ms": 0.13447066672072813
+            },
+            "wall": {
+              "maximum_ms": 1.5273,
+              "mean_ms": 1.25948,
+              "minimum_ms": 1.1876,
+              "p50_ms": 1.1905,
+              "p95_ms": 1.4626000000000001,
+              "p99_ms": 1.51436,
+              "standard_deviation_ms": 0.13404001492091835
+            }
+          },
+          "router": {
+            "device": {
+              "maximum_ms": 0.4854399859905243,
+              "mean_ms": 0.46936959624290464,
+              "minimum_ms": 0.4604159891605377,
+              "p50_ms": 0.46668800711631775,
+              "p95_ms": 0.4821375906467438,
+              "p99_ms": 0.4847795069217682,
+              "standard_deviation_ms": 0.008505989879348419
+            },
+            "wall": {
+              "maximum_ms": 0.492,
+              "mean_ms": 0.47615999999999997,
+              "minimum_ms": 0.4683,
+              "p50_ms": 0.4731,
+              "p95_ms": 0.48869999999999997,
+              "p99_ms": 0.49134,
+              "standard_deviation_ms": 0.008253871818728468
+            }
+          },
+          "shared_expert": {
+            "device": {
+              "maximum_ms": 0.25465598702430725,
+              "mean_ms": 0.24481919705867766,
+              "minimum_ms": 0.2420479953289032,
+              "p50_ms": 0.24243199825286865,
+              "p95_ms": 0.25224319100379944,
+              "p99_ms": 0.2541734278202057,
+              "standard_deviation_ms": 0.00492157429841493
+            },
+            "wall": {
+              "maximum_ms": 0.2629,
+              "mean_ms": 0.25204,
+              "minimum_ms": 0.2483,
+              "p50_ms": 0.2496,
+              "p95_ms": 0.26034,
+              "p99_ms": 0.262388,
+              "standard_deviation_ms": 0.005461721340383464
+            }
+          }
+        },
+        "phase_profile_calls": 5,
+        "retained_calls": 50,
+        "routing": {
+          "avoided_routed_expert_weight_launches": 0,
+          "effective_weight_reuse_rows_per_native_call": 1.0,
+          "expert_group_size_histogram": {
+            "1": 800
+          },
+          "maximum_rows_for_one_expert": 1,
+          "mean_pairwise_overlap_fraction": 0.0,
+          "mean_unique_experts_per_batch": 16.0,
+          "native_routed_expert_calls": 800,
+          "real_route_source": "three retained stateful Kimi decode trace positions",
+          "total_selections": 800
+        },
+        "status": "PASS",
+        "throughput_gain_vs_serial_batch1": 0.9289388951187778,
+        "wall": {
+          "maximum_ms": 3.9451,
+          "mean_ms": 3.532924,
+          "minimum_ms": 3.4252,
+          "p50_ms": 3.4854000000000003,
+          "p95_ms": 3.841895,
+          "p99_ms": 3.930694,
+          "standard_deviation_ms": 0.13016713035171362
+        },
+        "warmup_calls": 10
+      },
+      "post_batch_checks": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14156824576,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12471",
+          "memory.total": "32607",
+          "memory.used": "19717",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "63",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        }
+      },
+      "post_batch_safe_fixture": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14148435968,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12471",
+          "memory.total": "32607",
+          "memory.used": "19717",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "63",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "output_fingerprint": "sha256:4f848b37deb0737875aa04c81c2f6495b3ec45b1c1d012ff8c17bef05f8765e7",
+        "output_finite": true,
+        "pass": true,
+        "standard_batch1_path": true
+      },
+      "status": "PASS"
+    },
+    "16": {
+      "correctness": {
+        "all_16_experts_executed_once": true,
+        "comparisons": [
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 4,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 5,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 6,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 7,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 8,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 9,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 10,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 11,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 12,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 13,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 14,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 15,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 4,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 5,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 6,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 7,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 8,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 9,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 10,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 11,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 12,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 13,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 14,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 15,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 4,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 5,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 6,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 7,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 8,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 9,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 10,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 11,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 12,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 13,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 14,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 15,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "pass": true,
+        "positions": 3,
+        "routing_equality": true,
+        "rows": 16,
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_rows_per_second": 406.2617897217793,
+        "batch": 16,
+        "device": {
+          "maximum_ms": 40.35670471191406,
+          "mean_ms": 39.326018753051756,
+          "minimum_ms": 38.513153076171875,
+          "p50_ms": 39.38347244262695,
+          "p95_ms": 40.079422569274904,
+          "p99_ms": 40.31225135803223,
+          "standard_deviation_ms": 0.4900189071122179
+        },
+        "ideal_parallel_capacity_retention_percent": 7.717145971272574,
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 1,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": false,
+        "memory": {
+          "free_bytes_after_close": 14154727424,
+          "free_bytes_after_open": 14022606848,
+          "free_bytes_after_run": 14022606848,
+          "free_bytes_before_open": 14154727424,
+          "persistent_batch_workspace_bytes": 8486912,
+          "resident_stage_bytes": 18272485376,
+          "session_allocation_free_delta_bytes": 132120576,
+          "session_state_bytes_each": 6881280,
+          "state_evidence": [
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            }
+          ]
+        },
+        "per_row_device_service_ms": 2.4614670276641846,
+        "phase_decomposition": {
+          "attention_and_pre_moe": {
+            "device": {
+              "maximum_ms": 18.187360763549805,
+              "mean_ms": 17.698118209838867,
+              "minimum_ms": 17.316383361816406,
+              "p50_ms": 17.783615112304688,
+              "p95_ms": 18.11345329284668,
+              "p99_ms": 18.17257926940918,
+              "standard_deviation_ms": 0.3176495710935024
+            },
+            "wall": {
+              "maximum_ms": 18.2449,
+              "mean_ms": 17.739539999999998,
+              "minimum_ms": 17.3551,
+              "p50_ms": 17.8227,
+              "p95_ms": 18.16686,
+              "p99_ms": 18.229292,
+              "standard_deviation_ms": 0.324121715409505
+            }
+          },
+          "expert_collection": {
+            "device": {
+              "maximum_ms": 1.9692480564117432,
+              "mean_ms": 1.8313024044036865,
+              "minimum_ms": 1.5771199464797974,
+              "p50_ms": 1.9271999597549438,
+              "p95_ms": 1.9673664569854736,
+              "p99_ms": 1.9688717365264894,
+              "standard_deviation_ms": 0.15560391342341034
+            },
+            "wall": {
+              "maximum_ms": 1.9961,
+              "mean_ms": 1.8458999999999999,
+              "minimum_ms": 1.5852,
+              "p50_ms": 1.937,
+              "p95_ms": 1.99248,
+              "p99_ms": 1.995376,
+              "standard_deviation_ms": 0.16060849292612145
+            }
+          },
+          "expert_dispatch": {
+            "device": {
+              "maximum_ms": 1.8350720405578613,
+              "mean_ms": 1.7145152330398559,
+              "minimum_ms": 1.543936014175415,
+              "p50_ms": 1.7322560548782349,
+              "p95_ms": 1.83372163772583,
+              "p99_ms": 1.8348019599914551,
+              "standard_deviation_ms": 0.1127328827485529
+            },
+            "wall": {
+              "maximum_ms": 1.843,
+              "mean_ms": 1.7213,
+              "minimum_ms": 1.5502,
+              "p50_ms": 1.7397,
+              "p95_ms": 1.8413,
+              "p99_ms": 1.84266,
+              "standard_deviation_ms": 0.11313331958357802
+            }
+          },
+          "latent_down": {
+            "device": {
+              "maximum_ms": 0.6174719929695129,
+              "mean_ms": 0.5983295917510987,
+              "minimum_ms": 0.5787839889526367,
+              "p50_ms": 0.5954560041427612,
+              "p95_ms": 0.6166207909584045,
+              "p99_ms": 0.6173017525672914,
+              "standard_deviation_ms": 0.014920503468481514
+            },
+            "wall": {
+              "maximum_ms": 0.6377,
+              "mean_ms": 0.6198,
+              "minimum_ms": 0.6015,
+              "p50_ms": 0.617,
+              "p95_ms": 0.6372,
+              "p99_ms": 0.6376000000000001,
+              "standard_deviation_ms": 0.014485440966708603
+            }
+          },
+          "latent_up": {
+            "device": {
+              "maximum_ms": 1.056831955909729,
+              "mean_ms": 0.7648767828941345,
+              "minimum_ms": 0.6724799871444702,
+              "p50_ms": 0.6929919719696045,
+              "p95_ms": 0.9877823591232299,
+              "p99_ms": 1.0430220365524292,
+              "standard_deviation_ms": 0.14650258525361937
+            },
+            "wall": {
+              "maximum_ms": 1.063,
+              "mean_ms": 0.77216,
+              "minimum_ms": 0.6836,
+              "p50_ms": 0.6997,
+              "p95_ms": 0.9939199999999998,
+              "p99_ms": 1.049184,
+              "standard_deviation_ms": 0.1458232436890635
+            }
+          },
+          "reduction": {
+            "device": {
+              "maximum_ms": 0.5189759731292725,
+              "mean_ms": 0.46577919721603395,
+              "minimum_ms": 0.4339520037174225,
+              "p50_ms": 0.44969600439071655,
+              "p95_ms": 0.5122623801231384,
+              "p99_ms": 0.5176332545280456,
+              "standard_deviation_ms": 0.03196120691161464
+            },
+            "wall": {
+              "maximum_ms": 0.5267,
+              "mean_ms": 0.47316,
+              "minimum_ms": 0.4403,
+              "p50_ms": 0.4573,
+              "p95_ms": 0.5198799999999999,
+              "p99_ms": 0.525336,
+              "standard_deviation_ms": 0.03213817667510088
+            }
+          },
+          "residual": {
+            "device": {
+              "maximum_ms": 0.35555198788642883,
+              "mean_ms": 0.28955519795417783,
+              "minimum_ms": 0.2526400089263916,
+              "p50_ms": 0.2750079929828644,
+              "p95_ms": 0.3438847899436951,
+              "p99_ms": 0.3532185482978821,
+              "standard_deviation_ms": 0.03600345324270774
+            },
+            "wall": {
+              "maximum_ms": 0.3625,
+              "mean_ms": 0.30102,
+              "minimum_ms": 0.2653,
+              "p50_ms": 0.2813,
+              "p95_ms": 0.3543,
+              "p99_ms": 0.36086,
+              "standard_deviation_ms": 0.036241765961387694
+            }
+          },
+          "routed_expert_compute": {
+            "device": {
+              "maximum_ms": 7.131231784820557,
+              "mean_ms": 6.342662334442139,
+              "minimum_ms": 5.640160083770752,
+              "p50_ms": 6.481855869293213,
+              "p95_ms": 7.064505386352539,
+              "p99_ms": 7.117886505126953,
+              "standard_deviation_ms": 0.600726843473913
+            },
+            "wall": {
+              "maximum_ms": 7.1385,
+              "mean_ms": 6.36144,
+              "minimum_ms": 5.667,
+              "p50_ms": 6.5146,
+              "p95_ms": 7.073799999999999,
+              "p99_ms": 7.12556,
+              "standard_deviation_ms": 0.5984034511932563
+            }
+          },
+          "router": {
+            "device": {
+              "maximum_ms": 7.13375997543335,
+              "mean_ms": 6.948147201538086,
+              "minimum_ms": 6.810912132263184,
+              "p50_ms": 6.923840045928955,
+              "p95_ms": 7.102124786376953,
+              "p99_ms": 7.12743293762207,
+              "standard_deviation_ms": 0.10703475454252852
+            },
+            "wall": {
+              "maximum_ms": 7.1415,
+              "mean_ms": 6.9561399999999995,
+              "minimum_ms": 6.8181,
+              "p50_ms": 6.9323,
+              "p95_ms": 7.109859999999999,
+              "p99_ms": 7.135172,
+              "standard_deviation_ms": 0.10703624806578362
+            }
+          },
+          "shared_expert": {
+            "device": {
+              "maximum_ms": 2.967967987060547,
+              "mean_ms": 2.639609622955322,
+              "minimum_ms": 2.5454399585723877,
+              "p50_ms": 2.5548160076141357,
+              "p95_ms": 2.8902080059051514,
+              "p99_ms": 2.9524159908294676,
+              "standard_deviation_ms": 0.1645861542722749
+            },
+            "wall": {
+              "maximum_ms": 2.9831,
+              "mean_ms": 2.65136,
+              "minimum_ms": 2.5529,
+              "p50_ms": 2.5727,
+              "p95_ms": 2.9038399999999998,
+              "p99_ms": 2.9672479999999997,
+              "standard_deviation_ms": 0.16626003247924606
+            }
+          }
+        },
+        "phase_profile_calls": 5,
+        "retained_calls": 50,
+        "routing": {
+          "avoided_routed_expert_weight_launches": 8971,
+          "effective_weight_reuse_rows_per_native_call": 3.34290937581614,
+          "expert_group_size_histogram": {
+            "10": 176,
+            "11": 369,
+            "16": 50,
+            "5": 779,
+            "6": 381
+          },
+          "maximum_rows_for_one_expert": 16,
+          "mean_pairwise_overlap_fraction": 0.862890625,
+          "mean_unique_experts_per_batch": 35.1,
+          "native_routed_expert_calls": 3829,
+          "real_route_source": "three retained stateful Kimi decode trace positions",
+          "total_selections": 12800
+        },
+        "status": "FAIL",
+        "throughput_gain_vs_serial_batch1": 1.2347433554036118,
+        "wall": {
+          "maximum_ms": 43.9716,
+          "mean_ms": 42.601058,
+          "minimum_ms": 41.5541,
+          "p50_ms": 42.661,
+          "p95_ms": 43.50757,
+          "p99_ms": 43.808626000000004,
+          "standard_deviation_ms": 0.5916541591470479
+        },
+        "warmup_calls": 10
+      },
+      "post_batch_checks": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14154727424,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12448",
+          "memory.total": "32607",
+          "memory.used": "19740",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "65",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        }
+      },
+      "post_batch_safe_fixture": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14148435968,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12448",
+          "memory.total": "32607",
+          "memory.used": "19740",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "65",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "output_fingerprint": "sha256:4f848b37deb0737875aa04c81c2f6495b3ec45b1c1d012ff8c17bef05f8765e7",
+        "output_finite": true,
+        "pass": true,
+        "standard_batch1_path": true
+      },
+      "status": "FAIL"
+    },
+    "2": {
+      "correctness": {
+        "all_16_experts_executed_once": true,
+        "comparisons": [
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "pass": true,
+        "positions": 3,
+        "routing_equality": true,
+        "rows": 2,
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_rows_per_second": 313.76447212280544,
+        "batch": 2,
+        "device": {
+          "maximum_ms": 7.229311943054199,
+          "mean_ms": 6.234773082733154,
+          "minimum_ms": 5.565695762634277,
+          "p50_ms": 6.374207973480225,
+          "p95_ms": 6.820523071289061,
+          "p99_ms": 7.148293499946593,
+          "standard_deviation_ms": 0.4194946226094672
+        },
+        "ideal_parallel_capacity_retention_percent": 47.68090513516815,
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "memory": {
+          "free_bytes_after_close": 14154727424,
+          "free_bytes_after_open": 14140047360,
+          "free_bytes_after_run": 14140047360,
+          "free_bytes_before_open": 14154727424,
+          "persistent_batch_workspace_bytes": 8486912,
+          "resident_stage_bytes": 18272485376,
+          "session_allocation_free_delta_bytes": 14680064,
+          "session_state_bytes_each": 6881280,
+          "state_evidence": [
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            }
+          ]
+        },
+        "per_row_device_service_ms": 3.1871039867401123,
+        "phase_decomposition": {
+          "attention_and_pre_moe": {
+            "device": {
+              "maximum_ms": 2.16377592086792,
+              "mean_ms": 2.1324095726013184,
+              "minimum_ms": 2.1152639389038086,
+              "p50_ms": 2.1265599727630615,
+              "p95_ms": 2.1572479248046874,
+              "p99_ms": 2.162470321655274,
+              "standard_deviation_ms": 0.016516868805844003
+            },
+            "wall": {
+              "maximum_ms": 2.1992,
+              "mean_ms": 2.1592399999999996,
+              "minimum_ms": 2.1388,
+              "p50_ms": 2.1511,
+              "p95_ms": 2.1905799999999997,
+              "p99_ms": 2.197476,
+              "standard_deviation_ms": 0.020777930599556814
+            }
+          },
+          "expert_collection": {
+            "device": {
+              "maximum_ms": 0.368831992149353,
+              "mean_ms": 0.2668991982936859,
+              "minimum_ms": 0.22550399601459503,
+              "p50_ms": 0.2359360009431839,
+              "p95_ms": 0.34979839324951173,
+              "p99_ms": 0.36502527236938476,
+              "standard_deviation_ms": 0.05371941236774099
+            },
+            "wall": {
+              "maximum_ms": 0.3761,
+              "mean_ms": 0.27562,
+              "minimum_ms": 0.233,
+              "p50_ms": 0.2442,
+              "p95_ms": 0.35734,
+              "p99_ms": 0.372348,
+              "standard_deviation_ms": 0.05299333543003308
+            }
+          },
+          "expert_dispatch": {
+            "device": {
+              "maximum_ms": 0.2733120024204254,
+              "mean_ms": 0.251705601811409,
+              "minimum_ms": 0.23056000471115112,
+              "p50_ms": 0.25011199712753296,
+              "p95_ms": 0.2695936024188995,
+              "p99_ms": 0.27256832242012025,
+              "standard_deviation_ms": 0.013631870211227741
+            },
+            "wall": {
+              "maximum_ms": 0.2797,
+              "mean_ms": 0.25822,
+              "minimum_ms": 0.2374,
+              "p50_ms": 0.2569,
+              "p95_ms": 0.27596,
+              "p99_ms": 0.278952,
+              "standard_deviation_ms": 0.013482047322272683
+            }
+          },
+          "latent_down": {
+            "device": {
+              "maximum_ms": 0.1136000007390976,
+              "mean_ms": 0.11034880131483078,
+              "minimum_ms": 0.10886400192975998,
+              "p50_ms": 0.10931199789047241,
+              "p95_ms": 0.11308800131082535,
+              "p99_ms": 0.11349760085344314,
+              "standard_deviation_ms": 0.0018081105250920355
+            },
+            "wall": {
+              "maximum_ms": 0.1339,
+              "mean_ms": 0.13032,
+              "minimum_ms": 0.1275,
+              "p50_ms": 0.1305,
+              "p95_ms": 0.13326,
+              "p99_ms": 0.133772,
+              "standard_deviation_ms": 0.002130164312911092
+            }
+          },
+          "latent_up": {
+            "device": {
+              "maximum_ms": 0.11574400216341019,
+              "mean_ms": 0.10056960135698319,
+              "minimum_ms": 0.09520000219345093,
+              "p50_ms": 0.097120001912117,
+              "p95_ms": 0.11235840171575547,
+              "p99_ms": 0.11506688207387925,
+              "standard_deviation_ms": 0.007684329755212495
+            },
+            "wall": {
+              "maximum_ms": 0.1216,
+              "mean_ms": 0.10662,
+              "minimum_ms": 0.1012,
+              "p50_ms": 0.103,
+              "p95_ms": 0.11828,
+              "p99_ms": 0.120936,
+              "standard_deviation_ms": 0.007591679656044505
+            }
+          },
+          "reduction": {
+            "device": {
+              "maximum_ms": 0.12544000148773193,
+              "mean_ms": 0.09485439956188202,
+              "minimum_ms": 0.0761599987745285,
+              "p50_ms": 0.08089599758386612,
+              "p95_ms": 0.12279040068387986,
+              "p99_ms": 0.12491008132696152,
+              "standard_deviation_ms": 0.02006775512856978
+            },
+            "wall": {
+              "maximum_ms": 0.1318,
+              "mean_ms": 0.10118,
+              "minimum_ms": 0.0826,
+              "p50_ms": 0.0873,
+              "p95_ms": 0.12912,
+              "p99_ms": 0.131264,
+              "standard_deviation_ms": 0.020042594642410948
+            }
+          },
+          "residual": {
+            "device": {
+              "maximum_ms": 0.0451200008392334,
+              "mean_ms": 0.03205760046839714,
+              "minimum_ms": 0.025439999997615814,
+              "p50_ms": 0.02816000021994114,
+              "p95_ms": 0.04297600090503693,
+              "p99_ms": 0.04469120085239411,
+              "standard_deviation_ms": 0.007197294766386553
+            },
+            "wall": {
+              "maximum_ms": 0.0511,
+              "mean_ms": 0.038,
+              "minimum_ms": 0.0314,
+              "p50_ms": 0.0341,
+              "p95_ms": 0.04894,
+              "p99_ms": 0.050668,
+              "standard_deviation_ms": 0.007206663583101408
+            }
+          },
+          "routed_expert_compute": {
+            "device": {
+              "maximum_ms": 2.6871039867401123,
+              "mean_ms": 2.052275204658508,
+              "minimum_ms": 1.4895679950714111,
+              "p50_ms": 2.2886080741882324,
+              "p95_ms": 2.6076287746429445,
+              "p99_ms": 2.6712089443206786,
+              "standard_deviation_ms": 0.4753732507799586
+            },
+            "wall": {
+              "maximum_ms": 2.7105,
+              "mean_ms": 2.0655200000000002,
+              "minimum_ms": 1.5123,
+              "p50_ms": 2.2948,
+              "p95_ms": 2.62752,
+              "p99_ms": 2.693904,
+              "standard_deviation_ms": 0.47566604839950477
+            }
+          },
+          "router": {
+            "device": {
+              "maximum_ms": 0.8971840143203735,
+              "mean_ms": 0.8931264042854309,
+              "minimum_ms": 0.8888639807701111,
+              "p50_ms": 0.8942400217056274,
+              "p95_ms": 0.8969920158386231,
+              "p99_ms": 0.8971456146240234,
+              "standard_deviation_ms": 0.003507684304519265
+            },
+            "wall": {
+              "maximum_ms": 0.919,
+              "mean_ms": 0.9027200000000001,
+              "minimum_ms": 0.8951,
+              "p50_ms": 0.9008,
+              "p95_ms": 0.9158000000000001,
+              "p99_ms": 0.9183600000000001,
+              "standard_deviation_ms": 0.008673499870294577
+            }
+          },
+          "shared_expert": {
+            "device": {
+              "maximum_ms": 0.3778879940509796,
+              "mean_ms": 0.37505279779434203,
+              "minimum_ms": 0.37110400199890137,
+              "p50_ms": 0.3765760064125061,
+              "p95_ms": 0.37784319519996645,
+              "p99_ms": 0.377879034280777,
+              "standard_deviation_ms": 0.002894655973406444
+            },
+            "wall": {
+              "maximum_ms": 0.3842,
+              "mean_ms": 0.38142,
+              "minimum_ms": 0.3776,
+              "p50_ms": 0.3832,
+              "p95_ms": 0.38414,
+              "p99_ms": 0.38418800000000003,
+              "standard_deviation_ms": 0.0028985513623187758
+            }
+          }
+        },
+        "phase_profile_calls": 5,
+        "retained_calls": 50,
+        "routing": {
+          "avoided_routed_expert_weight_launches": 241,
+          "effective_weight_reuse_rows_per_native_call": 1.177336276674025,
+          "expert_group_size_histogram": {
+            "1": 1118,
+            "2": 241
+          },
+          "maximum_rows_for_one_expert": 2,
+          "mean_pairwise_overlap_fraction": 0.150625,
+          "mean_unique_experts_per_batch": 27.18,
+          "native_routed_expert_calls": 1359,
+          "real_route_source": "three retained stateful Kimi decode trace positions",
+          "total_selections": 1600
+        },
+        "status": "PASS",
+        "throughput_gain_vs_serial_batch1": 0.953618102703363,
+        "wall": {
+          "maximum_ms": 7.5933,
+          "mean_ms": 6.578493999999999,
+          "minimum_ms": 5.8415,
+          "p50_ms": 6.7151,
+          "p95_ms": 7.16836,
+          "p99_ms": 7.549543,
+          "standard_deviation_ms": 0.42557010769554765
+        },
+        "warmup_calls": 10
+      },
+      "post_batch_checks": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14154727424,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12469",
+          "memory.total": "32607",
+          "memory.used": "19719",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "62",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        }
+      },
+      "post_batch_safe_fixture": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14148435968,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12469",
+          "memory.total": "32607",
+          "memory.used": "19719",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "62",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "output_fingerprint": "sha256:4f848b37deb0737875aa04c81c2f6495b3ec45b1c1d012ff8c17bef05f8765e7",
+        "output_finite": true,
+        "pass": true,
+        "standard_batch1_path": true
+      },
+      "status": "PASS"
+    },
+    "4": {
+      "correctness": {
+        "all_16_experts_executed_once": true,
+        "comparisons": [
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "pass": true,
+        "positions": 3,
+        "routing_equality": true,
+        "rows": 4,
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_rows_per_second": 344.3545202060247,
+        "batch": 4,
+        "device": {
+          "maximum_ms": 12.158944129943848,
+          "mean_ms": 11.484172115325928,
+          "minimum_ms": 10.745023727416992,
+          "p50_ms": 11.615935802459717,
+          "p95_ms": 12.05574083328247,
+          "p99_ms": 12.12775650024414,
+          "standard_deviation_ms": 0.4407113187054898
+        },
+        "ideal_parallel_capacity_retention_percent": 26.164745644598447,
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "memory": {
+          "free_bytes_after_close": 14152630272,
+          "free_bytes_after_open": 14123270144,
+          "free_bytes_after_run": 14123270144,
+          "free_bytes_before_open": 14152630272,
+          "persistent_batch_workspace_bytes": 8486912,
+          "resident_stage_bytes": 18272485376,
+          "session_allocation_free_delta_bytes": 29360128,
+          "session_state_bytes_each": 6881280,
+          "state_evidence": [
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            }
+          ]
+        },
+        "per_row_device_service_ms": 2.903983950614929,
+        "phase_decomposition": {
+          "attention_and_pre_moe": {
+            "device": {
+              "maximum_ms": 4.69974422454834,
+              "mean_ms": 4.3678912162780765,
+              "minimum_ms": 4.2584638595581055,
+              "p50_ms": 4.275968074798584,
+              "p95_ms": 4.627398586273193,
+              "p99_ms": 4.68527509689331,
+              "standard_deviation_ms": 0.1682670585313568
+            },
+            "wall": {
+              "maximum_ms": 4.7243,
+              "mean_ms": 4.39348,
+              "minimum_ms": 4.2836,
+              "p50_ms": 4.3018,
+              "p95_ms": 4.65216,
+              "p99_ms": 4.709872,
+              "standard_deviation_ms": 0.16774379750083174
+            }
+          },
+          "expert_collection": {
+            "device": {
+              "maximum_ms": 0.582144021987915,
+              "mean_ms": 0.5005760073661805,
+              "minimum_ms": 0.404992014169693,
+              "p50_ms": 0.5001919865608215,
+              "p95_ms": 0.5774336218833923,
+              "p99_ms": 0.5812019419670105,
+              "standard_deviation_ms": 0.06489684563769625
+            },
+            "wall": {
+              "maximum_ms": 0.5936,
+              "mean_ms": 0.5095799999999999,
+              "minimum_ms": 0.412,
+              "p50_ms": 0.5092,
+              "p95_ms": 0.58868,
+              "p99_ms": 0.592616,
+              "standard_deviation_ms": 0.06660409597014286
+            }
+          },
+          "expert_dispatch": {
+            "device": {
+              "maximum_ms": 0.5355200171470642,
+              "mean_ms": 0.47561601400375364,
+              "minimum_ms": 0.39395201206207275,
+              "p50_ms": 0.4789760112762451,
+              "p95_ms": 0.5337408185005188,
+              "p99_ms": 0.5351641774177551,
+              "standard_deviation_ms": 0.052789937816312915
+            },
+            "wall": {
+              "maximum_ms": 0.5422,
+              "mean_ms": 0.48202,
+              "minimum_ms": 0.4002,
+              "p50_ms": 0.4853,
+              "p95_ms": 0.5403800000000001,
+              "p99_ms": 0.541836,
+              "standard_deviation_ms": 0.05292762605672014
+            }
+          },
+          "latent_down": {
+            "device": {
+              "maximum_ms": 0.1738560050725937,
+              "mean_ms": 0.17171839773654937,
+              "minimum_ms": 0.17052799463272095,
+              "p50_ms": 0.17151999473571777,
+              "p95_ms": 0.17340160310268402,
+              "p99_ms": 0.17376512467861177,
+              "standard_deviation_ms": 0.0011332553325374558
+            },
+            "wall": {
+              "maximum_ms": 0.1929,
+              "mean_ms": 0.19156,
+              "minimum_ms": 0.1903,
+              "p50_ms": 0.1915,
+              "p95_ms": 0.19269999999999998,
+              "p99_ms": 0.19286,
+              "standard_deviation_ms": 0.000852291030106496
+            }
+          },
+          "latent_up": {
+            "device": {
+              "maximum_ms": 0.19631999731063843,
+              "mean_ms": 0.18293760120868682,
+              "minimum_ms": 0.16819199919700623,
+              "p50_ms": 0.1884479969739914,
+              "p95_ms": 0.1949759989976883,
+              "p99_ms": 0.1960511976480484,
+              "standard_deviation_ms": 0.01084546661753523
+            },
+            "wall": {
+              "maximum_ms": 0.2093,
+              "mean_ms": 0.19492,
+              "minimum_ms": 0.178,
+              "p50_ms": 0.1946,
+              "p95_ms": 0.20800000000000002,
+              "p99_ms": 0.20904,
+              "standard_deviation_ms": 0.010774674008989791
+            }
+          },
+          "reduction": {
+            "device": {
+              "maximum_ms": 0.17481599748134613,
+              "mean_ms": 0.14677759855985642,
+              "minimum_ms": 0.1066880002617836,
+              "p50_ms": 0.15724800527095795,
+              "p95_ms": 0.1737343966960907,
+              "p99_ms": 0.17459967732429504,
+              "standard_deviation_ms": 0.026298964460056126
+            },
+            "wall": {
+              "maximum_ms": 0.182,
+              "mean_ms": 0.15584,
+              "minimum_ms": 0.1142,
+              "p50_ms": 0.1633,
+              "p95_ms": 0.18066,
+              "p99_ms": 0.181732,
+              "standard_deviation_ms": 0.024427247081896072
+            }
+          },
+          "residual": {
+            "device": {
+              "maximum_ms": 0.08950400352478027,
+              "mean_ms": 0.07300480008125305,
+              "minimum_ms": 0.05081599950790405,
+              "p50_ms": 0.07311999797821045,
+              "p95_ms": 0.0887104034423828,
+              "p99_ms": 0.08934528350830077,
+              "standard_deviation_ms": 0.013928445887615448
+            },
+            "wall": {
+              "maximum_ms": 0.0955,
+              "mean_ms": 0.07955999999999999,
+              "minimum_ms": 0.0574,
+              "p50_ms": 0.0807,
+              "p95_ms": 0.09472,
+              "p99_ms": 0.095344,
+              "standard_deviation_ms": 0.013710229757374601
+            }
+          },
+          "routed_expert_compute": {
+            "device": {
+              "maximum_ms": 3.4266879558563232,
+              "mean_ms": 3.1655231952667235,
+              "minimum_ms": 2.643359899520874,
+              "p50_ms": 3.4129281044006348,
+              "p95_ms": 3.425113582611084,
+              "p99_ms": 3.4263730812072755,
+              "standard_deviation_ms": 0.3236305789754056
+            },
+            "wall": {
+              "maximum_ms": 3.446,
+              "mean_ms": 3.18504,
+              "minimum_ms": 2.6754,
+              "p50_ms": 3.4199,
+              "p95_ms": 3.44334,
+              "p99_ms": 3.445468,
+              "standard_deviation_ms": 0.3159141946795048
+            }
+          },
+          "router": {
+            "device": {
+              "maximum_ms": 1.7652159929275513,
+              "mean_ms": 1.7588607788085937,
+              "minimum_ms": 1.7541439533233643,
+              "p50_ms": 1.757375955581665,
+              "p95_ms": 1.764531183242798,
+              "p99_ms": 1.7650790309906006,
+              "standard_deviation_ms": 0.004073062422192385
+            },
+            "wall": {
+              "maximum_ms": 1.7719,
+              "mean_ms": 1.76536,
+              "minimum_ms": 1.7604,
+              "p50_ms": 1.764,
+              "p95_ms": 1.77118,
+              "p99_ms": 1.7717559999999999,
+              "standard_deviation_ms": 0.00419170609656738
+            }
+          },
+          "shared_expert": {
+            "device": {
+              "maximum_ms": 0.720255970954895,
+              "mean_ms": 0.6979263901710511,
+              "minimum_ms": 0.6830719709396362,
+              "p50_ms": 0.6928319931030273,
+              "p95_ms": 0.7170623779296875,
+              "p99_ms": 0.7196172523498535,
+              "standard_deviation_ms": 0.013131002966263603
+            },
+            "wall": {
+              "maximum_ms": 0.7278,
+              "mean_ms": 0.7051999999999999,
+              "minimum_ms": 0.6894,
+              "p50_ms": 0.701,
+              "p95_ms": 0.72476,
+              "p99_ms": 0.727192,
+              "standard_deviation_ms": 0.013658696863171093
+            }
+          }
+        },
+        "phase_profile_calls": 5,
+        "retained_calls": 50,
+        "routing": {
+          "avoided_routed_expert_weight_launches": 1076,
+          "effective_weight_reuse_rows_per_native_call": 1.5065913370998116,
+          "expert_group_size_histogram": {
+            "1": 779,
+            "2": 557,
+            "3": 369,
+            "4": 50
+          },
+          "maximum_rows_for_one_expert": 4,
+          "mean_pairwise_overlap_fraction": 0.4515625,
+          "mean_unique_experts_per_batch": 35.1,
+          "native_routed_expert_calls": 2124,
+          "real_route_source": "three retained stateful Kimi decode trace positions",
+          "total_selections": 3200
+        },
+        "status": "PASS",
+        "throughput_gain_vs_serial_batch1": 1.0465898257839379,
+        "wall": {
+          "maximum_ms": 13.1358,
+          "mean_ms": 12.109202,
+          "minimum_ms": 11.3039,
+          "p50_ms": 12.228449999999999,
+          "p95_ms": 12.745149999999999,
+          "p99_ms": 12.974001999999999,
+          "standard_deviation_ms": 0.4802472282023082
+        },
+        "warmup_calls": 10
+      },
+      "post_batch_checks": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14152630272,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12450",
+          "memory.total": "32607",
+          "memory.used": "19738",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "65",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        }
+      },
+      "post_batch_safe_fixture": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14146338816,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12450",
+          "memory.total": "32607",
+          "memory.used": "19738",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "65",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "output_fingerprint": "sha256:4f848b37deb0737875aa04c81c2f6495b3ec45b1c1d012ff8c17bef05f8765e7",
+        "output_finite": true,
+        "pass": true,
+        "standard_batch1_path": true
+      },
+      "status": "PASS"
+    },
+    "8": {
+      "correctness": {
+        "all_16_experts_executed_once": true,
+        "comparisons": [
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 4,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.7701040701245,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.7701040701245,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab",
+            "position": 0,
+            "routing_equality": true,
+            "row": 5,
+            "serial_fingerprint": "sha256:771e4c67500b0d0b7802b9ba7bd815394747a7cdc06b77e54349abc378f66dab"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3831033969739,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3831033969739,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+            "position": 0,
+            "routing_equality": true,
+            "row": 6,
+            "serial_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7371245546462,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7371245546462,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42",
+            "position": 0,
+            "routing_equality": true,
+            "row": 7,
+            "serial_fingerprint": "sha256:43ac729007962782f05b576e436a927de15d806218e666fbdfc6f8a0ae1fbc42"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 4,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.3496164901115,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.3496164901115,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00",
+            "position": 1,
+            "routing_equality": true,
+            "row": 5,
+            "serial_fingerprint": "sha256:99a359b1f8db2c2c8e5c5300add0ce7942efeab270dbc3f59e841cfab4cd1c00"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.7127262470154,
+              "cosine_similarity": 1.0000000000000002,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.7127262470154,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+            "position": 1,
+            "routing_equality": true,
+            "row": 6,
+            "serial_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 224.98147359218393,
+              "cosine_similarity": 0.9999999999999999,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 224.98147359218393,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd",
+            "position": 1,
+            "routing_equality": true,
+            "row": 7,
+            "serial_fingerprint": "sha256:5b1d8a327a8b43bfa4e9328393ced5eb44bc4629d565898d5dca94e8cf2ff2fd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 0,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 1,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 2,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 3,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 4,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 508.73082378717464,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 508.73082378717464,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6",
+            "position": 2,
+            "routing_equality": true,
+            "row": 5,
+            "serial_fingerprint": "sha256:863849fd3740590c52e2012406b07762df841a93b764b8abc82c26b39b5fe5f6"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 225.2154576687332,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 225.2154576687332,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62",
+            "position": 2,
+            "routing_equality": true,
+            "row": 6,
+            "serial_fingerprint": "sha256:dbe05e7e1cc8336c3ca21ca84559334d8983ccd353532f8e6ae8c0c8256f6e62"
+          },
+          {
+            "metrics": {
+              "actual_finite": true,
+              "actual_l2": 813.1342010190015,
+              "cosine_similarity": 1.0,
+              "maximum_absolute_error": 0.0,
+              "mean_absolute_error": 0.0,
+              "reference_finite": true,
+              "reference_l2": 813.1342010190015,
+              "relative_l2_error": 0.0
+            },
+            "observed_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd",
+            "position": 2,
+            "routing_equality": true,
+            "row": 7,
+            "serial_fingerprint": "sha256:3bcbd6ccb0ef63adce1e3c0fcdc464718ff1df1fb67caf1f2a290947ca053cdd"
+          }
+        ],
+        "maximum_relative_l2_error": 0.0,
+        "pass": true,
+        "positions": 3,
+        "routing_equality": true,
+        "rows": 8,
+        "state_fingerprint_equality": true
+      },
+      "performance": {
+        "aggregate_rows_per_second": 377.6714559512034,
+        "batch": 8,
+        "device": {
+          "maximum_ms": 21.997631072998047,
+          "mean_ms": 21.157454719543455,
+          "minimum_ms": 20.151296615600586,
+          "p50_ms": 21.182432174682617,
+          "p95_ms": 21.730840492248536,
+          "p99_ms": 21.895946502685547,
+          "standard_deviation_ms": 0.4154369752649035
+        },
+        "ideal_parallel_capacity_retention_percent": 14.34811655191323,
+        "lifecycle_delta": {
+          "connection_establishment": 0,
+          "model_materialization": 0,
+          "persistent_buffer_allocation": 0,
+          "process_creation": 0,
+          "task_creation": 0,
+          "thread_creation": 0,
+          "topology_rebuilds": 0,
+          "weight_loading": 0
+        },
+        "lifecycle_deltas_zero": true,
+        "memory": {
+          "free_bytes_after_close": 14152630272,
+          "free_bytes_after_open": 14089715712,
+          "free_bytes_after_run": 14089715712,
+          "free_bytes_before_open": 14152630272,
+          "persistent_batch_workspace_bytes": 8486912,
+          "resident_stage_bytes": 18272485376,
+          "session_allocation_free_delta_bytes": 62914560,
+          "session_state_bytes_each": 6881280,
+          "state_evidence": [
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:206d6dcab82bbd7344400550b815dfb6b2c7191d0486ec8f649218ea8b487b45",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:79b496dbb709b45cef49e3bcf7e1c90b5981eec104fb9262d2da3f541c20da24",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            },
+            {
+              "attention_type": "KDA",
+              "bytes": 6881280,
+              "cache_sequence_length": 65,
+              "fingerprint": "sha256:9f5500c96def27bff3f510bcfa0f4846bc094b65b24db6e5ceb7f07cc4726904",
+              "finite": true,
+              "nonzero_prefix": true,
+              "zero_suffix": true
+            }
+          ]
+        },
+        "per_row_device_service_ms": 2.647804021835327,
+        "phase_decomposition": {
+          "attention_and_pre_moe": {
+            "device": {
+              "maximum_ms": 8.909919738769531,
+              "mean_ms": 8.737984085083008,
+              "minimum_ms": 8.578495979309082,
+              "p50_ms": 8.683551788330078,
+              "p95_ms": 8.899718284606934,
+              "p99_ms": 8.907879447937011,
+              "standard_deviation_ms": 0.12555235637816017
+            },
+            "wall": {
+              "maximum_ms": 8.9388,
+              "mean_ms": 8.76816,
+              "minimum_ms": 8.609,
+              "p50_ms": 8.7121,
+              "p95_ms": 8.92974,
+              "p99_ms": 8.936988000000001,
+              "standard_deviation_ms": 0.12635262719864598
+            }
+          },
+          "expert_collection": {
+            "device": {
+              "maximum_ms": 0.9202560186386108,
+              "mean_ms": 0.8620416045188903,
+              "minimum_ms": 0.7484480142593384,
+              "p50_ms": 0.8984000086784363,
+              "p95_ms": 0.9173440098762512,
+              "p99_ms": 0.9196736168861389,
+              "standard_deviation_ms": 0.06344584072409276
+            },
+            "wall": {
+              "maximum_ms": 0.9294,
+              "mean_ms": 0.8702799999999999,
+              "minimum_ms": 0.757,
+              "p50_ms": 0.9072,
+              "p95_ms": 0.92614,
+              "p99_ms": 0.928748,
+              "standard_deviation_ms": 0.06352717213917207
+            }
+          },
+          "expert_dispatch": {
+            "device": {
+              "maximum_ms": 0.9771519899368286,
+              "mean_ms": 0.9221184015274048,
+              "minimum_ms": 0.8221120238304138,
+              "p50_ms": 0.9320319890975952,
+              "p95_ms": 0.9737279891967773,
+              "p99_ms": 0.9764671897888183,
+              "standard_deviation_ms": 0.05398858779328453
+            },
+            "wall": {
+              "maximum_ms": 0.9834,
+              "mean_ms": 0.9287000000000001,
+              "minimum_ms": 0.8288,
+              "p50_ms": 0.9393,
+              "p95_ms": 0.98,
+              "p99_ms": 0.98272,
+              "standard_deviation_ms": 0.05388016332566191
+            }
+          },
+          "latent_down": {
+            "device": {
+              "maximum_ms": 0.2972800135612488,
+              "mean_ms": 0.29614080786705016,
+              "minimum_ms": 0.2952960133552551,
+              "p50_ms": 0.2961280047893524,
+              "p95_ms": 0.2971264123916626,
+              "p99_ms": 0.2972492933273315,
+              "standard_deviation_ms": 0.0007177156604638766
+            },
+            "wall": {
+              "maximum_ms": 0.3179,
+              "mean_ms": 0.31686000000000003,
+              "minimum_ms": 0.3153,
+              "p50_ms": 0.3173,
+              "p95_ms": 0.31784,
+              "p99_ms": 0.317888,
+              "standard_deviation_ms": 0.0009687104830649862
+            }
+          },
+          "latent_up": {
+            "device": {
+              "maximum_ms": 0.3568960130214691,
+              "mean_ms": 0.3465088069438934,
+              "minimum_ms": 0.3375680148601532,
+              "p50_ms": 0.3428800106048584,
+              "p95_ms": 0.3559808075428009,
+              "p99_ms": 0.3567129719257355,
+              "standard_deviation_ms": 0.007041845448789517
+            },
+            "wall": {
+              "maximum_ms": 0.3631,
+              "mean_ms": 0.35294,
+              "minimum_ms": 0.3439,
+              "p50_ms": 0.3491,
+              "p95_ms": 0.36241999999999996,
+              "p99_ms": 0.36296399999999995,
+              "standard_deviation_ms": 0.007234804765852359
+            }
+          },
+          "reduction": {
+            "device": {
+              "maximum_ms": 0.3145599961280823,
+              "mean_ms": 0.2721151947975159,
+              "minimum_ms": 0.2561599910259247,
+              "p50_ms": 0.26262399554252625,
+              "p95_ms": 0.3047103941440582,
+              "p99_ms": 0.31259007573127745,
+              "standard_deviation_ms": 0.02143099666888313
+            },
+            "wall": {
+              "maximum_ms": 0.3207,
+              "mean_ms": 0.27868,
+              "minimum_ms": 0.2635,
+              "p50_ms": 0.2693,
+              "p95_ms": 0.3108,
+              "p99_ms": 0.31872,
+              "standard_deviation_ms": 0.021164347379496486
+            }
+          },
+          "residual": {
+            "device": {
+              "maximum_ms": 0.18377600610256195,
+              "mean_ms": 0.14454399943351745,
+              "minimum_ms": 0.11407999694347382,
+              "p50_ms": 0.13622400164604187,
+              "p95_ms": 0.17873280346393583,
+              "p99_ms": 0.18276736557483672,
+              "standard_deviation_ms": 0.024257302090129818
+            },
+            "wall": {
+              "maximum_ms": 0.1904,
+              "mean_ms": 0.1512,
+              "minimum_ms": 0.1209,
+              "p50_ms": 0.1425,
+              "p95_ms": 0.18530000000000002,
+              "p99_ms": 0.18938000000000002,
+              "standard_deviation_ms": 0.02413014711931944
+            }
+          },
+          "routed_expert_compute": {
+            "device": {
+              "maximum_ms": 5.030464172363281,
+              "mean_ms": 4.603264045715332,
+              "minimum_ms": 4.072127819061279,
+              "p50_ms": 4.792736053466797,
+              "p95_ms": 5.000019359588623,
+              "p99_ms": 5.024375209808349,
+              "standard_deviation_ms": 0.375788769704732
+            },
+            "wall": {
+              "maximum_ms": 5.0543,
+              "mean_ms": 4.61332,
+              "minimum_ms": 4.0782,
+              "p50_ms": 4.8002,
+              "p95_ms": 5.02032,
+              "p99_ms": 5.047504,
+              "standard_deviation_ms": 0.37989216048768365
+            }
+          },
+          "router": {
+            "device": {
+              "maximum_ms": 3.5196800231933594,
+              "mean_ms": 3.4781376361846923,
+              "minimum_ms": 3.4502720832824707,
+              "p50_ms": 3.474303960800171,
+              "p95_ms": 3.512652826309204,
+              "p99_ms": 3.5182745838165284,
+              "standard_deviation_ms": 0.023757298923732115
+            },
+            "wall": {
+              "maximum_ms": 3.5263,
+              "mean_ms": 3.48474,
+              "minimum_ms": 3.4568,
+              "p50_ms": 3.4809,
+              "p95_ms": 3.51926,
+              "p99_ms": 3.524892,
+              "standard_deviation_ms": 0.0237637202474697
+            }
+          },
+          "shared_expert": {
+            "device": {
+              "maximum_ms": 1.3316479921340942,
+              "mean_ms": 1.3217599868774415,
+              "minimum_ms": 1.3150399923324585,
+              "p50_ms": 1.3233920335769653,
+              "p95_ms": 1.3300479888916017,
+              "p99_ms": 1.3313279914855958,
+              "standard_deviation_ms": 0.006227182654940605
+            },
+            "wall": {
+              "maximum_ms": 1.3507,
+              "mean_ms": 1.33462,
+              "minimum_ms": 1.3263,
+              "p50_ms": 1.3312,
+              "p95_ms": 1.34756,
+              "p99_ms": 1.3500720000000002,
+              "standard_deviation_ms": 0.008507737654629454
+            }
+          }
+        },
+        "phase_profile_calls": 5,
+        "retained_calls": 50,
+        "routing": {
+          "avoided_routed_expert_weight_launches": 3336,
+          "effective_weight_reuse_rows_per_native_call": 2.088772845953003,
+          "expert_group_size_histogram": {
+            "2": 396,
+            "3": 764,
+            "5": 354,
+            "6": 191,
+            "8": 50
+          },
+          "maximum_rows_for_one_expert": 8,
+          "mean_pairwise_overlap_fraction": 0.72578125,
+          "mean_unique_experts_per_batch": 35.1,
+          "native_routed_expert_calls": 3064,
+          "real_route_source": "three retained stateful Kimi decode trace positions",
+          "total_selections": 6400
+        },
+        "status": "PASS",
+        "throughput_gain_vs_serial_batch1": 1.1478493241530585,
+        "wall": {
+          "maximum_ms": 23.6734,
+          "mean_ms": 22.809566,
+          "minimum_ms": 21.6864,
+          "p50_ms": 22.8527,
+          "p95_ms": 23.389175,
+          "p99_ms": 23.545313999999998,
+          "standard_deviation_ms": 0.4244856099374865
+        },
+        "warmup_calls": 10
+      },
+      "post_batch_checks": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14152630272,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12446",
+          "memory.total": "32607",
+          "memory.used": "19742",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "65",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        }
+      },
+      "post_batch_safe_fixture": {
+        "cuda_error_state_ok": true,
+        "cuda_synchronize": "PASS",
+        "free_vram_bytes": 14146338816,
+        "nvidia_smi": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "12446",
+          "memory.total": "32607",
+          "memory.used": "19742",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "65",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "output_fingerprint": "sha256:4f848b37deb0737875aa04c81c2f6495b3ec45b1c1d012ff8c17bef05f8765e7",
+        "output_finite": true,
+        "pass": true,
+        "standard_batch1_path": true
+      },
+      "status": "PASS"
+    }
+  },
+  "configuration": {
+    "attempted_batches": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "attention_type": "KDA",
+    "device": 0,
+    "fixture": "three exact retained stateful decode boundaries, row-rotated",
+    "layer": 89,
+    "phase_profile_calls": 5,
+    "retained_calls": 50,
+    "warmup_calls": 10
+  },
+  "cycle_id": "H014-029b",
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "failure": {
+    "gpu_health": {
+      "compute_cap": "12.0",
+      "driver_version": "591.86",
+      "index": "0",
+      "memory.free": "29874",
+      "memory.total": "32607",
+      "memory.used": "2314",
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci.bus_id": "00000000:02:00.0",
+      "pstate": "P1",
+      "status": "MEASURED",
+      "temperature.gpu": "60",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "message": "batch 16 failed a retained safety gate",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\complete_stage_batch.py\", line 787, in benchmark_complete_stage_batch\n    return asyncio.run(\n           ^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\runners.py\", line 190, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\base_events.py\", line 654, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\complete_stage_batch.py\", line 719, in _benchmark_complete_stage_batch\n    raise RuntimeError(f\"batch {batch} failed a retained safety gate\")\nRuntimeError: batch 16 failed a retained safety gate\n",
+    "type": "RuntimeError"
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30392",
+    "memory.total": "32607",
+    "memory.used": "1796",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "54",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": {
+    "minimum_material_throughput_gain": 1.5,
+    "prediction": "Grouping rows only when their real top-16 routes share an expert, while batching latent projections and the shared expert, will retain serial semantics and yield at least 1.5x complete-stage aggregate throughput at one certified batch without GPU or lifecycle degradation."
+  },
+  "implementation": {
+    "attention_state": "independent persistent state per decode stream",
+    "larger_than_target_executed": false,
+    "reduction": "unchanged deterministic per-row top-16 reduction",
+    "routed_experts": "expert-ID grouped gather/row-cooperative execute/scatter",
+    "router": "one exact real Kimi router call per row",
+    "shared_expert": "row-cooperative across all active rows",
+    "workspace": "fixed persistent allocation before READY"
+  },
+  "load": {
+    "accepted": true,
+    "assignment_source_weight_bytes": 16990092800,
+    "elapsed_ms": 21733.6248,
+    "lifecycle": {
+      "active_sessions": 0,
+      "backend_identity": "nvidia_cuda_persistent_kimi_stage",
+      "batch_capacity": 16,
+      "batch_execute_count": 0,
+      "batch_supported_sizes": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "batch_workspace_bytes": 8486912,
+      "cpu_mathematical_fallbacks": 0,
+      "cuda_library_sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff",
+      "execute_count": 0,
+      "measured_free_memory_delta_bytes": 18272485376,
+      "model_materialization_count": 1,
+      "persistent_buffer_allocation_count": 35,
+      "prepare_warmup": {
+        "count": 1,
+        "maximum_temporary_device_bytes": 8388608,
+        "measured_device_ms": 229.84589004516602,
+        "measured_wall_ms": 241.2585,
+        "primitive": "isolated assigned-stage Kimi CUDA fixture",
+        "stage_fixture": {
+          "active_sessions_after": 0,
+          "cpu_mathematical_fallbacks": 0,
+          "device": {
+            "maximum_ms": 39.20246505737305,
+            "mean_ms": 32.83512714930943,
+            "minimum_ms": 23.360288619995117,
+            "p50_ms": 34.567935943603516,
+            "p95_ms": 38.484135437011716,
+            "p99_ms": 39.05879913330078,
+            "standard_deviation_ms": 5.149634399450267
+          },
+          "device_ms_values": [
+            29.857152938842773,
+            39.20246505737305,
+            36.739070892333984,
+            34.567935943603516,
+            29.310943603515625,
+            36.80803298950195,
+            23.360288619995117
+          ],
+          "free_bytes_after_close": 14156824576,
+          "free_bytes_before": 14156824576,
+          "input": "float32 zero [1,9,7168]",
+          "iterations": 7,
+          "last_selected_expert_ids": [
+            728,
+            878,
+            28,
+            122,
+            814,
+            287,
+            4,
+            475,
+            297,
+            107,
+            866,
+            546,
+            467,
+            544,
+            778,
+            189
+          ],
+          "measured_device_ms": 229.84589004516602,
+          "measured_wall_ms": 241.2585,
+          "output_fingerprint": "sha256:f04993ef97d6659709c4fcd6d7d95df637093b52cd06a4893ac0701c14926511",
+          "output_finite": true,
+          "research_records_removed": true,
+          "serving_execute_count_restored": true,
+          "temporary_device_bytes": 8388608,
+          "temporary_memory_recovered": true
+        },
+        "temporary_device_bytes": 8388608,
+        "temporary_memory_recovered": true,
+        "total_measured_wall_ms": 241.2585
+      },
+      "prepare_warmup_count": 1,
+      "resident_device_bytes": 18272485376,
+      "resident_expert_count": 896,
+      "session_close_count": 1,
+      "session_open_count": 1,
+      "tracked_device_bytes": 16121007360,
+      "weight_fingerprint": "sha256:3f75cb42b481a2411696ad288a83b26ebe26918fa63653d09e47780dc02e26a0",
+      "weight_load_count": 1
+    },
+    "resident_device_bytes": 18272485376,
+    "weight_fingerprint": "sha256:3f75cb42b481a2411696ad288a83b26ebe26918fa63653d09e47780dc02e26a0"
+  },
+  "oracle_provenance": {
+    "certified_routes_sha256": "c734d864e8ac40ada5fd1fbd6c64da5959b9610561313ec63e7b79a499a91288",
+    "certified_trace_sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d",
+    "configured_routes_sha256": "c734d864e8ac40ada5fd1fbd6c64da5959b9610561313ec63e7b79a499a91288",
+    "configured_trace_sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d",
+    "graph_status": "PASS",
+    "pass": true
+  },
+  "progress": [
+    {
+      "phase": "preregistered"
+    },
+    {
+      "phase": "gpu_health_before",
+      "status": "MEASURED"
+    },
+    {
+      "accepted": true,
+      "phase": "production_stage_loaded_and_prepared",
+      "resident_device_bytes": 18272485376
+    },
+    {
+      "phase": "serial_baseline",
+      "status": "PASS"
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "armed_batch_1",
+      "prior_batches_passed": []
+    },
+    {
+      "cuda_error_state_ok": true,
+      "device_p50_ms": 3.2717760801315308,
+      "effective_weight_reuse": 1.0,
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_1_persisted_and_checked",
+      "status": "PASS",
+      "throughput_gain": 0.9289388951187778
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "armed_batch_2",
+      "prior_batches_passed": [
+        1
+      ]
+    },
+    {
+      "cuda_error_state_ok": true,
+      "device_p50_ms": 6.374207973480225,
+      "effective_weight_reuse": 1.177336276674025,
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_2_persisted_and_checked",
+      "status": "PASS",
+      "throughput_gain": 0.953618102703363
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "armed_batch_4",
+      "prior_batches_passed": [
+        1,
+        2
+      ]
+    },
+    {
+      "cuda_error_state_ok": true,
+      "device_p50_ms": 11.615935802459717,
+      "effective_weight_reuse": 1.5065913370998116,
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_4_persisted_and_checked",
+      "status": "PASS",
+      "throughput_gain": 1.0465898257839379
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "armed_batch_8",
+      "prior_batches_passed": [
+        1,
+        2,
+        4
+      ]
+    },
+    {
+      "cuda_error_state_ok": true,
+      "device_p50_ms": 21.182432174682617,
+      "effective_weight_reuse": 2.088772845953003,
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_8_persisted_and_checked",
+      "status": "PASS",
+      "throughput_gain": 1.1478493241530585
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "armed_batch_16",
+      "prior_batches_passed": [
+        1,
+        2,
+        4,
+        8
+      ]
+    },
+    {
+      "cuda_error_state_ok": true,
+      "device_p50_ms": 39.38347244262695,
+      "effective_weight_reuse": 3.34290937581614,
+      "nvidia_smi": "MEASURED",
+      "phase": "batch_16_persisted_and_checked",
+      "status": "FAIL",
+      "throughput_gain": 1.2347433554036118
+    }
+  ],
+  "schema_version": "experiment-014-k3-complete-stage-static-batch-v1",
+  "serial_baseline": {
+    "device": {
+      "maximum_ms": 3.6267518997192383,
+      "mean_ms": 3.089181451797485,
+      "minimum_ms": 3.0200960636138916,
+      "p50_ms": 3.03928005695343,
+      "p95_ms": 3.4011808395385743,
+      "p99_ms": 3.5287833023071284,
+      "standard_deviation_ms": 0.12483346617996664
+    },
+    "lifecycle_delta": {
+      "model_materialization_count": 0,
+      "persistent_buffer_allocation_count": 0,
+      "weight_load_count": 0
+    },
+    "lifecycle_deltas_zero": true,
+    "oracle_correctness": {
+      "maximum_relative_l2_error": 6.138932386793345e-08,
+      "pass": true,
+      "positions": [
+        {
+          "expected_expert_ids": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "expected_output_fingerprint": "sha256:1b980cae255ae8b83acd428124edde87b3158e1200fc78a594852a34cda00bdb",
+          "metrics": {
+            "actual_finite": true,
+            "actual_l2": 813.3831091340937,
+            "cosine_similarity": 0.9999999999999981,
+            "maximum_absolute_error": 5.7220458984375e-06,
+            "mean_absolute_error": 4.672126254133348e-08,
+            "reference_finite": true,
+            "reference_l2": 813.3831033969739,
+            "relative_l2_error": 6.138932386793345e-08
+          },
+          "output_fingerprint": "sha256:4f848b37deb0737875aa04c81c2f6495b3ec45b1c1d012ff8c17bef05f8765e7",
+          "position": 0,
+          "routing_equality": true,
+          "selected_expert_ids": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ]
+        },
+        {
+          "expected_expert_ids": [
+            888,
+            692,
+            62,
+            757,
+            263,
+            832,
+            662,
+            504,
+            777,
+            895,
+            885,
+            51,
+            756,
+            399,
+            569,
+            478
+          ],
+          "expected_output_fingerprint": "sha256:8b3f03db5246f3758ab33fb9b26f964e4f4ada7cf1b3f1375d09ffc06badb089",
+          "metrics": {
+            "actual_finite": true,
+            "actual_l2": 508.71272621465295,
+            "cosine_similarity": 0.9999999999999997,
+            "maximum_absolute_error": 1.1324882507324219e-06,
+            "mean_absolute_error": 1.2991828649925688e-08,
+            "reference_finite": true,
+            "reference_l2": 508.7127262470154,
+            "relative_l2_error": 2.7285223964230174e-08
+          },
+          "output_fingerprint": "sha256:c2f66b700674e724147331d90c5f0a754eaad9e46dcc625132f40bafaa049c98",
+          "position": 1,
+          "routing_equality": true,
+          "selected_expert_ids": [
+            888,
+            692,
+            62,
+            757,
+            263,
+            832,
+            662,
+            504,
+            777,
+            895,
+            885,
+            51,
+            756,
+            399,
+            569,
+            478
+          ]
+        },
+        {
+          "expected_expert_ids": [
+            832,
+            186,
+            756,
+            888,
+            62,
+            692,
+            51,
+            777,
+            569,
+            757,
+            504,
+            624,
+            885,
+            31,
+            350,
+            263
+          ],
+          "expected_output_fingerprint": "sha256:d9cf4c4ac2531ee8cde49046776e402aa7fe0081d9bc873c488ce015df9989ab",
+          "metrics": {
+            "actual_finite": true,
+            "actual_l2": 225.2154577849402,
+            "cosine_similarity": 0.9999999999999996,
+            "maximum_absolute_error": 9.5367431640625e-07,
+            "mean_absolute_error": 7.150447345338762e-09,
+            "reference_finite": true,
+            "reference_l2": 225.2154576687332,
+            "relative_l2_error": 3.129239101929135e-08
+          },
+          "output_fingerprint": "sha256:70e4df302a7910b8eaac327f3df3d533375cfef493f98c5a968d31764bef5a88",
+          "position": 2,
+          "routing_equality": true,
+          "selected_expert_ids": [
+            832,
+            186,
+            756,
+            888,
+            62,
+            692,
+            51,
+            777,
+            569,
+            757,
+            504,
+            624,
+            885,
+            31,
+            350,
+            263
+          ]
+        }
+      ]
+    },
+    "retained_iterations": 50,
+    "rows_per_second_at_device_p50": 329.02528929907123,
+    "state": {
+      "attention_type": "KDA",
+      "bytes": 6881280,
+      "cache_sequence_length": 60,
+      "fingerprint": "sha256:8c36ac08c8fd75950b7002226e1010199dd7d5cdaab00c252dc884bbb0935ef7",
+      "finite": true,
+      "nonzero_prefix": true,
+      "zero_suffix": true
+    },
+    "status": "PASS",
+    "wall": {
+      "maximum_ms": 3.8822,
+      "mean_ms": 3.2900240000000003,
+      "minimum_ms": 3.2011,
+      "p50_ms": 3.2375499999999997,
+      "p95_ms": 3.604375,
+      "p99_ms": 3.7603859999999996,
+      "standard_deviation_ms": 0.13346648502152145
+    },
+    "warmup_iterations": 10
+  },
+  "sources": {
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "cuda_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-028d-b16-candidate.dll",
+      "sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff"
+    },
+    "graph_certification": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-027w-regression-full-93-layer.json",
+      "sha256": "0c0a655a0f577d17b0bf68b81fff676cb42f225425b7800c839a86469cc74199"
+    },
+    "identity_manifest": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\h014-026b-model-identity.json",
+      "sha256": "f41ddaf2972e2a8f5b91a03a1f925382b683aa7014de9944f543e7bc045adb66"
+    },
+    "oracle_routes": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0\\routes.txt",
+      "sha256": "c734d864e8ac40ada5fd1fbd6c64da5959b9610561313ec63e7b79a499a91288"
+    },
+    "oracle_trace": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0\\hidden-trace.f32",
+      "sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d"
+    }
+  },
+  "status": "FAIL"
+}

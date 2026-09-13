@@ -1,0 +1,81 @@
+{
+  "e021_secondary_measurement": "Before any speculative headline, run the frozen DSpark revision on the preregistered coding, math, chat, and creative prompts; record the exact accepted-length histogram for block 7/12/16 plus GPU draft, commit, and rollback latency. Target-only remains the primary gate.",
+  "existing_acceptance_evidence": {
+    "experiment_015_status": "INCOMPLETE",
+    "measurement_count": 0,
+    "public_reference_mean_block7": 3.85,
+    "public_reference_not_swarm": true
+  },
+  "reason_not_blocking_primary_readiness": "The E021 primary acceptance gate is target-only >=5 real Kimi K3 tokens/s/user; speculative decoding runs only after that gate.",
+  "rows": [
+    {
+      "acceptance_length_distribution": {
+        "1": 0.4,
+        "2": 0.3,
+        "3": 0.2,
+        "4": 0.1
+      },
+      "block": 7,
+      "cycle_latency_ms": 889.4773670418743,
+      "draft_latency_evidence": "E015 CPU BF16 DSpark correctness reference; stale/inadequate as production latency",
+      "draft_latency_ms": 200.40960000187624,
+      "mean_output_tokens_per_cycle": 2.0,
+      "passes_5_tok_s": false,
+      "predicted": true,
+      "predicted_real_output_tok_s_per_user": 2.248511400184784,
+      "rollback_commit_ms": 0.35000000000000003,
+      "scenario": "conservative_scenario",
+      "scientific_result": false,
+      "target_latency_evidence": "E020 bottom-up worker-level PREDICTED",
+      "target_verify_latency_ms": 688.7177670399981
+    },
+    {
+      "acceptance_length_distribution": {
+        "1": 0.1,
+        "2": 0.15,
+        "3": 0.2,
+        "4": 0.2,
+        "5": 0.15,
+        "6": 0.12,
+        "7": 0.08
+      },
+      "block": 7,
+      "cycle_latency_ms": 889.4773670418743,
+      "draft_latency_evidence": "E015 CPU BF16 DSpark correctness reference; stale/inadequate as production latency",
+      "draft_latency_ms": 200.40960000187624,
+      "mean_output_tokens_per_cycle": 3.8299999999999996,
+      "passes_5_tok_s": false,
+      "predicted": true,
+      "predicted_real_output_tok_s_per_user": 4.305899331353861,
+      "rollback_commit_ms": 0.35000000000000003,
+      "scenario": "public_reference_scenario",
+      "scientific_result": false,
+      "target_latency_evidence": "E020 bottom-up worker-level PREDICTED",
+      "target_verify_latency_ms": 688.7177670399981
+    },
+    {
+      "acceptance_length_distribution": {
+        "3": 0.1,
+        "4": 0.15,
+        "5": 0.2,
+        "6": 0.25,
+        "7": 0.3
+      },
+      "block": 7,
+      "cycle_latency_ms": 889.4773670418743,
+      "draft_latency_evidence": "E015 CPU BF16 DSpark correctness reference; stale/inadequate as production latency",
+      "draft_latency_ms": 200.40960000187624,
+      "mean_output_tokens_per_cycle": 5.5,
+      "passes_5_tok_s": true,
+      "predicted": true,
+      "predicted_real_output_tok_s_per_user": 6.1834063505081565,
+      "rollback_commit_ms": 0.35000000000000003,
+      "scenario": "optimistic_scenario",
+      "scientific_result": false,
+      "target_latency_evidence": "E020 bottom-up worker-level PREDICTED",
+      "target_verify_latency_ms": 688.7177670399981
+    }
+  ],
+  "schema_version": "experiment-020-speculative-overhead-v1",
+  "status": "SCENARIO_ONLY_ACCEPTANCE_UNVALIDATED"
+}

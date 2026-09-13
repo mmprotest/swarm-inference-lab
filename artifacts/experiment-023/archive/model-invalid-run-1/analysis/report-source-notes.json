@@ -1,0 +1,131 @@
+{
+  "audience": "technical",
+  "chart_map": [
+    {
+      "chart_id": 1,
+      "chart_type": "ranked dot plot",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "comparison-and-ranking",
+      "fields": "inventory_id; efficiency_uplift_percent",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-01-efficiency-uplift.png",
+      "question": "Which headline inventories clear the 20% SLO efficiency threshold?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "Diagnostic distribution and 20% reference",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 2,
+      "chart_type": "ranked dot plot",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "comparison-and-ranking",
+      "fields": "inventory_id; throughput_uplift_percent",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-02-throughput-uplift.png",
+      "question": "Does FLEX_POOL preserve raw SLO throughput?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "Diagnostic raw-throughput changes and zero reference",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 3,
+      "chart_type": "faceted scatter",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "relationship",
+      "fields": "arm; family; abstract_node_cost; slo_target_rows_per_second",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-03-throughput-vs-cost.png",
+      "question": "How do the five architectures trade SLO throughput against abstract cost?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "Cross-arm cost and throughput envelope",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 4,
+      "chart_type": "labeled scatter",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "relationship",
+      "fields": "replica_resident_gib; efficiency_uplift_percent; family",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-04-replica-memory-vs-uplift.png",
+      "question": "Is replica memory associated with diagnostic efficiency uplift?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "Memory footprint versus modeled uplift",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 5,
+      "chart_type": "strip plot with median",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "distribution",
+      "fields": "family; efficiency_uplift_percent",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-05-family-summary.png",
+      "question": "How does diagnostic uplift vary by preregistered family?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "Within-family observations and medians",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 6,
+      "chart_type": "faceted line",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "trend",
+      "fields": "inventory_id; concurrency; target_rows_per_second; arm",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-06-saturation-curves.png",
+      "question": "Where do U_STRONG and FLEX_POOL saturate?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "Full five-point concurrency ladder",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 7,
+      "chart_type": "faceted heatmap",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "matrix-and-cohort",
+      "fields": "inventory_id; layer_id; logical_group_id; alternate_selection_rate",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-07-replica-selection.png",
+      "question": "Which flexible logical groups actually select alternates?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "Physical-copy choice while preserving logical identity",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 8,
+      "chart_type": "explicit no-data status panel",
+      "evidence_status": "DIAGNOSTIC_NOT_PROMOTABLE",
+      "family": "uncertainty-and-benchmark",
+      "fields": "none; phase stopped before execution",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-08-hedging-tail-tradeoff.png",
+      "question": "What was the hedging p95/compute trade-off?",
+      "source": "deterministic-run-1 diagnostic artifacts",
+      "supported_takeaway": "No hedging conclusion exists",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    }
+  ],
+  "comparison_basis": "FLEX_POOL versus U_STRONG at the 2.0x latency budget",
+  "decision_useful_answer": "The question is unanswered because a mandatory negative-control planner gate failed; the mechanical verdict is MODEL_INVALID.",
+  "delivery_surface": "user-mandated Markdown report",
+  "evidence_omissions": {
+    "deterministic_rerun": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE",
+    "full_correctness": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE",
+    "hedging": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE",
+    "primary_only_with_replica_cost": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE",
+    "static_copy_choice": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE"
+  },
+  "question": "Can exact sparse WHOLE_EXPERT:p8 optionality create a >=20% latency-constrained efficiency wedge over U_STRONG?",
+  "report_structure_mapping": {
+    "further_questions": "Merged into What E023 Does Not Prove because the frozen MODEL_INVALID decision tree prescribes one next action.",
+    "key_findings_with_visual_evidence": "Primary Results through Legacy Network Robustness",
+    "limitations_uncertainty_robustness": "Hedging Diagnostic through Limitations",
+    "methodology": "Strong Unique Baseline + Sparse Flexibility Mechanism",
+    "recommended_next_steps": "Recommendation for Experiment 024",
+    "scope_data_metric_definitions": "Evidence Boundary + Serving Model",
+    "technical_summary": "Verdict + Executive Summary",
+    "title": "Report section 1"
+  },
+  "schema_version": "experiment-023-report-source-notes-v1"
+}

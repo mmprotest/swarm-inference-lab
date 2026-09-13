@@ -1,0 +1,189 @@
+{
+  "arrays": {
+    "expected_logits": {
+      "dtype": "float32",
+      "sha256": "8cd947eb8f2fddda751b0527d81f5f68c306a57c2526fefbcea937d81f590248",
+      "shape": [
+        2,
+        163840
+      ]
+    },
+    "expected_tokens": {
+      "dtype": "int64",
+      "sha256": "b3eb628da64db6bb036304b0b414b0e2b7aea2d98ad41a6a267a9b1d5759ad01",
+      "shape": [
+        3
+      ]
+    },
+    "layer_0_expected_boundary": {
+      "dtype": "float32",
+      "sha256": "a05cf86c6db8e9e06b7b2e7d6ac19b6be517d7a96981e381f9ef26b478e2d4cc",
+      "shape": [
+        3,
+        9,
+        7168
+      ]
+    },
+    "layer_0_expected_routes": {
+      "dtype": "int64",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "shape": [
+        3,
+        0
+      ]
+    },
+    "layer_0_input": {
+      "dtype": "int64",
+      "sha256": "241ae03733a6905632d98380d0b7619d7d7b941acfd852a8011cf7982058be9e",
+      "shape": [
+        3,
+        1
+      ]
+    },
+    "layer_89_expected_boundary": {
+      "dtype": "float32",
+      "sha256": "10dca5ce3a34c3d570ba7462e9ffe3e6cf1c4a8865b90e4d391e59192f256c04",
+      "shape": [
+        3,
+        9,
+        7168
+      ]
+    },
+    "layer_89_expected_routes": {
+      "dtype": "int64",
+      "sha256": "79c8f559d50027c6a80300792e97e683023c7a4181b19afe23c837204c893ab6",
+      "shape": [
+        3,
+        16
+      ]
+    },
+    "layer_89_input": {
+      "dtype": "float32",
+      "sha256": "ea53499a14ea114cae51c5f31fcfeaec73bc576fa88e184f79ead3a9d0ec6b8a",
+      "shape": [
+        3,
+        9,
+        7168
+      ]
+    },
+    "layer_91_expected_boundary": {
+      "dtype": "float32",
+      "sha256": "7a2cd3392a42831c95037f346040d1e0241b536891e1af6af1cc3c7a9a6a124e",
+      "shape": [
+        3,
+        9,
+        7168
+      ]
+    },
+    "layer_91_expected_routes": {
+      "dtype": "int64",
+      "sha256": "764da00bc11b7ef27020f57a4d868d4cc4afdfe70bb967383119db51ad2bf8c5",
+      "shape": [
+        3,
+        16
+      ]
+    },
+    "layer_91_input": {
+      "dtype": "float32",
+      "sha256": "96be08d776dd1d5f36853cd1722642f7d41b702b287990f6b28a22e8a296f0b1",
+      "shape": [
+        3,
+        9,
+        7168
+      ]
+    },
+    "layer_92_expected_final": {
+      "dtype": "float32",
+      "sha256": "0a53810b7cc68c1fd982fbf5e5157428aa0acc38493522a283a668c8035bccf7",
+      "shape": [
+        3,
+        7168
+      ]
+    },
+    "layer_92_expected_layer": {
+      "dtype": "float32",
+      "sha256": "265d98bba9b3f7aaac960cb9e7d26cd3c8548a905e6fa9758e0abb0cbeb13a23",
+      "shape": [
+        3,
+        7168
+      ]
+    },
+    "layer_92_expected_routes": {
+      "dtype": "int64",
+      "sha256": "2c2fbb7f25e8285668e3c2709efd4e7092411e9e214f06f779475524313dea2d",
+      "shape": [
+        3,
+        16
+      ]
+    },
+    "layer_92_input": {
+      "dtype": "float32",
+      "sha256": "7a2cd3392a42831c95037f346040d1e0241b536891e1af6af1cc3c7a9a6a124e",
+      "shape": [
+        3,
+        9,
+        7168
+      ]
+    },
+    "token_ids": {
+      "dtype": "int64",
+      "sha256": "241ae03733a6905632d98380d0b7619d7d7b941acfd852a8011cf7982058be9e",
+      "shape": [
+        3,
+        1
+      ]
+    }
+  },
+  "checkpoint": {
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569"
+  },
+  "fixture_npz": "h014-037b4-physical-canary-fixtures.npz",
+  "fixture_npz_sha256": "e06008bd26a14eec834cc2c4623c5fe0b3dc6752c4ab75d3264a7c1e5926a109",
+  "numerical_gate": {
+    "relative_l2_error_at_most": 3e-05
+  },
+  "oracle_sources": {
+    "logits": {
+      "file": "prefill-logits.f32",
+      "sha256": "8cd947eb8f2fddda751b0527d81f5f68c306a57c2526fefbcea937d81f590248"
+    },
+    "routes": {
+      "file": "routes.txt",
+      "sha256": "c734d864e8ac40ada5fd1fbd6c64da5959b9610561313ec63e7b79a499a91288"
+    },
+    "trace": {
+      "file": "hidden-trace.f32",
+      "sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d"
+    }
+  },
+  "physical_execution_status": "NOT_RUN",
+  "placement_sha256": "943fe0748b055d11f097827bd9e483c3209b6b696bde319e8230083825fda982",
+  "reference_evidence": {
+    "full_graph": {
+      "file": "h014-038-regression-full-93-layer.json",
+      "sha256": "c4a5836ac1c6c576c2675c696faefa92e2f3ae4f836b10a086f92d27ea0fcb57",
+      "status": "PASS"
+    },
+    "operation_matrix": {
+      "file": "k3-cuda-operation-matrix.json",
+      "sha256": "405fd8b49b8036a6ba1bc165a915f3c5c2a9e4a888e6330cfcc8099d0f52e8ec",
+      "status": "PASS"
+    },
+    "sm86": {
+      "file": "rtx3090-sm86-certification.json",
+      "sha256": "799499fdfa0f7a5f86d71e30f44a451deb7918506982dbabdbe28c3f858eb2c9",
+      "status": "PASS"
+    }
+  },
+  "roles": {
+    "final_norm_head_sampling": 92,
+    "gated_mla_moe": 91,
+    "kda_moe": 89,
+    "stage_zero_embedding_dense": 0
+  },
+  "schema_version": "experiment-015-k3-physical-canary-fixtures-v1",
+  "status": "PASS"
+}

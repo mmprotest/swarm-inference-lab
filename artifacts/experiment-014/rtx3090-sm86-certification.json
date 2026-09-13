@@ -1,0 +1,491 @@
+{
+  "artifact_contract": {
+    "blackwell_cubin_absent": true,
+    "compute86_ptx": true,
+    "required_symbols": {
+      "attention_absorb_kernel": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "grouped_down_g4": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "grouped_hidden_g4_dual": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "kimi_attnres_mix": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "kimi_embedding_bf16": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "kimi_kda_core": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "kimi_mla_sigmoid_gate": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "kimi_situ_mul": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "mxfp4_matmul_pair": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "pipe_rmsnorm_rows": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "pipe_router_logits": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "pipe_router_select": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "quant_matmul": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      },
+      "weighted_sum_rows": {
+        "compute86_ptx": true,
+        "sm86_cubin_sass": true
+      }
+    },
+    "sm86_cubin": true
+  },
+  "generated_at_utc": "2026-08-11T23:31:35.094965+00:00",
+  "operations": [
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "attention_absorb_kernel": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "kimi_mla_sigmoid_gate": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "pipe_rmsnorm_rows": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "quant_matmul": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_complete_kimi_gated_mla",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-mla-stage.json",
+            "schema_version": "experiment-014-k3-cuda-real-mla-stage-v1",
+            "sha256": "97624dfcd02c4260d75e000d14536fad731054c4af2a6eb04d77d0cd7137b114"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "latent_cache_relative_l2_error": 2.73625294668951e-07,
+          "maximum_output_relative_l2_error": 5.87921473356043e-07,
+          "repeat_bit_exact": true,
+          "rope_cache_copy_bit_exact": true,
+          "rope_cache_relative_l2_error": 1.6094896944844453e-07
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "adapted CUDA",
+      "kimi_operation": "Gated_MLA",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "kimi_kda_core": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "quant_matmul": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_complete_kimi_kda",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-kda-stage.json",
+            "schema_version": "experiment-014-k3-cuda-real-kda-stage-v1",
+            "sha256": "2dfa7919ac99bef2827096dcfd3d43d531472fff1a64e9c2eda4b09baa6a7ac7"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "maximum_output_relative_l2_error": 9.507436002774015e-07,
+          "repeat_bit_exact": true,
+          "state_relative_l2_error": 2.9055207002808386e-07
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "adapted CUDA",
+      "kimi_operation": "KDA",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "quant_matmul": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_int8_lm_head",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-lm-head.json",
+            "schema_version": "experiment-014-k3-cuda-real-lm-head-v1",
+            "sha256": "cd5fbc091159d597458e988370ec580636421ce249d060da6352b004538af740"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "argmax_token_id": 11,
+          "cuda_vs_serial_relative_l2_error": 2.8845312533539024e-07
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "generic existing CUDA",
+      "kimi_operation": "LM_head",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "kimi_situ_mul": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "mxfp4_matmul_pair": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_direct_dll",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-expert.json",
+            "schema_version": "experiment-014-k3-cuda-real-expert-v1",
+            "sha256": "f9403941323d3b5fef7d81e72510e810f64dd13d0321ade09c1601865dcaed80"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "cosine_similarity": 0.9999999999999252,
+          "relative_l2_error": 3.9036776347743796e-07
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "custom Kimi CUDA",
+      "kimi_operation": "MXFP4_routed_expert",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "weighted_sum_rows": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_fixed_order_moe_reduction",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-moe-reduction.json",
+            "schema_version": "experiment-014-k3-cuda-real-moe-reduction-v1",
+            "sha256": "a67044da1abbee03c5d866cdd1abe79c2dd271f1f4d75dd57ae24e4fd53d6772"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "relative_l2_error": 7.119524142352378e-08,
+          "repeat_bit_exact": true,
+          "routing_equality": true
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "adapted CUDA",
+      "kimi_operation": "MoE_reduction",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "kimi_attnres_mix": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "pipe_rmsnorm_rows": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_kimi_attnres_plus_rmsnorm",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-attnres.json",
+            "schema_version": "experiment-014-k3-cuda-real-attnres-v1",
+            "sha256": "ceae0c61b65d22ee3d8ac91c1d3f09bccfcc423ec520507a2715f1b24cc6325a"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "cuda_vs_serial_relative_l2_error": 1.612132611502946e-08,
+          "repeat_bit_exact": true
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "adapted CUDA",
+      "kimi_operation": "attention_residual",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "quant_matmul": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_grouped_int4",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-dense-small.json",
+            "schema_version": "experiment-014-k3-cuda-real-dense-v1",
+            "sha256": "7241fc153806ddebce37c6c9f58ec39769b738e81493081fce0cf5e94422f236"
+          },
+          {
+            "backend_identity": "nvidia_cuda_device_resident_grouped_int4",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-dense-large.json",
+            "schema_version": "experiment-014-k3-cuda-real-dense-v1",
+            "sha256": "f62c7fcd9cf606cb0149f5cab7d44c7a30b4e921ffd1cccc4f4476e0e6e36343"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": [
+          {
+            "cosine_similarity": 0.999999999999915,
+            "dimensions": [
+              128,
+              7168
+            ],
+            "relative_l2_error": 4.1406920685204016e-07
+          },
+          {
+            "cosine_similarity": 0.9999999999999271,
+            "dimensions": [
+              12288,
+              7168
+            ],
+            "relative_l2_error": 3.8320112362431817e-07
+          }
+        ],
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "generic existing CUDA",
+      "kimi_operation": "dense_projection",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "kimi_embedding_bf16": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_bf16_embedding",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-embedding.json",
+            "schema_version": "experiment-014-k3-cuda-real-embedding-v1",
+            "sha256": "ad8bad4b5030c202bbbc42d6173f07e11ff076ada81f4e946e431cfd26ae8174"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "bit_exact": true,
+          "relative_l2_error": 0.0
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "custom Kimi CUDA",
+      "kimi_operation": "embedding",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "pipe_rmsnorm_rows": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_rmsnorm",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-final-norm.json",
+            "schema_version": "experiment-014-k3-cuda-real-final-norm-v1",
+            "sha256": "5b7b8e67f91bb5a4fe2c1386b289313749736c11c53c5013f1eb105e396174c5"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "cosine_similarity": 0.9999999999999994,
+          "relative_l2_error": 8.90105482789867e-08
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "generic existing CUDA",
+      "kimi_operation": "final_norm",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "pipe_router_logits": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "pipe_router_select": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_router",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-router.json",
+            "schema_version": "experiment-014-k3-cuda-router-v1",
+            "sha256": "2d48e0058e497dd197d740b72619d1d469d0cfdb15e1056d962bd596a0f1231e"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "routing_equality": true,
+          "selected_expert_ids": [
+            878,
+            704,
+            325,
+            513,
+            468,
+            805,
+            788,
+            187,
+            83,
+            142,
+            412,
+            533,
+            84,
+            263,
+            564,
+            144
+          ],
+          "selected_weight_relative_l2_error": 1.3975632748966042e-07
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "generic existing CUDA",
+      "kimi_operation": "router",
+      "status": "CERTIFIED"
+    },
+    {
+      "blocker": null,
+      "evidence": {
+        "artifact_contract": {
+          "grouped_down_g4": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          },
+          "grouped_hidden_g4_dual": {
+            "compute86_ptx": true,
+            "sm86_cubin_sass": true
+          }
+        },
+        "benchmarks": [
+          {
+            "backend_identity": "nvidia_cuda_device_resident_grouped_int4_situ",
+            "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-shared-expert.json",
+            "schema_version": "experiment-014-k3-cuda-real-shared-expert-v1",
+            "sha256": "89ddf42342dd890dbe3014f0bbe281be7c3f08e6126ca120d079ed5008167f1e"
+          }
+        ],
+        "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+        "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "numerical": {
+          "cosine_similarity": 0.9999999999997993,
+          "relative_l2_error": 6.356483827111398e-07
+        },
+        "physical_sm86_execution": false,
+        "physical_validation": "Experiment 015 single-RTX-3090 canary"
+      },
+      "implementation_kind": "adapted CUDA",
+      "kimi_operation": "shared_experts",
+      "status": "CERTIFIED"
+    }
+  ],
+  "schema_version": "experiment-014-rtx3090-sm86-certification-v2",
+  "status": "PASS",
+  "summary": {
+    "blockers": 0,
+    "certified": 11,
+    "critical_operation_classes": 11,
+    "fallback_certified": 0,
+    "physical_sm86_execution_deferred_to_canary": true
+  },
+  "target": {
+    "binary": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+    "binary_bytes": 792576,
+    "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+    "compute_capability": "sm_86",
+    "gpu_class": "RTX 3090",
+    "physical_sm86_execution": false,
+    "physical_validation": "Experiment 015 single-RTX-3090 canary"
+  }
+}

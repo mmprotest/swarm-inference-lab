@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-08-19T08:17:55.080359+00:00",
+  "machine_ids": [
+    140510
+  ],
+  "policy": "exclude a physical machine after any prior instance for this stage failed authenticated WORKER_READY or participated in a frozen physical canary receipt whose status was not PASS",
+  "schema_version": "experiment-025-failed-machine-exclusions-v1",
+  "sources": [
+    {
+      "machine_id": 140510,
+      "observations": [
+        {
+          "instance_id": 48083296,
+          "offer_id": 46117245,
+          "physical_failure_receipt": null,
+          "reason": "prior instance never reached WORKER_READY",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-001-three-ready-ttl-abort"
+        }
+      ]
+    }
+  ],
+  "stage_prefix": "stage-2-sub-layer-canary"
+}

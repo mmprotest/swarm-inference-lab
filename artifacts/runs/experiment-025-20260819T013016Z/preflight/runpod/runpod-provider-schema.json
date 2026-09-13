@@ -1,0 +1,128 @@
+{
+  "captured_at_utc": "2026-08-28T04:37:18.437806+00:00",
+  "cli_invocations": [
+    {
+      "arguments": [
+        "version"
+      ],
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "arguments": [
+        "--help"
+      ],
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "arguments": [
+        "gpu",
+        "list",
+        "--include-unavailable",
+        "--output",
+        "json"
+      ],
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "arguments": [
+        "datacenter",
+        "list",
+        "--output",
+        "json"
+      ],
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "arguments": [
+        "pod",
+        "list",
+        "--all",
+        "--output",
+        "json"
+      ],
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "arguments": [
+        "network-volume",
+        "list",
+        "--output",
+        "json"
+      ],
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "arguments": [
+        "user",
+        "--output",
+        "json"
+      ],
+      "returncode": 0,
+      "stderr": ""
+    }
+  ],
+  "graphql_audit": [
+    {
+      "authenticated": false,
+      "method": "POST",
+      "operation": "GRAPHQL_QUERY",
+      "payload": {
+        "operationName": "E025ReadOnlyGpuMatrix",
+        "query": "query E025ReadOnlyGpuMatrix { g0: gpuTypes(input: { id: \"NVIDIA GeForce RTX 3090\" }) { id displayName memoryInGb s1: lowestPrice(input: { gpuCount: 1, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c1: lowestPrice(input: { gpuCount: 1, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s2: lowestPrice(input: { gpuCount: 2, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c2: lowestPrice(input: { gpuCount: 2, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s3: lowestPrice(input: { gpuCount: 3, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c3: lowestPrice(input: { gpuCount: 3, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s4: lowestPrice(input: { gpuCount: 4, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c4: lowestPrice(input: { gpuCount: 4, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s5: lowestPrice(input: { gpuCount: 5, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c5: lowestPrice(input: { gpuCount: 5, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s6: lowestPrice(input: { gpuCount: 6, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c6: lowestPrice(input: { gpuCount: 6, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s7: lowestPrice(input: { gpuCount: 7, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c7: lowestPrice(input: { gpuCount: 7, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s8: lowestPrice(input: { gpuCount: 8, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c8: lowestPrice(input: { gpuCount: 8, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } } g1: gpuTypes(input: { id: \"NVIDIA GeForce RTX 3090 Ti\" }) { id displayName memoryInGb s1: lowestPrice(input: { gpuCount: 1, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c1: lowestPrice(input: { gpuCount: 1, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s2: lowestPrice(input: { gpuCount: 2, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c2: lowestPrice(input: { gpuCount: 2, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s3: lowestPrice(input: { gpuCount: 3, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c3: lowestPrice(input: { gpuCount: 3, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s4: lowestPrice(input: { gpuCount: 4, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c4: lowestPrice(input: { gpuCount: 4, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s5: lowestPrice(input: { gpuCount: 5, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c5: lowestPrice(input: { gpuCount: 5, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s6: lowestPrice(input: { gpuCount: 6, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c6: lowestPrice(input: { gpuCount: 6, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s7: lowestPrice(input: { gpuCount: 7, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c7: lowestPrice(input: { gpuCount: 7, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s8: lowestPrice(input: { gpuCount: 8, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c8: lowestPrice(input: { gpuCount: 8, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } } g2: gpuTypes(input: { id: \"NVIDIA GeForce RTX 3070\" }) { id displayName memoryInGb s1: lowestPrice(input: { gpuCount: 1, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c1: lowestPrice(input: { gpuCount: 1, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s2: lowestPrice(input: { gpuCount: 2, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c2: lowestPrice(input: { gpuCount: 2, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s3: lowestPrice(input: { gpuCount: 3, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c3: lowestPrice(input: { gpuCount: 3, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s4: lowestPrice(input: { gpuCount: 4, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c4: lowestPrice(input: { gpuCount: 4, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s5: lowestPrice(input: { gpuCount: 5, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c5: lowestPrice(input: { gpuCount: 5, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s6: lowestPrice(input: { gpuCount: 6, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c6: lowestPrice(input: { gpuCount: 6, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s7: lowestPrice(input: { gpuCount: 7, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c7: lowestPrice(input: { gpuCount: 7, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s8: lowestPrice(input: { gpuCount: 8, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c8: lowestPrice(input: { gpuCount: 8, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } } g3: gpuTypes(input: { id: \"NVIDIA GeForce RTX 3080\" }) { id displayName memoryInGb s1: lowestPrice(input: { gpuCount: 1, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c1: lowestPrice(input: { gpuCount: 1, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s2: lowestPrice(input: { gpuCount: 2, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c2: lowestPrice(input: { gpuCount: 2, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s3: lowestPrice(input: { gpuCount: 3, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c3: lowestPrice(input: { gpuCount: 3, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s4: lowestPrice(input: { gpuCount: 4, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c4: lowestPrice(input: { gpuCount: 4, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s5: lowestPrice(input: { gpuCount: 5, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c5: lowestPrice(input: { gpuCount: 5, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s6: lowestPrice(input: { gpuCount: 6, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c6: lowestPrice(input: { gpuCount: 6, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s7: lowestPrice(input: { gpuCount: 7, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c7: lowestPrice(input: { gpuCount: 7, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s8: lowestPrice(input: { gpuCount: 8, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c8: lowestPrice(input: { gpuCount: 8, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } } g4: gpuTypes(input: { id: \"NVIDIA GeForce RTX 3080 Ti\" }) { id displayName memoryInGb s1: lowestPrice(input: { gpuCount: 1, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c1: lowestPrice(input: { gpuCount: 1, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s2: lowestPrice(input: { gpuCount: 2, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c2: lowestPrice(input: { gpuCount: 2, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s3: lowestPrice(input: { gpuCount: 3, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c3: lowestPrice(input: { gpuCount: 3, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s4: lowestPrice(input: { gpuCount: 4, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c4: lowestPrice(input: { gpuCount: 4, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s5: lowestPrice(input: { gpuCount: 5, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c5: lowestPrice(input: { gpuCount: 5, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s6: lowestPrice(input: { gpuCount: 6, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c6: lowestPrice(input: { gpuCount: 6, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s7: lowestPrice(input: { gpuCount: 7, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c7: lowestPrice(input: { gpuCount: 7, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } s8: lowestPrice(input: { gpuCount: 8, secureCloud: true }) { stockStatus uninterruptablePrice availableGpuCounts } c8: lowestPrice(input: { gpuCount: 8, secureCloud: false }) { stockStatus uninterruptablePrice availableGpuCounts } } }"
+      },
+      "url": "https://api.runpod.io/graphql"
+    }
+  ],
+  "official_documentation": {
+    "environment": "https://docs.runpod.io/pods/templates/environment-variables",
+    "global_networking": "https://docs.runpod.io/pods/networking",
+    "graphql_gpu_inventory": "https://docs.runpod.io/sdks/graphql/manage-pods",
+    "pricing": "https://docs.runpod.io/pods/pricing",
+    "rest_create": "https://docs.runpod.io/api-reference/pods/POST/pods",
+    "rest_delete": "https://docs.runpod.io/api-reference/pods/DELETE/pods/podId"
+  },
+  "provider_compute_mutations": [],
+  "provider_mode": {
+    "cli_acknowledged": false,
+    "environment_acknowledged": false,
+    "mode": "READ_ONLY_PREPARATION",
+    "paid_mutations_enabled": false
+  },
+  "schema_version": "experiment-025-runpod-provider-schema-v1",
+  "status": "PASS",
+  "surfaces": {
+    "graphql": {
+      "mutations_called": false,
+      "queries_only": true,
+      "query_fields": [
+        "gpuTypes",
+        "lowestPrice",
+        "stockStatus",
+        "uninterruptablePrice",
+        "availableGpuCounts"
+      ],
+      "url": "https://api.runpod.io/graphql"
+    },
+    "operator_cli": {
+      "read_only_facade": true,
+      "version": "runpodctl 2.11.0-0592468"
+    },
+    "rest_v1": {
+      "base_url": "https://rest.runpod.io/v1",
+      "create_not_called": true,
+      "lifecycle": [
+        "POST /pods",
+        "GET /pods",
+        "GET /pods/{id}",
+        "DELETE /pods/{id}"
+      ],
+      "terminate_after_field_observed": false
+    }
+  }
+}

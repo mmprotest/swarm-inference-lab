@@ -1,0 +1,28 @@
+{
+  "command": [
+    "docker",
+    "run",
+    "--rm",
+    "--gpus",
+    "all",
+    "--shm-size",
+    "16g",
+    "--ipc=host",
+    "-v",
+    "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab:/workspace",
+    "-v",
+    "C:\\Users\\Simon\\.cache\\huggingface:/root/.cache/huggingface",
+    "--entrypoint",
+    "python3",
+    "vllm/vllm-openai:v0.25.1",
+    "/workspace/scripts/vllm_engine_benchmark.py",
+    "--job",
+    "/workspace/artifacts/benchmarks/experiment-004/vllm-64-probe/logs/jobs/vllm-64.job.json",
+    "--output",
+    "/workspace/artifacts/benchmarks/experiment-004/vllm-64-probe/logs/jobs/vllm-64.result.json"
+  ],
+  "cwd": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab",
+  "finished_unix_seconds": 1785459385.719967,
+  "return_code": 1,
+  "started_unix_seconds": 1785459358.229464
+}

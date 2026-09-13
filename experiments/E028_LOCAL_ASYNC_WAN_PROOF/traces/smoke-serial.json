@@ -1,0 +1,2942 @@
+{
+  "k": 0,
+  "w": 1,
+  "committed_tokens": [
+    248068,
+    198,
+    760,
+    1156,
+    369,
+    6992,
+    310,
+    264,
+    491,
+    3177,
+    321,
+    3133,
+    494,
+    2046,
+    13,
+    2302,
+    1318,
+    264,
+    24679,
+    1118,
+    21598,
+    13618,
+    421,
+    37568,
+    2250,
+    2433,
+    25,
+    6236,
+    1208,
+    11,
+    48782,
+    11
+  ],
+  "token_sha256": "96dcfba4c97e126b547e002d69b636bdc824a7592318181c4fcbe52c9035ea95",
+  "prefill": {
+    "target": [
+      [
+        {
+          "compute_ms": 77.1639,
+          "service_ms": 78.6693,
+          "server_total_ms": 77.7396,
+          "deserialize_ms": 0.0036,
+          "serialize_and_state_ms": 0.5721,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 248,
+          "response_bytes": 983128,
+          "input_bytes": 192,
+          "output_bytes": 983040,
+          "start_ms": 458.62550000310875,
+          "end_ms": 537.8818000026513,
+          "rows": 48
+        },
+        {
+          "compute_ms": 77.2711,
+          "service_ms": 79.8485,
+          "server_total_ms": 78.6049,
+          "deserialize_ms": 0.238,
+          "serialize_and_state_ms": 1.0958,
+          "client_header_serialize_ms": 0.0027,
+          "request_bytes": 983096,
+          "response_bytes": 983128,
+          "input_bytes": 983040,
+          "output_bytes": 983040,
+          "start_ms": 538.1486999976914,
+          "end_ms": 618.9210000156891,
+          "rows": 48
+        },
+        {
+          "compute_ms": 64.8273,
+          "service_ms": 82.08,
+          "server_total_ms": 81.1261,
+          "deserialize_ms": 0.1767,
+          "serialize_and_state_ms": 16.1221,
+          "client_header_serialize_ms": 0.0023,
+          "request_bytes": 983096,
+          "response_bytes": 983512,
+          "input_bytes": 983040,
+          "output_bytes": 983424,
+          "start_ms": 619.2944000067655,
+          "end_ms": 702.3172999906819,
+          "rows": 48
+        }
+      ]
+    ],
+    "draft": [
+      {
+        "compute_ms": 40.6973,
+        "service_ms": 53.8825,
+        "server_total_ms": 53.0697,
+        "deserialize_ms": 0.2508,
+        "serialize_and_state_ms": 12.1216,
+        "client_header_serialize_ms": 0.0028,
+        "request_bytes": 983288,
+        "response_bytes": 983512,
+        "input_bytes": 983232,
+        "output_bytes": 983424,
+        "start_ms": 702.945400000317,
+        "end_ms": 757.8670000075363,
+        "rows": 48
+      }
+    ]
+  },
+  "prefill_ms": 758.2607000076678,
+  "elapsed_ms": 909.7060000058264,
+  "total_ms": 1667.96710001654,
+  "protocol_version": "compound-cached-rollback-v2",
+  "chunks": [
+    {
+      "id": 0,
+      "epoch": 0,
+      "parent": null,
+      "position": 48,
+      "tokens": [
+        248068
+      ],
+      "launch_dependency": null,
+      "draft": [],
+      "launched_ms": 758.3062000048812,
+      "stages": [
+        {
+          "compute_ms": 19.7215,
+          "service_ms": 20.2971,
+          "server_total_ms": 19.9583,
+          "deserialize_ms": 0.0213,
+          "serialize_and_state_ms": 0.2155,
+          "client_header_serialize_ms": 0.0021,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 758.4120999963488,
+          "end_ms": 778.9964000112377,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 18.3378,
+          "service_ms": 18.569,
+          "server_total_ms": 18.416,
+          "deserialize_ms": 0.0094,
+          "serialize_and_state_ms": 0.0688,
+          "client_header_serialize_ms": 0.0023,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 779.0690000110772,
+          "end_ms": 797.9192000057083,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 18.0274,
+          "service_ms": 18.681,
+          "server_total_ms": 18.5128,
+          "deserialize_ms": 0.0052,
+          "serialize_and_state_ms": 0.4802,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 797.9612000053748,
+          "end_ms": 816.9448999979068,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 816.9612000056077,
+      "decided_ms": 816.9796000001952,
+      "target_greedy": [
+        198
+      ],
+      "rollback": null
+    },
+    {
+      "id": 1,
+      "epoch": 0,
+      "parent": null,
+      "position": 49,
+      "tokens": [
+        198
+      ],
+      "launch_dependency": 0,
+      "draft": [],
+      "launched_ms": 817.0542000152636,
+      "stages": [
+        {
+          "compute_ms": 8.3784,
+          "service_ms": 8.6625,
+          "server_total_ms": 8.4719,
+          "deserialize_ms": 0.0082,
+          "serialize_and_state_ms": 0.0853,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 817.0851000177208,
+          "end_ms": 825.9522000153083,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6403,
+          "service_ms": 8.8449,
+          "server_total_ms": 8.7203,
+          "deserialize_ms": 0.0084,
+          "serialize_and_state_ms": 0.0716,
+          "client_header_serialize_ms": 0.0021,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 825.9866000153124,
+          "end_ms": 835.0167000025976,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.2598,
+          "service_ms": 8.7326,
+          "server_total_ms": 8.5861,
+          "deserialize_ms": 0.0074,
+          "serialize_and_state_ms": 0.3189,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 835.0451000151224,
+          "end_ms": 844.0199000178836,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 844.0314000181388,
+      "decided_ms": 844.0480999997817,
+      "target_greedy": [
+        760
+      ],
+      "rollback": null
+    },
+    {
+      "id": 2,
+      "epoch": 0,
+      "parent": null,
+      "position": 50,
+      "tokens": [
+        760
+      ],
+      "launch_dependency": 1,
+      "draft": [],
+      "launched_ms": 844.0556999994442,
+      "stages": [
+        {
+          "compute_ms": 8.2971,
+          "service_ms": 8.6215,
+          "server_total_ms": 8.3702,
+          "deserialize_ms": 0.0047,
+          "serialize_and_state_ms": 0.0684,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 844.0839000104461,
+          "end_ms": 852.8524000139441,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.9887,
+          "service_ms": 9.2118,
+          "server_total_ms": 9.0663,
+          "deserialize_ms": 0.0246,
+          "serialize_and_state_ms": 0.053,
+          "client_header_serialize_ms": 0.0017,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 852.8778000036255,
+          "end_ms": 862.2806000057608,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9403,
+          "service_ms": 8.5277,
+          "server_total_ms": 8.3024,
+          "deserialize_ms": 0.0291,
+          "serialize_and_state_ms": 0.333,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 862.3050000169314,
+          "end_ms": 871.0279999941122,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 871.0371000051964,
+      "decided_ms": 871.0504000191577,
+      "target_greedy": [
+        1156
+      ],
+      "rollback": null
+    },
+    {
+      "id": 3,
+      "epoch": 0,
+      "parent": null,
+      "position": 51,
+      "tokens": [
+        1156
+      ],
+      "launch_dependency": 2,
+      "draft": [],
+      "launched_ms": 871.0584999935236,
+      "stages": [
+        {
+          "compute_ms": 9.1638,
+          "service_ms": 9.3783,
+          "server_total_ms": 9.2312,
+          "deserialize_ms": 0.0047,
+          "serialize_and_state_ms": 0.0627,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 871.0835000092629,
+          "end_ms": 880.6809000088833,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.7832,
+          "service_ms": 9.1592,
+          "server_total_ms": 8.8849,
+          "deserialize_ms": 0.0295,
+          "serialize_and_state_ms": 0.0722,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 880.7077000092249,
+          "end_ms": 890.0178000039887,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.3622,
+          "service_ms": 8.8907,
+          "server_total_ms": 8.7461,
+          "deserialize_ms": 0.0227,
+          "serialize_and_state_ms": 0.3612,
+          "client_header_serialize_ms": 0.0011,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 890.0340000109281,
+          "end_ms": 899.1295000014361,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 899.1426000138745,
+      "decided_ms": 899.1550999926403,
+      "target_greedy": [
+        369
+      ],
+      "rollback": null
+    },
+    {
+      "id": 4,
+      "epoch": 0,
+      "parent": null,
+      "position": 52,
+      "tokens": [
+        369
+      ],
+      "launch_dependency": 3,
+      "draft": [],
+      "launched_ms": 899.1621000168379,
+      "stages": [
+        {
+          "compute_ms": 8.6907,
+          "service_ms": 8.9176,
+          "server_total_ms": 8.7638,
+          "deserialize_ms": 0.0064,
+          "serialize_and_state_ms": 0.0667,
+          "client_header_serialize_ms": 0.0014,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 899.1865999996662,
+          "end_ms": 908.2950000010896,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.7084,
+          "service_ms": 8.8874,
+          "server_total_ms": 8.775,
+          "deserialize_ms": 0.0053,
+          "serialize_and_state_ms": 0.0613,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 908.3435999928042,
+          "end_ms": 917.4000000057276,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.7157,
+          "service_ms": 9.6012,
+          "server_total_ms": 9.1538,
+          "deserialize_ms": 0.0075,
+          "serialize_and_state_ms": 0.4306,
+          "client_header_serialize_ms": 0.0133,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 917.4249999923632,
+          "end_ms": 927.9274000145961,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 927.943899994716,
+      "decided_ms": 927.9591999948025,
+      "target_greedy": [
+        6992
+      ],
+      "rollback": null
+    },
+    {
+      "id": 5,
+      "epoch": 0,
+      "parent": null,
+      "position": 53,
+      "tokens": [
+        6992
+      ],
+      "launch_dependency": 4,
+      "draft": [],
+      "launched_ms": 927.9680000036024,
+      "stages": [
+        {
+          "compute_ms": 8.3825,
+          "service_ms": 8.5491,
+          "server_total_ms": 8.4389,
+          "deserialize_ms": 0.0027,
+          "serialize_and_state_ms": 0.0537,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 928.0030000081751,
+          "end_ms": 936.7169000033755,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6961,
+          "service_ms": 8.8889,
+          "server_total_ms": 8.7655,
+          "deserialize_ms": 0.006,
+          "serialize_and_state_ms": 0.0634,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 936.7386999947485,
+          "end_ms": 945.7581000169739,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.8338,
+          "service_ms": 8.3085,
+          "server_total_ms": 8.2033,
+          "deserialize_ms": 0.0231,
+          "serialize_and_state_ms": 0.3464,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 945.7748999993782,
+          "end_ms": 954.2550999904051,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 954.2660000151955,
+      "decided_ms": 954.2771000124048,
+      "target_greedy": [
+        310
+      ],
+      "rollback": null
+    },
+    {
+      "id": 6,
+      "epoch": 0,
+      "parent": null,
+      "position": 54,
+      "tokens": [
+        310
+      ],
+      "launch_dependency": 5,
+      "draft": [],
+      "launched_ms": 954.2887000134215,
+      "stages": [
+        {
+          "compute_ms": 8.4203,
+          "service_ms": 8.5544,
+          "server_total_ms": 8.4654,
+          "deserialize_ms": 0.0027,
+          "serialize_and_state_ms": 0.0424,
+          "client_header_serialize_ms": 0.0011,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 954.3131999962498,
+          "end_ms": 962.9990000103135,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.5485,
+          "service_ms": 8.7298,
+          "server_total_ms": 8.6132,
+          "deserialize_ms": 0.0058,
+          "serialize_and_state_ms": 0.0589,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 963.0176000064239,
+          "end_ms": 971.9215999939479,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.2356,
+          "service_ms": 8.7609,
+          "server_total_ms": 8.6158,
+          "deserialize_ms": 0.0047,
+          "serialize_and_state_ms": 0.3755,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 971.9573000038508,
+          "end_ms": 980.9284000075422,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 980.9379999933299,
+      "decided_ms": 980.9501999989152,
+      "target_greedy": [
+        264
+      ],
+      "rollback": null
+    },
+    {
+      "id": 7,
+      "epoch": 0,
+      "parent": null,
+      "position": 55,
+      "tokens": [
+        264
+      ],
+      "launch_dependency": 6,
+      "draft": [],
+      "launched_ms": 980.9572999947704,
+      "stages": [
+        {
+          "compute_ms": 8.8489,
+          "service_ms": 9.4333,
+          "server_total_ms": 9.153,
+          "deserialize_ms": 0.0231,
+          "serialize_and_state_ms": 0.281,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 980.9816000051796,
+          "end_ms": 990.5701999960002,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 9.1182,
+          "service_ms": 9.3559,
+          "server_total_ms": 9.2015,
+          "deserialize_ms": 0.0076,
+          "serialize_and_state_ms": 0.0757,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 990.5902000027709,
+          "end_ms": 1000.1871999993455,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.8619,
+          "service_ms": 8.415,
+          "server_total_ms": 8.2606,
+          "deserialize_ms": 0.0209,
+          "serialize_and_state_ms": 0.3778,
+          "client_header_serialize_ms": 0.0033,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1000.2103000006173,
+          "end_ms": 1008.8414000056218,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1008.851999999024,
+      "decided_ms": 1008.8642000046093,
+      "target_greedy": [
+        491
+      ],
+      "rollback": null
+    },
+    {
+      "id": 8,
+      "epoch": 0,
+      "parent": null,
+      "position": 56,
+      "tokens": [
+        491
+      ],
+      "launch_dependency": 7,
+      "draft": [],
+      "launched_ms": 1008.8721000065561,
+      "stages": [
+        {
+          "compute_ms": 8.4386,
+          "service_ms": 8.6672,
+          "server_total_ms": 8.5322,
+          "deserialize_ms": 0.0069,
+          "serialize_and_state_ms": 0.0867,
+          "client_header_serialize_ms": 0.0011,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1008.8953000085894,
+          "end_ms": 1017.8446999925654,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 9.9964,
+          "service_ms": 11.0455,
+          "server_total_ms": 10.7938,
+          "deserialize_ms": 0.3413,
+          "serialize_and_state_ms": 0.4561,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1017.874600016512,
+          "end_ms": 1029.1585999948438,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.0044,
+          "service_ms": 8.4966,
+          "server_total_ms": 8.3949,
+          "deserialize_ms": 0.0064,
+          "serialize_and_state_ms": 0.3841,
+          "client_header_serialize_ms": 0.0023,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1029.189699998824,
+          "end_ms": 1037.8563000122085,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1037.8640000126325,
+      "decided_ms": 1037.8764999913983,
+      "target_greedy": [
+        3177
+      ],
+      "rollback": null
+    },
+    {
+      "id": 9,
+      "epoch": 0,
+      "parent": null,
+      "position": 57,
+      "tokens": [
+        3177
+      ],
+      "launch_dependency": 8,
+      "draft": [],
+      "launched_ms": 1037.8832000133116,
+      "stages": [
+        {
+          "compute_ms": 9.4507,
+          "service_ms": 9.7706,
+          "server_total_ms": 9.566,
+          "deserialize_ms": 0.0085,
+          "serialize_and_state_ms": 0.1068,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1037.9035999940243,
+          "end_ms": 1047.8934000129811,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6037,
+          "service_ms": 8.7956,
+          "server_total_ms": 8.6816,
+          "deserialize_ms": 0.0081,
+          "serialize_and_state_ms": 0.0698,
+          "client_header_serialize_ms": 0.0021,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1047.9258999985177,
+          "end_ms": 1056.9041999988258,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.2811,
+          "service_ms": 8.92,
+          "server_total_ms": 8.7026,
+          "deserialize_ms": 0.0062,
+          "serialize_and_state_ms": 0.4153,
+          "client_header_serialize_ms": 0.0014,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1056.9298999907915,
+          "end_ms": 1066.1130000080448,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1066.1289000127,
+      "decided_ms": 1066.1443000135478,
+      "target_greedy": [
+        321
+      ],
+      "rollback": null
+    },
+    {
+      "id": 10,
+      "epoch": 0,
+      "parent": null,
+      "position": 58,
+      "tokens": [
+        321
+      ],
+      "launch_dependency": 9,
+      "draft": [],
+      "launched_ms": 1066.1531999940053,
+      "stages": [
+        {
+          "compute_ms": 8.4513,
+          "service_ms": 8.599,
+          "server_total_ms": 8.5113,
+          "deserialize_ms": 0.0031,
+          "serialize_and_state_ms": 0.0569,
+          "client_header_serialize_ms": 0.0023,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1066.1837999941781,
+          "end_ms": 1074.9641000002157,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 9.0437,
+          "service_ms": 9.2243,
+          "server_total_ms": 9.1139,
+          "deserialize_ms": 0.0054,
+          "serialize_and_state_ms": 0.0648,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1075.0042000145186,
+          "end_ms": 1084.4189999916125,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9458,
+          "service_ms": 8.4354,
+          "server_total_ms": 8.318,
+          "deserialize_ms": 0.0055,
+          "serialize_and_state_ms": 0.3667,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1084.4519000092987,
+          "end_ms": 1093.098800018197,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1093.108700006269,
+      "decided_ms": 1093.1224999949336,
+      "target_greedy": [
+        3133
+      ],
+      "rollback": null
+    },
+    {
+      "id": 11,
+      "epoch": 0,
+      "parent": null,
+      "position": 59,
+      "tokens": [
+        3133
+      ],
+      "launch_dependency": 10,
+      "draft": [],
+      "launched_ms": 1093.1293000176083,
+      "stages": [
+        {
+          "compute_ms": 8.4194,
+          "service_ms": 8.5611,
+          "server_total_ms": 8.4744,
+          "deserialize_ms": 0.0033,
+          "serialize_and_state_ms": 0.0517,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1093.1524999905378,
+          "end_ms": 1101.8813000118826,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.816,
+          "service_ms": 9.0343,
+          "server_total_ms": 8.8852,
+          "deserialize_ms": 0.0063,
+          "serialize_and_state_ms": 0.0629,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1101.9166999903973,
+          "end_ms": 1111.195300007239,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9576,
+          "service_ms": 8.545,
+          "server_total_ms": 8.4041,
+          "deserialize_ms": 0.023,
+          "serialize_and_state_ms": 0.4235,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1111.2426000181586,
+          "end_ms": 1120.0797999917995,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1120.090300013544,
+      "decided_ms": 1120.104600006016,
+      "target_greedy": [
+        494
+      ],
+      "rollback": null
+    },
+    {
+      "id": 12,
+      "epoch": 0,
+      "parent": null,
+      "position": 60,
+      "tokens": [
+        494
+      ],
+      "launch_dependency": 11,
+      "draft": [],
+      "launched_ms": 1120.1117000018712,
+      "stages": [
+        {
+          "compute_ms": 8.7497,
+          "service_ms": 8.9854,
+          "server_total_ms": 8.8141,
+          "deserialize_ms": 0.0038,
+          "serialize_and_state_ms": 0.0606,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1120.1361000130419,
+          "end_ms": 1129.3635000183713,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6319,
+          "service_ms": 8.8295,
+          "server_total_ms": 8.702,
+          "deserialize_ms": 0.0096,
+          "serialize_and_state_ms": 0.0605,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1129.41100000171,
+          "end_ms": 1138.4428000019398,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.1168,
+          "service_ms": 8.6121,
+          "server_total_ms": 8.4493,
+          "deserialize_ms": 0.0057,
+          "serialize_and_state_ms": 0.3268,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1138.483399990946,
+          "end_ms": 1147.3475999955554,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1147.3599000019021,
+      "decided_ms": 1147.3738999920897,
+      "target_greedy": [
+        2046
+      ],
+      "rollback": null
+    },
+    {
+      "id": 13,
+      "epoch": 0,
+      "parent": null,
+      "position": 61,
+      "tokens": [
+        2046
+      ],
+      "launch_dependency": 12,
+      "draft": [],
+      "launched_ms": 1147.382099996321,
+      "stages": [
+        {
+          "compute_ms": 8.3677,
+          "service_ms": 8.5482,
+          "server_total_ms": 8.4558,
+          "deserialize_ms": 0.0071,
+          "serialize_and_state_ms": 0.081,
+          "client_header_serialize_ms": 0.0017,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1147.408999997424,
+          "end_ms": 1156.118700018851,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 10.031,
+          "service_ms": 10.662,
+          "server_total_ms": 10.4382,
+          "deserialize_ms": 0.0425,
+          "serialize_and_state_ms": 0.3647,
+          "client_header_serialize_ms": 0.0014,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1156.141999992542,
+          "end_ms": 1167.0767000177875,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.928,
+          "service_ms": 8.5808,
+          "server_total_ms": 8.282,
+          "deserialize_ms": 0.0067,
+          "serialize_and_state_ms": 0.3473,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1167.1095000056084,
+          "end_ms": 1175.902799994219,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1175.9120000060648,
+      "decided_ms": 1175.9263999992982,
+      "target_greedy": [
+        13
+      ],
+      "rollback": null
+    },
+    {
+      "id": 14,
+      "epoch": 0,
+      "parent": null,
+      "position": 62,
+      "tokens": [
+        13
+      ],
+      "launch_dependency": 13,
+      "draft": [],
+      "launched_ms": 1175.9348000050522,
+      "stages": [
+        {
+          "compute_ms": 8.5134,
+          "service_ms": 8.7208,
+          "server_total_ms": 8.5888,
+          "deserialize_ms": 0.0044,
+          "serialize_and_state_ms": 0.071,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1175.960499997018,
+          "end_ms": 1184.8990000144113,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.9518,
+          "service_ms": 9.1867,
+          "server_total_ms": 9.0247,
+          "deserialize_ms": 0.006,
+          "serialize_and_state_ms": 0.0669,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1184.9440000078175,
+          "end_ms": 1194.3536000035238,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9244,
+          "service_ms": 8.4955,
+          "server_total_ms": 8.3622,
+          "deserialize_ms": 0.0262,
+          "serialize_and_state_ms": 0.4116,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1194.378999993205,
+          "end_ms": 1203.0743999930564,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1203.088000009302,
+      "decided_ms": 1203.1018999987282,
+      "target_greedy": [
+        2302
+      ],
+      "rollback": null
+    },
+    {
+      "id": 15,
+      "epoch": 0,
+      "parent": null,
+      "position": 63,
+      "tokens": [
+        2302
+      ],
+      "launch_dependency": 14,
+      "draft": [],
+      "launched_ms": 1203.1106000067666,
+      "stages": [
+        {
+          "compute_ms": 8.4562,
+          "service_ms": 8.6146,
+          "server_total_ms": 8.5161,
+          "deserialize_ms": 0.0047,
+          "serialize_and_state_ms": 0.0552,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1203.1383000139613,
+          "end_ms": 1211.898100009421,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 9.0394,
+          "service_ms": 9.2749,
+          "server_total_ms": 9.1023,
+          "deserialize_ms": 0.0072,
+          "serialize_and_state_ms": 0.0557,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1211.9326000101864,
+          "end_ms": 1221.4688000094611,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.4153,
+          "service_ms": 9.0733,
+          "server_total_ms": 8.8848,
+          "deserialize_ms": 0.0063,
+          "serialize_and_state_ms": 0.4632,
+          "client_header_serialize_ms": 0.0022,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1221.5018999995664,
+          "end_ms": 1230.9102000144776,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1230.924600007711,
+      "decided_ms": 1230.9391000017058,
+      "target_greedy": [
+        1318
+      ],
+      "rollback": null
+    },
+    {
+      "id": 16,
+      "epoch": 0,
+      "parent": null,
+      "position": 64,
+      "tokens": [
+        1318
+      ],
+      "launch_dependency": 15,
+      "draft": [],
+      "launched_ms": 1230.9466000006068,
+      "stages": [
+        {
+          "compute_ms": 8.5658,
+          "service_ms": 8.7319,
+          "server_total_ms": 8.6233,
+          "deserialize_ms": 0.0035,
+          "serialize_and_state_ms": 0.054,
+          "client_header_serialize_ms": 0.0021,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1230.9764999954496,
+          "end_ms": 1239.873999991687,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 9.0044,
+          "service_ms": 9.6813,
+          "server_total_ms": 9.492,
+          "deserialize_ms": 0.0529,
+          "serialize_and_state_ms": 0.4347,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1239.8966000182554,
+          "end_ms": 1249.75029999041,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.8089,
+          "service_ms": 8.2581,
+          "server_total_ms": 8.1485,
+          "deserialize_ms": 0.0227,
+          "serialize_and_state_ms": 0.3169,
+          "client_header_serialize_ms": 0.0014,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1249.7891999955755,
+          "end_ms": 1258.2169999950565,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1258.2263000076637,
+      "decided_ms": 1258.2379000086803,
+      "target_greedy": [
+        264
+      ],
+      "rollback": null
+    },
+    {
+      "id": 17,
+      "epoch": 0,
+      "parent": null,
+      "position": 65,
+      "tokens": [
+        264
+      ],
+      "launch_dependency": 16,
+      "draft": [],
+      "launched_ms": 1258.2450000045355,
+      "stages": [
+        {
+          "compute_ms": 8.6653,
+          "service_ms": 8.8468,
+          "server_total_ms": 8.719,
+          "deserialize_ms": 0.0034,
+          "serialize_and_state_ms": 0.0503,
+          "client_header_serialize_ms": 0.0014,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1258.2677000027616,
+          "end_ms": 1267.301200015936,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.5236,
+          "service_ms": 8.6871,
+          "server_total_ms": 8.5818,
+          "deserialize_ms": 0.0061,
+          "serialize_and_state_ms": 0.0521,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1267.3496000061277,
+          "end_ms": 1276.2225000187755,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9884,
+          "service_ms": 8.4997,
+          "server_total_ms": 8.3703,
+          "deserialize_ms": 0.0233,
+          "serialize_and_state_ms": 0.3586,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1276.2469000008423,
+          "end_ms": 1284.9927000061143,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1285.003199998755,
+      "decided_ms": 1285.0164000119548,
+      "target_greedy": [
+        24679
+      ],
+      "rollback": null
+    },
+    {
+      "id": 18,
+      "epoch": 0,
+      "parent": null,
+      "position": 66,
+      "tokens": [
+        24679
+      ],
+      "launch_dependency": 17,
+      "draft": [],
+      "launched_ms": 1285.02350000781,
+      "stages": [
+        {
+          "compute_ms": 8.6777,
+          "service_ms": 8.8938,
+          "server_total_ms": 8.7475,
+          "deserialize_ms": 0.0034,
+          "serialize_and_state_ms": 0.0664,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1285.0465000083204,
+          "end_ms": 1294.1399000119418,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 10.9666,
+          "service_ms": 11.5074,
+          "server_total_ms": 11.3084,
+          "deserialize_ms": 0.0329,
+          "serialize_and_state_ms": 0.3089,
+          "client_header_serialize_ms": 0.0019,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1294.165300001623,
+          "end_ms": 1305.900700011989,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.2864,
+          "service_ms": 8.8594,
+          "server_total_ms": 8.7019,
+          "deserialize_ms": 0.0058,
+          "serialize_and_state_ms": 0.4097,
+          "client_header_serialize_ms": 0.0022,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1305.9431000147015,
+          "end_ms": 1315.0571000005584,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1315.0680999970064,
+      "decided_ms": 1315.0828999932855,
+      "target_greedy": [
+        1118
+      ],
+      "rollback": null
+    },
+    {
+      "id": 19,
+      "epoch": 0,
+      "parent": null,
+      "position": 67,
+      "tokens": [
+        1118
+      ],
+      "launch_dependency": 18,
+      "draft": [],
+      "launched_ms": 1315.0900000182446,
+      "stages": [
+        {
+          "compute_ms": 8.4549,
+          "service_ms": 8.7462,
+          "server_total_ms": 8.6324,
+          "deserialize_ms": 0.0032,
+          "serialize_and_state_ms": 0.1743,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1315.113399992697,
+          "end_ms": 1324.0781000058632,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.818,
+          "service_ms": 9.2205,
+          "server_total_ms": 8.9335,
+          "deserialize_ms": 0.0054,
+          "serialize_and_state_ms": 0.1101,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1324.1052000084892,
+          "end_ms": 1333.5759000037797,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9746,
+          "service_ms": 8.4867,
+          "server_total_ms": 8.3409,
+          "deserialize_ms": 0.0078,
+          "serialize_and_state_ms": 0.3585,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1333.620899997186,
+          "end_ms": 1342.4090000044089,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1342.4224999907892,
+      "decided_ms": 1342.438299994683,
+      "target_greedy": [
+        21598
+      ],
+      "rollback": null
+    },
+    {
+      "id": 20,
+      "epoch": 0,
+      "parent": null,
+      "position": 68,
+      "tokens": [
+        21598
+      ],
+      "launch_dependency": 19,
+      "draft": [],
+      "launched_ms": 1342.4469000019599,
+      "stages": [
+        {
+          "compute_ms": 8.4489,
+          "service_ms": 8.6458,
+          "server_total_ms": 8.5236,
+          "deserialize_ms": 0.0037,
+          "serialize_and_state_ms": 0.071,
+          "client_header_serialize_ms": 0.0021,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1342.4760999914724,
+          "end_ms": 1351.302900002338,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6855,
+          "service_ms": 8.908,
+          "server_total_ms": 8.7607,
+          "deserialize_ms": 0.0076,
+          "serialize_and_state_ms": 0.0676,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1351.3281999912579,
+          "end_ms": 1360.4267000046093,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9061,
+          "service_ms": 8.4111,
+          "server_total_ms": 8.2901,
+          "deserialize_ms": 0.0084,
+          "serialize_and_state_ms": 0.3756,
+          "client_header_serialize_ms": 0.0017,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1360.450900014257,
+          "end_ms": 1369.0484999970067,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1369.0623000147752,
+      "decided_ms": 1369.07680000877,
+      "target_greedy": [
+        13618
+      ],
+      "rollback": null
+    },
+    {
+      "id": 21,
+      "epoch": 0,
+      "parent": null,
+      "position": 69,
+      "tokens": [
+        13618
+      ],
+      "launch_dependency": 20,
+      "draft": [],
+      "launched_ms": 1369.0850000130013,
+      "stages": [
+        {
+          "compute_ms": 8.4128,
+          "service_ms": 8.5742,
+          "server_total_ms": 8.4705,
+          "deserialize_ms": 0.0031,
+          "serialize_and_state_ms": 0.0546,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1369.1209999960847,
+          "end_ms": 1377.8466999938246,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6842,
+          "service_ms": 8.8814,
+          "server_total_ms": 8.7524,
+          "deserialize_ms": 0.0067,
+          "serialize_and_state_ms": 0.0615,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1377.8668000013568,
+          "end_ms": 1386.8953000055626,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.3792,
+          "service_ms": 8.9131,
+          "server_total_ms": 8.7471,
+          "deserialize_ms": 0.0256,
+          "serialize_and_state_ms": 0.3423,
+          "client_header_serialize_ms": 0.0014,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1386.9160000176635,
+          "end_ms": 1396.1904000025243,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1396.206200006418,
+      "decided_ms": 1396.221000002697,
+      "target_greedy": [
+        421
+      ],
+      "rollback": null
+    },
+    {
+      "id": 22,
+      "epoch": 0,
+      "parent": null,
+      "position": 70,
+      "tokens": [
+        421
+      ],
+      "launch_dependency": 21,
+      "draft": [],
+      "launched_ms": 1396.2294000084512,
+      "stages": [
+        {
+          "compute_ms": 8.4328,
+          "service_ms": 8.571,
+          "server_total_ms": 8.4938,
+          "deserialize_ms": 0.0032,
+          "serialize_and_state_ms": 0.0578,
+          "client_header_serialize_ms": 0.0022,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1396.261300018523,
+          "end_ms": 1404.9769999983255,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 9.0815,
+          "service_ms": 9.2735,
+          "server_total_ms": 9.1579,
+          "deserialize_ms": 0.006,
+          "serialize_and_state_ms": 0.0704,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1404.999799997313,
+          "end_ms": 1414.4478999951389,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.887,
+          "service_ms": 8.3154,
+          "server_total_ms": 8.2082,
+          "deserialize_ms": 0.0061,
+          "serialize_and_state_ms": 0.3151,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1414.4705999933649,
+          "end_ms": 1423.0182000028435,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1423.029300000053,
+      "decided_ms": 1423.0433000193443,
+      "target_greedy": [
+        37568
+      ],
+      "rollback": null
+    },
+    {
+      "id": 23,
+      "epoch": 0,
+      "parent": null,
+      "position": 71,
+      "tokens": [
+        37568
+      ],
+      "launch_dependency": 22,
+      "draft": [],
+      "launched_ms": 1423.0556999973487,
+      "stages": [
+        {
+          "compute_ms": 8.5791,
+          "service_ms": 8.7844,
+          "server_total_ms": 8.6414,
+          "deserialize_ms": 0.0031,
+          "serialize_and_state_ms": 0.0592,
+          "client_header_serialize_ms": 0.0022,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1423.0826999992132,
+          "end_ms": 1432.1109000011347,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.8264,
+          "service_ms": 9.049,
+          "server_total_ms": 8.9039,
+          "deserialize_ms": 0.0081,
+          "serialize_and_state_ms": 0.0694,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1432.1672999940347,
+          "end_ms": 1441.3950000016484,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9142,
+          "service_ms": 8.3492,
+          "server_total_ms": 8.2536,
+          "deserialize_ms": 0.0226,
+          "serialize_and_state_ms": 0.3168,
+          "client_header_serialize_ms": 0.0011,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1441.4186000067275,
+          "end_ms": 1449.9464000109583,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1449.9550000182353,
+      "decided_ms": 1449.9687000061385,
+      "target_greedy": [
+        2250
+      ],
+      "rollback": null
+    },
+    {
+      "id": 24,
+      "epoch": 0,
+      "parent": null,
+      "position": 72,
+      "tokens": [
+        2250
+      ],
+      "launch_dependency": 23,
+      "draft": [],
+      "launched_ms": 1449.9754999997094,
+      "stages": [
+        {
+          "compute_ms": 8.3667,
+          "service_ms": 8.5035,
+          "server_total_ms": 8.4281,
+          "deserialize_ms": 0.0039,
+          "serialize_and_state_ms": 0.0575,
+          "client_header_serialize_ms": 0.0011,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1450.0004000146873,
+          "end_ms": 1458.6265000107232,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.7077,
+          "service_ms": 8.9356,
+          "server_total_ms": 8.7953,
+          "deserialize_ms": 0.0106,
+          "serialize_and_state_ms": 0.077,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1458.6481000005733,
+          "end_ms": 1467.7952000056393,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9376,
+          "service_ms": 8.4259,
+          "server_total_ms": 8.2951,
+          "deserialize_ms": 0.0052,
+          "serialize_and_state_ms": 0.3523,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1467.843599995831,
+          "end_ms": 1476.5104000107385,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1476.521300006425,
+      "decided_ms": 1476.5348999935668,
+      "target_greedy": [
+        2433
+      ],
+      "rollback": null
+    },
+    {
+      "id": 25,
+      "epoch": 0,
+      "parent": null,
+      "position": 73,
+      "tokens": [
+        2433
+      ],
+      "launch_dependency": 24,
+      "draft": [],
+      "launched_ms": 1476.5426999947522,
+      "stages": [
+        {
+          "compute_ms": 8.4123,
+          "service_ms": 8.6726,
+          "server_total_ms": 8.4853,
+          "deserialize_ms": 0.0035,
+          "serialize_and_state_ms": 0.0695,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1476.5669000044,
+          "end_ms": 1485.3963000059593,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 9.148,
+          "service_ms": 9.3586,
+          "server_total_ms": 9.2196,
+          "deserialize_ms": 0.0127,
+          "serialize_and_state_ms": 0.0589,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1485.4439000191633,
+          "end_ms": 1495.025300013367,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.8799,
+          "service_ms": 8.325,
+          "server_total_ms": 8.1819,
+          "deserialize_ms": 0.0051,
+          "serialize_and_state_ms": 0.2969,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1495.054600003641,
+          "end_ms": 1503.579800017178,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1503.591000015149,
+      "decided_ms": 1503.6035999946762,
+      "target_greedy": [
+        25
+      ],
+      "rollback": null
+    },
+    {
+      "id": 26,
+      "epoch": 0,
+      "parent": null,
+      "position": 74,
+      "tokens": [
+        25
+      ],
+      "launch_dependency": 25,
+      "draft": [],
+      "launched_ms": 1503.6107999912929,
+      "stages": [
+        {
+          "compute_ms": 8.3815,
+          "service_ms": 8.5219,
+          "server_total_ms": 8.4387,
+          "deserialize_ms": 0.0031,
+          "serialize_and_state_ms": 0.0541,
+          "client_header_serialize_ms": 0.0011,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1503.6367000138853,
+          "end_ms": 1512.3084000078961,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.8118,
+          "service_ms": 9.0522,
+          "server_total_ms": 8.8863,
+          "deserialize_ms": 0.0075,
+          "serialize_and_state_ms": 0.067,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1512.3387000057846,
+          "end_ms": 1521.622300002491,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.3695,
+          "service_ms": 8.9659,
+          "server_total_ms": 8.8358,
+          "deserialize_ms": 0.0059,
+          "serialize_and_state_ms": 0.4604,
+          "client_header_serialize_ms": 0.0017,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1521.6526000003796,
+          "end_ms": 1530.8836000040174,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1530.8971999911591,
+      "decided_ms": 1530.9117000142578,
+      "target_greedy": [
+        6236
+      ],
+      "rollback": null
+    },
+    {
+      "id": 27,
+      "epoch": 0,
+      "parent": null,
+      "position": 75,
+      "tokens": [
+        6236
+      ],
+      "launch_dependency": 26,
+      "draft": [],
+      "launched_ms": 1530.9198000177275,
+      "stages": [
+        {
+          "compute_ms": 8.4575,
+          "service_ms": 8.6156,
+          "server_total_ms": 8.5219,
+          "deserialize_ms": 0.0031,
+          "serialize_and_state_ms": 0.0613,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1530.9488000057172,
+          "end_ms": 1539.7159999993164,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6849,
+          "service_ms": 8.8664,
+          "server_total_ms": 8.7612,
+          "deserialize_ms": 0.0157,
+          "serialize_and_state_ms": 0.0606,
+          "client_header_serialize_ms": 0.0009,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1539.7658000001684,
+          "end_ms": 1548.7897999992128,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9301,
+          "service_ms": 8.3211,
+          "server_total_ms": 8.2376,
+          "deserialize_ms": 0.0053,
+          "serialize_and_state_ms": 0.3022,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1548.824900004547,
+          "end_ms": 1557.2895999939647,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1557.2968999913428,
+      "decided_ms": 1557.308200019179,
+      "target_greedy": [
+        1208
+      ],
+      "rollback": null
+    },
+    {
+      "id": 28,
+      "epoch": 0,
+      "parent": null,
+      "position": 76,
+      "tokens": [
+        1208
+      ],
+      "launch_dependency": 27,
+      "draft": [],
+      "launched_ms": 1557.3141000058968,
+      "stages": [
+        {
+          "compute_ms": 8.4038,
+          "service_ms": 8.7036,
+          "server_total_ms": 8.5843,
+          "deserialize_ms": 0.0056,
+          "serialize_and_state_ms": 0.1749,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1557.3330000042915,
+          "end_ms": 1566.23799999943,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6413,
+          "service_ms": 8.8171,
+          "server_total_ms": 8.7074,
+          "deserialize_ms": 0.0089,
+          "serialize_and_state_ms": 0.0572,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1566.2811000074726,
+          "end_ms": 1575.287899991963,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.1107,
+          "service_ms": 8.619,
+          "server_total_ms": 8.4794,
+          "deserialize_ms": 0.0073,
+          "serialize_and_state_ms": 0.3614,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1575.3295000176877,
+          "end_ms": 1584.192600013921,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1584.2058999987785,
+      "decided_ms": 1584.220099990489,
+      "target_greedy": [
+        11
+      ],
+      "rollback": null
+    },
+    {
+      "id": 29,
+      "epoch": 0,
+      "parent": null,
+      "position": 77,
+      "tokens": [
+        11
+      ],
+      "launch_dependency": 28,
+      "draft": [],
+      "launched_ms": 1584.227200015448,
+      "stages": [
+        {
+          "compute_ms": 8.5104,
+          "service_ms": 8.6769,
+          "server_total_ms": 8.57,
+          "deserialize_ms": 0.0028,
+          "serialize_and_state_ms": 0.0568,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1584.2603000055533,
+          "end_ms": 1593.1708000134677,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.8401,
+          "service_ms": 9.1292,
+          "server_total_ms": 8.9442,
+          "deserialize_ms": 0.0275,
+          "serialize_and_state_ms": 0.0766,
+          "client_header_serialize_ms": 0.0018,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1593.1993999984115,
+          "end_ms": 1602.5643000029959,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 8.1101,
+          "service_ms": 8.6406,
+          "server_total_ms": 8.4819,
+          "deserialize_ms": 0.0057,
+          "serialize_and_state_ms": 0.3661,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1602.674299996579,
+          "end_ms": 1611.5780000109226,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1611.5904000180308,
+      "decided_ms": 1611.6039000044111,
+      "target_greedy": [
+        48782
+      ],
+      "rollback": null
+    },
+    {
+      "id": 30,
+      "epoch": 0,
+      "parent": null,
+      "position": 78,
+      "tokens": [
+        48782
+      ],
+      "launch_dependency": 29,
+      "draft": [],
+      "launched_ms": 1611.6120000078809,
+      "stages": [
+        {
+          "compute_ms": 9.1317,
+          "service_ms": 9.8029,
+          "server_total_ms": 9.5887,
+          "deserialize_ms": 0.0294,
+          "serialize_and_state_ms": 0.4276,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1611.6374999983236,
+          "end_ms": 1621.6432999935932,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.6805,
+          "service_ms": 8.8774,
+          "server_total_ms": 8.7504,
+          "deserialize_ms": 0.0082,
+          "serialize_and_state_ms": 0.0617,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1621.6679000062868,
+          "end_ms": 1630.6993000034709,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9217,
+          "service_ms": 8.3965,
+          "server_total_ms": 8.2735,
+          "deserialize_ms": 0.0061,
+          "serialize_and_state_ms": 0.3457,
+          "client_header_serialize_ms": 0.0009,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1630.7439999945927,
+          "end_ms": 1639.6939000114799,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1639.7410999925341,
+      "decided_ms": 1639.8098999925423,
+      "target_greedy": [
+        11
+      ],
+      "rollback": null
+    },
+    {
+      "id": 31,
+      "epoch": 0,
+      "parent": null,
+      "position": 79,
+      "tokens": [
+        11
+      ],
+      "launch_dependency": 30,
+      "draft": [],
+      "launched_ms": 1639.8482999939006,
+      "stages": [
+        {
+          "compute_ms": 8.7899,
+          "service_ms": 9.6347,
+          "server_total_ms": 9.1352,
+          "deserialize_ms": 0.0198,
+          "serialize_and_state_ms": 0.3255,
+          "client_header_serialize_ms": 0.0095,
+          "request_bytes": 60,
+          "response_bytes": 20568,
+          "input_bytes": 4,
+          "output_bytes": 20480,
+          "start_ms": 1640.000500017777,
+          "end_ms": 1650.0914999924134,
+          "rows": 1,
+          "stage": 0
+        },
+        {
+          "compute_ms": 8.7076,
+          "service_ms": 8.9084,
+          "server_total_ms": 8.7819,
+          "deserialize_ms": 0.0135,
+          "serialize_and_state_ms": 0.0608,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 20536,
+          "response_bytes": 20568,
+          "input_bytes": 20480,
+          "output_bytes": 20480,
+          "start_ms": 1650.1466000045184,
+          "end_ms": 1659.2306999955326,
+          "rows": 1,
+          "stage": 1
+        },
+        {
+          "compute_ms": 7.9703,
+          "service_ms": 8.3979,
+          "server_total_ms": 8.3041,
+          "deserialize_ms": 0.0055,
+          "serialize_and_state_ms": 0.3283,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 20536,
+          "response_bytes": 20576,
+          "input_bytes": 20480,
+          "output_bytes": 20488,
+          "start_ms": 1659.2528000182938,
+          "end_ms": 1667.8510000056121,
+          "rows": 1,
+          "stage": 2
+        }
+      ],
+      "accepted": 1,
+      "rejected": false,
+      "invalidated": false,
+      "completed_ms": 1667.8590000083204,
+      "decided_ms": 1667.8698000032455,
+      "target_greedy": [
+        321
+      ],
+      "rollback": null
+    }
+  ],
+  "events": [
+    {
+      "event": "launch",
+      "time_ms": 758.3168999990448,
+      "chunk": 0,
+      "position": 48,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 816.9836000015493,
+      "chunk": 0,
+      "accepted": 1,
+      "position": 49,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 817.0607000065502,
+      "chunk": 1,
+      "position": 49,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 844.050400017295,
+      "chunk": 1,
+      "accepted": 1,
+      "position": 50,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 844.0622999914922,
+      "chunk": 2,
+      "position": 50,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 871.0529000090901,
+      "chunk": 2,
+      "accepted": 1,
+      "position": 51,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 871.0652000154369,
+      "chunk": 3,
+      "position": 51,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 899.1573000093922,
+      "chunk": 3,
+      "accepted": 1,
+      "position": 52,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 899.1688000096474,
+      "chunk": 4,
+      "position": 52,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 927.9616000130773,
+      "chunk": 4,
+      "accepted": 1,
+      "position": 53,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 927.9755000025034,
+      "chunk": 5,
+      "position": 53,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 954.2791999992914,
+      "chunk": 5,
+      "accepted": 1,
+      "position": 54,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 954.2951000039466,
+      "chunk": 6,
+      "position": 54,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 980.9524000156671,
+      "chunk": 6,
+      "accepted": 1,
+      "position": 55,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 980.9643999906257,
+      "chunk": 7,
+      "position": 55,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1008.8663999922574,
+      "chunk": 7,
+      "accepted": 1,
+      "position": 56,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1008.8764000101946,
+      "chunk": 8,
+      "position": 56,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1037.8784000058658,
+      "chunk": 8,
+      "accepted": 1,
+      "position": 57,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1037.888099992415,
+      "chunk": 9,
+      "position": 57,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1066.1471000057645,
+      "chunk": 9,
+      "accepted": 1,
+      "position": 58,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1066.1585000052582,
+      "chunk": 10,
+      "position": 58,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1093.124600010924,
+      "chunk": 10,
+      "accepted": 1,
+      "position": 59,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1093.133599992143,
+      "chunk": 11,
+      "position": 59,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1120.1068999944255,
+      "chunk": 11,
+      "accepted": 1,
+      "position": 60,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1120.116300007794,
+      "chunk": 12,
+      "position": 60,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1147.3766000126489,
+      "chunk": 12,
+      "accepted": 1,
+      "position": 61,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1147.3867000022437,
+      "chunk": 13,
+      "position": 61,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1175.92860001605,
+      "chunk": 13,
+      "accepted": 1,
+      "position": 62,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1175.9402000170667,
+      "chunk": 14,
+      "position": 62,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1203.10410001548,
+      "chunk": 14,
+      "accepted": 1,
+      "position": 63,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1203.1150000111666,
+      "chunk": 15,
+      "position": 63,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1230.9410000161733,
+      "chunk": 15,
+      "accepted": 1,
+      "position": 64,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1230.9519000118598,
+      "chunk": 16,
+      "position": 64,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1258.2403999986127,
+      "chunk": 16,
+      "accepted": 1,
+      "position": 65,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1258.2494000089355,
+      "chunk": 17,
+      "position": 65,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1285.0184999988414,
+      "chunk": 17,
+      "accepted": 1,
+      "position": 66,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1285.0278000114486,
+      "chunk": 18,
+      "position": 66,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1315.084800007753,
+      "chunk": 18,
+      "accepted": 1,
+      "position": 67,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1315.0950999988709,
+      "chunk": 19,
+      "position": 67,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1342.4408000137191,
+      "chunk": 19,
+      "accepted": 1,
+      "position": 68,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1342.4515000078827,
+      "chunk": 20,
+      "position": 68,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1369.079199997941,
+      "chunk": 20,
+      "accepted": 1,
+      "position": 69,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1369.096400012495,
+      "chunk": 21,
+      "position": 69,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1396.2236999941524,
+      "chunk": 21,
+      "accepted": 1,
+      "position": 70,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1396.2341000151355,
+      "chunk": 22,
+      "position": 70,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1423.0453000054695,
+      "chunk": 22,
+      "accepted": 1,
+      "position": 71,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1423.0616000131704,
+      "chunk": 23,
+      "position": 71,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1449.9707999930251,
+      "chunk": 23,
+      "accepted": 1,
+      "position": 72,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1449.9799000041094,
+      "chunk": 24,
+      "position": 72,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1476.5373000118416,
+      "chunk": 24,
+      "accepted": 1,
+      "position": 73,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1476.5469999983907,
+      "chunk": 25,
+      "position": 73,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1503.6059000121895,
+      "chunk": 25,
+      "accepted": 1,
+      "position": 74,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1503.615900001023,
+      "chunk": 26,
+      "position": 74,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1530.9140000026673,
+      "chunk": 26,
+      "accepted": 1,
+      "position": 75,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1530.924299993785,
+      "chunk": 27,
+      "position": 75,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1557.3099000030197,
+      "chunk": 27,
+      "accepted": 1,
+      "position": 76,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1557.3183000087738,
+      "chunk": 28,
+      "position": 76,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1584.222100005718,
+      "chunk": 28,
+      "accepted": 1,
+      "position": 77,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1584.2322999960743,
+      "chunk": 29,
+      "position": 77,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1611.606499995105,
+      "chunk": 29,
+      "accepted": 1,
+      "position": 78,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1611.6170000168495,
+      "chunk": 30,
+      "position": 78,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1639.821499993559,
+      "chunk": 30,
+      "accepted": 1,
+      "position": 79,
+      "depth": 1
+    },
+    {
+      "event": "launch",
+      "time_ms": 1639.8921000072733,
+      "chunk": 31,
+      "position": 79,
+      "depth": 1,
+      "epoch": 0
+    },
+    {
+      "event": "commit",
+      "time_ms": 1667.871900019236,
+      "chunk": 31,
+      "accepted": 1,
+      "position": 80,
+      "depth": 1
+    }
+  ],
+  "rollback_events": 0,
+  "rollback_failures": 0,
+  "state_corruption_events": 0,
+  "rollback_checks": [],
+  "peak_inflight_chunks": 1,
+  "launches_before_prior_verification_completed": 0,
+  "commit_times_ms": [
+    816.9822999916505,
+    844.0498000127263,
+    871.0521000029985,
+    899.156600004062,
+    927.9608000069857,
+    954.2784999939613,
+    980.9517000103369,
+    1008.8656000152696,
+    1037.8779000020586,
+    1066.146299999673,
+    1093.123900005594,
+    1120.1061000174377,
+    1147.3758000065573,
+    1175.92790001072,
+    1203.1033000093885,
+    1230.940500012366,
+    1258.239599992521,
+    1285.0177999935113,
+    1315.0843000039458,
+    1342.440100008389,
+    1369.078499992611,
+    1396.2228000164032,
+    1423.0448000016622,
+    1449.9703000183217,
+    1476.5364000049885,
+    1503.6053000076208,
+    1530.9131999965757,
+    1557.3093999992125,
+    1584.2215000011493,
+    1611.6057000181172,
+    1639.8177999944892,
+    1667.8712000139058
+  ],
+  "shaping": [],
+  "shaped_network": null,
+  "evidence_class": "PHYSICAL_SINGLE_GPU_CORRECTNESS"
+}

@@ -1,0 +1,31 @@
+{
+  "cycle_id": "H014-SUB-001a",
+  "classification": "INVALID_HARNESS_INPUT_GEOMETRY",
+  "status": "FAIL_RETAINED",
+  "hypothesis_result": "NOT_TESTED",
+  "failure_receipt_sha256": "aa122cf42b739dacdcd007237a3972e39492e25b7818cfae634890ba5e056313",
+  "hypothesis": "Two persistent disjoint real-expert worker partitions can preserve exact layer-89 semantics while each stores less than the complete layer.",
+  "implementation": "The first harness loaded the complete reference, two 448-expert worker processes, and an expertless coordinator, then attempted its first seven-call collective PREPARE fixture.",
+  "benchmark_reached": {
+    "single_gpu_reference_status": "PASS",
+    "complete_layer_resident_device_bytes": 18278776832,
+    "worker_0_tracked_bytes": 7861417984,
+    "worker_1_tracked_bytes": 7861417984,
+    "coordinator_resident_device_bytes": 425721856,
+    "correctness_calls_completed": 0,
+    "retained_performance_calls_completed": 0
+  },
+  "result": "The first PREPARE dispatch rejected the returned geometry before reduction. No distributed correctness or efficiency result exists for this cycle.",
+  "inspection": "The worker correctly used the checkpoint-derived latent width 3584, but the coordinator collective was incorrectly constructed with a hard-coded width 512. The shutdown path then read a queued RESULT before CLOSED and tried to JSON-serialize its ndarray.",
+  "bottleneck": "Research harness geometry and shutdown frame draining, not CUDA arithmetic or GPU health.",
+  "decision": "RETAIN_AS_FAILED_INVALID_ATTEMPT",
+  "redesign": "Construct the collective from coordinator.config.latent, include observed/expected shapes in any future failure, and drain queued RESULT frames until the terminal CLOSED response before persisting shutdown evidence.",
+  "gpu_health_after": {
+    "status": "MEASURED",
+    "name": "NVIDIA GeForce RTX 5090",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49",
+    "memory_used_mib": 1888,
+    "memory_free_mib": 30299,
+    "temperature_c": 41
+  }
+}

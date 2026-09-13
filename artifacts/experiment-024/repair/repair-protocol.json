@@ -1,0 +1,61 @@
+{
+  "schema_version": "experiment-024-repair-protocol-v1",
+  "experiment_id": "024",
+  "repair_id": "authoritative-repair-run-2",
+  "preregistered_before_repaired_performance_work": true,
+  "authoritative_scientific_attempt": true,
+  "attempt_1": {
+    "archive_path": "artifacts/experiment-024/archive/model-invalid-run-1",
+    "archive_manifest_sha256": "d0d5f63cdb3308acdca56b10782fb973575a44ff2e626e2c90ef8098c6cce6cc",
+    "archived_file_count": 69,
+    "verdict": "MODEL_INVALID",
+    "mandatory_failure": "NO_PRODUCTION_NATIVE_P8_CANDIDATE_FOR_LAYER_0",
+    "stage_a_performance_result_existed": false,
+    "stage_b_performance_result_existed": false,
+    "performance_results_seen": false
+  },
+  "repair_reason": {
+    "old_rule": "All 93 transformer layers were required to use physically admitted degree-8 sub-layer execution.",
+    "finding": "The rule was over-constrained: Kimi K3 layer 0 is structurally different and its admitted whole-layer candidate fits the frozen commodity worker class.",
+    "corrected_rule": "Layer 0 uses layer-00:WHOLE_LAYER:p1 on one ordinary commodity worker; layers 1 through 92 remain physically admitted production-native degree-8 sub-layer only, with WHOLE_LAYER forbidden."
+  },
+  "frozen_architecture_facts": {
+    "layer_zero_candidate_id": "layer-00:WHOLE_LAYER:p1",
+    "layer_zero_resident_bytes": 2549338530,
+    "commodity_worker_memory_bytes": 10422845440,
+    "whole_layer_feasible_layer_ids_on_commodity": [0],
+    "p8_required_layer_ids": [
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+      33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+      49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+      65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+      81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92
+    ],
+    "p8_required_layer_count": 92,
+    "whole_layer_only_complete_k3_placement_on_commodity": "INFEASIBLE"
+  },
+  "unchanged_contract": {
+    "economic_thresholds_changed": false,
+    "network_definitions_changed": false,
+    "contributor_prices_changed": false,
+    "communication_transformations_changed": false,
+    "performance_cost_frontier_logic_changed": false,
+    "output_token_economics_changed": false,
+    "additional_research_mechanism_introduced": false
+  },
+  "frozen_commercial_values": {
+    "kimi_output_api_price_usd_per_m": 15.0,
+    "primary_contributor_payout_usd_per_active_node_hour": 0.15,
+    "payout_sensitivity_usd_per_active_node_hour": [0.05, 0.1, 0.15, 0.25, 0.5],
+    "target_cost_levels_usd_per_m": [15.0, 12.0, 9.0, 7.5, 5.0, 3.0],
+    "decode_concurrency_levels": [1, 4, 16, 64, 128],
+    "primary_decode_slo_multiplier": 4.0,
+    "decode_slo_sensitivity_multipliers": [2.0, 8.0],
+    "commodity_available_node_budgets": [96, 128, 160, 192, 224, 256, 320]
+  },
+  "scientific_question": "Can ordinary fragmented commodity workers sustain correct Kimi K3 output tokens below the frozen $15/M API benchmark when the naturally small dense layer 0 executes whole and the 92 whole-layer-infeasible transformer layers execute only through admitted degree-8 sub-layer candidates?",
+  "falsifiable_hypothesis": "At least two of the three frozen network scenarios will contain an SLO-feasible, exact, fully costed commodity point below $15/M under the repaired one-whole-plus-92-P8 architecture.",
+  "mandatory_validity_boundary": "Any mandatory candidate, memory, calibration, correctness, architecture, reconciliation, reproducibility, or immutable-input failure yields MODEL_INVALID before scientific interpretation.",
+  "design_provenance": "No Stage A, Stage B, token-throughput, or economic performance result was used to design this repair."
+}

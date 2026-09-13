@@ -1,0 +1,177 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "628662f5a7ec23ce53299c5bf006fe62e3b50e7a847439752e72339f5c6e8f7b",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_grouped_int4_situ",
+    "implementation_kind": "adapted CUDA"
+  },
+  "benchmark": {
+    "batched_event_service_ms_per_call": 0.15798208236694336,
+    "compute_utilization": null,
+    "effective_weight_bandwidth_gbps": 470.41932152396095,
+    "gpu_utilization": null,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.3125,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 15.625,
+      "standard_deviation_ms": 2.1875
+    },
+    "independent_quantized_reference_ms": 522.8891,
+    "kernel_count_per_call": 4,
+    "one_time_upload_ms": 721.6966,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "quantization_ms": 1069.1317,
+    "queued_service_ms_per_call": 0.157786,
+    "resident_weight_bytes": 74317824,
+    "retained_iterations": 100,
+    "wall": {
+      "maximum_ms": 0.192,
+      "mean_ms": 0.16949100000000006,
+      "minimum_ms": 0.1668,
+      "p50_ms": 0.1688,
+      "p95_ms": 0.17108500000000001,
+      "p99_ms": 0.18289200000000003,
+      "standard_deviation_ms": 0.003093867967447868
+    },
+    "warmup_iterations": 20
+  },
+  "checkpoint": {
+    "down": {
+      "name": "language_model.model.layers.1.block_sparse_moe.shared_experts.down_proj.weight",
+      "runtime_f32_fingerprint": "sha256:8b6263c200cfecad3a48fa2172dadab71a86e2783799af1af319449aac3a74c6",
+      "shape": [
+        7168,
+        6144
+      ],
+      "source_bytes": 88080384,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "53bdfc43ad3596241d5dacaf9fb002d40d0480c31ebc32a92ed37733f757bf7b",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "gate": {
+      "name": "language_model.model.layers.1.block_sparse_moe.shared_experts.gate_proj.weight",
+      "runtime_f32_fingerprint": "sha256:c9ad5658adc21a743981563438a13ea2b33217a89301196da2e0d42858dcdb47",
+      "shape": [
+        6144,
+        7168
+      ],
+      "source_bytes": 88080384,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "a0000660f0bd22d6232b126cc7608843e1a56d81c9073b0585d40c9d6ee3ee86",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "layer": 1,
+    "path": "F:\\models\\Kimi-K3",
+    "up": {
+      "name": "language_model.model.layers.1.block_sparse_moe.shared_experts.up_proj.weight",
+      "runtime_f32_fingerprint": "sha256:d1458b10fb6db0536cc8002db5464cfc5e57a950172cd181a091807d76470d5d",
+      "shape": [
+        6144,
+        7168
+      ],
+      "source_bytes": 88080384,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "d07b321c3b5f3e96a2ebfa2057048b09f21b9a756d2203bf07764267dfa34718",
+      "source_shard": "model-00002-of-000096.safetensors"
+    }
+  },
+  "correctness": {
+    "cuda_vs_production_quantized_oracle": {
+      "actual_finite": true,
+      "actual_l2": 0.0734937382948239,
+      "cosine_similarity": 0.9999999999997993,
+      "maximum_absolute_error": 2.2118911147117615e-09,
+      "mean_absolute_error": 4.3824601090948686e-10,
+      "reference_finite": true,
+      "reference_l2": 0.07349373849258044,
+      "relative_l2_error": 6.356483827111398e-07
+    },
+    "production_int4_quantization_vs_source_bf16": {
+      "actual_finite": true,
+      "actual_l2": 0.07349373849258044,
+      "cosine_similarity": 0.9842401700176326,
+      "maximum_absolute_error": 0.0005527298199012876,
+      "mean_absolute_error": 0.00012294640609766816,
+      "reference_finite": true,
+      "reference_l2": 0.0725320495793682,
+      "relative_l2_error": 0.17920203511476632
+    }
+  },
+  "cycle_id": "H014-025t",
+  "fixture": {
+    "activation_fingerprint": "sha256:807662647a7f0786a78fa973f05f3f232159efef5a8a5fd3586f1c3f00b2d631",
+    "activation_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\independent-reference\\x0.f32",
+    "activation_source_sha256": "fc4d010e5214195c5fb78d834f24e43c9627085cf60673b0f3e3cad1ad1a5158",
+    "cuda_output_fingerprint": "sha256:c98a23bd71a59b5eef57aea64f6d05fb68273f64d743f1878a55843ec13dfb94",
+    "down_packed_fingerprint": "sha256:0aa0b7e517ed0e42258e5f5deccc43765b2574275349c0a5b485336f858ee2c6",
+    "gate_packed_fingerprint": "sha256:b18dcd1305bcc0784fc9c5fb55018b3ec099ece69698f066ae77c526f11f7304",
+    "input_dimensions": [
+      7168
+    ],
+    "intermediate_dimensions": [
+      6144
+    ],
+    "output_dimensions": [
+      7168
+    ],
+    "reference_output_fingerprint": "sha256:c4d9886beab91c5fbe98ed2e2b3c6517690b27f461bc522065bca95c76597c99",
+    "runtime_dtype": "packed signed int4 with float32 group-64 scales",
+    "situ_beta": 4.0,
+    "situ_linear_beta": 25.0,
+    "up_packed_fingerprint": "sha256:cd62fa3ab198e5c76507906f1058ccf17014e97544b0e146144bda3648acee3d"
+  },
+  "hypothesis": "The resident Kimi SiTU expert path can reuse generic grouped-int4 CUDA GEMV for real shared-expert weights and match the production-quantized oracle within 1e-5 relative L2.",
+  "inspection": {
+    "bottleneck": "WEIGHT_MEMORY_TRAFFIC",
+    "decision": "RETAIN",
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_weight_loading": 0
+  },
+  "memory": {
+    "activation_buffer_bytes": 28672,
+    "after_upload": {
+      "free_bytes": 32345423872,
+      "total_bytes": 34190458880
+    },
+    "after_warmup": {
+      "free_bytes": 32343326720,
+      "total_bytes": 34190458880
+    },
+    "before_upload": {
+      "free_bytes": 32429309952,
+      "total_bytes": 34190458880
+    },
+    "expected_resident_weight_bytes": 74317824,
+    "observed_upload_vram_delta_bytes": 83886080,
+    "output_buffer_bytes": 28672,
+    "persistent_dequantized_weight_bytes": 0,
+    "persistent_scratch_bytes": 49152,
+    "resident_weight_bytes": 74317824
+  },
+  "schema_version": "experiment-014-k3-cuda-real-shared-expert-v1",
+  "status": "PASS"
+}

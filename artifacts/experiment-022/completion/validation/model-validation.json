@@ -1,0 +1,42 @@
+{
+  "absolute_percent_error": {
+    "maximum": 8.840475063046842,
+    "median": 3.2806018076935235,
+    "p90": 7.030403733821702
+  },
+  "calibration_layers": {
+    "Gated_MLA": 47,
+    "KDA": 45
+  },
+  "chunks": [
+    1,
+    2,
+    4
+  ],
+  "degree": 8,
+  "evidence_class": "PHYSICALLY GROUNDED MODEL validated against PHYSICAL replay",
+  "gate_population": "held-out physical layers only",
+  "global_correction_factor": false,
+  "heldout_layers": {
+    "Gated_MLA": 91,
+    "KDA": 89
+  },
+  "heldout_row_count": 6,
+  "normalization": false,
+  "row_count": 12,
+  "schema_version": "experiment-022-completion-model-validation-v2",
+  "service_features": [
+    "attention_type",
+    "chunk_rows",
+    "partition_degree",
+    "native_operation",
+    "ordered_phase"
+  ],
+  "status": "PASS",
+  "thresholds": {
+    "maximum": 15.0,
+    "median": 5.0,
+    "p90": 10.0
+  },
+  "validation_method": "calibration-layer native-operation and exclusive-phase services replayed as the actual ordered DAG on one concrete compute resource; explicitly classified experiment-only tasks are included only to reconcile measured outer wall and are excluded from the planner service catalog"
+}

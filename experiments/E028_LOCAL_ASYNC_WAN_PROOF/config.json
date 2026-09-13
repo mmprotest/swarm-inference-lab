@@ -1,0 +1,137 @@
+{
+  "experiment": "E028_LOCAL_ASYNC_WAN_PROOF",
+  "seed": 280912,
+  "model_path": ".runtime/experiment-026/models/Qwen3.8-27B-Q4_K_M.gguf",
+  "model_sha256": "31629f53165ab6a7dad8c9847dcfd1fdf55829dac1e6e748f4a68581b0033d34",
+  "draft_model_path": ".runtime/experiment-026/models/mtp-Qwen3.8-27B-Q8_0.gguf",
+  "draft_model_sha256": "cbf60a0c48b431bb61f1d49b8948dc88ac29c398d6dbdbbb2e6e89ef77eacc9a",
+  "llama_commit": "f1b6fbf35cfa010b0a8d6301fdfccbb7f41bd903",
+  "draft_lengths": [
+    1,
+    2,
+    3
+  ],
+  "inflight_windows": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "committed_tokens_per_prompt": 256,
+  "context_tokens": 8192,
+  "prefill_batch_tokens": 512,
+  "verification_kernel_mode": "scalar rows coalesced in one chunk; same numerical path at every W",
+  "checkpoint_slots": 18,
+  "rollback_stress_events_per_scenario": 40,
+  "rollback_stress_scenarios": [
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      2
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      1,
+      4
+    ],
+    [
+      2,
+      4
+    ],
+    [
+      3,
+      4
+    ],
+    [
+      1,
+      8
+    ],
+    [
+      2,
+      8
+    ],
+    [
+      3,
+      8
+    ]
+  ],
+  "network_seeds": [
+    280912,
+    280913,
+    280914
+  ],
+  "network_profiles": [
+    {
+      "name": "LOCAL",
+      "rtt_ms": 0,
+      "bandwidth_mbps": null,
+      "jitter_ms": 0
+    },
+    {
+      "name": "WAN-30",
+      "rtt_ms": 30,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 3
+    },
+    {
+      "name": "WAN-60",
+      "rtt_ms": 60,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 6
+    },
+    {
+      "name": "WAN-100",
+      "rtt_ms": 100,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 10
+    },
+    {
+      "name": "WAN-150",
+      "rtt_ms": 150,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 15
+    }
+  ],
+  "preregistered_criteria": {
+    "correctness": "Exact W=1 versus W>1 committed tokens, zero state corruption, forced rollback succeeds, no stale commit",
+    "genericity": "No model-name branch or architecture-specific math in E028 scheduler, transport, rollback or simulator",
+    "simulator_absolute_relative_error_max": 0.1,
+    "pass_strong": {
+      "speedup_60_min": 2.0,
+      "retention_60_min": 0.7,
+      "retention_100_min": 0.5,
+      "wan_wait_60_max": 0.2,
+      "tps_60_min": 10,
+      "min_stage_utilization": 0.6,
+      "discarded_compute_max_exclusive": 0.35,
+      "physical_w8_fits": true
+    },
+    "pass": {
+      "tps_60_min": 6,
+      "speedup_60_min": 1.5,
+      "wan_wait_60_max_exclusive": 0.35
+    },
+    "fail": [
+      "any correctness or genericity gate fails",
+      "simulator fails after reasonable repair",
+      "speedup_60 < 1.5",
+      "high-W WAN wait > 0.50",
+      "tps_60 < 5",
+      "no pass threshold met"
+    ],
+    "blocked": "Only external or technical impossibility preventing any E028 execution"
+  },
+  "rollback_protocol": "parallel native compound rollback with worker-cached accepted-prefix replay",
+  "runtime_version": "compound-cached-rollback-v2",
+  "serial_control": "no draft execution or checkpoints in decode; same resident target and scalar kernels",
+  "simulator_version": "e028-des-3",
+  "idle_calibration_seed": 280915,
+  "serial_service_model": "Independent periodic native service for non-speculative WAN control; no wall-time correction factor"
+}

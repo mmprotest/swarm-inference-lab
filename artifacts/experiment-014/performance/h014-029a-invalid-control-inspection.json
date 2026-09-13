@@ -1,0 +1,36 @@
+{
+  "schema_version": "experiment-014-invalid-cycle-inspection-v1",
+  "cycle_id": "H014-029a",
+  "status": "INVALID_HARNESS_INPUT",
+  "hypothesis": "The complete-stage serial regression is caused by an H014-028d CUDA arithmetic change.",
+  "result": "FALSIFIED",
+  "failed_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-029a-complete-stage-batch-layer89.json",
+    "sha256": "ceccb24b49838c24bc00be7e347339627d55d8c7ae0723c118b283fb12d42125",
+    "batch_sizes_executed": [],
+    "serial_routes_exact": true,
+    "maximum_reported_relative_l2_error": 0.00022179327478527553
+  },
+  "inspection": {
+    "configured_oracle_trace_sha256": "95012ceb968aaa31f51ccbea38beff44e47dec72572b8c22ca4fe01bbadd56ae",
+    "latest_exact_binary_oracle_trace_sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d",
+    "latest_graph_receipt": "artifacts/experiment-014/cuda/h014-027w-regression-full-93-layer.json",
+    "latest_graph_receipt_sha256": "0c0a655a0f577d17b0bf68b81fff676cb42f225425b7800c839a86469cc74199",
+    "latest_graph_oracle": "artifacts/experiment-014/oracle-full-93-idot0",
+    "cause": "The H014-029a control paired a later deterministic-router binary lineage with the superseded non-idot0 trace. The expected boundary fingerprints therefore did not describe the configured control execution."
+  },
+  "shared_expert_isolation": {
+    "candidate_receipt": "artifacts/experiment-014/cuda/h014-029a-shared-expert-isolation-candidate.json",
+    "candidate_receipt_sha256": "9dd2212c985e948ca617bba43a6b82574494413e212a14b39c927598e15bc7e3",
+    "deployed_receipt": "artifacts/experiment-014/cuda/h014-029a-shared-expert-isolation-deployed.json",
+    "deployed_receipt_sha256": "9b6cb5e8bee1c1c5158c0065245dbf82dc7e65cf1603235e77a3ce559a19dd5d",
+    "candidate_output_fingerprint": "sha256:c5266f4ec6a976002d20a167c301f58a84d85b25243b732d4346f600bf9fa534",
+    "deployed_output_fingerprint": "sha256:c5266f4ec6a976002d20a167c301f58a84d85b25243b732d4346f600bf9fa534",
+    "bit_exact": true,
+    "candidate_relative_l2_error": 4.0387018670480724e-7,
+    "deployed_relative_l2_error": 4.0387018670480724e-7
+  },
+  "gpu_health_after": "MEASURED",
+  "decision": "RETAIN_AS_INVALID_ATTEMPT; do not attribute the control error to H014-028d and do not modify CUDA.",
+  "redesign": "Rerun the unchanged complete-stage implementation with the H014-027w-proven oracle-full-93-idot0 trace and routes."
+}

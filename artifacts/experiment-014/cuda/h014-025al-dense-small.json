@@ -1,0 +1,152 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-025aj.dll",
+    "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_grouped_int4"
+  },
+  "benchmark": {
+    "compute_utilization": null,
+    "detailed_profile": {
+      "calls": 100,
+      "kernel_ms_per_call": 0.01481535996310413
+    },
+    "effective_weight_bandwidth_gbps": 34.835198151464084,
+    "gpu_utilization": null,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.03125,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "standard_deviation_ms": 0.6980721219902711
+    },
+    "kernel_count_per_call": 1,
+    "kernel_share_of_synchronized_p50_percent": 90.89177891474927,
+    "one_time_h2d_bytes": 28672,
+    "one_time_validation_d2h_bytes": 512,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "queued_service_ms_per_call": 0.009980600000000001,
+    "resident_weight_bytes": 516096,
+    "retained_iterations": 500,
+    "utilization_note": "micro-kernel utilization requires a kernel profiler",
+    "wall": {
+      "maximum_ms": 0.0691,
+      "mean_ms": 0.019255200000000004,
+      "minimum_ms": 0.0153,
+      "p50_ms": 0.0163,
+      "p95_ms": 0.03553499999999996,
+      "p99_ms": 0.047504,
+      "standard_deviation_ms": 0.007602799021413102
+    },
+    "warmup_iterations": 50
+  },
+  "checkpoint": {
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "layer": 1,
+    "path": "F:\\models\\Kimi-K3",
+    "tensor": {
+      "name": "language_model.model.layers.1.self_attn.f_a_proj.weight",
+      "runtime_f32_fingerprint": "sha256:fbe2d2880aa96a06ac5282214ce145e94fec713cbaccce35ce4a8f7f77f551cd",
+      "shape": [
+        128,
+        7168
+      ],
+      "source_bytes": 1835008,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "5355d82e40c1884caf4f701ad33b932720ac7dc9fa36d195675842144118f6cd",
+      "source_shard": "model-00002-of-000096.safetensors"
+    }
+  },
+  "correctness": {
+    "cuda_vs_production_quantized_oracle": {
+      "actual_finite": true,
+      "actual_l2": 0.5931355055389663,
+      "cosine_similarity": 0.999999999999915,
+      "maximum_absolute_error": 6.705522537231445e-08,
+      "mean_absolute_error": 1.624721335247159e-08,
+      "reference_finite": true,
+      "reference_l2": 0.5931354843107548,
+      "relative_l2_error": 4.1406920685204016e-07
+    },
+    "production_int4_quantization_vs_source_bf16": {
+      "actual_finite": true,
+      "actual_l2": 0.5931354843107548,
+      "cosine_similarity": 0.9935319766817398,
+      "maximum_absolute_error": 0.016033746302127838,
+      "mean_absolute_error": 0.004795734254003037,
+      "reference_finite": true,
+      "reference_l2": 0.5894209764794345,
+      "relative_l2_error": 0.11426847247941839
+    },
+    "threshold": {
+      "cosine_similarity_minimum": 0.999999,
+      "relative_l2_error_maximum": 1e-05
+    }
+  },
+  "cycle_id": "H014-025al",
+  "fixture": {
+    "activation_fingerprint": "sha256:807662647a7f0786a78fa973f05f3f232159efef5a8a5fd3586f1c3f00b2d631",
+    "activation_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\independent-reference\\x0.f32",
+    "activation_source_sha256": "fc4d010e5214195c5fb78d834f24e43c9627085cf60673b0f3e3cad1ad1a5158",
+    "cuda_output_fingerprint": "sha256:d8454cbd8d9179175b6466f955117c400576c8192e0d5dc64cfdeaabde8087fd",
+    "dimensions": [
+      128,
+      7168
+    ],
+    "packed_weight_fingerprint": "sha256:f3dd28598da1969f2e11963a1606409fb3d47ba8e43c65d0a0ac977bfc9ef729",
+    "reference_output_fingerprint": "sha256:8b98f9532e233f7d825933d9f14fcef307dff25e64b3a176d41acff105ee3c54",
+    "runtime_dtype": "packed signed int4 with float32 group-64 scales",
+    "scale_fingerprint": "sha256:2d5648cb8a9a05c89d2571c2e2fbbc16aac9cc58fa1f5bb539a88352108a6ff7",
+    "source_dtype": "BF16"
+  },
+  "hypothesis": "The existing resident grouped-int4 CUDA GEMV consumes Kimi's exact load-time int4-g64 representation and matches an independent dequantized oracle within 1e-5 relative L2 without CPU fallback.",
+  "inspection": {
+    "bottleneck": "MIXED_PENDING_KERNEL_PROFILE",
+    "decision": "RETAIN",
+    "layout_conversion_kernel_count": 1,
+    "layout_conversion_scope": "one-time in-place offset-binary-to-signed nibble conversion at upload",
+    "persistent_dequantized_weight_bytes": 0
+  },
+  "memory": {
+    "activation_buffer_bytes": 28672,
+    "after_buffers": {
+      "free_bytes": 32425115648,
+      "total_bytes": 34190458880
+    },
+    "after_upload": {
+      "free_bytes": 32425115648,
+      "total_bytes": 34190458880
+    },
+    "before_upload": {
+      "free_bytes": 32429309952,
+      "total_bytes": 34190458880
+    },
+    "observed_buffer_vram_delta_bytes": 0,
+    "observed_upload_vram_delta_bytes": 4194304,
+    "output_buffer_bytes": 512,
+    "tensor_resident_bytes": 516096,
+    "workspace_bytes": 0
+  },
+  "schema_version": "experiment-014-k3-cuda-real-dense-v1",
+  "status": "PASS"
+}

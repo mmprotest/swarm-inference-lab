@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 391, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 372, in main
+    prepared = prepare_worker(
+               ^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 280, in prepare_worker
+    acquisition = acquire_worker_package(
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_014/remote_acquisition.py", line 232, in acquire_worker_package
+    result = _download_object(
+             ^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_014/remote_acquisition.py", line 150, in _download_object
+    raise AcquisitionError(
+swarm_inference.experiments.experiment_014.remote_acquisition.AcquisitionError: immutable object acquisition failed after 3 attempts: attempt 1: URLError: <urlopen error [Errno 101] Network is unreachable>; attempt 2: URLError: <urlopen error [Errno 101] Network is unreachable>; attempt 3: URLError: <urlopen error [Errno 101] Network is unreachable>
+

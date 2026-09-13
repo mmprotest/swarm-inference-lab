@@ -1,0 +1,73 @@
+{
+  "experiment": "E028_LOCAL_ASYNC_WAN_PROOF",
+  "collected_utc": "2026-09-12T08:58:24Z",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python": "3.11.9",
+  "numpy": "2.4.6",
+  "gpu": "NVIDIA GeForce RTX 5090, GPU-8e79b31d-7efe-e59d-a370-0e0add109e49, 32607 MiB, 591.86",
+  "models": [
+    {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.runtime\\experiment-026\\models\\Qwen3.8-27B-Q4_K_M.gguf",
+      "bytes": 18973870432,
+      "sha256": "31629f53165ab6a7dad8c9847dcfd1fdf55829dac1e6e748f4a68581b0033d34"
+    },
+    {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.runtime\\experiment-026\\models\\mtp-Qwen3.8-27B-Q8_0.gguf",
+      "bytes": 3164006688,
+      "sha256": "cbf60a0c48b431bb61f1d49b8948dc88ac29c398d6dbdbbb2e6e89ef77eacc9a"
+    }
+  ],
+  "llama_commit": "f1b6fbf35cfa010b0a8d6301fdfccbb7f41bd903",
+  "repository_commit": "7dee5aa0317ac89943a513573aad74c41c480bfe",
+  "evidence_classes": [
+    "PHYSICAL",
+    "SHAPED NETWORK",
+    "PHYSICALLY GROUNDED MODEL"
+  ],
+  "physical_gpu_count": 1,
+  "paid_resources_used": false,
+  "llama_local_patch_sha256": "25edcec89a9237dff8fd6fa15294ec013e363de95690241956fbf624ff8abaa8",
+  "native_executable_sha256": "bf327a436febc61d13ff753920c0b65e7c735b21f21b2e7dabf633ba7c718736",
+  "runtime_version": "compound-cached-rollback-v2",
+  "libraries": [
+    {
+      "path": ".runtime\\experiment-027\\build\\bin\\ggml-base.dll",
+      "sha256": "d7a2268d53cf3cdcc43e6bc33ed8993dac7cb59b3789efa304b312fbf14a4daa"
+    },
+    {
+      "path": ".runtime\\experiment-027\\build\\bin\\ggml-cpu.dll",
+      "sha256": "eae64a01b6f8b81c491739b43302efcb82d2c2723dd6e56733214bb82580ca1e"
+    },
+    {
+      "path": ".runtime\\experiment-027\\build\\bin\\ggml-cuda.dll",
+      "sha256": "6e394a169d951a3d00ece3c961b8779485945f993837bf9c3ec9548c5a77b473"
+    },
+    {
+      "path": ".runtime\\experiment-027\\build\\bin\\ggml.dll",
+      "sha256": "f9739eb400178606dd8496ecb54af86f9677cf786fbdb3b28b82c4bc6dd0b954"
+    },
+    {
+      "path": ".runtime\\experiment-027\\build\\bin\\llama.dll",
+      "sha256": "0c57d5024af1a02c30323fd28e3e513e43b5c97d2c2d938416661c44f9bf653a"
+    }
+  ],
+  "observed_target_metadata": [
+    "llama_model_loader: - kv   0:                       general.architecture str              = qwen35",
+    "llama_model_loader: - kv   5:                               general.name str              = Qwen3.8-27B",
+    "llama_model_loader: - kv   9:                         qwen35.block_count u32              = 64",
+    "llama_model_loader: - kv  11:                    qwen35.embedding_length u32              = 5120",
+    "llama_model_loader: - kv  20:                     qwen35.ssm.conv_kernel u32              = 4",
+    "llama_model_loader: - kv  21:                      qwen35.ssm.state_size u32              = 128",
+    "llama_model_loader: - kv  22:                     qwen35.ssm.group_count u32              = 16",
+    "llama_model_loader: - kv  23:                  qwen35.ssm.time_step_rank u32              = 48",
+    "llama_model_loader: - kv  24:                      qwen35.ssm.inner_size u32              = 6144",
+    "llama_model_loader: - kv  25:             qwen35.full_attention_interval u32              = 4"
+  ],
+  "hybrid_state_evidence": "Pinned backend reports both recurrent SSM/Gated DeltaNet operators and full attention every 4 layers; full and partial generic sequence-state exports are stress checked.",
+  "cpu": {
+    "Name": "Intel(R) Core(TM) Ultra 7 265K",
+    "NumberOfCores": 20,
+    "NumberOfLogicalProcessors": 20
+  },
+  "system_ram_bytes": 102496780288
+}

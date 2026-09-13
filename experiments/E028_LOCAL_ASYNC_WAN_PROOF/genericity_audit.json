@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "violations": [],
+  "inspected_sources": [
+    "src\\swarm_inference\\experiments\\experiment_028\\collect.py",
+    "src\\swarm_inference\\experiments\\experiment_028\\local.py",
+    "src\\swarm_inference\\experiments\\experiment_028\\report.py",
+    "src\\swarm_inference\\experiments\\experiment_028\\simulator.py",
+    "src\\swarm_inference\\experiments\\experiment_028\\validation.py",
+    "src\\swarm_inference\\experiments\\experiment_028\\__init__.py",
+    "native\\experiment_028\\e028_stage_server.cpp"
+  ],
+  "backend_boundary": "Existing architecture-specific graph builder and stage-range support inside pinned llama.cpp; E028 adds no model kernels.",
+  "state_api": "llama_memory_seq_cp/rm; KV prefix sharing and recurrent copy-on-write; per-chunk cached activation input",
+  "position_api": "llama_model_rope_type selects backend-defined text position layout",
+  "draft_api": "Generic token + conditioning-hidden MTP interface; no model-name dispatch",
+  "limitation": "One architecture/backend was exercised; this does not establish support for every GGUF architecture."
+}

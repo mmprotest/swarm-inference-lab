@@ -1,0 +1,114 @@
+{
+  "base_total_usd": {
+    "high": 15.181493055555555,
+    "low": 14.931493055555556
+  },
+  "budget_with_safety_usd": {
+    "high": 22.77223958333333,
+    "low": 22.397239583333334
+  },
+  "data_transfer_assumption": "RunPod Pods pricing documentation says no ingress or egress fees; recheck immediately before paid execution.",
+  "evidence_class": "PROJECTION_USING_LIVE_INVENTORY_PRICES",
+  "generated_at_utc": "2026-08-28T04:52:25.549578+00:00",
+  "minimum_recommended_account_credit_usd": 60,
+  "safety_multiplier": 1.5,
+  "schema_version": "experiment-025-runpod-paid-canary-budget-v1",
+  "stages": [
+    {
+      "backbone_gpus": 1,
+      "base_cost_usd": {
+        "high": 0.3854166666666667,
+        "low": 0.3854166666666667
+      },
+      "compute_cost_usd": {
+        "high": 0.375,
+        "low": 0.375
+      },
+      "container_storage_cost_usd": 0.010416666666666666,
+      "current_stock_supported": true,
+      "data_transfer_cost_usd": 0,
+      "expected_duration_hours": 0.75,
+      "fragment_gpus": 0,
+      "stage": "P1_SINGLE_SECURE_3090",
+      "stock_basis": "current Secure RTX 3090 single-GPU price"
+    },
+    {
+      "backbone_gpus": 2,
+      "base_cost_usd": {
+        "high": 0.5055555555555555,
+        "low": 0.5055555555555555
+      },
+      "compute_cost_usd": {
+        "high": 0.5,
+        "low": 0.5
+      },
+      "container_storage_cost_usd": 0.005555555555555556,
+      "current_stock_supported": true,
+      "data_transfer_cost_usd": 0,
+      "expected_duration_hours": 0.5,
+      "fragment_gpus": 0,
+      "stage": "P2_TWO_SECURE_POD_NETWORK",
+      "stock_basis": "current Secure RTX 3090 single-GPU price"
+    },
+    {
+      "backbone_gpus": 2,
+      "base_cost_usd": {
+        "high": 1.025,
+        "low": 1.025
+      },
+      "compute_cost_usd": {
+        "high": 1.0,
+        "low": 1.0
+      },
+      "container_storage_cost_usd": 0.025,
+      "current_stock_supported": false,
+      "data_transfer_cost_usd": 0,
+      "expected_duration_hours": 1.0,
+      "fragment_gpus": 0,
+      "stage": "P3_MULTI_GPU_SECURE_3090",
+      "stock_basis": "minimum viable two-GPU projection; current multi-GPU stock is absent"
+    },
+    {
+      "backbone_gpus": 1,
+      "base_cost_usd": {
+        "high": 1.2561111111111112,
+        "low": 1.0561111111111112
+      },
+      "compute_cost_usd": {
+        "high": 1.22,
+        "low": 1.02
+      },
+      "container_storage_cost_usd": 0.03611111111111111,
+      "current_stock_supported": false,
+      "data_transfer_cost_usd": 0,
+      "expected_duration_hours": 1.0,
+      "fragment_gpus": 4,
+      "stage": "P4_LAYER89_PROVIDER_CANARY",
+      "stock_basis": "price-bounded projection; located validated Ampere fragment stock is absent"
+    },
+    {
+      "backbone_gpus": 93,
+      "base_cost_usd": {
+        "high": 12.009409722222221,
+        "low": 11.959409722222222
+      },
+      "compute_cost_usd": {
+        "high": 11.805,
+        "low": 11.755
+      },
+      "container_storage_cost_usd": 0.20440972222222223,
+      "current_stock_supported": false,
+      "data_transfer_cost_usd": 0,
+      "expected_duration_hours": 0.25,
+      "fragment_gpus": 4,
+      "stage": "P5_FULL_ACQUISITION_REHEARSAL_NO_K3",
+      "stock_basis": "price-bounded projection; located validated Ampere fragment stock is absent"
+    }
+  ],
+  "status": "ESTIMATE_NOT_AUTHORIZATION_NOT_INVOICE",
+  "unsupported_stage_costs_are_projections": [
+    "P3_MULTI_GPU_SECURE_3090",
+    "P4_LAYER89_PROVIDER_CANARY",
+    "P5_FULL_ACQUISITION_REHEARSAL_NO_K3"
+  ]
+}

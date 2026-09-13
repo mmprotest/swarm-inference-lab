@@ -1,0 +1,80 @@
+{
+  "artificial_reduction_barriers": false,
+  "cost_owners": {
+    "collective_compute": [
+      "local_reduction_ms"
+    ],
+    "excluded_experiment_only": [
+      "experimental_harness_ms"
+    ],
+    "excluded_single_gpu_artifact": [
+      "single_gpu_serialization_artifact_ms"
+    ],
+    "network_transport": [
+      "event_model_network_edges_only"
+    ],
+    "scheduler_control_plane": [
+      "event_model_scheduler_edges_only"
+    ],
+    "state_wait": [
+      "event_model_state_dependencies_only"
+    ],
+    "worker_compute": [
+      "kernel_compute_ms"
+    ],
+    "worker_software_overhead": [
+      "launch_gap_ms",
+      "worker_local_host_ms",
+      "cuda_sync_ms",
+      "device_copy_ms",
+      "worker_protocol_ms"
+    ]
+  },
+  "every_final_service_cost_has_exactly_one_owner": true,
+  "experiment_only_operations_in_planner_service": [],
+  "maximum_reconciliation_fraction": 4.154184155377022e-16,
+  "network_is_not_charged_as_local_compute": true,
+  "non_service_event_ownership": {
+    "inter_layer_transfer": "network_transport",
+    "network_fanout_and_gather": "network_transport",
+    "recurrent_state_dependencies": "state_wait",
+    "scheduler_dependencies": "scheduler_control_plane"
+  },
+  "one_owner_per_cost": true,
+  "planner_service_excludes_experiment_only": true,
+  "schema_version": "experiment-022-completion-accounting-reconciliation-v2",
+  "service_operation_ownership": {
+    "attention_common": "worker_compute",
+    "attention_preprocess": "worker_compute",
+    "attention_reduction": "collective_compute",
+    "attention_shard": "worker_compute",
+    "attention_shard_remote": "worker_compute",
+    "attention_whole": "worker_compute",
+    "expert_reduction": "collective_compute",
+    "expert_stripe": "worker_compute",
+    "expert_stripe_remote": "worker_compute",
+    "expert_whole": "worker_compute",
+    "expert_whole_group": "worker_compute",
+    "expert_whole_group_remote": "worker_compute",
+    "latent_down": "worker_compute",
+    "latent_down_remote": "worker_compute",
+    "latent_down_whole": "worker_compute",
+    "latent_up": "worker_compute",
+    "latent_up_reduction": "collective_compute",
+    "latent_up_remote": "worker_compute",
+    "latent_up_whole": "worker_compute",
+    "output_state_commit": "worker_compute",
+    "post_attention_preprocess": "worker_compute",
+    "routed_norm": "worker_compute",
+    "routed_shared_reduction": "collective_compute",
+    "router": "worker_compute",
+    "shared_expert": "worker_compute",
+    "shared_expert_remote": "worker_compute",
+    "shared_expert_whole": "worker_compute",
+    "shared_reduction": "collective_compute",
+    "whole_layer": "worker_compute",
+    "worker_protocol": "worker_software_overhead"
+  },
+  "service_owner_conflicts": {},
+  "status": "PASS"
+}

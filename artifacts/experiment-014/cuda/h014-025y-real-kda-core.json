@@ -1,0 +1,390 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "744649f63ed2d6edc061654f6dd5c6bc80d3d94a270bddcaef58daa81b08356b",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_kimi_kda_core",
+    "implementation_kind": "custom Kimi CUDA core; projections excluded"
+  },
+  "benchmark": {
+    "approximate_state_bandwidth_gbps": 583.471469648528,
+    "approximate_state_bytes_read_written_per_call": 25165824,
+    "batched_device_service_ms_per_call": 0.04313119888305664,
+    "convolution_state_bytes": 589824,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.15625,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.15625000000007994,
+      "standard_deviation_ms": 1.5546678704790937
+    },
+    "independent_reference_ms": 117.77,
+    "kernel_count_per_call": 1,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "projection_quantize_ms": {
+      "g": 576.2842,
+      "k": 574.3872,
+      "q": 699.0858,
+      "v": 596.9992
+    },
+    "projection_reference_ms": {
+      "g": 1070.0717,
+      "k": 1058.8549,
+      "q": 1073.5983,
+      "v": 1052.2859
+    },
+    "queued_service_ms_per_call": 0.043137999999999996,
+    "recurrent_state_bytes": 6291456,
+    "retained_iterations": 100,
+    "wall": {
+      "maximum_ms": 0.0603,
+      "mean_ms": 0.051449999999999996,
+      "minimum_ms": 0.0507,
+      "p50_ms": 0.0511,
+      "p95_ms": 0.052309999999999995,
+      "p99_ms": 0.060003,
+      "standard_deviation_ms": 0.0013065603698260556
+    },
+    "warmup_iterations": 20
+  },
+  "checkpoint": {
+    "b": {
+      "name": "language_model.model.layers.1.self_attn.b_proj.weight",
+      "runtime_f32_fingerprint": "sha256:192d37e8865ce8cfb123f1a9b700f8d46fe194bcb2266f675096bf9a9d906e28",
+      "shape": [
+        96,
+        7168
+      ],
+      "source_bytes": 1376256,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "fdd4cfc73077260d39a39aca8cdedec2151910f8d7fcc4a1eb00c254572ff53a",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "f_a": {
+      "name": "language_model.model.layers.1.self_attn.f_a_proj.weight",
+      "runtime_f32_fingerprint": "sha256:fbe2d2880aa96a06ac5282214ce145e94fec713cbaccce35ce4a8f7f77f551cd",
+      "shape": [
+        128,
+        7168
+      ],
+      "source_bytes": 1835008,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "5355d82e40c1884caf4f701ad33b932720ac7dc9fa36d195675842144118f6cd",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "f_b": {
+      "name": "language_model.model.layers.1.self_attn.f_b_proj.weight",
+      "runtime_f32_fingerprint": "sha256:3440a8a643764a0714900c5850d62f59e380dd7dbb0df52577aba855d3b7ad32",
+      "shape": [
+        12288,
+        128
+      ],
+      "source_bytes": 3145728,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "fd3fa0581587ee937371dbfde95e975361c6455a4ef5ca5e8160e4a3e8f81e17",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "input_norm": {
+      "name": "language_model.model.layers.1.input_layernorm.weight",
+      "runtime_f32_fingerprint": "sha256:a8b3dd39a7361c0b7bd4e3c07117add822000f37d1bab09d8be41c6de6533e33",
+      "shape": [
+        7168
+      ],
+      "source_bytes": 14336,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "b03b4cc3e999b997f6d2e0bfe279da0a707d9627b6f064cc6fad2d6c5ffeeab5",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "layer": 1,
+    "path": "F:\\models\\Kimi-K3",
+    "quantized_input_projections": {
+      "g": {
+        "packed_fingerprint": "sha256:782775cff922bc31ed4762094c943a53b12d7d50615826085120bea3148904e7",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:ed218bf952b89118acaa775d6e64c1e11a4a589ca3b1cacf7cff35273035b449",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.g_proj.weight",
+          "runtime_f32_fingerprint": "sha256:3be8e7c0fda13789a1603d1061e29680aae80f16fdc436744cfa6e2c8087afc4",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "81cc0ce780577dc1d1c3144c92324fd64154422fd955906dea44b471207858f2",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      },
+      "k": {
+        "packed_fingerprint": "sha256:12e19f938744b88bdb05676a95dd091e8c317306a1a75971dc6b8630eca0e547",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:bfe69e3c346ac42b9d76b6ac38ee1a71b92ec4012c41af870dfc95208c2b746c",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.k_proj.weight",
+          "runtime_f32_fingerprint": "sha256:ebc02af2cad22c4fbb00c89cd7a08d9c9b13aa7d2c48f4d366b7c2fcfdf8d28b",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "be45df9cd94c6aee7393e9b5760000ef3e64dc5ca9b0ab64fb2e00dbce84b45b",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      },
+      "q": {
+        "packed_fingerprint": "sha256:a2f97403fabea1b0013670d053bf7fa47dc71bd43dc80b645fbcb7845ddc3a2c",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:ecf2fb3213c0542a7f23b6c4e584797db95ab75173de256be64502e298c417e0",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.q_proj.weight",
+          "runtime_f32_fingerprint": "sha256:4207afdd1ce4d4ff1ffe4cf8163b0de240b4427bfe2756fc59e37ca431b57aa2",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "a3e64d671c4b0139aef1dfb2eebbd7bd3508fafeafcb24940c548f0982fb474d",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      },
+      "v": {
+        "packed_fingerprint": "sha256:b880649a91793f68eac70b89dc04dbb49200d009f906c63b2fa8d4ad6e8b2df0",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:33faa5eac8a7f6136cfd40935c7059e77656259d69eeabbaec14d655be379f52",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.v_proj.weight",
+          "runtime_f32_fingerprint": "sha256:53500f285b6ffdfabff1b88b5696c7faebb8bf8645dc7460378ddacb02be5649",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "2d5e1e8ccd31b81afcf5c3b61107aefbfca59c38cd13442ee717855e5bb0d6bc",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      }
+    },
+    "state_parameters": {
+      "a_log": {
+        "name": "language_model.model.layers.1.self_attn.A_log",
+        "runtime_f32_fingerprint": "sha256:be045bc9fc7c6f229ff5f5c8848fa3dd19062a8f3afef19f5c1139a35290ab4a",
+        "shape": [
+          128
+        ],
+        "source_bytes": 512,
+        "source_dtype": "F32",
+        "source_raw_sha256": "e62123b255be20125cdcdd04bd0af0da3619845ef97cbce72993c4d1b126d072",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "conv_k": {
+        "name": "language_model.model.layers.1.self_attn.k_conv1d.weight",
+        "runtime_f32_fingerprint": "sha256:ce9b7f3bd38e31e2c6c94e8669927f9b4217a18e8cd273db9f94f0d2b2592022",
+        "shape": [
+          12288,
+          1,
+          4
+        ],
+        "source_bytes": 196608,
+        "source_dtype": "F32",
+        "source_raw_sha256": "c2d79d57af7495ac674deb5d59f30389c2fb20307cc40ca5e9ed69e4f5a17132",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "conv_q": {
+        "name": "language_model.model.layers.1.self_attn.q_conv1d.weight",
+        "runtime_f32_fingerprint": "sha256:50c3e0a2b173981b6cfff837a21086040db78078b8e8fdb702bb3bedb78defce",
+        "shape": [
+          12288,
+          1,
+          4
+        ],
+        "source_bytes": 196608,
+        "source_dtype": "F32",
+        "source_raw_sha256": "2c18b186e8aeb8d804a5b0740dcb7a614778795fa7368e06278da8b26ad6657d",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "conv_v": {
+        "name": "language_model.model.layers.1.self_attn.v_conv1d.weight",
+        "runtime_f32_fingerprint": "sha256:d7820783b9650e1dc23ea2d5fc7cfe1413fa7197d059c9802fe637252baea1db",
+        "shape": [
+          12288,
+          1,
+          4
+        ],
+        "source_bytes": 196608,
+        "source_dtype": "F32",
+        "source_raw_sha256": "f61a97e1a52d7da0fd0bb8093a399d0b35de958c17dbe44982cf86a725631273",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "dt": {
+        "name": "language_model.model.layers.1.self_attn.dt_bias",
+        "runtime_f32_fingerprint": "sha256:7c45214deb5745b5f7860ae25899a6ff067898c142b0bc0200ceff537a3ddcc3",
+        "shape": [
+          12288
+        ],
+        "source_bytes": 49152,
+        "source_dtype": "F32",
+        "source_raw_sha256": "8403106310c52e38079300a2fb573852282eb57771f5fda96ec260b5911c3643",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "output_norm": {
+        "name": "language_model.model.layers.1.self_attn.o_norm.weight",
+        "runtime_f32_fingerprint": "sha256:a9d183b5724fc5ccc820f3b25ef291c12cdea4f7931c82399af8e1af9fc300cf",
+        "shape": [
+          128
+        ],
+        "source_bytes": 512,
+        "source_dtype": "F32",
+        "source_raw_sha256": "66c6cf56ff55bd2e71ebb90136c3f6236489c9a635507eba49093a9d61e3c7a5",
+        "source_shard": "model-00002-of-000096.safetensors"
+      }
+    }
+  },
+  "correctness": {
+    "convolution_window_metrics": {
+      "actual_finite": true,
+      "actual_l2": 329.37211210912295,
+      "cosine_similarity": 1.0,
+      "maximum_absolute_error": 0.0,
+      "mean_absolute_error": 0.0,
+      "reference_finite": true,
+      "reference_l2": 329.37211210912295,
+      "relative_l2_error": 0.0
+    },
+    "maximum_output_relative_l2_error": 2.902163711526357e-07,
+    "per_step_output_metrics": [
+      {
+        "actual_finite": true,
+        "actual_l2": 0.028237521727319272,
+        "cosine_similarity": 0.9999999999999793,
+        "maximum_absolute_error": 1.3969838619232178e-09,
+        "mean_absolute_error": 2.5515400158247005e-11,
+        "reference_finite": true,
+        "reference_l2": 0.028237527219867983,
+        "relative_l2_error": 2.820712903230916e-07
+      },
+      {
+        "actual_finite": true,
+        "actual_l2": 0.21026020241138968,
+        "cosine_similarity": 0.9999999999999821,
+        "maximum_absolute_error": 7.450580596923828e-09,
+        "mean_absolute_error": 1.6099546941543882e-10,
+        "reference_finite": true,
+        "reference_l2": 0.21026022281216705,
+        "relative_l2_error": 2.1375498411445463e-07
+      },
+      {
+        "actual_finite": true,
+        "actual_l2": 0.1926225149930019,
+        "cosine_similarity": 0.999999999999974,
+        "maximum_absolute_error": 1.4901161193847656e-08,
+        "mean_absolute_error": 2.0702820490922647e-10,
+        "reference_finite": true,
+        "reference_l2": 0.1926225493518122,
+        "relative_l2_error": 2.902163711526357e-07
+      }
+    ],
+    "post_benchmark_state_finite": true,
+    "repeat_bit_exact": true,
+    "state_advanced_from_zero": true,
+    "state_metrics": {
+      "actual_finite": true,
+      "actual_l2": 3.674832527232493,
+      "cosine_similarity": 0.9999999999999879,
+      "maximum_absolute_error": 8.940696716308594e-08,
+      "mean_absolute_error": 1.0710013604640535e-10,
+      "reference_finite": true,
+      "reference_l2": 3.6748326105942493,
+      "relative_l2_error": 1.4209767220865757e-07
+    }
+  },
+  "cycle_id": "H014-025y",
+  "fixture": {
+    "activation_source_sha256": "fc4d010e5214195c5fb78d834f24e43c9627085cf60673b0f3e3cad1ad1a5158",
+    "beta_fingerprint": "sha256:fc94da05963c2c8f9fb8a5f094a8f69af4498bf06b2d8d2115ae83efa2eeb293",
+    "cuda_output_fingerprints": [
+      "sha256:5684b75b5a88600cde5893329babd421ef4d7b82795e915f4dfa792e762d070a",
+      "sha256:ba7573aca293b6c06f77f5af6840d5d3b5cf22e792fe9303ae91baf8cca9f3a1",
+      "sha256:64f8e33eb0fee17835899da73e06e9ed963b20ac9bdf9a666681bb7b69055492"
+    ],
+    "cuda_state_fingerprint": "sha256:9d1929b2ccf70634e4be75cb0013ec96316f10dc76c5aa5db3e6b588d52ed2ba",
+    "decay_fingerprint": "sha256:af6a66d626c7ec5b0e66afcf050a329f75f75d4ac7307127cad79c4b62d8f9af",
+    "dtype": "float32",
+    "normalized_input_fingerprint": "sha256:44727fce06ee4b5ea1af981c5b3f4cbd39d8add2f85022ca7d01d4d68e4e2a3b",
+    "projected_input_fingerprints": {
+      "g": "sha256:d2a4a82cfa2fe11176ba0c8099a77734fcf3617c8fea157bbdcbc1d4fa24b5c8",
+      "k": "sha256:d58b1dfe50904034bdd6f7c9e8c1e5ba3583e597a79c9c1f83a475faa2e5b9e5",
+      "q": "sha256:c0ab1e844cfceea3846dfcfd41cac2147b8155e6c98e4483688ac4e08ab91983",
+      "v": "sha256:f2101ac5aea1f3e0a04da577fb22cd9bea33cb82cf059a58b10327fb912ad8c4"
+    },
+    "raw_input_fingerprint": "sha256:0f3c5c543fd7dfad4bccddc83cb376281eeeebd15a2c720798b4fdcee356f456",
+    "raw_input_sources": [
+      {
+        "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\independent-reference\\x0.f32",
+        "row": 0
+      },
+      {
+        "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\hidden-trace.f32",
+        "row": 188
+      },
+      {
+        "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\hidden-trace.f32",
+        "row": 189
+      }
+    ],
+    "reference_output_fingerprints": [
+      "sha256:885256457620aaa439a7a61db7807e14851a9ef1976fa8c2d847af78dc132067",
+      "sha256:573be79655bd85068d4bf460df0107c025dc7ca4d8728058d1f32c41a4bb1a39",
+      "sha256:ba04a8f805885621c08c0b53756a0291cf467ad1d504b99e7a744e4f493d844f"
+    ],
+    "reference_state_fingerprint": "sha256:49633fa2443c63012de6de87b642a688ffde28775813b8da0112ac5dc9d0e085",
+    "steps": 3,
+    "trace_source_sha256": "95012ceb968aaa31f51ccbea38beff44e47dec72572b8c22ca4fe01bbadd56ae"
+  },
+  "hypothesis": "One custom resident CUDA kernel can cover only Kimi's missing depthwise-convolution/recurrent KDA core and match a three-step independent production-quantized oracle within 2e-5 relative L2.",
+  "inspection": {
+    "bottleneck": "PENDING_TIMING_INSPECTION",
+    "decision": "RETAIN",
+    "scope": "KDA core only; eight generic projection kernels remain to be wired",
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_state_reset": 0
+  },
+  "memory": {
+    "after_buffers": {
+      "free_bytes": 32420921344,
+      "total_bytes": 34190458880
+    },
+    "output_bytes": 49152,
+    "persistent_convolution_state_bytes": 589824,
+    "persistent_parameter_bytes": 640384,
+    "persistent_recurrent_state_bytes": 6291456,
+    "projected_fixture_bytes": 738432
+  },
+  "schema_version": "experiment-014-k3-cuda-real-kda-core-v1",
+  "status": "PASS"
+}

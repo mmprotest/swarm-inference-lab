@@ -1,0 +1,56 @@
+{
+  "charts": [
+    {
+      "claim": "Acquisition peaked below the required 97 roles.",
+      "family": "Comparison & Ranking",
+      "fields": [
+        "state",
+        "roles"
+      ],
+      "question": "How did peak readiness compare with the required fleet?",
+      "section": "Lifecycle",
+      "source": "telemetry/physical-run-events.jsonl",
+      "type": "bar"
+    },
+    {
+      "claim": "Targeted replacement operated, but churn consumed the window.",
+      "family": "Comparison & Ranking",
+      "fields": [
+        "event",
+        "count"
+      ],
+      "question": "How much instance churn occurred?",
+      "section": "Churn",
+      "source": "telemetry/animation-event-log-summary.json",
+      "type": "bar"
+    },
+    {
+      "claim": "All four distinct fragment workers became READY, not executed.",
+      "family": "Comparison & Ranking",
+      "fields": [
+        "worker",
+        "ready_minutes"
+      ],
+      "question": "When did each fragment become READY?",
+      "section": "Layer 89",
+      "source": "telemetry/physical-run-events.jsonl",
+      "type": "bar"
+    },
+    {
+      "claim": "Attempted physical machines span the supplied raw labels.",
+      "family": "Comparison & Ranking",
+      "fields": [
+        "raw_location",
+        "distinct_machines"
+      ],
+      "question": "Which raw Vast geolocation labels were reported?",
+      "section": "Locations",
+      "source": "telemetry/attempt-005-node-inventory.json",
+      "type": "bar"
+    }
+  ],
+  "delivery_surface": "portable HTML plus explicitly requested static PNG evidence",
+  "generated_at_utc": "2026-08-23T21:45:10.634001+00:00",
+  "palette_policy": "hard two-root cap: blue and gold/orange plus neutrals",
+  "schema_version": "experiment-025-attempt-005-chart-map-v1"
+}

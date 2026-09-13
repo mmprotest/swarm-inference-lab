@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "complete_decode_step": [
+        "embedding",
+        "layer_0_dense_whole",
+        "layers_1_92_degree_8",
+        "final_norm",
+        "lm_head",
+        "greedy_argmax",
+        "state_commit"
+      ],
+      "independent_recurrent_state_per_row": true,
+      "input_current_token_count": 1,
+      "new_output_token_count": 1,
+      "rows": 1,
+      "speculative_execution": false,
+      "status": "PASS",
+      "target_verification": false
+    },
+    {
+      "complete_decode_step": [
+        "embedding",
+        "layer_0_dense_whole",
+        "layers_1_92_degree_8",
+        "final_norm",
+        "lm_head",
+        "greedy_argmax",
+        "state_commit"
+      ],
+      "independent_recurrent_state_per_row": true,
+      "input_current_token_count": 2,
+      "new_output_token_count": 2,
+      "rows": 2,
+      "speculative_execution": false,
+      "status": "PASS",
+      "target_verification": false
+    },
+    {
+      "complete_decode_step": [
+        "embedding",
+        "layer_0_dense_whole",
+        "layers_1_92_degree_8",
+        "final_norm",
+        "lm_head",
+        "greedy_argmax",
+        "state_commit"
+      ],
+      "independent_recurrent_state_per_row": true,
+      "input_current_token_count": 4,
+      "new_output_token_count": 4,
+      "rows": 4,
+      "speculative_execution": false,
+      "status": "PASS",
+      "target_verification": false
+    }
+  ],
+  "layer_0_candidate_id": "layer-00:WHOLE_LAYER:p1",
+  "layer_0_degree": 1,
+  "layer_0_execution_kind": "WHOLE_LAYER",
+  "layers_1_92_execution_degree": 8,
+  "layers_1_92_execution_kind": "PHYSICALLY_ADMITTED_SUB_LAYER",
+  "no_preloaded_future_token": true,
+  "no_speculative_decoding": true,
+  "no_target_verification": true,
+  "one_completed_decode_row_equals_one_new_output_token": true,
+  "schema_version": "experiment-024-token-semantics-v2",
+  "status": "PASS"
+}

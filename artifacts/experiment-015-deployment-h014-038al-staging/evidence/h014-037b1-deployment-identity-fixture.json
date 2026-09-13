@@ -1,0 +1,118 @@
+{
+  "acceptance_gates": {
+    "all_assignments_model_identity_exact": true,
+    "all_initial_load_requests_identity_exact": true,
+    "all_recovery_load_requests_identity_exact": true,
+    "bare_hash_without_certificate_rejected": true,
+    "endpoint_mismatch_rejected": true,
+    "exact_93_assignments": true,
+    "failed_physical_gate_certificate_rejected": true,
+    "linux_sha_distinct_from_windows_reference": true,
+    "logical_fixture_rejected_by_production": true,
+    "malformed_runtime_sha_rejected": true,
+    "missing_runtime_pair_member_rejected": true,
+    "missing_worker_rejected": true,
+    "production_batch_eight_propagated": true,
+    "typed_plan_round_trip_exact": true,
+    "unhealthy_registration_rejected": true,
+    "windows_hash_reuse_rejected": true,
+    "wrong_device_rejected": true,
+    "wrong_model_identity_rejected": true,
+    "wrong_placement_certificate_rejected": true,
+    "wrong_platform_certificate_rejected": true,
+    "wrong_source_certificate_rejected": true
+  },
+  "bottleneck": "Physical Linux runtime identity remains pending the single-3090 canary; the logical product path is now fail-closed.",
+  "configuration": {
+    "context_tokens": 8192,
+    "fixture_only": true,
+    "logical_workers": 93,
+    "model_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "model_id": "moonshotai/Kimi-K3",
+    "model_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "native_source_manifest_sha256": "779705ede213842680aafd79f97f1387567fe744780d401308269709d389bc17",
+    "production_batch": 8,
+    "runtime_certificate_sha256": "ee83d3040bf519d8c9d701398d69abbdd9e106bd754576e4a3d6a0fb6872c89f",
+    "runtime_library": "/opt/swarm/runtime/libcoli_cuda-sm86.so",
+    "runtime_sha256": "5a81bed70fe9544a6ed9ea538bf7eca57e2d540553d8a159e31fd7e13afe693b",
+    "windows_reference_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "cycle_id": "H014-038al",
+  "decision": "RETAIN if every gate passes; otherwise do not package or deploy",
+  "hypothesis": "A source- and canary-qualified Linux ELF may have a distinct SHA from the Windows evidence DLL while every assignment and initial/recovery request carries its exact identity; a bare or mismatched identity must reject.",
+  "inspection": "The logical ELF hash intentionally differs from the Windows reference. The canonical request builder propagated it through both generations for all 93 stages, while production rejected the fixture-only certificate.",
+  "negative_controls": {
+    "bare_hash_without_certificate": {
+      "detail": "RuntimeQualificationError: invalid JSON document: C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\deployment\\absent-runtime-certificate.json",
+      "rejected": true
+    },
+    "endpoint_mismatch": {
+      "detail": "DeploymentBindingError: k3-worker-053: data endpoint is absent or inconsistent",
+      "rejected": true
+    },
+    "failed_physical_gate": {
+      "detail": "RuntimeQualificationError: qualified runtime has failed gates: ['nvidia_smi_healthy_after']",
+      "rejected": true
+    },
+    "logical_fixture_rejected_by_production": {
+      "detail": "RuntimeQualificationError: Linux runtime certificate is not physical_3090 evidence",
+      "rejected": true
+    },
+    "malformed_runtime_sha": {
+      "detail": "DeploymentBindingError: native runtime SHA-256 must be 64 lowercase hexadecimal digits",
+      "rejected": true
+    },
+    "missing_runtime_pair_member": {
+      "detail": "ValidationError: 1 validation error for PlanWorkerAssignment\n  Value error, assignment native runtime library and SHA-256 must be supplied together [type=value_error, input_value={'stage_id': 0, 'worker_i...rtifact_manifest': None}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+      "rejected": true
+    },
+    "missing_worker": {
+      "detail": "DeploymentBindingError: live fleet is not exactly 93 assigned workers; missing=['k3-worker-092'] unexpected=[]",
+      "rejected": true
+    },
+    "unhealthy_registration": {
+      "detail": "DeploymentBindingError: k3-worker-041: registration is unhealthy",
+      "rejected": true
+    },
+    "windows_hash_reuse": {
+      "detail": "RuntimeQualificationError: Linux ELF incorrectly reuses the Windows DLL SHA",
+      "rejected": true
+    },
+    "wrong_device": {
+      "detail": "DeploymentBindingError: k3-worker-017: device is not native-cuda:0",
+      "rejected": true
+    },
+    "wrong_model_identity": {
+      "detail": "DeploymentBindingError: k3-worker-029: configured model identity fingerprint differs",
+      "rejected": true
+    },
+    "wrong_placement": {
+      "detail": "RuntimeQualificationError: qualified runtime placement_sha256 differs",
+      "rejected": true
+    },
+    "wrong_platform": {
+      "detail": "RuntimeQualificationError: qualified runtime platform is not linux-x86_64",
+      "rejected": true
+    },
+    "wrong_source": {
+      "detail": "RuntimeQualificationError: qualified runtime source_bundle_sha256 differs",
+      "rejected": true
+    }
+  },
+  "redesign": "Build and hash the Linux sm_86 runtime on the canary, then bind the real live worker-status document with this same command.",
+  "result": {
+    "assignment_count": 93,
+    "fixture_plan_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\deployment\\h014-037b1-deployment-identity-fixture-bound-plan.json",
+    "fixture_plan_sha256": "0962bc99821b9e25d6ca606ed8d0c8f2bfc2115691a8a662eca6386ea1f106c2",
+    "initial_load_request_count": 93,
+    "native_source_manifest_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\deployment\\h014-037b1-deployment-identity-fixture-native-source-manifest.json",
+    "placement_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\deployment\\h014-037a-final-physical-placement.json",
+    "placement_sha256": "943fe0748b055d11f097827bd9e483c3209b6b696bde319e8230083825fda982",
+    "plan_id": "k3-plan-2733fdeb05c0eda38c4d0d32",
+    "recovery_load_request_count": 93,
+    "runtime_certificate_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\deployment\\h014-037b1-deployment-identity-fixture-logical-runtime-certificate.json",
+    "topology_id": "k3-whole-layer-93-2733fdeb05c0eda38c4d0d32"
+  },
+  "schema_version": "experiment-014-k3-deployment-identity-fixture-v2",
+  "status": "PASS"
+}

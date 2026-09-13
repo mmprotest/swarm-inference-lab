@@ -1,0 +1,40 @@
+{
+  "generated_at_utc": "2026-08-11T08:55:50.422861+00:00",
+  "link_artifacts": {
+    "classification": "LEGACY_DEVELOPMENT_LINK_ARTIFACTS_EXCLUDED_FROM_RUNTIME",
+    "exp": {
+      "contains_batch_capability_export": false,
+      "contains_candidate_dll_name": false,
+      "contains_generic_dll_name": true,
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.exp",
+      "sha256": "ef616e7b11542d60144341f748c579dfe73bcc2633a77d2fcd642609a6e6fa05"
+    },
+    "lib": {
+      "contains_batch_capability_export": false,
+      "contains_candidate_dll_name": false,
+      "contains_generic_dll_name": true,
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.lib",
+      "sha256": "009960cf54a60aabd0c9e8f2aaedf89b44767cd20074b986f14b664a842e089e"
+    },
+    "reason": "The generic link artifacts predate the capability export; the candidate link artifacts embed a candidate-specific DLL name. Runtime certification loads the exact DLL directly. Regenerate the triplet after H014-028."
+  },
+  "qualification": {
+    "path": "artifacts\\experiment-014\\cuda\\h014-027w-same-binary-qualification.json",
+    "sha256": "0c95463f5c068bf3f0f36884f6b9f2bf222549af16bcd6755a0932d07957662a"
+  },
+  "runtime": {
+    "bytes": 700416,
+    "compute86_ptx": true,
+    "cpu_mathematical_fallbacks": 0,
+    "max_certified_batch": 2,
+    "path": "native/windows/coli_cuda-sm86.dll",
+    "sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+    "sm86_cubin": true
+  },
+  "schema_version": "experiment-015-native-runtime-manifest-v1",
+  "sm86_certificate": {
+    "path": "artifacts\\experiment-014\\rtx3090-sm86-certification.json",
+    "sha256": "aaf444d45a9c0394cc3f40ad997733d15d4722509ce8d52fd0ccb8c94f81331c"
+  },
+  "status": "PASS"
+}

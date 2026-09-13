@@ -1,0 +1,893 @@
+{
+  "checkpoint_config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+  "distribution_sha256": "e8fc112240c251695cf9c28ca359d7a0a2e53623fe5f615de80a21146b931842",
+  "generated_at_utc": "2026-08-19T06:18:36.417996+00:00",
+  "index_sha256": "997d03c395e00c55b290f4a6daf9324f45d9c0f0da1a397961c8377d0df45ce3",
+  "output_directory": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\deployment\\e025_context",
+  "placement_sha256": "015c7bc6ce4f2724123df2315607e7c261ad4aba2dd1b9def5266bfa2ac334f5",
+  "schema_version": "experiment-025-image-input-v1",
+  "shared_asset_sha256": {
+    "config.json": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "encoding_k3.py": "b9cb7ae100fed34b9337f80dacee5abbf7e261fe9b74bc0e76366701d46f5333",
+    "tiktoken.model": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
+    "tokenization_kimi.py": "f28ea66e2d862a2a5814970b2ce40c2f7d8296ff09aed90a7e7def689b906944",
+    "tokenizer_config.json": "5d0803c94db9cd78763499e0956c95fd5a225c14a727e5a6cf5db3f96f010a6e"
+  },
+  "status": "PASS",
+  "worker_count": 97,
+  "workers": [
+    {
+      "assigned_tensor_bytes": 3930587136,
+      "distribution_sha256": "c0fea54c060ddb54c92b50e141f81cd3238539d272e503aa67995ecd76071e97",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "4412e3cb56d46d7c18be35296e7dfca8910e3e890caca06ef528cf620ce8d328",
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-00",
+      "worker_template_sha256": "788d642bbeb220c931e29ad709d50977ac54f84f42448b02af1c93205e018117"
+    },
+    {
+      "assigned_tensor_bytes": 3930587136,
+      "distribution_sha256": "3844c1f7a45ae95cffaf3518f76d341d9eb11335918d8e68e221da8332f7705b",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "6c43c5a42dd60da98cc7d97fe9d21ea859270c1992f0598e1f39055c4c85443b",
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-01",
+      "worker_template_sha256": "77e88c534f0ae461cb50b53fdb505cb0d2c5078bbeab2a52c6315610d8db3b62"
+    },
+    {
+      "assigned_tensor_bytes": 3930587136,
+      "distribution_sha256": "c8f38a8c7385d213ac42d47a3d2a2a2ed1e6565f41b59bd94a105dcf97b796b7",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "d1955b4bf873a64e0a62650076b4d5b257516935641c4c1c1a9b7171859cd038",
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-02",
+      "worker_template_sha256": "bff0dded111b05c0dc36fd556be4afb7ce60aa91b4bee8dcb8d0a2953cc8bc2b"
+    },
+    {
+      "assigned_tensor_bytes": 3930587136,
+      "distribution_sha256": "decd290e84d259aa051a335c01c59d57d069fa83718c4ab3787f6bc59c8fdad3",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "a893a8260c758517fee3bb5dbb411e4047b42031cc8ee5ce13823f36fb2f89a6",
+      "role": "SUB_LAYER_WORKER",
+      "worker_id": "e025-layer-089-sub-03",
+      "worker_template_sha256": "14b6ec203daaa1c7a340873bbb1b2c5c6c6bed49705c975d06037ff6f3fa489a"
+    },
+    {
+      "assigned_tensor_bytes": 4690023424,
+      "distribution_sha256": "aa8ec2a140ab519793ce6dd038721d584bf9eebcfe8735ea988853f8ce920fbf",
+      "download_bytes_cold_cache": 7038880184,
+      "placement_sha256": "40df59ece88d9e2fb06fea8e0f9cccc82c0162f60024ca33650061254ca19d6c",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-000",
+      "worker_template_sha256": "25d01966e4e87c9a3d01035cf5b096340aa84391e6b92ec0a5283f9b09878dcf"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "fa9a2449b584ab1b3eaea812700efd900930f339968dd712fc73e9ac013a6b38",
+      "download_bytes_cold_cache": 16990911504,
+      "placement_sha256": "8bf8f66178ff72fadf5b981e7789c31cc8168744d33a2d2cbfc86aa4a6df3c73",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-001",
+      "worker_template_sha256": "4832e34f9646b0794474bcc3ddc6ebeba0c8437462372032b5f624681d910e2c"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "f1276d0235e64e30d728d8bc60fac91ef0ddfa60c50dca585f8490938a64cd73",
+      "download_bytes_cold_cache": 16990911504,
+      "placement_sha256": "d08556dab4919a6805a7c508cf591370f27e526ad8777ebb9734e721b17d4d4a",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-002",
+      "worker_template_sha256": "07157c38d6ed164f41bf9bc3c3f760bf18369f6ea63a001b61b5a79f78bc7ead"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "f853e34c94422f1ac601723116fa1ef81590ddaf3278e11382de89f933ff2cdc",
+      "download_bytes_cold_cache": 16567501776,
+      "placement_sha256": "1e51dfa24cbbe70124363cfc9a0cc596e7a97565ef454f7ce590e5a7eb0dc2fd",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-003",
+      "worker_template_sha256": "2e292ec49d352f2846e0c8eaa18449a55ba51e7b322bf3d2e9e60bd7fa04bbdd"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "7d3c4fc4a36394a3b3927931e47dc256b503f5f581ebdc2fc6978b75fe570e4a",
+      "download_bytes_cold_cache": 16990911504,
+      "placement_sha256": "d93911afb6ff966ee3097a8f7e4833a4a155bb93542839d8d6b3fa53f656bf5f",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-004",
+      "worker_template_sha256": "98c6d61b0815d12166b48e133124b9fe24204c415ac639fe566c49f621e014cb"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "f3ac2bdf8a6e574cd1018ac00a8fa3720ef718fb847d2463da5e32f875c4a339",
+      "download_bytes_cold_cache": 16990911504,
+      "placement_sha256": "42a859e01b7008f8b024dc717f54d0a4c5ddca40ec1eb0df4bc00648c5b42b9c",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-005",
+      "worker_template_sha256": "300b5b9373af05084809fb469318c2faa8fad5fb6709b14f06ef6d5af7ac7fe0"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "cdf4d40f1e492284ef457d723077e13c712c52ec7f1d8fdeacfa5312fef7e06d",
+      "download_bytes_cold_cache": 16990911504,
+      "placement_sha256": "949a091739ab91d29fc4faa82f487834937ab08f65b767fa42237ef8f7c4cdd3",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-006",
+      "worker_template_sha256": "e3d658956890f55daa2e8468d6565bfdfbfbd626046c48d73c18ff18b266be72"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "09b5926dd3f0b779193602e5f9ab1baa37b9633a92967487d03283438bc4db8f",
+      "download_bytes_cold_cache": 16567501776,
+      "placement_sha256": "3b75256e3ed5f00819b24afaec93dcb230f2465f6fef73b633bce00b68201853",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-007",
+      "worker_template_sha256": "ee3a9b53845690692f35f51c5ba381ee785de592c7f49b7de03576919bedfa5d"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "bef03096ef056bf30c6e1771991d5b5598cd80a7e8773ed6243cd05d5280b34c",
+      "download_bytes_cold_cache": 16990911504,
+      "placement_sha256": "089a6b9f0250b6e60124e80e2dbe488ec1b418699d14f372911615b21f7a6df7",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-008",
+      "worker_template_sha256": "90684179d6d112f18441225f4f8043c9d047552181c30a96b9f493b61413a153"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "06bf56fed0ba82227319b5247bd016076341ecc8619109cd7982385c3cbf6055",
+      "download_bytes_cold_cache": 16990911504,
+      "placement_sha256": "f39a5493592894325f81bdf40b2db6a194f51b3eaa2956670c08948037358853",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-009",
+      "worker_template_sha256": "6f158f991ef114b11b7802b77e4cdfe1973ca627c59bc43542a03699bcdab177"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "ab7d61af9aef8186e38bb75b5931054e132631306161ba371b0637d5b480f76b",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "5168902e278853613d727644c667ae1cf83c46110b6fe68bc22d6db6795fba50",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-010",
+      "worker_template_sha256": "e0d6498e1899c3992e76f6868a790fd91422f3d09324b68692625680735bcb29"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "bcc668fe10da121c0588afc152e5ee02abb2cbc789969c506aa7a2e002eab377",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "727298cd9614e526a0aae12742bc3e754bf68f0f7998120e529b649280bc6d92",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-011",
+      "worker_template_sha256": "4d8c57c52c3be368f573795d93753441d413bb7cf61f1cb21e4492f55dc0167d"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "e0576191531fe15e77d75f6c74248d0fbfa9a9e3c365e10745193ac634ed7ed6",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "cd0f4dcac71a15812bc24c19649d03f18f14e041fa52146aed8c3224f30d1cfd",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-012",
+      "worker_template_sha256": "a71cbb19f5865cf82b6b3e466a5b8e53e169465ef33705bc577201d2588306d6"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "d9f1d7e31b2de80bf4f3d9f6eab20452d228860e09f533515277ab73f382e976",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "ebef83fea7bbe85aa1790f6947a1bf21bdb644695a36855d2ad5791126fac793",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-013",
+      "worker_template_sha256": "ebbcb22827ff56d9c21221955559cd205ccd52a5408a14b547e6356f105145e1"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "b131bf048ba8b55830d8350f51abca790955122418912c408b8f9126d6b27099",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "7f830af7bb9e383e26822805b80d577e5a83bda069b0da5dd2b8b3de6a3a6d12",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-014",
+      "worker_template_sha256": "c4804cedf520d0c154d9e82c415145fbdafd3b648858be3f116d83fc54a05476"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "110e5721742d443e21d724f91561a9fa8a3e5fca5909f7e674fdf1e6a6de4ad6",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "5ae8a2cc34a5f7ee4c943c8673008ef706ebf9f683023d5d9d9734f501722992",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-015",
+      "worker_template_sha256": "c201c2120ca6401ac3d23ad14d1e9aeddb9b4cf92d1b19e79c78b2b9fc64f3e7"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "00ab98c005403e6ab82f58f54191f6579b93d8c1b574dfb88db263952808839e",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "d3cb94a70ceb46ba866e31669d52fc08ce6294e3164ba7a2773ff9dc4524d69c",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-016",
+      "worker_template_sha256": "472afa5a4bf62f008d133362b31e69bc261f2960d8804a392614d48ba7fd8aff"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "941c03adc615f7ccd603d91bbaa4dd94ffbfc152a07fdc7002c14da5c5eb1819",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "35ef987ba767857155b0b81847e3309ae86c9188e83c7ad7c286ed356754b652",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-017",
+      "worker_template_sha256": "d3e01b260c2d6d97025a29c0a43813aff16c0b8187a0100bc21423c9e77746d5"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "b3ba1828c5edf9d6d1bb104413f9b7d822977417b9ed605de8c4ede04f742bb6",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "6d2437fea807362d3e3de9d7c5dc45dfa3de15d3adf14b4a690e633f88d7cd21",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-018",
+      "worker_template_sha256": "1b01c860de7bc966cf348359774c941cf567088aafce583b5559c652c5e40eed"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "f11ea69f4c6f9ea481348657b5f05d459b1801e7fde58f814c8a2b56829c7c5f",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "f74c4626b461485bf6f4a3f643966a56d9c8f48e2a4d27e56ad5a9fa0830089a",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-019",
+      "worker_template_sha256": "d32f3dbff81a7a467f899f5844b24392b4f27257c3dd697d10851744f823f818"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "3aa244d63db73ed0ec7de16b72b4d75a9ead5cb963ba8c059996030d98632983",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "14e9a75f735dc22e5b2dcf34a16085311cc4876fc54044e767a595b7d892566d",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-020",
+      "worker_template_sha256": "9bb6827f433e837f38d6c07ea6524a7ff4a56d9be5b8cf55e7314375a7b1a9b6"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "3ad60de36e0ef8f1f3646049e06503e07d5d93d6a213e77e2a09da638c3c3292",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "628bca74dbc5116f804f9cd72480e0654a3a7fcbdaa5408d8b3bee05fe5af683",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-021",
+      "worker_template_sha256": "ab54e982b8d033a6f15fd06e1e2c2032bfc2e315e7497a283a265304b42258ec"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "689291785144fdfb410d4d01cc3466c93cae1a7860181c7743c133ac3d1129e3",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "404b36e2180fc0742bc6f6d14a6647c68d22f180dda78bc8ed8086147f270ef5",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-022",
+      "worker_template_sha256": "c57e4ea39706dc225b155ba05f9b351d4c7d57ee1f9a6670977eab19c6d83cc1"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "fc3e9efdb310db51b8ecd4acaa8695baec61d873351d50008ae0d72a8914fbee",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "ba95acd877bba9282b72d0c4e619728817467e2696cc8e0adbcfe823e137f3fc",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-023",
+      "worker_template_sha256": "11d7ef3d760a51c65d97376f2b2bcf8582dc2cb128c7c4b226339f6e1104edc2"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "76d752b0011aacbbe9038ad63532a86a03865ae073844cc3a5df87de449f952a",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "bd978f559b2e94737d0cafcf530b00d84804a238ce1283785d9d5a968d1ee514",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-024",
+      "worker_template_sha256": "2c89b94b0d07316f59fc94f7145e53d1b3bb4a1e1f06b9dd166ee61288e5e621"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "5430720090b06f83a53f9568726f9fa39ddb78f278763e7a35627320acc6edfb",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "c44f71d679c0d8d79cc39490ec5c89f84406d2279df63d2fff84cffb3cda6478",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-025",
+      "worker_template_sha256": "291e373eed012280c518cd01f3e161811df5f205ee1caf4b5276e0e1c39aa9a9"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "7f57bf76647e8e471b5529a699760b65ffb91133cb2b28515c55d4d035fb48c7",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "6d0974dcdb0c1347d5307b5fbd8b5b4c101162179c4c6486805eaa1f53c58967",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-026",
+      "worker_template_sha256": "84da30f377c68cff4ba4f4a8018b8d2b1fe4bb2ff1dccf03d5e2aead05ff45bb"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "70741ef16787189189a3f75241e379fb2cbcb870f0bf14fa914802ecc86b0578",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "8af350181d56c542ed56aa067847d45a98b89d90b3492cf3a938645a0323c22e",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-027",
+      "worker_template_sha256": "b05f5b9f6ce3bbd8701ddd41c91efa03e628017ba6a5f0a3d05171910b27379a"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "45ddd43d782371e9913504f4b034c5e7d1d0be3225a26da02807a72bfad60cc4",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "e414e1c908978201c5fc69e6ed1654969a7f7b04c0d005537d2119fe46b1ae55",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-028",
+      "worker_template_sha256": "88ed02f4c4a9c9bfd3fc5be4fa422225ba167e5a7ea9cd9f7ec06cf92c6a9bee"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "078c4e0d781a5b147d7696a9b097688148b5b8f0ac5bc902d5926ed3417f1e12",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "eafd1c91fc88b97cf88643f6700cb06b7e763ea8617f1429fae44525d395fdfb",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-029",
+      "worker_template_sha256": "3b4c333f03929c424f1f344dc8617cdda56912bd90e2b4e8d2bcc8060d6dc105"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "8f43cdad6b9a2c50d8275b7ed92b66dba3f15d67f90eef010594468f190af7a0",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "6590d6aced3df9d17994941ecea9446711c8512d108d413f9492b06c4c0ec992",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-030",
+      "worker_template_sha256": "5b60662d905d817c86383183e5315e293c195e54f13c25e49c3515041e6af391"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "fb105f0c9d55e86bb8cd5a0346351e6b629746344aef4688b6a901aab8860cbc",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "2cf0d33b09239ecc7ecbc48d571f9a2a663bb299c1219be52c702d7207c5b0bc",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-031",
+      "worker_template_sha256": "2ee31f4c892155e5e3514563ee795342b024c6600199bfe01538a16410ae4d2f"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "fe619bce4f134284141c712cdda859ae8d7bc52bf31f25cc001a439d912c7780",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "faa44512c138518411fa4c82a9a3edbf4750ec8bd3914d97dad4301c034f94a1",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-032",
+      "worker_template_sha256": "47231490fa1cfcb1ef38c0d9b0a9865d8926d00bb391f660c5fe3c9c61cc3477"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "9e93f8f86ed949abe448b8e27efa362c7199ff06fa6be54c5ba82dbd26883a49",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "0455879fb3bed43b69d64836fd34925d782754644f21ddde23c46ea33acfc1c8",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-033",
+      "worker_template_sha256": "9ad8f0029dcf11d21009fcf1bd72bf756a909b0856cc2af91209ccf78d879fb7"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "ceaf7b1966fa28aa3e1d996fff0b3e7817be3a1705dcb6a8ece7382b0f8d305c",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "33e857d6cf1795c4eda794c2b7a6bc0726812b70b6f1aec741aa6eb1f44c6761",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-034",
+      "worker_template_sha256": "68c3e60a34583efafa500016afe518fbbeac2915ab8f44e80e36f0affd79cdaa"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "e8f975e35273c1fc6da478d1cc480809d44fbf78458698d1fd7adf942d3801d7",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "d8a35ea23f016cb30d5f7cf6f56c8944b8de9aef8d8bb645a0415fe0aafcb65e",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-035",
+      "worker_template_sha256": "475d24da51acbaf20f22cd007f5e6aea1024c8b831731c52183f74efe6064b0b"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "992757e5327bd2b8442d1f687c1e338998d8bf9eca9f10adae9271a67fddb3eb",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "b5a15b1b3a0dbd0ff9f24e0aa54e3a4fa59a0fa41e0c8080dd5c37213806b314",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-036",
+      "worker_template_sha256": "0d79ec93412c1c9de2339c7a52cf5d78d1490018ed624d895657c5b955e168cf"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "6fd437e573405bfa25757473da62bb78d9b817ff5c8e18b716d07f2099b79073",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "8fece41825ad39e0873ec6c5f6a513d174fb9e0fedcb87ceb4b36106f8dcb0fa",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-037",
+      "worker_template_sha256": "4ab745d03daf627dee753da7022ddf891a22ecf1d516e1ae9b1e0da015d7a37a"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "10ed86d093a3dc0b0caa2ef0f1d67b28b29fb6eee2e24c6945176c4530225978",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "5495b3d36240b3be5dad7e8b63af5f5e6f78b5ba023e71f3e62e6349f99d9295",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-038",
+      "worker_template_sha256": "9680560e920edd810b7b1e0fa545bf988e6c86807596857ba61d8b46bdfdece4"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "6d8b982eaf3c0429fce5241b4d8591fe58200384c5373987ad9093822c73e081",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "ea067103f49394bff127f64239811a0d940db0e4ac7a0c70dc9b87a65e1baae7",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-039",
+      "worker_template_sha256": "c76e010c70ae0902a5ff6d006e7933cb1416fadbacec7647949b27986ba117bb"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "3ec8b9cec8395b59c9546371c08cc3c2c62755ac68a566cd2781c5eca873b4a3",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "577a66fb26762931ae3d371d57454aee4d2f3d49fcf4c7b6ad0ff5432094a8ba",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-040",
+      "worker_template_sha256": "774416a4da4f83f4770e2ba7203f3cde26f8b2437fce0f5bc033370c4b8f76fc"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "69e8b6652199fb86353d2d8314f532a5af20f99ea228990a1374fe974a26b36f",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "b68188d382b313d61649fb1b750c2b6c0304e526549e24823e815852632b7e53",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-041",
+      "worker_template_sha256": "5823742ee0bd3a84b40dd54810f610392cd5ef34c9099b2ceaf9439afe5da964"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "b02c63e5d196cab42df299c41aa53dd8e2c06bd174b2c80d3932478a84376675",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "8d5a033a127aa606efe8a2137b8166f599e2c1bf70b8754aa80c4036c615c1cd",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-042",
+      "worker_template_sha256": "c7ad6a9a8fdec265cc510d1609e6b4decd2024e0ef1c1948265524c8fa01b39e"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "d2896fdf8a83cab045df6b8bf974de354faeff7d6436dcc90c9b8c004372414a",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "723240ff25f894646002cef77a6dce4ad3c94bafcf6565a5561ca945b70b82a5",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-043",
+      "worker_template_sha256": "2341542c4cc03d7303671a8769d4eadb863a686744f896f2e430949c91afbbc7"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "a125d1e7c72d2b65a24a48c73eab7bf0f40ad9ab4ebab39ef07508afb64e4d0e",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "cae4855ef82c41a1c00c41ec9ec6553bed89521d58405a172b39a0e2909235a2",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-044",
+      "worker_template_sha256": "603e39ce05375d6bc83fffe9009418f4651fc26f543cf8b58665999bc4404768"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "4b070bde4c523f1819e499127b5ceb18703ac1d739a795aaf036280cfc10007a",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "6add81e4ae5001a7e188b93f1e7f7942c330bb14fe8f7699cd98c342a98441b8",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-045",
+      "worker_template_sha256": "9b7940d0669fabc43ca65f58389c9d19d2022cb48e7b1b832984f08ae686f74f"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "1d3357353a0e3931fc54d9488dd025696acd14901eb4d0411568dcb81272e7f1",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "429030a35ac7c60ef4fb2ab8860257c96c7319b1d4c5b8f842784a9a17d4047b",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-046",
+      "worker_template_sha256": "280c0cbb06d91101389e19c7a0f84147b096fb01a909a14d17c73280113c3517"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "5c21faf46ef686e564f7f295c45a51ad2458b9864cd42cdb5f7dd468fa38b966",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "3818f2da43f761c72d70da14ffbdb40d6f8d394ca33596acc0fa6dd0632fa1cc",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-047",
+      "worker_template_sha256": "a606f899597bc256f88f14a86c8c5e53c0e90f313c5808ddea8e2d3d76ec376d"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "0af58bf5f43c66dbcac95a539bc5de5d8617ec6fb8a6d608fe47a217826290c5",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "9c92ed8f4bfc7b2439513af31df629f4cc0fea8134cc8a51e22e049a27436b2b",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-048",
+      "worker_template_sha256": "5a83e74feda8070a6e91589dbc5adbbe1ede1d7b69aa56636f8250a55876af69"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "479dd28523502b02f034a3fa7ff02a524aca0726a2a8170ca88a140244a17c2b",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "14f11e57c47ca59861af97d650e4187d731af8e8a978aae54d76621e07c491b3",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-049",
+      "worker_template_sha256": "30854c997e2c243d6266eaf1402c6ef36dc49d5b9f3d665914ddc2ab84415405"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "df89f6ad6a9eae97f9c4b6090e5bf3adc4efa7a283a43efbef0025df7c3bc7e6",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "53ab49d9b2e0b1cc48410fe94790b5692477263f5bcce6e3f8f1a1baa991537f",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-050",
+      "worker_template_sha256": "b2f07adb0f05f4a5dd1ba3493a45c28d079d8af4fff75675984ad8ec674ffb2e"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "4a128eb7eb38fa538f4cf8065f7e1b04cc73a0d2e54d6021725470172f797a48",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "75a6ebfe0031cbf824de7a770ea859647f76715b19fcfc52bcb47559c79e5c17",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-051",
+      "worker_template_sha256": "50ec0b44620609b5f8e9f82a2aed40a0271421fd1bdd1b49c16c8a7f5d387e4d"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "c9fc23f5e5b464579b0274f4a5d9c13209a22b294cde347f8eb5c93e0bebb6c4",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "b6128ae935777764aef954df30f809b6df5c275269a0a412a8faa7dcfcb31d43",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-052",
+      "worker_template_sha256": "7ebda13d3104ecce0a135bfb5763817e21ce8f8d12f8392143c99c1366da9295"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "c8872b980f137fb54deea0fb7dc81ba4016e54e506235e9ffa44797bdaab81e9",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "75ef6794ecbe7ab09b7f511e022966c95ace8d87be8446c14c140c9beb121cb5",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-053",
+      "worker_template_sha256": "de0ba323415400017578057d74a58f3a2dca6ce28a89afe35db233d2693a52dd"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "27bfa56bd080b80d5b62123e153b39142c198ece3f9a37d28325408297921771",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "292874ac83b9c3177221511fd91166bcaa0d2eb33c2e5020b192699d56d93f78",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-054",
+      "worker_template_sha256": "ebf9102687eea98c16e73d32d25d18c731ab8ac6d5dfa95a7102aaed0bb24e77"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "de7e6a20f7e75b460342015c21d179b80e5ca36577b0e0683928149d59ab3d7d",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "b3e624821c478f563571fa437623ce43888ebe933272d4a21ebb9971d010d9d7",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-055",
+      "worker_template_sha256": "9d2cbab18cf7e90147f6fded7728771521799ea4f51f763fb169172219d64e06"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "2a1222ac0990b94312e4c4ac8a82c3f7f631f434f6a908926b35ec4fa3aaa18b",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "b1ef8e298d563b952857749da345674e160980f7f6e5db3bd1fd6dda1661ebde",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-056",
+      "worker_template_sha256": "3d6bcfaa2c9d8c4124968d136e9c3389718f858393a4ed1da038b621c35b0b99"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "27f82c03c494eb3f79b3b282b609510a4c202a5fde9c1bac02fdb5aab7b39517",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "bb743d3fdd111c850506abd0928758b716e1684512d2c9ef8c22a03cd8294ea0",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-057",
+      "worker_template_sha256": "26dfd66358039535803bbdd12e0418bbcbd0284a28da6aa4b6de94e19b08ebab"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "e67ace01405fe6be9648372e3b9e03b6db9f21a5043b182008b66861c767f1d5",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "d1dbb38bb6ef2721de6eb7ab7835a1f5eff59113591d04bd721b62d98c2774da",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-058",
+      "worker_template_sha256": "6d4d60ce8ab3dc01687fb24911a878b3c73e83e78182235e5cfe4440ca7aabf1"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "2ced84d02f7835a28133e8942747d21f0940ebb6e8d4445c6603d113aaa6ae03",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "e1f98968d5476b6d95b2e3a8a3296266a0fc24d8f12851d1725949f06304ea9d",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-059",
+      "worker_template_sha256": "9cc05ec3439cc9a01cef9692d646a3329e8a2295d3bac1574181e0d4f067556d"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "f2e0fa0768847a6181960d8db26955611bb5abb12a49d749633ef9ff0dfcbbde",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "4f877b899866fb740e19e859cdd506384e1eb72119ce519a8f3bf354c172a009",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-060",
+      "worker_template_sha256": "4ab29e9060edf8e33cdac17873bb1eab3ae6e7f3214408520a8fa7494932d158"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "12c2a3c5e971d466b882788a0ec62b323222c1d16b8f349ecef015c8905a880a",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "fcee39003fe0ad92bfe0030f2adf2e92b24820875828a73a606f21b4c13b85e2",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-061",
+      "worker_template_sha256": "c2c6bb63d4dad9b28c4cfcac2051ed5fcdc7c0794df2845b1f388c5fd6986753"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "c39d9146726e91adb892e11d2307f9faf25a54ad2e7664d27b649b7d851cfc2f",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "a12548f43359aa76ece914996331b6e8bc3063b2f6e372e0fb345482424e5cd6",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-062",
+      "worker_template_sha256": "ca1aaeb55a1004b65e56df23b1b6fc19825e009fef605bc4e88608a2d32e4bec"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "15e92de2bf29920a0c6ee81de6b26dd8a986657f8b9473797dfbf1a66a22df3f",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "3c328f8004c3f2bd29796fce3738985f79c4e5a3528bd0f377421d529f0689bd",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-063",
+      "worker_template_sha256": "0487de07285e82b04b9877f2a73a87aa57140d41a0bd08e0768be64a8397ee11"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "7dd4bce769b853bda210b25fa7f07596463d5eb9d325eb1fca378a87500315ac",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "f82d65328677b622387a9d5f611aaab5b6fe638ef9d604a5fd6645853259a75d",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-064",
+      "worker_template_sha256": "5d7c320eeaf72d750027b17fadaff9808290a8649043d00f18fadd922dd2cb5d"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "da107a27c2b14b439c4d6b5000d6cd5ed031de467cc2bb72b1b68fff6c3a8e72",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "748ae7ae91b8d198a10a79199f8656edf239f3781037657a84880486ef13a102",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-065",
+      "worker_template_sha256": "af55b9190c2368b535b241d5dd3bd121a88a9e8edbbd5619134cfcebfbfebb07"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "f9b380505c1438c7a5d4e21080b4811fc4b7e3f1b3d654d93dd320d70c16c88d",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "e8ce826f2935833361d683c54baa6adeba94ea9fbf8c0ab82220fb729a9214b5",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-066",
+      "worker_template_sha256": "3ef44de15597aa8bfb531f63e35e6f60ec1327aebcf8c7beba03bb335ce88db7"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "15fe888f157ff9a96769480a556d93019f191ebd09241fb784c1f9c44835fb54",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "e52443f7045cd1c4acad46696a9464d2585b0222860913d4f412b3083788e484",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-067",
+      "worker_template_sha256": "a5fbf8b7c20e0e186848fb88797c68a23319dd3f406dc38cb628a7ffbeb45713"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "a3ef04430d21cbccb149ece38028e1770a73a9344796be076ee26763aa6b6850",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "4bf72e0660b8cd531026657830ac260fd3b12c97e06b0e6ba576180638077157",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-068",
+      "worker_template_sha256": "0bfe0f5fda168f0079549cf06482c1a6246fa9aed137db05fb2195f1113200fb"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "a71b92597c20f33acad30a04f2e55cd85f8128926e8cf7a17515144d41438855",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "e2ae3ccd3952a61e68e858644113812f35424c40f17fc9ed19fd49adcad2e69c",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-069",
+      "worker_template_sha256": "f1ce5936b8cd9a0ac79afefca68d87137494e0f1a8f8293c953686e12a5d942d"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "23dad15324588c57fa0150e6bb077501b40e9610ea8a19dff12174c2eeee2c19",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "b7a0ae42728b0782b111fed1eaf78dfc011cf74a6daf01dcd856900d9adeb897",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-070",
+      "worker_template_sha256": "10f6d8e9e8f8a6566102c212b48c44d4ab004119cdc3b0693d938487febf054a"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "b4503e268afe946b68ad0d8dd3692db8e1101968cfdf70567163357b15261111",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "cb242777cbbae8a2a3a1570be35d1a9f11e4af73cb60d058b9155872a7614e15",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-071",
+      "worker_template_sha256": "16552e29e3f3e09b4d6e0ae802f2f3d78f06be8104cf4ae0fbb212a202e18041"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "1e0d9400043ed4c6d72a50c89c0d1e379aea482dbca2d18869fd9525883057ca",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "9f59121df88ff98a67801a8afb3b0789ffe296793614acc743b3fe53a62267e7",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-072",
+      "worker_template_sha256": "be20090de9a257d45be9907685cd5b9e3d0604b9f1ddb9aeed286207f8a62160"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "71dcef8eca09c3454cb68e28fa9dfec6ff6633a6c9cec0caa0a2cd359b46a7c0",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "42b0efbe5893bb8f5155ee7b54c1f4f7856500a6d61003e3e6f3415a63ebdf2c",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-073",
+      "worker_template_sha256": "5c5072dee43307a4a989c4d836f8e29ab9808539c47e73b0c6c6c8d1fb390bc2"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "f3fb3b0dbcf9c07885e1289288601cb0fcc59c521660757c3d1bbcfec06ad12a",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "7c5c7336d0e1958fd7f7777a765c201c833cf052e74f3c6a07d0ec1d0b62c765",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-074",
+      "worker_template_sha256": "fb12221f81d01354d647aebf12762c4827af4314cd4c9c661a7a710d5492da4e"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "cd1f0f22a72e3b099707fc23ee32ab8d45fc620efd06c04adcec217448b2e5db",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "e183b8a6edd9d9afbd49491f94ecc77bdd22f551cf34045fff3b6419cfd3b227",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-075",
+      "worker_template_sha256": "c8d5618e42e54dc5cf480cb2c9d360d1dd74011b681bf7780997cfb6be7df749"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "4e21cf6f37f6d7aa0b9ae840b738a25e7cd934beb377195f317467dcc0aa5184",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "46af5ff8abd6c35e54a7ad3a336562f3cf84b8c03d7c385aaaa58f26fca152e7",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-076",
+      "worker_template_sha256": "e086447a93533fa38b2fe07d0a9c15f43dffe779038abd0a6227236f3b6dab1a"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "9b3994cd8a979f18af06f153956ee868ed32fadd97d6d43b2f77cc1c8f98a9f0",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "bd342c6e30c18c6a351e3e5604396e2e6778308854c374d32e911a9a3ecf0c06",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-077",
+      "worker_template_sha256": "a1f11a15491ddda1d8cceb4652184249919f0f0f19ad4e9ab1d2b7c261d06346"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "58dc588e4f45ee558e3047a9626f9028dcc5cd4cb325cb8cadc2d7b2dafa2122",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "6ce573053429c2bb7f296d10050620a5c03d307200f957d31a5fce81f991e24d",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-078",
+      "worker_template_sha256": "81d1a72e976b2eece8cb83fd55900784e7088fff0fdc0ef461a71b5ac1d4fdc2"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "151af214cc7055478e6cbc664f027051965d705f1a0755004dc1c00c87c4c749",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "2b216e7d2dfb438d72b927f7a4edd655427b59994afa727ae3fe894ac6de9df7",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-079",
+      "worker_template_sha256": "ee0570f15f6c74a3bff0092d12fa0538cbeea93e56b610e27abf427f8935ba77"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "79a6d6fc11cf3c133cf7aa25ed34036340f0ffedc24078abad463dec64cbcf0c",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "76ea67adf36c939c4eeefacd22d03e1f2185d294c3149fdc7a587e4cce086481",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-080",
+      "worker_template_sha256": "5052173f8700de46c4904364e727665d6c8995bf4e24c9a582859eb1d844a30b"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "66155891211b09797f95ebbde09a2653fc8d5d76313426b264628586f96edb24",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "36406c6e3df20dc6d4368d54fc5a660afc0f4b69906efe971ada22a2e8796946",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-081",
+      "worker_template_sha256": "3b940a1f6c789ac38db4ef6940bc507a841c2ad8258fc270e023797be9687d6c"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "403bcf7b630b653b4e9e1fa02918b975beace040429dc903972eefd152630a5f",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "e1c4c8af0ade256adbdbdd006f6c6d23222b725677b3f42ea5e3812e0fb6cd1b",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-082",
+      "worker_template_sha256": "564ac82cdf96eb3c1b697b2e703b88fe6c17a32c37a329b1e55d3a8d53819afd"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "71ca244df2bee74817c592b96cd4eb86756c40cbfada046d9695795970d37eaa",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "57562183463de6379a61f43189b6b298f74042dff833d0dc6db21ea64a2236c1",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-083",
+      "worker_template_sha256": "fcfc77bd15c96d5d0249c95cfbef7201261378e60635c39122aadfc137fbd01b"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "c3d32fe090df1c3f8c461ffd537b4c3bf8ba25d643e5e3ed778be3975f88c1cf",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "b0fb5fa5e8f0962500cb77f360d525683e97d87a391a2232019978585c0bc663",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-084",
+      "worker_template_sha256": "4d3f9c07bfb00d417efe4d54dc6d18ec57b787c0bb000185f2caf6a0c42a7629"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "28a419a4f2c67de9e4830ca9114160a2f7a30276e770ef841398588ee035b138",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "161ca0dc5605dbaa80f5c39e1aac6231825501eea2095503a1a5fd19cf699ea3",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-085",
+      "worker_template_sha256": "66fb8fb2727c2e98711a79f90e7f8f6a6e60035087686d6f45436fa46e8493b7"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "f6770f7726e87055fb66aaea9fda5f31d23bd50fd63ac41f81d5fb0de53a2b7c",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "bf037b3cd4876721b161f914b1985b08ed14c17a17f714b79557e7c548a837db",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-086",
+      "worker_template_sha256": "d62bb2727c3543670edb0ba5b881ed81ab3d52b88abfdd73df69a4b2b42a0c9e"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "bfa0981c782eb8b10388fe8edb7feb67911bbee1594560c46d242d1555944b22",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "abd007b5c75cedfe38446d29f9cb1558803694ada7eafa534011d6be1a617e9d",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-087",
+      "worker_template_sha256": "874e1776cb4b313d4151db1e6b6fc7e98b486b18cfeccfd7ce542c763d91f77b"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "9bf84d3ac3366480210d39d5e1337e4a5517ba8ef39762d4e837a3bd7a14bde1",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "a00063ffe972797899f24ed4fb7eed954f52de86dc9f21d3209d5fa815a62d3f",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-088",
+      "worker_template_sha256": "0b0f7ef3b4d6bbcd1d2c62ac7a978102ba25b18325658cb4ad090133addae997"
+    },
+    {
+      "assigned_tensor_bytes": 1267744256,
+      "distribution_sha256": "dfe15979d48e85dc0cf99319e7df98bd1fda01d2defde7ab5727ebb71c421e58",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "c33ced5efbd30de61eac0bf547be89f8431c481adb8a911cc12d18712db81af2",
+      "role": "SUB_LAYER_PARENT",
+      "worker_id": "e025-stage-089-parent",
+      "worker_template_sha256": "958775b0640a3d31074acbcc2177c3ce60a229bfb240878cd629e817b07e75a0"
+    },
+    {
+      "assigned_tensor_bytes": 16990092800,
+      "distribution_sha256": "c37de8dd06da01874d0be43ecc8fd660c11564d6ae9d07f81f85efa306aee944",
+      "download_bytes_cold_cache": 16990916912,
+      "placement_sha256": "326f164b65ce22b578712937653e6d913a4c139a99f0216e133caf37281a8949",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-090",
+      "worker_template_sha256": "36278b9b12d6121a6fcd71576615abd3a26e8567c02e7b042eb7d032eb1103a0"
+    },
+    {
+      "assigned_tensor_bytes": 16566684160,
+      "distribution_sha256": "05e8b5300f0054bf4255a4ff58a11177546dba189cfd271ad21159e0f540b003",
+      "download_bytes_cold_cache": 16567507176,
+      "placement_sha256": "e4db6e1a5a48265942eccc297334b2842b4edaec56ac9b1ee71b8f2da8fbc00a",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-091",
+      "worker_template_sha256": "a56082c57e78ae653b7ea45925dccad667c5cc0f3812fd88fb007bb39cd976b0"
+    },
+    {
+      "assigned_tensor_bytes": 18915537408,
+      "distribution_sha256": "b661b567b5c1438edb26dff52ac4183024c010c12cad1f6d8af9e62a6b3926e7",
+      "download_bytes_cold_cache": 21265171248,
+      "placement_sha256": "e21f7c6c39d842d7ae1af797aa537a8408901333e12872a9470e35cbc7486139",
+      "role": "BACKBONE_STAGE",
+      "worker_id": "e025-stage-092",
+      "worker_template_sha256": "7cc53235e9333cd7c7f72c11d752f0bbe36c73b59920128cd0eff2d2fa923806"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "best_complete_measured_architecture": "B015-000 control only",
+  "best_justified_result": {
+    "admission_reason": "constructed solely from validated service and shaped network inputs",
+    "admitted_to_decision_frontier": true,
+    "aggregate_output_tok_s": 97.15028433444262,
+    "aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+    "architecture_id": "D",
+    "cost_per_million_output_tokens_usd": 39.886656292844215,
+    "dependency_bound_tok_s": 1.1766258547730912,
+    "evidence_class": "SHAPED",
+    "name": "hierarchical microcells",
+    "paid_gpu_equivalents": 93.0,
+    "techniques": [
+      "8-layer microcells"
+    ]
+  },
+  "economics": {
+    "break_even_tok_s_per_paid_gpu": 2.7777777777777777,
+    "gpu_hourly_price_usd": 0.15,
+    "margin_fraction": 0.5,
+    "margin_tok_s_per_paid_gpu": 5.555555555555555,
+    "output_price_per_million_usd": 15.0
+  },
+  "evidence_classification_audit": {
+    "allowed_classes": [
+      "MEASURED",
+      "PROJECTED",
+      "SHAPED",
+      "VALIDATED MODEL"
+    ],
+    "counts": {
+      "MEASURED": 18,
+      "PROJECTED": 79,
+      "SHAPED": 401,
+      "UNCLASSIFIED_DIAGNOSTIC": 8,
+      "VALIDATED MODEL": 1
+    },
+    "null_class_rule": "scientific_result must be false",
+    "status": "PASS",
+    "violations": []
+  },
+  "evidence_counts": {
+    "measured_complete_architecture_results": 0,
+    "shaped_architecture_results": 1,
+    "unadmitted_projected_sensitivities": 11,
+    "validated_model_architecture_results": 0
+  },
+  "experiment": "015",
+  "experiment_016_plan_created": false,
+  "metrics": {
+    "accepted_tokens_per_target_pass": null,
+    "baseline_aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+    "baseline_dependency_bound_tok_s": 0.9502949393520926,
+    "best_aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+    "best_dependency_bound_tok_s": 1.1766258547730912,
+    "best_measured_expert_workers": 4,
+    "best_measured_microwork_efficiency_percent": 78.80896676852558,
+    "best_microcell_depth": 8,
+    "coarse_synchronization_count_per_token_depth8": 11,
+    "communication_overlap_fraction": null,
+    "cost_per_million_output_tokens_usd": 39.886656292844215,
+    "dcp_8k_degree8_shaped_gain_percent": 40.468316043986206,
+    "dependency_speedup": 1.238169126287582,
+    "full_93_layer_cuda_regression": {
+      "classification": "MEASURED correctness-only; not capacity evidence",
+      "layers_executed": 93,
+      "maximum_layer_relative_l2_error": 9.9222690810692e-07,
+      "relative_error_gate": 2e-06,
+      "routing_equality": true,
+      "stateful_decode_executed": true,
+      "status": "PASS",
+      "wall_seconds": 3666.3242572
+    },
+    "gpu_utilization": null,
+    "inter_token_latency_p50_ms": null,
+    "inter_token_latency_p95_ms": null,
+    "inter_token_latency_p99_ms": null,
+    "microwork_worker_gib": 3.6610851287841797,
+    "network_bytes_per_token": 23740416,
+    "nominal_paid_vram_gib_at_24gib_per_stage": 2232,
+    "paid_gpu_equivalents": 93.0,
+    "perfect_block7_depth8_upper_bound_tok_s": 2.1838203220693897,
+    "synchronization_count_per_token": 92,
+    "throughput_per_paid_gpu_speedup": 1.0,
+    "ttft_ms": null
+  },
+  "schema_version": "experiment-015-machine-summary-v1",
+  "status": "FAIL",
+  "verdict": "FAIL: unresolved implementation/correctness evidence"
+}

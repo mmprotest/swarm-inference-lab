@@ -1,0 +1,59 @@
+{
+  "close_error": null,
+  "evidence_class": "PHYSICAL RTX 5090 consecutive manifest layers",
+  "inventory_id": "memory-fragmented-02",
+  "layers": [
+    {
+      "candidate_id": "layer-71:FULL_MIXED_STRIPE:p8",
+      "layer": 71,
+      "native_primitive": "ResidentMixedLayerGraph.production_native_full_mixed_dag",
+      "next_block_count": 6,
+      "outer_cuda_mem_info_after_layer": {
+        "free_bytes": 32416727040,
+        "total_bytes": 34190458880
+      },
+      "output_metrics": {
+        "actual_finite": true,
+        "actual_l2": 65.26586663536341,
+        "cosine_similarity": 0.999999999999929,
+        "maximum_absolute_error": 5.7220458984375e-06,
+        "mean_absolute_error": 2.2474101310113577e-07,
+        "reference_finite": true,
+        "reference_l2": 65.26586353306885,
+        "relative_l2_error": 3.810785383779226e-07
+      },
+      "partition_type": "FULL_MIXED_STRIPE",
+      "state_status": "PASS",
+      "wall_ms": 30881.816
+    },
+    {
+      "candidate_id": "layer-72:EXPERT_SHARD:p8",
+      "layer": 72,
+      "native_primitive": "ManifestK3Runner.expert_sharded_layer_dag",
+      "next_block_count": 7,
+      "outer_cuda_mem_info_after_layer": {
+        "free_bytes": 32418824192,
+        "total_bytes": 34190458880
+      },
+      "output_metrics": {
+        "actual_finite": true,
+        "actual_l2": 3.0489039737746433,
+        "cosine_similarity": 0.9999999999997384,
+        "maximum_absolute_error": 9.5367431640625e-07,
+        "mean_absolute_error": 1.9021192494100044e-08,
+        "reference_finite": true,
+        "reference_l2": 3.048904871881713,
+        "relative_l2_error": 7.829896126747434e-07
+      },
+      "partition_type": "EXPERT_SHARD",
+      "state_status": "PASS",
+      "wall_ms": 244587.5432
+    }
+  ],
+  "outer_authenticated_roundtrips": 2,
+  "planner_level": "E",
+  "schema_version": "experiment-022-manifest-transition-smoke-v1",
+  "status": "PASS",
+  "timed_checkpoint_reads": 0,
+  "wall_seconds": 290.0111163
+}

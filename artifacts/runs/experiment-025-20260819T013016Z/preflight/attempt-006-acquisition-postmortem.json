@@ -1,0 +1,157 @@
+{
+  "artifact_sha256": "e764206cc65b8bcda89a336533c0108e7d0d26b877636b7bbef6689e6ea09637",
+  "attempt": 5,
+  "authoritative_result": "INCOMPLETE",
+  "cost_estimate_usd": {
+    "active_plus_storage_usd": 24.831077558176275,
+    "active_storage_plus_completed_download_lower_bound_usd": 30.797660463331756,
+    "actual_provider_invoice_available": false,
+    "basis": "ledger instance lifetimes multiplied by selected advertised active/storage rates; completed worker download bytes multiplied by selected advertised ingress rates",
+    "completed_download_bytes": 936458388104,
+    "completed_download_event_count": 56,
+    "completed_download_ingress_lower_bound_usd": 5.966582905155479,
+    "estimated_active_rental_usd": 24.138600594924075,
+    "estimated_storage_usd": 0.692476963252201,
+    "generated_at_utc": "2026-08-23T21:45:10.634001+00:00",
+    "instance_count": 65,
+    "limitations": [
+      "This is not a Vast provider invoice.",
+      "Completed-download ingress is a lower bound and excludes incomplete downloads or missing provider counters.",
+      "The account had unrelated activity, so balance delta is not attributed to Attempt 005."
+    ],
+    "provider_invoice_claimed": false,
+    "schema_version": "experiment-025-attempt-005-cost-reconciliation-v1",
+    "source_cost_receipt": "rental/stage-4-headline/rental-cost-summary.json",
+    "source_event_log": "telemetry/physical-run-events.jsonl",
+    "status": "PASS_ESTIMATE_ONLY",
+    "total_elapsed_instance_seconds": 77763.66990100007
+  },
+  "decision_implication": "Attempt 006 must not use the Attempt 005 acquisition controller unchanged.",
+  "e025_pass_earned": false,
+  "evidence_class": "PHYSICAL_ACQUISITION_ONLY",
+  "generated_at_utc": "2026-08-24T08:27:56.715877+00:00",
+  "inference_failure": false,
+  "inference_reached": false,
+  "machine_history_artifact": "attempt-006-machine-reliability.json",
+  "machine_history_observation_count": 505,
+  "parent_serialization": {
+    "diagnosis": "the parent paid bootstrap began only after all four fragment workers were READY, leaving only the acquisition tail before cutoff",
+    "last_fragment_ready_timestamp_utc": "2026-08-23T21:02:53.356079+00:00",
+    "parent_created_timestamp_utc": "2026-08-23T21:02:55.462482+00:00",
+    "parent_ready": false,
+    "seconds_from_last_fragment_ready_to_parent_create": 2.106403
+  },
+  "readiness": {
+    "create_to_ready_seconds": {
+      "count": 56,
+      "maximum": 1476.962635,
+      "median": 848.476232,
+      "minimum": 442.467418,
+      "p90": 1199.0641655
+    },
+    "net_ready_events_not_retained_at_peak": 10,
+    "peak_simultaneous_current_ready_roles": 46,
+    "pre_cleanup_readiness_drops": [
+      {
+        "from": 29,
+        "timestamp_utc": "2026-08-23T20:50:59.595912+00:00",
+        "to": 26
+      },
+      {
+        "from": 31,
+        "timestamp_utc": "2026-08-23T20:52:20.281916+00:00",
+        "to": 30
+      },
+      {
+        "from": 39,
+        "timestamp_utc": "2026-08-23T20:56:05.740351+00:00",
+        "to": 36
+      },
+      {
+        "from": 45,
+        "timestamp_utc": "2026-08-23T20:59:15.487597+00:00",
+        "to": 42
+      }
+    ],
+    "ready_elapsed_from_run_start_seconds": {
+      "count": 56,
+      "maximum": 1657.864836,
+      "median": 876.7871785,
+      "minimum": 455.278343,
+      "p90": 1368.6594635000001
+    },
+    "total_ready_events": 56
+  },
+  "root_causes": [
+    {
+      "cause": "Layer 89 parent bootstrap serialized behind four fragment READY completions",
+      "priority": 1,
+      "repair": "create parent from a versioned set of four public fragment mappings before fragment model readiness"
+    },
+    {
+      "cause": "one-shot group acquisition did not own READY liveness until fleet freeze",
+      "priority": 2,
+      "repair": "long-lived group supervisors remove lost roles from current readiness and replace only the affected group"
+    },
+    {
+      "cause": "finite frozen alternates and price-led selection amplified provider tail failures",
+      "priority": 3,
+      "repair": "bounded live refresh plus reliability/time/cost scoring"
+    },
+    {
+      "cause": "serial replacement exposed the 97-role fleet to extreme-value tail latency",
+      "priority": 4,
+      "repair": "at most one evidence-triggered duplicate per group with a global hedge cap and immediate loser cleanup"
+    }
+  ],
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-attempt-006-acquisition-postmortem-v1",
+  "source_assertions": {
+    "event_sha256_exact": true,
+    "four_fragments_ready": true,
+    "instances_created_65": true,
+    "no_token_execution": true,
+    "parent_not_ready": true,
+    "peak_simultaneous_46": true,
+    "ready_events_56": true,
+    "replacements_19": true,
+    "status_incomplete": true,
+    "zero_live_cleanup": true
+  },
+  "source_files": {
+    "canonical_event_log": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\telemetry\\physical-run-events.jsonl",
+    "canonical_event_log_sha256": "84fef174ca83e99c7c227c5cfe2a1eb646280c9dc07c0522a39c937f10d7225e",
+    "node_inventory": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\telemetry\\attempt-005-node-inventory.json",
+    "terminal_result": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\final\\attempt-005-terminal-result.json"
+  },
+  "status": "PASS",
+  "verified_counts": {
+    "ABORT": 1,
+    "ACQUISITION_POLICY_APPLIED": 1,
+    "BOOTSTRAP_PROGRESS": 9,
+    "ERROR": 84,
+    "INSTANCE_BOOTING": 140,
+    "INSTANCE_CREATED": 65,
+    "INSTANCE_CREATE_REQUESTED": 71,
+    "INSTANCE_DESTROYED": 100,
+    "INSTANCE_DESTROY_REQUESTED": 100,
+    "INSTANCE_REPLACED": 19,
+    "MODEL_DOWNLOAD_COMPLETED": 56,
+    "MODEL_DOWNLOAD_PROGRESS": 695,
+    "MODEL_DOWNLOAD_STARTED": 140,
+    "MODEL_HASH_VERIFIED": 56,
+    "OFFER_SELECTED": 97,
+    "READINESS_MONITORING_STARTED": 1,
+    "RETRY": 5,
+    "RUN_STARTED": 1,
+    "SHARD_ASSIGNED": 97,
+    "SHARD_LOADED": 56,
+    "SHARD_LOAD_STARTED": 140,
+    "TIMEOUT": 72,
+    "WORKER_CONNECTED": 56,
+    "WORKER_CONNECTING": 140,
+    "WORKER_DISCONNECTED": 234,
+    "WORKER_READY": 56,
+    "WORKER_UNHEALTHY": 29
+  }
+}

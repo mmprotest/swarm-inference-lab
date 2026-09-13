@@ -1,0 +1,58 @@
+{
+  "cycle_id": "H015-008A-H015-009A",
+  "decisions": {
+    "H015-EPLB": "STOP_REPRESENTATIVE_TRACE_GATE_NOT_MET",
+    "H015-PREDICT": "REJECT_SIMPLE_PREVIOUS_TOKEN_PREDICTOR",
+    "dynamic_placement": "NOT_JUSTIFIED",
+    "hot_expert_replication": "NOT_ADMITTED"
+  },
+  "evidence_class": "MEASURED",
+  "fixture": {
+    "layers": 92,
+    "positions_per_layer": 3,
+    "route_rows": 276,
+    "selected_experts_per_row": 16,
+    "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\routes.txt",
+    "source_sha256": "4d0fbfbc1c2fedba69533d219af7c23daa19087b9064aba147c1c1de0aa0001d"
+  },
+  "global_trace_hits": {
+    "coldest_pair_hits": 1,
+    "hottest_pair_hits": 3,
+    "selected_layer_expert_pairs": 3890
+  },
+  "previous_token_same_layer_predictor": {
+    "admitted": false,
+    "correct_predictions": 503,
+    "mean_jaccard": 0.1041106839932357,
+    "p95_jaccard": 0.3826086956521736,
+    "precision": 0.17085597826086957,
+    "predicted_activation_bytes": 24117248,
+    "predicted_experts": 2944,
+    "reason": "insufficient recall and non-representative three-token fixture",
+    "recall": 0.17085597826086957,
+    "transitions": 184,
+    "useful_activation_bytes": 4120576,
+    "wasted_activation_bytes": 19996672
+  },
+  "representative_workload": false,
+  "schema_version": "experiment-015-route-analysis-v1",
+  "static_modulo_placement": {
+    "maximum_critical_worker_selections": 9.0,
+    "mean_critical_worker_selections": 6.202898550724638,
+    "mean_hottest_to_coldest_ratio": 3.8158212560386477,
+    "p95_critical_worker_selections": 8.0,
+    "p95_hottest_to_coldest_ratio": 8.0,
+    "workers": 4
+  },
+  "status": "PASS",
+  "trace_fitted_balanced_placement": {
+    "admitted": false,
+    "critical_load_gain_fraction": 0.10163551401869153,
+    "maximum_critical_worker_selections": 8.0,
+    "mean_critical_worker_selections": 5.572463768115942,
+    "mean_hottest_to_coldest_ratio": 2.5157004830917877,
+    "p95_critical_worker_selections": 7.0,
+    "p95_hottest_to_coldest_ratio": 6.0,
+    "reason": "placement is fitted and evaluated on only the same three tokens"
+  }
+}

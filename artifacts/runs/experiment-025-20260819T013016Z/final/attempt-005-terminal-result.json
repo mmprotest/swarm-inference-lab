@@ -1,0 +1,1019 @@
+{
+  "all_four_sublayer_machine_ids_distinct": true,
+  "all_four_sublayer_workers_ready": true,
+  "attempt": 5,
+  "attributable_instance_timeout_count": 17,
+  "cleanup": {
+    "generated_at_utc": "2026-08-23T21:06:49.185607+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "full-headline-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48499661,
+      48499664,
+      48499665,
+      48499666,
+      48499667,
+      48499668,
+      48499669,
+      48499670,
+      48499671,
+      48499672,
+      48499673,
+      48499674,
+      48499675,
+      48499676,
+      48499677,
+      48499678,
+      48499684,
+      48499685,
+      48499686,
+      48499687,
+      48499688,
+      48499689,
+      48499690,
+      48499691,
+      48499692,
+      48499693,
+      48499694,
+      48499695,
+      48499696,
+      48499697,
+      48499698,
+      48499699,
+      48499700,
+      48499701,
+      48499702,
+      48499703,
+      48499705,
+      48499707,
+      48499708,
+      48499709,
+      48499710,
+      48499711,
+      48499712,
+      48499713,
+      48499714,
+      48500023,
+      48500180,
+      48500225,
+      48500234,
+      48500260,
+      48500266,
+      48500453,
+      48500500,
+      48500511,
+      48500556,
+      48500622,
+      48500739,
+      48500762,
+      48500848,
+      48500882,
+      48500943,
+      48500946,
+      48501143,
+      48501401,
+      48501507
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "controller_observer_sha256": "94a8769b4caccb65fddb9d68c04002fe74e86014b7d086b77c007cfadfa18601",
+  "cost": {
+    "active_plus_storage_usd": 24.831077558176275,
+    "active_storage_plus_completed_download_lower_bound_usd": 30.797660463331756,
+    "actual_provider_invoice_available": false,
+    "basis": "ledger instance lifetimes multiplied by selected advertised active/storage rates; completed worker download bytes multiplied by selected advertised ingress rates",
+    "completed_download_bytes": 936458388104,
+    "completed_download_event_count": 56,
+    "completed_download_ingress_lower_bound_usd": 5.966582905155479,
+    "estimated_active_rental_usd": 24.138600594924075,
+    "estimated_storage_usd": 0.692476963252201,
+    "generated_at_utc": "2026-08-23T21:45:10.634001+00:00",
+    "instance_count": 65,
+    "limitations": [
+      "This is not a Vast provider invoice.",
+      "Completed-download ingress is a lower bound and excludes incomplete downloads or missing provider counters.",
+      "The account had unrelated activity, so balance delta is not attributed to Attempt 005."
+    ],
+    "provider_invoice_claimed": false,
+    "schema_version": "experiment-025-attempt-005-cost-reconciliation-v1",
+    "source_cost_receipt": "rental/stage-4-headline/rental-cost-summary.json",
+    "source_event_log": "telemetry/physical-run-events.jsonl",
+    "status": "PASS_ESTIMATE_ONLY",
+    "total_elapsed_instance_seconds": 77763.66990100007
+  },
+  "create_request_count": 71,
+  "deadline": {
+    "first_ledger_confirmed_paid_instance_utc": "2026-08-23T20:36:22.261456+00:00",
+    "hard_acquisition_deadline_utc": "2026-08-23T21:06:18.158141+00:00",
+    "interpretation": "The conservative policy clock began a few seconds before the first ledger-confirmed paid instance; it did not exceed the 30-minute maximum from paid creation.",
+    "policy_origin_utc": "2026-08-23T20:36:18.158141+00:00",
+    "policy_window_seconds": 1800,
+    "reserve_seconds": 900,
+    "seconds_after_policy_origin_to_first_paid_instance": 4.103315114974976,
+    "seconds_from_first_ledger_confirmed_paid_instance_to_deadline": 1795.896684885025,
+    "terminal_abort_timestamp_utc": "2026-08-23T21:06:49.418418+00:00"
+  },
+  "event_coverage": {
+    "ABORT": {
+      "count": 1,
+      "status": "PRESENT"
+    },
+    "ERROR": {
+      "count": 84,
+      "status": "PRESENT"
+    },
+    "EXPERT_DISPATCHED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "EXPERT_RESULT_RETURNED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "FRAGMENT_EXECUTION_COMPLETED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "FRAGMENT_EXECUTION_STARTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "INSTANCE_BOOTING": {
+      "count": 140,
+      "status": "PRESENT"
+    },
+    "INSTANCE_CREATED": {
+      "count": 65,
+      "status": "PRESENT"
+    },
+    "INSTANCE_CREATE_REQUESTED": {
+      "count": 71,
+      "status": "PRESENT"
+    },
+    "INSTANCE_DESTROYED": {
+      "count": 100,
+      "status": "PRESENT"
+    },
+    "INSTANCE_DESTROY_REQUESTED": {
+      "count": 100,
+      "status": "PRESENT"
+    },
+    "INSTANCE_REPLACED": {
+      "count": 19,
+      "status": "PRESENT"
+    },
+    "LAYER_EXECUTION_COMPLETED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "LAYER_EXECUTION_STARTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "MESSAGE_RECEIVED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "MESSAGE_SEND_COMPLETED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "MESSAGE_SEND_STARTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "MODEL_DOWNLOAD_COMPLETED": {
+      "count": 56,
+      "status": "PRESENT"
+    },
+    "MODEL_DOWNLOAD_PROGRESS": {
+      "count": 695,
+      "status": "PRESENT"
+    },
+    "MODEL_DOWNLOAD_STARTED": {
+      "count": 140,
+      "status": "PRESENT"
+    },
+    "MODEL_HASH_VERIFIED": {
+      "count": 56,
+      "status": "PRESENT"
+    },
+    "OFFER_SELECTED": {
+      "count": 97,
+      "status": "PRESENT"
+    },
+    "REDUCTION_COMPLETED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "REDUCTION_STARTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "RETRY": {
+      "count": 5,
+      "status": "PRESENT"
+    },
+    "ROUTE_COMPUTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "SHARD_ASSIGNED": {
+      "count": 97,
+      "status": "PRESENT"
+    },
+    "SHARD_LOADED": {
+      "count": 56,
+      "status": "PRESENT"
+    },
+    "SHARD_LOAD_STARTED": {
+      "count": 140,
+      "status": "PRESENT"
+    },
+    "TIMEOUT": {
+      "count": 72,
+      "status": "PRESENT"
+    },
+    "TOKEN_EMITTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "TOKEN_EXECUTION_COMPLETED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "TOKEN_EXECUTION_STARTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "TOKEN_SAMPLE_STARTED": {
+      "count": 0,
+      "status": "NOT_EMITTED_INFERENCE_NOT_REACHED"
+    },
+    "WATCHDOG_TRIGGERED": {
+      "count": 0,
+      "status": "NOT_EMITTED_NOT_APPLICABLE_OR_NOT_OBSERVED"
+    },
+    "WORKER_CONNECTED": {
+      "count": 56,
+      "status": "PRESENT"
+    },
+    "WORKER_CONNECTING": {
+      "count": 140,
+      "status": "PRESENT"
+    },
+    "WORKER_DISCONNECTED": {
+      "count": 234,
+      "status": "PRESENT"
+    },
+    "WORKER_READY": {
+      "count": 56,
+      "status": "PRESENT"
+    },
+    "WORKER_UNHEALTHY": {
+      "count": 29,
+      "status": "PRESENT"
+    }
+  },
+  "event_log": {
+    "animation_order": "event_id / monotonic_ns",
+    "error_count": 0,
+    "errors": [],
+    "event_count": 2521,
+    "event_id_sequence_contiguous": true,
+    "event_ids_unique": true,
+    "monotonic_ns_nondecreasing": true,
+    "status": "PASS",
+    "timestamp_regression_count": 0,
+    "unique_event_id_count": 2521
+  },
+  "event_log_sha256": "84fef174ca83e99c7c227c5cfe2a1eb646280c9dc07c0522a39c937f10d7225e",
+  "event_type_counts": {
+    "ABORT": 1,
+    "ACQUISITION_POLICY_APPLIED": 1,
+    "BOOTSTRAP_PROGRESS": 9,
+    "ERROR": 84,
+    "INSTANCE_BOOTING": 140,
+    "INSTANCE_CREATED": 65,
+    "INSTANCE_CREATE_REQUESTED": 71,
+    "INSTANCE_DESTROYED": 100,
+    "INSTANCE_DESTROY_REQUESTED": 100,
+    "INSTANCE_REPLACED": 19,
+    "MODEL_DOWNLOAD_COMPLETED": 56,
+    "MODEL_DOWNLOAD_PROGRESS": 695,
+    "MODEL_DOWNLOAD_STARTED": 140,
+    "MODEL_HASH_VERIFIED": 56,
+    "OFFER_SELECTED": 97,
+    "READINESS_MONITORING_STARTED": 1,
+    "RETRY": 5,
+    "RUN_STARTED": 1,
+    "SHARD_ASSIGNED": 97,
+    "SHARD_LOADED": 56,
+    "SHARD_LOAD_STARTED": 140,
+    "TIMEOUT": 72,
+    "WORKER_CONNECTED": 56,
+    "WORKER_CONNECTING": 140,
+    "WORKER_DISCONNECTED": 234,
+    "WORKER_READY": 56,
+    "WORKER_UNHEALTHY": 29
+  },
+  "evidence_class": "PHYSICAL_ACQUISITION_ONLY",
+  "exact_public_prompt_configuration_status": "PASS",
+  "generated_at_utc": "2026-08-23T21:45:10.634001+00:00",
+  "immutable_worker_image": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "instances_created": 65,
+  "instances_destroyed": 65,
+  "layer89_parent_ready": false,
+  "ledger": {
+    "entry_count": 574,
+    "error_count": 0,
+    "errors": [],
+    "first_entry_sha256": "f5686f91f09f7d76d25c0da366993699cc9ee8f093e9a93be6cb93be0081052c",
+    "last_entry_sha256": "3ff30efa7e072a6aa65f80bf24133ee1ca38c308065a68e5eb95a6b9113bb6bb",
+    "status": "PASS"
+  },
+  "location_counts": {
+    ", US": 4,
+    "Alberta, CA": 1,
+    "Austria, AT": 1,
+    "California, US": 6,
+    "Croatia, HR": 1,
+    "Czechia, CZ": 2,
+    "Denmark, DK": 1,
+    "Estonia, EE": 2,
+    "Florida, US": 1,
+    "France, FR": 1,
+    "Germany, DE": 1,
+    "Hong Kong, HK": 2,
+    "Hungary, HU": 2,
+    "Japan, JP": 1,
+    "Kansas, US": 1,
+    "Latvia, LV": 1,
+    "Maryland, US": 1,
+    "New York, US": 1,
+    "Norway, NO": 4,
+    "Oregon, US": 4,
+    "Pennsylvania, US": 1,
+    "Poland, PL": 1,
+    "Quebec, CA": 3,
+    "Romania, RO": 1,
+    "Saskatchewan, CA": 1,
+    "South Korea, KR": 4,
+    "Taiwan, TW": 1,
+    "Texas, US": 3,
+    "Thailand, TH": 2,
+    "United Arab Emirates, AE": 1,
+    "United Kingdom, GB": 2,
+    "Vietnam, VN": 1,
+    "Virginia, US": 4,
+    "Washington, US": 2
+  },
+  "monitoring": {
+    "all_groups_concurrent": true,
+    "backbone_group_count": 41,
+    "fragment_group_count": 4,
+    "per_instance_no_progress_timeout_seconds": 240,
+    "policy": "ALL_GROUPS_CONCURRENT_ROLLING_REPLACEMENT"
+  },
+  "pass_gates": {
+    "G10_sub_layer_necessity": true,
+    "G11_numerical_correctness": false,
+    "G12_stateful_autoregressive_correctness": false,
+    "G13_human_readable_generation": false,
+    "G14_physical_trace_complete": false,
+    "G15_cleanup": true,
+    "G1_authoritative_kimi_k3": false,
+    "G2_full_physical_multi_machine_path": false,
+    "G3_consumer_only_headline_compute": false,
+    "G4_real_native_execution": false,
+    "G5_required_model_coverage": true,
+    "G6_physical_sub_layer_workers": false,
+    "G7_complete_layer_cannot_fit": false,
+    "G8_fragment_fits": false,
+    "G9_no_hidden_full_layer_fallback": false
+  },
+  "preflight_go_status": "GO",
+  "public_generation_reached": false,
+  "readiness": {
+    "peak_live_ready_event_id": "e025-000002099-f6a7af7cfb2b446eb6ade34b717e0f52",
+    "peak_live_ready_timestamp_utc": "2026-08-23T21:03:52.038089+00:00",
+    "peak_live_ready_worker_count": 46,
+    "peak_live_ready_worker_ids": [
+      "e025-layer-089-sub-00",
+      "e025-layer-089-sub-01",
+      "e025-layer-089-sub-02",
+      "e025-layer-089-sub-03",
+      "e025-stage-000",
+      "e025-stage-004",
+      "e025-stage-010",
+      "e025-stage-011",
+      "e025-stage-013",
+      "e025-stage-014",
+      "e025-stage-017",
+      "e025-stage-018",
+      "e025-stage-021",
+      "e025-stage-022",
+      "e025-stage-024",
+      "e025-stage-025",
+      "e025-stage-026",
+      "e025-stage-027",
+      "e025-stage-029",
+      "e025-stage-030",
+      "e025-stage-032",
+      "e025-stage-033",
+      "e025-stage-034",
+      "e025-stage-041",
+      "e025-stage-042",
+      "e025-stage-044",
+      "e025-stage-045",
+      "e025-stage-047",
+      "e025-stage-048",
+      "e025-stage-049",
+      "e025-stage-053",
+      "e025-stage-056",
+      "e025-stage-057",
+      "e025-stage-061",
+      "e025-stage-062",
+      "e025-stage-064",
+      "e025-stage-066",
+      "e025-stage-070",
+      "e025-stage-071",
+      "e025-stage-072",
+      "e025-stage-077",
+      "e025-stage-080",
+      "e025-stage-081",
+      "e025-stage-083",
+      "e025-stage-090",
+      "e025-stage-091"
+    ],
+    "ready_worker_count_at_hard_deadline": 46,
+    "ready_worker_ids_at_hard_deadline": [
+      "e025-layer-089-sub-00",
+      "e025-layer-089-sub-01",
+      "e025-layer-089-sub-02",
+      "e025-layer-089-sub-03",
+      "e025-stage-000",
+      "e025-stage-004",
+      "e025-stage-010",
+      "e025-stage-011",
+      "e025-stage-013",
+      "e025-stage-014",
+      "e025-stage-017",
+      "e025-stage-018",
+      "e025-stage-021",
+      "e025-stage-022",
+      "e025-stage-024",
+      "e025-stage-025",
+      "e025-stage-026",
+      "e025-stage-027",
+      "e025-stage-029",
+      "e025-stage-030",
+      "e025-stage-032",
+      "e025-stage-033",
+      "e025-stage-034",
+      "e025-stage-041",
+      "e025-stage-042",
+      "e025-stage-044",
+      "e025-stage-045",
+      "e025-stage-047",
+      "e025-stage-048",
+      "e025-stage-049",
+      "e025-stage-053",
+      "e025-stage-056",
+      "e025-stage-057",
+      "e025-stage-061",
+      "e025-stage-062",
+      "e025-stage-064",
+      "e025-stage-066",
+      "e025-stage-070",
+      "e025-stage-071",
+      "e025-stage-072",
+      "e025-stage-077",
+      "e025-stage-080",
+      "e025-stage-081",
+      "e025-stage-083",
+      "e025-stage-090",
+      "e025-stage-091"
+    ],
+    "timeline": [
+      {
+        "elapsed_minutes": 0.0,
+        "ready_workers": 0,
+        "timestamp_utc": "2026-08-23T20:36:14.173253+00:00"
+      },
+      {
+        "elapsed_minutes": 7.587972,
+        "ready_workers": 1,
+        "timestamp_utc": "2026-08-23T20:43:49.451596+00:00"
+      },
+      {
+        "elapsed_minutes": 8.526209,
+        "ready_workers": 2,
+        "timestamp_utc": "2026-08-23T20:44:45.745776+00:00"
+      },
+      {
+        "elapsed_minutes": 8.657868,
+        "ready_workers": 3,
+        "timestamp_utc": "2026-08-23T20:44:53.645313+00:00"
+      },
+      {
+        "elapsed_minutes": 8.759581,
+        "ready_workers": 4,
+        "timestamp_utc": "2026-08-23T20:44:59.748132+00:00"
+      },
+      {
+        "elapsed_minutes": 9.506467,
+        "ready_workers": 5,
+        "timestamp_utc": "2026-08-23T20:45:44.561251+00:00"
+      },
+      {
+        "elapsed_minutes": 9.853794,
+        "ready_workers": 6,
+        "timestamp_utc": "2026-08-23T20:46:05.400912+00:00"
+      },
+      {
+        "elapsed_minutes": 10.714024,
+        "ready_workers": 7,
+        "timestamp_utc": "2026-08-23T20:46:57.014695+00:00"
+      },
+      {
+        "elapsed_minutes": 10.72002,
+        "ready_workers": 8,
+        "timestamp_utc": "2026-08-23T20:46:57.374429+00:00"
+      },
+      {
+        "elapsed_minutes": 11.517746,
+        "ready_workers": 9,
+        "timestamp_utc": "2026-08-23T20:47:45.238024+00:00"
+      },
+      {
+        "elapsed_minutes": 11.544414,
+        "ready_workers": 10,
+        "timestamp_utc": "2026-08-23T20:47:46.838089+00:00"
+      },
+      {
+        "elapsed_minutes": 11.602935,
+        "ready_workers": 11,
+        "timestamp_utc": "2026-08-23T20:47:50.349357+00:00"
+      },
+      {
+        "elapsed_minutes": 11.825508,
+        "ready_workers": 12,
+        "timestamp_utc": "2026-08-23T20:48:03.703715+00:00"
+      },
+      {
+        "elapsed_minutes": 11.858029,
+        "ready_workers": 13,
+        "timestamp_utc": "2026-08-23T20:48:05.654984+00:00"
+      },
+      {
+        "elapsed_minutes": 11.866132,
+        "ready_workers": 14,
+        "timestamp_utc": "2026-08-23T20:48:06.141151+00:00"
+      },
+      {
+        "elapsed_minutes": 12.482429,
+        "ready_workers": 15,
+        "timestamp_utc": "2026-08-23T20:48:43.118999+00:00"
+      },
+      {
+        "elapsed_minutes": 12.52014,
+        "ready_workers": 16,
+        "timestamp_utc": "2026-08-23T20:48:45.381665+00:00"
+      },
+      {
+        "elapsed_minutes": 12.557996,
+        "ready_workers": 17,
+        "timestamp_utc": "2026-08-23T20:48:47.653017+00:00"
+      },
+      {
+        "elapsed_minutes": 12.620079,
+        "ready_workers": 18,
+        "timestamp_utc": "2026-08-23T20:48:51.377983+00:00"
+      },
+      {
+        "elapsed_minutes": 13.099125,
+        "ready_workers": 19,
+        "timestamp_utc": "2026-08-23T20:49:20.120751+00:00"
+      },
+      {
+        "elapsed_minutes": 13.299629,
+        "ready_workers": 20,
+        "timestamp_utc": "2026-08-23T20:49:32.151009+00:00"
+      },
+      {
+        "elapsed_minutes": 13.693654,
+        "ready_workers": 21,
+        "timestamp_utc": "2026-08-23T20:49:55.792476+00:00"
+      },
+      {
+        "elapsed_minutes": 13.832899,
+        "ready_workers": 22,
+        "timestamp_utc": "2026-08-23T20:50:04.147181+00:00"
+      },
+      {
+        "elapsed_minutes": 14.074587,
+        "ready_workers": 23,
+        "timestamp_utc": "2026-08-23T20:50:18.648486+00:00"
+      },
+      {
+        "elapsed_minutes": 14.144799,
+        "ready_workers": 24,
+        "timestamp_utc": "2026-08-23T20:50:22.861177+00:00"
+      },
+      {
+        "elapsed_minutes": 14.309066,
+        "ready_workers": 25,
+        "timestamp_utc": "2026-08-23T20:50:32.717231+00:00"
+      },
+      {
+        "elapsed_minutes": 14.324744,
+        "ready_workers": 26,
+        "timestamp_utc": "2026-08-23T20:50:33.657867+00:00"
+      },
+      {
+        "elapsed_minutes": 14.488439,
+        "ready_workers": 27,
+        "timestamp_utc": "2026-08-23T20:50:43.479565+00:00"
+      },
+      {
+        "elapsed_minutes": 14.575788,
+        "ready_workers": 28,
+        "timestamp_utc": "2026-08-23T20:50:48.720562+00:00"
+      },
+      {
+        "elapsed_minutes": 14.650451,
+        "ready_workers": 29,
+        "timestamp_utc": "2026-08-23T20:50:53.200301+00:00"
+      },
+      {
+        "elapsed_minutes": 14.757044,
+        "ready_workers": 26,
+        "timestamp_utc": "2026-08-23T20:50:59.595912+00:00"
+      },
+      {
+        "elapsed_minutes": 14.87886,
+        "ready_workers": 27,
+        "timestamp_utc": "2026-08-23T20:51:06.904847+00:00"
+      },
+      {
+        "elapsed_minutes": 15.316596,
+        "ready_workers": 28,
+        "timestamp_utc": "2026-08-23T20:51:33.169019+00:00"
+      },
+      {
+        "elapsed_minutes": 15.467603,
+        "ready_workers": 29,
+        "timestamp_utc": "2026-08-23T20:51:42.229406+00:00"
+      },
+      {
+        "elapsed_minutes": 15.643291,
+        "ready_workers": 30,
+        "timestamp_utc": "2026-08-23T20:51:52.770734+00:00"
+      },
+      {
+        "elapsed_minutes": 16.003034,
+        "ready_workers": 31,
+        "timestamp_utc": "2026-08-23T20:52:14.355320+00:00"
+      },
+      {
+        "elapsed_minutes": 16.101811,
+        "ready_workers": 30,
+        "timestamp_utc": "2026-08-23T20:52:20.281916+00:00"
+      },
+      {
+        "elapsed_minutes": 17.035661,
+        "ready_workers": 31,
+        "timestamp_utc": "2026-08-23T20:53:16.312943+00:00"
+      },
+      {
+        "elapsed_minutes": 17.08428,
+        "ready_workers": 32,
+        "timestamp_utc": "2026-08-23T20:53:19.230041+00:00"
+      },
+      {
+        "elapsed_minutes": 17.922704,
+        "ready_workers": 33,
+        "timestamp_utc": "2026-08-23T20:54:09.535485+00:00"
+      },
+      {
+        "elapsed_minutes": 18.017089,
+        "ready_workers": 34,
+        "timestamp_utc": "2026-08-23T20:54:15.198613+00:00"
+      },
+      {
+        "elapsed_minutes": 18.476797,
+        "ready_workers": 35,
+        "timestamp_utc": "2026-08-23T20:54:42.781092+00:00"
+      },
+      {
+        "elapsed_minutes": 18.748098,
+        "ready_workers": 36,
+        "timestamp_utc": "2026-08-23T20:54:59.059129+00:00"
+      },
+      {
+        "elapsed_minutes": 19.24682,
+        "ready_workers": 37,
+        "timestamp_utc": "2026-08-23T20:55:28.982431+00:00"
+      },
+      {
+        "elapsed_minutes": 19.485451,
+        "ready_workers": 38,
+        "timestamp_utc": "2026-08-23T20:55:43.300318+00:00"
+      },
+      {
+        "elapsed_minutes": 19.760533,
+        "ready_workers": 39,
+        "timestamp_utc": "2026-08-23T20:55:59.805203+00:00"
+      },
+      {
+        "elapsed_minutes": 19.859452,
+        "ready_workers": 36,
+        "timestamp_utc": "2026-08-23T20:56:05.740351+00:00"
+      },
+      {
+        "elapsed_minutes": 19.929739,
+        "ready_workers": 37,
+        "timestamp_utc": "2026-08-23T20:56:09.957621+00:00"
+      },
+      {
+        "elapsed_minutes": 20.364361,
+        "ready_workers": 38,
+        "timestamp_utc": "2026-08-23T20:56:36.034898+00:00"
+      },
+      {
+        "elapsed_minutes": 20.415301,
+        "ready_workers": 39,
+        "timestamp_utc": "2026-08-23T20:56:39.091293+00:00"
+      },
+      {
+        "elapsed_minutes": 20.415509,
+        "ready_workers": 40,
+        "timestamp_utc": "2026-08-23T20:56:39.103818+00:00"
+      },
+      {
+        "elapsed_minutes": 20.930958,
+        "ready_workers": 41,
+        "timestamp_utc": "2026-08-23T20:57:10.030750+00:00"
+      },
+      {
+        "elapsed_minutes": 20.9519,
+        "ready_workers": 42,
+        "timestamp_utc": "2026-08-23T20:57:11.287252+00:00"
+      },
+      {
+        "elapsed_minutes": 22.718011,
+        "ready_workers": 43,
+        "timestamp_utc": "2026-08-23T20:58:57.253924+00:00"
+      },
+      {
+        "elapsed_minutes": 22.903971,
+        "ready_workers": 44,
+        "timestamp_utc": "2026-08-23T20:59:08.411509+00:00"
+      },
+      {
+        "elapsed_minutes": 22.923595,
+        "ready_workers": 45,
+        "timestamp_utc": "2026-08-23T20:59:09.588974+00:00"
+      },
+      {
+        "elapsed_minutes": 23.021906,
+        "ready_workers": 42,
+        "timestamp_utc": "2026-08-23T20:59:15.487597+00:00"
+      },
+      {
+        "elapsed_minutes": 23.401083,
+        "ready_workers": 43,
+        "timestamp_utc": "2026-08-23T20:59:38.238241+00:00"
+      },
+      {
+        "elapsed_minutes": 24.829559,
+        "ready_workers": 44,
+        "timestamp_utc": "2026-08-23T21:01:03.946813+00:00"
+      },
+      {
+        "elapsed_minutes": 26.653047,
+        "ready_workers": 45,
+        "timestamp_utc": "2026-08-23T21:02:53.356079+00:00"
+      },
+      {
+        "elapsed_minutes": 27.631081,
+        "ready_workers": 46,
+        "timestamp_utc": "2026-08-23T21:03:52.038089+00:00"
+      },
+      {
+        "elapsed_minutes": 30.425826,
+        "ready_workers": 45,
+        "timestamp_utc": "2026-08-23T21:06:39.722784+00:00"
+      },
+      {
+        "elapsed_minutes": 30.425842,
+        "ready_workers": 41,
+        "timestamp_utc": "2026-08-23T21:06:39.723788+00:00"
+      },
+      {
+        "elapsed_minutes": 30.425869,
+        "ready_workers": 32,
+        "timestamp_utc": "2026-08-23T21:06:39.725374+00:00"
+      },
+      {
+        "elapsed_minutes": 30.442736,
+        "ready_workers": 28,
+        "timestamp_utc": "2026-08-23T21:06:40.737391+00:00"
+      },
+      {
+        "elapsed_minutes": 30.459548,
+        "ready_workers": 26,
+        "timestamp_utc": "2026-08-23T21:06:41.746146+00:00"
+      },
+      {
+        "elapsed_minutes": 30.459557,
+        "ready_workers": 23,
+        "timestamp_utc": "2026-08-23T21:06:41.746659+00:00"
+      },
+      {
+        "elapsed_minutes": 30.476378,
+        "ready_workers": 12,
+        "timestamp_utc": "2026-08-23T21:06:42.755920+00:00"
+      },
+      {
+        "elapsed_minutes": 30.49338,
+        "ready_workers": 10,
+        "timestamp_utc": "2026-08-23T21:06:43.776044+00:00"
+      },
+      {
+        "elapsed_minutes": 30.510309,
+        "ready_workers": 8,
+        "timestamp_utc": "2026-08-23T21:06:44.791804+00:00"
+      },
+      {
+        "elapsed_minutes": 30.510326,
+        "ready_workers": 2,
+        "timestamp_utc": "2026-08-23T21:06:44.792804+00:00"
+      },
+      {
+        "elapsed_minutes": 30.527269,
+        "ready_workers": 1,
+        "timestamp_utc": "2026-08-23T21:06:45.809381+00:00"
+      },
+      {
+        "elapsed_minutes": 30.544361,
+        "ready_workers": 0,
+        "timestamp_utc": "2026-08-23T21:06:46.834892+00:00"
+      }
+    ]
+  },
+  "ready_event_count": 56,
+  "recovery_policy_test_status": "PASS",
+  "replacement_count": 19,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-attempt-005-derived-facts-v1",
+  "scientific_execution_reached": false,
+  "source_tree_sha256": "8b485f44a8244bd36ce969d145771f2e844d4132043926c8d24307e1eb5e4269",
+  "status": "INCOMPLETE",
+  "sublayer_workers": [
+    {
+      "attempt_005_execution_count": 0,
+      "attempt_005_execution_status": "NOT_REACHED",
+      "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+      "cuda_runtime": "13.0",
+      "driver_version": "595.84",
+      "evidence_class": "PHYSICAL_READINESS_NOT_EXECUTION",
+      "gpu_name": "NVIDIA GeForce RTX 3080",
+      "gpu_uuid": "GPU-8643c381-6d63-c0a7-ac02-50d1634f706f",
+      "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+      "instance_id": 48499709,
+      "machine_id": 143869,
+      "owned_components": [
+        "layer_89_routed_experts_mod_4_0"
+      ],
+      "owned_expert_count": 224,
+      "physical_gpu_slot": 0,
+      "raw_geolocation": "Austria, AT",
+      "ready_elapsed_minutes": 17.922704,
+      "ready_timestamp_utc": "2026-08-23T20:54:09.535485+00:00",
+      "source_weight_bytes": 3930587136,
+      "vast_reported_host_location_metadata": {
+        "geolocation": "Austria, AT",
+        "geolocode": 1097515854
+      },
+      "vram_mib": 10240,
+      "worker_id": "e025-layer-089-sub-00"
+    },
+    {
+      "attempt_005_execution_count": 0,
+      "attempt_005_execution_status": "NOT_REACHED",
+      "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+      "cuda_runtime": "13.0",
+      "driver_version": "595.84",
+      "evidence_class": "PHYSICAL_READINESS_NOT_EXECUTION",
+      "gpu_name": "NVIDIA GeForce RTX 3070",
+      "gpu_uuid": "GPU-b7970e6d-7f78-e0ed-6332-7b21c96eca40",
+      "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+      "instance_id": 48499710,
+      "machine_id": 141803,
+      "owned_components": [
+        "layer_89_routed_experts_mod_4_1"
+      ],
+      "owned_expert_count": 224,
+      "physical_gpu_slot": 0,
+      "raw_geolocation": "France, FR",
+      "ready_elapsed_minutes": 15.467603,
+      "ready_timestamp_utc": "2026-08-23T20:51:42.229406+00:00",
+      "source_weight_bytes": 3930587136,
+      "vast_reported_host_location_metadata": {
+        "geolocation": "France, FR",
+        "geolocode": 1109525496
+      },
+      "vram_mib": 8192,
+      "worker_id": "e025-layer-089-sub-01"
+    },
+    {
+      "attempt_005_execution_count": 0,
+      "attempt_005_execution_status": "NOT_REACHED",
+      "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+      "cuda_runtime": "13.0",
+      "driver_version": "610.43.02",
+      "evidence_class": "PHYSICAL_READINESS_NOT_EXECUTION",
+      "gpu_name": "NVIDIA GeForce RTX 3080 Ti",
+      "gpu_uuid": "GPU-927f220b-98e0-eab6-316c-335058274c9a",
+      "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+      "instance_id": 48500180,
+      "machine_id": 57056,
+      "owned_components": [
+        "layer_89_routed_experts_mod_4_2"
+      ],
+      "owned_expert_count": 224,
+      "physical_gpu_slot": 0,
+      "raw_geolocation": "Quebec, CA",
+      "ready_elapsed_minutes": 26.653047,
+      "ready_timestamp_utc": "2026-08-23T21:02:53.356079+00:00",
+      "source_weight_bytes": 3930587136,
+      "vast_reported_host_location_metadata": {
+        "geolocation": "Quebec, CA",
+        "geolocode": 513588759
+      },
+      "vram_mib": 12288,
+      "worker_id": "e025-layer-089-sub-02"
+    },
+    {
+      "attempt_005_execution_count": 0,
+      "attempt_005_execution_status": "NOT_REACHED",
+      "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+      "cuda_runtime": "13.0",
+      "driver_version": "580.159.03",
+      "evidence_class": "PHYSICAL_READINESS_NOT_EXECUTION",
+      "gpu_name": "NVIDIA GeForce RTX 3070",
+      "gpu_uuid": "GPU-d3efdcf8-7ac4-2b0a-d5bc-579f9e059c69",
+      "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+      "instance_id": 48499712,
+      "machine_id": 31715,
+      "owned_components": [
+        "layer_89_routed_experts_mod_4_3"
+      ],
+      "owned_expert_count": 224,
+      "physical_gpu_slot": 0,
+      "raw_geolocation": "Florida, US",
+      "ready_elapsed_minutes": 14.324744,
+      "ready_timestamp_utc": "2026-08-23T20:50:33.657867+00:00",
+      "source_weight_bytes": 3930587136,
+      "vast_reported_host_location_metadata": {
+        "geolocation": "Florida, US",
+        "geolocode": 433199645
+      },
+      "vram_mib": 8192,
+      "worker_id": "e025-layer-089-sub-03"
+    }
+  ],
+  "token_1_reached": false,
+  "token_2_reached": false,
+  "token_event_counts": {
+    "EXPERT_DISPATCHED": 0,
+    "MESSAGE_SEND_STARTED": 0,
+    "REDUCTION_STARTED": 0,
+    "ROUTE_COMPUTED": 0,
+    "TOKEN_EMITTED": 0,
+    "TOKEN_EXECUTION_COMPLETED": 0,
+    "TOKEN_EXECUTION_STARTED": 0,
+    "TOKEN_SAMPLE_STARTED": 0
+  },
+  "unique_worker_roles_ever_ready": 56,
+  "watchdog": {
+    "deadline_epoch": 1787520078.158141,
+    "independent_process": true,
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-independent-watchdog-v1",
+    "stage": "full-headline-fleet",
+    "startup_nonce_sha256": "18d9a0ac3db0bc7be96ff049f6bbcb04c2d92ec42a8a16632a1bfacf17a7789c",
+    "status": "STOPPED_AFTER_ZERO_LIVE_VERIFICATION",
+    "timestamp": "2026-08-23T21:06:50.108247+00:00",
+    "watchdog_pid": 11300
+  }
+}

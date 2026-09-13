@@ -1,0 +1,525 @@
+{
+  "classification_audit": {
+    "allowed_classes": [
+      "MEASURED",
+      "PROJECTED",
+      "SHAPED",
+      "VALIDATED MODEL"
+    ],
+    "counts": {
+      "MEASURED": 18,
+      "PROJECTED": 79,
+      "SHAPED": 401,
+      "UNCLASSIFIED_DIAGNOSTIC": 8,
+      "VALIDATED MODEL": 1
+    },
+    "null_class_rule": "scientific_result must be false",
+    "status": "PASS",
+    "violations": []
+  },
+  "excluded": [
+    "research-cache/vllm-source (source commit pinned separately)",
+    "evidence-integrity.json (self-reference)"
+  ],
+  "file_count": 99,
+  "files": [
+    {
+      "bytes": 1571,
+      "path": "artifacts/experiment-015/acceptance-gates.json",
+      "sha256": "1ab0496f78d0d17dc67c492c9298f42a4936fcf7eb441649ddc5b741a5f3dede"
+    },
+    {
+      "bytes": 15319,
+      "path": "artifacts/experiment-015/architecture-pareto/results.json",
+      "sha256": "a726acd703778df9d1904bcbaaa82207487db2cb28e7a0a6477896b94b71b626"
+    },
+    {
+      "bytes": 4956,
+      "path": "artifacts/experiment-015/baseline/B015-000.json",
+      "sha256": "d0ead24bbfb9e859afe9190e2e462405d462484211b96e45ce643381cbc6916a"
+    },
+    {
+      "bytes": 33505,
+      "path": "artifacts/experiment-015/capacity-model/results.json",
+      "sha256": "304a7cbeb0f2d882b89fa77e3cf7c8e5de6982e550911497767f09348e24047e"
+    },
+    {
+      "bytes": 10697,
+      "path": "artifacts/experiment-015/cycle-ledger.json",
+      "sha256": "6bea925ad18c701fd0835d3c9df8d71296d23ac56047e65e572fe8d75c35edbb"
+    },
+    {
+      "bytes": 9329,
+      "path": "artifacts/experiment-015/cycle-ledger.md",
+      "sha256": "e21ebcdebf52f53bd7afe8e987283ca683ec6371f213542e114130c9a8606db9"
+    },
+    {
+      "bytes": 1575,
+      "path": "artifacts/experiment-015/dcp/correctness.json",
+      "sha256": "4162f281d9ffe570825cd74a1f30961ecfdef70b480e8c248bc4aadf2b037e71"
+    },
+    {
+      "bytes": 16207,
+      "path": "artifacts/experiment-015/dcp/results.json",
+      "sha256": "564cfefff3859e1e7579532bde94c707d8a4bc6e0e6633f9ffa8d4dd375335db"
+    },
+    {
+      "bytes": 2277,
+      "path": "artifacts/experiment-015/dspark/h015-001a-dspark-reference-block1.json",
+      "sha256": "5adf747217ca36fb988a182bb86a73f81e2ee6c7f1b3d370fbca4b617918228a"
+    },
+    {
+      "bytes": 4688,
+      "path": "artifacts/experiment-015/dspark/h015-001b-dspark-reference-sweep.json",
+      "sha256": "85cf5509dedd7038afa39c5e4a07ec753bb24c6fe4a821d80e7dd9e0f435aea3"
+    },
+    {
+      "bytes": 4689,
+      "path": "artifacts/experiment-015/dspark/h015-001c-dspark-reference-repeat.json",
+      "sha256": "3fcb1f95a882adc68b5bd24956808ab896e48df9825d4c2fc6220726acddca86"
+    },
+    {
+      "bytes": 4930,
+      "path": "artifacts/experiment-015/dspark/results.json",
+      "sha256": "1251cea72703cb13a73fd152ef69bd881d23c810fd5f9a07c5ff2c91b7248b79"
+    },
+    {
+      "bytes": 7798,
+      "path": "artifacts/experiment-015/economics/results.json",
+      "sha256": "4122bb6d9fea40c8a7b6fc0d77182a5e27127fa042c0ed61661f6b35193aedf9"
+    },
+    {
+      "bytes": 1313391,
+      "path": "artifacts/experiment-015/expert-placement/plans.json",
+      "sha256": "d2ed4d00e4ebf7c24e055ba51329713f27e247a805b745edb1d81aaf26aab611"
+    },
+    {
+      "bytes": 2380,
+      "path": "artifacts/experiment-015/expert-residency/results.json",
+      "sha256": "8ea9eb1c88276f2e37cccf55cd72351796c6a67ae8e06d67a7916973141a3c8c"
+    },
+    {
+      "bytes": 2164,
+      "path": "artifacts/experiment-015/expert-routing/results.json",
+      "sha256": "77a21ded965b7232978f64e2001344d71d9816f17978034d41059625a1327438"
+    },
+    {
+      "bytes": 79769,
+      "path": "artifacts/experiment-015/expert-routing/route-trace.csv",
+      "sha256": "03ad5f82026d5a2d2f3fc8659341572942879871d16feb2825916077abe357d0"
+    },
+    {
+      "bytes": 49878,
+      "path": "artifacts/experiment-015/figures/01-baseline-vs-best-dependency.png",
+      "sha256": "3b8fe567ccdfc1b1b9c429a70eb14c574778950e107b5e260d9f47074371c7aa"
+    },
+    {
+      "bytes": 52989,
+      "path": "artifacts/experiment-015/figures/01-baseline-vs-best-dependency.svg",
+      "sha256": "0b08c79785b1e81a552cca0c264d00a77a7873374a5320cb8f35a71b50e3ed54"
+    },
+    {
+      "bytes": 60636,
+      "path": "artifacts/experiment-015/figures/02-target-traversals-per-accepted-token.png",
+      "sha256": "05366c932f9bccd75dac445363b6725299c924ca01e1abfbe7bcf6f64fe53d30"
+    },
+    {
+      "bytes": 57299,
+      "path": "artifacts/experiment-015/figures/02-target-traversals-per-accepted-token.svg",
+      "sha256": "276b04056851aae237dd46590d35290dde30bb477f8ac92d75a17976230e45e2"
+    },
+    {
+      "bytes": 70132,
+      "path": "artifacts/experiment-015/figures/03-dspark-block-size-vs-accepted-length.png",
+      "sha256": "502ff97af3975ca5129297cde98e1bfb0ab6b664bd22e3fe2dddb13f288c8356"
+    },
+    {
+      "bytes": 57460,
+      "path": "artifacts/experiment-015/figures/03-dspark-block-size-vs-accepted-length.svg",
+      "sha256": "0b14202a9fc7c858df51257dfba16498a7187e5fcc7f41a1be443e1635dfa822"
+    },
+    {
+      "bytes": 60578,
+      "path": "artifacts/experiment-015/figures/04-speculative-speedup-by-workload.png",
+      "sha256": "c32e496a4362989775df1a660bdc7ebb406c904bfba519c6e08261bfbcf9acf8"
+    },
+    {
+      "bytes": 59101,
+      "path": "artifacts/experiment-015/figures/04-speculative-speedup-by-workload.svg",
+      "sha256": "8fe2d185e09462d38d40776eaf61f2f87736e097a05701e3ea0a01fa9f454cb5"
+    },
+    {
+      "bytes": 67486,
+      "path": "artifacts/experiment-015/figures/05-pipeline-utilization.png",
+      "sha256": "48eab7ccdc97c811108c63e131a2f1899c4162ea70945ad5076baa512c93220d"
+    },
+    {
+      "bytes": 61409,
+      "path": "artifacts/experiment-015/figures/05-pipeline-utilization.svg",
+      "sha256": "b0297ee144fd1087294b38c73e592c0382a02882fbdc47cb0f84e63dd8b6e53e"
+    },
+    {
+      "bytes": 66195,
+      "path": "artifacts/experiment-015/figures/06-macrocell-depth-vs-latency.png",
+      "sha256": "9982cbeaa4e2c2d7b78e9ddda401c141a5ebd3ca4510f44257ce27da736b3fc8"
+    },
+    {
+      "bytes": 48559,
+      "path": "artifacts/experiment-015/figures/06-macrocell-depth-vs-latency.svg",
+      "sha256": "86f04ff4b658061a5c66adc3f49821454eb4bf4b6c479d77a17802a52d9fba2a"
+    },
+    {
+      "bytes": 69279,
+      "path": "artifacts/experiment-015/figures/07-coarse-boundaries-vs-stream-speed.png",
+      "sha256": "ec0b180d27d98c9f7e5b06d0e76b458b332989386c71f99ba836f964901fb174"
+    },
+    {
+      "bytes": 50164,
+      "path": "artifacts/experiment-015/figures/07-coarse-boundaries-vs-stream-speed.svg",
+      "sha256": "ff49327f8b65962a2f4eee67680ebf6bc3607a2d7203ef86298eefeb97867d9d"
+    },
+    {
+      "bytes": 61625,
+      "path": "artifacts/experiment-015/figures/08-expert-workers-vs-layer-throughput.png",
+      "sha256": "e44fc68f2057f20e262b7bfd7e82b42c695b052f3c7b4ba50fb4872081ebc603"
+    },
+    {
+      "bytes": 54916,
+      "path": "artifacts/experiment-015/figures/08-expert-workers-vs-layer-throughput.svg",
+      "sha256": "5853c716fb5ccb6f06472c1202718be000b9eb3a88d77bf7c9a0231b78c5c928"
+    },
+    {
+      "bytes": 48597,
+      "path": "artifacts/experiment-015/figures/09-expert-workers-vs-memory.png",
+      "sha256": "e137814d7a8284aa86372a0cd4614e8e5006dd9dcc06b22247e9c995e1d0f860"
+    },
+    {
+      "bytes": 50837,
+      "path": "artifacts/experiment-015/figures/09-expert-workers-vs-memory.svg",
+      "sha256": "47cea73b4cfe843fffbf031a439f379e92e7a2944252d33f66508ac213fa03f7"
+    },
+    {
+      "bytes": 54254,
+      "path": "artifacts/experiment-015/figures/10-expert-workers-vs-network.png",
+      "sha256": "0f20eff590f2b2190e826566c67686c7dfb69d1ce5548699e5e064368c9e556a"
+    },
+    {
+      "bytes": 48036,
+      "path": "artifacts/experiment-015/figures/10-expert-workers-vs-network.svg",
+      "sha256": "efc2c270307ec4926f1d9f17a46d82712c3cdacd74501427d889377861212e3c"
+    },
+    {
+      "bytes": 81537,
+      "path": "artifacts/experiment-015/figures/11-dcp-workers-vs-mla-service.png",
+      "sha256": "68f00d9d215e01f4a14275d8fb16ed5c684f7458891c01fd8a2cb43d0e483629"
+    },
+    {
+      "bytes": 52972,
+      "path": "artifacts/experiment-015/figures/11-dcp-workers-vs-mla-service.svg",
+      "sha256": "d668f824ea5988db9522a01a8d6ab3694894d508934cbccb0fb90075cf54eeaf"
+    },
+    {
+      "bytes": 75781,
+      "path": "artifacts/experiment-015/figures/12-tp-degree-vs-latency.png",
+      "sha256": "8cc010f58bb80a1215597b715c36706497c2c736f60e3230dd68a486a7e62240"
+    },
+    {
+      "bytes": 59082,
+      "path": "artifacts/experiment-015/figures/12-tp-degree-vs-latency.svg",
+      "sha256": "d80950b0cbfc8943747a03aba08fbd2ce7ffa65a4e2617a5071d71a4c8b75831"
+    },
+    {
+      "bytes": 41198,
+      "path": "artifacts/experiment-015/figures/13-expert-load-distribution.png",
+      "sha256": "ccd1b0ac5d433a15c97aba7562da97b02cde0e0d71165c9f743d3d5569147ea6"
+    },
+    {
+      "bytes": 43868,
+      "path": "artifacts/experiment-015/figures/13-expert-load-distribution.svg",
+      "sha256": "7d94eb7de8cc7763ef1c3114a046873531cbd6c3a4c7a623dbfa8614f96206c1"
+    },
+    {
+      "bytes": 40204,
+      "path": "artifacts/experiment-015/figures/14-hot-expert-replication-effect.png",
+      "sha256": "f05342af265d3fd549d6ee0a7b93deb526e6f1cfb2bbdff054338fc7eb446db9"
+    },
+    {
+      "bytes": 36278,
+      "path": "artifacts/experiment-015/figures/14-hot-expert-replication-effect.svg",
+      "sha256": "b591d73e08b0170e3099f5584495afacf103187baa14088ef9f0b3709cd65778"
+    },
+    {
+      "bytes": 41553,
+      "path": "artifacts/experiment-015/figures/15-route-prediction-usefulness.png",
+      "sha256": "b89fb9e8bb0a293547acb4c870afce05ac84647389dbef97552ce134b8043a6e"
+    },
+    {
+      "bytes": 44538,
+      "path": "artifacts/experiment-015/figures/15-route-prediction-usefulness.svg",
+      "sha256": "10f2d71f9c0ba8f0d3cec0a2e028c73f9a4682e687eb31c851a24f8e659f8832"
+    },
+    {
+      "bytes": 51059,
+      "path": "artifacts/experiment-015/figures/16-residency-vs-throughput.png",
+      "sha256": "22195079c4b62810047ba8f824490052e22603e7c2fb15b211fd07a8a96d0a44"
+    },
+    {
+      "bytes": 56634,
+      "path": "artifacts/experiment-015/figures/16-residency-vs-throughput.svg",
+      "sha256": "2e9d9cc4a37e87c15845b42a20bf0014ed12d4ccd62d7593579c23e341505e4f"
+    },
+    {
+      "bytes": 57687,
+      "path": "artifacts/experiment-015/figures/17-throughput-per-paid-gpu.png",
+      "sha256": "58ef52f96d2f32503ebbdce715f6e4a7e8e69fbf5de7d2aff27ccfdaac00b35d"
+    },
+    {
+      "bytes": 53835,
+      "path": "artifacts/experiment-015/figures/17-throughput-per-paid-gpu.svg",
+      "sha256": "94e8748e32171fdf323df32b00e41e44e1636a8a0ac00ae3e9775dd62b0f0a12"
+    },
+    {
+      "bytes": 45604,
+      "path": "artifacts/experiment-015/figures/18-dependency-by-architecture.png",
+      "sha256": "6e500e8f2119856bf1090d19092a70a50f147ed0a698df7d8f81642c66afeb1d"
+    },
+    {
+      "bytes": 52618,
+      "path": "artifacts/experiment-015/figures/18-dependency-by-architecture.svg",
+      "sha256": "a86474a116128cf5467fcab3618c176ee7043af26753e596d6a810178a399999"
+    },
+    {
+      "bytes": 60472,
+      "path": "artifacts/experiment-015/figures/19-cost-per-million.png",
+      "sha256": "04e86fbb47385dd55900bdb86e4be4ada2a182fa012bdb006bb3b9abf8e577cb"
+    },
+    {
+      "bytes": 55524,
+      "path": "artifacts/experiment-015/figures/19-cost-per-million.svg",
+      "sha256": "104dfe8e08a48f4b2e101b71611c0dbf440ed3e3e8d7e806f0497427138e7c32"
+    },
+    {
+      "bytes": 59727,
+      "path": "artifacts/experiment-015/figures/20-pareto-frontier.png",
+      "sha256": "e8deb086bcf11e41a7577d51f72cf9eeb260e25fe65062826467d5898ea7bcc5"
+    },
+    {
+      "bytes": 55736,
+      "path": "artifacts/experiment-015/figures/20-pareto-frontier.svg",
+      "sha256": "cb52b84e331b59a2e6a28ce5e5d0bbdf4465e5c63773916d0373ca779ccdd89f"
+    },
+    {
+      "bytes": 1347,
+      "path": "artifacts/experiment-015/final-recommended-architecture.json",
+      "sha256": "de44e4db87edfe85da055959b9ef2808ca13115d1a4accc0479f677fa5f3c634"
+    },
+    {
+      "bytes": 3325,
+      "path": "artifacts/experiment-015/machine-summary.json",
+      "sha256": "5ef2f29ef3050b3505f576bc0aeb9655085c49f843227aebac08b0e6f6bf5f9e"
+    },
+    {
+      "bytes": 6602,
+      "path": "artifacts/experiment-015/microwork/results.json",
+      "sha256": "00a72dc61e256686ff4fc3fca4539d4ed045fbb95806586591837e05c1e28c35"
+    },
+    {
+      "bytes": 2075,
+      "path": "artifacts/experiment-015/model-validation/results.json",
+      "sha256": "cf934f1cb3ae3fa908e6b2a3f9b27998ec375a6d9b7e15a5f0ac4c5856740dae"
+    },
+    {
+      "bytes": 20914,
+      "path": "artifacts/experiment-015/network-surfaces/activation-boundaries.json",
+      "sha256": "bc889d9993d05316b9b8d897f3fc5aa84bcf50755ca6918cd08107a0ee8ee24a"
+    },
+    {
+      "bytes": 76159,
+      "path": "artifacts/experiment-015/network-surfaces/expert-microwork.json",
+      "sha256": "ef1717dcd61a060270d5bf66ab2a92b687916f977cc6e302eb553a7de5328ff4"
+    },
+    {
+      "bytes": 1712,
+      "path": "artifacts/experiment-015/pipeline-occupancy/results.json",
+      "sha256": "dd7d5ea9813c9727bf59ac4bda3b5bc076eabb3f8b2235b21057ca914b00592f"
+    },
+    {
+      "bytes": 1,
+      "path": "artifacts/experiment-015/regression/dist/.gitignore",
+      "sha256": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1"
+    },
+    {
+      "bytes": 2045902,
+      "path": "artifacts/experiment-015/regression/dist/swarm_inference_lab-0.1.0rc11-py3-none-any.whl",
+      "sha256": "46f576bbbae9497856522b979264b768f39f1d68f66a0e19b9e6ca921ca2961b"
+    },
+    {
+      "bytes": 2323143,
+      "path": "artifacts/experiment-015/regression/full-93-layer.json",
+      "sha256": "3f87bca1454773d1d21cde3313253e8d43b2ce30ce72553d47a98751fc8f2ade"
+    },
+    {
+      "bytes": 165287,
+      "path": "artifacts/experiment-015/regression/pytest-full.xml",
+      "sha256": "694afc64c389300b9150c6c7b7f6e6ce47865d0fd904bbf9ab649fa440d4242a"
+    },
+    {
+      "bytes": 5470,
+      "path": "artifacts/experiment-015/research-source-ledger.json",
+      "sha256": "617eb07ba0757a09066a2c34e5fddb8fbdfb8bd6b268ad41196c2bb65046515a"
+    },
+    {
+      "bytes": 2417,
+      "path": "artifacts/experiment-015/research-source-ledger.md",
+      "sha256": "75533c7c5baff0e4ccc928597d153fdc59cc1b60be2aaa7e186bd08c775b89d3"
+    },
+    {
+      "bytes": 2193,
+      "path": "artifacts/experiment-015/speculation/acceptance-traces.csv",
+      "sha256": "2d44444f04d1d0f9f064649a04e84c378824696a64522a2aea59dbc33748ca95"
+    },
+    {
+      "bytes": 7005,
+      "path": "artifacts/experiment-015/speculation/acceptance-traces.json",
+      "sha256": "897c2cd1f15b4deeccd2b2d9a5bc0375aa7cf6fcd49e8917d36473dcf1148059"
+    },
+    {
+      "bytes": 913,
+      "path": "artifacts/experiment-015/speculation/workload-manifest.json",
+      "sha256": "38454da1af14031d56394a20657b495d5a80fc01d80ab1c4a3204063f01934bd"
+    },
+    {
+      "bytes": 8959,
+      "path": "artifacts/experiment-015/tp/results.json",
+      "sha256": "78f5f9f794362cabce13f4b637c23561fde90e5347e28c242ca3fa56d7ff853b"
+    },
+    {
+      "bytes": 17034,
+      "path": "artifacts/experiment-015/worker-packing/model.json",
+      "sha256": "495293bee604005bb4a7cfb1c323ce29d72a250c99b0fcd5fb44636ce1ff0ed9"
+    },
+    {
+      "bytes": 10484,
+      "path": "docs/experiment-015-break-the-depth-barrier.md",
+      "sha256": "fff8a195530fc8c166c8627ad8b978de36af57c0abb528707db70dfea7edc500"
+    },
+    {
+      "bytes": 5084,
+      "path": "docs/experiment-015-manager-summary.md",
+      "sha256": "eb7af28885ef77d0103106e5291827c634a8ac546b2c7576b952d3fc4ab6c789"
+    },
+    {
+      "bytes": 953,
+      "path": "scripts/experiment_015_dspark_reference.py",
+      "sha256": "e9f661d09f8521b9ae6c140b9171bd4ed6b474f02f1e1af6b52db9c2453632a2"
+    },
+    {
+      "bytes": 1185,
+      "path": "scripts/experiment_015_finalize.py",
+      "sha256": "183444708287da1b3ca464ebdb86996598e2a7a0289013fc9ebb006ae424d63e"
+    },
+    {
+      "bytes": 560,
+      "path": "src/swarm_inference/experiments/experiment_015/__init__.py",
+      "sha256": "f758846e130c049223bc00d679551725a6c63fa1772355ce688c864d3ba5a9df"
+    },
+    {
+      "bytes": 10553,
+      "path": "src/swarm_inference/experiments/experiment_015/architecture_search.py",
+      "sha256": "1a6e7285493cb08695a69921804a1388cbaea61381e14355d0bb0552be7a838e"
+    },
+    {
+      "bytes": 8762,
+      "path": "src/swarm_inference/experiments/experiment_015/baseline.py",
+      "sha256": "d39b61adf712ebaf14c17ce9ed4212bcd25ca3ef605d852f3f80d2a26820e236"
+    },
+    {
+      "bytes": 1973,
+      "path": "src/swarm_inference/experiments/experiment_015/contracts.py",
+      "sha256": "4966dc22966949d150b43ffc3eb5d07d8200db966fc2fcc50905e4f41e70405a"
+    },
+    {
+      "bytes": 6254,
+      "path": "src/swarm_inference/experiments/experiment_015/dcp.py",
+      "sha256": "bbe903ac438d822e3ffc61d6ae682a26d780e6e9eae3a0f90ef2ed5e754686d3"
+    },
+    {
+      "bytes": 7030,
+      "path": "src/swarm_inference/experiments/experiment_015/dspark_benchmark.py",
+      "sha256": "aaa2a3bcc42f498e2664dd76a229f6647bd73eb21afec5bf089a605702c72f44"
+    },
+    {
+      "bytes": 12060,
+      "path": "src/swarm_inference/experiments/experiment_015/dspark_reference.py",
+      "sha256": "ced666cf5e7386bea0e0f1465108110fbf090c2fcff3cab964ec3fb50c538c13"
+    },
+    {
+      "bytes": 2734,
+      "path": "src/swarm_inference/experiments/experiment_015/evidence.py",
+      "sha256": "f2df27d81bb8abd5ee398727fef33d49cfa4f0117562089d6a10f630e6eec55e"
+    },
+    {
+      "bytes": 17672,
+      "path": "src/swarm_inference/experiments/experiment_015/figures.py",
+      "sha256": "93ed41f56e13a5cace6e4742c1cd4c7f2a030d5fde27c5dfcdc931ca48c4f8ea"
+    },
+    {
+      "bytes": 62037,
+      "path": "src/swarm_inference/experiments/experiment_015/finalize.py",
+      "sha256": "06ef66d865a52f254dd2add95f5a1f17cc6278a85f287672048dd8e434eab92f"
+    },
+    {
+      "bytes": 10813,
+      "path": "src/swarm_inference/experiments/experiment_015/microwork.py",
+      "sha256": "6dcff0c5b3434f6ae276c1c349b5ae1874f2e3869f143d56dc1267ce8f27f3b8"
+    },
+    {
+      "bytes": 2726,
+      "path": "src/swarm_inference/experiments/experiment_015/network.py",
+      "sha256": "8f9027398a34fdf3d9fa025c318c798a04d08b3005c98c004e242c27d0a714cf"
+    },
+    {
+      "bytes": 4783,
+      "path": "src/swarm_inference/experiments/experiment_015/packing.py",
+      "sha256": "3a1332811193364b11c745bcc649fde8a4b3e50c6f8edc62f219b3b22f53baad"
+    },
+    {
+      "bytes": 3103,
+      "path": "src/swarm_inference/experiments/experiment_015/pipeline.py",
+      "sha256": "850c88fbb71ea1191a7039b9fd2788af4a78f3c763fb06e5ca7d8af54f1f5633"
+    },
+    {
+      "bytes": 13475,
+      "path": "src/swarm_inference/experiments/experiment_015/routing.py",
+      "sha256": "05d46c0c486a5f049163144084ab49d931b92b2c0de41a4bf57a2f1abd2e917f"
+    },
+    {
+      "bytes": 17509,
+      "path": "src/swarm_inference/experiments/experiment_015/service_model.py",
+      "sha256": "b853fe905ae3900cbe95001599d62fd7a2afc08929b69728ca3d79d6f9fa7a93"
+    },
+    {
+      "bytes": 9903,
+      "path": "src/swarm_inference/experiments/experiment_015/speculation.py",
+      "sha256": "cc225cbd8be5df741714a67ab5fb5fc37c58fa8b080c23b2f43276b63c99762f"
+    },
+    {
+      "bytes": 5532,
+      "path": "src/swarm_inference/experiments/experiment_015/tp.py",
+      "sha256": "45f4b1847d23663cf4c58e6e7c735084f097ac6a39abf5ca1577cbf5bb84e6df"
+    },
+    {
+      "bytes": 4804,
+      "path": "tests/unit/test_experiment_015_models.py",
+      "sha256": "50385eeb859ceb0023410d208d6628178105c0b2b9ee267681c99e907238a19e"
+    },
+    {
+      "bytes": 4381,
+      "path": "tests/unit/test_experiment_015_speculation.py",
+      "sha256": "6673d14cc78c0e77bdb956674b727b2f9e5e54b40e64e8325b0cb0a2c00c63ef"
+    }
+  ],
+  "hash_algorithm": "SHA-256",
+  "schema_version": "experiment-015-evidence-integrity-v1",
+  "status": "PASS"
+}

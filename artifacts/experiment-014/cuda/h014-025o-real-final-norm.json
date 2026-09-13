@@ -1,0 +1,134 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "91c665a32470627a8fa3f60ef1fed9d1e6e0f3f2a8cbc76e924eca7e64324e3d",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_rmsnorm"
+  },
+  "benchmark": {
+    "bytes_touched_per_call": 86016,
+    "compute_utilization": null,
+    "effective_bandwidth_gbps": 4.31460654067141,
+    "gpu_utilization": null,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.03125,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "standard_deviation_ms": 0.6980721219902711
+    },
+    "kernel": {
+      "maximum_ms": 0.05526399984955788,
+      "mean_ms": 0.020385599993169308,
+      "minimum_ms": 0.019519999623298645,
+      "p50_ms": 0.019936000928282738,
+      "p95_ms": 0.02070559933781624,
+      "p99_ms": 0.026308480650186688,
+      "standard_deviation_ms": 0.003571269880882192
+    },
+    "kernel_count_per_call": 1,
+    "kernel_share_of_synchronized_p50_percent": 93.59624848959032,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "profiled_iterations": 100,
+    "queued_service_ms_per_call": 0.0124212,
+    "retained_iterations": 500,
+    "utilization_note": "single-row micro-kernel utilization is not sampled reliably",
+    "wall": {
+      "maximum_ms": 0.0323,
+      "mean_ms": 0.0210062,
+      "minimum_ms": 0.0202,
+      "p50_ms": 0.0213,
+      "p95_ms": 0.0215,
+      "p99_ms": 0.0228,
+      "standard_deviation_ms": 0.0007700789310194113
+    },
+    "warmup_iterations": 50
+  },
+  "checkpoint": {
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "path": "F:\\models\\Kimi-K3",
+    "rms_norm_epsilon": 1e-05,
+    "weight": {
+      "name": "language_model.model.norm.weight",
+      "runtime_f32_fingerprint": "sha256:e336fcd4b49e590a311e49c464b19880ae2f65f468bc7bc66fd48be7d9d35681",
+      "shape": [
+        7168
+      ],
+      "source_bytes": 14336,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "582007975240ff40346b88582607814fdbcb18f4308055e1085819c6a0f35b36",
+      "source_shard": "model-00094-of-000096.safetensors"
+    }
+  },
+  "correctness": {
+    "actual_finite": true,
+    "actual_l2": 67.60979347824009,
+    "cosine_similarity": 0.9999999999999994,
+    "maximum_absolute_error": 2.384185791015625e-07,
+    "mean_absolute_error": 4.847364871401234e-08,
+    "reference_finite": true,
+    "reference_l2": 67.60978827392515,
+    "relative_l2_error": 8.90105482789867e-08
+  },
+  "correctness_threshold": {
+    "cosine_similarity_minimum": 0.999999,
+    "relative_l2_error_maximum": 2e-06
+  },
+  "cycle_id": "H014-025o",
+  "fixture": {
+    "activation_dtype": "float32",
+    "activation_fingerprint": "sha256:807662647a7f0786a78fa973f05f3f232159efef5a8a5fd3586f1c3f00b2d631",
+    "activation_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\independent-reference\\x0.f32",
+    "activation_source_sha256": "fc4d010e5214195c5fb78d834f24e43c9627085cf60673b0f3e3cad1ad1a5158",
+    "cuda_output_fingerprint": "sha256:6993fd36680154340b73f20ad1d9c84b1d6c4fcb4d5da9c3fdd4dbc83058c240",
+    "dimensions": [
+      7168
+    ],
+    "output_dtype": "float32",
+    "reference_output_fingerprint": "sha256:ce1cb17d59a622dfcff7a7fa6488eecfa054af444f7103b0bc5e2bdf64140395",
+    "weight_dtype": "float32",
+    "weight_fingerprint": "sha256:e336fcd4b49e590a311e49c464b19880ae2f65f468bc7bc66fd48be7d9d35681"
+  },
+  "hypothesis": "The resident generic CUDA RMSNorm reproduces the serial FP32-activation final normalization with real Kimi scale weights at <=2e-6 relative L2.",
+  "inspection": {
+    "bottleneck": "DEVICE_MICROKERNEL_BOUND",
+    "decision": "RETAIN"
+  },
+  "memory": {
+    "activation_buffer_bytes": 28672,
+    "after_buffers": {
+      "free_bytes": 32427212800,
+      "total_bytes": 34190458880
+    },
+    "before_buffers": {
+      "free_bytes": 32429309952,
+      "total_bytes": 34190458880
+    },
+    "output_buffer_bytes": 28672,
+    "persistent_weight_bytes": 28672,
+    "workspace_bytes": 0
+  },
+  "schema_version": "experiment-014-k3-cuda-real-final-norm-v1",
+  "status": "PASS"
+}

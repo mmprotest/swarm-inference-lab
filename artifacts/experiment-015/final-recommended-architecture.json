@@ -1,0 +1,40 @@
+{
+  "best_model_sensitivity": {
+    "admission_reason": "constructed solely from validated service and shaped network inputs",
+    "admitted_to_decision_frontier": true,
+    "aggregate_output_tok_s": 97.15028433444262,
+    "aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+    "architecture_id": "D",
+    "cost_per_million_output_tokens_usd": 39.886656292844215,
+    "dependency_bound_tok_s": 1.1766258547730912,
+    "evidence_class": "SHAPED",
+    "name": "hierarchical microcells",
+    "paid_gpu_equivalents": 93.0,
+    "techniques": [
+      "8-layer microcells"
+    ]
+  },
+  "blocking_requirements": [
+    "representative target-verified DSpark acceptance",
+    "GPU DSpark draft latency and paid-compute accounting",
+    "real device-resident EP transport",
+    "complete Kimi DCP correctness/performance"
+  ],
+  "candidate_for_further_local_work": {
+    "coarse_network": {
+      "bandwidth_gbps": 10.0,
+      "rtt_ms": 5.0
+    },
+    "internal_network": {
+      "maximum_rtt_ms": 0.25,
+      "minimum_bandwidth_gbps": 25.0
+    },
+    "microcell_depth": 8,
+    "reason": "minor shaped dependency improvement only"
+  },
+  "control": "B015-000",
+  "experiment_016_plan": null,
+  "physical_validation_ready": false,
+  "schema_version": "experiment-015-final-architecture-v1",
+  "status": "NO_CREDIBLE_ARCHITECTURE_RECOMMENDATION"
+}

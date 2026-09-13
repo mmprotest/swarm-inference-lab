@@ -1,0 +1,207 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-025aj.dll",
+    "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_fixed_order_moe_reduction",
+    "implementation_kind": "adapted existing CUDA"
+  },
+  "benchmark": {
+    "batched_event_service_ms_per_call": 0.007070720195770264,
+    "bytes_read_per_call": 229440,
+    "bytes_written_per_call": 14336,
+    "dimension": 3584,
+    "effective_io_bandwidth_gbps": 34.476827430652385,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.03125,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "standard_deviation_ms": 0.6980721219902711
+    },
+    "kernel_count_per_call": 1,
+    "one_time_expert_reference_ms": 8195.1884,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "queued_service_ms_per_call": 0.0069386000000000005,
+    "retained_iterations": 500,
+    "rows_per_call": 16,
+    "wall": {
+      "maximum_ms": 0.1679,
+      "mean_ms": 0.013526999999999999,
+      "minimum_ms": 0.0081,
+      "p50_ms": 0.0096,
+      "p95_ms": 0.030904999999999995,
+      "p99_ms": 0.04930799999999999,
+      "standard_deviation_ms": 0.013875604887715706
+    },
+    "warmup_iterations": 50
+  },
+  "checkpoint": {
+    "expert_source_shards": [
+      "model-00002-of-000096.safetensors"
+    ],
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "latent_down": {
+      "name": "language_model.model.layers.1.block_sparse_moe.routed_expert_down_proj.weight",
+      "runtime_f32_fingerprint": "sha256:2f41ed9dff6bccaf820c7659860946275f4bfc8d6b37c0e489da215ee5491c95",
+      "shape": [
+        3584,
+        7168
+      ],
+      "source_bytes": 51380224,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "39bfe48649bd6452944185b32eb6486dbf0552da401c83f5d4f6ef2b3c0a3ca6",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "layer": 1,
+    "path": "F:\\models\\Kimi-K3",
+    "router": {
+      "name": "language_model.model.layers.1.block_sparse_moe.gate.weight",
+      "runtime_f32_fingerprint": "sha256:c6264960ed4924607aee26bc16dd0c996c2e2a60b1fdd9b2d269aeb84bc87f7a",
+      "shape": [
+        896,
+        7168
+      ],
+      "source_bytes": 12845056,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "25ebb27dfe797648f0d815f433fb2cf36f5617987bc2208e01d071588e79a957",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "router_bias": {
+      "name": "language_model.model.layers.1.block_sparse_moe.gate.e_score_correction_bias",
+      "runtime_f32_fingerprint": "sha256:26c3322fe1dafc49080600bd18ae434d86524779c4b5e2c7ec4effcf1da71906",
+      "shape": [
+        896
+      ],
+      "source_bytes": 3584,
+      "source_dtype": "F32",
+      "source_raw_sha256": "853727cc546c18e82efe23f124519049f001feb3d429123876ba8ec5484e5a1d",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "selected_expert_weight_fingerprint": "sha256:755126e64110db14768947ab2dbc524842e41d1a15ebc151d9620c7154f7b74e"
+  },
+  "correctness": {
+    "cuda_router_ids": [
+      878,
+      704,
+      325,
+      513,
+      468,
+      805,
+      788,
+      187,
+      83,
+      142,
+      412,
+      533,
+      84,
+      263,
+      564,
+      144
+    ],
+    "cuda_router_keff": 16,
+    "cuda_router_weight_metrics": {
+      "actual_finite": true,
+      "actual_l2": 0.2500518031179552,
+      "cosine_similarity": 0.9999999999999907,
+      "maximum_absolute_error": 1.4901161193847656e-08,
+      "mean_absolute_error": 6.51925802230835e-09,
+      "reference_finite": true,
+      "reference_l2": 0.25005179571731095,
+      "relative_l2_error": 1.3975632748966042e-07
+    },
+    "reduction_metrics": {
+      "actual_finite": true,
+      "actual_l2": 0.09046222771475675,
+      "cosine_similarity": 0.9999999999999977,
+      "maximum_absolute_error": 4.656612873077393e-10,
+      "mean_absolute_error": 6.372838814201159e-11,
+      "reference_finite": true,
+      "reference_l2": 0.09046222773059226,
+      "relative_l2_error": 7.119524142352378e-08
+    },
+    "repeat_bit_exact": true,
+    "routing_equality": true
+  },
+  "cycle_id": "H014-025u",
+  "fixture": {
+    "activation_fingerprint": "sha256:807662647a7f0786a78fa973f05f3f232159efef5a8a5fd3586f1c3f00b2d631",
+    "activation_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\independent-reference\\x0.f32",
+    "activation_source_sha256": "fc4d010e5214195c5fb78d834f24e43c9627085cf60673b0f3e3cad1ad1a5158",
+    "cuda_output_fingerprint": "sha256:57778d32966d24a6cdf1bac4526cef68e9e804ae4143f3abdb3b78d8fc464d57",
+    "dtype": "float32",
+    "expert_rows_dimensions": [
+      16,
+      3584
+    ],
+    "expert_rows_fingerprint": "sha256:30cc83841bd7779cfb5b66fcff4113c9ce8766bb2c4b8eabace16710d3cdad7c",
+    "latent_fingerprint": "sha256:6ad65e3e176b56b442b8e157cb2564e29bab033d30d25fdc56719586fc49d934",
+    "reference_output_fingerprint": "sha256:691a633557658650c72a33ed539f627da0e7ad1689d16968c404407d1d03c852",
+    "selected_expert_ids": [
+      878,
+      704,
+      325,
+      513,
+      468,
+      805,
+      788,
+      187,
+      83,
+      142,
+      412,
+      533,
+      84,
+      263,
+      564,
+      144
+    ],
+    "selected_weights": [
+      0.06520114839076996,
+      0.06354165077209473,
+      0.06323456019163132,
+      0.06363840401172638,
+      0.06144866347312927,
+      0.06316074728965759,
+      0.061168063431978226,
+      0.06337076425552368,
+      0.0629068985581398,
+      0.06168389692902565,
+      0.06331375986337662,
+      0.06230040267109871,
+      0.06291212141513824,
+      0.0610806830227375,
+      0.060361433774232864,
+      0.060676753520965576
+    ]
+  },
+  "hypothesis": "The existing fixed-order resident CUDA reduction reproduces the weighted sum of 16 actual Kimi routed-expert outputs within 2e-6 relative L2 and is deterministic.",
+  "inspection": {
+    "bottleneck": "PENDING_TIMING_INSPECTION",
+    "decision": "RETAIN",
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_weight_loading": 0
+  },
+  "schema_version": "experiment-014-k3-cuda-real-moe-reduction-v1",
+  "status": "PASS"
+}

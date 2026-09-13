@@ -1,0 +1,167 @@
+{
+  "schema_version": "experiment-022-completion-audit-v1",
+  "audit_status": "PASS",
+  "sharing_assessment": "READY_TO_SHARE",
+  "experiment_status": "FAIL_REQUIRED_DYNAMIC_GATE",
+  "final_answer": "MODEL INVALID",
+  "question_audited": "Given the exact same frozen heterogeneous resources, does selective sub-layer partitioning materially improve the best Kimi K3 inference system over whole-layer-only placement?",
+  "artifact_integrity": {
+    "required_artifacts_expected": 42,
+    "required_artifacts_present": 42,
+    "required_artifacts_empty": 0,
+    "completion_json_files_parsed": 179,
+    "json_parse_errors": 0,
+    "placement_manifests": 135,
+    "charts_rendered_and_visually_inspected": 8,
+    "report_numbered_sections": 19
+  },
+  "frozen_input_audit": {
+    "inventory_files_hash_matched": 27,
+    "inventory_files_hash_mismatched": 0,
+    "unique_inventory_ids": 27,
+    "unique_inventory_seeds": 27,
+    "inventory_seeds_equal_frozen_seed_set": true,
+    "inventory_suite_sha256": "3e949a8eee0a71e128493f64e0be903bd373d3baad4be86a8869d87279d4bb49",
+    "post_freeze_source_changes": [
+      {
+        "path": "src/swarm_inference/experiments/experiment_022/planner.py",
+        "classification": "REPAIRED_SERVICE_ACCOUNTING_AND_RUNTIME_ELIGIBILITY",
+        "frozen_optimizer_algorithm_or_budget_changed": false
+      },
+      {
+        "path": "src/swarm_inference/experiments/experiment_022/runner.py",
+        "classification": "PRODUCTION_BINDING_RECEIPT_REPAIR",
+        "frozen_optimizer_algorithm_or_budget_changed": false
+      }
+    ],
+    "frozen_invariants_rechecked": {
+      "planner_action_ladder": true,
+      "shared_optimizer": true,
+      "objective": true,
+      "proposal_budget_24": true,
+      "exact_evaluation_budget_6": true,
+      "restarts_3": true,
+      "candidate_groups_per_action_4": true,
+      "randomization_0_08": true,
+      "optimizer_seed_22022": true,
+      "dominance_tolerance_percent_1": true,
+      "thresholds": true
+    }
+  },
+  "physical_and_model_spot_checks": {
+    "execute_shard_bindings": {
+      "operations": 6,
+      "status": "PASS",
+      "checkpoint_reads_in_timed_region": 0,
+      "whole_layer_fallbacks": 0
+    },
+    "chunk_rows": {
+      "1": {
+        "physical_rows": 184,
+        "failed_rows": 0
+      },
+      "2": {
+        "physical_rows": 184,
+        "failed_rows": 0
+      },
+      "4": {
+        "physical_rows": 184,
+        "failed_rows": 0
+      }
+    },
+    "residual_ledger_rows": 84,
+    "residual_reconciliation_failures": 0,
+    "maximum_unexplained_fraction": 0.0056051813266253456,
+    "heldout_model_validation": {
+      "rows": 6,
+      "median_absolute_error_percent": 3.2806018076935235,
+      "p90_absolute_error_percent": 7.030403733821702,
+      "maximum_absolute_error_percent": 8.840475063046842,
+      "normalization_or_global_correction": false,
+      "status": "PASS"
+    },
+    "candidate_catalog": {
+      "candidates": 1573,
+      "incomplete_candidates": 0,
+      "imaginary_candidates_admitted": 0,
+      "status": "PASS"
+    }
+  },
+  "headline_recomputation": {
+    "a_feasible_inventories": 21,
+    "a_feasible_heterogeneous_inventories": 18,
+    "median_throughput_uplift_percent": 0.0,
+    "wins_ge_20_percent": 0,
+    "wins_ge_20_denominator": 18,
+    "adaptive_regressions_gt_1_percent": 0,
+    "dominance_failures": 0,
+    "capacity_unlocks": 6,
+    "target_crossings": 0,
+    "ablation_rows": 135,
+    "feasible_by_level": {
+      "A": 21,
+      "B": 27,
+      "C": 27,
+      "D": 27,
+      "E": 27
+    }
+  },
+  "correctness_audit": {
+    "original_representative_slots_passed": 5,
+    "final_headline_slots_passed": 5,
+    "fresh_changed_manifests_executed": 2,
+    "identical_manifest_receipt_reuses_disclosed": 1,
+    "strict_correctness_failures": 0,
+    "status": "PASS"
+  },
+  "dynamic_audit": {
+    "rows": 25,
+    "passed": 21,
+    "failed": 4,
+    "failed_scenario": "JOIN_USEFUL",
+    "failed_inventory_ids": [
+      "full-mixed-01",
+      "full-mixed-02",
+      "full-mixed-03",
+      "full-mixed-05"
+    ],
+    "failed_joined_nodes_used": 0,
+    "status": "FAIL"
+  },
+  "visualization_review": {
+    "status": "PASS",
+    "chart_05_population_change_disclosed": true,
+    "chart_07_experiment_only_and_unexplained_bundle_disclosed": true,
+    "chart_07_maximum_unexplained_percent_disclosed": 0.56,
+    "clipped_or_broken_charts": 0
+  },
+  "test_receipt": {
+    "command": ".venv/Scripts/python.exe -m pytest -q tests/test_experiment_022.py tests/test_experiment_022_completion.py --basetemp .pytest-e022-final-lint",
+    "python_path": "src",
+    "passed": 19,
+    "failed": 0,
+    "warnings": 1,
+    "warning": "Pre-existing PytestConfigWarning: unknown asyncio_mode option",
+    "scratch_directory_removed_after_success": true
+  },
+  "lint_receipt": {
+    "tool": "ruff",
+    "scope": "all touched and newly added Experiment 022 source, supporting Experiment 019/native runtime source, script, and tests",
+    "status": "PASS",
+    "findings": 0
+  },
+  "conclusion_reconciliation": {
+    "all_gates_except_dynamic": "PASS",
+    "dynamic_gate": "FAIL",
+    "static_pattern_if_dynamic_gate_were_ignored": "SUBLAYER_CAPACITY_ONLY",
+    "static_pattern_promoted_to_final_conclusion": false,
+    "required_fail_closed_verdict": "MODEL INVALID",
+    "claim_boundary_preserved": true,
+    "physical_multi_machine_throughput_claimed": false
+  },
+  "remaining_caveats": [
+    "The final answer is inadmissible for the north-star value question because the required dynamic adaptation gate failed.",
+    "Static modeled outcomes are diagnostic only and do not establish a capacity-only verdict.",
+    "No physical multi-machine swarm throughput, contention, jitter, or deployed economics were measured."
+  ]
+}

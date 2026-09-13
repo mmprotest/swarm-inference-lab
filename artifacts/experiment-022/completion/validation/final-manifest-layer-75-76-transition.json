@@ -1,0 +1,59 @@
+{
+  "close_error": null,
+  "evidence_class": "PHYSICAL RTX 5090 consecutive manifest layers",
+  "inventory_id": "memory-fragmented-02",
+  "layers": [
+    {
+      "candidate_id": "layer-75:WHOLE_EXPERT:p8",
+      "layer": 75,
+      "native_primitive": "ManifestK3Runner.whole_expert_layer_dag",
+      "next_block_count": 7,
+      "outer_cuda_mem_info_after_layer": {
+        "free_bytes": 32423018496,
+        "total_bytes": 34190458880
+      },
+      "output_metrics": {
+        "actual_finite": true,
+        "actual_l2": 13.420316894807373,
+        "cosine_similarity": 0.9999999999998302,
+        "maximum_absolute_error": 2.5033950805664062e-06,
+        "mean_absolute_error": 6.609577342585129e-08,
+        "reference_finite": true,
+        "reference_l2": 13.420317137062096,
+        "relative_l2_error": 5.85401510473443e-07
+      },
+      "partition_type": "WHOLE_EXPERT",
+      "state_status": "PASS",
+      "wall_ms": 47094.9786
+    },
+    {
+      "candidate_id": "layer-76:EXPERT_SHARD:p8",
+      "layer": 76,
+      "native_primitive": "ManifestK3Runner.expert_sharded_layer_dag",
+      "next_block_count": 7,
+      "outer_cuda_mem_info_after_layer": {
+        "free_bytes": 32423018496,
+        "total_bytes": 34190458880
+      },
+      "output_metrics": {
+        "actual_finite": true,
+        "actual_l2": 16.69865544460682,
+        "cosine_similarity": 0.99999999999997,
+        "maximum_absolute_error": 3.8743019104003906e-07,
+        "mean_absolute_error": 3.863449040051949e-08,
+        "reference_finite": true,
+        "reference_l2": 16.698655643729246,
+        "relative_l2_error": 2.5000949454182974e-07
+      },
+      "partition_type": "EXPERT_SHARD",
+      "state_status": "PASS",
+      "wall_ms": 243335.9589
+    }
+  ],
+  "outer_authenticated_roundtrips": 2,
+  "planner_level": "E",
+  "schema_version": "experiment-022-manifest-transition-smoke-v1",
+  "status": "PASS",
+  "timed_checkpoint_reads": 0,
+  "wall_seconds": 304.6144633
+}

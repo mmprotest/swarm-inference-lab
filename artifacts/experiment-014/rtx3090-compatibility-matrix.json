@@ -1,0 +1,260 @@
+{
+  "generated_at_utc": "2026-08-10T10:33:58.875824+00:00",
+  "generic_sm86_binary": {
+    "architecture_metadata": "MISSING",
+    "exists": false,
+    "path": null,
+    "sha256": null
+  },
+  "operations": [
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "token_embedding",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "host checkpoint read + GPU gather",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "st_read_slice_f32",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "dense_projection",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "BF16/int8/int4 matmul",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "w_matmul",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "kda_attention",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "recurrent matrix update + short convolution",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "kda_forward",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "gated_mla_attention",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "causal latent-cache attention",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "mla_forward",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "attnres",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "RMS-normalized residual mixing",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "res_mix",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "moe_router",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "896-way sigmoid+bias top-16",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "moe_forward",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "native_mxfp4_routed_expert",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "E2M1/UE8M0 group-32 decode/matmul",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "matmul_mxfp4",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "shared_experts",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "SiTU-GLU projections",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "shared_experts",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "fixed_order_moe_reduction",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "FP32 weighted reduction",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "moe_forward",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "final_norm",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "RMS normalization",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "rmsnorm_",
+      "target_architectures": [
+        "sm_86"
+      ]
+    },
+    {
+      "architecture_specific_intrinsics": "none in Kimi source; CUDA backend WMMA >= sm_75",
+      "backend": "CPU reference; optional Vulkan; no Kimi CUDA dispatch",
+      "blackwell_only_assumption": false,
+      "blocker": "full Kimi K3 engine has no CUDA dispatch, so an sm_86 binary cannot execute this operation on the RTX 3090",
+      "compatibility_status": "BLOCKER",
+      "compile_flags": [
+        "-gencode arch=compute_86,code=sm_86"
+      ],
+      "expected_sm86_support": "generic CUDA primitives should compile, but this operation is not wired to them",
+      "fallback_behaviour": "mathematically implemented CPU reference path",
+      "operation": "lm_head",
+      "ptx_cubin_architecture": "MISSING",
+      "required_cuda_feature": "163840-way output projection",
+      "source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+      "source_symbol": "lm_head",
+      "target_architectures": [
+        "sm_86"
+      ]
+    }
+  ],
+  "schema_version": "experiment-014-rtx3090-compatibility-v1",
+  "source_evidence": {
+    "cuda_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\backend_cuda.cu",
+    "cuda_source_sha256": "4120bee2a370c38eac81376bb05bccf86c691a95d80f8bf204d0e3b2d2e59047",
+    "generic_cuda_has_ampere_wmma_paths": true,
+    "kimi_has_cuda_dispatch": false,
+    "kimi_has_vulkan_dispatch": true,
+    "kimi_make_target_links_cuda_object": false,
+    "kimi_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.c",
+    "kimi_source_sha256": "50d27b1811326bf16dd412a34a1d3b748b6bb030e90fec052ecd672bebcb18f1",
+    "makefile": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\Makefile",
+    "makefile_sha256": "65a692c08607ac57c39a9a7068032ee4c4b729dfe1a36a11ee0ec4e84c98cb6d",
+    "portable_build_declares_sm86": true
+  },
+  "status": "FAIL",
+  "summary": {
+    "blockers": 11,
+    "certified_for_sm86": 0,
+    "critical_operations": 11,
+    "fallback_available_but_not_product_gpu_path": 11,
+    "gate_9_sm86_package": false,
+    "specific_blocker": "Colibri's full Kimi K3 target links only CPU/Vulkan code; generic coli_cuda is not called by kimi_k3.c"
+  },
+  "target": {
+    "compute_capability": "8.6",
+    "cuda_architecture": "sm_86",
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "purpose": "compatibility certification, not speed measurement"
+  }
+}

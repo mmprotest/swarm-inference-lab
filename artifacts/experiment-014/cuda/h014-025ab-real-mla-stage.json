@@ -1,0 +1,357 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "8660cacd514ee45dbd5ee9831d1926b1b0b256628ecba48987cea6ae92bae283",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_complete_kimi_gated_mla",
+    "implementation_kind": "generic existing CUDA projections/norm/attention plus adapted cache wiring and custom sigmoid elementwise gate"
+  },
+  "benchmark": {
+    "batched_device_service_ms_per_call": 0.5392720031738282,
+    "device_copy_count_per_call": 1,
+    "effective_projection_weight_bandwidth_gbps": 431.04843313193777,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.46875,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 15.625,
+      "standard_deviation_ms": 2.665425329567497
+    },
+    "independent_reference_ms": 843.0894,
+    "kernel_count_per_call": 9,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "phase_device_ms_per_call": {
+      "absorb_attention_and_sigmoid_gate": 0.10920928001403808,
+      "five_projection_and_query_norm_kernels": 0.23331136703491212,
+      "latent_norm_and_nope_cache_append": 0.015791679620742797,
+      "output_projection": 0.06576159954071045,
+      "phase_sum": 0.4240739262104034
+    },
+    "quantization_ms": {
+      "gate": 456.4646,
+      "kv_a": 28.5418,
+      "kv_b": 70.7929,
+      "output": 493.4176,
+      "query_a": 94.2385,
+      "query_b": 166.0506
+    },
+    "queued_service_ms_per_call": 0.539141,
+    "resident_projection_weight_bytes": 232452352,
+    "retained_iterations": 100,
+    "wall": {
+      "maximum_ms": 0.5748,
+      "mean_ms": 0.5532630000000001,
+      "minimum_ms": 0.5452,
+      "p50_ms": 0.5532,
+      "p95_ms": 0.560245,
+      "p99_ms": 0.568959,
+      "standard_deviation_ms": 0.004572387888182716
+    },
+    "warmup_iterations": 20
+  },
+  "checkpoint": {
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "input_norm": {
+      "name": "language_model.model.layers.3.input_layernorm.weight",
+      "runtime_f32_fingerprint": "sha256:d573ec2088f19d721c2ddf95a3ba3f1661970fab01ed364af8007e20b3dde427",
+      "shape": [
+        7168
+      ],
+      "source_bytes": 14336,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "b1d364f71ce7a7e7b3caa82ea617a0a8c88251370cbb7832d7c594f17c791a8d",
+      "source_shard": "model-00004-of-000096.safetensors"
+    },
+    "kv_norm": {
+      "name": "language_model.model.layers.3.self_attn.kv_a_layernorm.weight",
+      "runtime_f32_fingerprint": "sha256:d9657001cc4f049ae2f33c06f54f6efb3d2004b839ff5c6b2a0efb7762ea28ab",
+      "shape": [
+        512
+      ],
+      "source_bytes": 1024,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "70ce713f9f943551b6fd6a49c7fee5648fb16b6c4185ebecfca4491be8cad1aa",
+      "source_shard": "model-00004-of-000096.safetensors"
+    },
+    "layer": 3,
+    "path": "F:\\models\\Kimi-K3",
+    "quantized_projections": {
+      "gate": {
+        "quantized_scale_fingerprint": "sha256:3909a0c5fd8621a8e8696635a0284ce5125e0c21354088a27f7e43a937eb07a7",
+        "quantized_weight_fingerprint": "sha256:a6b07616662b4d9f254a88464a99f7866421bb47473b4e461c8ffe1b70057349",
+        "runtime_format": "signed int8 with float32 per-row scale",
+        "source": {
+          "name": "language_model.model.layers.3.self_attn.g_proj.weight",
+          "runtime_bf16_fingerprint": "sha256:7bec3022e545c7a16c79c517c4cda69476f19c04411463e34c1d194b8e35f554",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_range": [
+            380761040,
+            556921808
+          ],
+          "source_raw_sha256": "c4f335faf3454722f48c75f69ee22e92c8fb399f353a80d1895984c3d075aa08",
+          "source_shard": "model-00004-of-000096.safetensors"
+        }
+      },
+      "kv_a": {
+        "quantized_scale_fingerprint": "sha256:99462d99bc308201b134843c99478e47955886eb18c5aa8233396d33c923a55a",
+        "quantized_weight_fingerprint": "sha256:adc88ec90076cfe63c914a83b37094258d8936fb40fe2cc1fa5865d24b743992",
+        "runtime_format": "signed int8 with float32 per-row scale",
+        "source": {
+          "name": "language_model.model.layers.3.self_attn.kv_a_proj_with_mqa.weight",
+          "runtime_bf16_fingerprint": "sha256:f15046db7eb4f855a163f4e7a142bc88bfd2d8041de014916cf29494ccf669fb",
+          "shape": [
+            576,
+            7168
+          ],
+          "source_bytes": 8257536,
+          "source_dtype": "BF16",
+          "source_range": [
+            556922832,
+            565180368
+          ],
+          "source_raw_sha256": "14d45d237c10967b6dab350e6d3bb4701bb57ac46f9acb905397f30ab3a80d49",
+          "source_shard": "model-00004-of-000096.safetensors"
+        }
+      },
+      "kv_b": {
+        "quantized_scale_fingerprint": "sha256:b0df9b4beddd3866c3f679c55a3eea00070d6148fd073c831249f096087adb6d",
+        "quantized_weight_fingerprint": "sha256:9f6d2bcacf9d6d77b895895898ab0d6ec8d23540e37c44fe70174255c80f4bb7",
+        "runtime_format": "signed int8 with float32 per-row scale",
+        "source": {
+          "name": "language_model.model.layers.3.self_attn.kv_b_proj.weight",
+          "runtime_bf16_fingerprint": "sha256:108d4310e8db6aae8485c98e75a041cb66c0a28f6c987e5509bbe32efa231bd0",
+          "shape": [
+            24576,
+            512
+          ],
+          "source_bytes": 25165824,
+          "source_dtype": "BF16",
+          "source_range": [
+            565180368,
+            590346192
+          ],
+          "source_raw_sha256": "d9fb711d4aa59bc48a371f431e72a4d73a5ef7f1f5a4cb69a1776c17d230a0fc",
+          "source_shard": "model-00004-of-000096.safetensors"
+        }
+      },
+      "output": {
+        "quantized_scale_fingerprint": "sha256:7e8cb081b78c37d7a539de52e8c6070dae360f60de3355ec8483b10a7ca7d883",
+        "quantized_weight_fingerprint": "sha256:39d5adfa3b38b2a456b8230919a23986495c606481e0014d7bb94b0b39f13009",
+        "runtime_format": "signed int8 with float32 per-row scale",
+        "source": {
+          "name": "language_model.model.layers.3.self_attn.o_proj.weight",
+          "runtime_bf16_fingerprint": "sha256:047d35ea8e4bc881ba7151e6ed5cbbd02b76ac85135ea975f815614e7c88600a",
+          "shape": [
+            7168,
+            12288
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_range": [
+            590346192,
+            766506960
+          ],
+          "source_raw_sha256": "d676298f4da2de1a30142d086be25a1339a899a98fb4e09e3912dfa97885d3ae",
+          "source_shard": "model-00004-of-000096.safetensors"
+        }
+      },
+      "query_a": {
+        "quantized_scale_fingerprint": "sha256:a81d24045b5e3662987d88ce0c3d5147c9c397968f85c00e050aa4c6e9fc962b",
+        "quantized_weight_fingerprint": "sha256:6a9c5cbd0ce4cb181543b9cbdffe2fe7b61e27e053392a87660b4cdb805fdb39",
+        "runtime_format": "signed int8 with float32 per-row scale",
+        "source": {
+          "name": "language_model.model.layers.3.self_attn.q_a_proj.weight",
+          "runtime_bf16_fingerprint": "sha256:3fe602436df21378000c0b8eafc5f083ef4d95a330ac47607e01688f70f84ecd",
+          "shape": [
+            1536,
+            7168
+          ],
+          "source_bytes": 22020096,
+          "source_dtype": "BF16",
+          "source_range": [
+            766510032,
+            788530128
+          ],
+          "source_raw_sha256": "b1066a91aede8403e87921c4b3ccb482cd5d07610d7e0a9e7d4ee400eeb317a1",
+          "source_shard": "model-00004-of-000096.safetensors"
+        }
+      },
+      "query_b": {
+        "quantized_scale_fingerprint": "sha256:c2f4d63a0d610d6f0ed0ec365b4ff58235a025eeb45db67164fc9d97f7fe1f8c",
+        "quantized_weight_fingerprint": "sha256:1287dda7c9e30d9a8c9c616e608fccddcd9aae497e2cd5310a6c738f1fafae48",
+        "runtime_format": "signed int8 with float32 per-row scale",
+        "source": {
+          "name": "language_model.model.layers.3.self_attn.q_b_proj.weight",
+          "runtime_bf16_fingerprint": "sha256:0de223bc004c31cd3cef51694148b8319a5dfacbfab5956b66b2a07665554c7c",
+          "shape": [
+            18432,
+            1536
+          ],
+          "source_bytes": 56623104,
+          "source_dtype": "BF16",
+          "source_range": [
+            788530128,
+            845153232
+          ],
+          "source_raw_sha256": "747865b478d9011a7e18f80132dc486600f341ab7080718d458fcf65ffacb0ee",
+          "source_shard": "model-00004-of-000096.safetensors"
+        }
+      }
+    },
+    "query_norm": {
+      "name": "language_model.model.layers.3.self_attn.q_a_layernorm.weight",
+      "runtime_f32_fingerprint": "sha256:893064b1656ae5f54555f62c2c7c3cefef0f75a10cfcae5266d205823c0be277",
+      "shape": [
+        1536
+      ],
+      "source_bytes": 3072,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "eb7f49339bd5103bf6807ed3f89712dbf39421ae5181ebc2d76bd43b0e813d65",
+      "source_shard": "model-00004-of-000096.safetensors"
+    }
+  },
+  "correctness": {
+    "latent_cache_metrics": {
+      "actual_finite": true,
+      "actual_l2": 4.544599020644787,
+      "cosine_similarity": 0.9999999999999627,
+      "maximum_absolute_error": 1.4901161193847656e-07,
+      "mean_absolute_error": 2.2050609042404783e-08,
+      "reference_finite": true,
+      "reference_l2": 4.54459894396226,
+      "relative_l2_error": 2.73625294668951e-07
+    },
+    "maximum_output_relative_l2_error": 5.87921473356043e-07,
+    "per_step_output_metrics": [
+      {
+        "actual_finite": true,
+        "actual_l2": 2.0155383594676444,
+        "cosine_similarity": 0.9999999999998972,
+        "maximum_absolute_error": 1.1920928955078125e-07,
+        "mean_absolute_error": 8.615611240309867e-09,
+        "reference_finite": true,
+        "reference_l2": 2.015538204608706,
+        "relative_l2_error": 4.625168386963635e-07
+      },
+      {
+        "actual_finite": true,
+        "actual_l2": 1.4466986208317718,
+        "cosine_similarity": 0.9999999999998814,
+        "maximum_absolute_error": 5.960464477539063e-08,
+        "mean_absolute_error": 6.79474914428673e-09,
+        "reference_finite": true,
+        "reference_l2": 1.4466984405816017,
+        "relative_l2_error": 5.038194706237555e-07
+      },
+      {
+        "actual_finite": true,
+        "actual_l2": 1.3855573668887522,
+        "cosine_similarity": 0.9999999999998278,
+        "maximum_absolute_error": 4.470348358154297e-08,
+        "mean_absolute_error": 7.57869444978354e-09,
+        "reference_finite": true,
+        "reference_l2": 1.3855573942228785,
+        "relative_l2_error": 5.87921473356043e-07
+      }
+    ],
+    "repeat_output_bit_exact": true,
+    "rope_cache_bit_exact": false,
+    "rope_cache_metrics": {
+      "actual_finite": true,
+      "actual_l2": 33.62534843492348,
+      "cosine_similarity": 0.9999999999999873,
+      "maximum_absolute_error": 9.5367431640625e-07,
+      "mean_absolute_error": 2.9130023904144764e-07,
+      "reference_finite": true,
+      "reference_l2": 33.62534785176846,
+      "relative_l2_error": 1.6094896944844453e-07
+    }
+  },
+  "cycle_id": "H014-025ab",
+  "dimensions": {
+    "attention_scale": 0.07216878235340118,
+    "heads": 96,
+    "hidden": 7168,
+    "kv_lora": 512,
+    "query_lora": 1536,
+    "query_nope_per_head": 128,
+    "query_rope_per_head": 64,
+    "value_per_head": 128
+  },
+  "fixture": {
+    "cuda_latent_cache_fingerprint": "sha256:1262e85e29770e56e775db84bab986af9bce2dff43b7cf51c7dbe40cbe2726d4",
+    "cuda_output_fingerprints": [
+      "sha256:be67a29b17036159bd3ab9efd228a0545f13d90589d293fa0c714cf6831b8df3",
+      "sha256:016232ac25118a1a829c9a985b981d9fae6f47ca7fbeda7a1d2ae3a414e8c185",
+      "sha256:2207bb957e0d31773bfe4b02a7ce9e542a76bd0ed16f1d306e91b3035c939d69"
+    ],
+    "cuda_rope_cache_fingerprint": "sha256:8897598dcea56ad0bc3ca66e49b7d016e19da259a0bab47f9af01fe143724d90",
+    "dtype": "float32 activations/state; per-row int8 projection weights",
+    "normalized_input_fingerprint": "sha256:1a8cd2fa526365532b613794e485b3284d0d0b962f6b7dd3840e71a9ea8a78d2",
+    "raw_input_fingerprint": "sha256:3d2a0f37958dc5b98f9a9669118dc5a768238c5be0a964f9a227032caf0e7c9b",
+    "reference_latent_cache_fingerprint": "sha256:32e9c751868f42bcc569d3e98b945d35848485e5b9e833c3c605c8dde474f608",
+    "reference_output_fingerprints": [
+      "sha256:13724d8a0fc595aca831740646c33bb347cd0c4fad1c3bb547590a9a5bf21463",
+      "sha256:91f24334262b92a00c2b567d74ddb31db6da3fc081c68b2a8a8f2a2dc19576e4",
+      "sha256:3634467739388017b0dfb258cc33f424b4f6f946ec05d2468f4a07eb74c6bee1"
+    ],
+    "reference_rope_cache_fingerprint": "sha256:b77c6b06ca2a0c4345f2824d79cd64e7a23776c6dffcf27792a63a54dc509c57",
+    "steps": 3,
+    "trace_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\hidden-trace.f32",
+    "trace_row_semantics": "real serial layer-2 hidden outputs for three tokens",
+    "trace_rows": [
+      2,
+      96,
+      190
+    ],
+    "trace_sha256": "95012ceb968aaa31f51ccbea38beff44e47dec72572b8c22ca4fe01bbadd56ae"
+  },
+  "hypothesis": "Existing CUDA GEMV, RMSNorm, and absorb-attention primitives plus only cache wiring and a sigmoid-gate adapter reproduce a complete three-step real-weight Kimi Gated MLA stage within 3e-5 relative L2.",
+  "inspection": {
+    "bottleneck": "MLA_NUMERICAL_DIVERGENCE",
+    "decision": "MODIFY",
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_state_reset": 0,
+    "warm_path_weight_loading": 0
+  },
+  "memory": {
+    "after_load": {
+      "free_bytes": 32192331776,
+      "total_bytes": 34190458880
+    },
+    "fixture_persistent_cache_bytes": 6912,
+    "persistent_activation_buffer_bytes": 209152,
+    "persistent_cache_bytes_per_token_per_layer_per_request": 2304,
+    "persistent_norm_parameter_bytes": 8192,
+    "resident_projection_weight_bytes": 232452352
+  },
+  "schema_version": "experiment-014-k3-cuda-real-mla-stage-v1",
+  "status": "FAIL"
+}

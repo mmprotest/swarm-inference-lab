@@ -1,0 +1,191 @@
+{
+  "All required serving rows complete": true,
+  "Cases >=20%": 0,
+  "Cost reconciliation": "PASS",
+  "Deterministic reproducibility": {
+    "accepted_action_sequence_matches": 135,
+    "canonical_plan_hash_expected": 135,
+    "canonical_plan_hash_matches": 135,
+    "experiment_id": "023",
+    "failures": [],
+    "float_relative_tolerance": 1e-12,
+    "integer_and_replica_selection_counters_exact": true,
+    "inventory_count": 27,
+    "maximum_float_relative_difference": 0.0,
+    "primary_assignment_matches": 135,
+    "primary_attempt": "deterministic-run-2",
+    "primary_wall_seconds": 71169.5753885,
+    "replicated_group_and_alternate_matches": 135,
+    "reproducibility_attempt": "deterministic-run-3",
+    "reproducibility_wall_seconds": 72296.32063699997,
+    "schema_version": "experiment-023-reproducibility-v2",
+    "selected_flex_pool_envelope_source_matches": 27,
+    "status": "PASS",
+    "u_strong_hash_expected": 27,
+    "u_strong_hash_matches": 27,
+    "wall_clock_runtime_compared": false
+  },
+  "Each family wedge gate": {
+    "compute-heterogeneous": {
+      "checks": {
+        "at_least_half_use_replicas": false,
+        "expected_family_size": true,
+        "legacy_majority_nonnegative": true,
+        "legacy_median_at_least_5": false,
+        "median_efficiency_at_least_20": false,
+        "median_throughput_nonnegative": true,
+        "no_efficiency_regression_worse_than_5": true,
+        "no_throughput_regression_worse_than_5": true,
+        "required_cases_ge_20": false
+      },
+      "passed": false
+    },
+    "full-mixed": {
+      "checks": {
+        "at_least_half_use_replicas": true,
+        "expected_family_size": true,
+        "legacy_majority_nonnegative": true,
+        "legacy_median_at_least_5": false,
+        "median_efficiency_at_least_20": false,
+        "median_throughput_nonnegative": true,
+        "no_efficiency_regression_worse_than_5": true,
+        "no_throughput_regression_worse_than_5": true,
+        "required_cases_ge_20": false
+      },
+      "passed": false
+    },
+    "memory-fragmented": {
+      "checks": {
+        "at_least_half_use_replicas": false,
+        "expected_family_size": true,
+        "legacy_majority_nonnegative": true,
+        "legacy_median_at_least_5": false,
+        "median_efficiency_at_least_20": false,
+        "median_throughput_nonnegative": true,
+        "no_efficiency_regression_worse_than_5": true,
+        "no_throughput_regression_worse_than_5": true,
+        "required_cases_ge_20": false
+      },
+      "passed": false
+    },
+    "network-heterogeneous": {
+      "checks": {
+        "at_least_half_use_replicas": true,
+        "expected_family_size": true,
+        "legacy_majority_nonnegative": false,
+        "legacy_median_at_least_5": false,
+        "median_efficiency_at_least_20": false,
+        "median_throughput_nonnegative": true,
+        "no_efficiency_regression_worse_than_5": true,
+        "no_throughput_regression_worse_than_5": true,
+        "required_cases_ge_20": false
+      },
+      "passed": false
+    }
+  },
+  "FLEX_POOL search coverage": true,
+  "FLEX_POOL superset audit 27/27": true,
+  "Final plan audit": {
+    "expected_plan_manifest_count": 135,
+    "plan_manifest_count": 135,
+    "status": "PASS",
+    "violations": []
+  },
+  "Final verdict": "NO_WEDGE",
+  "Five full correctness receipts": {
+    "receipts": [
+      {
+        "alternate_dispatch_count": 0,
+        "forced_alternate_dispatch_count": 0,
+        "inventory_id": "memory-fragmented-03",
+        "primary_dispatch_count": 0,
+        "replica_count_in_plan": 0,
+        "status": "PASS"
+      },
+      {
+        "alternate_dispatch_count": 0,
+        "forced_alternate_dispatch_count": 0,
+        "inventory_id": "compute-heterogeneous-04",
+        "primary_dispatch_count": 0,
+        "replica_count_in_plan": 0,
+        "status": "PASS"
+      },
+      {
+        "alternate_dispatch_count": 1,
+        "forced_alternate_dispatch_count": 1,
+        "inventory_id": "network-heterogeneous-01",
+        "primary_dispatch_count": 15,
+        "replica_count_in_plan": 4,
+        "status": "PASS"
+      },
+      {
+        "alternate_dispatch_count": 2,
+        "forced_alternate_dispatch_count": 2,
+        "inventory_id": "full-mixed-02",
+        "primary_dispatch_count": 6,
+        "replica_count_in_plan": 4,
+        "status": "PASS"
+      },
+      {
+        "alternate_dispatch_count": 6,
+        "forced_alternate_dispatch_count": 6,
+        "inventory_id": "coarse-friendly-01",
+        "primary_dispatch_count": 18,
+        "replica_count_in_plan": 12,
+        "status": "PASS"
+      }
+    ],
+    "status": "PASS"
+  },
+  "Frozen constants unchanged": true,
+  "General wedge gate": {
+    "checks": {
+      "at_least_12_cases_ge_20": false,
+      "at_least_9_actual_replica_users": true,
+      "exactly_18_headline_inventories": true,
+      "legacy_at_least_9_nonnegative": true,
+      "legacy_median_at_least_10": false,
+      "median_efficiency_at_least_20": false,
+      "median_throughput_nonnegative": true,
+      "no_efficiency_regression_worse_than_5": true,
+      "no_throughput_regression_worse_than_5": true
+    },
+    "passed": false
+  },
+  "Hedging": {
+    "reason": "HEDGE_SERVICE_DRIFT",
+    "service_drift_percent": 71.93110756234796,
+    "status": "SUPPRESSED"
+  },
+  "Legacy engine compatibility": "PASS",
+  "Memory reconciliation": "PASS",
+  "Original deterministic-run-1 verdict": "MODEL_INVALID",
+  "Physical duplicate-group validation": "PASS",
+  "Primary efficiency mean percent": 1.943343509218155,
+  "Primary efficiency median percent": 0.6777957023810677,
+  "Primary efficiency p90 percent": 3.262304337805341,
+  "Raw throughput median percent": 0.3777460560276724,
+  "Three negative controls": {
+    "failures": [],
+    "status": "PASS"
+  },
+  "U_STRONG exact match 27/27": true,
+  "Validity failures": [],
+  "Worst efficiency percent": 0.0,
+  "Worst throughput percent": -0.6815387622054692,
+  "Zero-new-node wedge": {
+    "cases_ge_20_percent": 0,
+    "family_gates": {
+      "compute-heterogeneous": false,
+      "full-mixed": false,
+      "memory-fragmented": false,
+      "network-heterogeneous": false
+    },
+    "general_gate": false,
+    "median_efficiency_uplift_percent": 0.6164900801092554,
+    "median_raw_throughput_uplift_percent": 0.5836386705862173,
+    "zero_new_node_wedge": false
+  },
+  "experiment_id": "023",
+  "schema_version": "experiment-023-repaired-truth-table-v2"
+}

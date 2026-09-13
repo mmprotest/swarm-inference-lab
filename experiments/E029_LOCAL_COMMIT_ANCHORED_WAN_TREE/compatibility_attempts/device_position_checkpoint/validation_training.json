@@ -1,0 +1,5912 @@
+{
+  "prompt_id": "conversation-1",
+  "configuration": {
+    "policy": "STATIC_TREE",
+    "node_budget": 8,
+    "max_depth": 4,
+    "construction_network": "LOCAL",
+    "id": "validation"
+  },
+  "evidence_class": "PHYSICAL single RTX 5090",
+  "physical_elapsed_ms": 4307.155499991495,
+  "committed_tokens": [
+    248068,
+    198,
+    760,
+    1156,
+    369,
+    6992,
+    310,
+    264,
+    491,
+    3177,
+    321,
+    3133,
+    494,
+    2046,
+    13,
+    2302,
+    1318,
+    264,
+    24679,
+    1118,
+    21598,
+    13618,
+    421,
+    37568,
+    2250,
+    2433,
+    25,
+    6236,
+    1208,
+    11,
+    48782,
+    11
+  ],
+  "token_sha256": "96dcfba4c97e126b547e002d69b636bdc824a7592318181c4fcbe52c9035ea95",
+  "exact_reference_agreement": true,
+  "rounds": [
+    {
+      "round_id": 0,
+      "root_position": 48,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 248068,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 303,
+          "draft_probability_or_score": 0.3649077776164053,
+          "branch_probability_or_score": 0.3649077776164053,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 13,
+          "draft_probability_or_score": 0.18166796782975225,
+          "branch_probability_or_score": 0.18166796782975225,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 4
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 10189,
+          "draft_probability_or_score": 0.5053357964694778,
+          "branch_probability_or_score": 0.18440096243969326,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 12
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 1901,
+          "draft_probability_or_score": 0.19449942791606292,
+          "branch_probability_or_score": 0.07097435398851275,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 2302,
+          "draft_probability_or_score": 0.9700386084817847,
+          "branch_probability_or_score": 0.17622494271928651,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 6
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 1156,
+          "draft_probability_or_score": 0.013164948599944173,
+          "branch_probability_or_score": 0.002391649458735,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 11,
+          "draft_probability_or_score": 0.41783418499628755,
+          "branch_probability_or_score": 0.07704902585352026,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0
+      ],
+      "committed_tokens": [
+        248068
+      ],
+      "greedy": [
+        198,
+        6163,
+        561,
+        18211,
+        198,
+        1318,
+        6587,
+        1179
+      ],
+      "draft": {
+        "compute_ms": 82.3638,
+        "service_ms": 82.9555,
+        "server_total_ms": 82.5202,
+        "deserialize_ms": 0.0003,
+        "serialize_and_state_ms": 0.1561,
+        "client_header_serialize_ms": 0.0051,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 42200,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 188.0293,
+          "service_ms": 189.0322,
+          "server_total_ms": 188.6145,
+          "deserialize_ms": 0.0302,
+          "serialize_and_state_ms": 0.555,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 152,
+          "response_bytes": 164603,
+          "input_bytes": 96,
+          "output_bytes": 164515,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 19146600,
+              "fork_ns": 34120000
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 8185900,
+              "fork_ns": 20800400
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4698500,
+              "fork_ns": 21530800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4912100,
+              "fork_ns": 19981500
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4690800,
+              "fork_ns": 19716300
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4707900,
+              "fork_ns": 8109750
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4883900,
+              "fork_ns": 7914250
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4630600,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 93936600,
+          "state_restore_ns": 38236400,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 191.9335,
+          "service_ms": 192.7231,
+          "server_total_ms": 192.3856,
+          "deserialize_ms": 0.0748,
+          "serialize_and_state_ms": 0.3773,
+          "client_header_serialize_ms": 0.0031,
+          "request_bytes": 163960,
+          "response_bytes": 164602,
+          "input_bytes": 163904,
+          "output_bytes": 164514,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 18674000,
+              "fork_ns": 33545500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 8713500,
+              "fork_ns": 20981200
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 5042400,
+              "fork_ns": 20936200
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5148800,
+              "fork_ns": 19698550
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4988300,
+              "fork_ns": 19347950
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5066400,
+              "fork_ns": 7967650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4941800,
+              "fork_ns": 11752650
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5128600,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 91801000,
+          "state_restore_ns": 42428700,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 199.6391,
+          "service_ms": 201.2326,
+          "server_total_ms": 200.9688,
+          "deserialize_ms": 0.0149,
+          "serialize_and_state_ms": 1.3148,
+          "client_header_serialize_ms": 0.0025,
+          "request_bytes": 163960,
+          "response_bytes": 797,
+          "input_bytes": 163904,
+          "output_bytes": 709,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 19641100,
+              "fork_ns": 37090400
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 7931000,
+              "fork_ns": 21255100
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4844400,
+              "fork_ns": 21215600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5009400,
+              "fork_ns": 21353800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4781600,
+              "fork_ns": 21454000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4967800,
+              "fork_ns": 9978850
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4945400,
+              "fork_ns": 10084250
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5086400,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 102141100,
+          "state_restore_ns": 40290900,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 5.729,
+          "service_ms": 6.2593,
+          "server_total_ms": 6.0,
+          "deserialize_ms": 0.0003,
+          "serialize_and_state_ms": 0.2707,
+          "client_header_serialize_ms": 0.0026,
+          "request_bytes": 56,
+          "response_bytes": 41167,
+          "input_bytes": 0,
+          "output_bytes": 41079,
+          "position": 49,
+          "accepted_indices": [
+            0
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 1,
+          "accepted_replay_compute_ns": 5702800
+        },
+        {
+          "compute_ms": 5.0159,
+          "service_ms": 5.1116,
+          "server_total_ms": 5.0218,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0058,
+          "client_header_serialize_ms": 0.0025,
+          "request_bytes": 56,
+          "response_bytes": 20685,
+          "input_bytes": 0,
+          "output_bytes": 20597,
+          "position": 49,
+          "accepted_indices": [
+            0
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 1,
+          "accepted_replay_compute_ns": 5000900
+        },
+        {
+          "compute_ms": 5.0193,
+          "service_ms": 5.1371,
+          "server_total_ms": 5.0294,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0101,
+          "client_header_serialize_ms": 0.0014,
+          "request_bytes": 56,
+          "response_bytes": 41168,
+          "input_bytes": 0,
+          "output_bytes": 41080,
+          "position": 49,
+          "accepted_indices": [
+            0
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 1,
+          "accepted_replay_compute_ns": 4932100
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.7535,
+        "service_ms": 0.9691,
+        "server_total_ms": 0.825,
+        "deserialize_ms": 0.0099,
+        "serialize_and_state_ms": 0.0616,
+        "client_header_serialize_ms": 0.0012,
+        "request_bytes": 102456,
+        "response_bytes": 174,
+        "input_bytes": 102400,
+        "output_bytes": 86,
+        "state_restore_ns": 21200,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.2277999883517623,
+      "physical_elapsed_ms": 684.8663999990094,
+      "cpu_overhead_ms": 1.4458999990093844,
+      "discarded_compute_ms": 417.3843,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 2.0576166799059052,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 7.331231682779325
+      }
+    },
+    {
+      "round_id": 1,
+      "root_position": 49,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 198,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 248069,
+          "draft_probability_or_score": 0.9920461987689391,
+          "branch_probability_or_score": 0.9920461987689391,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 40,
+          "draft_probability_or_score": 0.004845791466622335,
+          "branch_probability_or_score": 0.004845791466622335,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 271,
+          "draft_probability_or_score": 0.9999999856730004,
+          "branch_probability_or_score": 0.9920461845558936,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 248046,
+          "draft_probability_or_score": 1.4317232937206088e-08,
+          "branch_probability_or_score": 1.4203356512244752e-08,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 13
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 3172,
+          "draft_probability_or_score": 0.7259949691269544,
+          "branch_probability_or_score": 0.003518020226206141,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 7
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 2688,
+          "draft_probability_or_score": 0.12470348210352512,
+          "branch_probability_or_score": 0.0006042870694353531,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 6
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 760,
+          "draft_probability_or_score": 0.3561294641134113,
+          "branch_probability_or_score": 0.3532968760816447,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0
+      ],
+      "committed_tokens": [
+        198
+      ],
+      "greedy": [
+        760,
+        271,
+        1144,
+        13536,
+        198,
+        2790,
+        10163,
+        1118
+      ],
+      "draft": {
+        "compute_ms": 6.587,
+        "service_ms": 6.9477,
+        "server_total_ms": 6.7576,
+        "deserialize_ms": 0.0001,
+        "serialize_and_state_ms": 0.1705,
+        "client_header_serialize_ms": 0.001,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 18400,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 98.1879,
+          "service_ms": 98.7131,
+          "server_total_ms": 98.39,
+          "deserialize_ms": 0.0025,
+          "serialize_and_state_ms": 0.1996,
+          "client_header_serialize_ms": 0.0009,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4784500,
+              "fork_ns": 11005300
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5127200,
+              "fork_ns": 8389750
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4843300,
+              "fork_ns": 8458250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4782400,
+              "fork_ns": 7919550
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4766700,
+              "fork_ns": 7895850
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4999200,
+              "fork_ns": 7848000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4775000,
+              "fork_ns": 7922900
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4670000,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21846000,
+          "state_restore_ns": 37593600,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 99.5458,
+          "service_ms": 100.2198,
+          "server_total_ms": 99.8099,
+          "deserialize_ms": 0.0724,
+          "serialize_and_state_ms": 0.1917,
+          "client_header_serialize_ms": 0.0026,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5239300,
+              "fork_ns": 10992700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5305700,
+              "fork_ns": 8186700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 5082600,
+              "fork_ns": 7964900
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4965600,
+              "fork_ns": 8101950
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4877900,
+              "fork_ns": 8303850
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4979100,
+              "fork_ns": 7727650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4916100,
+              "fork_ns": 8010650
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4891100,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21930800,
+          "state_restore_ns": 37357600,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 104.0712,
+          "service_ms": 105.2928,
+          "server_total_ms": 105.0178,
+          "deserialize_ms": 0.0645,
+          "serialize_and_state_ms": 0.8821,
+          "client_header_serialize_ms": 0.0022,
+          "request_bytes": 163960,
+          "response_bytes": 790,
+          "input_bytes": 163904,
+          "output_bytes": 702,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4902700,
+              "fork_ns": 12129500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5155200,
+              "fork_ns": 8789100
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4870800,
+              "fork_ns": 8581000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4808800,
+              "fork_ns": 8579000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5622700,
+              "fork_ns": 9087600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4780500,
+              "fork_ns": 8475250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4822600,
+              "fork_ns": 8686650
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4779800,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 23521800,
+          "state_restore_ns": 40806300,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 5.423,
+          "service_ms": 6.092,
+          "server_total_ms": 5.4442,
+          "deserialize_ms": 0.0004,
+          "serialize_and_state_ms": 0.0208,
+          "client_header_serialize_ms": 0.0026,
+          "request_bytes": 56,
+          "response_bytes": 41167,
+          "input_bytes": 0,
+          "output_bytes": 41079,
+          "position": 50,
+          "accepted_indices": [
+            0
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 1,
+          "accepted_replay_compute_ns": 5398500
+        },
+        {
+          "compute_ms": 5.5762,
+          "service_ms": 6.1095,
+          "server_total_ms": 5.5891,
+          "deserialize_ms": 0.0002,
+          "serialize_and_state_ms": 0.0127,
+          "client_header_serialize_ms": 0.0096,
+          "request_bytes": 56,
+          "response_bytes": 20685,
+          "input_bytes": 0,
+          "output_bytes": 20597,
+          "position": 50,
+          "accepted_indices": [
+            0
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 1,
+          "accepted_replay_compute_ns": 5541100
+        },
+        {
+          "compute_ms": 5.3205,
+          "service_ms": 5.4475,
+          "server_total_ms": 5.3288,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0083,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 56,
+          "response_bytes": 41168,
+          "input_bytes": 0,
+          "output_bytes": 41080,
+          "position": 50,
+          "accepted_indices": [
+            0
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 1,
+          "accepted_replay_compute_ns": 5215900
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.686,
+        "service_ms": 0.8665,
+        "server_total_ms": 0.7202,
+        "deserialize_ms": 0.0124,
+        "serialize_and_state_ms": 0.0218,
+        "client_header_serialize_ms": 0.0016,
+        "request_bytes": 102456,
+        "response_bytes": 174,
+        "input_bytes": 102400,
+        "output_bytes": 86,
+        "state_restore_ns": 24100,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.12829998740926385,
+      "physical_elapsed_ms": 331.03630002005957,
+      "cpu_overhead_ms": 1.347400020059581,
+      "discarded_compute_ms": 252.7509,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.346357372372098,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 11.92297935267437
+      }
+    },
+    {
+      "round_id": 2,
+      "root_position": 50,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 760,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 1156,
+          "draft_probability_or_score": 0.9999920341367172,
+          "branch_probability_or_score": 0.9999920341367172,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 1637,
+          "draft_probability_or_score": 6.152700812207468e-06,
+          "branch_probability_or_score": 6.152700812207468e-06,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 6587,
+          "draft_probability_or_score": 0.5190088384911455,
+          "branch_probability_or_score": 0.5190047041376956,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 369,
+          "draft_probability_or_score": 0.4785274794100891,
+          "branch_probability_or_score": 0.4785236675256111,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 369,
+          "draft_probability_or_score": 0.5916082078196198,
+          "branch_probability_or_score": 3.639988300760379e-06,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 6587,
+          "draft_probability_or_score": 0.40641291502865956,
+          "branch_probability_or_score": 2.5005370723884386e-06,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 264,
+          "draft_probability_or_score": 0.8463943128575981,
+          "branch_probability_or_score": 0.4392826299284859,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1,
+        4
+      ],
+      "committed_tokens": [
+        760,
+        1156,
+        369
+      ],
+      "greedy": [
+        1156,
+        369,
+        369,
+        264,
+        6992,
+        6992,
+        264,
+        24679
+      ],
+      "draft": {
+        "compute_ms": 3.885,
+        "service_ms": 4.0812,
+        "server_total_ms": 3.9669,
+        "deserialize_ms": 0.0001,
+        "serialize_and_state_ms": 0.0818,
+        "client_header_serialize_ms": 0.0008,
+        "request_bytes": 56,
+        "response_bytes": 164013,
+        "input_bytes": 0,
+        "output_bytes": 163925,
+        "state_restore_ns": 7100,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 101.851,
+          "service_ms": 102.2769,
+          "server_total_ms": 102.0711,
+          "deserialize_ms": 0.0019,
+          "serialize_and_state_ms": 0.2182,
+          "client_header_serialize_ms": 0.0007,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5119000,
+              "fork_ns": 10858800
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4757900,
+              "fork_ns": 8859300
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 5190600,
+              "fork_ns": 8633800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4877900,
+              "fork_ns": 8146650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4708200,
+              "fork_ns": 8293150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4821000,
+              "fork_ns": 8701800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4938800,
+              "fork_ns": 9234400
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4709700,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21966400,
+          "state_restore_ns": 40761500,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 100.6579,
+          "service_ms": 101.2982,
+          "server_total_ms": 100.913,
+          "deserialize_ms": 0.0724,
+          "serialize_and_state_ms": 0.1827,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5352300,
+              "fork_ns": 10804900
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5012000,
+              "fork_ns": 8675000
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4994500,
+              "fork_ns": 8462900
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4925300,
+              "fork_ns": 8286500
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5047000,
+              "fork_ns": 7974000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4978100,
+              "fork_ns": 7931050
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4904200,
+              "fork_ns": 8048350
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5261800,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21313200,
+          "state_restore_ns": 38869500,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 104.1709,
+          "service_ms": 105.2113,
+          "server_total_ms": 104.9621,
+          "deserialize_ms": 0.0757,
+          "serialize_and_state_ms": 0.7155,
+          "client_header_serialize_ms": 0.0028,
+          "request_bytes": 163960,
+          "response_bytes": 790,
+          "input_bytes": 163904,
+          "output_bytes": 702,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4967700,
+              "fork_ns": 11754700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4782900,
+              "fork_ns": 8468900
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4793700,
+              "fork_ns": 8722700
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4871900,
+              "fork_ns": 8668950
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4883300,
+              "fork_ns": 9023950
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4825800,
+              "fork_ns": 9269250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4762300,
+              "fork_ns": 9649050
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4725800,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 25212800,
+          "state_restore_ns": 40344700,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 14.2882,
+          "service_ms": 14.4825,
+          "server_total_ms": 14.3079,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0196,
+          "client_header_serialize_ms": 0.0032,
+          "request_bytes": 56,
+          "response_bytes": 123092,
+          "input_bytes": 0,
+          "output_bytes": 123004,
+          "position": 53,
+          "accepted_indices": [
+            0,
+            1,
+            4
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 3,
+          "accepted_replay_compute_ns": 14247300
+        },
+        {
+          "compute_ms": 15.2281,
+          "service_ms": 15.4348,
+          "server_total_ms": 15.2427,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0145,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 56,
+          "response_bytes": 61650,
+          "input_bytes": 0,
+          "output_bytes": 61562,
+          "position": 53,
+          "accepted_indices": [
+            0,
+            1,
+            4
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 3,
+          "accepted_replay_compute_ns": 15186100
+        },
+        {
+          "compute_ms": 14.9851,
+          "service_ms": 15.1969,
+          "server_total_ms": 15.0101,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0249,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 56,
+          "response_bytes": 123093,
+          "input_bytes": 0,
+          "output_bytes": 123005,
+          "position": 53,
+          "accepted_indices": [
+            0,
+            1,
+            4
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 3,
+          "accepted_replay_compute_ns": 14718400
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.8338,
+        "service_ms": 1.221,
+        "server_total_ms": 1.0162,
+        "deserialize_ms": 0.0352,
+        "serialize_and_state_ms": 0.1472,
+        "client_header_serialize_ms": 0.0019,
+        "request_bytes": 307256,
+        "response_bytes": 174,
+        "input_bytes": 307200,
+        "output_bytes": 86,
+        "state_restore_ns": 29100,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.11409999569877982,
+      "physical_elapsed_ms": 360.55860001943074,
+      "cpu_overhead_ms": 1.3558000194307738,
+      "discarded_compute_ms": 177.33679999999998,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.436815328954695,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 12.245278565999246
+      }
+    },
+    {
+      "round_id": 3,
+      "root_position": 53,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 6992,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 310,
+          "draft_probability_or_score": 0.995965908688487,
+          "branch_probability_or_score": 0.995965908688487,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 1083,
+          "draft_probability_or_score": 0.00374834934285048,
+          "branch_probability_or_score": 0.00374834934285048,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 264,
+          "draft_probability_or_score": 0.9999947142856601,
+          "branch_probability_or_score": 0.9959606442972014,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 2361,
+          "draft_probability_or_score": 2.531314767029895e-06,
+          "branch_probability_or_score": 2.521103212121515e-06,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 7
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 264,
+          "draft_probability_or_score": 0.9999970317731112,
+          "branch_probability_or_score": 0.0037483382168991717,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 2361,
+          "draft_probability_or_score": 9.916954476179815e-07,
+          "branch_probability_or_score": 3.7172209793866736e-09,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 7
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 491,
+          "draft_probability_or_score": 0.999931488947999,
+          "branch_probability_or_score": 0.995892409985709,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1,
+        3,
+        7
+      ],
+      "committed_tokens": [
+        6992,
+        310,
+        264,
+        491
+      ],
+      "greedy": [
+        310,
+        264,
+        264,
+        491,
+        3177,
+        491,
+        3177,
+        3177
+      ],
+      "draft": {
+        "compute_ms": 3.91,
+        "service_ms": 4.0643,
+        "server_total_ms": 3.9412,
+        "deserialize_ms": 0.0,
+        "serialize_and_state_ms": 0.0312,
+        "client_header_serialize_ms": 0.0012,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 13500,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 98.6125,
+          "service_ms": 99.1179,
+          "server_total_ms": 98.8338,
+          "deserialize_ms": 0.0039,
+          "serialize_and_state_ms": 0.2174,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4790500,
+              "fork_ns": 11054700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4874900,
+              "fork_ns": 8233500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4823500,
+              "fork_ns": 7986500
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4747900,
+              "fork_ns": 8309000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4878400,
+              "fork_ns": 7902600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4909500,
+              "fork_ns": 7945650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 5098200,
+              "fork_ns": 8322350
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4735300,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 22243500,
+          "state_restore_ns": 37510800,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 100.3453,
+          "service_ms": 100.9979,
+          "server_total_ms": 100.6389,
+          "deserialize_ms": 0.0717,
+          "serialize_and_state_ms": 0.2219,
+          "client_header_serialize_ms": 0.0033,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5068300,
+              "fork_ns": 11585000
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5015900,
+              "fork_ns": 8202800
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4954500,
+              "fork_ns": 8101700
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4945500,
+              "fork_ns": 8240350
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4908400,
+              "fork_ns": 7919250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5084400,
+              "fork_ns": 7955100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 5546600,
+              "fork_ns": 7931200
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4886300,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 22456100,
+          "state_restore_ns": 37479300,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 109.6638,
+          "service_ms": 110.9149,
+          "server_total_ms": 110.5379,
+          "deserialize_ms": 0.0795,
+          "serialize_and_state_ms": 0.7946,
+          "client_header_serialize_ms": 0.003,
+          "request_bytes": 163960,
+          "response_bytes": 792,
+          "input_bytes": 163904,
+          "output_bytes": 704,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4853300,
+              "fork_ns": 11799600
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4948200,
+              "fork_ns": 8590550
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4844800,
+              "fork_ns": 9171050
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4829000,
+              "fork_ns": 9554150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5301000,
+              "fork_ns": 8800350
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4934100,
+              "fork_ns": 11450200
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4930300,
+              "fork_ns": 10852600
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4804600,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 27899000,
+          "state_restore_ns": 42319500,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 19.3978,
+          "service_ms": 19.6651,
+          "server_total_ms": 19.4715,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0737,
+          "client_header_serialize_ms": 0.0026,
+          "request_bytes": 56,
+          "response_bytes": 164054,
+          "input_bytes": 0,
+          "output_bytes": 163966,
+          "position": 57,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19330700
+        },
+        {
+          "compute_ms": 20.559,
+          "service_ms": 20.904,
+          "server_total_ms": 20.5819,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0228,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 56,
+          "response_bytes": 82132,
+          "input_bytes": 0,
+          "output_bytes": 82044,
+          "position": 57,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 20502800
+        },
+        {
+          "compute_ms": 19.6788,
+          "service_ms": 19.9709,
+          "server_total_ms": 19.7039,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.025,
+          "client_header_serialize_ms": 0.0028,
+          "request_bytes": 56,
+          "response_bytes": 164055,
+          "input_bytes": 0,
+          "output_bytes": 163967,
+          "position": 57,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19279900
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.9111,
+        "service_ms": 1.4198,
+        "server_total_ms": 1.1638,
+        "deserialize_ms": 0.0498,
+        "serialize_and_state_ms": 0.2029,
+        "client_header_serialize_ms": 0.0029,
+        "request_bytes": 409656,
+        "response_bytes": 174,
+        "input_bytes": 409600,
+        "output_bytes": 86,
+        "state_restore_ns": 22500,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.12430001515895128,
+      "physical_elapsed_ms": 378.771699994104,
+      "cpu_overhead_ms": 1.7168999941039829,
+      "discarded_compute_ms": 164.55225,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.9953181753515805,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 14.235208858853657
+      }
+    },
+    {
+      "round_id": 4,
+      "root_position": 57,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 3177,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 321,
+          "draft_probability_or_score": 0.5025028010578466,
+          "branch_probability_or_score": 0.5025028010578466,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 11,
+          "draft_probability_or_score": 0.42857484733611595,
+          "branch_probability_or_score": 0.42857484733611595,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 3133,
+          "draft_probability_or_score": 0.9768775889492811,
+          "branch_probability_or_score": 0.49088372473764946,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 4138,
+          "draft_probability_or_score": 0.020176962462351865,
+          "branch_probability_or_score": 0.010138980154170838,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 3133,
+          "draft_probability_or_score": 0.9948475655451675,
+          "branch_probability_or_score": 0.4263666435262268,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 4138,
+          "draft_probability_or_score": 0.0033529626100362417,
+          "branch_probability_or_score": 0.0014369954387199871,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 494,
+          "draft_probability_or_score": 0.9982657381660475,
+          "branch_probability_or_score": 0.4900324038289285,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1,
+        3,
+        7
+      ],
+      "committed_tokens": [
+        3177,
+        321,
+        3133,
+        494
+      ],
+      "greedy": [
+        321,
+        3133,
+        3133,
+        494,
+        494,
+        494,
+        494,
+        2046
+      ],
+      "draft": {
+        "compute_ms": 3.9438,
+        "service_ms": 4.151,
+        "server_total_ms": 3.9758,
+        "deserialize_ms": 0.0001,
+        "serialize_and_state_ms": 0.0319,
+        "client_header_serialize_ms": 0.0008,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 14900,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 105.7947,
+          "service_ms": 106.32,
+          "server_total_ms": 106.0249,
+          "deserialize_ms": 0.006,
+          "serialize_and_state_ms": 0.2242,
+          "client_header_serialize_ms": 0.0007,
+          "request_bytes": 152,
+          "response_bytes": 164600,
+          "input_bytes": 96,
+          "output_bytes": 164512,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4794900,
+              "fork_ns": 11031900
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5151300,
+              "fork_ns": 8180700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4767100,
+              "fork_ns": 8096700
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4784400,
+              "fork_ns": 8249700
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4839500,
+              "fork_ns": 8566900
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4825800,
+              "fork_ns": 11715100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4894300,
+              "fork_ns": 11203900
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4692500,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 28450200,
+          "state_restore_ns": 38594700,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 99.31,
+          "service_ms": 100.0422,
+          "server_total_ms": 99.5862,
+          "deserialize_ms": 0.0728,
+          "serialize_and_state_ms": 0.2034,
+          "client_header_serialize_ms": 0.003,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4985500,
+              "fork_ns": 10732000
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4918600,
+              "fork_ns": 7809100
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4972100,
+              "fork_ns": 7815600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5262600,
+              "fork_ns": 8161800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5321600,
+              "fork_ns": 8124100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5034400,
+              "fork_ns": 8098650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 5053700,
+              "fork_ns": 8067950
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4952300,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21786100,
+          "state_restore_ns": 37023100,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 103.5892,
+          "service_ms": 104.7976,
+          "server_total_ms": 104.429,
+          "deserialize_ms": 0.0146,
+          "serialize_and_state_ms": 0.8252,
+          "client_header_serialize_ms": 0.0025,
+          "request_bytes": 163960,
+          "response_bytes": 790,
+          "input_bytes": 163904,
+          "output_bytes": 702,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4797900,
+              "fork_ns": 11853300
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4808900,
+              "fork_ns": 8266900
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4863200,
+              "fork_ns": 9132500
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5217100,
+              "fork_ns": 8633350
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5177500,
+              "fork_ns": 8569150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4864900,
+              "fork_ns": 8649400
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4866000,
+              "fork_ns": 9127700
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4761400,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 23315900,
+          "state_restore_ns": 40916400,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 19.4531,
+          "service_ms": 19.8477,
+          "server_total_ms": 19.4781,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.025,
+          "client_header_serialize_ms": 0.0026,
+          "request_bytes": 56,
+          "response_bytes": 164054,
+          "input_bytes": 0,
+          "output_bytes": 163966,
+          "position": 61,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19391900
+        },
+        {
+          "compute_ms": 19.9936,
+          "service_ms": 20.1843,
+          "server_total_ms": 20.0095,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0159,
+          "client_header_serialize_ms": 0.0029,
+          "request_bytes": 56,
+          "response_bytes": 82132,
+          "input_bytes": 0,
+          "output_bytes": 82044,
+          "position": 61,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19950500
+        },
+        {
+          "compute_ms": 19.603,
+          "service_ms": 19.7928,
+          "server_total_ms": 19.6271,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0241,
+          "client_header_serialize_ms": 0.0016,
+          "request_bytes": 56,
+          "response_bytes": 164055,
+          "input_bytes": 0,
+          "output_bytes": 163967,
+          "position": 61,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19254900
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.752,
+        "service_ms": 1.3564,
+        "server_total_ms": 0.9821,
+        "deserialize_ms": 0.0343,
+        "serialize_and_state_ms": 0.1958,
+        "client_header_serialize_ms": 0.0011,
+        "request_bytes": 409656,
+        "response_bytes": 174,
+        "input_bytes": 409600,
+        "output_bytes": 86,
+        "state_restore_ns": 28700,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.11789999553002417,
+      "physical_elapsed_ms": 378.1748999899719,
+      "cpu_overhead_ms": 1.6828999899719292,
+      "discarded_compute_ms": 166.64775000000003,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.3499363960796575,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 11.935731315785148
+      }
+    },
+    {
+      "round_id": 5,
+      "root_position": 61,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 2046,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 13,
+          "draft_probability_or_score": 0.9957858893307849,
+          "branch_probability_or_score": 0.9957858893307849,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 11,
+          "draft_probability_or_score": 0.003184231555706422,
+          "branch_probability_or_score": 0.003184231555706422,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 2302,
+          "draft_probability_or_score": 0.9995408768895722,
+          "branch_probability_or_score": 0.9953287010159553,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 74829,
+          "draft_probability_or_score": 0.00020581976705329958,
+          "branch_probability_or_score": 0.0002049524197770249,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 321,
+          "draft_probability_or_score": 0.7099169912243148,
+          "branch_probability_or_score": 0.0022605400853886225,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 12
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 18631,
+          "draft_probability_or_score": 0.14444366877253625,
+          "branch_probability_or_score": 0.0004599420881275162,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 10
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 1318,
+          "draft_probability_or_score": 0.8583355801419934,
+          "branch_probability_or_score": 0.8543260380185067,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1,
+        3,
+        7
+      ],
+      "committed_tokens": [
+        2046,
+        13,
+        2302,
+        1318
+      ],
+      "greedy": [
+        13,
+        2302,
+        321,
+        1318,
+        264,
+        6587,
+        264,
+        264
+      ],
+      "draft": {
+        "compute_ms": 4.5493,
+        "service_ms": 4.9876,
+        "server_total_ms": 4.6111,
+        "deserialize_ms": 0.0003,
+        "serialize_and_state_ms": 0.0615,
+        "client_header_serialize_ms": 0.0011,
+        "request_bytes": 56,
+        "response_bytes": 164015,
+        "input_bytes": 0,
+        "output_bytes": 163927,
+        "state_restore_ns": 132800,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 99.0014,
+          "service_ms": 99.5398,
+          "server_total_ms": 99.2183,
+          "deserialize_ms": 0.0037,
+          "serialize_and_state_ms": 0.2132,
+          "client_header_serialize_ms": 0.0009,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4992400,
+              "fork_ns": 11082700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4738500,
+              "fork_ns": 8125700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4699600,
+              "fork_ns": 8132600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4725700,
+              "fork_ns": 9028550
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4843000,
+              "fork_ns": 8289550
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4698800,
+              "fork_ns": 7970650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4764000,
+              "fork_ns": 7774150
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5135500,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21545300,
+          "state_restore_ns": 38858600,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 104.3111,
+          "service_ms": 105.491,
+          "server_total_ms": 104.6453,
+          "deserialize_ms": 0.0709,
+          "serialize_and_state_ms": 0.2633,
+          "client_header_serialize_ms": 0.003,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5190800,
+              "fork_ns": 12224300
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4993300,
+              "fork_ns": 7928950
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4937000,
+              "fork_ns": 8587650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5114000,
+              "fork_ns": 9001750
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5015900,
+              "fork_ns": 8974150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5406100,
+              "fork_ns": 8423200
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4997500,
+              "fork_ns": 8483000
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5033500,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 23820200,
+          "state_restore_ns": 39802800,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 101.93,
+          "service_ms": 103.0967,
+          "server_total_ms": 102.7931,
+          "deserialize_ms": 0.082,
+          "serialize_and_state_ms": 0.7811,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 163960,
+          "response_bytes": 790,
+          "input_bytes": 163904,
+          "output_bytes": 702,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4834100,
+              "fork_ns": 11113800
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5060800,
+              "fork_ns": 8639350
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4746900,
+              "fork_ns": 8591950
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4820500,
+              "fork_ns": 8563900
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4836600,
+              "fork_ns": 8363000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4958400,
+              "fork_ns": 8716500
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 5119400,
+              "fork_ns": 8758400
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4806400,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 23128700,
+          "state_restore_ns": 39618200,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 19.4289,
+          "service_ms": 19.6672,
+          "server_total_ms": 19.4566,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0277,
+          "client_header_serialize_ms": 0.0028,
+          "request_bytes": 56,
+          "response_bytes": 164054,
+          "input_bytes": 0,
+          "output_bytes": 163966,
+          "position": 65,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19363700
+        },
+        {
+          "compute_ms": 19.9491,
+          "service_ms": 20.1934,
+          "server_total_ms": 19.9683,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0191,
+          "client_header_serialize_ms": 0.0025,
+          "request_bytes": 56,
+          "response_bytes": 82132,
+          "input_bytes": 0,
+          "output_bytes": 82044,
+          "position": 65,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19905800
+        },
+        {
+          "compute_ms": 19.4736,
+          "service_ms": 19.6711,
+          "server_total_ms": 19.496,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0224,
+          "client_header_serialize_ms": 0.0015,
+          "request_bytes": 56,
+          "response_bytes": 164055,
+          "input_bytes": 0,
+          "output_bytes": 163967,
+          "position": 65,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19115600
+        }
+      ],
+      "inject": {
+        "compute_ms": 2.1526,
+        "service_ms": 3.4106,
+        "server_total_ms": 2.8887,
+        "deserialize_ms": 0.34,
+        "serialize_and_state_ms": 0.3961,
+        "client_header_serialize_ms": 0.0014,
+        "request_bytes": 409656,
+        "response_bytes": 175,
+        "input_bytes": 409600,
+        "output_bytes": 87,
+        "state_restore_ns": 173500,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.1142999972216785,
+      "physical_elapsed_ms": 377.82930000685155,
+      "cpu_overhead_ms": 1.771900006851581,
+      "discarded_compute_ms": 160.088,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.8515502945142464,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 13.722967850480364
+      }
+    },
+    {
+      "round_id": 6,
+      "root_position": 65,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 264,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 24679,
+          "draft_probability_or_score": 0.995618497653733,
+          "branch_probability_or_score": 0.995618497653733,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 1118,
+          "draft_probability_or_score": 0.0022443465896145654,
+          "branch_probability_or_score": 0.0022443465896145654,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 2
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 1118,
+          "draft_probability_or_score": 0.999662798283303,
+          "branch_probability_or_score": 0.9952827733871489,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 11,
+          "draft_probability_or_score": 0.00024482011526758685,
+          "branch_probability_or_score": 0.00024374743535812856,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 21598,
+          "draft_probability_or_score": 0.9887915005444244,
+          "branch_probability_or_score": 0.002219190832086748,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 2
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 35718,
+          "draft_probability_or_score": 0.005991132214521387,
+          "branch_probability_or_score": 1.3446177153591035e-05,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 4
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 21598,
+          "draft_probability_or_score": 0.9993972463605546,
+          "branch_probability_or_score": 0.9946828630732125,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1,
+        3,
+        7
+      ],
+      "committed_tokens": [
+        264,
+        24679,
+        1118,
+        21598
+      ],
+      "greedy": [
+        24679,
+        1118,
+        21598,
+        21598,
+        7948,
+        13618,
+        21598,
+        13618
+      ],
+      "draft": {
+        "compute_ms": 6.0339,
+        "service_ms": 6.3973,
+        "server_total_ms": 6.0855,
+        "deserialize_ms": 0.0002,
+        "serialize_and_state_ms": 0.0514,
+        "client_header_serialize_ms": 0.0012,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 48600,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 98.8063,
+          "service_ms": 99.4448,
+          "server_total_ms": 99.0248,
+          "deserialize_ms": 0.0051,
+          "serialize_and_state_ms": 0.2134,
+          "client_header_serialize_ms": 0.0009,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5115000,
+              "fork_ns": 10884500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4822100,
+              "fork_ns": 8040500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4809900,
+              "fork_ns": 7984500
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5142400,
+              "fork_ns": 8131100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5139000,
+              "fork_ns": 8144600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4829100,
+              "fork_ns": 8258650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4838400,
+              "fork_ns": 7893050
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4773500,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21687200,
+          "state_restore_ns": 37649700,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 100.3935,
+          "service_ms": 101.1083,
+          "server_total_ms": 100.682,
+          "deserialize_ms": 0.0759,
+          "serialize_and_state_ms": 0.2126,
+          "client_header_serialize_ms": 0.0032,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4987300,
+              "fork_ns": 10726900
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4945600,
+              "fork_ns": 8102500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4945900,
+              "fork_ns": 8115100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5287700,
+              "fork_ns": 7911650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5231100,
+              "fork_ns": 8143350
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5454800,
+              "fork_ns": 8339100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 5057400,
+              "fork_ns": 8257200
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4887900,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 22003800,
+          "state_restore_ns": 37592000,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 103.2248,
+          "service_ms": 104.3044,
+          "server_total_ms": 104.0625,
+          "deserialize_ms": 0.0434,
+          "serialize_and_state_ms": 0.7943,
+          "client_header_serialize_ms": 0.0028,
+          "request_bytes": 163960,
+          "response_bytes": 790,
+          "input_bytes": 163904,
+          "output_bytes": 702,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4833600,
+              "fork_ns": 11937300
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4799500,
+              "fork_ns": 8842250
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 5130400,
+              "fork_ns": 8587250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4920000,
+              "fork_ns": 8862800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4833500,
+              "fork_ns": 8481300
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4758700,
+              "fork_ns": 8764450
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4832400,
+              "fork_ns": 8869350
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4772000,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 23065300,
+          "state_restore_ns": 41279400,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 19.5606,
+          "service_ms": 19.9011,
+          "server_total_ms": 19.5838,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0231,
+          "client_header_serialize_ms": 0.0027,
+          "request_bytes": 56,
+          "response_bytes": 164054,
+          "input_bytes": 0,
+          "output_bytes": 163966,
+          "position": 69,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19498100
+        },
+        {
+          "compute_ms": 19.6528,
+          "service_ms": 19.8224,
+          "server_total_ms": 19.6747,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0219,
+          "client_header_serialize_ms": 0.0019,
+          "request_bytes": 56,
+          "response_bytes": 82132,
+          "input_bytes": 0,
+          "output_bytes": 82044,
+          "position": 69,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19606500
+        },
+        {
+          "compute_ms": 19.9396,
+          "service_ms": 20.1373,
+          "server_total_ms": 19.963,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0233,
+          "client_header_serialize_ms": 0.0019,
+          "request_bytes": 56,
+          "response_bytes": 164055,
+          "input_bytes": 0,
+          "output_bytes": 163967,
+          "position": 69,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19537900
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.5129,
+        "service_ms": 0.9687,
+        "server_total_ms": 0.6343,
+        "deserialize_ms": 0.0394,
+        "serialize_and_state_ms": 0.082,
+        "client_header_serialize_ms": 0.002,
+        "request_bytes": 409656,
+        "response_bytes": 174,
+        "input_bytes": 409600,
+        "output_bytes": 86,
+        "state_restore_ns": 28800,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.12200002674944699,
+      "physical_elapsed_ms": 373.7279000051785,
+      "cpu_overhead_ms": 1.6436000051785413,
+      "discarded_compute_ms": 159.6985,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.9903048651483073,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 14.217346572375925
+      }
+    },
+    {
+      "round_id": 7,
+      "root_position": 69,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 13618,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 364,
+          "draft_probability_or_score": 0.5868407426672961,
+          "branch_probability_or_score": 0.5868407426672961,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 421,
+          "draft_probability_or_score": 0.360956419510906,
+          "branch_probability_or_score": 0.360956419510906,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 2250,
+          "draft_probability_or_score": 0.6283119732838178,
+          "branch_probability_or_score": 0.36871906502863,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 25,
+          "draft_probability_or_score": 0.2817272756336792,
+          "branch_probability_or_score": 0.16532904366250237,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 14103,
+          "draft_probability_or_score": 0.6468663159714184,
+          "branch_probability_or_score": 0.2334905493152536,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 10
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 25,
+          "draft_probability_or_score": 0.2209908224731863,
+          "branch_probability_or_score": 0.07976805602469159,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 1208,
+          "draft_probability_or_score": 0.996424209716397,
+          "branch_probability_or_score": 0.36740060297852145,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        2
+      ],
+      "committed_tokens": [
+        13618,
+        421
+      ],
+      "greedy": [
+        421,
+        25,
+        37568,
+        2433,
+        198,
+        2250,
+        198,
+        25
+      ],
+      "draft": {
+        "compute_ms": 5.6371,
+        "service_ms": 5.8382,
+        "server_total_ms": 5.678,
+        "deserialize_ms": 0.0003,
+        "serialize_and_state_ms": 0.0406,
+        "client_header_serialize_ms": 0.0011,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 82700,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 97.5493,
+          "service_ms": 97.9821,
+          "server_total_ms": 97.7682,
+          "deserialize_ms": 0.0027,
+          "serialize_and_state_ms": 0.2162,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4918300,
+              "fork_ns": 10898400
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4740900,
+              "fork_ns": 8010500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4845800,
+              "fork_ns": 7972700
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5001000,
+              "fork_ns": 8134000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4832900,
+              "fork_ns": 7723600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4778600,
+              "fork_ns": 8123100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4731900,
+              "fork_ns": 8135100
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4702500,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21479400,
+          "state_restore_ns": 37518000,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 100.8688,
+          "service_ms": 101.3641,
+          "server_total_ms": 101.0785,
+          "deserialize_ms": 0.0123,
+          "serialize_and_state_ms": 0.1974,
+          "client_header_serialize_ms": 0.0026,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5656400,
+              "fork_ns": 10985100
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4936500,
+              "fork_ns": 7897500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4956400,
+              "fork_ns": 7967800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5012500,
+              "fork_ns": 8227800
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5054100,
+              "fork_ns": 8296700
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5708000,
+              "fork_ns": 8211950
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4983300,
+              "fork_ns": 8099650
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4875100,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21794900,
+          "state_restore_ns": 37891600,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 104.8839,
+          "service_ms": 105.9703,
+          "server_total_ms": 105.712,
+          "deserialize_ms": 0.0131,
+          "serialize_and_state_ms": 0.815,
+          "client_header_serialize_ms": 0.0027,
+          "request_bytes": 163960,
+          "response_bytes": 790,
+          "input_bytes": 163904,
+          "output_bytes": 702,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4854500,
+              "fork_ns": 11709500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4832100,
+              "fork_ns": 9450050
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4897300,
+              "fork_ns": 8359750
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4821500,
+              "fork_ns": 9225400
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4799400,
+              "fork_ns": 9097100
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4862600,
+              "fork_ns": 9087150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4879600,
+              "fork_ns": 8932250
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5075700,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 24148400,
+          "state_restore_ns": 41712800,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 9.5944,
+          "service_ms": 9.7703,
+          "server_total_ms": 9.6099,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0155,
+          "client_header_serialize_ms": 0.0032,
+          "request_bytes": 56,
+          "response_bytes": 82129,
+          "input_bytes": 0,
+          "output_bytes": 82041,
+          "position": 71,
+          "accepted_indices": [
+            0,
+            2
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 2,
+          "accepted_replay_compute_ns": 9570300
+        },
+        {
+          "compute_ms": 10.4698,
+          "service_ms": 10.6101,
+          "server_total_ms": 10.4811,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0113,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 56,
+          "response_bytes": 41168,
+          "input_bytes": 0,
+          "output_bytes": 41080,
+          "position": 71,
+          "accepted_indices": [
+            0,
+            2
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 2,
+          "accepted_replay_compute_ns": 10444100
+        },
+        {
+          "compute_ms": 9.8742,
+          "service_ms": 10.0669,
+          "server_total_ms": 9.8932,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0189,
+          "client_header_serialize_ms": 0.0019,
+          "request_bytes": 56,
+          "response_bytes": 82130,
+          "input_bytes": 0,
+          "output_bytes": 82042,
+          "position": 71,
+          "accepted_indices": [
+            0,
+            2
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 2,
+          "accepted_replay_compute_ns": 9660100
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.9264,
+        "service_ms": 1.1802,
+        "server_total_ms": 0.977,
+        "deserialize_ms": 0.0155,
+        "serialize_and_state_ms": 0.0351,
+        "client_header_serialize_ms": 0.0012,
+        "request_bytes": 204856,
+        "response_bytes": 174,
+        "input_bytes": 204800,
+        "output_bytes": 86,
+        "state_restore_ns": 24900,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.19180000526830554,
+      "physical_elapsed_ms": 344.2229999927804,
+      "cpu_overhead_ms": 1.4407999927803985,
+      "discarded_compute_ms": 215.28004999999996,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.1625044791878008,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 11.267916546931078
+      }
+    },
+    {
+      "round_id": 8,
+      "root_position": 71,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 37568,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 2250,
+          "draft_probability_or_score": 0.9755406668667491,
+          "branch_probability_or_score": 0.9755406668667491,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 25,
+          "draft_probability_or_score": 0.02385193914520758,
+          "branch_probability_or_score": 0.02385193914520758,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 8578,
+          "draft_probability_or_score": 0.38772018261206964,
+          "branch_probability_or_score": 0.37823680550307615,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 2
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 5493,
+          "draft_probability_or_score": 0.337681830259895,
+          "branch_probability_or_score": 0.3294223578805224,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 198,
+          "draft_probability_or_score": 0.9994630057053852,
+          "branch_probability_or_score": 0.023839130789971102,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 3
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 2433,
+          "draft_probability_or_score": 0.00039371207106072084,
+          "branch_probability_or_score": 9.390796359673956e-06,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 25,
+          "draft_probability_or_score": 0.9996399592017583,
+          "branch_probability_or_score": 0.37810062482169843,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1
+      ],
+      "committed_tokens": [
+        37568,
+        2250
+      ],
+      "greedy": [
+        2250,
+        2433,
+        198,
+        25,
+        25,
+        16,
+        310,
+        6236
+      ],
+      "draft": {
+        "compute_ms": 3.9881,
+        "service_ms": 4.1824,
+        "server_total_ms": 4.0236,
+        "deserialize_ms": 0.0,
+        "serialize_and_state_ms": 0.0355,
+        "client_header_serialize_ms": 0.0012,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 24700,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 98.5069,
+          "service_ms": 98.9182,
+          "server_total_ms": 98.7089,
+          "deserialize_ms": 0.0022,
+          "serialize_and_state_ms": 0.1998,
+          "client_header_serialize_ms": 0.001,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4740300,
+              "fork_ns": 10830500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4876000,
+              "fork_ns": 8010150
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 5235300,
+              "fork_ns": 8254350
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5106100,
+              "fork_ns": 8543600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4809400,
+              "fork_ns": 7793000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4774300,
+              "fork_ns": 7949550
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4824300,
+              "fork_ns": 8042450
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4717600,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 21778400,
+          "state_restore_ns": 37645200,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 103.5443,
+          "service_ms": 104.2014,
+          "server_total_ms": 103.7759,
+          "deserialize_ms": 0.0115,
+          "serialize_and_state_ms": 0.2201,
+          "client_header_serialize_ms": 0.0041,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5086200,
+              "fork_ns": 10950900
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5061900,
+              "fork_ns": 9355700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 5471300,
+              "fork_ns": 8557000
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5317900,
+              "fork_ns": 8420500
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5390600,
+              "fork_ns": 8467600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4901100,
+              "fork_ns": 8353650
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4938000,
+              "fork_ns": 8415250
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4856700,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 22257100,
+          "state_restore_ns": 40263500,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 110.4253,
+          "service_ms": 111.5475,
+          "server_total_ms": 111.3065,
+          "deserialize_ms": 0.0576,
+          "serialize_and_state_ms": 0.8236,
+          "client_header_serialize_ms": 0.0025,
+          "request_bytes": 163960,
+          "response_bytes": 791,
+          "input_bytes": 163904,
+          "output_bytes": 703,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4852600,
+              "fork_ns": 12360500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4827100,
+              "fork_ns": 9830250
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4907300,
+              "fork_ns": 9219150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4892600,
+              "fork_ns": 10793750
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5875800,
+              "fork_ns": 9564050
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4934700,
+              "fork_ns": 9246200
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 5217300,
+              "fork_ns": 9172600
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4731400,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 25517300,
+          "state_restore_ns": 44669200,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 10.0168,
+          "service_ms": 10.4145,
+          "server_total_ms": 10.0401,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0232,
+          "client_header_serialize_ms": 0.0034,
+          "request_bytes": 56,
+          "response_bytes": 82129,
+          "input_bytes": 0,
+          "output_bytes": 82041,
+          "position": 73,
+          "accepted_indices": [
+            0,
+            1
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 2,
+          "accepted_replay_compute_ns": 9978600
+        },
+        {
+          "compute_ms": 10.2116,
+          "service_ms": 10.449,
+          "server_total_ms": 10.2229,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0112,
+          "client_header_serialize_ms": 0.0028,
+          "request_bytes": 56,
+          "response_bytes": 41168,
+          "input_bytes": 0,
+          "output_bytes": 41080,
+          "position": 73,
+          "accepted_indices": [
+            0,
+            1
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 2,
+          "accepted_replay_compute_ns": 10186200
+        },
+        {
+          "compute_ms": 9.8061,
+          "service_ms": 10.0538,
+          "server_total_ms": 9.8256,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0194,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 56,
+          "response_bytes": 82130,
+          "input_bytes": 0,
+          "output_bytes": 82042,
+          "position": 73,
+          "accepted_indices": [
+            0,
+            1
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 2,
+          "accepted_replay_compute_ns": 9621800
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.8209,
+        "service_ms": 1.0924,
+        "server_total_ms": 0.885,
+        "deserialize_ms": 0.017,
+        "serialize_and_state_ms": 0.0471,
+        "client_header_serialize_ms": 0.002,
+        "request_bytes": 204856,
+        "response_bytes": 174,
+        "input_bytes": 204800,
+        "output_bytes": 86,
+        "state_restore_ns": 30600,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.12089998926967382,
+      "physical_elapsed_ms": 352.30550001142547,
+      "cpu_overhead_ms": 1.4463000114254783,
+      "discarded_compute_ms": 221.6944,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.109000915803584,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 11.077284820985943
+      }
+    },
+    {
+      "round_id": 9,
+      "root_position": 73,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 2433,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 25,
+          "draft_probability_or_score": 0.9999857872635284,
+          "branch_probability_or_score": 0.9999857872635284,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 318,
+          "draft_probability_or_score": 7.214481544487483e-06,
+          "branch_probability_or_score": 7.214481544487483e-06,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 6236,
+          "draft_probability_or_score": 0.9226387161250807,
+          "branch_probability_or_score": 0.92262560290415,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 198,
+          "draft_probability_or_score": 0.0722855350841648,
+          "branch_probability_or_score": 0.07228450770890393,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 6236,
+          "draft_probability_or_score": 0.8784420078023806,
+          "branch_probability_or_score": 6.337503653192804e-06,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 198,
+          "draft_probability_or_score": 0.10780107698933036,
+          "branch_probability_or_score": 7.777288804153981e-07,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 7,
+          "parent_id": 3,
+          "depth": 4,
+          "token_id": 1208,
+          "draft_probability_or_score": 0.9988535084913317,
+          "branch_probability_or_score": 0.9215678204847404,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        }
+      ],
+      "shape": {
+        "nodes": 8,
+        "depth": 4,
+        "nodes_by_depth": [
+          1,
+          2,
+          4,
+          1
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.25,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1,
+        3,
+        7
+      ],
+      "committed_tokens": [
+        2433,
+        25,
+        6236,
+        1208
+      ],
+      "greedy": [
+        25,
+        6236,
+        59183,
+        1208,
+        16,
+        1208,
+        16,
+        11
+      ],
+      "draft": {
+        "compute_ms": 3.9081,
+        "service_ms": 4.1635,
+        "server_total_ms": 3.9487,
+        "deserialize_ms": 0.0001,
+        "serialize_and_state_ms": 0.0405,
+        "client_header_serialize_ms": 0.0013,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 14900,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 104.2694,
+          "service_ms": 104.7587,
+          "server_total_ms": 104.5024,
+          "deserialize_ms": 0.0032,
+          "serialize_and_state_ms": 0.2298,
+          "client_header_serialize_ms": 0.0012,
+          "request_bytes": 152,
+          "response_bytes": 164598,
+          "input_bytes": 96,
+          "output_bytes": 164510,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5120700,
+              "fork_ns": 11412700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4756500,
+              "fork_ns": 8827450
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4982000,
+              "fork_ns": 9196250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5110000,
+              "fork_ns": 8390750
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5172600,
+              "fork_ns": 8579250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4812100,
+              "fork_ns": 9108900
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4957300,
+              "fork_ns": 9054400
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 4788500,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 22826800,
+          "state_restore_ns": 41742900,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 101.3106,
+          "service_ms": 101.875,
+          "server_total_ms": 101.5692,
+          "deserialize_ms": 0.0538,
+          "serialize_and_state_ms": 0.2048,
+          "client_header_serialize_ms": 0.0029,
+          "request_bytes": 163960,
+          "response_bytes": 164596,
+          "input_bytes": 163904,
+          "output_bytes": 164508,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5050700,
+              "fork_ns": 11699500
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5359800,
+              "fork_ns": 8007150
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4957200,
+              "fork_ns": 8176550
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4956300,
+              "fork_ns": 8334350
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5012500,
+              "fork_ns": 8007850
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5059900,
+              "fork_ns": 8496700
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4917000,
+              "fork_ns": 7995900
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5279200,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 23302900,
+          "state_restore_ns": 37415100,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 104.2495,
+          "service_ms": 105.3817,
+          "server_total_ms": 105.1271,
+          "deserialize_ms": 0.0655,
+          "serialize_and_state_ms": 0.8121,
+          "client_header_serialize_ms": 0.0032,
+          "request_bytes": 163960,
+          "response_bytes": 790,
+          "input_bytes": 163904,
+          "output_bytes": 702,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4813000,
+              "fork_ns": 12365700
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5007300,
+              "fork_ns": 9074750
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4916800,
+              "fork_ns": 8762250
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4831500,
+              "fork_ns": 8823050
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4769900,
+              "fork_ns": 8732850
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4859600,
+              "fork_ns": 8741150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4751300,
+              "fork_ns": 8656950
+            },
+            {
+              "depth": 4,
+              "nodes": [
+                7
+              ],
+              "compute_ns": 5143400,
+              "fork_ns": 0
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 8,
+          "state_checkpoint_ns": 24429600,
+          "state_restore_ns": 40727100,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 19.3892,
+          "service_ms": 19.672,
+          "server_total_ms": 19.4132,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.024,
+          "client_header_serialize_ms": 0.0026,
+          "request_bytes": 56,
+          "response_bytes": 164054,
+          "input_bytes": 0,
+          "output_bytes": 163966,
+          "position": 77,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19338800
+        },
+        {
+          "compute_ms": 19.9554,
+          "service_ms": 20.2448,
+          "server_total_ms": 19.9734,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0179,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 56,
+          "response_bytes": 82132,
+          "input_bytes": 0,
+          "output_bytes": 82044,
+          "position": 77,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19909100
+        },
+        {
+          "compute_ms": 19.8167,
+          "service_ms": 20.1853,
+          "server_total_ms": 19.8431,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0264,
+          "client_header_serialize_ms": 0.0013,
+          "request_bytes": 56,
+          "response_bytes": 164055,
+          "input_bytes": 0,
+          "output_bytes": 163967,
+          "position": 77,
+          "accepted_indices": [
+            0,
+            1,
+            3,
+            7
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 4,
+          "accepted_replay_compute_ns": 19434600
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.708,
+        "service_ms": 1.2319,
+        "server_total_ms": 0.888,
+        "deserialize_ms": 0.046,
+        "serialize_and_state_ms": 0.134,
+        "client_header_serialize_ms": 0.0027,
+        "request_bytes": 409656,
+        "response_bytes": 174,
+        "input_bytes": 409600,
+        "output_bytes": 86,
+        "state_restore_ns": 20900,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.12240000069141388,
+      "physical_elapsed_ms": 379.44949997472577,
+      "cpu_overhead_ms": 1.936599974725766,
+      "discarded_compute_ms": 162.6772,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 3.9164780480754002,
+        "estimated_wall_ms": 280.664528,
+        "estimated_utility": 13.954303652064645
+      }
+    },
+    {
+      "round_id": 10,
+      "root_position": 77,
+      "immutable_root": true,
+      "max_uncommitted_rounds": 1,
+      "nodes": [
+        {
+          "node_id": 0,
+          "parent_id": -1,
+          "depth": 1,
+          "token_id": 11,
+          "draft_probability_or_score": 1.0,
+          "branch_probability_or_score": 1.0,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 1,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 48782,
+          "draft_probability_or_score": 0.9987691204351423,
+          "branch_probability_or_score": 0.9987691204351423,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 2,
+          "parent_id": 0,
+          "depth": 2,
+          "token_id": 9856,
+          "draft_probability_or_score": 0.0012162717382894607,
+          "branch_probability_or_score": 0.0012162717382894607,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 1
+        },
+        {
+          "node_id": 3,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 11,
+          "draft_probability_or_score": 0.9998893015915876,
+          "branch_probability_or_score": 0.9986585582831388,
+          "status": "accepted",
+          "verified": true,
+          "accepted": true,
+          "rejected": false,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 4,
+          "parent_id": 1,
+          "depth": 3,
+          "token_id": 318,
+          "draft_probability_or_score": 7.429695085808598e-05,
+          "branch_probability_or_score": 7.420550025954352e-05,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 2
+        },
+        {
+          "node_id": 5,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 11,
+          "draft_probability_or_score": 0.9999220883775086,
+          "branch_probability_or_score": 0.00121617697658494,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 0
+        },
+        {
+          "node_id": 6,
+          "parent_id": 2,
+          "depth": 3,
+          "token_id": 318,
+          "draft_probability_or_score": 3.2580508099109536e-05,
+          "branch_probability_or_score": 3.962675122005781e-08,
+          "status": "rejected",
+          "verified": true,
+          "accepted": false,
+          "rejected": true,
+          "candidate_index": 2
+        }
+      ],
+      "shape": {
+        "nodes": 7,
+        "depth": 3,
+        "nodes_by_depth": [
+          1,
+          2,
+          4
+        ],
+        "branching_factor_by_depth": [
+          2.0,
+          2.0,
+          0.0
+        ]
+      },
+      "accepted_path": [
+        0,
+        1,
+        3
+      ],
+      "committed_tokens": [
+        11,
+        48782,
+        11
+      ],
+      "greedy": [
+        48782,
+        11,
+        11,
+        321,
+        7949,
+        321,
+        7949
+      ],
+      "draft": {
+        "compute_ms": 3.997,
+        "service_ms": 4.3062,
+        "server_total_ms": 4.0325,
+        "deserialize_ms": 0.0001,
+        "serialize_and_state_ms": 0.0354,
+        "client_header_serialize_ms": 0.0012,
+        "request_bytes": 56,
+        "response_bytes": 164014,
+        "input_bytes": 0,
+        "output_bytes": 163926,
+        "state_restore_ns": 19200,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "stages": [
+        {
+          "compute_ms": 94.0552,
+          "service_ms": 94.467,
+          "server_total_ms": 94.2468,
+          "deserialize_ms": 0.0035,
+          "serialize_and_state_ms": 0.1881,
+          "client_header_serialize_ms": 0.0011,
+          "request_bytes": 140,
+          "response_bytes": 144061,
+          "input_bytes": 84,
+          "output_bytes": 143973,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4753500,
+              "fork_ns": 10888600
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 4761400,
+              "fork_ns": 8015850
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4801200,
+              "fork_ns": 8222750
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 5444300,
+              "fork_ns": 8268400
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4788500,
+              "fork_ns": 8165900
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 4867900,
+              "fork_ns": 8189200
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4804500,
+              "fork_ns": 8083200
+            }
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "final": false,
+          "physical_decode_calls": 7,
+          "state_checkpoint_ns": 21874500,
+          "state_restore_ns": 37959400,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 97.1163,
+          "service_ms": 97.7083,
+          "server_total_ms": 97.3627,
+          "deserialize_ms": 0.0607,
+          "serialize_and_state_ms": 0.1857,
+          "client_header_serialize_ms": 0.0028,
+          "request_bytes": 143472,
+          "response_bytes": 144059,
+          "input_bytes": 143416,
+          "output_bytes": 143971,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 5065000,
+              "fork_ns": 11016600
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5477300,
+              "fork_ns": 7872100
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 5033400,
+              "fork_ns": 8228400
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4989300,
+              "fork_ns": 8313750
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 5037100,
+              "fork_ns": 8078050
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5322900,
+              "fork_ns": 9421150
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4960400,
+              "fork_ns": 8300850
+            }
+          ],
+          "taps": [
+            34
+          ],
+          "final": false,
+          "physical_decode_calls": 7,
+          "state_checkpoint_ns": 21558300,
+          "state_restore_ns": 39672600,
+          "max_live_checkpoint_metadata_bytes": 3540
+        },
+        {
+          "compute_ms": 100.328,
+          "service_ms": 101.2111,
+          "server_total_ms": 101.0231,
+          "deserialize_ms": 0.0493,
+          "serialize_and_state_ms": 0.6458,
+          "client_header_serialize_ms": 0.003,
+          "request_bytes": 143472,
+          "response_bytes": 729,
+          "input_bytes": 143416,
+          "output_bytes": 641,
+          "levels": [
+            {
+              "depth": 1,
+              "nodes": [
+                0
+              ],
+              "compute_ns": 4871300,
+              "fork_ns": 11973200
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                1
+              ],
+              "compute_ns": 5131500,
+              "fork_ns": 8775650
+            },
+            {
+              "depth": 2,
+              "nodes": [
+                2
+              ],
+              "compute_ns": 4900100,
+              "fork_ns": 8715950
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                3
+              ],
+              "compute_ns": 4877300,
+              "fork_ns": 9613400
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                4
+              ],
+              "compute_ns": 4922700,
+              "fork_ns": 8934400
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                5
+              ],
+              "compute_ns": 5186900,
+              "fork_ns": 8683600
+            },
+            {
+              "depth": 3,
+              "nodes": [
+                6
+              ],
+              "compute_ns": 4817100,
+              "fork_ns": 8924900
+            }
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "final": true,
+          "physical_decode_calls": 7,
+          "state_checkpoint_ns": 23444600,
+          "state_restore_ns": 42176500,
+          "max_live_checkpoint_metadata_bytes": 3540
+        }
+      ],
+      "commit": [
+        {
+          "compute_ms": 14.5445,
+          "service_ms": 14.7662,
+          "server_total_ms": 14.5679,
+          "deserialize_ms": 0.0,
+          "serialize_and_state_ms": 0.0234,
+          "client_header_serialize_ms": 0.0025,
+          "request_bytes": 56,
+          "response_bytes": 123092,
+          "input_bytes": 0,
+          "output_bytes": 123004,
+          "position": 80,
+          "accepted_indices": [
+            0,
+            1,
+            3
+          ],
+          "taps": [
+            6,
+            20
+          ],
+          "physical_decode_calls": 3,
+          "accepted_replay_compute_ns": 14499000
+        },
+        {
+          "compute_ms": 15.2232,
+          "service_ms": 15.4381,
+          "server_total_ms": 15.2374,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0141,
+          "client_header_serialize_ms": 0.0024,
+          "request_bytes": 56,
+          "response_bytes": 61650,
+          "input_bytes": 0,
+          "output_bytes": 61562,
+          "position": 80,
+          "accepted_indices": [
+            0,
+            1,
+            3
+          ],
+          "taps": [
+            34
+          ],
+          "physical_decode_calls": 3,
+          "accepted_replay_compute_ns": 15184900
+        },
+        {
+          "compute_ms": 14.8962,
+          "service_ms": 15.0933,
+          "server_total_ms": 14.9175,
+          "deserialize_ms": 0.0001,
+          "serialize_and_state_ms": 0.0212,
+          "client_header_serialize_ms": 0.002,
+          "request_bytes": 56,
+          "response_bytes": 123093,
+          "input_bytes": 0,
+          "output_bytes": 123005,
+          "position": 80,
+          "accepted_indices": [
+            0,
+            1,
+            3
+          ],
+          "taps": [
+            48,
+            62
+          ],
+          "physical_decode_calls": 3,
+          "accepted_replay_compute_ns": 14641500
+        }
+      ],
+      "inject": {
+        "compute_ms": 0.7071,
+        "service_ms": 1.1402,
+        "server_total_ms": 0.8142,
+        "deserialize_ms": 0.0441,
+        "serialize_and_state_ms": 0.063,
+        "client_header_serialize_ms": 0.0017,
+        "request_bytes": 307256,
+        "response_bytes": 174,
+        "input_bytes": 307200,
+        "output_bytes": 86,
+        "state_restore_ns": 33100,
+        "selector_top_k": 16,
+        "width": 5120,
+        "taps": [
+          6,
+          20,
+          34,
+          48,
+          62
+        ]
+      },
+      "tree_construction_ms": 0.1149999734479934,
+      "physical_elapsed_ms": 345.6173000158742,
+      "cpu_overhead_ms": 1.4869000158741983,
+      "discarded_compute_ms": 161.39105,
+      "peak_vram_bytes": 26435649536,
+      "utility": {
+        "expected_commit": 2.9999343725601664,
+        "estimated_wall_ms": 246.298812,
+        "estimated_utility": 12.180060261761094
+      }
+    }
+  ]
+}

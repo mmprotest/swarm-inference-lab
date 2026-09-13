@@ -1,0 +1,41 @@
+{
+  "schema_version": "experiment-014-k3-incomplete-command-v1",
+  "cycle_id": "H014-038a",
+  "generated_at_utc": "2026-08-11T19:05:30.7379095Z",
+  "status": "INVALID_INCOMPLETE_TIMEOUT",
+  "hypothesis": "Restoring the required BOS token is sufficient to recover the exact deterministic-oracle full-graph result on the final binary.",
+  "binary": {
+    "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+    "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "fixture": {
+    "prompt_token_ids": [163584, 18699],
+    "decode_token_id": 11,
+    "oracle_trace_sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d",
+    "layer_limit": 93,
+    "relative_error_gate": 0.000002
+  },
+  "observed_before_timeout": {
+    "prefill_layers_completed": 93,
+    "prefill_routing_equality": true,
+    "prefill_maximum_layer_relative_l2_error": 9.92226908e-7,
+    "decode_layers_completed": 88,
+    "decode_routing_equality": true,
+    "decode_maximum_layer_relative_l2_error": 9.77985551e-7,
+    "process_timeout_seconds": 3600.2,
+    "atomic_graph_receipt_written": false
+  },
+  "post_timeout_health": {
+    "status": "PASS",
+    "gpu_name": "NVIDIA GeForce RTX 5090",
+    "gpu_uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49",
+    "compute_capability": "12.0",
+    "memory_total_mib": 32607,
+    "memory_free_mib": 30338,
+    "memory_used_mib": 1850,
+    "pstate": "P8"
+  },
+  "inspection": "The corrected prompt restored exact routing and approximately 1e-6 numerical agreement through all prefill layers and 88 decode layers. The external one-hour shell timeout terminated the process before the final five decode layers and atomic receipt, so this is supporting diagnostic evidence but not a graph PASS.",
+  "bottleneck": "Benchmark timeout budget, not a measured CUDA, numerical, routing, memory, or health failure.",
+  "decision": "Retain as incomplete evidence and rerun the identical benchmark with a 90-minute process allowance."
+}

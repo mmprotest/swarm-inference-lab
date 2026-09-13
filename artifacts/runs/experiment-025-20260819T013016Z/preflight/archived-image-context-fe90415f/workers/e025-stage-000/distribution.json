@@ -1,0 +1,97 @@
+{
+  "checkpoint": {
+    "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "required_tensor_count": 497052,
+    "required_weight_bytes": 1559965606912,
+    "revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "shard_count": 96
+  },
+  "generated_at_utc": "2026-08-19T01:30:47.049269+00:00",
+  "placement_manifest": "placement.json",
+  "placement_manifest_sha256": "8e4caa1fb37a7d42369f9531bf7c94876d9651078f95d4c4c3828af3e7e346ea",
+  "schema_version": "experiment-014-k3-weight-distribution-v1",
+  "source": {
+    "mechanism": "official immutable Hugging Face revision",
+    "model_id": "moonshotai/Kimi-K3",
+    "revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "secrets_in_manifest": false,
+    "shards": {
+      "model-00001-of-000096.safetensors": {
+        "credential_mode": "public immutable checkpoint; optional short-lived token via environment only",
+        "file_bytes": 2341216112,
+        "sha256": "975584c00f85a95fce8ae0f840af8cef69c2ef4db00d34cab3e2cbdfc60f6e51",
+        "source_url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/9f62e4e9fffbd0a83ddd60e1c209d828994b3569/model-00001-of-000096.safetensors"
+      },
+      "model-00094-of-000096.safetensors": {
+        "credential_mode": "public immutable checkpoint; optional short-lived token via environment only",
+        "file_bytes": 4697664072,
+        "sha256": "ad66e1cb96b86963e63d6a0a466b6a407b13c9815cb480fe612480cc6bb3b6e1",
+        "source_url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/9f62e4e9fffbd0a83ddd60e1c209d828994b3569/model-00094-of-000096.safetensors"
+      }
+    }
+  },
+  "status": "PASS",
+  "summary": {
+    "atomic_activation": true,
+    "checkpoint_source_bytes": 1560041353768,
+    "deterministic_content": true,
+    "global_worker_count": 97,
+    "hash_verification": true,
+    "no_worker_downloads_complete_checkpoint": true,
+    "resumable_transfer": true,
+    "worker_count": 1
+  },
+  "workers": [
+    {
+      "assigned_tensor_bytes": 4690023424,
+      "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+      "download_bytes_cold_cache": 7038880184,
+      "download_bytes_warm_cache": 0,
+      "final_package_bytes_excluding_header": 4690023424,
+      "package": {
+        "activation": "atomic rename after source and package validation",
+        "cache_reuse": "content-addressed source-shard cache keyed by SHA-256",
+        "corruption_policy": "reject and retry only the failed source shard",
+        "filename": "e025-stage-000.safetensors",
+        "format": "deterministic Safetensors assembled from exact placement byte ranges"
+      },
+      "source_shards": [
+        {
+          "credential_mode": "public immutable checkpoint; optional short-lived token via environment only",
+          "download": {
+            "mode": "complete immutable source shard then exact tensor extraction",
+            "resumable": true,
+            "resume_command": "curl --fail --location --continue-at - --output <cache-partial> <source_url>",
+            "verification": "SHA-256 before atomic cache activation"
+          },
+          "file_bytes": 2341216112,
+          "name": "model-00001-of-000096.safetensors",
+          "required_fraction_of_source": 0.9999987493679097,
+          "required_tensor_bytes": 2341213184,
+          "sha256": "975584c00f85a95fce8ae0f840af8cef69c2ef4db00d34cab3e2cbdfc60f6e51",
+          "source_url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/9f62e4e9fffbd0a83ddd60e1c209d828994b3569/model-00001-of-000096.safetensors"
+        },
+        {
+          "credential_mode": "public immutable checkpoint; optional short-lived token via environment only",
+          "download": {
+            "mode": "complete immutable source shard then exact tensor extraction",
+            "resumable": true,
+            "resume_command": "curl --fail --location --continue-at - --output <cache-partial> <source_url>",
+            "verification": "SHA-256 before atomic cache activation"
+          },
+          "file_bytes": 4697664072,
+          "name": "model-00094-of-000096.safetensors",
+          "required_fraction_of_source": 0.4999953602472067,
+          "required_tensor_bytes": 2348810240,
+          "sha256": "ad66e1cb96b86963e63d6a0a466b6a407b13c9815cb480fe612480cc6bb3b6e1",
+          "source_url": "https://huggingface.co/moonshotai/Kimi-K3/resolve/9f62e4e9fffbd0a83ddd60e1c209d828994b3569/model-00094-of-000096.safetensors"
+        }
+      ],
+      "temporary_disk_bytes": 11728903608,
+      "tensor_count": 24,
+      "worker_id": "e025-stage-000"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-19T09:24:49.937748+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "single-backbone-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48096114
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "INCOMPLETE_TIMEOUT",
+    "error": "E025 worker e025-stage-001 was not READY: ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it",
+    "error_type": "TimeoutError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 404, in run_backbone_canary_stage\n    worker = provision_worker(\n             ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 396, in provision_worker\n    return wait_for_worker(\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 356, in wait_for_worker\n    raise TimeoutError(f\"E025 worker {worker_id} was not READY: {last_error}\")\nTimeoutError: E025 worker e025-stage-001 was not READY: ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it\n"
+  },
+  "generated_at_utc": "2026-08-19T09:24:49.962546+00:00",
+  "image_digest": "sha256:c47a221f89e2ef96918db8ecacfc9b1a9ea5dedd01da360fea7f18af61e40026",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:c47a221f89e2ef96918db8ecacfc9b1a9ea5dedd01da360fea7f18af61e40026",
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0.05359302637037038,
+    "estimated_storage_cost_usd": 0.003907824839506173,
+    "generated_at_utc": "2026-08-19T09:24:49.957365+00:00",
+    "instance_count": 1,
+    "instances": [
+      {
+        "active_rental_rate_usd_per_hour": 0.21333333333333335,
+        "created_at_utc": "2026-08-19T09:09:43.829722+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-19T09:24:48.212042+00:00",
+        "elapsed_seconds": 904.38232,
+        "estimated_active_cost_usd": 0.05359302637037038,
+        "estimated_storage_cost_usd": 0.003907824839506173,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3090",
+        "instance_id": 48096114,
+        "machine_id": 55158,
+        "offer_id": 31139414,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.18666666666666665
+      }
+    ],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "PASS",
+    "total_elapsed_instance_seconds": 904.38232
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-backbone-canary-stage-v1",
+  "status": "FAIL",
+  "worker": null
+}

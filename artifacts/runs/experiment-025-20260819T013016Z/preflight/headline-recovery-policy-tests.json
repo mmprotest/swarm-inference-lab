@@ -1,0 +1,27 @@
+{
+  "schema_version": "experiment-025-headline-recovery-policy-tests-v2",
+  "generated_at_utc": "2026-08-23T20:18:54.8769160Z",
+  "run_id": "20260819T013016Z",
+  "status": "PASS",
+  "scope": "controller-only headline acquisition, progress-aware machine exclusion, and exact public-generation token budget",
+  "immutable_worker_image_changed": false,
+  "immutable_worker_image": "ghcr.io/mmprotest/swarm-inference-lab@sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "checks": {
+    "python_compile": "PASS",
+    "ruff": "PASS",
+    "hard_acquisition_deadline_preserves_15_minute_reserve": true,
+    "forty_backbone_groups_started_concurrently": true,
+    "attributable_attempt_004_stall_machines_excluded": 27,
+    "progressing_gpu_load_deadline_abort_machine_57056_retained": true,
+    "exact_public_prompt": "Repeat exactly: \"I am the swarm. 2.8 trillion parameters. Consumer GPUs. No datacenter required.\"",
+    "default_max_new_tokens": 16,
+    "tokenizer_proven_target_token_count": 20,
+    "minimum_additional_tokens_required": 4,
+    "target_roundtrip_exact": true
+  },
+  "files": {
+    "run-headline-observed.py": "94a8769b4caccb65fddb9d68c04002fe74e86014b7d086b77c007cfadfa18601",
+    "run-full-fleet-preflight-only.py": "066422b636e957a27e2c5d0809d5946a93ad63b485ea19405989a76346dde360",
+    "test-headline-recovery-policy.py": "2cd13670ff70850833457614d70fb6450ee1f14c76c239d8a594ea3d5600befe"
+  }
+}

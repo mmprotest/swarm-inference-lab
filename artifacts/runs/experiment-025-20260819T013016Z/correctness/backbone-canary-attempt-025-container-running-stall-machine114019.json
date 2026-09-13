@@ -1,0 +1,60 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-23T07:44:45.348189+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "single-backbone-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48452481
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "PHYSICAL_OR_RUNTIME_DEFECT_REQUIRES_OFFLINE_REVIEW",
+    "error": "Vast instance 48452481 disappeared after appearing in 3 consecutive live queries",
+    "error_type": "RuntimeError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 468, in run_backbone_canary_stage\n    worker = provision_worker(\n             ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\run-stage1-progress-aware.py\", line 222, in progress_aware_provision_worker\n    worker = provisioning.wait_for_worker(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 264, in wait_for_worker\n    raise RuntimeError(\nRuntimeError: Vast instance 48452481 disappeared after appearing in 3 consecutive live queries\n"
+  },
+  "generated_at_utc": "2026-08-23T07:44:45.366122+00:00",
+  "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0.02077100974074074,
+    "estimated_storage_cost_usd": 0.002596376217592592,
+    "generated_at_utc": "2026-08-23T07:44:45.361610+00:00",
+    "instance_count": 1,
+    "instances": [
+      {
+        "active_rental_rate_usd_per_hour": 0.13333333333333333,
+        "created_at_utc": "2026-08-23T07:35:02.591839+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T07:44:23.409102+00:00",
+        "elapsed_seconds": 560.817263,
+        "estimated_active_cost_usd": 0.02077100974074074,
+        "estimated_storage_cost_usd": 0.002596376217592592,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3090",
+        "instance_id": 48452481,
+        "machine_id": 114019,
+        "offer_id": 46739600,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.19999999999999998
+      }
+    ],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "PASS",
+    "total_elapsed_instance_seconds": 560.817263
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-backbone-canary-stage-v1",
+  "status": "FAIL",
+  "worker": null
+}

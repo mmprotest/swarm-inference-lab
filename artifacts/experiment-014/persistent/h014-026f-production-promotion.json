@@ -1,0 +1,85 @@
+{
+  "schema_version": "experiment-014-k3-production-promotion-v1",
+  "cycle_id": "H014-026f",
+  "hypothesis": "Moving the unchanged persistent Kimi implementation under swarm_inference.execution preserves the retained stage-zero, KDA, Gated-MLA, and final-stage correctness, state, backend-identity, and warm-lifecycle gates.",
+  "implementation": {
+    "change_class": "mechanical module promotion and import rewiring",
+    "arithmetic_changed": false,
+    "allocation_changed": false,
+    "protocol_changed": false,
+    "fixture_changed": false,
+    "production_executor_module": "swarm_inference.execution.kimi_k3_stage",
+    "registered_adapter_module": "swarm_inference.model.kimi_k3"
+  },
+  "module_audit": {
+    "executor": "swarm_inference.execution.kimi_k3_stage.PersistentKimiStageExecutor",
+    "mro": [
+      "swarm_inference.execution.kimi_k3_stage.PersistentKimiStageExecutor",
+      "builtins.object"
+    ],
+    "experiment_superclass": false,
+    "adapter_factory_imports_production_executor": true,
+    "registered_entry_point": "swarm_inference.model.kimi_k3:KimiK3CudaAdapter"
+  },
+  "backend": {
+    "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+    "target_binary": "sm_86+compute_86 PTX",
+    "cpu_mathematical_fallbacks": 0
+  },
+  "benchmarks": [
+    {
+      "role": "final-stage layer 92 plus final norm, LM head, and sampling",
+      "path": "h014-026f-final-regression.json",
+      "sha256": "aeeaad0bcfaa4b7e05cf5a50b215c23741a795299822c13d3190f1fe4fcd3881",
+      "status": "PASS",
+      "maximum_relative_l2_error": 3.180334332960047e-7,
+      "routing_exact": true,
+      "sampled_tokens_exact": true,
+      "warm_lifecycle_deltas_zero": true
+    },
+    {
+      "role": "layer 1 KDA+MoE and layer 3 Gated-MLA+MoE",
+      "path": "h014-026f-nonfinal-regression.json",
+      "sha256": "97947e5d81e4f517d3469c257c18cc1800ea8feeb7b0d4497f12c8068ee84d90",
+      "status": "PASS",
+      "maximum_relative_l2_error": 3.0016791641951867e-7,
+      "routing_exact": true,
+      "state_continuity": true,
+      "warm_lifecycle_deltas_zero": true
+    },
+    {
+      "role": "stage zero embedding plus dense layer 0",
+      "path": "h014-026f-stage-zero-regression.json",
+      "sha256": "d772ea40629c3977bbfb23ff224237e1e00af5a3bee0b812b4df01ba1cfc5043",
+      "status": "PASS",
+      "maximum_relative_l2_error": 2.751786728581615e-7,
+      "residual_rows_bit_exact": true,
+      "state_continuity": true,
+      "warm_lifecycle_deltas_zero": true
+    }
+  ],
+  "inspection": {
+    "actual_bottleneck": "none in the mechanical promotion; cold tensor loading remains outside the warm path",
+    "functional_stage_roles_covered": [
+      "embedding",
+      "dense layer",
+      "KDA+MoE layer",
+      "Gated-MLA+MoE layer",
+      "final residual/norm",
+      "LM head",
+      "sampling"
+    ],
+    "warm_topology_rebuilds": 0,
+    "warm_process_creation": 0,
+    "warm_task_creation": 0,
+    "warm_thread_creation": 0,
+    "warm_connection_establishment": 0,
+    "warm_weight_loading": 0,
+    "warm_model_materialization": 0,
+    "warm_persistent_buffer_allocation": 0
+  },
+  "decision": "RETAIN",
+  "redesign": "Close P1. Begin P2 by profiling the canonical resident real-weight layer service path; do not treat the three-call lifecycle timings as capacity evidence.",
+  "p1_canonical_persistent_kimi_stage_runtime": "PASS",
+  "status": "PASS"
+}

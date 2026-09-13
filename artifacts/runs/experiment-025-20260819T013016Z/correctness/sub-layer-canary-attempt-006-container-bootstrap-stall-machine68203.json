@@ -1,0 +1,112 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-23T08:26:10.272047+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "physical-sub-layer-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48454538,
+      48454539,
+      48454540,
+      48454541
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "PHYSICAL_OR_RUNTIME_DEFECT_REQUIRES_OFFLINE_REVIEW",
+    "error": "E025 worker e025-layer-089-sub-03 endpoint wait was aborted",
+    "error_type": "RuntimeError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 689, in run_sub_layer_canary_stage\n    pending_fragments = list(pool.map(create_fragment, range(4)))\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 619, in result_iterator\n    yield _result_or_cancel(fs.pop())\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 317, in _result_or_cancel\n    return fut.result(timeout)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 456, in result\n    return self.__get_result()\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 401, in __get_result\n    raise self._exception\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\thread.py\", line 58, in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 678, in create_fragment\n    host, port = wait_for_public_endpoint(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\run-stage2-progress-aware.py\", line 143, in observed_wait_for_public_endpoint\n    return _original_wait_endpoint(**kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 217, in wait_for_public_endpoint\n    raise RuntimeError(f\"E025 worker {worker_id} endpoint wait was aborted\")\nRuntimeError: E025 worker e025-layer-089-sub-03 endpoint wait was aborted\n"
+  },
+  "fragments": [],
+  "generated_at_utc": "2026-08-23T08:26:10.291876+00:00",
+  "image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "parent": null,
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0.04978049580296297,
+    "estimated_storage_cost_usd": 0.008199728964506171,
+    "generated_at_utc": "2026-08-23T08:26:10.287358+00:00",
+    "instance_count": 4,
+    "instances": [
+      {
+        "active_rental_rate_usd_per_hour": 0.084,
+        "created_at_utc": "2026-08-23T08:17:16.554991+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T08:26:07.823017+00:00",
+        "elapsed_seconds": 531.268026,
+        "estimated_active_cost_usd": 0.012396253940000001,
+        "estimated_storage_cost_usd": 0.0016397161296296291,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3070",
+        "instance_id": 48454538,
+        "machine_id": 56939,
+        "offer_id": 46113147,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.10666666666666667,
+        "created_at_utc": "2026-08-23T08:17:16.704007+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T08:26:07.787157+00:00",
+        "elapsed_seconds": 531.08315,
+        "estimated_active_cost_usd": 0.01573579703703704,
+        "estimated_storage_cost_usd": 0.001639145524691358,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3080",
+        "instance_id": 48454539,
+        "machine_id": 51857,
+        "offer_id": 45587623,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.05333333333333334,
+        "created_at_utc": "2026-08-23T08:17:16.768281+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T08:26:08.525371+00:00",
+        "elapsed_seconds": 531.75709,
+        "estimated_active_cost_usd": 0.007877882814814814,
+        "estimated_storage_cost_usd": 0.002461838379629629,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3060",
+        "instance_id": 48454540,
+        "machine_id": 68203,
+        "offer_id": 34596403,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.19999999999999998
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.09333333333333334,
+        "created_at_utc": "2026-08-23T08:17:16.680879+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-23T08:26:07.831128+00:00",
+        "elapsed_seconds": 531.150249,
+        "estimated_active_cost_usd": 0.013770562011111112,
+        "estimated_storage_cost_usd": 0.002459028930555555,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3080",
+        "instance_id": 48454541,
+        "machine_id": 140739,
+        "offer_id": 41270924,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.19999999999999998
+      }
+    ],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "PASS",
+    "total_elapsed_instance_seconds": 2125.2585150000004
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-sub-layer-canary-stage-v1",
+  "status": "FAIL"
+}

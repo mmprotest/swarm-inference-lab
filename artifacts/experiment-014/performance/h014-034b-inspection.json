@@ -1,0 +1,49 @@
+{
+  "schema_version": "experiment-014-inspection-v1",
+  "cycle_id": "H014-034b",
+  "status": "BATCH_1_EXECUTION_PASS_STATE_EVIDENCE_GATE_FAIL",
+  "raw_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-034b-contextual-batch-layer91-8k.json",
+    "sha256": "31e7c9806e71be34a109c0a724c65e72f727cb3fc8574d9d9d70e2f538379934"
+  },
+  "executed_sizes": [1],
+  "later_sizes_armed": [],
+  "batch_1": {
+    "prefill_wall_ms": 35154.3653,
+    "last_256_device_p50_ms": 5.2205281257629395,
+    "validation_device_ms": 5.201791763305664,
+    "retained_device_p50_ms": 5.304239988327026,
+    "retained_device_p99_ms": 5.356866054534912,
+    "aggregate_rows_per_second": 188.528422959875,
+    "state_bytes": 18934272,
+    "output_matches_h014_033c": true,
+    "all_non_fingerprint_gates_pass": true
+  },
+  "failed_gate": {
+    "name": "phase_zero_state_matches_h014_033c",
+    "expected_full_allocation_slots": 8193,
+    "observed_full_allocation_slots": 8218,
+    "active_cache_slots_at_comparison": 8193,
+    "reason": "session_state_evidence fingerprints the complete prepared allocation, including the zero suffix"
+  },
+  "inspection": {
+    "mathematical_divergence_observed": false,
+    "output_bit_exact": true,
+    "active_state_length_exact": true,
+    "state_finite": true,
+    "zero_suffix": true,
+    "cuda_error_state_ok": true,
+    "safe_fixture_exact": true,
+    "nvidia_smi_measured": true,
+    "minimum_fix": "add an active-prefix fingerprint to state evidence and compare equal-shaped active prefixes"
+  },
+  "health_after_process_close": {
+    "name": "NVIDIA GeForce RTX 5090",
+    "memory_used_mib": 1870,
+    "memory_free_mib": 30318,
+    "temperature_c": 46,
+    "pstate": "P8",
+    "nvidia_smi_status": "MEASURED"
+  },
+  "decision": "MODIFY_STATE_EVIDENCE_ONLY_AND_RERUN_AS_H014-034c"
+}

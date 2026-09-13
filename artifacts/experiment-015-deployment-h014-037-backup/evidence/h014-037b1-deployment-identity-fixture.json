@@ -1,0 +1,77 @@
+{
+  "acceptance_gates": {
+    "all_assignments_model_identity_exact": true,
+    "all_initial_load_requests_identity_exact": true,
+    "all_recovery_load_requests_identity_exact": true,
+    "endpoint_mismatch_rejected": true,
+    "exact_93_assignments": true,
+    "malformed_runtime_sha_rejected": true,
+    "missing_runtime_pair_member_rejected": true,
+    "missing_worker_rejected": true,
+    "production_batch_eight_propagated": true,
+    "typed_plan_round_trip_exact": true,
+    "unhealthy_registration_rejected": true,
+    "wrong_device_rejected": true,
+    "wrong_model_identity_rejected": true
+  },
+  "bottleneck": "Physical Linux runtime identity remains pending the single-3090 canary; the logical product path is now fail-closed.",
+  "configuration": {
+    "context_tokens": 8192,
+    "fixture_only": true,
+    "logical_workers": 93,
+    "model_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "model_id": "moonshotai/Kimi-K3",
+    "model_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "production_batch": 8,
+    "runtime_library": "/opt/swarm/runtime/libcoli_cuda-sm86.so",
+    "runtime_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "cycle_id": "H014-037b1",
+  "decision": "RETAIN if every gate passes; otherwise do not package or deploy",
+  "hypothesis": "Every bound stage assignment and initial/recovery load request carries one exact Kimi model/runtime identity; missing or mismatched identities reject.",
+  "inspection": "The canonical request builder is shared by initial deployment and recovery; the retained fixture exercised both generations for all 93 assignments.",
+  "negative_controls": {
+    "endpoint_mismatch": {
+      "detail": "DeploymentBindingError: k3-worker-053: data endpoint is absent or inconsistent",
+      "rejected": true
+    },
+    "malformed_runtime_sha": {
+      "detail": "DeploymentBindingError: native runtime SHA-256 must be 64 lowercase hexadecimal digits",
+      "rejected": true
+    },
+    "missing_runtime_pair_member": {
+      "detail": "ValidationError: 1 validation error for PlanWorkerAssignment\n  Value error, assignment native runtime library and SHA-256 must be supplied together [type=value_error, input_value={'stage_id': 0, 'worker_i...rtifact_manifest': None}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+      "rejected": true
+    },
+    "missing_worker": {
+      "detail": "DeploymentBindingError: live fleet is not exactly 93 assigned workers; missing=['k3-worker-092'] unexpected=[]",
+      "rejected": true
+    },
+    "unhealthy_registration": {
+      "detail": "DeploymentBindingError: k3-worker-041: registration is unhealthy",
+      "rejected": true
+    },
+    "wrong_device": {
+      "detail": "DeploymentBindingError: k3-worker-017: device is not native-cuda:0",
+      "rejected": true
+    },
+    "wrong_model_identity": {
+      "detail": "DeploymentBindingError: k3-worker-029: configured model identity fingerprint differs",
+      "rejected": true
+    }
+  },
+  "redesign": "Build and hash the Linux sm_86 runtime on the canary, then bind the real live worker-status document with this same command.",
+  "result": {
+    "assignment_count": 93,
+    "fixture_plan_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\deployment\\h014-037b1-deployment-identity-fixture-bound-plan.json",
+    "fixture_plan_sha256": "ffd7cf9eedcf8b5073c9c0b33272c2dd85dac3ec03ba85634a8f2e50cf7ef9f8",
+    "initial_load_request_count": 93,
+    "placement_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\manifests\\k3-3090-placement-manifest.json",
+    "placement_sha256": "82c0f28046db559c490bdc36104100503608ec61d76052b6eef4d5cf532c85e0",
+    "plan_id": "k3-plan-f03c8d1722927e31ff3c65be",
+    "recovery_load_request_count": 93,
+    "topology_id": "k3-whole-layer-93-f03c8d1722927e31ff3c65be"
+  },
+  "schema_version": "experiment-014-k3-deployment-identity-fixture-v1",
+  "status": "PASS"
+}

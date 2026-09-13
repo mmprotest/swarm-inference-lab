@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.20)
+project(e028 LANGUAGES CXX)
+add_executable(llama-e028-stage e028_stage_server.cpp)
+target_compile_features(llama-e028-stage PRIVATE cxx_std_17)
+target_include_directories(llama-e028-stage PRIVATE "${LLAMA_ROOT}/include" "${LLAMA_ROOT}/src" "${LLAMA_ROOT}/ggml/include")
+target_link_libraries(llama-e028-stage PRIVATE "${LLAMA_BUILD}/src/llama.lib" "${LLAMA_BUILD}/ggml/src/ggml.lib" "${LLAMA_BUILD}/ggml/src/ggml-base.lib" ws2_32)

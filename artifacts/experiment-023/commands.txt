@@ -1,0 +1,7 @@
+# Experiment 023 repaired command ledger
+$env:PYTHONPATH='src'; .\.venv\Scripts\python.exe scripts\experiment_023_correctness.py compatibility
+$env:PYTHONPATH='src'; .\.venv\Scripts\python.exe scripts\experiment_023_run.py --attempt attempts/repair-control-pilot-v1 --inventory coarse-friendly-01 --inventory coarse-friendly-02 --inventory coarse-friendly-03
+$env:PYTHONPATH='src'; .\.venv\Scripts\python.exe scripts\experiment_023_run.py --attempt attempts/deterministic-run-2
+$env:PYTHONPATH='src'; .\.venv\Scripts\python.exe scripts\experiment_023_correctness.py full --primary-attempt deterministic-run-2
+$env:PYTHONPATH='src'; .\.venv\Scripts\python.exe scripts\experiment_023_run.py --attempt attempts/deterministic-run-3
+$env:PYTHONPATH='src'; .\.venv\Scripts\python.exe scripts\experiment_023_finalize.py --primary-attempt deterministic-run-2 --reproducibility-attempt deterministic-run-3

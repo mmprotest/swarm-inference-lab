@@ -1,0 +1,55 @@
+{
+  "evidence_class": "SHAPED NETWORK",
+  "simulator_version": "e028-des-3",
+  "complete": true,
+  "passed": true,
+  "threshold_absolute_relative_error": 0.1,
+  "conditions": [
+    {
+      "k": 0,
+      "w": 1,
+      "network": "WAN-30",
+      "committed_tokens": 64,
+      "measured_runtime_ms": 5654.1430999932345,
+      "predicted_runtime_ms": 5270.50573652749,
+      "absolute_relative_error": 0.06785066396112327,
+      "passed": true,
+      "actual_injected_delays": 256,
+      "requested_delay_ms": 4173.318174028527,
+      "actual_delay_ms": 4329.323900077725,
+      "timing_source": "independent native service: unshaped workload for speculation; separate-prompt periodic calibration for SERIAL; no wall-time fitting",
+      "trace": "traces\\validation-k0-rtt30.json"
+    },
+    {
+      "k": 0,
+      "w": 1,
+      "network": "WAN-60",
+      "committed_tokens": 64,
+      "measured_runtime_ms": 10091.858300002059,
+      "predicted_runtime_ms": 9853.98647055604,
+      "absolute_relative_error": 0.023570666806327533,
+      "passed": true,
+      "actual_injected_delays": 256,
+      "requested_delay_ms": 8030.363708057057,
+      "actual_delay_ms": 8192.390600044746,
+      "timing_source": "independent native service: unshaped workload for speculation; separate-prompt periodic calibration for SERIAL; no wall-time fitting",
+      "trace": "traces\\validation-k0-rtt60.json"
+    },
+    {
+      "k": 3,
+      "w": 1,
+      "network": "WAN-60",
+      "committed_tokens": 64,
+      "measured_runtime_ms": 5161.946700012777,
+      "predicted_runtime_ms": 4933.962626769288,
+      "absolute_relative_error": 0.0441662974247534,
+      "passed": true,
+      "actual_injected_delays": 112,
+      "requested_delay_ms": 3739.5237823606544,
+      "actual_delay_ms": 3809.802300063893,
+      "timing_source": "independent native service: unshaped workload for speculation; separate-prompt periodic calibration for SERIAL; no wall-time fitting",
+      "trace": "traces\\validation-k3-rtt60.json"
+    }
+  ],
+  "interpretation": "Validates serial causal service/transfer accounting only. Does not validate physical three-GPU contention, transport, or async throughput."
+}

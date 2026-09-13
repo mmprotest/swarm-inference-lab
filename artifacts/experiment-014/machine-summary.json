@@ -1,0 +1,178 @@
+{
+  "economics_condition": "Initial fleet proceeds only at or below the preregistered USD 0.05/GPU-hour cost guard.",
+  "experiment": "014-kimi-k3-precluster-certification",
+  "full_fleet_activation_allowed": false,
+  "metrics": {
+    "best_exact_sub_layer_worker_bytes": 3931060224,
+    "best_exact_sub_layer_worker_fraction_percent": 21.51601912233127,
+    "best_sub_layer_workers": 4,
+    "break_even_gpu_price_usd_per_hour": 0.056409842516773126,
+    "capacity_model_local_held_out_median_ape_percent": 0.5525504329320846,
+    "checkpoint_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "coarse_capacity_retention_percent": 91.25976409250863,
+    "coarse_maximum_tested_rtt_ms": 5.0,
+    "coarse_minimum_tested_bandwidth_gbps": 10.0,
+    "coarse_payload_bytes": 258048,
+    "coarse_wire_bytes": 258283.0,
+    "cost_per_million_output_tokens_usd": 13.295552097614738,
+    "dominant_bottleneck": "8K row-serial Gated-MLA context scan",
+    "economic_gpu_price_usd_per_hour": 0.05,
+    "final_binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+    "first_rejected_batch": 9,
+    "fleet_cost_per_hour_usd": 4.65,
+    "gross_margin_at_15_per_million_percent": 11.362986015901745,
+    "kda_batch8_device_p50_ms": 13.305903911590576,
+    "kda_production_device_p50_ms": 2.975279927253723,
+    "maximum_planned_worker_vram_bytes": 24276277658,
+    "minimum_total_headroom_bytes": 4070506496,
+    "minimum_unallocated_after_safety_bytes": 1493526118,
+    "mla_batch8_device_p50_ms": 12.875679969787598,
+    "mla_production_device_p50_ms": 2.7035200595855713,
+    "physical_worker_vram_bytes": 25769803776,
+    "prefill": [
+      {
+        "context_tokens": 1024,
+        "eight_stream_full_model_state_bytes": 4288051200,
+        "maximum_state_bytes_on_one_worker_at_eight_streams": 55050240,
+        "measured_kda_stage_prompt_tokens_per_second_rtx5090": 271.6642488813813,
+        "measured_mla_stage_prompt_tokens_per_second_rtx5090": 285.2919199421838,
+        "projected_pipeline_prompt_tokens_per_second_rtx3090": 131.57433295376597,
+        "projected_wavefront_ttft_seconds": 8.827377546080042,
+        "single_stream_full_model_state_bytes": 536006400,
+        "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+      },
+      {
+        "context_tokens": 4096,
+        "eight_stream_full_model_state_bytes": 5590382592,
+        "maximum_state_bytes_on_one_worker_at_eight_streams": 75515904,
+        "measured_kda_stage_prompt_tokens_per_second_rtx5090": 289.5495140449364,
+        "measured_mla_stage_prompt_tokens_per_second_rtx5090": 268.30509197342656,
+        "projected_pipeline_prompt_tokens_per_second_rtx3090": 121.0540896388529,
+        "projected_wavefront_ttft_seconds": 34.88015829616162,
+        "single_stream_full_model_state_bytes": 698797824,
+        "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+      },
+      {
+        "context_tokens": 8192,
+        "eight_stream_full_model_state_bytes": 7326824448,
+        "maximum_state_bytes_on_one_worker_at_eight_streams": 151013376,
+        "measured_kda_stage_prompt_tokens_per_second_rtx5090": 290.0752296935849,
+        "measured_mla_stage_prompt_tokens_per_second_rtx5090": 231.828844409138,
+        "projected_pipeline_prompt_tokens_per_second_rtx3090": 100.16162488642513,
+        "projected_wavefront_ttft_seconds": 82.83013155827632,
+        "single_stream_full_model_state_bytes": 915853056,
+        "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+      },
+      {
+        "context_tokens": 16384,
+        "eight_stream_full_model_state_bytes": 10799708160,
+        "maximum_state_bytes_on_one_worker_at_eight_streams": 302008320,
+        "measured_kda_stage_prompt_tokens_per_second_rtx5090": 289.9315007807942,
+        "measured_mla_stage_prompt_tokens_per_second_rtx5090": 182.5665059449979,
+        "projected_pipeline_prompt_tokens_per_second_rtx3090": 74.6016686127004,
+        "projected_wavefront_ttft_seconds": 220.65865289464108,
+        "single_stream_full_model_state_bytes": 1349963520,
+        "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+      }
+    ],
+    "projected_aggregate_output_tokens_per_second": 97.15028433444262,
+    "projected_end_to_end_ms": 1052.304877769628,
+    "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+    "projected_wall_capacity_retention_percent": 39.43378616277193,
+    "pytest": {
+      "errors": 0,
+      "failures": 0,
+      "passed": 1091,
+      "sha256": "55f516d35c237f4e070b774c50e175bc549e9a6cf85bbdc08da9ff01e3b65751",
+      "skipped": 13,
+      "tests": 1104,
+      "time_seconds": 191.726
+    },
+    "routing_coldest_selected_count": 2,
+    "routing_hottest_selected_count": 6,
+    "routing_imbalance_ratio": 3.0,
+    "rtx3090_transfer_status": "PROJECTED_PENDING_PHYSICAL_CANARY",
+    "safe_certified_batch": 8,
+    "serving_frontier": {
+      "rows": [
+        {
+          "admitted_users_meeting_both_capacity_and_latency": 0,
+          "aggregate_only_concurrent_user_limit": 19,
+          "dependency_latency_feasible": false,
+          "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+          "target_tokens_per_second_per_user": 5.0
+        },
+        {
+          "admitted_users_meeting_both_capacity_and_latency": 0,
+          "aggregate_only_concurrent_user_limit": 9,
+          "dependency_latency_feasible": false,
+          "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+          "target_tokens_per_second_per_user": 10.0
+        },
+        {
+          "admitted_users_meeting_both_capacity_and_latency": 0,
+          "aggregate_only_concurrent_user_limit": 4,
+          "dependency_latency_feasible": false,
+          "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+          "target_tokens_per_second_per_user": 20.0
+        },
+        {
+          "admitted_users_meeting_both_capacity_and_latency": 0,
+          "aggregate_only_concurrent_user_limit": 3,
+          "dependency_latency_feasible": false,
+          "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+          "target_tokens_per_second_per_user": 30.0
+        }
+      ],
+      "selected_experiment_015_workload": "batch-8 aggregate-capacity canary with eight independent 8K streams; report 0.950 tok/s/user at 5ms/10Gbps rather than claiming the 5 tok/s product target"
+    },
+    "smallest_meaningful_gpu_capacity_gib": 8.0,
+    "smallest_tested_worker_bytes": 982890496,
+    "smallest_tested_worker_fraction_percent": 5.377222475189307,
+    "smallest_tested_worker_gib": 0.9153881072998047,
+    "sub_layer_batch8_capacity_retention_percent": 84.15349441120019,
+    "sub_layer_critical_path_bytes_per_token": 100352,
+    "sub_layer_distributed_layer_p50_ms": 4.1888000000000005,
+    "sub_layer_distributed_layer_p95_ms": 4.65934,
+    "sub_layer_distributed_layer_p99_ms": 5.002629000000001,
+    "sub_layer_efficiency_percent": 16.898430202663032,
+    "sub_layer_exact_maximum_rtt_ms_at_100gbps": 0.6461381024968426,
+    "sub_layer_exact_minimum_bandwidth_gbps_at_0_25ms": 1.9863508523457518,
+    "sub_layer_maximum_tested_rtt_ms": 0.5,
+    "sub_layer_mean_total_bytes_per_token": 289550.6,
+    "sub_layer_minimum_tested_bandwidth_gbps": 2.5,
+    "sub_layer_relative_throughput_percent": 78.80896676852558,
+    "sub_layer_result": "FUNCTIONAL BUT NOT CURRENTLY ECONOMIC",
+    "sub_layer_root_messages": 8.0,
+    "sub_layer_synchronization_points": 2,
+    "topology": "WHOLE-LAYER",
+    "worker_count": 93
+  },
+  "next_action": "RUN_EXPERIMENT_015_SINGLE_RTX3090_CANARY",
+  "physical_3090_canary": "NOT_RUN",
+  "precluster_certification_complete": true,
+  "ready_to_rent_single_canary": true,
+  "recommended_experiment_015_topology": {
+    "candidate": "B",
+    "class": "WHOLE-LAYER",
+    "sub_layer_workers_in_initial_fleet": false,
+    "worker_count": 93
+  },
+  "remaining_physical_unknowns": [
+    "Linux RTX 3090 sm_86 correctness and timing",
+    "RTX 5090 to RTX 3090 transfer-model error",
+    "physical network jitter and contention",
+    "thermal and clock-state behavior",
+    "full-fleet throughput and per-user cadence",
+    "physical clean-node provisioning duration"
+  ],
+  "schema_version": "experiment-014-final-machine-summary-v1",
+  "status": "PASS",
+  "sub_layer_conclusion": {
+    "physical_multi_gpu_efficiency": "NOT_TESTED",
+    "recommended_use": "ONLY_INSIDE_FAST_DOMAINS",
+    "result": "FUNCTIONAL BUT NOT CURRENTLY ECONOMIC"
+  },
+  "terminal_statement": "PRE-CLUSTER CERTIFICATION COMPLETE. Experiment 015 is the full physical Kimi K3 cluster test. No further synthetic architecture experiment is required.",
+  "verdict": "PASS"
+}

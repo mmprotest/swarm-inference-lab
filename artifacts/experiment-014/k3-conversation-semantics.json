@@ -1,0 +1,84 @@
+{
+  "certified_cases": [
+    "single-turn prompt",
+    "multi-turn history",
+    "reasoning-content preservation",
+    "thinking effort low/max",
+    "non-thinking response channel",
+    "EOS/end-of-message identity"
+  ],
+  "checkpoint": "F:\\models\\Kimi-K3",
+  "checkpoint_sources": {
+    "encoding_k3_sha256": "b9cb7ae100fed34b9337f80dacee5abbf7e261fe9b74bc0e76366701d46f5333",
+    "tiktoken_model_sha256": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
+    "tokenization_kimi_sha256": "f28ea66e2d862a2a5814970b2ce40c2f7d8296ff09aed90a7e7def689b906944"
+  },
+  "eos": {
+    "checkpoint_eos_token_id": 163586,
+    "end_of_message_token_id": 163586,
+    "eos_matches_end_of_message": true
+  },
+  "fixtures": [
+    {
+      "engine_return_code": 0,
+      "engine_stderr": "[OMP] kimi_k3: 19 thread (core fisici) invece di 20 logici \u2014 l'SMT dimezza il decode su alcune CPU (#718); OMP_NUM_THREADS=<n> per decidere tu",
+      "first_mismatch_index": null,
+      "name": "single_turn_thinking_default_max",
+      "official_mismatch_window": [],
+      "official_token_sha256": "11bb6db61f1352f872351ef58e8443db99aabb1c7928f14f113bc6be64a02959",
+      "product_mismatch_window": [],
+      "product_token_sha256": "11bb6db61f1352f872351ef58e8443db99aabb1c7928f14f113bc6be64a02959",
+      "reasoning_effort": "max",
+      "status": "PASS",
+      "thinking": true,
+      "token_count": 90,
+      "token_equality": true,
+      "wire_sha256": "5c5a722c1d4533155a51a9cc8d146bc593ad26e26d6416bba152f0afaffac8b8"
+    },
+    {
+      "engine_return_code": 0,
+      "engine_stderr": "[OMP] kimi_k3: 19 thread (core fisici) invece di 20 logici \u2014 l'SMT dimezza il decode su alcune CPU (#718); OMP_NUM_THREADS=<n> per decidere tu",
+      "first_mismatch_index": null,
+      "name": "multi_turn_reasoning_low",
+      "official_mismatch_window": [],
+      "official_token_sha256": "d5aeda57f40db3d3ff9a38d28c385128b7b7f7378299e09ac7e214c4140071e2",
+      "product_mismatch_window": [],
+      "product_token_sha256": "d5aeda57f40db3d3ff9a38d28c385128b7b7f7378299e09ac7e214c4140071e2",
+      "reasoning_effort": "low",
+      "status": "PASS",
+      "thinking": true,
+      "token_count": 146,
+      "token_equality": true,
+      "wire_sha256": "90e0e6be39ec25652e67505c717c690ee54d2c99da3d50487768dba00298f290"
+    },
+    {
+      "engine_return_code": 0,
+      "engine_stderr": "[OMP] kimi_k3: 19 thread (core fisici) invece di 20 logici \u2014 l'SMT dimezza il decode su alcune CPU (#718); OMP_NUM_THREADS=<n> per decidere tu",
+      "first_mismatch_index": null,
+      "name": "multi_turn_no_thinking",
+      "official_mismatch_window": [],
+      "official_token_sha256": "cade08e87eacc91ce2aaa4a9ef00c350cc4a9459d8da2b7425693c9a1c262981",
+      "product_mismatch_window": [],
+      "product_token_sha256": "cade08e87eacc91ce2aaa4a9ef00c350cc4a9459d8da2b7425693c9a1c262981",
+      "reasoning_effort": null,
+      "status": "PASS",
+      "thinking": false,
+      "token_count": 53,
+      "token_equality": true,
+      "wire_sha256": "426d206c6f1473cdabb721098c71d1feaca4933f4deb1e455984d1472f60f04b"
+    }
+  ],
+  "generated_at_utc": "2026-08-10T10:26:34.512019+00:00",
+  "initial_product_tool_calls": {
+    "policy": "fail closed until the official XTML tool subset is wired end to end",
+    "supported": false,
+    "unsupported_request_rejected": true
+  },
+  "product_sources": {
+    "executable_sha256": "c4ce697663d9ffb7b4cb914f3636a76e2437f8a677beee2f91ddd98316020f56",
+    "generated_tokenizer_sha256": "49f733745c76dbd69bd90fa109a66929af087e881bcffadbd4068b68635fd526",
+    "openai_server_sha256": "62bdf889be206daee9b5ff528fd700c69f3400d1a8df10e63bbce49ed0521f89"
+  },
+  "schema_version": "experiment-014-k3-conversation-semantics-v1",
+  "status": "PASS"
+}

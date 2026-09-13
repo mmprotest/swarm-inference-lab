@@ -1,0 +1,5 @@
+# Render only; no command was executed on a Vast host.
+EXECUTED=false
+# Vast args mode preserves the image ENTRYPOINT; Docker-in-Docker is not used.
+# The current render invokes worker_main directly; bootstrap/cache integration is an E020 blocker.
+python -m swarm_inference.experiments.experiment_020.worker_main controller-host-agent  # BLOCKED until the production role is implemented

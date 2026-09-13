@@ -1,0 +1,100 @@
+{
+  "compute_multiplier_rule": "slower-or-equal to local physical reference only",
+  "compute_multipliers": [
+    1.0,
+    0.8,
+    0.6,
+    0.4
+  ],
+  "created_before_planner_evaluation": true,
+  "endpoint_policy_identical": true,
+  "evidence_class": "PHYSICALLY GROUNDED MODEL + CONTROLLED HETEROGENEITY + SHAPED NETWORK",
+  "external_resource_queries": 0,
+  "families": {
+    "coarse-friendly": 3,
+    "compute-heterogeneous": 6,
+    "full-mixed": 6,
+    "memory-fragmented": 6,
+    "network-heterogeneous": 6
+  },
+  "gpu_rentals": 0,
+  "hypothesis_frozen": true,
+  "link_classes": {
+    "fast": {
+      "bandwidth_gbps": 25.0,
+      "latency_ms": 0.25,
+      "software_overhead_ms": 0.04
+    },
+    "medium": {
+      "bandwidth_gbps": 10.0,
+      "latency_ms": 1.0,
+      "software_overhead_ms": 0.05
+    },
+    "regional": {
+      "bandwidth_gbps": 1.0,
+      "latency_ms": 5.0,
+      "software_overhead_ms": 0.08
+    },
+    "slow": {
+      "bandwidth_gbps": 0.1,
+      "latency_ms": 20.0,
+      "software_overhead_ms": 0.12
+    }
+  },
+  "memory_class_basis": {
+    "large_multi_layer": "3.35 x maximum layer resident memory",
+    "maximum_measured_or_derived_layer_resident_bytes": 18285068288,
+    "multi_layer": "2.55 x maximum layer resident memory",
+    "near_layer": "0.94 x maximum layer resident memory",
+    "one_layer_plus": "1.35 x maximum layer resident memory",
+    "sub_layer": "0.57 x maximum layer resident memory"
+  },
+  "memory_classes_bytes": {
+    "large_multi_layer": 61255712768,
+    "multi_layer": 46627028992,
+    "near_layer": 17188257792,
+    "one_layer_plus": 24685576192,
+    "sub_layer": 10422845440
+  },
+  "schema_version": "experiment-022-inventory-generator-v1",
+  "seeds": {
+    "coarse-friendly": [
+      22000,
+      22001,
+      22002
+    ],
+    "compute-heterogeneous": [
+      22200,
+      22201,
+      22202,
+      22203,
+      22204,
+      22205
+    ],
+    "full-mixed": [
+      22400,
+      22401,
+      22402,
+      22403,
+      22404,
+      22405
+    ],
+    "memory-fragmented": [
+      22100,
+      22101,
+      22102,
+      22103,
+      22104,
+      22105
+    ],
+    "network-heterogeneous": [
+      22300,
+      22301,
+      22302,
+      22303,
+      22304,
+      22305
+    ]
+  },
+  "whole_layer_feasibility_uses_actual_per_layer_resident_bytes": true
+}

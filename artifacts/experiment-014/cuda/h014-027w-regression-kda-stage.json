@@ -1,0 +1,383 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86+c86_ptx",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-027w-candidate.dll",
+    "cuda_library_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_device_resident_complete_kimi_kda",
+    "implementation_kind": "generic existing CUDA projections plus custom Kimi core"
+  },
+  "benchmark": {
+    "batched_device_service_ms_per_call": 0.8519407653808594,
+    "effective_projection_weight_bandwidth_gbps": 305.76082585219183,
+    "host_cpu": {
+      "maximum_ms": 15.625,
+      "mean_ms": 0.9375,
+      "minimum_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 15.625,
+      "p99_ms": 15.625,
+      "standard_deviation_ms": 3.710731902199349
+    },
+    "independent_reference_ms": 1250.472,
+    "individual_profile_attribution_percent": 72.29783410541548,
+    "individual_projection_device_ms_per_call": {
+      "b": 0.011240960359573364,
+      "f_a": 0.01099552035331726,
+      "f_b": 0.01643519997596741,
+      "gate": 0.11303168296813965,
+      "k": 0.10397536277770997,
+      "output": 0.10505855560302735,
+      "q": 0.10399231910705567,
+      "v": 0.10530943870544433
+    },
+    "individual_projection_plus_core_attributed_ms": 0.6159347212314605,
+    "kernel_count_per_call": 9,
+    "per_call_d2h_bytes": 0,
+    "per_call_h2d_bytes": 0,
+    "phase_device_ms_per_call": {
+      "kda_state_core": 0.045895681381225586,
+      "output_projection": 0.10505855560302735,
+      "phase_sum": 0.7859235286712647,
+      "seven_input_projections": 0.6349692916870118
+    },
+    "quantization_ms": {
+      "gate": 743.6805,
+      "k": 738.8591,
+      "output": 739.8291,
+      "q": 758.9746,
+      "v": 736.9489
+    },
+    "queued_service_ms_per_call": 0.841121,
+    "resident_projection_weight_bytes": 260490112,
+    "retained_iterations": 100,
+    "wall": {
+      "maximum_ms": 1.2331,
+      "mean_ms": 0.851692,
+      "minimum_ms": 0.8319,
+      "p50_ms": 0.83485,
+      "p95_ms": 0.8870299999999997,
+      "p99_ms": 1.2053800000000001,
+      "standard_deviation_ms": 0.06849311597525697
+    },
+    "warmup_iterations": 20
+  },
+  "checkpoint": {
+    "b": {
+      "name": "language_model.model.layers.1.self_attn.b_proj.weight",
+      "runtime_f32_fingerprint": "sha256:192d37e8865ce8cfb123f1a9b700f8d46fe194bcb2266f675096bf9a9d906e28",
+      "shape": [
+        96,
+        7168
+      ],
+      "source_bytes": 1376256,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "fdd4cfc73077260d39a39aca8cdedec2151910f8d7fcc4a1eb00c254572ff53a",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "f_a": {
+      "name": "language_model.model.layers.1.self_attn.f_a_proj.weight",
+      "runtime_f32_fingerprint": "sha256:fbe2d2880aa96a06ac5282214ce145e94fec713cbaccce35ce4a8f7f77f551cd",
+      "shape": [
+        128,
+        7168
+      ],
+      "source_bytes": 1835008,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "5355d82e40c1884caf4f701ad33b932720ac7dc9fa36d195675842144118f6cd",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "f_b": {
+      "name": "language_model.model.layers.1.self_attn.f_b_proj.weight",
+      "runtime_f32_fingerprint": "sha256:3440a8a643764a0714900c5850d62f59e380dd7dbb0df52577aba855d3b7ad32",
+      "shape": [
+        12288,
+        128
+      ],
+      "source_bytes": 3145728,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "fd3fa0581587ee937371dbfde95e975361c6455a4ef5ca5e8160e4a3e8f81e17",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "input_norm": {
+      "name": "language_model.model.layers.1.input_layernorm.weight",
+      "runtime_f32_fingerprint": "sha256:a8b3dd39a7361c0b7bd4e3c07117add822000f37d1bab09d8be41c6de6533e33",
+      "shape": [
+        7168
+      ],
+      "source_bytes": 14336,
+      "source_dtype": "BF16",
+      "source_raw_sha256": "b03b4cc3e999b997f6d2e0bfe279da0a707d9627b6f064cc6fad2d6c5ffeeab5",
+      "source_shard": "model-00002-of-000096.safetensors"
+    },
+    "layer": 1,
+    "path": "F:\\models\\Kimi-K3",
+    "quantized_projections": {
+      "gate": {
+        "packed_fingerprint": "sha256:782775cff922bc31ed4762094c943a53b12d7d50615826085120bea3148904e7",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:ed218bf952b89118acaa775d6e64c1e11a4a589ca3b1cacf7cff35273035b449",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.g_proj.weight",
+          "runtime_f32_fingerprint": "sha256:3be8e7c0fda13789a1603d1061e29680aae80f16fdc436744cfa6e2c8087afc4",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "81cc0ce780577dc1d1c3144c92324fd64154422fd955906dea44b471207858f2",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      },
+      "k": {
+        "packed_fingerprint": "sha256:12e19f938744b88bdb05676a95dd091e8c317306a1a75971dc6b8630eca0e547",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:bfe69e3c346ac42b9d76b6ac38ee1a71b92ec4012c41af870dfc95208c2b746c",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.k_proj.weight",
+          "runtime_f32_fingerprint": "sha256:ebc02af2cad22c4fbb00c89cd7a08d9c9b13aa7d2c48f4d366b7c2fcfdf8d28b",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "be45df9cd94c6aee7393e9b5760000ef3e64dc5ca9b0ab64fb2e00dbce84b45b",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      },
+      "output": {
+        "packed_fingerprint": "sha256:a27f4d89e644e638030be886d315fc0a076724a410d8fdbb92c868c801f7cfdf",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:c97a6163db7492fa205532b8f06622ff83ecf2f265ba350ac4ede12aeff5d452",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.o_proj.weight",
+          "runtime_f32_fingerprint": "sha256:aaf5b3a0d1b0bfd6c148fe76ad1fba082fd648fb3733436794dd683808c9940e",
+          "shape": [
+            7168,
+            12288
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "0ec14e298cc858bd2c389d32b998e2fe1e35ff798ed64f78bda1722e5034cedf",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      },
+      "q": {
+        "packed_fingerprint": "sha256:a2f97403fabea1b0013670d053bf7fa47dc71bd43dc80b645fbcb7845ddc3a2c",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:ecf2fb3213c0542a7f23b6c4e584797db95ab75173de256be64502e298c417e0",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.q_proj.weight",
+          "runtime_f32_fingerprint": "sha256:4207afdd1ce4d4ff1ffe4cf8163b0de240b4427bfe2756fc59e37ca431b57aa2",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "a3e64d671c4b0139aef1dfb2eebbd7bd3508fafeafcb24940c548f0982fb474d",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      },
+      "v": {
+        "packed_fingerprint": "sha256:b880649a91793f68eac70b89dc04dbb49200d009f906c63b2fa8d4ad6e8b2df0",
+        "runtime_format": "packed signed int4 with float32 group-64 scales",
+        "scale_fingerprint": "sha256:33faa5eac8a7f6136cfd40935c7059e77656259d69eeabbaec14d655be379f52",
+        "source": {
+          "name": "language_model.model.layers.1.self_attn.v_proj.weight",
+          "runtime_f32_fingerprint": "sha256:53500f285b6ffdfabff1b88b5696c7faebb8bf8645dc7460378ddacb02be5649",
+          "shape": [
+            12288,
+            7168
+          ],
+          "source_bytes": 176160768,
+          "source_dtype": "BF16",
+          "source_raw_sha256": "2d5e1e8ccd31b81afcf5c3b61107aefbfca59c38cd13442ee717855e5bb0d6bc",
+          "source_shard": "model-00002-of-000096.safetensors"
+        }
+      }
+    },
+    "state_parameters": {
+      "a_log": {
+        "name": "language_model.model.layers.1.self_attn.A_log",
+        "runtime_f32_fingerprint": "sha256:be045bc9fc7c6f229ff5f5c8848fa3dd19062a8f3afef19f5c1139a35290ab4a",
+        "shape": [
+          128
+        ],
+        "source_bytes": 512,
+        "source_dtype": "F32",
+        "source_raw_sha256": "e62123b255be20125cdcdd04bd0af0da3619845ef97cbce72993c4d1b126d072",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "conv_k": {
+        "name": "language_model.model.layers.1.self_attn.k_conv1d.weight",
+        "runtime_f32_fingerprint": "sha256:ce9b7f3bd38e31e2c6c94e8669927f9b4217a18e8cd273db9f94f0d2b2592022",
+        "shape": [
+          12288,
+          1,
+          4
+        ],
+        "source_bytes": 196608,
+        "source_dtype": "F32",
+        "source_raw_sha256": "c2d79d57af7495ac674deb5d59f30389c2fb20307cc40ca5e9ed69e4f5a17132",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "conv_q": {
+        "name": "language_model.model.layers.1.self_attn.q_conv1d.weight",
+        "runtime_f32_fingerprint": "sha256:50c3e0a2b173981b6cfff837a21086040db78078b8e8fdb702bb3bedb78defce",
+        "shape": [
+          12288,
+          1,
+          4
+        ],
+        "source_bytes": 196608,
+        "source_dtype": "F32",
+        "source_raw_sha256": "2c18b186e8aeb8d804a5b0740dcb7a614778795fa7368e06278da8b26ad6657d",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "conv_v": {
+        "name": "language_model.model.layers.1.self_attn.v_conv1d.weight",
+        "runtime_f32_fingerprint": "sha256:d7820783b9650e1dc23ea2d5fc7cfe1413fa7197d059c9802fe637252baea1db",
+        "shape": [
+          12288,
+          1,
+          4
+        ],
+        "source_bytes": 196608,
+        "source_dtype": "F32",
+        "source_raw_sha256": "f61a97e1a52d7da0fd0bb8093a399d0b35de958c17dbe44982cf86a725631273",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "dt": {
+        "name": "language_model.model.layers.1.self_attn.dt_bias",
+        "runtime_f32_fingerprint": "sha256:7c45214deb5745b5f7860ae25899a6ff067898c142b0bc0200ceff537a3ddcc3",
+        "shape": [
+          12288
+        ],
+        "source_bytes": 49152,
+        "source_dtype": "F32",
+        "source_raw_sha256": "8403106310c52e38079300a2fb573852282eb57771f5fda96ec260b5911c3643",
+        "source_shard": "model-00002-of-000096.safetensors"
+      },
+      "output_norm": {
+        "name": "language_model.model.layers.1.self_attn.o_norm.weight",
+        "runtime_f32_fingerprint": "sha256:a9d183b5724fc5ccc820f3b25ef291c12cdea4f7931c82399af8e1af9fc300cf",
+        "shape": [
+          128
+        ],
+        "source_bytes": 512,
+        "source_dtype": "F32",
+        "source_raw_sha256": "66c6cf56ff55bd2e71ebb90136c3f6236489c9a635507eba49093a9d61e3c7a5",
+        "source_shard": "model-00002-of-000096.safetensors"
+      }
+    }
+  },
+  "correctness": {
+    "maximum_output_relative_l2_error": 9.507436002774015e-07,
+    "per_step_output_metrics": [
+      {
+        "actual_finite": true,
+        "actual_l2": 0.06217322938799002,
+        "cosine_similarity": 0.9999999999995822,
+        "maximum_absolute_error": 2.7066562324762344e-09,
+        "mean_absolute_error": 5.565787830619229e-10,
+        "reference_finite": true,
+        "reference_l2": 0.06217324522457727,
+        "relative_l2_error": 9.507436002774015e-07
+      },
+      {
+        "actual_finite": true,
+        "actual_l2": 0.49301402181226117,
+        "cosine_similarity": 0.999999999999885,
+        "maximum_absolute_error": 1.3969838619232178e-08,
+        "mean_absolute_error": 2.266649598173639e-09,
+        "reference_finite": true,
+        "reference_l2": 0.49301407072171133,
+        "relative_l2_error": 4.931392045862324e-07
+      },
+      {
+        "actual_finite": true,
+        "actual_l2": 0.4615524402184485,
+        "cosine_similarity": 0.999999999999885,
+        "maximum_absolute_error": 1.210719347000122e-08,
+        "mean_absolute_error": 2.2352679707182688e-09,
+        "reference_finite": true,
+        "reference_l2": 0.4615525307514272,
+        "relative_l2_error": 5.211050665319847e-07
+      }
+    ],
+    "post_benchmark_state_finite": true,
+    "repeat_bit_exact": true,
+    "state_metrics": {
+      "actual_finite": true,
+      "actual_l2": 3.674832500548385,
+      "cosine_similarity": 0.9999999999999564,
+      "maximum_absolute_error": 2.086162567138672e-07,
+      "mean_absolute_error": 3.130627830857049e-10,
+      "reference_finite": true,
+      "reference_l2": 3.6748326105942493,
+      "relative_l2_error": 2.9055207002808386e-07
+    }
+  },
+  "cycle_id": "H014-027w",
+  "fixture": {
+    "cuda_output_fingerprints": [
+      "sha256:fdd203394628c7967a75eac790f6e93449687615e1ae043da6aedfde11ced4a6",
+      "sha256:9e88806207c5936d352a8399103d834f633174291a72d47c9141991cab72a4ef",
+      "sha256:5964129f7748facb197155b6258cad85bfc5683f7f37a2bb5272cb09fb7afec2"
+    ],
+    "cuda_state_fingerprint": "sha256:36c9a7478effe6b389c1949761af5be0115848b8fe6321fed556926fca11fb54",
+    "dtype": "float32 activations; int4-g64 and FP32 weights",
+    "input_fingerprint": "sha256:44727fce06ee4b5ea1af981c5b3f4cbd39d8add2f85022ca7d01d4d68e4e2a3b",
+    "reference_core_fingerprint": "sha256:7f07df29b714439d22944094d1cebaf64490022c6cdc29c7c8c3a9afbe1002c3",
+    "reference_output_fingerprints": [
+      "sha256:0d158aab011d75cbee6405defc3ad08f226cc5fa649271cffb7de51d89654f4e",
+      "sha256:6232c25772256d319eadc18b23bdde23323d29a0677e91d76fb01659939a6178",
+      "sha256:759403cae51cf75ac017dd562db66f3287c14edc29daccf9392a729ae19b229a"
+    ],
+    "reference_state_fingerprint": "sha256:49633fa2443c63012de6de87b642a688ffde28775813b8da0112ac5dc9d0e085",
+    "steps": 3
+  },
+  "hypothesis": "The eight existing resident CUDA GEMV transforms plus the retained KDA state core reproduce a complete real Kimi KDA attention stage over three stateful steps within 3e-5 relative L2.",
+  "inspection": {
+    "bottleneck": "PENDING_PHASE_INSPECTION",
+    "decision": "RETAIN",
+    "warm_path_d2h_bytes": 0,
+    "warm_path_h2d_bytes": 0,
+    "warm_path_state_reset": 0,
+    "warm_path_weight_loading": 0
+  },
+  "memory": {
+    "after_load": {
+      "free_bytes": 32152485888,
+      "total_bytes": 34190458880
+    },
+    "persistent_activation_buffer_bytes": 324480,
+    "persistent_convolution_state_bytes": 589824,
+    "persistent_parameter_bytes": 640384,
+    "persistent_recurrent_state_bytes": 6291456,
+    "resident_projection_weight_bytes": 260490112
+  },
+  "schema_version": "experiment-014-k3-cuda-real-kda-stage-v1",
+  "status": "PASS"
+}

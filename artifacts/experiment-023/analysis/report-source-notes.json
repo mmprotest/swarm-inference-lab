@@ -1,0 +1,113 @@
+{
+  "chart_map": [
+    {
+      "chart_id": 1,
+      "chart_type": "ranked dot plot",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "comparison-and-ranking",
+      "fields": "inventory_id; efficiency_uplift_percent",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-01-efficiency-uplift.png",
+      "question": "Which headline inventories clear the 20% SLO efficiency threshold?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "Authoritative distribution and 20% reference",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 2,
+      "chart_type": "ranked dot plot",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "comparison-and-ranking",
+      "fields": "inventory_id; throughput_uplift_percent",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-02-throughput-uplift.png",
+      "question": "Does FLEX_POOL preserve raw SLO throughput?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "Authoritative raw-throughput changes and zero reference",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 3,
+      "chart_type": "faceted scatter",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "relationship",
+      "fields": "arm; family; abstract_node_cost; slo_target_rows_per_second",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-03-throughput-vs-cost.png",
+      "question": "How do the five architectures trade SLO throughput against abstract cost?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "Cross-arm cost and throughput envelope",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 4,
+      "chart_type": "labeled scatter",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "relationship",
+      "fields": "replica_resident_gib; efficiency_uplift_percent; family",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-04-replica-memory-vs-uplift.png",
+      "question": "Is replica memory associated with efficiency uplift?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "Memory footprint versus modeled uplift",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 5,
+      "chart_type": "strip plot with median",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "distribution",
+      "fields": "family; efficiency_uplift_percent",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-05-family-summary.png",
+      "question": "How does uplift vary by preregistered family?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "Within-family observations and medians",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 6,
+      "chart_type": "faceted line",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "trend",
+      "fields": "inventory_id; concurrency; target_rows_per_second; arm",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-06-saturation-curves.png",
+      "question": "Where do U_STRONG and FLEX_POOL saturate?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "Full five-point concurrency ladder",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 7,
+      "chart_type": "faceted heatmap",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "matrix-and-cohort",
+      "fields": "inventory_id; layer_id; logical_group_id; alternate_selection_rate",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-07-replica-selection.png",
+      "question": "Which flexible logical groups actually select alternates?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "Physical-copy choice while preserving logical identity",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    },
+    {
+      "chart_id": 8,
+      "chart_type": "explicit no-data status panel",
+      "evidence_status": "AUTHORITATIVE_REPAIRED_E023",
+      "family": "uncertainty-and-benchmark",
+      "fields": "physical service-drift status",
+      "palette_policy": "two-root-or-family-categorical-with-neutral-references",
+      "path": "charts/chart-08-hedging-tail-tradeoff.png",
+      "question": "Why is the hedging conclusion suppressed?",
+      "source": "deterministic-run-2 authoritative repaired artifacts",
+      "supported_takeaway": "No hedging conclusion is promoted",
+      "visual_qa_status": "PASS_VISUAL_INSPECTION"
+    }
+  ],
+  "original_attempt": "deterministic-run-1",
+  "original_verdict": "MODEL_INVALID",
+  "primary_attempt": "deterministic-run-2",
+  "reproducibility_attempt": "deterministic-run-3",
+  "schema_version": "experiment-023-repaired-report-sources-v1"
+}

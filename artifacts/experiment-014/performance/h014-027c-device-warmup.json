@@ -1,0 +1,166 @@
+{
+  "backend": {
+    "cpu_mathematical_fallbacks": 0,
+    "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_persistent_kimi_stage",
+    "target_binary": "sm_86+compute_86 PTX"
+  },
+  "benchmark": {
+    "baseline_cold_device_ms": [
+      36.66348648071289,
+      33.659934997558594,
+      27.78486442565918
+    ],
+    "baseline_cold_median_ms": 33.659934997558594,
+    "cold_to_warmed_improvement": 9.843560047110756,
+    "steady_production_device_p50_ms": 3.012608051300049,
+    "warmed_canonical_calls": [
+      {
+        "cosine_similarity": 0.9999999999999972,
+        "device_ms": 4.0589118003845215,
+        "external_wall_ms": 4.7317,
+        "maximum_absolute_error": 3.725290298461914e-08,
+        "position": 0,
+        "relative_l2_error": 7.743282866015043e-08,
+        "routing_equality": true,
+        "selected_expert_ids": [
+          295,
+          809,
+          873,
+          596,
+          203,
+          162,
+          419,
+          498,
+          334,
+          472,
+          103,
+          85,
+          866,
+          293,
+          457,
+          148
+        ]
+      },
+      {
+        "cosine_similarity": 0.9999999999999892,
+        "device_ms": 3.419487953186035,
+        "external_wall_ms": 3.6301,
+        "maximum_absolute_error": 5.960464477539063e-08,
+        "position": 1,
+        "relative_l2_error": 1.4933589133121538e-07,
+        "routing_equality": true,
+        "selected_expert_ids": [
+          362,
+          334,
+          472,
+          558,
+          140,
+          796,
+          782,
+          511,
+          692,
+          649,
+          169,
+          322,
+          642,
+          749,
+          68,
+          335
+        ]
+      },
+      {
+        "cosine_similarity": 0.9999999999999872,
+        "device_ms": 3.405087947845459,
+        "external_wall_ms": 3.6125,
+        "maximum_absolute_error": 1.862645149230957e-08,
+        "position": 2,
+        "relative_l2_error": 1.619126133073415e-07,
+        "routing_equality": true,
+        "selected_expert_ids": [
+          798,
+          48,
+          294,
+          630,
+          465,
+          371,
+          782,
+          541,
+          411,
+          626,
+          577,
+          52,
+          33,
+          655,
+          115,
+          549
+        ]
+      }
+    ],
+    "warmed_median_device_ms": 3.419487953186035,
+    "warmed_to_steady_ratio": 1.1350590235959845
+  },
+  "cycle_id": "H014-027c",
+  "decision": "RETAIN_PREPARE_WARMUP",
+  "hypothesis": "At least 100 ms of unrelated resident CUDA add work reduces the first three canonical call median by at least 5x and to at most 2x steady p50.",
+  "implementation": "Benchmark-only PREPARE warmup through the generic resident add primitive; no expert weights or Kimi arithmetic are touched.",
+  "inspection": {
+    "actual_bottleneck": "CUDA_DEVICE_NOT_COMPUTE_READY_AT_READY_BOUNDARY",
+    "warmup_is_excluded_from_service_rate": true,
+    "warmup_is_one_time_prepare_work": true
+  },
+  "load": {
+    "accepted": true,
+    "elapsed_ms": 21680.6783
+  },
+  "redesign": "Require a measured device-compute warmup before READY and continue P2 steady profiling.",
+  "result": {
+    "correctness_pass": true,
+    "hypothesis_supported": true,
+    "lifecycle_pass": true
+  },
+  "schema_version": "experiment-014-k3-device-warmup-v1",
+  "sources": {
+    "cold_profile": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027b-expert-working-set.json",
+      "sha256": "28023f4c59527fc3b2ad3d5090a9ff9e14912151f657a61bb846e6c377b5676c"
+    },
+    "steady_profile": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027a-resident-stage-profile.json",
+      "sha256": "d05f8d18ffc3ab51d38ddd9bcada7b0a3818a52fe010aa1631f5cad3fe37054f"
+    }
+  },
+  "status": "PASS",
+  "warmup": {
+    "batch_device_ms": [
+      40.074432373046875,
+      38.40252685546875,
+      35.7889289855957
+    ],
+    "expert_weight_bytes_read": 0,
+    "kernel_launches": 12288,
+    "lifecycle_delta": {
+      "connection_establishment": 0,
+      "model_materialization": 0,
+      "persistent_buffer_allocation": 0,
+      "process_creation": 0,
+      "task_creation": 0,
+      "thread_creation": 0,
+      "topology_rebuilds": 0,
+      "weight_loading": 0
+    },
+    "measured_device_ms": 114.26588821411133,
+    "measured_wall_ms": 114.4856,
+    "minimum_device_ms": 100.0,
+    "one_time_h2d_bytes": 57344,
+    "primitive": "generic resident float32 add"
+  }
+}

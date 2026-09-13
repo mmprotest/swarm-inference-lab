@@ -1,0 +1,14 @@
+{
+  "schema_version": "experiment-014-k3-deployment-package-failure-v1",
+  "cycle_id": "H014-037b4b",
+  "status": "FAIL",
+  "hypothesis": "The retained passing distribution manifest can be copied unchanged into a no-checkout Linux deployment package and still resolve its placement manifest.",
+  "observed_distribution_manifest": "artifacts/experiment-015-deployment/manifests/k3-weight-distribution-manifest.json",
+  "observed_placement_reference": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\manifests\\k3-3090-placement-manifest.json",
+  "resolution_implementation": "Path(distribution[\"placement_manifest\"])",
+  "result": "FALSIFIED",
+  "linux_node_resolution": "IMPOSSIBLE: the Windows development path does not exist on a clean rented node",
+  "inspection": "All tensor URLs, shard hashes, worker ownership and checkpoint revision remain valid; only the operational placement reference is non-portable.",
+  "bottleneck": "Absolute development-machine path embedded in an otherwise immutable distribution manifest.",
+  "decision": "MODIFY. Resolve relative references from the distribution manifest directory and package a canonical sibling filename bound to the unchanged placement SHA-256."
+}

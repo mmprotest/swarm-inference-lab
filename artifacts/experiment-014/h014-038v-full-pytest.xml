@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="2" failures="0" skipped="0" tests="2" time="6.748" timestamp="2026-08-12T08:01:21.273121+10:00" hostname="DESKTOP-VFIMO5P"><testcase classname="" name="tests.unit.test_experiment_014_full_cuda" time="0.000"><error message="collection failure">ImportError while importing test module 'C:\Users\Simon\OneDrive\Documents\Python Scripts\swarm-inference-lab\tests\unit\test_experiment_014_full_cuda.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_experiment_014_full_cuda.py:12: in &lt;module&gt;
+    from swarm_inference.experiments.experiment_014.full_cuda import (
+E   ImportError: cannot import name '_quantize_bf16_grouped_int4' from 'swarm_inference.experiments.experiment_014.full_cuda' (C:\Users\Simon\OneDrive\Documents\Python Scripts\swarm-inference-lab\src\swarm_inference\experiments\experiment_014\full_cuda.py)</error></testcase><testcase classname="" name="tests.unit.test_experiment_014_persistent_identity" time="0.000"><error message="collection failure">ImportError while importing test module 'C:\Users\Simon\OneDrive\Documents\Python Scripts\swarm-inference-lab\tests\unit\test_experiment_014_persistent_identity.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\unit\test_experiment_014_persistent_identity.py:17: in &lt;module&gt;
+    from swarm_inference.experiments.experiment_014.persistent_stages import (
+src\swarm_inference\experiments\experiment_014\persistent_stages.py:27: in &lt;module&gt;
+    from swarm_inference.experiments.experiment_014.full_cuda import (
+E   ImportError: cannot import name '_CheckpointReader' from 'swarm_inference.experiments.experiment_014.full_cuda' (C:\Users\Simon\OneDrive\Documents\Python Scripts\swarm-inference-lab\src\swarm_inference\experiments\experiment_014\full_cuda.py)</error></testcase></testsuite></testsuites>

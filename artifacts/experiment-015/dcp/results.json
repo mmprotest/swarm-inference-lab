@@ -1,0 +1,510 @@
+{
+  "beneficial_context_threshold": "NOT_ESTABLISHED",
+  "best_8k_sensitivity": {
+    "capacity_evidence": false,
+    "combine_transport_ms": 0.7459247999999999,
+    "context_tokens": 8192,
+    "degree": 8,
+    "evidence_class": "SHAPED",
+    "measured_scan_fit": {
+      "intercept_ms_rtx5090": 3.0592532157897976,
+      "measured_contexts": [
+        1024,
+        4096,
+        8192,
+        16384
+      ],
+      "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+    },
+    "partial_payload_bytes_per_worker": 33280,
+    "projected_local_scan_ms": 0.8767537741561573,
+    "projected_mla_stage_ms": 7.931050067285647,
+    "projected_non_scan_ms": 6.308371493129489,
+    "query_rows": 1,
+    "stage_gain_fraction": 0.4046831604398621,
+    "stage_speedup": 1.6797777814228647,
+    "synchronization_count": 2,
+    "unsharded_stage_ms": 13.322401686378747
+  },
+  "best_degree": "NOT_ESTABLISHED",
+  "complete_kimi_correctness": "NOT_ESTABLISHED",
+  "complete_kimi_performance": "NOT_ESTABLISHED",
+  "component_correctness": {
+    "complete_kimi_reference_gate": "NOT_RUN",
+    "cycle_id": "H015-006A",
+    "evidence_class": null,
+    "maximum_relative_l2_error": 1.1190103151149252e-15,
+    "rows": [
+      {
+        "context_tokens": 1024,
+        "degree": 1,
+        "finite": true,
+        "heads": 8,
+        "maximum_absolute_error": 0.0,
+        "query_rows": 3,
+        "relative_l2_error": 0.0,
+        "repeat_bit_exact": true,
+        "value_dimension": 32
+      },
+      {
+        "context_tokens": 1024,
+        "degree": 2,
+        "finite": true,
+        "heads": 8,
+        "maximum_absolute_error": 2.914335439641036e-16,
+        "query_rows": 3,
+        "relative_l2_error": 1.1190103151149252e-15,
+        "repeat_bit_exact": true,
+        "value_dimension": 32
+      },
+      {
+        "context_tokens": 1024,
+        "degree": 4,
+        "finite": true,
+        "heads": 8,
+        "maximum_absolute_error": 2.7755575615628914e-16,
+        "query_rows": 3,
+        "relative_l2_error": 1.1109910896038194e-15,
+        "repeat_bit_exact": true,
+        "value_dimension": 32
+      },
+      {
+        "context_tokens": 1024,
+        "degree": 8,
+        "finite": true,
+        "heads": 8,
+        "maximum_absolute_error": 2.7755575615628914e-16,
+        "query_rows": 3,
+        "relative_l2_error": 1.0641233642348274e-15,
+        "repeat_bit_exact": true,
+        "value_dimension": 32
+      }
+    ],
+    "schema_version": "experiment-015-dcp-combination-correctness-v1",
+    "scientific_result": false,
+    "scope": "local CPU exact-attention unit diagnostic with synthetic tensors; outside the four Experiment 015 evidence classes and not complete Kimi MLA",
+    "status": "PASS"
+  },
+  "cycle_id": "H015-006A-H015-006B",
+  "decision": "STOP_NO_REAL_DISTRIBUTED_KIMI_DCP_KERNEL",
+  "performance_rows": [
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.0,
+      "context_tokens": 1024,
+      "degree": 1,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 0.8767537741561573,
+      "projected_mla_stage_ms": 7.185125267285647,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.0,
+      "stage_speedup": 1.0,
+      "synchronization_count": 0,
+      "unsharded_stage_ms": 7.185125267285647
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 1024,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 0.43837688707807865,
+      "projected_mla_stage_ms": 7.492673180207568,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": -0.0428034169873428,
+      "stage_speedup": 0.9589535129152129,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 7.185125267285647
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 1024,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 0.21918844353903932,
+      "projected_mla_stage_ms": 7.273484736668529,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": -0.01229755447482428,
+      "stage_speedup": 0.987851838206599,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 7.185125267285647
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 1024,
+      "degree": 8,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 0.10959422176951966,
+      "projected_mla_stage_ms": 7.163890514899009,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.002955376781434982,
+      "stage_speedup": 1.002964136922874,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 7.185125267285647
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.0,
+      "context_tokens": 4096,
+      "degree": 1,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 3.507015096624629,
+      "projected_mla_stage_ms": 9.81538658975412,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.0,
+      "stage_speedup": 1.0,
+      "synchronization_count": 0,
+      "unsharded_stage_ms": 9.81538658975412
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 4096,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 1.7535075483123146,
+      "projected_mla_stage_ms": 8.807803841441803,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.10265339414792796,
+      "stage_speedup": 1.114396592663828,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 9.81538658975412
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 4096,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 0.8767537741561573,
+      "projected_mla_stage_ms": 7.931050067285647,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.1919778202557456,
+      "stage_speedup": 1.2375897903155433,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 9.81538658975412
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 4096,
+      "degree": 8,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 0.43837688707807865,
+      "projected_mla_stage_ms": 7.492673180207568,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.23664003330965455,
+      "stage_speedup": 1.3099979611658714,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 9.81538658975412
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.0,
+      "context_tokens": 8192,
+      "degree": 1,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 7.014030193249258,
+      "projected_mla_stage_ms": 13.322401686378747,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.0,
+      "stage_speedup": 1.0,
+      "synchronization_count": 0,
+      "unsharded_stage_ms": 13.322401686378747
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 8192,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 3.507015096624629,
+      "projected_mla_stage_ms": 10.561311389754119,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.20725169242176922,
+      "stage_speedup": 1.2614344180120713,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 13.322401686378747
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 8192,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 1.7535075483123146,
+      "projected_mla_stage_ms": 8.807803841441803,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.3388726711004979,
+      "stage_speedup": 1.5125679370486436,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 13.322401686378747
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 8192,
+      "degree": 8,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 0.8767537741561573,
+      "projected_mla_stage_ms": 7.931050067285647,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.4046831604398621,
+      "stage_speedup": 1.6797777814228647,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 13.322401686378747
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.0,
+      "context_tokens": 16384,
+      "degree": 1,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 14.028060386498517,
+      "projected_mla_stage_ms": 20.336431879628005,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.0,
+      "stage_speedup": 1.0,
+      "synchronization_count": 0,
+      "unsharded_stage_ms": 20.336431879628005
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 16384,
+      "degree": 2,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 7.014030193249258,
+      "projected_mla_stage_ms": 14.068326486378746,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.30822050939665213,
+      "stage_speedup": 1.4455473363742426,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 20.336431879628005
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 16384,
+      "degree": 4,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 3.507015096624629,
+      "projected_mla_stage_ms": 10.561311389754119,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.48067038248071925,
+      "stage_speedup": 1.9255593485631963,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 20.336431879628005
+    },
+    {
+      "capacity_evidence": false,
+      "combine_transport_ms": 0.7459247999999999,
+      "context_tokens": 16384,
+      "degree": 8,
+      "evidence_class": "SHAPED",
+      "measured_scan_fit": {
+        "intercept_ms_rtx5090": 3.0592532157897976,
+        "measured_contexts": [
+          1024,
+          4096,
+          8192,
+          16384
+        ],
+        "slope_ms_per_context_token_rtx5090": 0.000290848214977554
+      },
+      "partial_payload_bytes_per_worker": 33280,
+      "projected_local_scan_ms": 1.7535075483123146,
+      "projected_mla_stage_ms": 8.807803841441803,
+      "projected_non_scan_ms": 6.308371493129489,
+      "query_rows": 1,
+      "stage_gain_fraction": 0.566895319022753,
+      "stage_speedup": 2.3089106258182754,
+      "synchronization_count": 2,
+      "unsharded_stage_ms": 20.336431879628005
+    }
+  ],
+  "schema_version": "experiment-015-dcp-results-v1",
+  "status": "FAIL"
+}

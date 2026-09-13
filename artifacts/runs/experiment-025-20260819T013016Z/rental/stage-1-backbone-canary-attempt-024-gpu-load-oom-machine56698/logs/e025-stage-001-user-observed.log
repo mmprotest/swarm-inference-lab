@@ -1,0 +1,83 @@
+[CUDA] device 0: NVIDIA GeForce RTX 3090, 25.3 GB VRAM, sm_86
+[k3-persistent:load] layer 1 expert 128/896
+[k3-persistent:load] layer 1 expert 256/896
+[k3-persistent:load] layer 1 expert 384/896
+[k3-persistent:load] layer 1 expert 512/896
+[CUDA] tensor allocation: out of memory
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 166, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 154, in main
+    run_worker_server(
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/worker.py", line 807, in run_worker_server
+    runtime = WorkerRuntime(config_path, credential, certificate)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/worker.py", line 384, in __init__
+    self.executor = PersistentKimiStageExecutor(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/execution/kimi_k3_stage.py", line 353, in __init__
+    experts[expert] = self.runner._upload_expert(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/execution/kimi_k3_graph_runtime.py", line 419, in _upload_expert
+    up = matrix("up", "w3", self.config.latent, self.config.moe_intermediate)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/execution/kimi_k3_graph_runtime.py", line 412, in matrix
+    handle = self.runtime.upload(tensor)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/execution/kimi_cuda_runtime.py", line 1203, in upload
+    raise KimiCudaError("native MXFP4 CUDA tensor upload failed")
+swarm_inference.execution.kimi_cuda_runtime.KimiCudaError: native MXFP4 CUDA tensor upload failed
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 166, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 147, in main
+    prepared = prepare_worker(
+               ^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 65, in prepare_worker
+    activation = activate_worker_snapshot(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_014/remote_acquisition.py", line 337, in activate_worker_snapshot
+    raise AcquisitionError(f"refusing to replace activated snapshot: {destination}")
+swarm_inference.experiments.experiment_014.remote_acquisition.AcquisitionError: refusing to replace activated snapshot: /var/lib/swarm/e025/e025-stage-001/snapshot
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 166, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 147, in main
+    prepared = prepare_worker(
+               ^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 56, in prepare_worker
+    acquisition = acquire_worker_package(
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_014/remote_acquisition.py", line 244, in acquire_worker_package
+    package = materialize_worker_package(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_014/distribution.py", line 246, in materialize_worker_package
+    target.write(block)
+OSError: [Errno 28] No space left on device
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 166, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 147, in main
+    prepared = prepare_worker(
+               ^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_025/bootstrap.py", line 56, in prepare_worker
+    acquisition = acquire_worker_package(
+                  ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_014/remote_acquisition.py", line 244, in acquire_worker_package
+    package = materialize_worker_package(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/swarm/src/swarm_inference/experiments/experiment_014/distribution.py", line 246, in materialize_worker_package
+    target.write(block)
+OSError: [Errno 28] No space left on device

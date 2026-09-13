@@ -1,0 +1,411 @@
+{
+  "best_justified_result": {
+    "admission_reason": "constructed solely from validated service and shaped network inputs",
+    "admitted_to_decision_frontier": true,
+    "aggregate_output_tok_s": 97.15028433444262,
+    "aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+    "architecture_id": "D",
+    "cost_per_million_output_tokens_usd": 39.886656292844215,
+    "dependency_bound_tok_s": 1.1766258547730912,
+    "evidence_class": "SHAPED",
+    "name": "hierarchical microcells",
+    "paid_gpu_equivalents": 93.0,
+    "techniques": [
+      "8-layer microcells"
+    ]
+  },
+  "best_measured_complete_architecture": "B015-000_CONTROL_ONLY",
+  "conclusion": "No speculative/sub-layer combination is admitted. Eight-layer microcells dominate the control only in a shaped topology model and remain Tier 0.",
+  "cycle_id": "H015-011A-H015-COMBINE",
+  "decision_pareto_architecture_ids": [
+    "D"
+  ],
+  "external_dspark_sensitivity": {
+    "accepted_tokens_per_target_pass": 3.85,
+    "dspark_only": {
+      "accepted_tokens_per_target_pass": 3.85,
+      "aggregate_output_tok_s": 46.75357433595051,
+      "aggregate_tok_s_per_paid_gpu_equivalent_excluding_draft": 0.5027266057629087,
+      "asynchronous_draft": true,
+      "block_size": 7,
+      "cell": {
+        "cells": 93,
+        "coarse_boundaries": 92,
+        "compute_ms": 3497.8580718499525,
+        "dependency_bound_tok_s": 0.25406811126944817,
+        "dependency_latency_ms": 3935.9524302499526,
+        "endpoint_ms": 58.244246095787275,
+        "evidence_class": "SHAPED",
+        "internal_boundaries": 0,
+        "kda_ms": 1721.9370517793232,
+        "layers_per_cell": 1,
+        "mla_ms": 1717.676773974842,
+        "payload_bytes_per_boundary": 2064384,
+        "service_model_validation": "component model passed held-out validation; topology transport is synthetic",
+        "target_rows": 8
+      },
+      "dependency_bound_tok_s": 0.9781622283873755,
+      "draft_latency_ms": 0.0,
+      "end_to_end_pass_ms": 3935.9524302499526,
+      "evidence_class": "PROJECTED",
+      "executed_target_rows": 8,
+      "logical_target_rows": 8,
+      "padding_rows": 0,
+      "paid_gpu_equivalents_excluding_draft": 93.0,
+      "scope": "optimistic target-only upper bound; draft cost is excluded from paid GPU-equivalents and acceptance is an explicit sensitivity input",
+      "target_capacity_ratio_vs_baseline_batch8": 1.0,
+      "target_pass_ms": 3935.9524302499526
+    },
+    "dspark_plus_depth8": {
+      "accepted_tokens_per_target_pass": 3.85,
+      "aggregate_output_tok_s": 46.75357433595051,
+      "aggregate_tok_s_per_paid_gpu_equivalent_excluding_draft": 0.5027266057629087,
+      "asynchronous_draft": true,
+      "block_size": 7,
+      "cell": {
+        "cells": 12,
+        "coarse_boundaries": 11,
+        "compute_ms": 3497.8580718499525,
+        "dependency_bound_tok_s": 0.2729775402586737,
+        "dependency_latency_ms": 3663.3050435299524,
+        "endpoint_ms": 58.244246095787275,
+        "evidence_class": "SHAPED",
+        "internal_boundaries": 81,
+        "kda_ms": 1721.9370517793232,
+        "layers_per_cell": 8,
+        "mla_ms": 1717.676773974842,
+        "payload_bytes_per_boundary": 2064384,
+        "service_model_validation": "component model passed held-out validation; topology transport is synthetic",
+        "target_rows": 8
+      },
+      "dependency_bound_tok_s": 1.0509635299958937,
+      "draft_latency_ms": 0.0,
+      "end_to_end_pass_ms": 3663.3050435299524,
+      "evidence_class": "PROJECTED",
+      "executed_target_rows": 8,
+      "logical_target_rows": 8,
+      "padding_rows": 0,
+      "paid_gpu_equivalents_excluding_draft": 93.0,
+      "scope": "optimistic target-only upper bound; draft cost is excluded from paid GPU-equivalents and acceptance is an explicit sensitivity input",
+      "target_capacity_ratio_vs_baseline_batch8": 1.0,
+      "target_pass_ms": 3663.3050435299524
+    },
+    "source_scope": "public Kimi K3 DSpark cross-workload mean, not Swarm"
+  },
+  "microcell_sweep": [
+    {
+      "cells": 93,
+      "coarse_boundaries": 92,
+      "compute_ms": 747.1568489696278,
+      "dependency_bound_tok_s": 0.9502949393520929,
+      "dependency_latency_ms": 1052.3048777696279,
+      "endpoint_ms": 14.45819457160086,
+      "evidence_class": "SHAPED",
+      "internal_boundaries": 0,
+      "kda_ms": 427.44309701821174,
+      "layers_per_cell": 1,
+      "mla_ms": 305.2555573798153,
+      "payload_bytes_per_boundary": 258048,
+      "service_model_validation": "component model passed held-out validation; topology transport is synthetic",
+      "target_rows": 1
+    },
+    {
+      "cells": 47,
+      "coarse_boundaries": 46,
+      "compute_ms": 747.1568489696278,
+      "dependency_bound_tok_s": 1.0668350967372924,
+      "dependency_latency_ms": 937.3519891296279,
+      "endpoint_ms": 14.45819457160086,
+      "evidence_class": "SHAPED",
+      "internal_boundaries": 46,
+      "kda_ms": 427.44309701821174,
+      "layers_per_cell": 2,
+      "mla_ms": 305.2555573798153,
+      "payload_bytes_per_boundary": 258048,
+      "service_model_validation": "component model passed held-out validation; topology transport is synthetic",
+      "target_rows": 1
+    },
+    {
+      "cells": 24,
+      "coarse_boundaries": 23,
+      "compute_ms": 747.1568489696278,
+      "dependency_bound_tok_s": 1.136524370860157,
+      "dependency_latency_ms": 879.8755448096279,
+      "endpoint_ms": 14.45819457160086,
+      "evidence_class": "SHAPED",
+      "internal_boundaries": 69,
+      "kda_ms": 427.44309701821174,
+      "layers_per_cell": 4,
+      "mla_ms": 305.2555573798153,
+      "payload_bytes_per_boundary": 258048,
+      "service_model_validation": "component model passed held-out validation; topology transport is synthetic",
+      "target_rows": 1
+    },
+    {
+      "cells": 12,
+      "coarse_boundaries": 11,
+      "compute_ms": 747.1568489696278,
+      "dependency_bound_tok_s": 1.1766258547730912,
+      "dependency_latency_ms": 849.8878347296278,
+      "endpoint_ms": 14.45819457160086,
+      "evidence_class": "SHAPED",
+      "internal_boundaries": 81,
+      "kda_ms": 427.44309701821174,
+      "layers_per_cell": 8,
+      "mla_ms": 305.2555573798153,
+      "payload_bytes_per_boundary": 258048,
+      "service_model_validation": "component model passed held-out validation; topology transport is synthetic",
+      "target_rows": 1
+    }
+  ],
+  "perfect_acceptance_upper_bound": {
+    "accepted_tokens_per_target_pass": 8.0,
+    "aggregate_output_tok_s": 97.15028433444262,
+    "aggregate_tok_s_per_paid_gpu_equivalent_excluding_draft": 1.0446267132735765,
+    "asynchronous_draft": true,
+    "block_size": 7,
+    "cell": {
+      "cells": 12,
+      "coarse_boundaries": 11,
+      "compute_ms": 3497.8580718499525,
+      "dependency_bound_tok_s": 0.2729775402586737,
+      "dependency_latency_ms": 3663.3050435299524,
+      "endpoint_ms": 58.244246095787275,
+      "evidence_class": "SHAPED",
+      "internal_boundaries": 81,
+      "kda_ms": 1721.9370517793232,
+      "layers_per_cell": 8,
+      "mla_ms": 1717.676773974842,
+      "payload_bytes_per_boundary": 2064384,
+      "service_model_validation": "component model passed held-out validation; topology transport is synthetic",
+      "target_rows": 8
+    },
+    "dependency_bound_tok_s": 2.1838203220693897,
+    "draft_latency_ms": 0.0,
+    "end_to_end_pass_ms": 3663.3050435299524,
+    "evidence_class": "PROJECTED",
+    "executed_target_rows": 8,
+    "logical_target_rows": 8,
+    "padding_rows": 0,
+    "paid_gpu_equivalents_excluding_draft": 93.0,
+    "scope": "optimistic target-only upper bound; draft cost is excluded from paid GPU-equivalents and acceptance is an explicit sensitivity input",
+    "target_capacity_ratio_vs_baseline_batch8": 1.0,
+    "target_pass_ms": 3663.3050435299524
+  },
+  "primary_targets": {
+    "aggregate_tok_s_per_paid_gpu_equivalent": 2.7777777777777777,
+    "dependency_bound_tok_s": 5.0,
+    "simultaneous_pass": false
+  },
+  "rows": [
+    {
+      "admission_reason": "immutable B015-000 control",
+      "admitted_to_decision_frontier": true,
+      "aggregate_output_tok_s": 97.15028433444262,
+      "aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+      "architecture_id": "A",
+      "cost_per_million_output_tokens_usd": 39.886656292844215,
+      "dependency_bound_tok_s": 0.9502949393520926,
+      "evidence_class": "PROJECTED",
+      "name": "Experiment 014 93-stage baseline",
+      "paid_gpu_equivalents": 93.0,
+      "techniques": [
+        "whole-layer pipeline"
+      ]
+    },
+    {
+      "admission_reason": "uses external acceptance sensitivity; Swarm acceptance not established",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": 46.75357433595051,
+      "aggregate_tok_s_per_paid_gpu_equivalent": 0.5027266057629087,
+      "architecture_id": "B",
+      "cost_per_million_output_tokens_usd": 82.88136372539057,
+      "dependency_bound_tok_s": 0.9781622283873755,
+      "evidence_class": "PROJECTED",
+      "name": "DSpark only",
+      "paid_gpu_equivalents": 93.0,
+      "techniques": [
+        "DSpark"
+      ]
+    },
+    {
+      "admission_reason": "ordinary DSpark gate and GPU draft timing did not pass",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "C",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "pipeline-aware speculation only",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "asynchronous speculation",
+        "early cancellation"
+      ]
+    },
+    {
+      "admission_reason": "constructed solely from validated service and shaped network inputs",
+      "admitted_to_decision_frontier": true,
+      "aggregate_output_tok_s": 97.15028433444262,
+      "aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+      "architecture_id": "D",
+      "cost_per_million_output_tokens_usd": 39.886656292844215,
+      "dependency_bound_tok_s": 1.1766258547730912,
+      "evidence_class": "SHAPED",
+      "name": "hierarchical microcells",
+      "paid_gpu_equivalents": 93.0,
+      "techniques": [
+        "8-layer microcells"
+      ]
+    },
+    {
+      "admission_reason": "90% gate exists only as an optimistic overhead-subtraction bound",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "E",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "improved expert microwork only",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "direct resident expert dispatch"
+      ]
+    },
+    {
+      "admission_reason": "exact combiner passed but no real distributed Kimi DCP kernel ran",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "F",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "SHAPED",
+      "name": "DCP only",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "DCP"
+      ]
+    },
+    {
+      "admission_reason": "EP redesign gate did not pass",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "G",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "microcells + expert microwork",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "microcells",
+        "EP"
+      ]
+    },
+    {
+      "admission_reason": "EP and DCP implementation gates did not pass",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "H",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "microcells + EP + DCP",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "microcells",
+        "EP",
+        "DCP"
+      ]
+    },
+    {
+      "admission_reason": "external acceptance sensitivity and draft GPU cost excluded",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": 46.75357433595051,
+      "aggregate_tok_s_per_paid_gpu_equivalent": 0.5027266057629087,
+      "architecture_id": "I",
+      "cost_per_million_output_tokens_usd": 82.88136372539057,
+      "dependency_bound_tok_s": 1.0509635299958937,
+      "evidence_class": "PROJECTED",
+      "name": "DSpark + microcells",
+      "paid_gpu_equivalents": 93.0,
+      "techniques": [
+        "DSpark",
+        "8-layer microcells"
+      ]
+    },
+    {
+      "admission_reason": "DSpark and EP gates did not pass",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "J",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "DSpark + microcells + EP",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "DSpark",
+        "microcells",
+        "EP"
+      ]
+    },
+    {
+      "admission_reason": "multiple unpassed components; combination not modeled as multiplicative",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "K",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "DSpark + microcells + EP + DCP",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "DSpark",
+        "microcells",
+        "EP",
+        "DCP"
+      ]
+    },
+    {
+      "admission_reason": "placement result was fitted/evaluated on the same three-token trace",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "L",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "best architecture + expert load balancing",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "microcells",
+        "EPLB"
+      ]
+    },
+    {
+      "admission_reason": "three-token cold-start trace cannot establish cache hit rate",
+      "admitted_to_decision_frontier": false,
+      "aggregate_output_tok_s": null,
+      "aggregate_tok_s_per_paid_gpu_equivalent": null,
+      "architecture_id": "M",
+      "cost_per_million_output_tokens_usd": null,
+      "dependency_bound_tok_s": null,
+      "evidence_class": "PROJECTED",
+      "name": "best architecture + tiered residency",
+      "paid_gpu_equivalents": null,
+      "techniques": [
+        "microcells",
+        "tiered residency"
+      ]
+    }
+  ],
+  "schema_version": "experiment-015-architecture-search-v1",
+  "status": "PASS"
+}

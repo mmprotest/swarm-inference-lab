@@ -1,0 +1,243 @@
+{
+  "AttnRes_ownership": [
+    {
+      "bytes": 3899392,
+      "layers": [
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71
+      ],
+      "owner": "pod-008.worker-00",
+      "queued_chunks": 17
+    }
+  ],
+  "KDA_state": [
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 64,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 65,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 66,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 68,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 69,
+      "type": "KDA_recurrent_and_conv_heads"
+    },
+    {
+      "bytes": 860160,
+      "head_start": 0,
+      "head_stop": 12,
+      "layer": 70,
+      "type": "KDA_recurrent_and_conv_heads"
+    }
+  ],
+  "MLA_state": [
+    {
+      "bytes": 9437184,
+      "layer": 67,
+      "maximum_context": 4096,
+      "type": "MLA_compressed_cache_replica_for_owned_heads"
+    },
+    {
+      "bytes": 9437184,
+      "layer": 71,
+      "maximum_context": 4096,
+      "type": "MLA_compressed_cache_replica_for_owned_heads"
+    }
+  ],
+  "all_checkpoint_hashes_available": true,
+  "attention_heads": [
+    {
+      "layer": 64,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 65,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 66,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 67,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 68,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 69,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 70,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    },
+    {
+      "layer": 71,
+      "start": 0,
+      "stop": 12,
+      "total": 96
+    }
+  ],
+  "checkpoint_byte_ranges": {
+    "artifact": "placement/tensor-coverage.csv",
+    "assigned_checkpoint_bytes": 16890992640,
+    "encoding": "safetensors-row-major-contiguous-or-strided-v1",
+    "logical_range_count": 51566678,
+    "worker_filter": "pod-008.worker-00"
+  },
+  "checkpoint_hash_source": "pod-bundles.json/local_huggingface_download_lfs_metadata",
+  "checkpoint_hashes": {
+    "model-00065-of-000096.safetensors": "276d1cce1d8d494526938d878d4afb713ca379f98064dcd3c505325c954639db",
+    "model-00066-of-000096.safetensors": "2ebd83fea628d8cf7496a936f66a8a7f1b430bc8438644ae6ac9761ac056194e",
+    "model-00067-of-000096.safetensors": "f0228892f8199c29c5053e7e5388a60dacf1458b53eb6f471e1f548f02478dd1",
+    "model-00068-of-000096.safetensors": "fa75764056d16855c42baffd474bcc01045deda7ed5f773d88ff8887ea8458b6",
+    "model-00069-of-000096.safetensors": "9375584663bd3073cd95df18c3dc99fd4346c0c71dfdeec686a4891b7768a738",
+    "model-00070-of-000096.safetensors": "ab53464148721a209d4941dc3ab6f698574f913179e729726d00ed6232144893",
+    "model-00071-of-000096.safetensors": "28ac0d3286ffc5c8567cc3b265500777ba2b75a0a5c6a273c87a5c9cfd8a8a5b",
+    "model-00072-of-000096.safetensors": "0a269faaf8ea2daccef499e7c1501089ea05386ca7c6a5a9d4150fd38e37673b",
+    "model-00096-of-000096.safetensors": "9d10c74fc10161bef9463a8541a634a97f521f43c99368ea7243ce0c79cdbf7c"
+  },
+  "expert_stripes": [
+    {
+      "expert_ids": "0..895",
+      "layer": 64,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 65,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 66,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 67,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 68,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 69,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 70,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    },
+    {
+      "expert_ids": "0..895",
+      "layer": 71,
+      "stripe_degree": 8,
+      "stripe_index": 0,
+      "weight_axis": "native_intermediate_dimension"
+    }
+  ],
+  "gpu_index": 0,
+  "largest_expert_fraction": 0.125,
+  "largest_layer_fraction": 0.1256541788871218,
+  "largest_shared_expert_fraction": 0.125,
+  "layers": [
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71
+  ],
+  "memory_bytes": {
+    "activations": 172032,
+    "allocator_allowance": 739691049,
+    "collective_buffers": 57344,
+    "cuda_workspace": 536870912,
+    "persistent_state": 27934720,
+    "scales": 924844032,
+    "scratch": 61440,
+    "static_weights": 15966148608,
+    "transport_buffers": 57344
+  },
+  "peak_total_bytes": 18195837481,
+  "peak_total_gib": 16.946194210089743,
+  "pod": "pod-008",
+  "schema_version": "experiment-020-worker-manifest-v1",
+  "tensor_slices": {
+    "artifact": "placement/tensor-coverage.csv",
+    "encoding": "checkpoint-coverage-csv-filter-v1",
+    "worker_filter": "pod-008.worker-00"
+  },
+  "whole_layer": false,
+  "whole_routed_expert": false,
+  "whole_shared_expert": false,
+  "worker_id": "pod-008.worker-00"
+}

@@ -1,0 +1,124 @@
+{
+  "communication_formulas": {
+    "A_BYTES": "7 * ((H + R) + L + H + H + L + H)",
+    "B_BYTES": "7 * (H + R + L + H + L + H)",
+    "C_BYTES": "7 * (H + R + L + H + L_SLICE + H)",
+    "D_BYTES": "7 * (H + R + L + L_SLICE + H)"
+  },
+  "constants": {
+    "CALIBRATION_ITERATIONS": 100,
+    "CALIBRATION_WARMUP": 20,
+    "COMMODITY_AVAILABLE_NODE_BUDGETS": [
+      96,
+      128,
+      160,
+      192,
+      224,
+      256,
+      320
+    ],
+    "COMMUNICATION_LOWER_BOUND_RATIO_MAX": 1.03,
+    "DECODE_CONCURRENCY_LEVELS": [
+      1,
+      4,
+      16,
+      64,
+      128
+    ],
+    "DECODE_SLO_SENSITIVITY_MULTIPLIERS": [
+      2.0,
+      8.0
+    ],
+    "DEGREE": 8,
+    "EXPERIMENT_ID": "024",
+    "FAST_FABRIC_BANDWIDTH_GBPS": 25.0,
+    "FAST_FABRIC_LATENCY_MS": 0.25,
+    "FAST_FABRIC_SOFTWARE_OVERHEAD_MS": 0.04,
+    "FLOAT_BYTES": 4,
+    "FUSION_ITERATIONS": 200,
+    "FUSION_WARMUP": 20,
+    "HIDDEN": 7168,
+    "KIMI_OUTPUT_API_PRICE_USD_PER_M": 15.0,
+    "LATENT": 3584,
+    "PAYOUT_SENSITIVITY_USD_PER_ACTIVE_NODE_HOUR": [
+      0.05,
+      0.1,
+      0.15,
+      0.25,
+      0.5
+    ],
+    "PHYSICAL_RELATIVE_L2_MAX": 2e-06,
+    "PRIMARY_CONTRIBUTOR_PAYOUT_USD_PER_ACTIVE_NODE_HOUR": 0.15,
+    "PRIMARY_DECODE_SLO_MULTIPLIER": 4.0,
+    "REMOTE_WORKERS": 7,
+    "ROUTE_ID_BYTES": 4,
+    "ROUTE_WEIGHT_BYTES": 4,
+    "SERVICE_VALIDATION_MAX_ERROR_PERCENT_MAX": 15.0,
+    "SERVICE_VALIDATION_MEDIAN_ERROR_PERCENT_MAX": 10.0,
+    "STAGE_A_CONCURRENCY": [
+      1,
+      8,
+      32,
+      128
+    ],
+    "STAGE_A_NETWORK_STRESS_PERCENT": 10.0,
+    "STAGE_A_PRIMARY_CONCURRENCY": 32,
+    "STAGE_A_ROWS": [
+      1,
+      2,
+      4
+    ],
+    "SWARM_D_MAX_REGRESSION_VS_CURRENT_PERCENT": 5.0,
+    "TARGET_COST_LEVELS_USD_PER_M": [
+      15.0,
+      12.0,
+      9.0,
+      7.5,
+      5.0,
+      3.0
+    ],
+    "TOPK": 16,
+    "WHOLE_LAYER_INCAPABLE_COMPUTE_SHARE_MIN": 0.95
+  },
+  "experiment_id": "024",
+  "performance_results_seen": false,
+  "phase0_audit": {
+    "candidate_catalog_path": "artifacts/experiment-022/completion/rerun/candidate-catalog.json",
+    "candidate_catalog_sha256": "3f1d8e8519fb2b759b7ec5678bfc1458a782a49a6e438eeb1b26d2077258ccd7",
+    "checkpoint_exists": true,
+    "complete_p8_only_placement_possible": false,
+    "e022_inventory_count": 27,
+    "e022_inventory_hashes_valid": true,
+    "e023_final_verdict": "NO_WEDGE",
+    "layer_zero_admitted_p8_candidate_count": 0,
+    "layer_zero_candidates": [
+      {
+        "candidate_id": "layer-00:ATTENTION_PROJECTION_SHARD:p8",
+        "candidate_type": "ATTENTION_PROJECTION_SHARD",
+        "chunk_sizes_physically_validated": [],
+        "correctness_status": "INELIGIBLE_UNVALIDATED",
+        "headline_eligible": false,
+        "production_native_binding": false,
+        "service_status": "NO_HEADLINE_SERVICE"
+      },
+      {
+        "candidate_id": "layer-00:FULL_MIXED_STRIPE:p8",
+        "candidate_type": "FULL_MIXED_STRIPE",
+        "chunk_sizes_physically_validated": [],
+        "correctness_status": "INELIGIBLE_UNVALIDATED",
+        "headline_eligible": false,
+        "production_native_binding": false,
+        "service_status": "NO_HEADLINE_SERVICE"
+      }
+    ],
+    "layer_zero_p8_candidate_count": 2,
+    "mandatory_failure_id": "NO_PRODUCTION_NATIVE_P8_CANDIDATE_FOR_LAYER_0",
+    "reason": "The frozen E022 catalog has no physically admitted, production-native degree-8 candidate for transformer layer 0. E024 forbids WHOLE_LAYER for every transformer layer, so no complete 93-layer P8-only placement can exist at any commodity node budget.",
+    "repaired_service_path": "artifacts/experiment-022/completion/validation/repaired-resident-service.csv",
+    "repaired_service_sha256": "ee240937dfc36a6ce04161812f61ff0021359a2861ecb783772d44e2614bcf2b",
+    "status": "MODEL_INVALID",
+    "transformer_layer_count": 93
+  },
+  "schema_version": "experiment-024-frozen-inputs-v1",
+  "status": "MODEL_INVALID_DURING_PHASE_0"
+}

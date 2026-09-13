@@ -1,0 +1,174 @@
+{
+  "best_measured": {
+    "complete_layer_p50_ms": 4.1888000000000005,
+    "complete_layer_p95_ms": 4.65934,
+    "complete_layer_p99_ms": 5.002629000000001,
+    "critical_path_payload_bytes": 100352,
+    "economic_efficiency_if_workers_are_distinct_paid_compute": 0.19702241692131395,
+    "evidence_class": "MEASURED",
+    "mean_transport_bytes_per_token": 289550.6,
+    "reference_layer_p50_ms": 3.30115,
+    "relative_complete_layer_throughput": 0.7880896676852558,
+    "synchronization_count_per_layer": 2,
+    "worker_gib": 3.6610851287841797,
+    "worker_tracked_bytes": 3931060224,
+    "workers": 4
+  },
+  "cycle_id": "H015-004A-H015-005A",
+  "decision": "RETAIN_EXISTING_FOUR_WORKER_BASELINE_ONLY",
+  "direct_resident_redesign_upper_bound": {
+    "admitted": false,
+    "assumption": "every individually timed host/serialization cost vanishes without replacement cost",
+    "evidence_class": "PROJECTED",
+    "known_overhead_subtracted_ms": 0.7342000161647797,
+    "measured_start_ms": 4.1888000000000005,
+    "optimistic_layer_p50_ms": 3.454599983835221,
+    "optimistic_relative_throughput": 0.9555809689824452
+  },
+  "measured_scaling": [
+    {
+      "complete_layer_p50_ms": 4.1461500000000004,
+      "complete_layer_p95_ms": 4.65053,
+      "complete_layer_p99_ms": 5.120849000000001,
+      "critical_path_payload_bytes": 157696,
+      "economic_efficiency_if_workers_are_distinct_paid_compute": 0.3935518493059826,
+      "evidence_class": "MEASURED",
+      "mean_transport_bytes_per_token": 259522.66666666666,
+      "reference_layer_p50_ms": 3.2634499999999997,
+      "relative_complete_layer_throughput": 0.7871036986119652,
+      "synchronization_count_per_layer": 2,
+      "worker_gib": 7.321516036987305,
+      "worker_tracked_bytes": 7861417984,
+      "workers": 2
+    },
+    {
+      "complete_layer_p50_ms": 4.1888000000000005,
+      "complete_layer_p95_ms": 4.65934,
+      "complete_layer_p99_ms": 5.002629000000001,
+      "critical_path_payload_bytes": 100352,
+      "economic_efficiency_if_workers_are_distinct_paid_compute": 0.19702241692131395,
+      "evidence_class": "MEASURED",
+      "mean_transport_bytes_per_token": 289550.6,
+      "reference_layer_p50_ms": 3.30115,
+      "relative_complete_layer_throughput": 0.7880896676852558,
+      "synchronization_count_per_layer": 2,
+      "worker_gib": 3.6610851287841797,
+      "worker_tracked_bytes": 3931060224,
+      "workers": 4
+    },
+    {
+      "complete_layer_p50_ms": 4.618449999999999,
+      "complete_layer_p95_ms": 5.331144999999999,
+      "complete_layer_p99_ms": 7.078535000000002,
+      "critical_path_payload_bytes": 71680,
+      "economic_efficiency_if_workers_are_distinct_paid_compute": 0.09927031796381904,
+      "evidence_class": "MEASURED",
+      "mean_transport_bytes_per_token": 347608.26666666666,
+      "reference_layer_p50_ms": 3.6677999999999997,
+      "relative_complete_layer_throughput": 0.7941625437105523,
+      "synchronization_count_per_layer": 2,
+      "worker_gib": 1.8305492401123047,
+      "worker_tracked_bytes": 1965537280,
+      "workers": 8
+    },
+    {
+      "complete_layer_p50_ms": 5.1531,
+      "complete_layer_p95_ms": 5.69781,
+      "complete_layer_p99_ms": 5.760975,
+      "critical_path_payload_bytes": 43008,
+      "economic_efficiency_if_workers_are_distinct_paid_compute": 0.04476249733170324,
+      "evidence_class": "MEASURED",
+      "mean_transport_bytes_per_token": 392660.26666666666,
+      "reference_layer_p50_ms": 3.6906499999999998,
+      "relative_complete_layer_throughput": 0.7161999573072518,
+      "synchronization_count_per_layer": 2,
+      "worker_gib": 0.9153881072998047,
+      "worker_tracked_bytes": 982890496,
+      "workers": 16
+    }
+  ],
+  "overlap": {
+    "reason": "no asynchronous device-resident send/receive implementation was executed",
+    "same_gpu_contention_from_experiment_014": "did not improve complete-layer economics",
+    "status": "NOT_ESTABLISHED"
+  },
+  "schema_version": "experiment-015-microwork-results-v1",
+  "sources": {
+    "hidden_trace": {
+      "bytes": 8085504,
+      "path": "artifacts/experiment-014/oracle-full-93/hidden-trace.f32",
+      "sha256": "95012ceb968aaa31f51ccbea38beff44e47dec72572b8c22ca4fe01bbadd56ae"
+    },
+    "promoted_four_worker": {
+      "bytes": 70794,
+      "path": "artifacts/experiment-014/sub-layer/h014-sub-011-promoted-four-worker-real-expert.json",
+      "sha256": "e5cdac8239dd465bc5e43a3020777823cdc32492bef61fe4718e7f7bea79efc4"
+    },
+    "scaling": {
+      "bytes": 33800,
+      "path": "artifacts/experiment-014/sub-layer/h014-sub-005-scaling-network.json",
+      "sha256": "dbb6cb5e71c563d523012f894f8732c524ec7cdc185ddba6a5781f0865004b96"
+    }
+  },
+  "status": "PASS",
+  "strong_90_percent_gate": {
+    "measured_pass": false,
+    "projected_upper_bound_pass": true
+  },
+  "transport_precision": {
+    "evidence_class": null,
+    "retained_formats": [
+      "FP32"
+    ],
+    "rows": [
+      {
+        "bytes_per_scalar": 4,
+        "component_error": {
+          "finite": true,
+          "maximum_absolute_error": 0.0,
+          "mean_absolute_error": 0.0,
+          "p99_absolute_error": 0.0,
+          "relative_l2_error": 0.0
+        },
+        "format": "FP32",
+        "full_layer_correctness_gate": "PASS_FROM_EXISTING_BASELINE_ONLY",
+        "payload_ratio": 1.0
+      },
+      {
+        "bytes_per_scalar": 2,
+        "component_error": {
+          "finite": true,
+          "maximum_absolute_error": 0.44696044921875,
+          "mean_absolute_error": 0.0006468696384615836,
+          "p99_absolute_error": 0.0077086687088012695,
+          "relative_l2_error": 0.0016690843730509139
+        },
+        "format": "BF16",
+        "full_layer_correctness_gate": "NOT_RUN",
+        "payload_ratio": 0.5
+      },
+      {
+        "bytes_per_scalar": 2,
+        "component_error": {
+          "finite": true,
+          "maximum_absolute_error": 0.05303955078125,
+          "mean_absolute_error": 8.09033139083652e-05,
+          "p99_absolute_error": 0.0009617805480957031,
+          "relative_l2_error": 0.00020820978803180075
+        },
+        "format": "FP16",
+        "full_layer_correctness_gate": "NOT_RUN",
+        "payload_ratio": 0.5
+      },
+      {
+        "bytes_per_scalar": 1,
+        "component_error": null,
+        "format": "FP8_OR_MXFP8",
+        "full_layer_correctness_gate": "UNSUPPORTED_BY_RETAINED_KIMI_KERNEL",
+        "payload_ratio": 0.25
+      }
+    ],
+    "scientific_result": false,
+    "scope": "CPU round-trip diagnostic on retained real Kimi hidden rows; outside the four Experiment 015 evidence classes; no full-layer CUDA transport run"
+  }
+}

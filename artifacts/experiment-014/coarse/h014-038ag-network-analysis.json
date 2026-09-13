@@ -1,0 +1,125 @@
+{
+  "artifacts": {
+    "chart": "artifacts/experiment-014/charts/h014-038ag-coarse-network.png",
+    "coarse_receipt": "artifacts/experiment-014/coarse/h014-038ae-promoted-stage0-stage1-tcp.json",
+    "coarse_receipt_sha256": "4b8806f3bada7d53cf5f2b798dbad435de800889d9305d68a1168026de5683c3",
+    "edge_class": "artifacts/experiment-014/coarse/kimi-coarse-stage-fp32-edge-class-final.json",
+    "fine_receipt": "artifacts/experiment-014/sub-layer/h014-sub-005-scaling-network.json",
+    "fine_receipt_sha256": "dbb6cb5e71c563d523012f894f8732c524ec7cdc185ddba6a5781f0865004b96",
+    "matrix_csv": "artifacts/experiment-014/coarse/h014-038ag-network-matrix.csv"
+  },
+  "boundaries": {
+    "exact_maximum_rtt_ms_by_bandwidth_gbps": {
+      "0.1": 0.0,
+      "0.25": 0.0,
+      "0.5": 0.0,
+      "1.0": 1.3735785511067702,
+      "10.0": 5.0928537511067695,
+      "100.0": 5.46478127110677,
+      "2.5": 3.85309535110677,
+      "25.0": 5.34080543110677,
+      "5.0": 4.67960095110677
+    },
+    "exact_minimum_bandwidth_gbps_by_rtt_ms": {
+      "0.1": 0.7644185257787722,
+      "0.25": 0.7862336807327128,
+      "0.5": 0.8254974115735441,
+      "1.0": 0.9170950471610546,
+      "10.0": null,
+      "2.0": 1.178665833385893,
+      "20.0": null,
+      "5.0": 8.165331966090651
+    },
+    "tested_maximum_rtt_ms_by_bandwidth_gbps": {
+      "0.1": null,
+      "0.25": null,
+      "0.5": null,
+      "1.0": 1.0,
+      "10.0": 5.0,
+      "100.0": 5.0,
+      "2.5": 2.0,
+      "25.0": 5.0,
+      "5.0": 2.0
+    },
+    "tested_minimum_bandwidth_gbps_by_rtt_ms": {
+      "0.1": 1.0,
+      "0.25": 1.0,
+      "0.5": 1.0,
+      "1.0": 1.0,
+      "10.0": null,
+      "2.0": 2.5,
+      "20.0": null,
+      "5.0": 10.0
+    }
+  },
+  "cycle_id": "H014-038ag",
+  "decision": {
+    "coarse_fp32_edge": "RETAIN",
+    "next_hypothesis": "Test FP16 and BF16 serialization of the exact stage-0 boundary through real stage-1 CUDA; retain a lower precision only if numerical gates pass."
+  },
+  "fine_comparison": {
+    "coarse_exact_maximum_rtt_ms_at_100gbps": 5.46478127110677,
+    "coarse_exact_minimum_bandwidth_gbps_at_0_25ms": 0.7862336807327128,
+    "coarse_is_materially_looser": true,
+    "coarse_recommended_maximum_tested_rtt_ms": 5.0,
+    "coarse_recommended_minimum_tested_bandwidth_gbps": 5.0,
+    "coarse_rtt_envelope_multiple": 10.0,
+    "fine_exact_maximum_rtt_ms_at_100gbps": 0.6461381024968426,
+    "fine_exact_minimum_bandwidth_gbps_at_0_25ms": 1.9863508523457518,
+    "fine_recommended_maximum_tested_rtt_ms": 0.5,
+    "fine_recommended_minimum_tested_bandwidth_gbps": 2.5
+  },
+  "hypothesis": "The measured FP32 coarse frame has a practical >=90%-capacity region with materially looser latency requirements than fine expert microwork.",
+  "inspection": {
+    "actual_bottleneck": "RTT above the coarse pipeline stage time; bandwidth becomes limiting below a few Gbps at multi-millisecond RTT",
+    "format_decision": "FP32 passes a 5 ms / 5 Gbps capacity admission point, but boundary precision still requires a numerical test because lower bandwidth rentals and per-stream latency may benefit."
+  },
+  "measured_inputs": {
+    "activation_payload_bytes": 258048,
+    "loopback_and_serialization_base_p50_ms": 0.6102000000000003,
+    "production_direction_wire_bytes": 258283.0,
+    "stage0_device_p50_ms": 2.166848063468933,
+    "stage1_device_p50_ms": 3.026927947998047,
+    "stage_bottleneck_p50_ms": 3.026927947998047
+  },
+  "method": {
+    "capacity_floor_percent": 90.0,
+    "formula": "edge_ms = measured_loopback_serialization_base + RTT/2 + wire_bytes*8/(bandwidth_gbps*1e6); pipeline_ms=max(stage_bottleneck,edge_ms)",
+    "kind": "counterfactual physical-link replay from measured loopback payload/service",
+    "not_a_physical_lan_claim": true
+  },
+  "profiles": {
+    "bandwidth_gbps": [
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.5,
+      5.0,
+      10.0,
+      25.0,
+      100.0
+    ],
+    "matrix_rows": 72,
+    "rtt_ms": [
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      20.0
+    ]
+  },
+  "recommendation": {
+    "capacity_retention_percent": 85.90800330851734,
+    "edge_class": "kimi_coarse_stage_fp32_v1",
+    "maximum_tested_rtt_ms": 5.0,
+    "minimum_tested_bandwidth_gbps": 5.0,
+    "two_stage_sequential_latency_ms": 8.717228811466981,
+    "use_only_inside_fast_domains": false
+  },
+  "schema_version": "experiment-014-k3-coarse-network-analysis-v1",
+  "status": "PASS"
+}

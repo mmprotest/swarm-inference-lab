@@ -1,0 +1,48 @@
+{
+  "schema_version": "experiment-025-scoped-source-change-validation-v1",
+  "recorded_at_utc": "2026-08-23T06:03:03.9219215Z",
+  "status": "PASS",
+  "change_classification": "CONTROLLER_ONLY_HEADLINE_ACQUISITION_SCHEDULING_FIX",
+  "parent_source_tree_sha256": "d93927c696170d1cf7078313fceac5735221b526d9d451d24a212ff2e70497ee",
+  "source_tree_sha256": "e68fd3556486042c6faec0bd0c6791e9e7960ab7d86b4124ac5f07e6c43d765a",
+  "changed_files": {
+    "src/swarm_inference/experiments/experiment_025/headline.py": {
+      "before_sha256": "3a04b23c518bc80d769a4e30326d5e4b78d840d6c59f3f06b14d0b6b20322aac",
+      "after_sha256": "2567243ea1dddb7024f2b5cab3219a81585f90e84a6a3e9d234956490659a627"
+    },
+    "tests/test_experiment_025.py": {
+      "before_sha256": "70a82b160b97a0807c938196e01b7eb562d8538af2bd7b5f87f47b16e7f8c195",
+      "after_sha256": "1b17b18d0fe7a3f8c5903cc598aa91591798042315cd2f254a339f86005dedba"
+    }
+  },
+  "added_files": [],
+  "removed_files": [],
+  "focused_test": {
+    "node_id": "tests/test_experiment_025.py::test_headline_monitors_backbone_while_preserving_fragment_parent_gate",
+    "passed": 1,
+    "failed": 0,
+    "status": "PASS"
+  },
+  "ruff": {
+    "files": [
+      "src/swarm_inference/experiments/experiment_025/headline.py",
+      "tests/test_experiment_025.py"
+    ],
+    "status": "PASS"
+  },
+  "semantic_guards": {
+    "backbone_readiness_starts_before_fragment_readiness_finishes": true,
+    "layer_89_parent_creation_remains_after_all_fragments_ready": true,
+    "worker_bootstrap_changed": false,
+    "worker_execution_changed": false,
+    "checkpoint_acquisition_changed": false,
+    "placement_changed": false,
+    "native_cuda_changed": false,
+    "model_math_changed": false
+  },
+  "full_repository_tests_rerun": false,
+  "full_repository_tests_retained_from_parent_source": true,
+  "local_model_rehearsal_rerun": false,
+  "local_model_rehearsal_retained_from_parent_source": true,
+  "retention_basis": "The only production change starts existing backbone readiness futures concurrently with existing fragment readiness. It does not alter worker, checkpoint, placement, native CUDA, or model-compute paths. The changed behavior is covered by the focused concurrency-ordering test."
+}

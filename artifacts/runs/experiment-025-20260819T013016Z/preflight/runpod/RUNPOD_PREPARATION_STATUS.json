@@ -1,0 +1,45 @@
+{
+  "blockers": [
+    {
+      "code": "ACCOUNT_CREDIT_ZERO",
+      "detail": "RunPod requires funded credit before any on-demand Pod can be created.",
+      "resolution": "Fund at least $60 before P1."
+    },
+    {
+      "code": "NO_CLI_LOCATED_VALIDATED_AMPERE_FRAGMENT_STOCK",
+      "detail": "GraphQL count-specific lowestPrice says Low for validated small Ampere SKUs, but authenticated CLI inventory exposes no available datacenter.",
+      "resolution": "Re-run inventory until four single-GPU candidates have located stock, then use P4/P5 machineId gates."
+    },
+    {
+      "code": "NO_MATERIAL_MULTI_GPU_BACKBONE_CONFIGURATION",
+      "detail": "Current inventory does not reduce provider objects materially."
+    }
+  ],
+  "chargeable_network_volumes_created": 0,
+  "gates": {
+    "account_provider_constraints_known": true,
+    "emergency_cleanup_ready": true,
+    "focused_tests_pass": true,
+    "live_read_only_inventory_succeeded": true,
+    "material_provider_object_reduction": false,
+    "mutation_firewall_proven": true,
+    "paid_scripts_p1_through_p5_ready": true,
+    "runpod_integration_code_complete": true,
+    "secret_scan_pass": true,
+    "worker_image_unchanged": true,
+    "zero_rental_verified": true
+  },
+  "generated_at_utc": "2026-08-28T04:52:29.247558+00:00",
+  "networking": "REQUIRES_PAID_TWO_POD_CANARY",
+  "next_authorized_action": "Resolve listed blockers, refresh read-only inventory, then P1 only.",
+  "paid_pods_created": 0,
+  "provider_compute_mutations": [],
+  "provider_mode": "READ_ONLY_PREPARATION",
+  "schema_version": "experiment-025-runpod-preparation-status-v1",
+  "status": "BLOCKED_BEFORE_PAID_RUNPOD_CANARIES",
+  "worker_image": {
+    "changed_for_runpod": false,
+    "digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+    "local_5090_recanary_required": false
+  }
+}

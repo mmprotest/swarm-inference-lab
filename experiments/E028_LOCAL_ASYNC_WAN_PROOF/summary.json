@@ -1,0 +1,83 @@
+{
+  "experiment": "E028_LOCAL_ASYNC_WAN_PROOF",
+  "verdict": "FAIL",
+  "correctness_passed": true,
+  "rollback_passed": true,
+  "genericity_passed": true,
+  "simulator_validated": true,
+  "best_k": 1,
+  "best_w": 8,
+  "best_60ms_committed_tps": 12.632047824755663,
+  "spec_sync_60ms_committed_tps": 10.515035605204586,
+  "spec_sync_best_k": 3,
+  "async_speedup_60ms": 1.201331911658314,
+  "serial_60ms_committed_tps": 6.523220631390374,
+  "same_k_async_speedup_60ms": 1.3410585426923065,
+  "zero_wan_committed_tps": 34.83108204736826,
+  "zero_wan_k": 1,
+  "zero_wan_w": 4,
+  "throughput_retention_60ms": 0.362665960465334,
+  "throughput_retention_100ms": 0.2562774540166299,
+  "wan_wait_fraction_60ms": 0.11612121902739991,
+  "discarded_compute_fraction": 0.7396306396775898,
+  "state_corruption_count": 0,
+  "headline": "Trace-driven three-stage WAN simulation projects 12.63 committed tok/s at 60 ms RTT with K=1, W=8; 1.20\u00d7 the strongest synchronous speculative control, 36.3% of the best zero-WAN throughput. WAN wait is 11.6% and discarded target compute is 74.0%.",
+  "decision": "STOP_CURRENT_SWARM_ARCHITECTURE",
+  "gates": {
+    "correctness": true,
+    "rollback": true,
+    "genericity": true,
+    "simulator": true
+  },
+  "pass_criteria": {
+    "tps_60": true,
+    "speedup_60": false,
+    "wan_wait_60": true
+  },
+  "pass_strong_criteria": {
+    "tps_60": true,
+    "speedup_60": false,
+    "retention_60": false,
+    "retention_100": false,
+    "wan_wait_60": true,
+    "stage_utilization": false,
+    "discarded_compute": false,
+    "physical_w8_fits": true
+  },
+  "peak_vram_bytes": 29774315520,
+  "peak_vram_scope": "sampled physical device during workload matrix and forced stress",
+  "physical_gpu_count": 1,
+  "virtual_target_gpu_count": 3,
+  "throughput_evidence_class": "PHYSICALLY GROUNDED MODEL",
+  "runtime_version": "compound-cached-rollback-v2",
+  "simulator_version": "e028-des-3",
+  "rtt_sensitivity_at_best_k": [
+    {
+      "w": 1,
+      "tps_30": 13.977638912265354,
+      "tps_60": 9.419460390890608,
+      "tps_100": 6.564893386944656,
+      "tps_150": 4.761257030336007,
+      "retention_100_vs_60": 0.6969500496327208,
+      "discard_60": 0.06373918295373596
+    },
+    {
+      "w": 4,
+      "tps_30": 18.337556396307114,
+      "tps_60": 12.39070388555161,
+      "tps_100": 8.625513393914677,
+      "tps_150": 6.229489097407803,
+      "retention_100_vs_60": 0.6961277965792244,
+      "discard_60": 0.5749339643905802
+    },
+    {
+      "w": 8,
+      "tps_30": 18.127816228754362,
+      "tps_60": 12.632047824755663,
+      "tps_100": 8.926421027743883,
+      "tps_150": 6.49846863320769,
+      "retention_100_vs_60": 0.7066487676091856,
+      "discard_60": 0.7396306396775898
+    }
+  ]
+}

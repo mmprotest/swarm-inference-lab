@@ -1,0 +1,2164 @@
+{
+  "backend": {
+    "cpu_mathematical_fallbacks": 0,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+    "cuda_library_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "identity": "nvidia_cuda_persistent_kimi_stage",
+    "target_binary": "sm_86+compute_86 PTX"
+  },
+  "benchmark": {
+    "batch": 1,
+    "layers": [
+      {
+        "assignment": {
+          "resident_device_bytes": 18264096768,
+          "routed_expert_bytes_all": 15722348544,
+          "routed_expert_bytes_each": 17547264,
+          "shared_expert_bytes": 264241152,
+          "source_weight_bytes": 16990092800,
+          "weight_fingerprint": "sha256:3fee8b4f4d928a49884eb67bd9bcc7b87f99ce52504368a2dbc34d62e3e0f242"
+        },
+        "attention_type": "KDA",
+        "cross_mode_output_equality": true,
+        "expert_kernel_share_percent": 47.7265698884287,
+        "layer": 1,
+        "load": {
+          "accepted": true,
+          "elapsed_ms": 21655.7581
+        },
+        "mode_order": [
+          "minimal",
+          "production",
+          "detailed"
+        ],
+        "modes": {
+          "detailed": {
+            "compute_utilization": null,
+            "compute_utilization_note": "kernel occupancy requires Nsight and is not inferred from device-wide SM utilization",
+            "correctness": {
+              "maximum_relative_l2_error": 1.619126133073415e-07,
+              "pass": true,
+              "positions": [
+                {
+                  "expected_expert_ids": [
+                    295,
+                    809,
+                    873,
+                    596,
+                    203,
+                    162,
+                    419,
+                    498,
+                    334,
+                    472,
+                    103,
+                    85,
+                    866,
+                    293,
+                    457,
+                    148
+                  ],
+                  "expected_output_fingerprint": "sha256:85c1d9e90ccf53622f786615b38c4447fa8b53adc81f04d74aa4ea359816426e",
+                  "input_fingerprint": "sha256:eac99f5a75496f838bdb4027e839ff6dc43811e8846c004b8f16107fc83f88fc",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 3.783053273546312,
+                    "cosine_similarity": 0.9999999999999972,
+                    "maximum_absolute_error": 3.725290298461914e-08,
+                    "mean_absolute_error": 2.6595321359641346e-10,
+                    "reference_finite": true,
+                    "reference_l2": 3.7830532707166658,
+                    "relative_l2_error": 7.743282866015043e-08
+                  },
+                  "output_fingerprint": "sha256:80c104cb434f723069fa0aaaa1679b0364189910b4667f2f2fb777430af5a31c",
+                  "position": 0,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    295,
+                    809,
+                    873,
+                    596,
+                    203,
+                    162,
+                    419,
+                    498,
+                    334,
+                    472,
+                    103,
+                    85,
+                    866,
+                    293,
+                    457,
+                    148
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    362,
+                    334,
+                    472,
+                    558,
+                    140,
+                    796,
+                    782,
+                    511,
+                    692,
+                    649,
+                    169,
+                    322,
+                    642,
+                    749,
+                    68,
+                    335
+                  ],
+                  "expected_output_fingerprint": "sha256:c565bf72ecbf9237ef8d82565596fba04e62a0320aca5d0fb709828fe07a04fd",
+                  "input_fingerprint": "sha256:34437bd09b0c029b1f55cc3691b26715e0d90a21f3c68d891c6aec2be956cc84",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 2.731450702770314,
+                    "cosine_similarity": 0.9999999999999892,
+                    "maximum_absolute_error": 5.960464477539063e-08,
+                    "mean_absolute_error": 4.091435902597686e-10,
+                    "reference_finite": true,
+                    "reference_l2": 2.7314506558828926,
+                    "relative_l2_error": 1.4933589133121538e-07
+                  },
+                  "output_fingerprint": "sha256:9a9e07a525cb6b8ee40a159dc75fdd6ebceabb160af3af3785d7391b0dea411f",
+                  "position": 1,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    362,
+                    334,
+                    472,
+                    558,
+                    140,
+                    796,
+                    782,
+                    511,
+                    692,
+                    649,
+                    169,
+                    322,
+                    642,
+                    749,
+                    68,
+                    335
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    798,
+                    48,
+                    294,
+                    630,
+                    465,
+                    371,
+                    782,
+                    541,
+                    411,
+                    626,
+                    577,
+                    52,
+                    33,
+                    655,
+                    115,
+                    549
+                  ],
+                  "expected_output_fingerprint": "sha256:01daf4f26ae6604a2aaaf26d3a4da015b12882f5d3e34159d87df7474fb74acc",
+                  "input_fingerprint": "sha256:c11ba20e317add469bb1ef07ebce227bd08316fdffe17182d9a2fce2ce448132",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 2.330321573761313,
+                    "cosine_similarity": 0.9999999999999872,
+                    "maximum_absolute_error": 1.862645149230957e-08,
+                    "mean_absolute_error": 3.853464989781117e-10,
+                    "reference_finite": true,
+                    "reference_l2": 2.3303215825827417,
+                    "relative_l2_error": 1.619126133073415e-07
+                  },
+                  "output_fingerprint": "sha256:d1ad1480d01cda7c0f6c237e51db86c00b268d948bb7f64991a07eb8dc55ae11",
+                  "position": 2,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    798,
+                    48,
+                    294,
+                    630,
+                    465,
+                    371,
+                    782,
+                    541,
+                    411,
+                    626,
+                    577,
+                    52,
+                    33,
+                    655,
+                    115,
+                    549
+                  ]
+                }
+              ],
+              "routing_equality": true
+            },
+            "detailed_counter_gate": true,
+            "device": null,
+            "final_boundary_fingerprint": "sha256:e410f1b41d859de19dde02f59abfc4204bee45d05369236dccc236db8c4447aa",
+            "gpu_utilization": {
+              "memory_utilization_percent": {
+                "maximum": 16.0,
+                "mean": 16.0
+              },
+              "note": "device-wide one-second nvidia-smi samples; not kernel compute occupancy",
+              "sample_count": 1,
+              "sampling_interval_seconds": 1,
+              "sm_utilization_percent": {
+                "maximum": 88.0,
+                "mean": 88.0
+              },
+              "status": "MEASURED"
+            },
+            "host_and_synchronization_exposure": null,
+            "kernel_count": {
+              "basis": "P0 retained kernel counts plus the exact canonical call graph",
+              "estimated_total_per_call": 91,
+              "native_dense_calls": 1000,
+              "native_router_calls": 100,
+              "phase_timed_routed_expert_groups": 100,
+              "phase_timed_shared_experts": 100
+            },
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "lifecycle_deltas_zero": true,
+            "memory": {
+              "free_bytes_after_session_close": 14165213184,
+              "free_bytes_after_session_open": 14158921728,
+              "free_bytes_before_session": 14165213184,
+              "resident_stage_bytes": 18264096768,
+              "session_allocation_free_delta_bytes": 6291456,
+              "state_bytes": 6881280
+            },
+            "mode": "detailed",
+            "native_attribution": {
+              "attributed_device_ms": 280.4159364271909,
+              "dense": {
+                "calls": 1000,
+                "kernel_ms_per_call": 0.09393558401428163
+              },
+              "dense_kernel_ms": 93.93558401428163,
+              "dense_kernel_share_percent": 30.773316823612685,
+              "expected_router_calls": 100,
+              "expert": {
+                "calls": 0,
+                "d2h_bytes": 0,
+                "d2h_ms": 0.0,
+                "down_ms": 0.0,
+                "gate_ms": 0.0,
+                "gate_up_pair_ms": 0.0,
+                "h2d_bytes": 0,
+                "h2d_ms": 0.0,
+                "kernel_ms": 0.0,
+                "rows": 0,
+                "situ_ms": 0.0,
+                "up_ms": 0.0
+              },
+              "expert_effective_source_weight_bandwidth_gbps": 374.09194487174113,
+              "expert_kernel_ms": 145.6854079514742,
+              "expert_kernel_share_percent": 47.7265698884287,
+              "phase_timed_routed_expert_groups": 100,
+              "phase_timed_shared_experts": 100,
+              "routed_expert_kernel_ms": 120.99715197086334,
+              "router": {
+                "calls": 100,
+                "d2h_ms_per_call": 0.04569664008915424,
+                "logits_ms_per_call": 0.37312352418899536,
+                "selection_ms_per_call": 0.034825920425355435
+              },
+              "router_d2h_ms": 4.569664008915424,
+              "router_device_ms": 40.79494446143508,
+              "router_device_share_percent": 13.364432274382404,
+              "shared_expert_kernel_ms": 24.688255980610847,
+              "unattributed_device_ms": 24.8341753911227,
+              "whole_stage_device_ms": 305.2501118183136,
+              "whole_stage_device_reference_mode": "production"
+            },
+            "process_cpu": {
+              "maximum_ms": 15.625,
+              "mean_ms": 3.4375,
+              "minimum_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 15.625,
+              "p99_ms": 15.625,
+              "standard_deviation_ms": 6.472598492877493
+            },
+            "retained_iterations": 100,
+            "routing_distribution": {
+              "maximum_selections_for_one_expert": 67,
+              "most_selected": [
+                {
+                  "count": 67,
+                  "expert_id": 782
+                },
+                {
+                  "count": 66,
+                  "expert_id": 472
+                },
+                {
+                  "count": 66,
+                  "expert_id": 334
+                },
+                {
+                  "count": 61,
+                  "expert_id": 465
+                },
+                {
+                  "count": 58,
+                  "expert_id": 283
+                },
+                {
+                  "count": 41,
+                  "expert_id": 115
+                },
+                {
+                  "count": 34,
+                  "expert_id": 798
+                },
+                {
+                  "count": 34,
+                  "expert_id": 48
+                },
+                {
+                  "count": 34,
+                  "expert_id": 294
+                },
+                {
+                  "count": 34,
+                  "expert_id": 630
+                }
+              ],
+              "selection_count": 1600,
+              "unique_experts": 46
+            },
+            "status": "PASS",
+            "transfers_per_call": {
+              "d2d_bytes": 0,
+              "d2h_bytes": 28672,
+              "h2d_bytes": 114752,
+              "wire_boundary_bytes_not_copied_wholesale_to_device": 258048
+            },
+            "wall": {
+              "maximum_ms": 4.028,
+              "mean_ms": 3.456257,
+              "minimum_ms": 3.3274,
+              "p50_ms": 3.3980499999999996,
+              "p95_ms": 3.805185,
+              "p99_ms": 3.977609,
+              "standard_deviation_ms": 0.1517951740043141
+            },
+            "warmup_iterations": 20
+          },
+          "minimal": {
+            "compute_utilization": null,
+            "compute_utilization_note": "kernel occupancy requires Nsight and is not inferred from device-wide SM utilization",
+            "correctness": {
+              "maximum_relative_l2_error": 1.619126133073415e-07,
+              "pass": true,
+              "positions": [
+                {
+                  "expected_expert_ids": [
+                    295,
+                    809,
+                    873,
+                    596,
+                    203,
+                    162,
+                    419,
+                    498,
+                    334,
+                    472,
+                    103,
+                    85,
+                    866,
+                    293,
+                    457,
+                    148
+                  ],
+                  "expected_output_fingerprint": "sha256:85c1d9e90ccf53622f786615b38c4447fa8b53adc81f04d74aa4ea359816426e",
+                  "input_fingerprint": "sha256:eac99f5a75496f838bdb4027e839ff6dc43811e8846c004b8f16107fc83f88fc",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 3.783053273546312,
+                    "cosine_similarity": 0.9999999999999972,
+                    "maximum_absolute_error": 3.725290298461914e-08,
+                    "mean_absolute_error": 2.6595321359641346e-10,
+                    "reference_finite": true,
+                    "reference_l2": 3.7830532707166658,
+                    "relative_l2_error": 7.743282866015043e-08
+                  },
+                  "output_fingerprint": "sha256:80c104cb434f723069fa0aaaa1679b0364189910b4667f2f2fb777430af5a31c",
+                  "position": 0,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    295,
+                    809,
+                    873,
+                    596,
+                    203,
+                    162,
+                    419,
+                    498,
+                    334,
+                    472,
+                    103,
+                    85,
+                    866,
+                    293,
+                    457,
+                    148
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    362,
+                    334,
+                    472,
+                    558,
+                    140,
+                    796,
+                    782,
+                    511,
+                    692,
+                    649,
+                    169,
+                    322,
+                    642,
+                    749,
+                    68,
+                    335
+                  ],
+                  "expected_output_fingerprint": "sha256:c565bf72ecbf9237ef8d82565596fba04e62a0320aca5d0fb709828fe07a04fd",
+                  "input_fingerprint": "sha256:34437bd09b0c029b1f55cc3691b26715e0d90a21f3c68d891c6aec2be956cc84",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 2.731450702770314,
+                    "cosine_similarity": 0.9999999999999892,
+                    "maximum_absolute_error": 5.960464477539063e-08,
+                    "mean_absolute_error": 4.091435902597686e-10,
+                    "reference_finite": true,
+                    "reference_l2": 2.7314506558828926,
+                    "relative_l2_error": 1.4933589133121538e-07
+                  },
+                  "output_fingerprint": "sha256:9a9e07a525cb6b8ee40a159dc75fdd6ebceabb160af3af3785d7391b0dea411f",
+                  "position": 1,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    362,
+                    334,
+                    472,
+                    558,
+                    140,
+                    796,
+                    782,
+                    511,
+                    692,
+                    649,
+                    169,
+                    322,
+                    642,
+                    749,
+                    68,
+                    335
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    798,
+                    48,
+                    294,
+                    630,
+                    465,
+                    371,
+                    782,
+                    541,
+                    411,
+                    626,
+                    577,
+                    52,
+                    33,
+                    655,
+                    115,
+                    549
+                  ],
+                  "expected_output_fingerprint": "sha256:01daf4f26ae6604a2aaaf26d3a4da015b12882f5d3e34159d87df7474fb74acc",
+                  "input_fingerprint": "sha256:c11ba20e317add469bb1ef07ebce227bd08316fdffe17182d9a2fce2ce448132",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 2.330321573761313,
+                    "cosine_similarity": 0.9999999999999872,
+                    "maximum_absolute_error": 1.862645149230957e-08,
+                    "mean_absolute_error": 3.853464989781117e-10,
+                    "reference_finite": true,
+                    "reference_l2": 2.3303215825827417,
+                    "relative_l2_error": 1.619126133073415e-07
+                  },
+                  "output_fingerprint": "sha256:d1ad1480d01cda7c0f6c237e51db86c00b268d948bb7f64991a07eb8dc55ae11",
+                  "position": 2,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    798,
+                    48,
+                    294,
+                    630,
+                    465,
+                    371,
+                    782,
+                    541,
+                    411,
+                    626,
+                    577,
+                    52,
+                    33,
+                    655,
+                    115,
+                    549
+                  ]
+                }
+              ],
+              "routing_equality": true
+            },
+            "detailed_counter_gate": true,
+            "device": {
+              "maximum_ms": 3.433311939239502,
+              "mean_ms": 3.043585603237152,
+              "minimum_ms": 2.971519947052002,
+              "p50_ms": 2.998975992202759,
+              "p95_ms": 3.3652575612068176,
+              "p99_ms": 3.4066690850257877,
+              "standard_deviation_ms": 0.1110346663109921
+            },
+            "final_boundary_fingerprint": "sha256:e410f1b41d859de19dde02f59abfc4204bee45d05369236dccc236db8c4447aa",
+            "gpu_utilization": {
+              "memory_utilization_percent": {
+                "maximum": 0.0,
+                "mean": 0.0
+              },
+              "note": "device-wide one-second nvidia-smi samples; not kernel compute occupancy",
+              "sample_count": 1,
+              "sampling_interval_seconds": 1,
+              "sm_utilization_percent": {
+                "maximum": 0.0,
+                "mean": 0.0
+              },
+              "status": "MEASURED"
+            },
+            "host_and_synchronization_exposure": {
+              "maximum_ms": 0.34015607566833506,
+              "mean_ms": 0.1993743967628479,
+              "minimum_ms": 0.17237205047607418,
+              "p50_ms": 0.1960039714813231,
+              "p95_ms": 0.2263428158378602,
+              "p99_ms": 0.30254777126693727,
+              "standard_deviation_ms": 0.023486471215174783
+            },
+            "kernel_count": {
+              "basis": "P0 retained kernel counts plus the exact canonical call graph",
+              "estimated_total_per_call": 91,
+              "native_dense_calls": 0,
+              "native_router_calls": 0,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0
+            },
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "lifecycle_deltas_zero": true,
+            "memory": {
+              "free_bytes_after_session_close": 14165213184,
+              "free_bytes_after_session_open": 14158921728,
+              "free_bytes_before_session": 14165213184,
+              "resident_stage_bytes": 18264096768,
+              "session_allocation_free_delta_bytes": 6291456,
+              "state_bytes": 6881280
+            },
+            "mode": "minimal",
+            "native_attribution": {
+              "attributed_device_ms": 0.0,
+              "dense": {
+                "calls": 0,
+                "kernel_ms_per_call": 0.0
+              },
+              "dense_kernel_ms": 0.0,
+              "dense_kernel_share_percent": null,
+              "expected_router_calls": 100,
+              "expert": {
+                "calls": 0,
+                "d2h_bytes": 0,
+                "d2h_ms": 0.0,
+                "down_ms": 0.0,
+                "gate_ms": 0.0,
+                "gate_up_pair_ms": 0.0,
+                "h2d_bytes": 0,
+                "h2d_ms": 0.0,
+                "kernel_ms": 0.0,
+                "rows": 0,
+                "situ_ms": 0.0,
+                "up_ms": 0.0
+              },
+              "expert_effective_source_weight_bandwidth_gbps": 0.0,
+              "expert_kernel_ms": 0,
+              "expert_kernel_share_percent": null,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0,
+              "routed_expert_kernel_ms": 0,
+              "router": {
+                "calls": 0,
+                "d2h_ms_per_call": 0.0,
+                "logits_ms_per_call": 0.0,
+                "selection_ms_per_call": 0.0
+              },
+              "router_d2h_ms": 0.0,
+              "router_device_ms": 0.0,
+              "router_device_share_percent": null,
+              "shared_expert_kernel_ms": 0,
+              "unattributed_device_ms": null,
+              "whole_stage_device_ms": null,
+              "whole_stage_device_reference_mode": "production"
+            },
+            "process_cpu": {
+              "maximum_ms": 15.625,
+              "mean_ms": 3.125,
+              "minimum_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 15.625,
+              "p99_ms": 15.625,
+              "standard_deviation_ms": 6.25
+            },
+            "retained_iterations": 100,
+            "routing_distribution": {
+              "maximum_selections_for_one_expert": 67,
+              "most_selected": [
+                {
+                  "count": 67,
+                  "expert_id": 782
+                },
+                {
+                  "count": 66,
+                  "expert_id": 472
+                },
+                {
+                  "count": 66,
+                  "expert_id": 334
+                },
+                {
+                  "count": 61,
+                  "expert_id": 465
+                },
+                {
+                  "count": 58,
+                  "expert_id": 283
+                },
+                {
+                  "count": 41,
+                  "expert_id": 115
+                },
+                {
+                  "count": 34,
+                  "expert_id": 798
+                },
+                {
+                  "count": 34,
+                  "expert_id": 48
+                },
+                {
+                  "count": 34,
+                  "expert_id": 294
+                },
+                {
+                  "count": 34,
+                  "expert_id": 630
+                }
+              ],
+              "selection_count": 1600,
+              "unique_experts": 46
+            },
+            "status": "PASS",
+            "transfers_per_call": {
+              "d2d_bytes": 0,
+              "d2h_bytes": 28672,
+              "h2d_bytes": 114752,
+              "wire_boundary_bytes_not_copied_wholesale_to_device": 258048
+            },
+            "wall": {
+              "maximum_ms": 3.645,
+              "mean_ms": 3.24296,
+              "minimum_ms": 3.1472,
+              "p50_ms": 3.1943,
+              "p95_ms": 3.5625,
+              "p99_ms": 3.6342090000000002,
+              "standard_deviation_ms": 0.1199087653176364
+            },
+            "warmup_iterations": 20
+          },
+          "production": {
+            "compute_utilization": null,
+            "compute_utilization_note": "kernel occupancy requires Nsight and is not inferred from device-wide SM utilization",
+            "correctness": {
+              "maximum_relative_l2_error": 1.619126133073415e-07,
+              "pass": true,
+              "positions": [
+                {
+                  "expected_expert_ids": [
+                    295,
+                    809,
+                    873,
+                    596,
+                    203,
+                    162,
+                    419,
+                    498,
+                    334,
+                    472,
+                    103,
+                    85,
+                    866,
+                    293,
+                    457,
+                    148
+                  ],
+                  "expected_output_fingerprint": "sha256:85c1d9e90ccf53622f786615b38c4447fa8b53adc81f04d74aa4ea359816426e",
+                  "input_fingerprint": "sha256:eac99f5a75496f838bdb4027e839ff6dc43811e8846c004b8f16107fc83f88fc",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 3.783053273546312,
+                    "cosine_similarity": 0.9999999999999972,
+                    "maximum_absolute_error": 3.725290298461914e-08,
+                    "mean_absolute_error": 2.6595321359641346e-10,
+                    "reference_finite": true,
+                    "reference_l2": 3.7830532707166658,
+                    "relative_l2_error": 7.743282866015043e-08
+                  },
+                  "output_fingerprint": "sha256:80c104cb434f723069fa0aaaa1679b0364189910b4667f2f2fb777430af5a31c",
+                  "position": 0,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    295,
+                    809,
+                    873,
+                    596,
+                    203,
+                    162,
+                    419,
+                    498,
+                    334,
+                    472,
+                    103,
+                    85,
+                    866,
+                    293,
+                    457,
+                    148
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    362,
+                    334,
+                    472,
+                    558,
+                    140,
+                    796,
+                    782,
+                    511,
+                    692,
+                    649,
+                    169,
+                    322,
+                    642,
+                    749,
+                    68,
+                    335
+                  ],
+                  "expected_output_fingerprint": "sha256:c565bf72ecbf9237ef8d82565596fba04e62a0320aca5d0fb709828fe07a04fd",
+                  "input_fingerprint": "sha256:34437bd09b0c029b1f55cc3691b26715e0d90a21f3c68d891c6aec2be956cc84",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 2.731450702770314,
+                    "cosine_similarity": 0.9999999999999892,
+                    "maximum_absolute_error": 5.960464477539063e-08,
+                    "mean_absolute_error": 4.091435902597686e-10,
+                    "reference_finite": true,
+                    "reference_l2": 2.7314506558828926,
+                    "relative_l2_error": 1.4933589133121538e-07
+                  },
+                  "output_fingerprint": "sha256:9a9e07a525cb6b8ee40a159dc75fdd6ebceabb160af3af3785d7391b0dea411f",
+                  "position": 1,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    362,
+                    334,
+                    472,
+                    558,
+                    140,
+                    796,
+                    782,
+                    511,
+                    692,
+                    649,
+                    169,
+                    322,
+                    642,
+                    749,
+                    68,
+                    335
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    798,
+                    48,
+                    294,
+                    630,
+                    465,
+                    371,
+                    782,
+                    541,
+                    411,
+                    626,
+                    577,
+                    52,
+                    33,
+                    655,
+                    115,
+                    549
+                  ],
+                  "expected_output_fingerprint": "sha256:01daf4f26ae6604a2aaaf26d3a4da015b12882f5d3e34159d87df7474fb74acc",
+                  "input_fingerprint": "sha256:c11ba20e317add469bb1ef07ebce227bd08316fdffe17182d9a2fce2ce448132",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 2.330321573761313,
+                    "cosine_similarity": 0.9999999999999872,
+                    "maximum_absolute_error": 1.862645149230957e-08,
+                    "mean_absolute_error": 3.853464989781117e-10,
+                    "reference_finite": true,
+                    "reference_l2": 2.3303215825827417,
+                    "relative_l2_error": 1.619126133073415e-07
+                  },
+                  "output_fingerprint": "sha256:d1ad1480d01cda7c0f6c237e51db86c00b268d948bb7f64991a07eb8dc55ae11",
+                  "position": 2,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    798,
+                    48,
+                    294,
+                    630,
+                    465,
+                    371,
+                    782,
+                    541,
+                    411,
+                    626,
+                    577,
+                    52,
+                    33,
+                    655,
+                    115,
+                    549
+                  ]
+                }
+              ],
+              "routing_equality": true
+            },
+            "detailed_counter_gate": true,
+            "device": {
+              "maximum_ms": 3.4463999271392822,
+              "mean_ms": 3.052501118183136,
+              "minimum_ms": 2.973088026046753,
+              "p50_ms": 3.012608051300049,
+              "p95_ms": 3.380500900745392,
+              "p99_ms": 3.414308218955994,
+              "standard_deviation_ms": 0.11216766534236337
+            },
+            "final_boundary_fingerprint": "sha256:e410f1b41d859de19dde02f59abfc4204bee45d05369236dccc236db8c4447aa",
+            "gpu_utilization": {
+              "memory_utilization_percent": {
+                "maximum": 16.0,
+                "mean": 16.0
+              },
+              "note": "device-wide one-second nvidia-smi samples; not kernel compute occupancy",
+              "sample_count": 1,
+              "sampling_interval_seconds": 1,
+              "sm_utilization_percent": {
+                "maximum": 87.0,
+                "mean": 87.0
+              },
+              "status": "MEASURED"
+            },
+            "host_and_synchronization_exposure": {
+              "maximum_ms": 0.3444680065155028,
+              "mean_ms": 0.19980088181686406,
+              "minimum_ms": 0.17660407447814963,
+              "p50_ms": 0.19425602359771732,
+              "p95_ms": 0.24007562437057492,
+              "p99_ms": 0.2636920090255744,
+              "standard_deviation_ms": 0.022953748049892142
+            },
+            "kernel_count": {
+              "basis": "P0 retained kernel counts plus the exact canonical call graph",
+              "estimated_total_per_call": 91,
+              "native_dense_calls": 0,
+              "native_router_calls": 0,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0
+            },
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "lifecycle_deltas_zero": true,
+            "memory": {
+              "free_bytes_after_session_close": 14165213184,
+              "free_bytes_after_session_open": 14158921728,
+              "free_bytes_before_session": 14165213184,
+              "resident_stage_bytes": 18264096768,
+              "session_allocation_free_delta_bytes": 6291456,
+              "state_bytes": 6881280
+            },
+            "mode": "production",
+            "native_attribution": {
+              "attributed_device_ms": 0.0,
+              "dense": {
+                "calls": 0,
+                "kernel_ms_per_call": 0.0
+              },
+              "dense_kernel_ms": 0.0,
+              "dense_kernel_share_percent": null,
+              "expected_router_calls": 100,
+              "expert": {
+                "calls": 0,
+                "d2h_bytes": 0,
+                "d2h_ms": 0.0,
+                "down_ms": 0.0,
+                "gate_ms": 0.0,
+                "gate_up_pair_ms": 0.0,
+                "h2d_bytes": 0,
+                "h2d_ms": 0.0,
+                "kernel_ms": 0.0,
+                "rows": 0,
+                "situ_ms": 0.0,
+                "up_ms": 0.0
+              },
+              "expert_effective_source_weight_bandwidth_gbps": 0.0,
+              "expert_kernel_ms": 0,
+              "expert_kernel_share_percent": null,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0,
+              "routed_expert_kernel_ms": 0,
+              "router": {
+                "calls": 0,
+                "d2h_ms_per_call": 0.0,
+                "logits_ms_per_call": 0.0,
+                "selection_ms_per_call": 0.0
+              },
+              "router_d2h_ms": 0.0,
+              "router_device_ms": 0.0,
+              "router_device_share_percent": null,
+              "shared_expert_kernel_ms": 0,
+              "unattributed_device_ms": null,
+              "whole_stage_device_ms": null,
+              "whole_stage_device_reference_mode": "production"
+            },
+            "process_cpu": {
+              "maximum_ms": 15.625,
+              "mean_ms": 3.28125,
+              "minimum_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 15.625,
+              "p99_ms": 15.625,
+              "standard_deviation_ms": 6.364191204505094
+            },
+            "retained_iterations": 100,
+            "routing_distribution": {
+              "maximum_selections_for_one_expert": 67,
+              "most_selected": [
+                {
+                  "count": 67,
+                  "expert_id": 782
+                },
+                {
+                  "count": 66,
+                  "expert_id": 472
+                },
+                {
+                  "count": 66,
+                  "expert_id": 334
+                },
+                {
+                  "count": 61,
+                  "expert_id": 465
+                },
+                {
+                  "count": 58,
+                  "expert_id": 283
+                },
+                {
+                  "count": 41,
+                  "expert_id": 115
+                },
+                {
+                  "count": 34,
+                  "expert_id": 798
+                },
+                {
+                  "count": 34,
+                  "expert_id": 48
+                },
+                {
+                  "count": 34,
+                  "expert_id": 294
+                },
+                {
+                  "count": 34,
+                  "expert_id": 630
+                }
+              ],
+              "selection_count": 1600,
+              "unique_experts": 46
+            },
+            "status": "PASS",
+            "transfers_per_call": {
+              "d2d_bytes": 0,
+              "d2h_bytes": 28672,
+              "h2d_bytes": 114752,
+              "wire_boundary_bytes_not_copied_wholesale_to_device": 258048
+            },
+            "wall": {
+              "maximum_ms": 3.6914,
+              "mean_ms": 3.2523020000000002,
+              "minimum_ms": 3.1612,
+              "p50_ms": 3.20425,
+              "p95_ms": 3.58331,
+              "p99_ms": 3.649325,
+              "standard_deviation_ms": 0.12067417949172059
+            },
+            "warmup_iterations": 20
+          }
+        },
+        "status": "PASS",
+        "telemetry_overhead": {
+          "detailed_relative_to_minimal_percent": 6.378549290924451,
+          "production_relative_to_minimal_percent": 0.31149234574083806
+        }
+      },
+      {
+        "assignment": {
+          "resident_device_bytes": 18228445184,
+          "routed_expert_bytes_all": 15722348544,
+          "routed_expert_bytes_each": 17547264,
+          "shared_expert_bytes": 264241152,
+          "source_weight_bytes": 16566684160,
+          "weight_fingerprint": "sha256:2b3137e028e21fc5d51552e48f204054181274a94aec7221fe50f3f75aebf181"
+        },
+        "attention_type": "Gated_MLA",
+        "cross_mode_output_equality": true,
+        "expert_kernel_share_percent": 52.34091919492811,
+        "layer": 3,
+        "load": {
+          "accepted": true,
+          "elapsed_ms": 18778.7626
+        },
+        "mode_order": [
+          "production",
+          "minimal",
+          "detailed"
+        ],
+        "modes": {
+          "detailed": {
+            "compute_utilization": null,
+            "compute_utilization_note": "kernel occupancy requires Nsight and is not inferred from device-wide SM utilization",
+            "correctness": {
+              "maximum_relative_l2_error": 3.0016792893238165e-07,
+              "pass": true,
+              "positions": [
+                {
+                  "expected_expert_ids": [
+                    165,
+                    43,
+                    396,
+                    870,
+                    481,
+                    686,
+                    841,
+                    335,
+                    855,
+                    632,
+                    629,
+                    337,
+                    611,
+                    209,
+                    199,
+                    713
+                  ],
+                  "expected_output_fingerprint": "sha256:30bf6b2a1cc4dcc21aef0f2f71c399d41803f88c1a5c76b0a97a35ee826c2ad3",
+                  "input_fingerprint": "sha256:df26849ca1042f026d38fe519d9bd9af99082af3fbaf9e39b44e4eed76c2a619",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 31.602171010836518,
+                    "cosine_similarity": 0.9999999999999731,
+                    "maximum_absolute_error": 5.960464477539062e-07,
+                    "mean_absolute_error": 8.067723279560191e-09,
+                    "reference_finite": true,
+                    "reference_l2": 31.602174684713642,
+                    "relative_l2_error": 2.5996148228171764e-07
+                  },
+                  "output_fingerprint": "sha256:65743714460e72e612c6c5dd1c0301cf7fb2d66732f4e22507712aef5e880196",
+                  "position": 0,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    165,
+                    43,
+                    396,
+                    870,
+                    481,
+                    686,
+                    841,
+                    335,
+                    855,
+                    632,
+                    629,
+                    337,
+                    611,
+                    209,
+                    199,
+                    713
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    477,
+                    165,
+                    263,
+                    464,
+                    723,
+                    657,
+                    870,
+                    599,
+                    71,
+                    635,
+                    524,
+                    65,
+                    622,
+                    704,
+                    354,
+                    754
+                  ],
+                  "expected_output_fingerprint": "sha256:d83dceff9cc9f0525b7c57777b0ee02b3469d12d8811430ff82e003d8ef15285",
+                  "input_fingerprint": "sha256:274b85bd93a7ce0edf80c3c8ee49ae181e8ffb23892a79d316de1205ee42b9f2",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 5.6727319561571115,
+                    "cosine_similarity": 0.9999999999999674,
+                    "maximum_absolute_error": 2.384185791015625e-07,
+                    "mean_absolute_error": 1.4783439375663412e-09,
+                    "reference_finite": true,
+                    "reference_l2": 5.672731881274216,
+                    "relative_l2_error": 2.574903287527055e-07
+                  },
+                  "output_fingerprint": "sha256:6dad7df9d3d49b663c326664119f23ba155f898abad0dc0894b13c714fe0c6c9",
+                  "position": 1,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    477,
+                    165,
+                    263,
+                    464,
+                    723,
+                    657,
+                    870,
+                    599,
+                    71,
+                    635,
+                    524,
+                    65,
+                    622,
+                    704,
+                    354,
+                    754
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    635,
+                    477,
+                    263,
+                    723,
+                    870,
+                    768,
+                    54,
+                    599,
+                    832,
+                    484,
+                    71,
+                    754,
+                    401,
+                    888,
+                    751,
+                    289
+                  ],
+                  "expected_output_fingerprint": "sha256:a7229fadf45909c293e5a6266fe2bb630e298c8ae8d27cef78d019e52285b02b",
+                  "input_fingerprint": "sha256:3a39cc2b3c585cdcf182649e53bf12e5727010726dfc300010276b9f807efc1f",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 4.913829997244165,
+                    "cosine_similarity": 0.999999999999956,
+                    "maximum_absolute_error": 1.1920928955078125e-07,
+                    "mean_absolute_error": 1.5155637450493125e-09,
+                    "reference_finite": true,
+                    "reference_l2": 4.913829792405221,
+                    "relative_l2_error": 3.0016792893238165e-07
+                  },
+                  "output_fingerprint": "sha256:24a5316295d47624e7b34ba50766f12e80b7af5117834df9d3e8707ada045005",
+                  "position": 2,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    635,
+                    477,
+                    263,
+                    723,
+                    870,
+                    768,
+                    54,
+                    599,
+                    832,
+                    484,
+                    71,
+                    754,
+                    401,
+                    888,
+                    751,
+                    289
+                  ]
+                }
+              ],
+              "routing_equality": true
+            },
+            "detailed_counter_gate": true,
+            "device": null,
+            "final_boundary_fingerprint": "sha256:84bd8923ef7ed34bd50c1d0cb0926ca3dd5acd4a705e7986fdf95b4040a33844",
+            "gpu_utilization": {
+              "memory_utilization_percent": {
+                "maximum": 9.0,
+                "mean": 9.0
+              },
+              "note": "device-wide one-second nvidia-smi samples; not kernel compute occupancy",
+              "sample_count": 1,
+              "sampling_interval_seconds": 1,
+              "sm_utilization_percent": {
+                "maximum": 47.0,
+                "mean": 47.0
+              },
+              "status": "MEASURED"
+            },
+            "host_and_synchronization_exposure": null,
+            "kernel_count": {
+              "basis": "P0 retained kernel counts plus the exact canonical call graph",
+              "estimated_total_per_call": 91,
+              "native_dense_calls": 700,
+              "native_router_calls": 100,
+              "phase_timed_routed_expert_groups": 100,
+              "phase_timed_shared_experts": 100
+            },
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "lifecycle_deltas_zero": true,
+            "memory": {
+              "free_bytes_after_session_close": 14198767616,
+              "free_bytes_after_session_open": 14196670464,
+              "free_bytes_before_session": 14198767616,
+              "resident_stage_bytes": 18228445184,
+              "session_allocation_free_delta_bytes": 2097152,
+              "state_bytes": 276480
+            },
+            "mode": "detailed",
+            "native_attribution": {
+              "attributed_device_ms": 236.1284476518631,
+              "dense": {
+                "calls": 700,
+                "kernel_ms_per_call": 0.07222226261560406
+              },
+              "dense_kernel_ms": 50.55558383092284,
+              "dense_kernel_share_percent": 18.34138728538557,
+              "expected_router_calls": 100,
+              "expert": {
+                "calls": 0,
+                "d2h_bytes": 0,
+                "d2h_ms": 0.0,
+                "down_ms": 0.0,
+                "gate_ms": 0.0,
+                "gate_up_pair_ms": 0.0,
+                "h2d_bytes": 0,
+                "h2d_ms": 0.0,
+                "kernel_ms": 0.0,
+                "rows": 0,
+                "situ_ms": 0.0,
+                "up_ms": 0.0
+              },
+              "expert_effective_source_weight_bandwidth_gbps": 377.7601281907247,
+              "expert_kernel_ms": 144.27075155079365,
+              "expert_kernel_share_percent": 52.34091919492811,
+              "phase_timed_routed_expert_groups": 100,
+              "phase_timed_shared_experts": 100,
+              "routed_expert_kernel_ms": 119.68979144096375,
+              "router": {
+                "calls": 100,
+                "d2h_ms_per_call": 0.04621247991919517,
+                "logits_ms_per_call": 0.37629728227853776,
+                "selection_ms_per_call": 0.03672384042292833
+              },
+              "router_d2h_ms": 4.6212479919195175,
+              "router_device_ms": 41.30211227014661,
+              "router_device_share_percent": 14.984260480201957,
+              "shared_expert_kernel_ms": 24.580960109829903,
+              "unattributed_device_ms": 39.508193373680115,
+              "whole_stage_device_ms": 275.6366410255432,
+              "whole_stage_device_reference_mode": "production"
+            },
+            "process_cpu": {
+              "maximum_ms": 15.625,
+              "mean_ms": 3.125,
+              "minimum_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 15.625,
+              "p99_ms": 15.625,
+              "standard_deviation_ms": 6.25
+            },
+            "retained_iterations": 100,
+            "routing_distribution": {
+              "maximum_selections_for_one_expert": 100,
+              "most_selected": [
+                {
+                  "count": 100,
+                  "expert_id": 723
+                },
+                {
+                  "count": 100,
+                  "expert_id": 870
+                },
+                {
+                  "count": 67,
+                  "expert_id": 635
+                },
+                {
+                  "count": 67,
+                  "expert_id": 477
+                },
+                {
+                  "count": 67,
+                  "expert_id": 263
+                },
+                {
+                  "count": 67,
+                  "expert_id": 599
+                },
+                {
+                  "count": 67,
+                  "expert_id": 71
+                },
+                {
+                  "count": 67,
+                  "expert_id": 754
+                },
+                {
+                  "count": 66,
+                  "expert_id": 165
+                },
+                {
+                  "count": 34,
+                  "expert_id": 768
+                }
+              ],
+              "selection_count": 1600,
+              "unique_experts": 37
+            },
+            "status": "PASS",
+            "transfers_per_call": {
+              "d2d_bytes": 0,
+              "d2h_bytes": 28672,
+              "h2d_bytes": 114752,
+              "wire_boundary_bytes_not_copied_wholesale_to_device": 258048
+            },
+            "wall": {
+              "maximum_ms": 3.6385,
+              "mean_ms": 3.1196010000000003,
+              "minimum_ms": 3.019,
+              "p50_ms": 3.08175,
+              "p95_ms": 3.37942,
+              "p99_ms": 3.5507860000000004,
+              "standard_deviation_ms": 0.10955954590541164
+            },
+            "warmup_iterations": 20
+          },
+          "minimal": {
+            "compute_utilization": null,
+            "compute_utilization_note": "kernel occupancy requires Nsight and is not inferred from device-wide SM utilization",
+            "correctness": {
+              "maximum_relative_l2_error": 3.0016792893238165e-07,
+              "pass": true,
+              "positions": [
+                {
+                  "expected_expert_ids": [
+                    165,
+                    43,
+                    396,
+                    870,
+                    481,
+                    686,
+                    841,
+                    335,
+                    855,
+                    632,
+                    629,
+                    337,
+                    611,
+                    209,
+                    199,
+                    713
+                  ],
+                  "expected_output_fingerprint": "sha256:30bf6b2a1cc4dcc21aef0f2f71c399d41803f88c1a5c76b0a97a35ee826c2ad3",
+                  "input_fingerprint": "sha256:df26849ca1042f026d38fe519d9bd9af99082af3fbaf9e39b44e4eed76c2a619",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 31.602171010836518,
+                    "cosine_similarity": 0.9999999999999731,
+                    "maximum_absolute_error": 5.960464477539062e-07,
+                    "mean_absolute_error": 8.067723279560191e-09,
+                    "reference_finite": true,
+                    "reference_l2": 31.602174684713642,
+                    "relative_l2_error": 2.5996148228171764e-07
+                  },
+                  "output_fingerprint": "sha256:65743714460e72e612c6c5dd1c0301cf7fb2d66732f4e22507712aef5e880196",
+                  "position": 0,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    165,
+                    43,
+                    396,
+                    870,
+                    481,
+                    686,
+                    841,
+                    335,
+                    855,
+                    632,
+                    629,
+                    337,
+                    611,
+                    209,
+                    199,
+                    713
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    477,
+                    165,
+                    263,
+                    464,
+                    723,
+                    657,
+                    870,
+                    599,
+                    71,
+                    635,
+                    524,
+                    65,
+                    622,
+                    704,
+                    354,
+                    754
+                  ],
+                  "expected_output_fingerprint": "sha256:d83dceff9cc9f0525b7c57777b0ee02b3469d12d8811430ff82e003d8ef15285",
+                  "input_fingerprint": "sha256:274b85bd93a7ce0edf80c3c8ee49ae181e8ffb23892a79d316de1205ee42b9f2",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 5.6727319561571115,
+                    "cosine_similarity": 0.9999999999999674,
+                    "maximum_absolute_error": 2.384185791015625e-07,
+                    "mean_absolute_error": 1.4783439375663412e-09,
+                    "reference_finite": true,
+                    "reference_l2": 5.672731881274216,
+                    "relative_l2_error": 2.574903287527055e-07
+                  },
+                  "output_fingerprint": "sha256:6dad7df9d3d49b663c326664119f23ba155f898abad0dc0894b13c714fe0c6c9",
+                  "position": 1,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    477,
+                    165,
+                    263,
+                    464,
+                    723,
+                    657,
+                    870,
+                    599,
+                    71,
+                    635,
+                    524,
+                    65,
+                    622,
+                    704,
+                    354,
+                    754
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    635,
+                    477,
+                    263,
+                    723,
+                    870,
+                    768,
+                    54,
+                    599,
+                    832,
+                    484,
+                    71,
+                    754,
+                    401,
+                    888,
+                    751,
+                    289
+                  ],
+                  "expected_output_fingerprint": "sha256:a7229fadf45909c293e5a6266fe2bb630e298c8ae8d27cef78d019e52285b02b",
+                  "input_fingerprint": "sha256:3a39cc2b3c585cdcf182649e53bf12e5727010726dfc300010276b9f807efc1f",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 4.913829997244165,
+                    "cosine_similarity": 0.999999999999956,
+                    "maximum_absolute_error": 1.1920928955078125e-07,
+                    "mean_absolute_error": 1.5155637450493125e-09,
+                    "reference_finite": true,
+                    "reference_l2": 4.913829792405221,
+                    "relative_l2_error": 3.0016792893238165e-07
+                  },
+                  "output_fingerprint": "sha256:24a5316295d47624e7b34ba50766f12e80b7af5117834df9d3e8707ada045005",
+                  "position": 2,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    635,
+                    477,
+                    263,
+                    723,
+                    870,
+                    768,
+                    54,
+                    599,
+                    832,
+                    484,
+                    71,
+                    754,
+                    401,
+                    888,
+                    751,
+                    289
+                  ]
+                }
+              ],
+              "routing_equality": true
+            },
+            "detailed_counter_gate": true,
+            "device": {
+              "maximum_ms": 3.1231040954589844,
+              "mean_ms": 2.7563420844078066,
+              "minimum_ms": 2.698240041732788,
+              "p50_ms": 2.7329119443893433,
+              "p95_ms": 2.9190928816795347,
+              "p99_ms": 3.0406409955024727,
+              "standard_deviation_ms": 0.07281549334436048
+            },
+            "final_boundary_fingerprint": "sha256:84bd8923ef7ed34bd50c1d0cb0926ca3dd5acd4a705e7986fdf95b4040a33844",
+            "gpu_utilization": {
+              "memory_utilization_percent": {
+                "maximum": 53.0,
+                "mean": 53.0
+              },
+              "note": "device-wide one-second nvidia-smi samples; not kernel compute occupancy",
+              "sample_count": 1,
+              "sampling_interval_seconds": 1,
+              "sm_utilization_percent": {
+                "maximum": 95.0,
+                "mean": 95.0
+              },
+              "status": "MEASURED"
+            },
+            "host_and_synchronization_exposure": {
+              "maximum_ms": 0.3461721038818357,
+              "mean_ms": 0.19779891559219362,
+              "minimum_ms": 0.1679960269927978,
+              "p50_ms": 0.1936779750823976,
+              "p95_ms": 0.22550495677948007,
+              "p99_ms": 0.27854702810669,
+              "standard_deviation_ms": 0.02257739592383208
+            },
+            "kernel_count": {
+              "basis": "P0 retained kernel counts plus the exact canonical call graph",
+              "estimated_total_per_call": 91,
+              "native_dense_calls": 0,
+              "native_router_calls": 0,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0
+            },
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "lifecycle_deltas_zero": true,
+            "memory": {
+              "free_bytes_after_session_close": 14198767616,
+              "free_bytes_after_session_open": 14196670464,
+              "free_bytes_before_session": 14198767616,
+              "resident_stage_bytes": 18228445184,
+              "session_allocation_free_delta_bytes": 2097152,
+              "state_bytes": 276480
+            },
+            "mode": "minimal",
+            "native_attribution": {
+              "attributed_device_ms": 0.0,
+              "dense": {
+                "calls": 0,
+                "kernel_ms_per_call": 0.0
+              },
+              "dense_kernel_ms": 0.0,
+              "dense_kernel_share_percent": null,
+              "expected_router_calls": 100,
+              "expert": {
+                "calls": 0,
+                "d2h_bytes": 0,
+                "d2h_ms": 0.0,
+                "down_ms": 0.0,
+                "gate_ms": 0.0,
+                "gate_up_pair_ms": 0.0,
+                "h2d_bytes": 0,
+                "h2d_ms": 0.0,
+                "kernel_ms": 0.0,
+                "rows": 0,
+                "situ_ms": 0.0,
+                "up_ms": 0.0
+              },
+              "expert_effective_source_weight_bandwidth_gbps": 0.0,
+              "expert_kernel_ms": 0,
+              "expert_kernel_share_percent": null,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0,
+              "routed_expert_kernel_ms": 0,
+              "router": {
+                "calls": 0,
+                "d2h_ms_per_call": 0.0,
+                "logits_ms_per_call": 0.0,
+                "selection_ms_per_call": 0.0
+              },
+              "router_d2h_ms": 0.0,
+              "router_device_ms": 0.0,
+              "router_device_share_percent": null,
+              "shared_expert_kernel_ms": 0,
+              "unattributed_device_ms": null,
+              "whole_stage_device_ms": null,
+              "whole_stage_device_reference_mode": "production"
+            },
+            "process_cpu": {
+              "maximum_ms": 15.625,
+              "mean_ms": 2.96875,
+              "minimum_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 15.625,
+              "p99_ms": 15.625,
+              "standard_deviation_ms": 6.129701639354072
+            },
+            "retained_iterations": 100,
+            "routing_distribution": {
+              "maximum_selections_for_one_expert": 100,
+              "most_selected": [
+                {
+                  "count": 100,
+                  "expert_id": 723
+                },
+                {
+                  "count": 100,
+                  "expert_id": 870
+                },
+                {
+                  "count": 67,
+                  "expert_id": 635
+                },
+                {
+                  "count": 67,
+                  "expert_id": 477
+                },
+                {
+                  "count": 67,
+                  "expert_id": 263
+                },
+                {
+                  "count": 67,
+                  "expert_id": 599
+                },
+                {
+                  "count": 67,
+                  "expert_id": 71
+                },
+                {
+                  "count": 67,
+                  "expert_id": 754
+                },
+                {
+                  "count": 66,
+                  "expert_id": 165
+                },
+                {
+                  "count": 34,
+                  "expert_id": 768
+                }
+              ],
+              "selection_count": 1600,
+              "unique_experts": 37
+            },
+            "status": "PASS",
+            "transfers_per_call": {
+              "d2d_bytes": 0,
+              "d2h_bytes": 28672,
+              "h2d_bytes": 114752,
+              "wire_boundary_bytes_not_copied_wholesale_to_device": 258048
+            },
+            "wall": {
+              "maximum_ms": 3.3234,
+              "mean_ms": 2.9541410000000003,
+              "minimum_ms": 2.8816,
+              "p50_ms": 2.92355,
+              "p95_ms": 3.12476,
+              "p99_ms": 3.259644,
+              "standard_deviation_ms": 0.08183059463916903
+            },
+            "warmup_iterations": 20
+          },
+          "production": {
+            "compute_utilization": null,
+            "compute_utilization_note": "kernel occupancy requires Nsight and is not inferred from device-wide SM utilization",
+            "correctness": {
+              "maximum_relative_l2_error": 3.0016792893238165e-07,
+              "pass": true,
+              "positions": [
+                {
+                  "expected_expert_ids": [
+                    165,
+                    43,
+                    396,
+                    870,
+                    481,
+                    686,
+                    841,
+                    335,
+                    855,
+                    632,
+                    629,
+                    337,
+                    611,
+                    209,
+                    199,
+                    713
+                  ],
+                  "expected_output_fingerprint": "sha256:30bf6b2a1cc4dcc21aef0f2f71c399d41803f88c1a5c76b0a97a35ee826c2ad3",
+                  "input_fingerprint": "sha256:df26849ca1042f026d38fe519d9bd9af99082af3fbaf9e39b44e4eed76c2a619",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 31.602171010836518,
+                    "cosine_similarity": 0.9999999999999731,
+                    "maximum_absolute_error": 5.960464477539062e-07,
+                    "mean_absolute_error": 8.067723279560191e-09,
+                    "reference_finite": true,
+                    "reference_l2": 31.602174684713642,
+                    "relative_l2_error": 2.5996148228171764e-07
+                  },
+                  "output_fingerprint": "sha256:65743714460e72e612c6c5dd1c0301cf7fb2d66732f4e22507712aef5e880196",
+                  "position": 0,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    165,
+                    43,
+                    396,
+                    870,
+                    481,
+                    686,
+                    841,
+                    335,
+                    855,
+                    632,
+                    629,
+                    337,
+                    611,
+                    209,
+                    199,
+                    713
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    477,
+                    165,
+                    263,
+                    464,
+                    723,
+                    657,
+                    870,
+                    599,
+                    71,
+                    635,
+                    524,
+                    65,
+                    622,
+                    704,
+                    354,
+                    754
+                  ],
+                  "expected_output_fingerprint": "sha256:d83dceff9cc9f0525b7c57777b0ee02b3469d12d8811430ff82e003d8ef15285",
+                  "input_fingerprint": "sha256:274b85bd93a7ce0edf80c3c8ee49ae181e8ffb23892a79d316de1205ee42b9f2",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 5.6727319561571115,
+                    "cosine_similarity": 0.9999999999999674,
+                    "maximum_absolute_error": 2.384185791015625e-07,
+                    "mean_absolute_error": 1.4783439375663412e-09,
+                    "reference_finite": true,
+                    "reference_l2": 5.672731881274216,
+                    "relative_l2_error": 2.574903287527055e-07
+                  },
+                  "output_fingerprint": "sha256:6dad7df9d3d49b663c326664119f23ba155f898abad0dc0894b13c714fe0c6c9",
+                  "position": 1,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    477,
+                    165,
+                    263,
+                    464,
+                    723,
+                    657,
+                    870,
+                    599,
+                    71,
+                    635,
+                    524,
+                    65,
+                    622,
+                    704,
+                    354,
+                    754
+                  ]
+                },
+                {
+                  "expected_expert_ids": [
+                    635,
+                    477,
+                    263,
+                    723,
+                    870,
+                    768,
+                    54,
+                    599,
+                    832,
+                    484,
+                    71,
+                    754,
+                    401,
+                    888,
+                    751,
+                    289
+                  ],
+                  "expected_output_fingerprint": "sha256:a7229fadf45909c293e5a6266fe2bb630e298c8ae8d27cef78d019e52285b02b",
+                  "input_fingerprint": "sha256:3a39cc2b3c585cdcf182649e53bf12e5727010726dfc300010276b9f807efc1f",
+                  "metrics": {
+                    "actual_finite": true,
+                    "actual_l2": 4.913829997244165,
+                    "cosine_similarity": 0.999999999999956,
+                    "maximum_absolute_error": 1.1920928955078125e-07,
+                    "mean_absolute_error": 1.5155637450493125e-09,
+                    "reference_finite": true,
+                    "reference_l2": 4.913829792405221,
+                    "relative_l2_error": 3.0016792893238165e-07
+                  },
+                  "output_fingerprint": "sha256:24a5316295d47624e7b34ba50766f12e80b7af5117834df9d3e8707ada045005",
+                  "position": 2,
+                  "routing_equality": true,
+                  "selected_expert_ids": [
+                    635,
+                    477,
+                    263,
+                    723,
+                    870,
+                    768,
+                    54,
+                    599,
+                    832,
+                    484,
+                    71,
+                    754,
+                    401,
+                    888,
+                    751,
+                    289
+                  ]
+                }
+              ],
+              "routing_equality": true
+            },
+            "detailed_counter_gate": true,
+            "device": {
+              "maximum_ms": 3.1412479877471924,
+              "mean_ms": 2.756366410255432,
+              "minimum_ms": 2.6908481121063232,
+              "p50_ms": 2.730799913406372,
+              "p95_ms": 2.9302672743797302,
+              "p99_ms": 3.113179485797882,
+              "standard_deviation_ms": 0.08561712080922183
+            },
+            "final_boundary_fingerprint": "sha256:84bd8923ef7ed34bd50c1d0cb0926ca3dd5acd4a705e7986fdf95b4040a33844",
+            "gpu_utilization": {
+              "memory_utilization_percent": {
+                "maximum": 0.0,
+                "mean": 0.0
+              },
+              "note": "device-wide one-second nvidia-smi samples; not kernel compute occupancy",
+              "sample_count": 1,
+              "sampling_interval_seconds": 1,
+              "sm_utilization_percent": {
+                "maximum": 0.0,
+                "mean": 0.0
+              },
+              "status": "MEASURED"
+            },
+            "host_and_synchronization_exposure": {
+              "maximum_ms": 0.3474398902893068,
+              "mean_ms": 0.19204358974456784,
+              "minimum_ms": 0.17103599662780766,
+              "p50_ms": 0.18934598369598388,
+              "p95_ms": 0.21510120546340944,
+              "p99_ms": 0.23313468870925944,
+              "standard_deviation_ms": 0.01976428157814571
+            },
+            "kernel_count": {
+              "basis": "P0 retained kernel counts plus the exact canonical call graph",
+              "estimated_total_per_call": 91,
+              "native_dense_calls": 0,
+              "native_router_calls": 0,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0
+            },
+            "lifecycle_delta": {
+              "connection_establishment": 0,
+              "model_materialization": 0,
+              "persistent_buffer_allocation": 0,
+              "process_creation": 0,
+              "task_creation": 0,
+              "thread_creation": 0,
+              "topology_rebuilds": 0,
+              "weight_loading": 0
+            },
+            "lifecycle_deltas_zero": true,
+            "memory": {
+              "free_bytes_after_session_close": 14198767616,
+              "free_bytes_after_session_open": 14196670464,
+              "free_bytes_before_session": 14198767616,
+              "resident_stage_bytes": 18228445184,
+              "session_allocation_free_delta_bytes": 2097152,
+              "state_bytes": 276480
+            },
+            "mode": "production",
+            "native_attribution": {
+              "attributed_device_ms": 0.0,
+              "dense": {
+                "calls": 0,
+                "kernel_ms_per_call": 0.0
+              },
+              "dense_kernel_ms": 0.0,
+              "dense_kernel_share_percent": null,
+              "expected_router_calls": 100,
+              "expert": {
+                "calls": 0,
+                "d2h_bytes": 0,
+                "d2h_ms": 0.0,
+                "down_ms": 0.0,
+                "gate_ms": 0.0,
+                "gate_up_pair_ms": 0.0,
+                "h2d_bytes": 0,
+                "h2d_ms": 0.0,
+                "kernel_ms": 0.0,
+                "rows": 0,
+                "situ_ms": 0.0,
+                "up_ms": 0.0
+              },
+              "expert_effective_source_weight_bandwidth_gbps": 0.0,
+              "expert_kernel_ms": 0,
+              "expert_kernel_share_percent": null,
+              "phase_timed_routed_expert_groups": 0,
+              "phase_timed_shared_experts": 0,
+              "routed_expert_kernel_ms": 0,
+              "router": {
+                "calls": 0,
+                "d2h_ms_per_call": 0.0,
+                "logits_ms_per_call": 0.0,
+                "selection_ms_per_call": 0.0
+              },
+              "router_d2h_ms": 0.0,
+              "router_device_ms": 0.0,
+              "router_device_share_percent": null,
+              "shared_expert_kernel_ms": 0,
+              "unattributed_device_ms": null,
+              "whole_stage_device_ms": null,
+              "whole_stage_device_reference_mode": "production"
+            },
+            "process_cpu": {
+              "maximum_ms": 15.625,
+              "mean_ms": 2.96875,
+              "minimum_ms": 0.0,
+              "p50_ms": 0.0,
+              "p95_ms": 15.625,
+              "p99_ms": 15.625,
+              "standard_deviation_ms": 6.129701639354072
+            },
+            "retained_iterations": 100,
+            "routing_distribution": {
+              "maximum_selections_for_one_expert": 100,
+              "most_selected": [
+                {
+                  "count": 100,
+                  "expert_id": 723
+                },
+                {
+                  "count": 100,
+                  "expert_id": 870
+                },
+                {
+                  "count": 67,
+                  "expert_id": 635
+                },
+                {
+                  "count": 67,
+                  "expert_id": 477
+                },
+                {
+                  "count": 67,
+                  "expert_id": 263
+                },
+                {
+                  "count": 67,
+                  "expert_id": 599
+                },
+                {
+                  "count": 67,
+                  "expert_id": 71
+                },
+                {
+                  "count": 67,
+                  "expert_id": 754
+                },
+                {
+                  "count": 66,
+                  "expert_id": 165
+                },
+                {
+                  "count": 34,
+                  "expert_id": 768
+                }
+              ],
+              "selection_count": 1600,
+              "unique_experts": 37
+            },
+            "status": "PASS",
+            "transfers_per_call": {
+              "d2d_bytes": 0,
+              "d2h_bytes": 28672,
+              "h2d_bytes": 114752,
+              "wire_boundary_bytes_not_copied_wholesale_to_device": 258048
+            },
+            "wall": {
+              "maximum_ms": 3.3362,
+              "mean_ms": 2.94841,
+              "minimum_ms": 2.8636,
+              "p50_ms": 2.92015,
+              "p95_ms": 3.15752,
+              "p99_ms": 3.3219440000000002,
+              "standard_deviation_ms": 0.09275670919130326
+            },
+            "warmup_iterations": 20
+          }
+        },
+        "status": "PASS",
+        "telemetry_overhead": {
+          "detailed_relative_to_minimal_percent": 5.411229498383818,
+          "production_relative_to_minimal_percent": -0.11629696772759157
+        }
+      }
+    ],
+    "retained_iterations_per_mode": 100,
+    "warmup_iterations_per_mode": 20
+  },
+  "cycle_id": "H014-027a",
+  "decision": "RETAIN_MEASUREMENT_CONTROLS",
+  "hypothesis": "Resident routed plus shared expert kernels exceed 70% of canonical batch-1 device service in both KDA and Gated-MLA MoE layers, while production telemetry changes wall p50 by at most 5% relative to minimal telemetry.",
+  "implementation": "Measurement-only native telemetry selection and opt-in cumulative router statistics; no arithmetic, layout, scheduling, weight, or state change.",
+  "inspection": {
+    "actual_bottleneck": "MIXED_UNATTRIBUTED_STAGE_SERVICE",
+    "detailed_telemetry_retained_for_attribution_only": true,
+    "instrumentation_materially_determined_result": false,
+    "production_or_minimal_modes_required_for_service_rate": true
+  },
+  "redesign": "H014-027b isolates the measured non-expert remainder before any expert kernel redesign.",
+  "result": {
+    "expert_dominance_prediction_supported": false,
+    "hypothesis_supported": false,
+    "production_telemetry_overhead_gate_supported": true
+  },
+  "schema_version": "experiment-014-k3-resident-stage-profile-v1",
+  "status": "PASS"
+}

@@ -1,0 +1,19 @@
+{
+  "final_runtime": "canonical-dfs-device-partial-linear-cow-v2",
+  "rejected_attempts": [
+    {
+      "artifact": "scalar_batch_hash_diagnostic.json",
+      "interpretation": "The initial counter treated scalar-vs-batched state-hash disagreement as contamination. That comparison did not isolate sibling influence and is not a confirmed cross-branch event. Follow-up tests changed rejected sibling tokens while holding batching/tree structure fixed and obtained identical surviving full and recurrent hashes."
+    },
+    {
+      "artifact": "batched_verification_compatibility_failure.json",
+      "interpretation": "A batched branch path changed deterministic continuation; excluded from final execution and timing."
+    },
+    {
+      "artifact": "variable_sequence_continuation_failure.json",
+      "interpretation": "A sequence-fork tree diverged in long-run continuation. Fixed sequence IDs and disabling Flash Attention did not establish equivalence. These paths were replaced, not used for final projections."
+    }
+  ],
+  "accepted_evidence": "Final branch_state_correctness.json and correctness_results.json test the canonical DFS/linear checkpoint implementation. Its full workload must match the same-engine scalar reference exactly.",
+  "cause_limit": "The failed continuation mechanisms were not conclusively attributed to a particular kernel or state component. No confirmed dependence of the surviving state on rejected sibling token values was found in the controlled branch tests."
+}

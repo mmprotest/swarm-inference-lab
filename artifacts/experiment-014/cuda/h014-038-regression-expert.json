@@ -1,0 +1,411 @@
+{
+  "backend": {
+    "binary_has_forward_ptx": true,
+    "binary_min_compute_capability": 86,
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "compiled_architecture": "sm_86",
+    "cpu_fallback_allowed": false,
+    "cuda_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+    "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+    "device": {
+      "compute_capability": "12.0",
+      "driver_version": "591.86",
+      "memory_total_mib": 32607.0,
+      "name": "NVIDIA GeForce RTX 5090",
+      "status": "MEASURED",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "gate_up_fused": true,
+    "identity": "nvidia_cuda_direct_dll",
+    "projection_order": "gate_then_up",
+    "reference_identity": "colibri-native-mxfp4-fixture-v1",
+    "reference_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\build\\colibri\\bin\\coli_kimi_mxfp4.dll",
+    "reference_library_sha256": "d0d487a186063b02134bb209705971242de54be1482c9b8c764c4b365722c375"
+  },
+  "benchmark": {
+    "compute_utilization": null,
+    "d2d_bytes_per_call": 0,
+    "d2h_bytes_per_call": 14336,
+    "detailed_exposed_host_or_sync_ms": 0.03697146641512711,
+    "effective_weight_bandwidth_gbps": 183.86471543449727,
+    "gpu_utilization": null,
+    "h2d_bytes_per_call": 14336,
+    "kernel_count_per_call": 4,
+    "memory_copies_per_call": 2,
+    "modes": {
+      "detailed": {
+        "host_cpu": {
+          "maximum_ms": 15.625,
+          "mean_ms": 0.5208333333333334,
+          "minimum_ms": 0.0,
+          "p50_ms": 0.0,
+          "p95_ms": 0.0,
+          "p99_ms": 11.093750000000014,
+          "standard_deviation_ms": 2.804773337049221
+        },
+        "output_fingerprint": "sha256:995613b0be8dfbe0b61bb02b21873e732524c15700313d8eda73ea46aaffaa37",
+        "telemetry": {
+          "calls": 30,
+          "d2h_bytes": 430080,
+          "d2h_ms": 1.0744959991425276,
+          "down_ms": 0.7372800260782242,
+          "gate_ms": 0.0,
+          "gate_up_pair_ms": 2.035071987658739,
+          "h2d_bytes": 430080,
+          "h2d_ms": 0.09228800050914288,
+          "kernel_ms": 2.863072007894516,
+          "rows": 30,
+          "situ_ms": 0.07449599844403565,
+          "up_ms": 0.0
+        },
+        "telemetry_per_call": {
+          "d2h_ms": 0.03581653330475092,
+          "down_ms": 0.02457600086927414,
+          "gate_ms": 0.0,
+          "gate_up_pair_ms": 0.06783573292195796,
+          "h2d_ms": 0.003076266683638096,
+          "kernel_ms": 0.09543573359648387,
+          "situ_ms": 0.0024831999481345216,
+          "up_ms": 0.0
+        },
+        "wall": {
+          "maximum_ms": 0.2032,
+          "mean_ms": 0.17085000000000003,
+          "minimum_ms": 0.1473,
+          "p50_ms": 0.1713,
+          "p95_ms": 0.18974999999999992,
+          "p99_ms": 0.202823,
+          "standard_deviation_ms": 0.01057285045135259
+        }
+      },
+      "minimal": {
+        "host_cpu": {
+          "maximum_ms": 15.625,
+          "mean_ms": 0.5208333333333334,
+          "minimum_ms": 0.0,
+          "p50_ms": 0.0,
+          "p95_ms": 0.0,
+          "p99_ms": 11.093750000000014,
+          "standard_deviation_ms": 2.804773337049221
+        },
+        "output_fingerprint": "sha256:995613b0be8dfbe0b61bb02b21873e732524c15700313d8eda73ea46aaffaa37",
+        "telemetry": {
+          "calls": 0,
+          "d2h_bytes": 0,
+          "d2h_ms": 0.0,
+          "down_ms": 0.0,
+          "gate_ms": 0.0,
+          "gate_up_pair_ms": 0.0,
+          "h2d_bytes": 0,
+          "h2d_ms": 0.0,
+          "kernel_ms": 0.0,
+          "rows": 0,
+          "situ_ms": 0.0,
+          "up_ms": 0.0
+        },
+        "telemetry_per_call": {
+          "d2h_ms": 0.0,
+          "down_ms": 0.0,
+          "gate_ms": 0.0,
+          "gate_up_pair_ms": 0.0,
+          "h2d_ms": 0.0,
+          "kernel_ms": 0.0,
+          "situ_ms": 0.0,
+          "up_ms": 0.0
+        },
+        "wall": {
+          "maximum_ms": 0.1829,
+          "mean_ms": 0.16607333333333338,
+          "minimum_ms": 0.1638,
+          "p50_ms": 0.1651,
+          "p95_ms": 0.17064,
+          "p99_ms": 0.17997100000000002,
+          "standard_deviation_ms": 0.0034830956856732437
+        }
+      },
+      "production": {
+        "host_cpu": {
+          "maximum_ms": 0.0,
+          "mean_ms": 0.0,
+          "minimum_ms": 0.0,
+          "p50_ms": 0.0,
+          "p95_ms": 0.0,
+          "p99_ms": 0.0,
+          "standard_deviation_ms": 0.0
+        },
+        "output_fingerprint": "sha256:995613b0be8dfbe0b61bb02b21873e732524c15700313d8eda73ea46aaffaa37",
+        "telemetry": {
+          "calls": 30,
+          "d2h_bytes": 430080,
+          "d2h_ms": 0.0,
+          "down_ms": 0.0,
+          "gate_ms": 0.0,
+          "gate_up_pair_ms": 0.0,
+          "h2d_bytes": 430080,
+          "h2d_ms": 0.0,
+          "kernel_ms": 0.0,
+          "rows": 30,
+          "situ_ms": 0.0,
+          "up_ms": 0.0
+        },
+        "telemetry_per_call": {
+          "d2h_ms": 0.0,
+          "down_ms": 0.0,
+          "gate_ms": 0.0,
+          "gate_up_pair_ms": 0.0,
+          "h2d_ms": 0.0,
+          "kernel_ms": 0.0,
+          "situ_ms": 0.0,
+          "up_ms": 0.0
+        },
+        "wall": {
+          "maximum_ms": 0.2107,
+          "mean_ms": 0.16475666666666663,
+          "minimum_ms": 0.1579,
+          "p50_ms": 0.163,
+          "p95_ms": 0.172455,
+          "p99_ms": 0.19962200000000002,
+          "standard_deviation_ms": 0.00905920097040695
+        }
+      }
+    },
+    "phase_hypothesis": {
+      "gemm_share_percent": 96.8313757423004,
+      "prediction": "MXFP4 GEMMs consume more than 95% of aggregate kernel time"
+    },
+    "reference_wall_ms": 2.1888,
+    "resident": {
+      "backend_identity": "nvidia_cuda_device_resident",
+      "correctness": {
+        "actual_finite": true,
+        "actual_l2": 0.2522664797700958,
+        "cosine_similarity": 0.9999999999999252,
+        "maximum_absolute_error": 5.820766091346741e-09,
+        "mean_absolute_error": 1.303492678874006e-09,
+        "reference_finite": true,
+        "reference_l2": 0.25226647965857474,
+        "relative_l2_error": 3.9036776347743796e-07
+      },
+      "cpu_fallback_allowed": false,
+      "d2h_bytes_per_call": 0,
+      "h2d_bytes_per_call": 0,
+      "one_time_activation_upload_bytes": 14336,
+      "one_time_validation_download_bytes": 14336,
+      "output_fingerprint": "sha256:995613b0be8dfbe0b61bb02b21873e732524c15700313d8eda73ea46aaffaa37",
+      "queued_service_ms_per_call": 0.06937,
+      "retained_calls": 30,
+      "synchronized_generation": {
+        "maximum_ms": 0.0837,
+        "mean_ms": 0.07676666666666666,
+        "minimum_ms": 0.0756,
+        "p50_ms": 0.0765,
+        "p95_ms": 0.079095,
+        "p99_ms": 0.082482,
+        "standard_deviation_ms": 0.0015102611988953723
+      },
+      "warmup_calls": 5
+    },
+    "resident_hypothesis": {
+      "minimum_queued_service_improvement_percent": 25.0,
+      "minimum_synchronized_p50_improvement_percent": 15.0,
+      "queued_service_improvement_percent": 57.98304058146577,
+      "supported": true,
+      "synchronized_p50_improvement_percent": 53.66444579043004
+    },
+    "retained_iterations_per_mode": 30,
+    "telemetry_contract_passed": true,
+    "telemetry_overhead": {
+      "detailed": {
+        "p50_ms": 0.1713,
+        "relative_to_minimal_percent": 3.755299818291946
+      },
+      "minimal": {
+        "p50_ms": 0.1651,
+        "relative_to_minimal_percent": 0.0
+      },
+      "production": {
+        "p50_ms": 0.163,
+        "relative_to_minimal_percent": -1.2719563900666198
+      }
+    },
+    "utilization_note": "not retained for this sub-millisecond component fixture; a kernel profiler is required before bottleneck classification",
+    "warmup_iterations_per_mode": 5
+  },
+  "checkpoint": {
+    "expert_id": 0,
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "layer": 1,
+    "path": "F:\\models\\Kimi-K3",
+    "source_shards": [
+      "model-00002-of-000096.safetensors"
+    ]
+  },
+  "correctness": {
+    "actual_finite": true,
+    "actual_l2": 0.2522664797700958,
+    "cosine_similarity": 0.9999999999999252,
+    "maximum_absolute_error": 5.820766091346741e-09,
+    "mean_absolute_error": 1.303492678874006e-09,
+    "reference_finite": true,
+    "reference_l2": 0.25226647965857474,
+    "relative_l2_error": 3.9036776347743796e-07
+  },
+  "correctness_threshold": {
+    "maximum_relative_l2_error": 0.0003,
+    "minimum_cosine_similarity": 0.999999
+  },
+  "cycle_id": "H014-038",
+  "fixture": {
+    "activation_dimensions": [
+      1,
+      3584
+    ],
+    "activation_dtype": "float32",
+    "activation_fingerprint": "sha256:39e324b98ddf58ce773735042ea2964bc471d66301e2f81640ee2b5c49d0bb89",
+    "activation_maximum": 0.15305770933628082,
+    "activation_minimum": -0.19685399532318115,
+    "activation_source": "deterministic_fp32_latent_fixture_with_real_checkpoint_weights",
+    "batch": 1,
+    "reference_output_fingerprint": "sha256:e2eeddbf97efaa9cdd9adb9a7d38b3c1a519ac490074fae57ddda599e5ee9e35",
+    "seed": 14025,
+    "tensors": {
+      "down": {
+        "dimensions": [
+          3584,
+          3072
+        ],
+        "packed_dtype": "uint8",
+        "packed_fingerprint": "sha256:9fcac484bcc8a15834ecafd65691525db1930a90115967771620493ce6101a41",
+        "packed_shape": [
+          3584,
+          1536
+        ],
+        "resident_bytes": 5849088,
+        "scale_dtype": "uint8",
+        "scale_fingerprint": "sha256:b7d6ac0f278c6741d15109db9b0e3eff76e7a12dc65e179c5ce11c5aa1ba8e6f",
+        "scale_shape": [
+          3584,
+          96
+        ],
+        "tensor_names": {
+          "packed": "language_model.model.layers.1.block_sparse_moe.experts.0.w2.weight_packed",
+          "scale": "language_model.model.layers.1.block_sparse_moe.experts.0.w2.weight_scale"
+        }
+      },
+      "gate": {
+        "dimensions": [
+          3072,
+          3584
+        ],
+        "packed_dtype": "uint8",
+        "packed_fingerprint": "sha256:a68f99b56c258fdbef7ea27cc8a4c9fdd824d3f0ab5a9c6931d14f260b2ca19b",
+        "packed_shape": [
+          3072,
+          1792
+        ],
+        "resident_bytes": 5849088,
+        "scale_dtype": "uint8",
+        "scale_fingerprint": "sha256:45e40af58b650a6127b0f21556b5ef17a80060f91e71b453d54f7a2478e8883a",
+        "scale_shape": [
+          3072,
+          112
+        ],
+        "tensor_names": {
+          "packed": "language_model.model.layers.1.block_sparse_moe.experts.0.w1.weight_packed",
+          "scale": "language_model.model.layers.1.block_sparse_moe.experts.0.w1.weight_scale"
+        }
+      },
+      "up": {
+        "dimensions": [
+          3072,
+          3584
+        ],
+        "packed_dtype": "uint8",
+        "packed_fingerprint": "sha256:432def89bc927b092c808559eca03ce7ebc44223c071c7f5ee962a5bd8c00149",
+        "packed_shape": [
+          3072,
+          1792
+        ],
+        "resident_bytes": 5849088,
+        "scale_dtype": "uint8",
+        "scale_fingerprint": "sha256:a288e8c4db7efd7dbf7d3cf750b7b7ef20cc396f837919f5e4bc57ee87eb5d24",
+        "scale_shape": [
+          3072,
+          112
+        ],
+        "tensor_names": {
+          "packed": "language_model.model.layers.1.block_sparse_moe.experts.0.w3.weight_packed",
+          "scale": "language_model.model.layers.1.block_sparse_moe.experts.0.w3.weight_scale"
+        }
+      }
+    }
+  },
+  "hypothesis": "The existing resident CUDA expert path can consume byte-exact Kimi E2M1/UE8M0 group-32 tensors with a SiTU epilogue, match the serial FP32-activation oracle within 3e-4 relative L2 error, and execute without CPU fallback or layout conversion.",
+  "inspection": {
+    "bottleneck": "PENDING_KERNEL_PROFILE",
+    "decision": "RETAIN",
+    "layout_conversion_kernel_count": 0,
+    "persistent_dequantized_weight_bytes": 0,
+    "routing_equality": "NOT_APPLICABLE_FIXED_EXPERT_ID",
+    "selected_expert_ids": [
+      0
+    ]
+  },
+  "memory": {
+    "after_upload": {
+      "free_bytes": 32408338432,
+      "total_bytes": 34190458880
+    },
+    "after_warmup": {
+      "free_bytes": 32406241280,
+      "total_bytes": 34190458880
+    },
+    "before_upload": {
+      "free_bytes": 32429309952,
+      "total_bytes": 34190458880
+    },
+    "expected_tensor_resident_bytes": 17547264,
+    "observed_upload_vram_delta_bytes": 20971520,
+    "observed_workspace_vram_delta_bytes": 2097152,
+    "tensor_resident_bytes": 17547264
+  },
+  "schema_version": "experiment-014-k3-cuda-real-expert-v1",
+  "status": "PASS",
+  "telemetry_mode_output_equality": {
+    "detailed": {
+      "actual_finite": true,
+      "actual_l2": 0.2522664797700958,
+      "cosine_similarity": 1.0000000000000002,
+      "maximum_absolute_error": 0.0,
+      "mean_absolute_error": 0.0,
+      "reference_finite": true,
+      "reference_l2": 0.2522664797700958,
+      "relative_l2_error": 0.0
+    },
+    "minimal": {
+      "actual_finite": true,
+      "actual_l2": 0.2522664797700958,
+      "cosine_similarity": 1.0000000000000002,
+      "maximum_absolute_error": 0.0,
+      "mean_absolute_error": 0.0,
+      "reference_finite": true,
+      "reference_l2": 0.2522664797700958,
+      "relative_l2_error": 0.0
+    },
+    "production": {
+      "actual_finite": true,
+      "actual_l2": 0.2522664797700958,
+      "cosine_similarity": 1.0000000000000002,
+      "maximum_absolute_error": 0.0,
+      "mean_absolute_error": 0.0,
+      "reference_finite": true,
+      "reference_l2": 0.2522664797700958,
+      "relative_l2_error": 0.0
+    }
+  }
+}

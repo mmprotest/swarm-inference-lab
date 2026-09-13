@@ -165,3 +165,35 @@ torchinductor_*/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Additional local environments and compiled/downloaded build payloads.
+venv/
+node_modules/
+*.exe
+*.dll
+*.so
+*.so.*
+*.dylib
+*.obj
+*.o
+*.lib
+*.a
+*.pdb
+*.whl
+
+# Generated experiment logs and per-round traces; preserve summaries/metrics.
+/experiments/**/logs/*.log
+/experiments/**/tree_rounds.jsonl
+
+# Large generated bundles and compressed artifact archives.
+/artifacts/**/*.tgz
+/artifacts/**/*.tar.xz
+/artifacts/**/*.tar.zst
+/artifacts/**/*.7z
+/experiments/**/*.zip
+/experiments/**/*.tar
+/experiments/**/*.tar.gz
+/experiments/**/*.tgz
+/experiments/**/*.tar.xz
+/experiments/**/*.tar.zst
+/experiments/**/*.7z

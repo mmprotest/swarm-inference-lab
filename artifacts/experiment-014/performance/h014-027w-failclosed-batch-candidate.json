@@ -1,0 +1,70 @@
+{
+  "benchmark": {
+    "binary_audit": {
+      "capability_query_without_device_init": 2,
+      "compute_86_ptx": true,
+      "exports": [
+        "coli_cuda_kimi_expert_max_certified_batch",
+        "coli_cuda_kimi_expert_mlp",
+        "coli_cuda_kimi_expert_mlp_dev"
+      ],
+      "sm_86_cubin": true
+    },
+    "build": {
+      "cuda": "13.0.88",
+      "host_compiler": "MSVC 14.44.35207",
+      "target": "sm_86+compute_86 PTX",
+      "status": "PASS"
+    },
+    "static_validation": {
+      "focused_tests": "23 passed in 2.74s",
+      "ruff": "PASS"
+    }
+  },
+  "cycle_id": "H014-027w",
+  "decision": "QUARANTINE_CANDIDATE_UNTIL_POST_REBOOT_GPU_VALIDATION",
+  "hypothesis": "Advertising max_certified_batch=2 and rejecting S>2 before scratch allocation or kernel launch prevents recurrence of the H014-027v device-loss class while preserving real batch 1 and 2.",
+  "implementation": "Both host and device-resident native Kimi expert entry points now reject S>2 before device selection, allocation, or launch; the DLL exports its certified maximum; Python performs the same preflight, using a conservative ceiling of 2 for legacy binaries.",
+  "inspection": {
+    "deployment_binary_replaced": false,
+    "gpu_runtime_validation": "BLOCKED_GPU_LOST_REBOOT_REQUIRED",
+    "nvidia_smi": "GPU is lost at PCI 0000:02:00.0; reboot required",
+    "static_bottleneck": "SAFETY_GUARD_RESOLVED_BUILD_ONLY_RUNTIME_UNVALIDATED"
+  },
+  "redesign": "After reboot, run isolated batch 1, batch 2, rejected batch 4, post-rejection batch 1, then the native P0/P1 regression subset on this exact candidate hash.",
+  "result": {
+    "build_pass": true,
+    "gpu_validation_pass": null,
+    "hypothesis_supported": null,
+    "python_prelaunch_guard_tested": true
+  },
+  "schema_version": "experiment-014-k3-failclosed-batch-candidate-v1",
+  "sources": {
+    "candidate_binary": {
+      "bytes": 700416,
+      "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-027w-candidate.dll",
+      "sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968"
+    },
+    "cuda_binding": {
+      "path": "src/swarm_inference/experiments/experiment_014/cuda.py",
+      "sha256": "d0734f0c38d78c49b4fd104db59978093c673af705e21acb004d049a297a815f"
+    },
+    "deployment_binary_unchanged": {
+      "path": "artifacts/experiment-015-deployment/native/windows/coli_cuda-sm86.dll",
+      "sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044"
+    },
+    "native_header": {
+      "path": "third_party/colibri/c/backend_cuda.h",
+      "sha256": "c4bc12591ec66be54eca4479327612979841684fe98f1a9d3a1f01bdcc8b594d"
+    },
+    "native_source": {
+      "path": "third_party/colibri/c/backend_cuda.cu",
+      "sha256": "a08bb7c8afbec55a334b7770a7dee5ed5f9b1ca72b702cc45f4ba2b7b7a09a6d"
+    },
+    "preflight_test": {
+      "path": "tests/unit/test_experiment_014_full_cuda.py",
+      "sha256": "eb029b5ea88542ad533eeb0e2437cc15d9b63322a7404a5a2a61e7fa4cdf7b32"
+    }
+  },
+  "status": "GPU_VALIDATION_BLOCKED"
+}

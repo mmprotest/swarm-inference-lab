@@ -1,0 +1,1246 @@
+{
+  "machine_ids": [
+    3754,
+    12704,
+    27870,
+    31375,
+    31390,
+    39772,
+    40393,
+    41794,
+    42540,
+    45075,
+    47324,
+    48280,
+    49894,
+    51857,
+    54112,
+    54514,
+    54594,
+    54702,
+    55158,
+    55636,
+    56254,
+    56698,
+    56838,
+    56939,
+    57297,
+    57649,
+    64274,
+    65601,
+    68203,
+    68301,
+    76546,
+    79780,
+    82227,
+    84895,
+    86690,
+    91962,
+    101705,
+    104433,
+    108924,
+    114019,
+    118555,
+    120972,
+    122589,
+    126098,
+    127089,
+    131146,
+    131228,
+    134131,
+    135788,
+    136514,
+    136634,
+    136818,
+    136978,
+    136980,
+    137464,
+    137644,
+    137843,
+    138100,
+    138111,
+    138211,
+    139916,
+    140049,
+    140149,
+    140510,
+    140887,
+    141223,
+    141578,
+    142483,
+    142848,
+    143947,
+    144250,
+    144463,
+    144543,
+    146355,
+    146484,
+    147917
+  ],
+  "policy": "exclude only machines with an attributable create-ID loss, progress-aware bootstrap stall, authenticated readiness failure, or frozen physical-canary failure; retain healthy siblings and deadline-aborted progressing hosts",
+  "schema_version": "experiment-025-headline-machine-exclusions-v1",
+  "stage_receipts": [
+    {
+      "generated_at_utc": "2026-08-23T20:33:35.093117+00:00",
+      "machine_ids": [
+        27870,
+        31375,
+        45075,
+        47324,
+        54594,
+        55158,
+        56254,
+        56698,
+        65601,
+        68301,
+        76546,
+        82227,
+        101705,
+        104433,
+        108924,
+        114019,
+        122589,
+        134131,
+        136980,
+        139916,
+        143947
+      ],
+      "policy": "exclude a physical machine after any prior instance for this stage failed authenticated WORKER_READY or participated in a frozen physical canary receipt whose status was not PASS",
+      "schema_version": "experiment-025-failed-machine-exclusions-v1",
+      "sources": [
+        {
+          "machine_id": 27870,
+          "observations": [
+            {
+              "instance_id": 48435503,
+              "offer_id": 48425053,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-018-watchdog-heartbeat-crash-machine27870"
+            }
+          ]
+        },
+        {
+          "machine_id": 31375,
+          "observations": [
+            {
+              "instance_id": 48081877,
+              "offer_id": 48077326,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-004-host-never-ready-watchdog-abort"
+            },
+            {
+              "instance_id": 48086132,
+              "offer_id": 48085995,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-006-known-bad-machine-abort-f285"
+            }
+          ]
+        },
+        {
+          "machine_id": 45075,
+          "observations": [
+            {
+              "instance_id": 48433976,
+              "offer_id": 47795743,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-016-worker-ready-timeout-machine45075"
+            }
+          ]
+        },
+        {
+          "machine_id": 47324,
+          "observations": [
+            {
+              "instance_id": 48095080,
+              "offer_id": 31044967,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-011-worker-ready-timeout-machine47324"
+            }
+          ]
+        },
+        {
+          "machine_id": 54594,
+          "observations": [
+            {
+              "instance_id": 48437206,
+              "offer_id": 47406651,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-020-transient-machine54594"
+            }
+          ]
+        },
+        {
+          "machine_id": 55158,
+          "observations": [
+            {
+              "instance_id": 48096114,
+              "offer_id": 31139414,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-012-worker-ready-timeout-machine55158"
+            }
+          ]
+        },
+        {
+          "machine_id": 56254,
+          "observations": [
+            {
+              "instance_id": 48437849,
+              "offer_id": 31986249,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-021-transient-machine56254"
+            }
+          ]
+        },
+        {
+          "machine_id": 56698,
+          "observations": [
+            {
+              "instance_id": 48439900,
+              "offer_id": 41997158,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-024-gpu-load-oom-machine56698"
+            }
+          ]
+        },
+        {
+          "machine_id": 65601,
+          "observations": [
+            {
+              "instance_id": 48080250,
+              "offer_id": 35740187,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-003-transient-host-disappeared"
+            }
+          ]
+        },
+        {
+          "machine_id": 68301,
+          "observations": [
+            {
+              "instance_id": 48087211,
+              "offer_id": 34643376,
+              "physical_failure_receipt": "physical-canary.json",
+              "reason": "prior stage frozen physical canary failed",
+              "stage_directory": "stage-1-backbone-canary-attempt-007-numerical-fail-driver590"
+            }
+          ]
+        },
+        {
+          "machine_id": 76546,
+          "observations": [
+            {
+              "instance_id": 48438507,
+              "offer_id": 36399272,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-022-transient-machine76546"
+            }
+          ]
+        },
+        {
+          "machine_id": 82227,
+          "observations": [
+            {
+              "instance_id": 48434701,
+              "offer_id": 35502358,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-017-transient-machine82227"
+            }
+          ]
+        },
+        {
+          "machine_id": 101705,
+          "observations": [
+            {
+              "instance_id": 48097131,
+              "offer_id": 48050799,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-013-worker-ready-timeout-machine101705"
+            }
+          ]
+        },
+        {
+          "machine_id": 104433,
+          "observations": [
+            {
+              "instance_id": 48078008,
+              "offer_id": 40945932,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-002-private-image-pull-failure"
+            }
+          ]
+        },
+        {
+          "machine_id": 108924,
+          "observations": [
+            {
+              "instance_id": 48098318,
+              "offer_id": 36757230,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-014-worker-ready-timeout-machine108924"
+            }
+          ]
+        },
+        {
+          "machine_id": 114019,
+          "observations": [
+            {
+              "instance_id": 48452481,
+              "offer_id": 46739600,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-025-container-running-stall-machine114019"
+            }
+          ]
+        },
+        {
+          "machine_id": 122589,
+          "observations": [
+            {
+              "instance_id": 48089692,
+              "offer_id": 47876163,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-008-worker-ready-timeout-machine122589"
+            }
+          ]
+        },
+        {
+          "machine_id": 134131,
+          "observations": [
+            {
+              "instance_id": 48436661,
+              "offer_id": 44133024,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-019-transient-machine134131"
+            }
+          ]
+        },
+        {
+          "machine_id": 136980,
+          "observations": [
+            {
+              "instance_id": 48090875,
+              "offer_id": 38666249,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-009-worker-ready-timeout-machine136980"
+            }
+          ]
+        },
+        {
+          "machine_id": 139916,
+          "observations": [
+            {
+              "instance_id": 48439210,
+              "offer_id": 46568474,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-023-transient-machine139916"
+            }
+          ]
+        },
+        {
+          "machine_id": 143947,
+          "observations": [
+            {
+              "instance_id": 48433130,
+              "offer_id": 44762929,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-1-backbone-canary-attempt-015-worker-ready-timeout-machine143947"
+            }
+          ]
+        }
+      ],
+      "stage_prefix": "stage-1-backbone-canary"
+    },
+    {
+      "generated_at_utc": "2026-08-23T20:33:35.098876+00:00",
+      "machine_ids": [
+        31390,
+        51857,
+        54702,
+        68203,
+        84895,
+        86690,
+        108924,
+        114019,
+        131146,
+        131228,
+        136980,
+        137644,
+        137843,
+        140510
+      ],
+      "policy": "exclude a physical machine after any prior instance for this stage failed authenticated WORKER_READY or participated in a frozen physical canary receipt whose status was not PASS",
+      "progress_aware_reclassification": {
+        "basis": "For each CREATE_ID_LOST attempt, successfully created siblings were destroyed only because a separate provider create lost its ID. For each progress-aware stall, only the machine with a BOOTSTRAP_STALLED event is excluded; progressing siblings are retained as eligible. Attempt 004 was aborted for a reproducible snapshot-restart software defect, not a physical host failure.",
+        "bootstrap_stalled_machines_temporarily_excluded": true,
+        "create_id_lost_machines_temporarily_excluded": true,
+        "healthy_progressing_fragment_machines_blacklisted": false,
+        "software_bootstrap_failure_machines_blacklisted": false,
+        "stage_directories": [
+          "stage-2-sub-layer-canary-attempt-003-parent-create-id-lost-machine114019",
+          "stage-2-sub-layer-canary-attempt-004-parent-snapshot-reactivation-machine10134",
+          "stage-2-sub-layer-canary-attempt-005-fragment-create-id-lost-machine86690",
+          "stage-2-sub-layer-canary-attempt-006-container-bootstrap-stall-machine68203",
+          "stage-2-sub-layer-canary-attempt-007-gpu-load-stall-machine31390",
+          "stage-2-sub-layer-canary-attempt-008-bootstrap-stall-machines84895-51857",
+          "stage-2-sub-layer-canary-attempt-009-container-bootstrap-stall-machine137843",
+          "stage-2-sub-layer-canary-attempt-010-model-download-stall-machines131228-137644",
+          "stage-2-sub-layer-canary-attempt-011-fragment-create-id-lost-machine54702",
+          "stage-2-sub-layer-canary-attempt-012-model-download-stall-machine136980",
+          "stage-2-sub-layer-canary-attempt-013-model-download-stall-machine131146"
+        ]
+      },
+      "schema_version": "experiment-025-failed-machine-exclusions-v1",
+      "sources": [
+        {
+          "machine_id": 31390,
+          "observations": [
+            {
+              "instance_id": 48455229,
+              "offer_id": 36243482,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "GPU_LOAD made no observable progress for 266.93799999996554 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-007-gpu-load-stall-machine31390"
+            }
+          ]
+        },
+        {
+          "machine_id": 51857,
+          "observations": [
+            {
+              "instance_id": 48456131,
+              "offer_id": 45587623,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "MODEL_DOWNLOAD made no observable progress for 240.1720000000205 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-008-bootstrap-stall-machines84895-51857"
+            }
+          ]
+        },
+        {
+          "machine_id": 54702,
+          "observations": [
+            {
+              "instance_id": null,
+              "offer_id": 44949896,
+              "physical_failure_receipt": null,
+              "reason": "provider create returned no recoverable instance ID; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-011-fragment-create-id-lost-machine54702"
+            }
+          ]
+        },
+        {
+          "machine_id": 68203,
+          "observations": [
+            {
+              "instance_id": 48454540,
+              "offer_id": 34596403,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "CONTAINER_RUNNING made no observable progress for 241.90700000000652 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-006-container-bootstrap-stall-machine68203"
+            }
+          ]
+        },
+        {
+          "machine_id": 84895,
+          "observations": [
+            {
+              "instance_id": 48456132,
+              "offer_id": 46870040,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "CONTAINER_RUNNING made no observable progress for 240.15599999995902 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-008-bootstrap-stall-machines84895-51857"
+            }
+          ]
+        },
+        {
+          "machine_id": 86690,
+          "observations": [
+            {
+              "instance_id": null,
+              "offer_id": 46730905,
+              "physical_failure_receipt": null,
+              "reason": "provider create returned no recoverable instance ID; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-005-fragment-create-id-lost-machine86690"
+            }
+          ]
+        },
+        {
+          "machine_id": 108924,
+          "observations": [
+            {
+              "instance_id": 48442617,
+              "offer_id": 36757250,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-2-sub-layer-canary-pass-fd609590-before-headline-readiness-fix"
+            }
+          ]
+        },
+        {
+          "machine_id": 114019,
+          "observations": [
+            {
+              "instance_id": null,
+              "offer_id": 46739601,
+              "physical_failure_receipt": null,
+              "reason": "provider create returned no recoverable instance ID; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-003-parent-create-id-lost-machine114019"
+            }
+          ]
+        },
+        {
+          "machine_id": 131146,
+          "observations": [
+            {
+              "instance_id": 48459471,
+              "offer_id": 43655097,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "MODEL_DOWNLOAD made no observable progress for 274.75 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-013-model-download-stall-machine131146"
+            }
+          ]
+        },
+        {
+          "machine_id": 131228,
+          "observations": [
+            {
+              "instance_id": 48457287,
+              "offer_id": 47824796,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "MODEL_DOWNLOAD made no observable progress for 240.06299999996554 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-010-model-download-stall-machines131228-137644"
+            }
+          ]
+        },
+        {
+          "machine_id": 136980,
+          "observations": [
+            {
+              "instance_id": 48458286,
+              "offer_id": 38666270,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "MODEL_DOWNLOAD made no observable progress for 267.14099999994505 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-012-model-download-stall-machine136980"
+            }
+          ]
+        },
+        {
+          "machine_id": 137644,
+          "observations": [
+            {
+              "instance_id": 48457419,
+              "offer_id": 39270987,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "MODEL_DOWNLOAD made no observable progress for 240.06299999996554 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-010-model-download-stall-machines131228-137644"
+            }
+          ]
+        },
+        {
+          "machine_id": 137843,
+          "observations": [
+            {
+              "instance_id": 48456702,
+              "offer_id": 43060079,
+              "physical_failure_receipt": "bootstrap-progress.jsonl",
+              "reason": "CONTAINER_RUNNING made no observable progress for 243.18799999996554 seconds; use a ranked alternate for the immediate retry",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-009-container-bootstrap-stall-machine137843"
+            }
+          ]
+        },
+        {
+          "machine_id": 140510,
+          "observations": [
+            {
+              "instance_id": 48083296,
+              "offer_id": 46117245,
+              "physical_failure_receipt": null,
+              "reason": "prior instance never reached WORKER_READY",
+              "stage_directory": "stage-2-sub-layer-canary-attempt-001-three-ready-ttl-abort"
+            }
+          ]
+        }
+      ],
+      "stage_prefix": "stage-2-sub-layer-canary"
+    },
+    {
+      "machine_ids": [
+        3754,
+        12704,
+        39772,
+        40393,
+        41794,
+        42540,
+        48280,
+        49894,
+        54112,
+        54514,
+        55636,
+        56838,
+        56939,
+        57297,
+        57649,
+        64274,
+        79780,
+        91962,
+        118555,
+        120972,
+        126098,
+        127089,
+        135788,
+        136514,
+        136634,
+        136818,
+        136978,
+        137464,
+        138100,
+        138111,
+        138211,
+        140049,
+        140149,
+        140887,
+        141223,
+        141578,
+        142483,
+        142848,
+        144250,
+        144463,
+        144543,
+        146355,
+        146484,
+        147917
+      ],
+      "policy": "temporarily exclude only provider create-ID loss, a trusted observer's 240-second no-progress stall, or a fatal bootstrap marker; retain hosts aborted solely by the fleet deadline or shared abort",
+      "retained_progressing_deadline_abort_machine_ids": [
+        2106,
+        12368,
+        21327,
+        26910,
+        29847,
+        36991,
+        39913,
+        43150,
+        44850,
+        51795,
+        53711,
+        55194,
+        55313,
+        57056,
+        57827,
+        58176,
+        58908,
+        58967,
+        59214,
+        68093,
+        100674,
+        100731,
+        121771,
+        138337,
+        140178,
+        141010,
+        141821,
+        143521,
+        143874,
+        144172,
+        144713,
+        144936,
+        145083,
+        145688,
+        146086,
+        146547
+      ],
+      "schema_version": "experiment-025-headline-progress-aware-exclusions-v1",
+      "sources": [
+        {
+          "machine_id": 3754,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 48202728,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            }
+          ]
+        },
+        {
+          "machine_id": 12704,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461614,
+              "no_progress_seconds": 258.18700000003446,
+              "offer_id": 39399825,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 39772,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461628,
+              "no_progress_seconds": 358.01600000006147,
+              "offer_id": 44527580,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 40393,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 42071762,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-003-acquisition-window-abort"
+            }
+          ]
+        },
+        {
+          "machine_id": 41794,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 40077664,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            },
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461606,
+              "no_progress_seconds": 292.375,
+              "offer_id": 40077665,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 42540,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461599,
+              "no_progress_seconds": 249.7029999999795,
+              "offer_id": 28913433,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 48280,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 48412778,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            }
+          ]
+        },
+        {
+          "machine_id": 49894,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48462120,
+              "no_progress_seconds": 252.26500000001397,
+              "offer_id": 40877445,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 54112,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 48232151,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            }
+          ]
+        },
+        {
+          "machine_id": 54514,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461678,
+              "no_progress_seconds": 255.17199999990407,
+              "offer_id": 41246100,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 55636,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461601,
+              "no_progress_seconds": 259.98400000005495,
+              "offer_id": 35957819,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 56838,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461646,
+              "no_progress_seconds": 338.454000000027,
+              "offer_id": 47343847,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 56939,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 46113147,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 57297,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 47755374,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 57649,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48462021,
+              "no_progress_seconds": 261.25,
+              "offer_id": 48012478,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 64274,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461778,
+              "no_progress_seconds": 252.18799999996554,
+              "offer_id": 44743858,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 79780,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461781,
+              "no_progress_seconds": 241.51599999994505,
+              "offer_id": 46862551,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 91962,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461838,
+              "no_progress_seconds": 302.06200000003446,
+              "offer_id": 36328625,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 118555,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 44139908,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-003-acquisition-window-abort"
+            }
+          ]
+        },
+        {
+          "machine_id": 120972,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461777,
+              "no_progress_seconds": 247.3279999999795,
+              "offer_id": 46966118,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 126098,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 46148175,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            }
+          ]
+        },
+        {
+          "machine_id": 127089,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 47746745,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 135788,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 48386180,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            },
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461665,
+              "no_progress_seconds": 318.625,
+              "offer_id": 48386180,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 136514,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461625,
+              "no_progress_seconds": 300.5,
+              "offer_id": 44096419,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 136634,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461702,
+              "no_progress_seconds": 272.48399999993853,
+              "offer_id": 48396260,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 136818,
+          "observations": [
+            {
+              "bootstrap_stage": "GPU_LOAD",
+              "instance_id": 48461623,
+              "no_progress_seconds": 335.780999999959,
+              "offer_id": 43964858,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 136978,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461608,
+              "no_progress_seconds": 296.2969999999041,
+              "offer_id": 38665373,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 137464,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 45892762,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            }
+          ]
+        },
+        {
+          "machine_id": 138100,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461636,
+              "no_progress_seconds": 304.46899999992456,
+              "offer_id": 46814628,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 138111,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461637,
+              "no_progress_seconds": 257.18700000003446,
+              "offer_id": 46814640,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 138211,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48462237,
+              "no_progress_seconds": 252.64000000001397,
+              "offer_id": 39693765,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 140049,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 46960088,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-002-observer-false-stall-abort"
+            }
+          ]
+        },
+        {
+          "machine_id": 140149,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461619,
+              "no_progress_seconds": 264.14000000001397,
+              "offer_id": 43602290,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 140887,
+          "observations": [
+            {
+              "bootstrap_stage": "GPU_LOAD",
+              "instance_id": 48461666,
+              "no_progress_seconds": 247.76500000001397,
+              "offer_id": 48412875,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 141223,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461603,
+              "no_progress_seconds": 265.875,
+              "offer_id": 41974061,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 141578,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 47841608,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 142483,
+          "observations": [
+            {
+              "bootstrap_stage": "GPU_LOAD",
+              "instance_id": 48461620,
+              "no_progress_seconds": 246.2970000000205,
+              "offer_id": 43688767,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 142848,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 45380574,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-001-create-id-alternate-exhaustion"
+            }
+          ]
+        },
+        {
+          "machine_id": 144250,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 45082143,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-003-acquisition-window-abort"
+            }
+          ]
+        },
+        {
+          "machine_id": 144463,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48461638,
+              "no_progress_seconds": 340.6720000000205,
+              "offer_id": 46814808,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 144543,
+          "observations": [
+            {
+              "bootstrap_stage": "CONTAINER_RUNNING_OR_MODEL_DOWNLOAD",
+              "instance_id": 48462112,
+              "no_progress_seconds": 241.10900000005495,
+              "offer_id": 48420177,
+              "reason": "no observable bootstrap progress for at least 240 seconds",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 146355,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 48403603,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 146484,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 46845010,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        },
+        {
+          "machine_id": 147917,
+          "observations": [
+            {
+              "bootstrap_stage": "INSTANCE_CREATE",
+              "instance_id": null,
+              "offer_id": 48000999,
+              "reason": "provider create returned no recoverable instance ID",
+              "stage_directory": "stage-4-headline-attempt-004-global-deadline-abort-active-gpu-load"
+            }
+          ]
+        }
+      ],
+      "stage_prefix": "stage-4-headline-attempt"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": "experiment-014-k3-tokenizer-product-seam-v1",
+  "cycle_id": "H014-037b2",
+  "phase": "BASELINE_FAILURE_RETAINED_BEFORE_IMPLEMENTATION",
+  "status": "FAIL",
+  "hypothesis": "The existing stage-zero product path cannot load Kimi's checkpoint tokenizer because worker activation omits its custom tokenizer assets and AutoTokenizer is called without an exact-hash trust decision.",
+  "benchmark": {
+    "checkpoint": "F:\\Models\\Kimi-K3",
+    "call": "AutoTokenizer.from_pretrained(checkpoint, local_files_only=True)",
+    "network_allowed": false,
+    "checkpoint_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569"
+  },
+  "result": {
+    "exception_type": "ValueError",
+    "message": "The repository contains custom code which must be executed to correctly load the model; pass trust_remote_code=True.",
+    "tokenizer_loaded": false
+  },
+  "inspection": "tokenizer_config.json selects tokenization_kimi.TikTokenTokenizer. The required local assets are tokenizer_config.json, tiktoken.model, tokenization_kimi.py and encoding_k3.py. The current activated stage-zero snapshot contains none of them.",
+  "bottleneck": "Unattested custom tokenizer code at the stage-zero text-admission boundary.",
+  "decision": "MODIFY; do not globally enable trust_remote_code and do not weaken model identity checks.",
+  "redesign": "Copy an explicit tokenizer allowlist only to stage zero, record every asset SHA-256 in model-identity.json, verify them before registration and immediately before tokenizer construction, then load with trust_remote_code=True and compare real token IDs with retained conversation evidence."
+}

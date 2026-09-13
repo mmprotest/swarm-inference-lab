@@ -1,0 +1,58 @@
+{
+  "advertised_download_mbps_used": 500.0,
+  "automatic_cost_kill_switch_required": true,
+  "budget_requires_explicit_future_user_approval": true,
+  "caveats": [
+    "Offer IDs and rates are ephemeral and must be refreshed immediately before E021.",
+    "Model downloads are concurrent across pods; elapsed time uses the slowest pod, while transfer fees use fleet bytes.",
+    "The worst-case cap includes a 1.5x failed-attempt allowance and must not be treated as approved."
+  ],
+  "charge_incurred": false,
+  "conservative_cost": {
+    "data_transfer_usd": 9.8415329128,
+    "disk_usd": 3.437667793351111,
+    "gpu_rental_usd": 618.7802028032,
+    "total_usd": 632.0594035093511
+  },
+  "conservative_elapsed_hours": 5.1565016900266665,
+  "conservative_fleet_rate_per_hour": 96.0,
+  "conservative_rate_per_pod_hour": 8.0,
+  "currency": "USD",
+  "estimated_model_download_hours": 0.6043344600177778,
+  "expected_cost": {
+    "data_transfer_usd": 7.87322633024,
+    "disk_usd": 2.0695563066785185,
+    "gpu_rental_usd": 149.00805408085333,
+    "total_usd": 158.95083671777184
+  },
+  "expected_elapsed_hours": 3.104334460017778,
+  "expected_fleet_rate_per_hour": 48.0,
+  "gpus_per_pod": 8,
+  "maximum_pod_model_bytes": 135975253504,
+  "maximum_policy_rate_per_pod_hour": 8.0,
+  "observed_median_rate_per_pod_hour": 4.0,
+  "observed_rate_basis": "no matching host: explicit midpoint-of-policy scenario assumption",
+  "observed_suitable_p8_hosts": 0,
+  "offer_filter_matches_fleet_policy": true,
+  "phase_hours": {
+    "artifact_collection_and_teardown": 0.25,
+    "bootstrap_and_hash_verification": 0.25,
+    "controller_and_worker_rental_startup": 0.25,
+    "model_download": 0.6043344600177778,
+    "network_qualification": 0.25,
+    "physical_benchmark": 1.25,
+    "warmup": 0.25
+  },
+  "required_pods": 12,
+  "schema_version": "experiment-020-e021-cost-estimate-v1",
+  "snapshot_at": "2026-08-13T09:27:17.905348+00:00",
+  "status": "ESTIMATE_ONLY_NO_CHARGES",
+  "total_gpus": 96,
+  "worst_case": {
+    "data_transfer_usd": 11.809839495359999,
+    "disk_usd": 4.0,
+    "gpu_rental_usd": 864.0,
+    "total_usd": 879.80983949536
+  },
+  "worst_case_budget_cap_usd": 900.0
+}

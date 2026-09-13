@@ -1,0 +1,44 @@
+{
+  "schema_version": "experiment-014-k3-cycle-inspection-v1",
+  "cycle_id": "H014-033c",
+  "status": "PASS",
+  "hypothesis_result": "FALSIFIED_PERFORMANCE_BAND_WITH_CORRECTNESS_AND_CAPACITY_PASS",
+  "raw_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-033c-prefill-layer91-mla16k.json",
+    "sha256": "8ff01603baf239b89e595a789a84503d03acd7ec5601e9931dde51bda45f2b48"
+  },
+  "capability_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-033c-shared-memory-capability.json",
+    "sha256": "6dfa436fbb7d097b2a1254c8d59db9d91af2be0e63a5a0884106b8ba178f31b9"
+  },
+  "binary": {
+    "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+    "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "measured": {
+    "terminal_16k_to_1k_device_p50_ratio": 2.344476179552081,
+    "cumulative_16k_to_1k_throughput_retention": 0.6399287648314615,
+    "last_256_device_p50_ms": {
+      "1024": 3.25711989402771,
+      "4096": 4.12827205657959,
+      "8192": 5.2982399463653564,
+      "16384": 7.636240005493164
+    },
+    "prompt_tokens_per_second": {
+      "1024": 285.2919199421838,
+      "4096": 268.30509197342656,
+      "8192": 231.828844409138,
+      "16384": 182.5665059449979
+    },
+    "state_bytes": {
+      "1024": 2361600,
+      "4096": 9439488,
+      "8192": 18876672,
+      "16384": 37751040
+    }
+  },
+  "inspection": "All four incremental contexts and their post-prefill decodes passed exact output, exact route, selected-expert-once, finite state/output, lifecycle, memory recovery, CUDA error-state, safe-fixture and nvidia-smi gates. The 16K launch used 69,636 of 101,376 reported opt-in bytes. Only the MLA attention/cache scan receives context length T; all downstream dimensions are fixed. Last-window complete-stage service therefore added 4.379120 ms from 1K to 16K inside the attention path.",
+  "bottleneck": "The safe capacity limit is resolved. The remaining bottleneck is the O(T*K) score/value cache scan plus a thread-0 exp/sum/normalize loop inside attention_absorb_kernel. Current evidence does not yet separate the serial softmax from the two parallel cache scans.",
+  "decision": "RETAIN the guarded capacity mechanism and 16K correctness evidence, but do not promote the candidate as the final binary because the preregistered latency and throughput-retention gates failed.",
+  "redesign": "H014-033d will parallelize only elementwise exp and normalization while retaining serial ordered summation and unchanged score/value scans. Exact fingerprints must remain identical; complete-stage 16K last-window p50 must improve at least 10% to retain the change."
+}

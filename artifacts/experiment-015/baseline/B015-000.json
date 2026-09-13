@@ -1,0 +1,128 @@
+{
+  "architecture": {
+    "first_rejected_batch": 9,
+    "persistent_runtime": true,
+    "physical_stages": 93,
+    "primary_transformer_layers_per_stage": 1,
+    "routing_semantics": "immutable Experiment 014 exact routing",
+    "safe_batch": 8,
+    "topology": "WHOLE-LAYER"
+  },
+  "baseline_id": "B015-000",
+  "economics": {
+    "break_even_tok_s_per_paid_gpu": 2.7777777777777777,
+    "gpu_hourly_price_usd": 0.15,
+    "margin_tok_s_per_paid_gpu": 5.555555555555555,
+    "output_price_per_million_usd": 15.0,
+    "target_gpu_margin_fraction": 0.5
+  },
+  "immutability": {
+    "capture_only": true,
+    "gpu_fleet_rented": false,
+    "physical_3090_canary_run": false,
+    "source_artifacts_modified": false,
+    "source_experiment": "014"
+  },
+  "latency_reconciliation": {
+    "absolute_error_ms": 2.2737367544323206e-13,
+    "coarse_edge_count": 92,
+    "coarse_edge_service_ms": 3.3168264,
+    "coarse_edge_total_ms": 305.1480288,
+    "compute_components_ms": {
+      "23_mla_layers_at_8k": 305.2555573798153,
+      "68_middle_kda_layers": 427.44309701821174,
+      "final_layer_head": 9.543978347230409,
+      "stage_zero": 4.914216224370451
+    },
+    "compute_total_ms": 747.1568489696278,
+    "reconstructed_end_to_end_ms": 1052.3048777696279
+  },
+  "performance": {
+    "aggregate_output_tok_s": 97.15028433444262,
+    "aggregate_tok_s_per_paid_gpu_equivalent": 1.0446267132735765,
+    "cost_per_million_output_tokens_usd": 39.886656292844215,
+    "dependency_bound_tok_s": 0.9502949393520926,
+    "end_to_end_ms": 1052.304877769628,
+    "evidence_class": "PROJECTED",
+    "paid_gpu_equivalents": 93.0
+  },
+  "schema_version": "experiment-015-immutable-baseline-v1",
+  "sources": {
+    "acceptance_gates": {
+      "bytes": 9289,
+      "path": "artifacts/experiment-014/acceptance-gates.json",
+      "sha256": "aedbaaf9d488849cd5ddb6812c2baf7b41f178590e3b0a28af0d4123e8e0718b"
+    },
+    "capacity": {
+      "bytes": 26381,
+      "path": "artifacts/experiment-014/performance/h014-038ak-final-capacity-topology-economics.json",
+      "sha256": "38c190a47dc33111550b8d2f7fae410b300068a34fca9ad344ed66f263982c26"
+    },
+    "coarse_network": {
+      "bytes": 4832,
+      "path": "artifacts/experiment-014/coarse/h014-038ah-network-analysis.json",
+      "sha256": "02a442914db950f7a48e9f01772c191f97ddc91c960ad11eb481e896375336e6"
+    },
+    "cuda_binary": {
+      "bytes": 792576,
+      "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-038-final.dll",
+      "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+    },
+    "evidence_integrity": {
+      "bytes": 13704,
+      "path": "artifacts/experiment-014/evidence-integrity.json",
+      "sha256": "ba990d83eb8b0e1ab44060cf47b8bcb4b2a735d2019ec4f8cc30ac96374c7d75"
+    },
+    "expert_microwork": {
+      "bytes": 70794,
+      "path": "artifacts/experiment-014/sub-layer/h014-sub-011-promoted-four-worker-real-expert.json",
+      "sha256": "e5cdac8239dd465bc5e43a3020777823cdc32492bef61fe4718e7f7bea79efc4"
+    },
+    "expert_scaling": {
+      "bytes": 33800,
+      "path": "artifacts/experiment-014/sub-layer/h014-sub-005-scaling-network.json",
+      "sha256": "dbb6cb5e71c563d523012f894f8732c524ec7cdc185ddba6a5781f0865004b96"
+    },
+    "kda_batch": {
+      "bytes": 134396,
+      "path": "artifacts/experiment-014/performance/h014-038ah2-complete-stage-batch-layer89.json",
+      "sha256": "71810d0a22d8d80f7664e2d0b28d778837801fe8af7f702d68966d47901dbaaa"
+    },
+    "machine_summary": {
+      "bytes": 9155,
+      "path": "artifacts/experiment-014/machine-summary.json",
+      "sha256": "d9f27447f33b420795fe012cdf3303e6b94f3879c2debadc5f5753e5d71210b3"
+    },
+    "mla_batch": {
+      "bytes": 133734,
+      "path": "artifacts/experiment-014/performance/h014-038ah2-complete-stage-batch-layer91.json",
+      "sha256": "04bcd176f6dc60e3c1edbe8a397fd42d28f501d26429b4a3c402d11899682339"
+    },
+    "mla_context": {
+      "bytes": 60280,
+      "path": "artifacts/experiment-014/performance/h014-033c-prefill-layer91-mla16k.json",
+      "sha256": "8ff01603baf239b89e595a789a84503d03acd7ec5601e9931dde51bda45f2b48"
+    },
+    "routing": {
+      "bytes": 484126,
+      "path": "artifacts/experiment-014/sub-layer/h014-sub-010-routing-imbalance.json",
+      "sha256": "b929b8e4d92b4f42646f0e666fabce059af8d76e5f6d969c1eb27d4de18982c3"
+    },
+    "routing_calls": {
+      "bytes": 77859,
+      "path": "artifacts/experiment-014/sub-layer/h014-sub-010-routing-calls.csv",
+      "sha256": "3221390f7638a79716af3a269812da96f0f4c066dbfd85392748b3b54cd7d3a6"
+    }
+  },
+  "status": "PASS",
+  "sub_layer": {
+    "best_expert_workers": 4,
+    "complete_layer_relative_throughput": 0.7880896676852558,
+    "conclusion": "FUNCTIONAL BUT NOT CURRENTLY ECONOMIC",
+    "evidence_class": "MEASURED",
+    "maximum_tested_rtt_ms": 0.5,
+    "minimum_tested_bandwidth_gbps": 2.5,
+    "smallest_tested_worker_bytes": 982890496,
+    "worker_resident_bytes": 3931060224
+  }
+}

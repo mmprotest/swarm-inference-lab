@@ -1,0 +1,32 @@
+{
+  "draft_backend": "llama.cpp native DFlash2 scored-lattice adapter",
+  "draft_model": ".runtime/experiment-029/models/Qwen3.8-27B-DFlash2-Q4_K_M.gguf",
+  "download": {
+    "url": "https://huggingface.co/incoai/Qwen3.8-27B-DFlash2-GGUF/resolve/main/Qwen3.8-27B-DFlash2-Q4_K_M.gguf",
+    "path": ".runtime\\experiment-029\\models\\Qwen3.8-27B-DFlash2-Q4_K_M.gguf",
+    "size_bytes": 1143006816,
+    "sha256": "1a25c56858e1ebe93f2718ac1d49d1151f9323325c1bbfd6209370f4db131ebd",
+    "elapsed_s": 22.39683723449707
+  },
+  "draft_vram_bytes": 1132053135.36,
+  "draft_vram_note": "llama.cpp reported model buffer; context workspace is included in total peak VRAM, not independently isolated",
+  "draft_latency_ms_mean": 4.372639259712867,
+  "draft_latency_ms_p50": 4.1666,
+  "target_feature_layers": [
+    6,
+    20,
+    34,
+    48,
+    62
+  ],
+  "target_feature_bytes_per_committed_token": 102400,
+  "integration": "DFlash shares target embedding/output weights through ctx_other in stage C process; candidates remain a generic scored-lattice interface",
+  "dflash2_used": true,
+  "fallback_used": false,
+  "block_size": 8,
+  "selector_top_k": 16,
+  "probability_transform": "conditional selector softmax, temperature 1; not calibrated target acceptance probabilities",
+  "draft_vram_is_approximate": true,
+  "draft_model_buffer_mib_reported": 1079.61,
+  "draft_context_workspace_bytes": null
+}

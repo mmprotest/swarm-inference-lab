@@ -1,0 +1,35 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-19T03:55:58.594810+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "watchdog-startup-timeout-before-any-create",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "error": "independent watchdog did not produce its RUNNING receipt within 15 seconds",
+  "error_type": "TimeoutError",
+  "generated_at_utc": "2026-08-19T03:56:01.643936+00:00",
+  "next_action": "increase local watchdog startup allowance only; retain 900-second rental TTL",
+  "root_cause": "watchdog process produced a valid RUNNING receipt after about 25 seconds; parent startup allowance was too short on Windows",
+  "schema_version": "experiment-025-paid-stage-attempt-failure-v1",
+  "stage": "single-backbone-canary",
+  "status": "ABORTED_BEFORE_CREATE",
+  "vast_create_invoked": false,
+  "watchdog_final_receipt": {
+    "deadline_epoch": 1787112571.0492191,
+    "independent_process": true,
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-independent-watchdog-v1",
+    "stage": "single-backbone-canary",
+    "status": "STOPPED_AFTER_ZERO_LIVE_VERIFICATION",
+    "timestamp": "2026-08-19T03:56:01.569156+00:00",
+    "watchdog_pid": 29812
+  }
+}

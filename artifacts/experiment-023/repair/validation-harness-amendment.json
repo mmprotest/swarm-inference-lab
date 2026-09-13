@@ -1,0 +1,46 @@
+{
+  "schema_version": "experiment-023-validation-harness-amendment-v1",
+  "experiment_id": "023",
+  "status": "VALIDATION_ONLY_ASSERTION_CORRECTION",
+  "recorded_at_utc": "2026-08-17T21:15:40.7203001Z",
+  "trigger": "The required post-finalization focused suite found four completion assertions that still encoded deterministic-run-1 MODEL_INVALID publication semantics.",
+  "scope": "tests/test_experiment_023_completion.py only",
+  "original_authoritative_code_freeze": {
+    "path": "artifacts/experiment-023/repair/repair-code-freeze-authoritative-run2-original.json",
+    "sha256": "d65b948595f7d5fc891df98df84d15f86843a091f17146830a4f471e06381d6c",
+    "files_canonical_sha256": "38f0088d217f755eb4a8e3e67d75c59d0d0dddf9236a39df55816f919a42acb3"
+  },
+  "changed_file": {
+    "path": "tests/test_experiment_023_completion.py",
+    "before_bytes": 16594,
+    "before_sha256": "a284d26166f6bfc4a32250b3ba9a04132e34eb1054110a8eeaeb037d5687081e",
+    "after_bytes": 17526,
+    "after_sha256": "d654e6b91a8ca12650d1cace07082ea01f42ed038ccd81e67981281486f3874e"
+  },
+  "corrections": [
+    "Replace the hard-coded run-1 MODEL_INVALID expectation with repaired-run validity and summary/truth-table consistency checks.",
+    "Apply the six-action maximum per FLEX search seed branch rather than summing independent POOL-U and POOL-FREE branches.",
+    "Check the exact repaired report section contract frozen in the repair request.",
+    "Require the five full correctness receipts to PASS instead of expecting NOT_RUN receipts from run 1."
+  ],
+  "frozen_file_comparison": {
+    "original_frozen_file_count": 16,
+    "unchanged_file_count": 15,
+    "changed_file_count": 1,
+    "only_changed_file": "tests/test_experiment_023_completion.py"
+  },
+  "scientific_execution_files_unchanged": true,
+  "frozen_constants_unchanged": true,
+  "e022_inputs_unchanged": true,
+  "physical_inputs_unchanged": true,
+  "planner_or_serving_behavior_changed": false,
+  "headline_results_inspected_to_choose_assertions": false,
+  "deterministic_attempts_recomputed": false,
+  "reason_attempts_not_recomputed": "The amended file is a post-run validation test and is never imported by planning, serving simulation, correctness execution, analysis, charting, or finalization. All executable experiment files remain byte-identical to the original pre-headline seal; recomputation could not change any deterministic scientific value.",
+  "post_correction_validation": {
+    "focused_suite": "68 passed",
+    "full_repository_suite": "1330 passed, 13 skipped",
+    "e023_scope_ruff": "PASS",
+    "compileall": "PASS"
+  }
+}

@@ -1,0 +1,495 @@
+{
+  "acceptance_gates": {
+    "aggregate_8k_capacity_between_90_and_120": true,
+    "at_least_1gib_unallocated_after_safety": true,
+    "candidate_b_best_equal_price_throughput_per_dollar": true,
+    "canonical_93_worker_memory_fit": true,
+    "coarse_admission_retains_at_least_90_percent": true,
+    "device_capacity_retention_between_35_and_50_percent": true,
+    "exactly_one_recommended_topology": true,
+    "held_out_local_model_median_ape_at_most_10_percent": true,
+    "per_user_decode_below_5_at_admitted_coarse_edge": true
+  },
+  "artifacts": {
+    "candidate_csv": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-038ak-topology-candidates.csv",
+      "sha256": "3acb117309ee4f9ab1cd95f0e3192e21fabc1c54390d3380f1944714a876713d"
+    },
+    "chart": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\charts\\h014-038ak-capacity-economics.png",
+      "sha256": "fef32a60e7364482d5193b24d1fa33611ea687cce33fd90a172f735a1a9d3cc4"
+    },
+    "economics_csv": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-038ak-economics-sensitivity.csv",
+      "sha256": "d90f7cbba48b783ec08561d99446ec284fea373ca30495a53eb9dfe2de3af3f4"
+    }
+  },
+  "cycle_id": "H014-038ak",
+  "decision": "RETAIN_CANDIDATE_B_WHOLE_LAYER_93; REQUIRE_3090_CANARY",
+  "decode_capacity": {
+    "bottleneck": "8K row-serial Gated-MLA context scan",
+    "context_tokens": 8192,
+    "production_batch": 8,
+    "projected_device_capacity_retention_fraction": 0.38708927386967434,
+    "projected_kda_batch8_device_ms": 26.58878449616742,
+    "projected_mla_batch8_device_ms": 81.37277277659837,
+    "projected_mla_batch8_wall_ms": 82.34664524974289,
+    "projected_rtx3090_device_rows_per_second": 98.31298267251235,
+    "projected_rtx3090_wall_output_tokens_per_second": 97.15028433444262,
+    "projected_wall_capacity_retention_fraction": 0.39433786162771933,
+    "rtx5090_matched_route_device_rows_per_second": 268.89888278817034,
+    "rtx5090_route_mix_device_rows_per_second": 253.98012631476962,
+    "rtx5090_route_mix_wall_rows_per_second": 246.36306524925783,
+    "rtx5090_static_matched_device_rows_per_second": 268.8053493642676
+  },
+  "decode_latency": {
+    "coarse_admission_bandwidth_gbps": 10.0,
+    "coarse_admission_capacity_retention_percent": 91.25976409250863,
+    "coarse_admission_rtt_ms": 5.0,
+    "coarse_edge_service_ms": 3.3168264,
+    "compute_components_ms": {
+      "23_mla_layers_at_8k": 305.2555573798153,
+      "68_middle_kda_layers": 427.44309701821174,
+      "final_layer_head": 9.543978347230409,
+      "stage_zero": 4.914216224370451
+    },
+    "edge_count": 92,
+    "fast_domain_bandwidth_gbps": 25.0,
+    "fast_domain_edge_service_ms": 0.8178505600000003,
+    "fast_domain_rtt_ms": 0.25,
+    "projected_end_to_end_ms": 1052.304877769628,
+    "projected_fast_domain_end_to_end_ms": 822.3991004896282,
+    "projected_fast_domain_per_user_tokens_per_second": 1.215954637358716,
+    "projected_per_user_tokens_per_second": 0.9502949393520926
+  },
+  "economics": {
+    "gpu_price_sensitivity": [
+      {
+        "break_even_selling_price_per_million_usd": 13.295552097614738,
+        "cost_per_million_output_tokens_usd": 13.295552097614738,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 4.65,
+        "gpu_hourly_price_usd": 0.05,
+        "gross_margin_at_15_per_million_fraction": 0.11362986015901745,
+        "utilization": 1.0
+      },
+      {
+        "break_even_selling_price_per_million_usd": 21.27288335618358,
+        "cost_per_million_output_tokens_usd": 21.27288335618358,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 7.44,
+        "gpu_hourly_price_usd": 0.08,
+        "gross_margin_at_15_per_million_fraction": -0.418192223745572,
+        "utilization": 1.0
+      },
+      {
+        "break_even_selling_price_per_million_usd": 26.591104195229477,
+        "cost_per_million_output_tokens_usd": 26.591104195229477,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 9.3,
+        "gpu_hourly_price_usd": 0.1,
+        "gross_margin_at_15_per_million_fraction": -0.7727402796819651,
+        "utilization": 1.0
+      },
+      {
+        "break_even_selling_price_per_million_usd": 31.909325034275373,
+        "cost_per_million_output_tokens_usd": 31.909325034275373,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 11.16,
+        "gpu_hourly_price_usd": 0.12,
+        "gross_margin_at_15_per_million_fraction": -1.1272883356183583,
+        "utilization": 1.0
+      },
+      {
+        "break_even_selling_price_per_million_usd": 43.875321922128634,
+        "cost_per_million_output_tokens_usd": 43.875321922128634,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 15.345,
+        "gpu_hourly_price_usd": 0.165,
+        "gross_margin_at_15_per_million_fraction": -1.9250214614752423,
+        "utilization": 1.0
+      },
+      {
+        "break_even_selling_price_per_million_usd": 53.18220839045895,
+        "cost_per_million_output_tokens_usd": 53.18220839045895,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 18.6,
+        "gpu_hourly_price_usd": 0.2,
+        "gross_margin_at_15_per_million_fraction": -2.5454805593639303,
+        "utilization": 1.0
+      },
+      {
+        "break_even_selling_price_per_million_usd": 79.77331258568843,
+        "cost_per_million_output_tokens_usd": 79.77331258568843,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 27.9,
+        "gpu_hourly_price_usd": 0.3,
+        "gross_margin_at_15_per_million_fraction": -4.318220839045895,
+        "utilization": 1.0
+      }
+    ],
+    "selling_price_per_million_output_tokens_usd": 15.0,
+    "utilization_sensitivity_at_0_165": [
+      {
+        "break_even_selling_price_per_million_usd": 175.50128768851454,
+        "cost_per_million_output_tokens_usd": 175.50128768851454,
+        "effective_output_tokens_per_second": 24.287571083610654,
+        "fleet_cost_per_hour_usd": 15.345,
+        "gpu_hourly_price_usd": 0.165,
+        "gross_margin_at_15_per_million_fraction": -10.700085845900968,
+        "utilization": 0.25
+      },
+      {
+        "break_even_selling_price_per_million_usd": 87.75064384425727,
+        "cost_per_million_output_tokens_usd": 87.75064384425727,
+        "effective_output_tokens_per_second": 48.57514216722131,
+        "fleet_cost_per_hour_usd": 15.345,
+        "gpu_hourly_price_usd": 0.165,
+        "gross_margin_at_15_per_million_fraction": -4.850042922950484,
+        "utilization": 0.5
+      },
+      {
+        "break_even_selling_price_per_million_usd": 58.50042922950485,
+        "cost_per_million_output_tokens_usd": 58.50042922950485,
+        "effective_output_tokens_per_second": 72.86271325083196,
+        "fleet_cost_per_hour_usd": 15.345,
+        "gpu_hourly_price_usd": 0.165,
+        "gross_margin_at_15_per_million_fraction": -2.9000286153003234,
+        "utilization": 0.75
+      },
+      {
+        "break_even_selling_price_per_million_usd": 43.875321922128634,
+        "cost_per_million_output_tokens_usd": 43.875321922128634,
+        "effective_output_tokens_per_second": 97.15028433444262,
+        "fleet_cost_per_hour_usd": 15.345,
+        "gpu_hourly_price_usd": 0.165,
+        "gross_margin_at_15_per_million_fraction": -1.9250214614752423,
+        "utilization": 1.0
+      }
+    ]
+  },
+  "hypothesis": "Operation-class RTX 3090 projection places conservative 8K capacity in 90-120 tok/s at 35-50% RTX-5090 retention; the 93-worker canonical whole-layer topology fits with >=1 GiB beyond 10% safety, wins equal-price throughput/$, and remains below 5 tok/s/user.",
+  "inspection": {
+    "actual_bottleneck": "row-serial 8K MLA state scan, then final-stage batch-1 service",
+    "physical_unknowns": [
+      "actual sm_86 RTX 3090 operation-class timing",
+      "physical 93-stage network contention and jitter",
+      "Linux CUDA baseline and allocator fragmentation",
+      "physical multi-GPU fine-collective overlap"
+    ],
+    "whole_layer_relative_to_fine": "Fine execution is correct and memory-reducing, but extra workers and the <=0.5 ms edge class destroy fleet economics before physical contention."
+  },
+  "memory": {
+    "best_four_worker_expert_partition_bytes": 3930830848,
+    "canonical_93_worker_maximum": {
+      "activation_and_communication_reserve_bytes": 67108864,
+      "conservative_workspace_reserve_bytes": 268435456,
+      "double_counting_note": "The CUDA baseline is measured before load; resident bytes are the subsequent delta. The three explicit reserves are additional and do not reuse the stale 3.5 GiB generic reserve.",
+      "feasible": true,
+      "measured_cuda_baseline_bytes": 1761148928,
+      "measured_final_stage_resident_bytes": 19413336064,
+      "physical_vram_bytes": 25769803776,
+      "planned_total_bytes": 24276277658,
+      "production_state_bytes": 55050240,
+      "remaining_unallocated_bytes": 1493526118,
+      "safety_headroom_bytes": 2576980378,
+      "serving_scheduler_reserve_bytes": 134217728,
+      "total_headroom_bytes": 4070506496
+    },
+    "checkpoint_aligned_96_remaining_after_safety_bytes": 2417109094,
+    "smallest_meaningful_gpu_capacity_gib": 8.0,
+    "smallest_meaningful_gpu_scope": "one four-way expert partition plus isolated CUDA/runtime reserves; functional only inside the fine edge class and not selected for fleet",
+    "smallest_tested_expert_worker_bytes": 982890496
+  },
+  "model_validation": {
+    "local_held_out_median_absolute_percentage_error": 0.5525504329320846,
+    "rtx_3090_transfer_is_held_out": false,
+    "rtx_3090_transfer_status": "PROJECTED_PENDING_PHYSICAL_CANARY",
+    "target_percent": 10.0
+  },
+  "operation_class_projection": {
+    "classification": "Real detailed expert+dense+router time is weight-memory traffic; unattributed stage and the row-serial O(T*K) MLA increment use the more conservative FP32 ceiling.",
+    "compute_bound_slowdown": 2.9438202247191008,
+    "host_and_synchronization_slowdown": 1.0,
+    "kda_attribution": {
+      "other_compute_fraction": 0.08135681013576213,
+      "other_compute_ms": 24.8341753911227,
+      "weight_memory_fraction": 0.9186431898642379,
+      "weight_memory_ms": 280.4159364271909,
+      "whole_stage_device_ms": 305.2501118183136
+    },
+    "kda_mixed_slowdown": 1.998269690870556,
+    "memory_bound_slowdown": 1.9145299145299146,
+    "mla_attribution": {
+      "other_compute_fraction": 0.1433343303948436,
+      "other_compute_ms": 39.508193373680115,
+      "weight_memory_fraction": 0.8566656696051564,
+      "weight_memory_ms": 236.1284476518631,
+      "whole_stage_device_ms": 275.6366410255432
+    },
+    "mla_context_increment_slowdown": 2.9438202247191008,
+    "mla_short_context_mixed_slowdown": 2.0620625519227826,
+    "network_slowdown": 1.0
+  },
+  "prefill": [
+    {
+      "context_tokens": 1024,
+      "eight_stream_full_model_state_bytes": 4288051200,
+      "maximum_state_bytes_on_one_worker_at_eight_streams": 55050240,
+      "measured_kda_stage_prompt_tokens_per_second_rtx5090": 271.6642488813813,
+      "measured_mla_stage_prompt_tokens_per_second_rtx5090": 285.2919199421838,
+      "projected_pipeline_prompt_tokens_per_second_rtx3090": 131.57433295376597,
+      "projected_wavefront_ttft_seconds": 8.827377546080042,
+      "single_stream_full_model_state_bytes": 536006400,
+      "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+    },
+    {
+      "context_tokens": 4096,
+      "eight_stream_full_model_state_bytes": 5590382592,
+      "maximum_state_bytes_on_one_worker_at_eight_streams": 75515904,
+      "measured_kda_stage_prompt_tokens_per_second_rtx5090": 289.5495140449364,
+      "measured_mla_stage_prompt_tokens_per_second_rtx5090": 268.30509197342656,
+      "projected_pipeline_prompt_tokens_per_second_rtx3090": 121.0540896388529,
+      "projected_wavefront_ttft_seconds": 34.88015829616162,
+      "single_stream_full_model_state_bytes": 698797824,
+      "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+    },
+    {
+      "context_tokens": 8192,
+      "eight_stream_full_model_state_bytes": 7326824448,
+      "maximum_state_bytes_on_one_worker_at_eight_streams": 151013376,
+      "measured_kda_stage_prompt_tokens_per_second_rtx5090": 290.0752296935849,
+      "measured_mla_stage_prompt_tokens_per_second_rtx5090": 231.828844409138,
+      "projected_pipeline_prompt_tokens_per_second_rtx3090": 100.16162488642513,
+      "projected_wavefront_ttft_seconds": 82.83013155827632,
+      "single_stream_full_model_state_bytes": 915853056,
+      "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+    },
+    {
+      "context_tokens": 16384,
+      "eight_stream_full_model_state_bytes": 10799708160,
+      "maximum_state_bytes_on_one_worker_at_eight_streams": 302008320,
+      "measured_kda_stage_prompt_tokens_per_second_rtx5090": 289.9315007807942,
+      "measured_mla_stage_prompt_tokens_per_second_rtx5090": 182.5665059449979,
+      "projected_pipeline_prompt_tokens_per_second_rtx3090": 74.6016686127004,
+      "projected_wavefront_ttft_seconds": 220.65865289464108,
+      "single_stream_full_model_state_bytes": 1349963520,
+      "ttft_model": "ideal persistent token-wavefront: first-token pipeline fill plus remaining prompt tokens at the projected slowest stage; excludes tokenization and coordinator queueing"
+    }
+  ],
+  "published_hardware_sources": {
+    "rtx_3090": {
+      "memory_bandwidth_gbps": 936.0,
+      "peak_fp32_tflops": 35.6,
+      "url": "https://www.nvidia.com/content/PDF/nvidia-ampere-ga-102-gpu-architecture-whitepaper-v2.pdf"
+    },
+    "rtx_5090": {
+      "memory_bandwidth_gbps": 1792.0,
+      "peak_fp32_tflops": 104.8,
+      "url": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/"
+    }
+  },
+  "recommended_experiment_015_topology": {
+    "candidate_id": "B",
+    "class": "WHOLE-LAYER",
+    "reason": "Highest projected throughput per rental dollar, only coarse network admission, canonical P1 endpoint packing, and >=1 GiB beyond reserved 10% safety. Fine/hybrid alternatives add workers and a physical proof burden without increasing capacity.",
+    "sub_layer_use": "NO_IN_INITIAL_FLEET; retain optional low-latency canary only",
+    "worker_count": 93
+  },
+  "schema_version": "experiment-014-k3-capacity-topology-economics-v1",
+  "serving_frontier": {
+    "rows": [
+      {
+        "admitted_users_meeting_both_capacity_and_latency": 0,
+        "aggregate_only_concurrent_user_limit": 19,
+        "dependency_latency_feasible": false,
+        "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+        "target_tokens_per_second_per_user": 5.0
+      },
+      {
+        "admitted_users_meeting_both_capacity_and_latency": 0,
+        "aggregate_only_concurrent_user_limit": 9,
+        "dependency_latency_feasible": false,
+        "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+        "target_tokens_per_second_per_user": 10.0
+      },
+      {
+        "admitted_users_meeting_both_capacity_and_latency": 0,
+        "aggregate_only_concurrent_user_limit": 4,
+        "dependency_latency_feasible": false,
+        "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+        "target_tokens_per_second_per_user": 20.0
+      },
+      {
+        "admitted_users_meeting_both_capacity_and_latency": 0,
+        "aggregate_only_concurrent_user_limit": 3,
+        "dependency_latency_feasible": false,
+        "projected_per_user_decode_tokens_per_second": 0.9502949393520926,
+        "target_tokens_per_second_per_user": 30.0
+      }
+    ],
+    "selected_experiment_015_workload": "batch-8 aggregate-capacity canary with eight independent 8K streams; report 0.950 tok/s/user at 5ms/10Gbps rather than claiming the 5 tok/s product target"
+  },
+  "sources": {
+    "coarse_network": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\coarse\\h014-038ah-network-analysis.json",
+      "sha256": "02a442914db950f7a48e9f01772c191f97ddc91c960ad11eb481e896375336e6"
+    },
+    "coarse_transport": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\coarse\\h014-038ae-promoted-stage0-stage1-tcp.json",
+      "sha256": "4b8806f3bada7d53cf5f2b798dbad435de800889d9305d68a1168026de5683c3"
+    },
+    "complete_kda_batch": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-038ah2-complete-stage-batch-layer89.json",
+      "sha256": "71810d0a22d8d80f7664e2d0b28d778837801fe8af7f702d68966d47901dbaaa"
+    },
+    "complete_mla_batch": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-038ah2-complete-stage-batch-layer91.json",
+      "sha256": "04bcd176f6dc60e3c1edbe8a397fd42d28f501d26429b4a3c402d11899682339"
+    },
+    "contextual_matched": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-034f-contextual-continuous-matched-layer91-8k.json",
+      "sha256": "8754fb1dee65e31ed4fd8e6d4800a35f9446280cd75c2030491658e4c6e6aa6f"
+    },
+    "contextual_route_mix": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-034e-contextual-continuous-layer91-8k.json",
+      "sha256": "ae3b95fb838db976b68ffa9e5fbfd86509e5b7d82d665209aec03409fdef6d3a"
+    },
+    "contextual_static": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-034d-contextual-batch-layer91-8k.json",
+      "sha256": "bd0dc855de8fc482363a26aa3c5b769d67db117a667ca17aa56325de3960ebc3"
+    },
+    "depth_profile": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027m-depth-profile.json",
+      "sha256": "c01b2dddd56dd1f7a80d9b36445e0d9b7a11c54449e1a2773d71326904b3baec"
+    },
+    "final_stage": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\h014-038-regression-final-stage.json",
+      "sha256": "7645a1fb5cf378af70a481947d638caa340c89c8241d143ab9fa79ff8c3c990a"
+    },
+    "kda_prefill": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-033a-prefill-layer89-kda.json",
+      "sha256": "4f0c125df29ee5922dbc4eec79735d69d176424bcb6cfa8137f3fd6dc38322a7"
+    },
+    "lm_head": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\h014-038-regression-lm-head.json",
+      "sha256": "cd5fbc091159d597458e988370ec580636421ce249d060da6352b004538af740"
+    },
+    "mla_prefill": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-033c-prefill-layer91-mla16k.json",
+      "sha256": "8ff01603baf239b89e595a789a84503d03acd7ec5601e9931dde51bda45f2b48"
+    },
+    "node_solver": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\k3-node-count-solver.json",
+      "sha256": "eeebfed362febb579cd96bfa98b8c00a634e70fcad638d9a63bb9fb0684da1f3"
+    },
+    "resident_profile": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027a-resident-stage-profile.json",
+      "sha256": "d05f8d18ffc3ab51d38ddd9bcada7b0a3818a52fe010aa1631f5cad3fe37054f"
+    },
+    "stage_zero": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\h014-038aj2-stage-zero-steady.json",
+      "sha256": "4daf5c34eaf7689556aea95eda617812c6442e960d2bee295bdb6c15c89a97de"
+    },
+    "sub_layer_batch": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-012a-006f-promoted-single-interval-batch.json",
+      "sha256": "db68cf34203e6bdfa51d568ce68b6cbe30ea2ba6fbef1bca822d9e5e6f6a448a"
+    },
+    "sub_layer_scaling": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-005-scaling-network.json",
+      "sha256": "dbb6cb5e71c563d523012f894f8732c524ec7cdc185ddba6a5781f0865004b96"
+    },
+    "validation": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-035b-performance-model-heldout-validation.json",
+      "sha256": "c285d5abc9842fb4e949c9421d233f61c56337cf30feefd34c959ebe51ed1866"
+    }
+  },
+  "status": "PASS",
+  "sub_layer_economics": {
+    "dedicated_8g_workers_at_0_05_per_hour": {
+      "break_even_selling_price_per_million_usd": 85.25082496346987,
+      "cost_per_million_output_tokens_usd": 85.25082496346987,
+      "effective_output_tokens_per_second": 75.1051708944914,
+      "fleet_cost_per_hour_usd": 23.05,
+      "gpu_hourly_price_usd": 0.05,
+      "gross_margin_at_15_per_million_fraction": -4.683388330897992,
+      "utilization": 1.0
+    },
+    "fine_network_capacity_retention_at_0_25ms_2_5gbps": 0.9186574644556393,
+    "hybrid_mixed_cost_per_million_output_tokens_usd": 73.34159909004805,
+    "hybrid_mixed_fleet_cost_per_hour_usd": 19.830000000000002,
+    "logical_four_worker_batch_capacity_retention_fraction": 0.8415349441120018,
+    "maximum_small_worker_hourly_price_to_match_candidate_b_at_0_165": 0.025733077621787993,
+    "projected_fine_fleet_output_tokens_per_second": 75.1051708944914
+  },
+  "topology_candidates": [
+    {
+      "candidate_id": "A",
+      "coarse_stage_edges": 95,
+      "cost_per_million_at_0_165_usd": 45.29065488735859,
+      "fine_edges_per_moe_layer": 0,
+      "fleet_cost_per_hour_at_0_165_usd": 15.84,
+      "gpu_capacity_gib": 24.0,
+      "maximum_worker_model_state_gib": 15.823256969451904,
+      "memory_feasible": true,
+      "network_class": "kimi_coarse_stage_fp32_v1",
+      "notes": "Retained conservative 96-node placement; two endpoint roles are not packed.",
+      "physical_proof": "logical only; 3090 canary required",
+      "projected_aggregate_output_tokens_per_second": 97.15028433444262,
+      "throughput_per_fleet_dollar_hour": 6.133225021113802,
+      "topology": "checkpoint-aligned whole-layer pipeline",
+      "worker_count": 96
+    },
+    {
+      "candidate_id": "B",
+      "coarse_stage_edges": 92,
+      "cost_per_million_at_0_165_usd": 43.875321922128634,
+      "fine_edges_per_moe_layer": 0,
+      "fleet_cost_per_hour_at_0_165_usd": 15.345,
+      "gpu_capacity_gib": 24.0,
+      "maximum_worker_model_state_gib": 18.080078125,
+      "memory_feasible": true,
+      "network_class": "kimi_coarse_stage_fp32_v1",
+      "notes": "Stage zero owns embedding+dense layer 0; 91 middle workers own layers 1-91; final worker owns layer 92, final norm, LM head and sampling.",
+      "physical_proof": "logical production stages only; 3090 canary required",
+      "projected_aggregate_output_tokens_per_second": 97.15028433444262,
+      "throughput_per_fleet_dollar_hour": 6.331070989536827,
+      "topology": "canonical packed whole-layer pipeline",
+      "worker_count": 93
+    },
+    {
+      "candidate_id": "C",
+      "coarse_stage_edges": 92,
+      "cost_per_million_at_0_165_usd": 281.32772237945056,
+      "fine_edges_per_moe_layer": 4,
+      "fleet_cost_per_hour_at_0_165_usd": 76.065,
+      "gpu_capacity_gib": 8.0,
+      "maximum_worker_model_state_gib": 3.6608715057373047,
+      "memory_feasible": true,
+      "network_class": "kimi_sub_layer_expert_v1",
+      "notes": "One parent plus four dedicated expert workers for each of 92 MoE layers.",
+      "physical_proof": "one-GPU logical isolation only; multi-GPU canary required",
+      "projected_aggregate_output_tokens_per_second": 75.1051708944914,
+      "throughput_per_fleet_dollar_hour": 0.9873814618351594,
+      "topology": "dedicated four-way sub-layer expert groups",
+      "worker_count": 461
+    },
+    {
+      "candidate_id": "D",
+      "coarse_stage_edges": 92,
+      "cost_per_million_at_0_165_usd": 112.89724216962767,
+      "fine_edges_per_moe_layer": 4,
+      "fleet_cost_per_hour_at_0_165_usd": 30.525000000000002,
+      "gpu_capacity_gib": 24.0,
+      "maximum_worker_model_state_gib": 14.643486022949219,
+      "memory_feasible": true,
+      "network_class": "coarse plus kimi_sub_layer_expert_v1",
+      "notes": "Ninety-two parent stages plus ninety-two 24-GiB expert owners, each packing four measured partitions, and one stage-zero worker.",
+      "physical_proof": "one-GPU logical isolation only; multi-GPU canary required",
+      "projected_aggregate_output_tokens_per_second": 75.1051708944914,
+      "throughput_per_fleet_dollar_hour": 2.460447858951397,
+      "topology": "hybrid coarse pipeline plus packed expert domains",
+      "worker_count": 185
+    }
+  ]
+}

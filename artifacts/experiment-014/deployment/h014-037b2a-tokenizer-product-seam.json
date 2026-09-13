@@ -1,0 +1,167 @@
+{
+  "acceptance_gates": {
+    "all_product_prompt_token_ids_exact": true,
+    "all_raw_prompt_token_ids_exact": true,
+    "bos_inserted_exactly_once": true,
+    "conversation_asset_lineage_exact": true,
+    "expanded_allowlist_rejected": true,
+    "invalid_bos_rejected": true,
+    "missing_asset_rejected": true,
+    "non_stage_zero_owner_rejected": true,
+    "oracle_hi_exact_bos_contract": true,
+    "oracle_hi_prompt_token_count_two": true,
+    "post_control_identity_restored": true,
+    "special_tokens_false_preserves_raw_ids": true,
+    "stage_zero_activation_copied_exact_allowlist": true,
+    "tampered_asset_rejected": true,
+    "wrong_worker_rejected": true
+  },
+  "activation": {
+    "activation_receipt_sha256": "0b5448ffea3fa0d4447e7063a526813f0789def3bc01ba79076a57e59af77966",
+    "atomic_activation": true,
+    "checkpoint_fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+    "checkpoint_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "index_sha256": "a7b227f91b2fa9747479f061ce876c5347bb8805e77e472538b35880b03dd77b",
+    "model_identity_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.test-temp\\h014-037b2-i4ag2a11\\snapshot\\model-identity.json",
+    "model_identity_sha256": "6c7d09662fcb8e1d72a8f2e32b3ab0739a957c6b27cd7bc128e6a40239236109",
+    "owned_layers": [
+      0
+    ],
+    "package_sha256": "27ef8a75b4ea974a282abacba1ca35c0d310049646c9ce8562c996b801f6691a",
+    "partial_directory_absent": true,
+    "placement_manifest_sha256": "bab037d7d7648ba57906affb44968d5d1fff0218acd04a85a792b740b5234bac",
+    "schema_version": "experiment-015-k3-worker-snapshot-v1",
+    "snapshot_path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\.test-temp\\h014-037b2-i4ag2a11\\snapshot",
+    "source_weight_bytes": 1,
+    "status": "PASS",
+    "tensor_count": 1,
+    "tokenizer_asset_bytes": 2837736,
+    "tokenizer_asset_count": 4,
+    "tokenizer_assets_sha256": {
+      "encoding_k3.py": "b9cb7ae100fed34b9337f80dacee5abbf7e261fe9b74bc0e76366701d46f5333",
+      "tiktoken.model": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
+      "tokenization_kimi.py": "f28ea66e2d862a2a5814970b2ce40c2f7d8296ff09aed90a7e7def689b906944",
+      "tokenizer_config.json": "5d0803c94db9cd78763499e0956c95fd5a225c14a727e5a6cf5db3f96f010a6e"
+    },
+    "worker_id": "k3-worker-000",
+    "worker_role": "embedding_dense_stage"
+  },
+  "bottleneck": "Tokenizer construction is a stage-zero cold lifecycle cost; it is cached after first use and does not affect warm per-token CUDA service.",
+  "cycle_id": "H014-037b2a",
+  "decision": "RETAIN_HASH_PINNED_TOKENIZER_AND_EXPLICIT_BOS_ADAPTER",
+  "hypothesis": "An exact-hashed stage-zero tokenizer allowlist makes Kimi product text tokenization equivalent to the checkpoint tokenizer while every identity or asset mismatch rejects before custom code executes.",
+  "inspection": "Only four hash-pinned local tokenizer assets were trusted. The repository-owned Kimi adapter then reproduced the native engine's explicit, exactly-once BOS prompt contract.",
+  "negative_controls": {
+    "expanded_allowlist": {
+      "detail": "IntegrityError: configured Kimi tokenizer allowlist is incomplete or expanded",
+      "rejected": true
+    },
+    "invalid_bos": {
+      "detail": "IntegrityError: configured Kimi tokenizer has no valid BOS token ID",
+      "rejected": true
+    },
+    "missing_asset": {
+      "detail": "IntegrityError: configured Kimi tokenizer asset is absent: tiktoken.model",
+      "rejected": true
+    },
+    "non_stage_zero_owner": {
+      "detail": "IntegrityError: Kimi prompt tokenization is restricted to stage zero",
+      "rejected": true
+    },
+    "tampered_asset": {
+      "detail": "IntegrityError: configured Kimi tokenizer asset hash differs: encoding_k3.py",
+      "rejected": true
+    },
+    "wrong_worker": {
+      "detail": "IntegrityError: configured Kimi tokenizer belongs to a different worker",
+      "rejected": true
+    }
+  },
+  "redesign": "Package the same four immutable assets with worker zero only and exercise text submission on the physical canary.",
+  "schema_version": "experiment-014-k3-tokenizer-product-seam-v1",
+  "sources": {
+    "conversation_receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\k3-conversation-semantics.json",
+    "conversation_receipt_sha256": "90554184d81ff22d3cf8199e58fd9fcc62e8dff71a510ec233ec4efb5276e62b",
+    "tokenizer_assets_sha256": {
+      "encoding_k3.py": "b9cb7ae100fed34b9337f80dacee5abbf7e261fe9b74bc0e76366701d46f5333",
+      "tiktoken.model": "b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103",
+      "tokenization_kimi.py": "f28ea66e2d862a2a5814970b2ce40c2f7d8296ff09aed90a7e7def689b906944",
+      "tokenizer_config.json": "5d0803c94db9cd78763499e0956c95fd5a225c14a727e5a6cf5db3f96f010a6e"
+    },
+    "tokenizer_directory": "F:\\models\\Kimi-K3"
+  },
+  "status": "PASS",
+  "token_cases": [
+    {
+      "exact": true,
+      "prompt": "Hi",
+      "raw_exact": true,
+      "raw_token_ids": [
+        18699
+      ],
+      "token_count": 2,
+      "token_ids": [
+        163584,
+        18699
+      ],
+      "token_sha256": "2cbe73263146395ee5014c59d822f46da58a4e81be453d1c2c2c105e35c62a80"
+    },
+    {
+      "exact": true,
+      "prompt": "Hypothesis \u2192 Benchmark",
+      "raw_exact": true,
+      "raw_token_ids": [
+        97782,
+        135659,
+        6912,
+        71843
+      ],
+      "token_count": 5,
+      "token_ids": [
+        163584,
+        97782,
+        135659,
+        6912,
+        71843
+      ],
+      "token_sha256": "a17e6a3e631e5de5972216e102501c3a837aa300c8b503df740588e87ae93243"
+    },
+    {
+      "exact": true,
+      "prompt": "Can a worker store less than one complete Kimi layer?",
+      "raw_exact": true,
+      "raw_token_ids": [
+        8672,
+        261,
+        18498,
+        3921,
+        3889,
+        1541,
+        1101,
+        5434,
+        24980,
+        72,
+        8119,
+        30
+      ],
+      "token_count": 13,
+      "token_ids": [
+        163584,
+        8672,
+        261,
+        18498,
+        3921,
+        3889,
+        1541,
+        1101,
+        5434,
+        24980,
+        72,
+        8119,
+        30
+      ],
+      "token_sha256": "c4c53213b040d992b03d3b608a56f763de082fd1c8e19da54c4d4e2855257727"
+    }
+  ]
+}

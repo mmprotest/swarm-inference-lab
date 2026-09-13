@@ -1,0 +1,28 @@
+{
+  "command": [
+    "docker",
+    "run",
+    "--rm",
+    "--gpus",
+    "all",
+    "--shm-size",
+    "16g",
+    "--ipc=host",
+    "-v",
+    "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab:/workspace",
+    "-v",
+    "C:\\Users\\Simon\\.cache\\huggingface:/root/.cache/huggingface",
+    "--entrypoint",
+    "python3",
+    "lmsysorg/sglang:v0.5.16",
+    "/workspace/scripts/sglang_engine_benchmark.py",
+    "--job",
+    "/workspace/artifacts/benchmarks/experiment-004/sglang-512-probe/logs/jobs/sglang-512.job.json",
+    "--output",
+    "/workspace/artifacts/benchmarks/experiment-004/sglang-512-probe/logs/jobs/sglang-512.result.json"
+  ],
+  "cwd": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab",
+  "finished_unix_seconds": 1785458816.3279567,
+  "return_code": 1,
+  "started_unix_seconds": 1785458762.7284913
+}

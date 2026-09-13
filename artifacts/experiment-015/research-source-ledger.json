@@ -1,0 +1,143 @@
+{
+  "accessed_date": "2026-08-12",
+  "entries": [
+    {
+      "id": "R015-001",
+      "imported_into_swarm_result": false,
+      "source_type": "official project engineering report",
+      "title": "Kimi K3 Is Here: Efficient Day-0 Support on vLLM",
+      "topic": "Kimi K3 serving and DSpark/DCP",
+      "url": "https://vllm-project.github.io/2026/07/27/k3.html",
+      "used_for": "hypothesis motivation and external reference only"
+    },
+    {
+      "id": "R015-002",
+      "imported_into_swarm_result": false,
+      "source_type": "public model card",
+      "title": "Inferact/Kimi-K3-DSpark model card",
+      "topic": "Kimi K3 DSpark",
+      "url": "https://huggingface.co/Inferact/Kimi-K3-DSpark/blob/main/README.md",
+      "used_for": "checkpoint identity, architecture, public acceptance sensitivity"
+    },
+    {
+      "id": "R015-003",
+      "imported_into_swarm_result": false,
+      "source_type": "research paper",
+      "title": "DSpark: Confidence-Scheduled Speculative Decoding",
+      "topic": "DSpark",
+      "url": "https://arxiv.org/abs/2607.05147",
+      "used_for": "confidence scheduling and verification-waste hypothesis"
+    },
+    {
+      "id": "R015-004",
+      "imported_into_swarm_result": false,
+      "source_type": "peer-reviewed paper",
+      "title": "Fast Inference from Transformers via Speculative Decoding",
+      "topic": "speculative decoding",
+      "url": "https://proceedings.mlr.press/v202/leviathan23a.html",
+      "used_for": "distribution-preserving rejection-sampling semantics"
+    },
+    {
+      "id": "R015-005",
+      "imported_into_swarm_result": false,
+      "source_type": "research paper",
+      "title": "SpecInfer",
+      "topic": "tree speculative inference",
+      "url": "https://arxiv.org/abs/2305.09781",
+      "used_for": "token-tree branch criterion"
+    },
+    {
+      "id": "R015-006",
+      "imported_into_swarm_result": false,
+      "source_type": "research paper",
+      "title": "PipeInfer",
+      "topic": "pipeline speculative inference",
+      "url": "https://arxiv.org/abs/2407.11798",
+      "used_for": "asynchronous speculation and early cancellation hypothesis"
+    },
+    {
+      "id": "R015-007",
+      "imported_into_swarm_result": false,
+      "source_type": "peer-reviewed paper",
+      "title": "PipeSpec",
+      "topic": "hierarchical speculative pipelines",
+      "url": "https://aclanthology.org/2025.findings-acl.669/",
+      "used_for": "hierarchical pipeline hypothesis"
+    },
+    {
+      "id": "R015-008",
+      "imported_into_swarm_result": false,
+      "source_type": "official open-source implementation",
+      "title": "DeepEP",
+      "topic": "expert parallelism",
+      "url": "https://github.com/deepseek-ai/DeepEP",
+      "used_for": "device-resident dispatch/combine and overlap principles"
+    },
+    {
+      "id": "R015-009",
+      "imported_into_swarm_result": false,
+      "source_type": "official open-source implementation",
+      "title": "Expert Parallelism Load Balancer",
+      "topic": "expert load balancing",
+      "url": "https://github.com/deepseek-ai/EPLB",
+      "used_for": "redundant expert placement hypothesis"
+    },
+    {
+      "id": "R015-010",
+      "imported_into_swarm_result": false,
+      "source_type": "official documentation",
+      "title": "vLLM Context Parallel Deployment",
+      "topic": "Decode Context Parallelism",
+      "url": "https://docs.vllm.ai/en/latest/serving/context_parallel_deployment/",
+      "used_for": "DCP exact-combine and conditional-admission design"
+    },
+    {
+      "id": "R015-011",
+      "imported_into_swarm_result": false,
+      "source_type": "research paper",
+      "title": "OD-MoE",
+      "topic": "on-demand expert loading",
+      "url": "https://arxiv.org/abs/2512.03927",
+      "used_for": "tiered residency hypothesis"
+    },
+    {
+      "id": "R015-012",
+      "imported_into_swarm_result": false,
+      "source_type": "research paper",
+      "title": "HybriMoE",
+      "topic": "hybrid expert offload",
+      "url": "https://arxiv.org/abs/2504.05897",
+      "used_for": "dynamic CPU/GPU scheduling, prefetch, and caching hypothesis"
+    },
+    {
+      "id": "R015-013",
+      "imported_into_swarm_result": false,
+      "source_type": "official profiling repository",
+      "title": "DeepSeek public profiling data",
+      "topic": "communication/computation overlap",
+      "url": "https://github.com/deepseek-ai/profile-data",
+      "used_for": "operation-timeline/nanobatching hypothesis"
+    }
+  ],
+  "pinned_local_research_material": {
+    "dspark_config": {
+      "bytes": 1251,
+      "path": "artifacts/experiment-015/research-cache/dspark-metadata/config.json",
+      "sha256": "5a3c2f4f91c965ed93b14de5f12a4e9c17fd98d8c99916ed2deb26ce8702f970"
+    },
+    "dspark_model_card": {
+      "bytes": 6316,
+      "path": "artifacts/experiment-015/research-cache/dspark-metadata/README.md",
+      "sha256": "4734eec1b55b5b40b4050512a029808aea117f24440dcaf27815efd1127a88dc"
+    },
+    "vllm_commit": "a53ad859139ee37ef7c2c29716963abffd9cb486",
+    "vllm_dspark_pipeline_guard": {
+      "bytes": 3045,
+      "path": "artifacts/experiment-015/research-cache/vllm-source/vllm/v1/worker/gpu/spec_decode/dspark/utils.py",
+      "sha256": "012edd21fc03c535ae56929874cdc8c768d1faf9f66310b6a3039a6055c16d1a"
+    }
+  },
+  "policy": "external work motivates hypotheses; only Swarm evidence determines conclusions",
+  "schema_version": "experiment-015-research-source-ledger-v1",
+  "status": "PASS"
+}

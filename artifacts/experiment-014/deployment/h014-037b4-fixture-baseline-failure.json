@@ -1,0 +1,28 @@
+{
+  "schema_version": "experiment-014-k3-deployment-package-failure-v1",
+  "cycle_id": "H014-037b4",
+  "status": "FAIL",
+  "hypothesis": "The first compact canary fixture builder handles all four checkpoint-aligned roles without inventing router evidence for the dense stage zero.",
+  "configuration": {
+    "checkpoint": "F:\\models\\Kimi-K3",
+    "roles": [
+      "stage_zero_embedding_dense",
+      "kda_moe",
+      "gated_mla_moe",
+      "final_norm_head_sampling"
+    ],
+    "positions": 3,
+    "cuda_execution_attempted": false
+  },
+  "result": {
+    "exception_type": "KeyError",
+    "exception_value": "0",
+    "failing_expression": "parsed_routes[layer][position]",
+    "failing_layer": 0,
+    "fixture_bundle_written": false
+  },
+  "inspection": "The retained route trace intentionally contains routed-MoE calls only. Layer 0 is dense and its executor emits an empty selected-expert list. Treating it as an MoE layer was a canary-fixture harness error.",
+  "bottleneck": "Unconditional router-trace lookup for the dense stage-zero role.",
+  "decision": "MODIFY. Preserve this failure; represent dense-stage routing as an exact empty [3,0] array and do not change any Kimi arithmetic, oracle, weights or MoE route expectations.",
+  "gpu_health_impact": "NONE: import and source-fixture construction only; CUDA execution did not start."
+}

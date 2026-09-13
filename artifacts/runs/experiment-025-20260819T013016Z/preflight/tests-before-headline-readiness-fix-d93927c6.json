@@ -1,0 +1,99 @@
+{
+  "compileall": {
+    "roots": [
+      "src",
+      "scripts"
+    ],
+    "status": "PASS"
+  },
+  "focused_e025": {
+    "passed": 23,
+    "rerun_after_watchdog_fix": false,
+    "source_tree_sha256": "22f954ecf8f44bc5a5610cb463a3663bfc761e342df75dba67b1a21b41121490",
+    "status": "PASS"
+  },
+  "focused_watchdog_fix": {
+    "failed": 0,
+    "passed": 4,
+    "source_tree_sha256": "d93927c696170d1cf7078313fceac5735221b526d9d451d24a212ff2e70497ee",
+    "status": "PASS",
+    "tests": [
+      "test_watchdog_startup_timeout_prearms_cleanup_trigger",
+      "test_watchdog_accepts_nonce_bound_receipt_when_windows_pid_differs",
+      "test_watchdog_receipt_write_retries_transient_windows_lock",
+      "test_watchdog_delays_first_heartbeat_until_after_startup_receipt"
+    ]
+  },
+  "full_repository_regression": {
+    "experiment_024_explicitly_ignored": true,
+    "passed": 1353,
+    "rerun_after_watchdog_fix": false,
+    "retention_reason": "Controller-only watchdog receipt race fix; resume instruction forbids repeating the full suite",
+    "skipped": 13,
+    "source_tree_sha256": "22f954ecf8f44bc5a5610cb463a3663bfc761e342df75dba67b1a21b41121490",
+    "status": "PASS"
+  },
+  "generated_at_utc": "2026-08-23T01:29:21.603603+00:00",
+  "independent_watchdog_physical_process_canary": {
+    "different_process_ids": true,
+    "launcher_pid": 20440,
+    "startup_elapsed_seconds": 0.5149423000402749,
+    "startup_identity": "per-launch SHA-256 nonce",
+    "status": "PASS",
+    "vast_create_invoked": false,
+    "watchdog_pid": 15720,
+    "zero_live_cleanup": true
+  },
+  "lineage_regression": {
+    "covered_by_full_repository_regression": true,
+    "experiment_024_explicitly_excluded": true,
+    "included": [
+      "E014",
+      "E019",
+      "E020",
+      "E021",
+      "E022",
+      "E023",
+      "E025"
+    ],
+    "status": "PASS"
+  },
+  "paid_resources_used": false,
+  "production_dispatch_functional_test": true,
+  "ruff": {
+    "e025_scope": [
+      "src/swarm_inference/experiments/experiment_025",
+      "scripts/experiment_025_*.py",
+      "tests/test_experiment_025*.py"
+    ],
+    "global_repository_observation": {
+      "pre_existing_error_count": 47,
+      "scope": "Experiment 019 lineage and unrelated legacy files",
+      "status": "PRE_EXISTING_FAILURE_NOT_MODIFIED_BY_E025"
+    },
+    "status": "PASS"
+  },
+  "schema_version": "experiment-025-local-tests-v1",
+  "source_tree_sha256": "d93927c696170d1cf7078313fceac5735221b526d9d451d24a212ff2e70497ee",
+  "status": "PASS",
+  "watchdog_fix_scope": {
+    "changed_files": [
+      "src/swarm_inference/experiments/experiment_025/watchdog.py",
+      "tests/test_experiment_025.py"
+    ],
+    "checkpoint_changed": false,
+    "model_execution_changed": false,
+    "placement_changed": false,
+    "production_dispatch_functional_test_retained_from_parent_source": true
+  },
+  "watchdog_runtime_fix_integration": {
+    "artifact": "preflight/watchdog-runtime-fix-20260823/watchdog-receipt.json",
+    "detached_process_survived": true,
+    "evidence_class": "LOCAL_NO_RENTAL_PROCESS_INTEGRATION",
+    "heartbeat_advanced": true,
+    "partial_file_remained": false,
+    "status": "PASS",
+    "stopped_after_zero_live_probe_receipt": true,
+    "vast_mutations_performed": false
+  }
+}

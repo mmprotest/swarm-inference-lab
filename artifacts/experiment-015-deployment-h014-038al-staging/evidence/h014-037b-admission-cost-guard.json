@@ -1,0 +1,217 @@
+{
+  "acceptance_gates": {
+    "missing_worker_fleet_aborted": true,
+    "nominal_price_fleet_aborted": true,
+    "unused_worker_fleet_aborted": true,
+    "valid_node_passes": true,
+    "viable_price_fleet_allowed": true,
+    "wrong_gpu_rejected_before_cuda": true,
+    "wrong_network_rejected": true
+  },
+  "cases": {
+    "missing_worker": {
+      "connected_nodes": 92,
+      "expected_nodes": 93,
+      "failed_gates": [
+        "all_expected_connected",
+        "all_expected_ready"
+      ],
+      "gates": {
+        "all_expected_connected": false,
+        "all_expected_ready": false,
+        "all_shards_exact": true,
+        "expected_node_count": true,
+        "fleet_hourly_cost_within_gate": true,
+        "gpu_price_within_economic_gate": true,
+        "linux_runtime_qualification_pass": true,
+        "no_unhealthy": true,
+        "no_unused": true,
+        "no_wrong_hardware": true,
+        "no_wrong_network": true,
+        "single_3090_canary_pass": true,
+        "topology_exact": true
+      },
+      "hourly_cost_usd": 4.6000000000000005,
+      "kind": "fleet_cost_guard",
+      "ready_nodes": 92,
+      "schema_version": "experiment-015-k3-admission-v1",
+      "status": "ABORT"
+    },
+    "nominal_0_165_fleet": {
+      "connected_nodes": 93,
+      "expected_nodes": 93,
+      "failed_gates": [
+        "fleet_hourly_cost_within_gate",
+        "gpu_price_within_economic_gate"
+      ],
+      "gates": {
+        "all_expected_connected": true,
+        "all_expected_ready": true,
+        "all_shards_exact": true,
+        "expected_node_count": true,
+        "fleet_hourly_cost_within_gate": false,
+        "gpu_price_within_economic_gate": false,
+        "linux_runtime_qualification_pass": true,
+        "no_unhealthy": true,
+        "no_unused": true,
+        "no_wrong_hardware": true,
+        "no_wrong_network": true,
+        "single_3090_canary_pass": true,
+        "topology_exact": true
+      },
+      "hourly_cost_usd": 15.345,
+      "kind": "fleet_cost_guard",
+      "ready_nodes": 93,
+      "schema_version": "experiment-015-k3-admission-v1",
+      "status": "ABORT"
+    },
+    "unused_worker": {
+      "connected_nodes": 93,
+      "expected_nodes": 93,
+      "failed_gates": [
+        "no_unused"
+      ],
+      "gates": {
+        "all_expected_connected": true,
+        "all_expected_ready": true,
+        "all_shards_exact": true,
+        "expected_node_count": true,
+        "fleet_hourly_cost_within_gate": true,
+        "gpu_price_within_economic_gate": true,
+        "linux_runtime_qualification_pass": true,
+        "no_unhealthy": true,
+        "no_unused": false,
+        "no_wrong_hardware": true,
+        "no_wrong_network": true,
+        "single_3090_canary_pass": true,
+        "topology_exact": true
+      },
+      "hourly_cost_usd": 4.65,
+      "kind": "fleet_cost_guard",
+      "ready_nodes": 93,
+      "schema_version": "experiment-015-k3-admission-v1",
+      "status": "ABORT"
+    },
+    "valid_node": {
+      "cuda_initialization_attempted": true,
+      "failed_gates": [],
+      "gates": {
+        "assigned_stage_canary_pass": true,
+        "assignment_hash_exact": true,
+        "binary_accepts_sm86": true,
+        "checkpoint_revision_exact": true,
+        "coarse_bandwidth": true,
+        "coarse_rtt": true,
+        "compute86_ptx": true,
+        "compute_capability_sm86": true,
+        "cuda_initialized": true,
+        "disk_capacity": true,
+        "exact_rtx_3090": true,
+        "native_batch_at_least_eight": true,
+        "nvidia_smi_healthy": true,
+        "package_version_exact": true,
+        "prepare_seven_calls_pass": true,
+        "runtime_hash_exact": true,
+        "safe_fixture_pass": true,
+        "vram_at_least_24_gib": true
+      },
+      "kind": "node_admission",
+      "mode": "FLEET",
+      "schema_version": "experiment-015-k3-admission-v1",
+      "status": "PASS"
+    },
+    "viable_fleet": {
+      "connected_nodes": 93,
+      "expected_nodes": 93,
+      "failed_gates": [],
+      "gates": {
+        "all_expected_connected": true,
+        "all_expected_ready": true,
+        "all_shards_exact": true,
+        "expected_node_count": true,
+        "fleet_hourly_cost_within_gate": true,
+        "gpu_price_within_economic_gate": true,
+        "linux_runtime_qualification_pass": true,
+        "no_unhealthy": true,
+        "no_unused": true,
+        "no_wrong_hardware": true,
+        "no_wrong_network": true,
+        "single_3090_canary_pass": true,
+        "topology_exact": true
+      },
+      "hourly_cost_usd": 4.65,
+      "kind": "fleet_cost_guard",
+      "ready_nodes": 93,
+      "schema_version": "experiment-015-k3-admission-v1",
+      "status": "ALLOW"
+    },
+    "wrong_gpu": {
+      "cuda_initialization_attempted": false,
+      "failed_gates": [
+        "exact_rtx_3090"
+      ],
+      "gates": {
+        "assignment_hash_exact": true,
+        "checkpoint_revision_exact": true,
+        "coarse_bandwidth": true,
+        "coarse_rtt": true,
+        "compute_capability_sm86": true,
+        "disk_capacity": true,
+        "exact_rtx_3090": false,
+        "nvidia_smi_healthy": true,
+        "package_version_exact": true,
+        "vram_at_least_24_gib": true
+      },
+      "kind": "node_admission",
+      "mode": "PRE_CANARY",
+      "schema_version": "experiment-015-k3-admission-v1",
+      "status": "REJECT"
+    },
+    "wrong_network": {
+      "cuda_initialization_attempted": true,
+      "failed_gates": [
+        "coarse_bandwidth",
+        "coarse_rtt"
+      ],
+      "gates": {
+        "assignment_hash_exact": true,
+        "checkpoint_revision_exact": true,
+        "coarse_bandwidth": false,
+        "coarse_rtt": false,
+        "compute_capability_sm86": true,
+        "disk_capacity": true,
+        "exact_rtx_3090": true,
+        "nvidia_smi_healthy": true,
+        "package_version_exact": true,
+        "vram_at_least_24_gib": true
+      },
+      "kind": "node_admission",
+      "mode": "PRE_CANARY",
+      "schema_version": "experiment-015-k3-admission-v1",
+      "status": "REJECT"
+    }
+  },
+  "cycle_id": "H014-038al",
+  "decision": "RETAIN_FAIL_CLOSED_ADMISSION_AND_COST_GUARD",
+  "hypothesis": "Hardware/network mismatches reject before unsafe CUDA, and the full-fleet guard permits only an exact healthy 93-worker fleet at or below the measured USD 0.05/GPU-hour economic ceiling.",
+  "policy": {
+    "expected_nodes": 93,
+    "maximum_fleet_cost_per_hour_usd": 4.65,
+    "maximum_gpu_price_per_hour_usd": 0.05,
+    "sub_layer_canary_required": false
+  },
+  "requirements": {
+    "assignment_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "checkpoint_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "minimum_disk_free_bytes": 34359738368,
+    "minimum_vram_bytes": 25769803776,
+    "network": {
+      "maximum_rtt_ms": 5.0,
+      "minimum_bandwidth_gbps": 10.0
+    },
+    "package_version": "0.1.0rc11",
+    "runtime_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "schema_version": "experiment-014-k3-admission-fixture-v1",
+  "status": "PASS"
+}

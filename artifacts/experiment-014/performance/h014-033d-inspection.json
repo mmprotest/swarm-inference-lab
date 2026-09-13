@@ -1,0 +1,41 @@
+{
+  "schema_version": "experiment-014-k3-cycle-inspection-v1",
+  "cycle_id": "H014-033d",
+  "status": "PASS",
+  "hypothesis_result": "FALSIFIED_PERFORMANCE_THRESHOLD",
+  "raw_receipt": {
+    "path": "artifacts/experiment-014/performance/h014-033d-prefill-layer91-mla-parallel-exp.json",
+    "sha256": "7d865ebec402e8778ea2763d4260f1204cb5dee949e8a5e1ba248e93a3750020"
+  },
+  "binary": {
+    "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-033d-mla-parallel-exp-candidate.dll",
+    "sha256": "efba8f3256d5bd70fac3ea46b3d0790c687ee5e8a99554f8ceff3c85ec8f1f5e"
+  },
+  "baseline": {
+    "cycle": "H014-033c",
+    "binary_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "last_256_device_p50_ms": {
+    "1024": {"baseline": 3.25711989402771, "candidate": 3.228543996810913, "improvement_percent": 0.8773363629995344},
+    "4096": {"baseline": 4.12827205657959, "candidate": 3.991152048110962, "improvement_percent": 3.321486728329539},
+    "8192": {"baseline": 5.2982399463653564, "candidate": 5.028464078903198, "improvement_percent": 5.091801620785922},
+    "16384": {"baseline": 7.636240005493164, "candidate": 7.088624000549316, "improvement_percent": 7.171278070751023}
+  },
+  "candidate": {
+    "terminal_16k_to_1k_ratio": 2.195610159734948,
+    "cumulative_throughput_retention": 0.6594415920765025,
+    "prompt_tokens_per_second_16k": 192.41093865581325,
+    "stage_local_ttft_ms_16k": 85158.7208
+  },
+  "correctness": {
+    "all_context_gates_pass": true,
+    "final_output_fingerprints_equal_to_h014_033c_at_all_contexts": true,
+    "decode_output_fingerprints_equal_to_h014_033c_at_all_contexts": true,
+    "state_fingerprints_equal_to_h014_033c_at_all_contexts": true,
+    "cuda_and_nvidia_health_pass": true
+  },
+  "inspection": "The benefit rises monotonically with context, proving serialized elementwise exp/normalization was real, but it accounts for only 7.171% of 16K complete-stage last-window service. The candidate still misses both the 2.00x terminal-ratio and 70% throughput-retention bands.",
+  "bottleneck": "The remaining dominant context term is the pair of O(T*K) score and weighted-value cache scans. The easy elementwise softmax scheduling change cannot materially resolve complete-stage scaling by itself.",
+  "decision": "REVERT the H014-033d scheduling change under its preregistered 10% retention threshold. Keep H014-033c's capacity-checked 16K mechanism and treat the scan kernels as the next evidence-backed optimization target only if the capacity model shows material fleet impact.",
+  "redesign": "Promote no new arithmetic optimization. Run P0/P1 regressions on H014-033c, then use measured Gated-MLA context service in the validated capacity model."
+}

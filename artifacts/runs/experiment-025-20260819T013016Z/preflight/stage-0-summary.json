@@ -1,0 +1,78 @@
+{
+  "blocker_receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\registry-publication-blocker.json",
+  "emergency_cleanup_script": {
+    "created_before_any_rental": true,
+    "idempotent": true,
+    "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\rental\\destroy_all_e025_20260819T013016Z.ps1",
+    "sha256": "9fa9868d000c74a8a2e9c0f6c0d1abf1de35ea1a96eceea5471f670a4c69ac8a"
+  },
+  "evidence_class": "LOCAL_PRE_RENTAL_ONLY",
+  "gates": {
+    "checkpoint_exact": true,
+    "code_frozen": true,
+    "deployment_image_anonymously_resolvable": true,
+    "deployment_image_published": true,
+    "distribution_exact": true,
+    "e024_preserved": true,
+    "focused_and_full_tests_passed": true,
+    "image_inputs_frozen": true,
+    "local_full_graph_rehearsal_passed": true,
+    "local_linux_image_built": true,
+    "local_linux_image_physical_canary_passed": true,
+    "native_dispatch_attested": true,
+    "native_dispatch_functionally_executed": true,
+    "physical_placement_exact": true,
+    "public_checkpoint_shard_anonymous_head": true,
+    "source_hash_matches_local_image": true,
+    "source_hash_matches_rehearsal": true,
+    "source_hash_matches_tests": true,
+    "stage_zero_no_vast_mutations": true,
+    "watchdog_nonce_startup_canary": true,
+    "zero_live_vast_instances": true
+  },
+  "generated_at_utc": "2026-08-19T04:19:06.786673+00:00",
+  "headline_evidence_class_target": "PHYSICAL_MULTI_MACHINE_CONSUMER_GPU_SWARM",
+  "live_vast_instances": 0,
+  "local_image": {
+    "digest": "sha256:289d79a6f8120d00485d00e2f8bc389111c4b33abbb5e1af8200d8ab58750de8",
+    "maximum_relative_l2_error": 4.0398817536788097e-07,
+    "physical_canary_status": "PASS",
+    "publication_status": "PASS",
+    "status": "PASS"
+  },
+  "next_authorized_action": "retry Stage 1: exactly one on-demand RTX 3090/3090 Ti under the 900-second watchdog",
+  "placement": {
+    "duplicate_tensor_count": 0,
+    "logical_worker_count": 97,
+    "required_text_path_bytes": 1559965606912,
+    "status": "PASS",
+    "unassigned_required_tensor_count": 0
+  },
+  "prior_stage_1_attempt": {
+    "preserved_at": "rental/stage-1-backbone-canary-attempt-001-watchdog-startup-failure",
+    "root_cause": "Windows launcher PID differed from independent watchdog PID",
+    "status": "ABORTED_BEFORE_CREATE",
+    "vast_create_invoked": false
+  },
+  "published_image": {
+    "anonymous_registry_resolve_status": "PASS",
+    "immutable_digest": "sha256:289d79a6f8120d00485d00e2f8bc389111c4b33abbb5e1af8200d8ab58750de8",
+    "immutable_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:289d79a6f8120d00485d00e2f8bc389111c4b33abbb5e1af8200d8ab58750de8",
+    "secrets_logged": false,
+    "source_id": "8a88116355453a21c9564dd4d2316ab68876cf05cd1ef76f2e82d150f0c18925",
+    "status": "PASS"
+  },
+  "registry_blocker": "RESOLVED",
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-stage-zero-v3",
+  "source_tree_sha256": "8a88116355453a21c9564dd4d2316ab68876cf05cd1ef76f2e82d150f0c18925",
+  "status": "PASS_READY_FOR_SINGLE_BACKBONE_CANARY_RETRY",
+  "vast_mutations_performed": false,
+  "watchdog_fix": {
+    "cleanup_zero_live": true,
+    "different_process_ids_proven": true,
+    "startup_elapsed_seconds": 0.5149423000402749,
+    "startup_identity": "per-launch SHA-256 nonce",
+    "status": "PASS"
+  }
+}

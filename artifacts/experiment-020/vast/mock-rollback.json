@@ -1,0 +1,3382 @@
+{
+  "failures": [
+    {
+      "created_instance_ids": [],
+      "destroyed_instance_ids": [],
+      "failure": "RuntimeError: offer disappeared between plan and create",
+      "ledger": {
+        "events": [],
+        "immutable": true,
+        "records": [],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "offer_disappears",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002
+      ],
+      "failure": "RuntimeError: pod provisioning failed",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "43ba6bfa6f36d5ab610f7b7ea0f9cd203decf4b2ed8632cdfa509942b9e9a2ea",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "cdebc2738aea5c167394df718da41a8d6824ddd6a28e9deae6211afa1d5ddfa0",
+            "instance_id": 10001,
+            "previous_sha256": "43ba6bfa6f36d5ab610f7b7ea0f9cd203decf4b2ed8632cdfa509942b9e9a2ea",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "400415b252d36b167ea26095eb46211d975e3d31aa6005dc7cbf7fac3cbba1b1",
+            "instance_id": 10002,
+            "previous_sha256": "cdebc2738aea5c167394df718da41a8d6824ddd6a28e9deae6211afa1d5ddfa0",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "c13ae1e7b4d173ed3a23fdda32954ed70633c3d9621f5d61dec4c66c3e4e3adc",
+            "instance_id": 10000,
+            "previous_sha256": "400415b252d36b167ea26095eb46211d975e3d31aa6005dc7cbf7fac3cbba1b1",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "9dc98085b7f9982b1673113240ac738f295289ef127a400eb7c6b6d000f97865",
+            "instance_id": 10001,
+            "previous_sha256": "c13ae1e7b4d173ed3a23fdda32954ed70633c3d9621f5d61dec4c66c3e4e3adc",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "fab0161a07ffd6dc8beb4b61430530c898e84fd2b36c70d65e1e42c8ffea77a4",
+            "instance_id": 10002,
+            "previous_sha256": "9dc98085b7f9982b1673113240ac738f295289ef127a400eb7c6b6d000f97865",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290577040300
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "one_pod_fails",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: instance never ready",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "43ba6bfa6f36d5ab610f7b7ea0f9cd203decf4b2ed8632cdfa509942b9e9a2ea",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "cdebc2738aea5c167394df718da41a8d6824ddd6a28e9deae6211afa1d5ddfa0",
+            "instance_id": 10001,
+            "previous_sha256": "43ba6bfa6f36d5ab610f7b7ea0f9cd203decf4b2ed8632cdfa509942b9e9a2ea",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "400415b252d36b167ea26095eb46211d975e3d31aa6005dc7cbf7fac3cbba1b1",
+            "instance_id": 10002,
+            "previous_sha256": "cdebc2738aea5c167394df718da41a8d6824ddd6a28e9deae6211afa1d5ddfa0",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "3e46635b8679d6794ac7424bef6ee65be09dfd7ce7d5c3c0f34d1b6021b2fa37",
+            "instance_id": 10003,
+            "previous_sha256": "400415b252d36b167ea26095eb46211d975e3d31aa6005dc7cbf7fac3cbba1b1",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "75da1e4ae0a6fcfea48368e75509e71703ce7e0232b00cf654595ddd2bac46e9",
+            "instance_id": 10004,
+            "previous_sha256": "3e46635b8679d6794ac7424bef6ee65be09dfd7ce7d5c3c0f34d1b6021b2fa37",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "a8b55c0d828c28672853e633c81fa3c26125ecbd73804e2713e250d1caa62d5e",
+            "instance_id": 10005,
+            "previous_sha256": "75da1e4ae0a6fcfea48368e75509e71703ce7e0232b00cf654595ddd2bac46e9",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "736735de6839da600658d21b5cd1e340fcb029e1ca16270ca5705684582baf15",
+            "instance_id": 10006,
+            "previous_sha256": "a8b55c0d828c28672853e633c81fa3c26125ecbd73804e2713e250d1caa62d5e",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "b894c573dd144930c84a44a2bb3042c7c1100936e7ed80c954ab8e0bb0f12774",
+            "instance_id": 10007,
+            "previous_sha256": "736735de6839da600658d21b5cd1e340fcb029e1ca16270ca5705684582baf15",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "10bca35ff9c35c614eaf7160cd9f0f26356bc1c447dad6fbbfb28489bf0d8fa4",
+            "instance_id": 10008,
+            "previous_sha256": "b894c573dd144930c84a44a2bb3042c7c1100936e7ed80c954ab8e0bb0f12774",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "b8f832db3810688f71e03c036837697ceda36171d5db2f0232a7173744abb315",
+            "instance_id": 10009,
+            "previous_sha256": "10bca35ff9c35c614eaf7160cd9f0f26356bc1c447dad6fbbfb28489bf0d8fa4",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "81f3b5246d20acc064ae30884936d116758979ef089e15366dfd9be5b70200c5",
+            "instance_id": 10010,
+            "previous_sha256": "b8f832db3810688f71e03c036837697ceda36171d5db2f0232a7173744abb315",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "c6582c1339149f2f34974c29a487cc076435ef97674b3b5d8a48aa0e7943ad35",
+            "instance_id": 10011,
+            "previous_sha256": "81f3b5246d20acc064ae30884936d116758979ef089e15366dfd9be5b70200c5",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "9d7dc55db6f8b092a39c42aae46960cde7f45ac03b596266d35f1267d39e40dd",
+            "instance_id": 10000,
+            "previous_sha256": "c6582c1339149f2f34974c29a487cc076435ef97674b3b5d8a48aa0e7943ad35",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "438568e2f377bc0608ec77171997fd61b0c1d5159d2f72c4e35837ea2df415eb",
+            "instance_id": 10001,
+            "previous_sha256": "9d7dc55db6f8b092a39c42aae46960cde7f45ac03b596266d35f1267d39e40dd",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "d3d5a6e3e9912d85a56dd7014c7fd687fd1e79da771e484df1e7c02ba97c244a",
+            "instance_id": 10002,
+            "previous_sha256": "438568e2f377bc0608ec77171997fd61b0c1d5159d2f72c4e35837ea2df415eb",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "5bb50dcada6e9291f73160a351fd350b9b0e5a4cc41e9402d07fb0d369ecd162",
+            "instance_id": 10003,
+            "previous_sha256": "d3d5a6e3e9912d85a56dd7014c7fd687fd1e79da771e484df1e7c02ba97c244a",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "189736cf700ce274b5f626a2cdf349ed6a191ae702ca88d7bcb5fb2c039ccc32",
+            "instance_id": 10004,
+            "previous_sha256": "5bb50dcada6e9291f73160a351fd350b9b0e5a4cc41e9402d07fb0d369ecd162",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "59c575f0abe2194022391a37fef5eba3dcd3777b34d2baf0c08b910edd10cd28",
+            "instance_id": 10005,
+            "previous_sha256": "189736cf700ce274b5f626a2cdf349ed6a191ae702ca88d7bcb5fb2c039ccc32",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "2f62bee0b1b1ae170c7a0740bcf6247b9a7b42b6be839913150538ce81ca9ef1",
+            "instance_id": 10006,
+            "previous_sha256": "59c575f0abe2194022391a37fef5eba3dcd3777b34d2baf0c08b910edd10cd28",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "27768e4a7b8b3e524bdb3b7f80de47e3f50102578c75fbf550ccca40e8419133",
+            "instance_id": 10007,
+            "previous_sha256": "2f62bee0b1b1ae170c7a0740bcf6247b9a7b42b6be839913150538ce81ca9ef1",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "d6c53e87cd2abc15facd773cec2569692c5e6f2ae97c033d203d7860c6d48a51",
+            "instance_id": 10008,
+            "previous_sha256": "27768e4a7b8b3e524bdb3b7f80de47e3f50102578c75fbf550ccca40e8419133",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "9bd36702bcc999c765b2c34511918e79438bab1b79d5145336b65140ac2354eb",
+            "instance_id": 10009,
+            "previous_sha256": "d6c53e87cd2abc15facd773cec2569692c5e6f2ae97c033d203d7860c6d48a51",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "a7f9b4731b642f8ce21156410e66e5cfbffde9b36ac0567d29331a448b2f83a0",
+            "instance_id": 10010,
+            "previous_sha256": "9bd36702bcc999c765b2c34511918e79438bab1b79d5145336b65140ac2354eb",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290577040300
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "1a28b6fcaed4041612e655396d24cfe46c07a9cce7669f28823e62d8d79a70a3",
+            "instance_id": 10011,
+            "previous_sha256": "a7f9b4731b642f8ce21156410e66e5cfbffde9b36ac0567d29331a448b2f83a0",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290577040300
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577040300,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "instance_never_ready",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: wrong gpu count",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "c807b1414ac46d791e5472b0418cd178fc161490f639f0e454883177102993e0",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "2297e6757ef766f640c725b08efc2da0d23cd54debd8a9936e7019d78057ca7d",
+            "instance_id": 10001,
+            "previous_sha256": "c807b1414ac46d791e5472b0418cd178fc161490f639f0e454883177102993e0",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "14b6ea4671330b9c73e7f47edd4c2f70682aaa10b17abbab760fb2a01e6d82da",
+            "instance_id": 10002,
+            "previous_sha256": "2297e6757ef766f640c725b08efc2da0d23cd54debd8a9936e7019d78057ca7d",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "09c3b7b0d571e85f8e1b4fc56b9aa7f7568de496b703684379cf5a0b82f36757",
+            "instance_id": 10003,
+            "previous_sha256": "14b6ea4671330b9c73e7f47edd4c2f70682aaa10b17abbab760fb2a01e6d82da",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "39d5182da638221bdeab75da49042240c45e755d2c30280290d3ff6756951375",
+            "instance_id": 10004,
+            "previous_sha256": "09c3b7b0d571e85f8e1b4fc56b9aa7f7568de496b703684379cf5a0b82f36757",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "14ba9073c6d4d2c1925aa3b3d8052036f8919858def942e7b5954fdab34388c4",
+            "instance_id": 10005,
+            "previous_sha256": "39d5182da638221bdeab75da49042240c45e755d2c30280290d3ff6756951375",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "72c1629d15e2134c034faeca1a6f1c1463aa2d7fcfdc3e0872614c5bd3b783dc",
+            "instance_id": 10006,
+            "previous_sha256": "14ba9073c6d4d2c1925aa3b3d8052036f8919858def942e7b5954fdab34388c4",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "eb3f7c6fa341da8990cac67f06cb6d120b4e3caabb33c4f4575c166aac66edf3",
+            "instance_id": 10007,
+            "previous_sha256": "72c1629d15e2134c034faeca1a6f1c1463aa2d7fcfdc3e0872614c5bd3b783dc",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "7eb6c91869f21dddcf65975185f9a8db1e561fb00e348137af03a2c372aa9fd8",
+            "instance_id": 10008,
+            "previous_sha256": "eb3f7c6fa341da8990cac67f06cb6d120b4e3caabb33c4f4575c166aac66edf3",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "cd216a4e23041a7e146068fb067bfaabc0b0262a4e523a718f2e95138d72c5b6",
+            "instance_id": 10009,
+            "previous_sha256": "7eb6c91869f21dddcf65975185f9a8db1e561fb00e348137af03a2c372aa9fd8",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "387d9812ac6e357010dc1db82396e118f20e2b51f4c510be5e7ce3994400553a",
+            "instance_id": 10010,
+            "previous_sha256": "cd216a4e23041a7e146068fb067bfaabc0b0262a4e523a718f2e95138d72c5b6",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "db96ca5c5fd378f8263ff791cef3345eeb8240d4097c0fb23d43dd65091296dd",
+            "instance_id": 10011,
+            "previous_sha256": "387d9812ac6e357010dc1db82396e118f20e2b51f4c510be5e7ce3994400553a",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ddb006fa8d44f0bcaa1d8a632efe6bde05524b4dfbb5f6382bf897ad8b70fcd0",
+            "instance_id": 10000,
+            "previous_sha256": "db96ca5c5fd378f8263ff791cef3345eeb8240d4097c0fb23d43dd65091296dd",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "c8482dba5da276453f146b926ffe4de5469bf9ebee87f08414af4bd9b5f5af74",
+            "instance_id": 10001,
+            "previous_sha256": "ddb006fa8d44f0bcaa1d8a632efe6bde05524b4dfbb5f6382bf897ad8b70fcd0",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "de54243bd4045f907e584a356eae688155664fca8c62ff603b8e496d7ce6a612",
+            "instance_id": 10002,
+            "previous_sha256": "c8482dba5da276453f146b926ffe4de5469bf9ebee87f08414af4bd9b5f5af74",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "5985aa2caadb16e541cdc7cb63b278cccb66519d59f5fa9020a60b321879136f",
+            "instance_id": 10003,
+            "previous_sha256": "de54243bd4045f907e584a356eae688155664fca8c62ff603b8e496d7ce6a612",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "6a1568a0bce1f1dd7d885096c7385f8714eebd9e7b6963ff6ddd2c1de2c528ea",
+            "instance_id": 10004,
+            "previous_sha256": "5985aa2caadb16e541cdc7cb63b278cccb66519d59f5fa9020a60b321879136f",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "612f496702521836cda106c9bcc973c3bc6c0e0b11184ace6a20ebabd742eff0",
+            "instance_id": 10005,
+            "previous_sha256": "6a1568a0bce1f1dd7d885096c7385f8714eebd9e7b6963ff6ddd2c1de2c528ea",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "6ebec6d8fc37de4c92bdffa7b339cf7c2ae59ec990eb0bc01fe086a28293369a",
+            "instance_id": 10006,
+            "previous_sha256": "612f496702521836cda106c9bcc973c3bc6c0e0b11184ace6a20ebabd742eff0",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "3677dd799c2029f7eac0bfeeeddf1ecbe7f6c49bd7ec744c32fd70cef111b85f",
+            "instance_id": 10007,
+            "previous_sha256": "6ebec6d8fc37de4c92bdffa7b339cf7c2ae59ec990eb0bc01fe086a28293369a",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "5ec7948599fd748f3300f776ddbcb2c75d0511eccfb351bfde3bce939e47683e",
+            "instance_id": 10008,
+            "previous_sha256": "3677dd799c2029f7eac0bfeeeddf1ecbe7f6c49bd7ec744c32fd70cef111b85f",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "a51d5bc354bd34831e2d21eee8ddb33fcaa5794848d7b6744f2504176288633c",
+            "instance_id": 10009,
+            "previous_sha256": "5ec7948599fd748f3300f776ddbcb2c75d0511eccfb351bfde3bce939e47683e",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ed5df56c26e182d311c2c22f52452da6c24e0e47402a829a6c92969f005dcd87",
+            "instance_id": 10010,
+            "previous_sha256": "a51d5bc354bd34831e2d21eee8ddb33fcaa5794848d7b6744f2504176288633c",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290577549600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "99726359317af1412bfc521df8d7262231d31b8e717e34f79ef7ee269d9476cf",
+            "instance_id": 10011,
+            "previous_sha256": "ed5df56c26e182d311c2c22f52452da6c24e0e47402a829a6c92969f005dcd87",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290577549600
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290577549600,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "wrong_gpu_count",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: insufficient disk",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "44b979cc8eac633d4cb6b30c31ef04e5a337fc1ea0d7db5a3600882f3a9eb204",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "aeb44f6ccebe0c1794bb682d5bace9782dc4253307b3ddea5e00f21a6318fb36",
+            "instance_id": 10001,
+            "previous_sha256": "44b979cc8eac633d4cb6b30c31ef04e5a337fc1ea0d7db5a3600882f3a9eb204",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "577db584361c0f4a4e1449eedcf9027fb9d7a0b3fdd0a3c6df20de1fad109373",
+            "instance_id": 10002,
+            "previous_sha256": "aeb44f6ccebe0c1794bb682d5bace9782dc4253307b3ddea5e00f21a6318fb36",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "6c4c584932db2ef7f8bda7c837aa6001b22e1b0f39690b80cc375474d6084d76",
+            "instance_id": 10003,
+            "previous_sha256": "577db584361c0f4a4e1449eedcf9027fb9d7a0b3fdd0a3c6df20de1fad109373",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "d88afa3687f0b995517a83f350c9ac2bedf2ad8bb99f4a7a8d0cbcba35c08da3",
+            "instance_id": 10004,
+            "previous_sha256": "6c4c584932db2ef7f8bda7c837aa6001b22e1b0f39690b80cc375474d6084d76",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "53387f08873c7c18c8f5af8a2b15da42b1e7eb7bd3854f6f3bb1ddf1e3ed5611",
+            "instance_id": 10005,
+            "previous_sha256": "d88afa3687f0b995517a83f350c9ac2bedf2ad8bb99f4a7a8d0cbcba35c08da3",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "61e129ee7005ff8f675abcec8dd7e5e292df1dc2cf287c9f1fb637887433a98b",
+            "instance_id": 10006,
+            "previous_sha256": "53387f08873c7c18c8f5af8a2b15da42b1e7eb7bd3854f6f3bb1ddf1e3ed5611",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "261750623d60478d073d07e83385e6538090edb64e7f40f556dc0704f726dea5",
+            "instance_id": 10007,
+            "previous_sha256": "61e129ee7005ff8f675abcec8dd7e5e292df1dc2cf287c9f1fb637887433a98b",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "43f5267f5c8a37edf41848da697a0fe5b74303f91a2a8db7a3e87b22a4e0f068",
+            "instance_id": 10008,
+            "previous_sha256": "261750623d60478d073d07e83385e6538090edb64e7f40f556dc0704f726dea5",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "5968b8a1a81f0ee2e5cbf8e6533434597a5831c01f3a4ff8d7671aa617c3c653",
+            "instance_id": 10009,
+            "previous_sha256": "43f5267f5c8a37edf41848da697a0fe5b74303f91a2a8db7a3e87b22a4e0f068",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "467b2c228737bc0d5341d47fc0173add2f6f6aec7ef69609f1e20ff9ef472796",
+            "instance_id": 10010,
+            "previous_sha256": "5968b8a1a81f0ee2e5cbf8e6533434597a5831c01f3a4ff8d7671aa617c3c653",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "9ab674a07ef1b739b3862c297917d4239048303550e9964ffaf4bb6a8d2c18a3",
+            "instance_id": 10011,
+            "previous_sha256": "467b2c228737bc0d5341d47fc0173add2f6f6aec7ef69609f1e20ff9ef472796",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "28925ae30dfe197d19f886edcbcedac01f7c5a1a2db394b7242abfcd1814b52f",
+            "instance_id": 10000,
+            "previous_sha256": "9ab674a07ef1b739b3862c297917d4239048303550e9964ffaf4bb6a8d2c18a3",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "4517ec525ff0ca370390e0d8d0daac787c7b248ffd30383cd32f45292ca54ebb",
+            "instance_id": 10001,
+            "previous_sha256": "28925ae30dfe197d19f886edcbcedac01f7c5a1a2db394b7242abfcd1814b52f",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "2d1d538d1f9385df1321b9f9b3cfa7fcf5079b483cae659bcd38bb2ae896c644",
+            "instance_id": 10002,
+            "previous_sha256": "4517ec525ff0ca370390e0d8d0daac787c7b248ffd30383cd32f45292ca54ebb",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ddc142f1c6f6fcafa0d6b78e3d5ad9a13669ae6adeb148ad04975142247b2f54",
+            "instance_id": 10003,
+            "previous_sha256": "2d1d538d1f9385df1321b9f9b3cfa7fcf5079b483cae659bcd38bb2ae896c644",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "78562d30563b1eb3de72fa52d8d61f064b99a65e388d8824fd40822a7c87927b",
+            "instance_id": 10004,
+            "previous_sha256": "ddc142f1c6f6fcafa0d6b78e3d5ad9a13669ae6adeb148ad04975142247b2f54",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "4ac3af1b3f027084afeca7659f4638e2ef7e7cf2bc677ffb04c4058e24003bb3",
+            "instance_id": 10005,
+            "previous_sha256": "78562d30563b1eb3de72fa52d8d61f064b99a65e388d8824fd40822a7c87927b",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "038ac38338db32592ca622a50f90f36706ab79e9567e247b4b8c37213a8e2e6a",
+            "instance_id": 10006,
+            "previous_sha256": "4ac3af1b3f027084afeca7659f4638e2ef7e7cf2bc677ffb04c4058e24003bb3",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "69e68e63b2d4ab1b29a71cffec2f0747f1c0cb465eb6209211f567d57fc07ddb",
+            "instance_id": 10007,
+            "previous_sha256": "038ac38338db32592ca622a50f90f36706ab79e9567e247b4b8c37213a8e2e6a",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "b25b901fd2d284d38ef48182c56b32482b7ec47b5534fecb5fdfc85b7cd8e2b4",
+            "instance_id": 10008,
+            "previous_sha256": "69e68e63b2d4ab1b29a71cffec2f0747f1c0cb465eb6209211f567d57fc07ddb",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "1a4c34b9017f46feef5f372b17ad8f6c7a6926a644461a9b3c3e2b72749a3ae0",
+            "instance_id": 10009,
+            "previous_sha256": "b25b901fd2d284d38ef48182c56b32482b7ec47b5534fecb5fdfc85b7cd8e2b4",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "f4d05e22ee913d961aa15e506075dfce68a9c66e121dc6b81721a71038c753bc",
+            "instance_id": 10010,
+            "previous_sha256": "1a4c34b9017f46feef5f372b17ad8f6c7a6926a644461a9b3c3e2b72749a3ae0",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "d485af588d1cdd7e15c8b7d713ac35f7b22ebef530c902986be7cbfd94068c9e",
+            "instance_id": 10011,
+            "previous_sha256": "f4d05e22ee913d961aa15e506075dfce68a9c66e121dc6b81721a71038c753bc",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290578065600
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "insufficient_disk",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "BOOTSTRAP",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: bootstrap failure",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "44b979cc8eac633d4cb6b30c31ef04e5a337fc1ea0d7db5a3600882f3a9eb204",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "aeb44f6ccebe0c1794bb682d5bace9782dc4253307b3ddea5e00f21a6318fb36",
+            "instance_id": 10001,
+            "previous_sha256": "44b979cc8eac633d4cb6b30c31ef04e5a337fc1ea0d7db5a3600882f3a9eb204",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "577db584361c0f4a4e1449eedcf9027fb9d7a0b3fdd0a3c6df20de1fad109373",
+            "instance_id": 10002,
+            "previous_sha256": "aeb44f6ccebe0c1794bb682d5bace9782dc4253307b3ddea5e00f21a6318fb36",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "6c4c584932db2ef7f8bda7c837aa6001b22e1b0f39690b80cc375474d6084d76",
+            "instance_id": 10003,
+            "previous_sha256": "577db584361c0f4a4e1449eedcf9027fb9d7a0b3fdd0a3c6df20de1fad109373",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "d88afa3687f0b995517a83f350c9ac2bedf2ad8bb99f4a7a8d0cbcba35c08da3",
+            "instance_id": 10004,
+            "previous_sha256": "6c4c584932db2ef7f8bda7c837aa6001b22e1b0f39690b80cc375474d6084d76",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "53387f08873c7c18c8f5af8a2b15da42b1e7eb7bd3854f6f3bb1ddf1e3ed5611",
+            "instance_id": 10005,
+            "previous_sha256": "d88afa3687f0b995517a83f350c9ac2bedf2ad8bb99f4a7a8d0cbcba35c08da3",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "61e129ee7005ff8f675abcec8dd7e5e292df1dc2cf287c9f1fb637887433a98b",
+            "instance_id": 10006,
+            "previous_sha256": "53387f08873c7c18c8f5af8a2b15da42b1e7eb7bd3854f6f3bb1ddf1e3ed5611",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "261750623d60478d073d07e83385e6538090edb64e7f40f556dc0704f726dea5",
+            "instance_id": 10007,
+            "previous_sha256": "61e129ee7005ff8f675abcec8dd7e5e292df1dc2cf287c9f1fb637887433a98b",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "43f5267f5c8a37edf41848da697a0fe5b74303f91a2a8db7a3e87b22a4e0f068",
+            "instance_id": 10008,
+            "previous_sha256": "261750623d60478d073d07e83385e6538090edb64e7f40f556dc0704f726dea5",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "5968b8a1a81f0ee2e5cbf8e6533434597a5831c01f3a4ff8d7671aa617c3c653",
+            "instance_id": 10009,
+            "previous_sha256": "43f5267f5c8a37edf41848da697a0fe5b74303f91a2a8db7a3e87b22a4e0f068",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "467b2c228737bc0d5341d47fc0173add2f6f6aec7ef69609f1e20ff9ef472796",
+            "instance_id": 10010,
+            "previous_sha256": "5968b8a1a81f0ee2e5cbf8e6533434597a5831c01f3a4ff8d7671aa617c3c653",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "9ab674a07ef1b739b3862c297917d4239048303550e9964ffaf4bb6a8d2c18a3",
+            "instance_id": 10011,
+            "previous_sha256": "467b2c228737bc0d5341d47fc0173add2f6f6aec7ef69609f1e20ff9ef472796",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "28925ae30dfe197d19f886edcbcedac01f7c5a1a2db394b7242abfcd1814b52f",
+            "instance_id": 10000,
+            "previous_sha256": "9ab674a07ef1b739b3862c297917d4239048303550e9964ffaf4bb6a8d2c18a3",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "4517ec525ff0ca370390e0d8d0daac787c7b248ffd30383cd32f45292ca54ebb",
+            "instance_id": 10001,
+            "previous_sha256": "28925ae30dfe197d19f886edcbcedac01f7c5a1a2db394b7242abfcd1814b52f",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "2d1d538d1f9385df1321b9f9b3cfa7fcf5079b483cae659bcd38bb2ae896c644",
+            "instance_id": 10002,
+            "previous_sha256": "4517ec525ff0ca370390e0d8d0daac787c7b248ffd30383cd32f45292ca54ebb",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ddc142f1c6f6fcafa0d6b78e3d5ad9a13669ae6adeb148ad04975142247b2f54",
+            "instance_id": 10003,
+            "previous_sha256": "2d1d538d1f9385df1321b9f9b3cfa7fcf5079b483cae659bcd38bb2ae896c644",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "78562d30563b1eb3de72fa52d8d61f064b99a65e388d8824fd40822a7c87927b",
+            "instance_id": 10004,
+            "previous_sha256": "ddc142f1c6f6fcafa0d6b78e3d5ad9a13669ae6adeb148ad04975142247b2f54",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "4ac3af1b3f027084afeca7659f4638e2ef7e7cf2bc677ffb04c4058e24003bb3",
+            "instance_id": 10005,
+            "previous_sha256": "78562d30563b1eb3de72fa52d8d61f064b99a65e388d8824fd40822a7c87927b",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "038ac38338db32592ca622a50f90f36706ab79e9567e247b4b8c37213a8e2e6a",
+            "instance_id": 10006,
+            "previous_sha256": "4ac3af1b3f027084afeca7659f4638e2ef7e7cf2bc677ffb04c4058e24003bb3",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "69e68e63b2d4ab1b29a71cffec2f0747f1c0cb465eb6209211f567d57fc07ddb",
+            "instance_id": 10007,
+            "previous_sha256": "038ac38338db32592ca622a50f90f36706ab79e9567e247b4b8c37213a8e2e6a",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "b25b901fd2d284d38ef48182c56b32482b7ec47b5534fecb5fdfc85b7cd8e2b4",
+            "instance_id": 10008,
+            "previous_sha256": "69e68e63b2d4ab1b29a71cffec2f0747f1c0cb465eb6209211f567d57fc07ddb",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "1a4c34b9017f46feef5f372b17ad8f6c7a6926a644461a9b3c3e2b72749a3ae0",
+            "instance_id": 10009,
+            "previous_sha256": "b25b901fd2d284d38ef48182c56b32482b7ec47b5534fecb5fdfc85b7cd8e2b4",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "f4d05e22ee913d961aa15e506075dfce68a9c66e121dc6b81721a71038c753bc",
+            "instance_id": 10010,
+            "previous_sha256": "1a4c34b9017f46feef5f372b17ad8f6c7a6926a644461a9b3c3e2b72749a3ae0",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290578065600
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "d485af588d1cdd7e15c8b7d713ac35f7b22ebef530c902986be7cbfd94068c9e",
+            "instance_id": 10011,
+            "previous_sha256": "f4d05e22ee913d961aa15e506075dfce68a9c66e121dc6b81721a71038c753bc",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290578065600
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578065600,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "bootstrap_failure",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "BOOTSTRAP",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: model download failure",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "d31dac61e2d86bc5580ed4e5bebfba0bd8bdc939f4f93133d226fdc12168aaab",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "26229fdc41cf9bb329fb0fb8d2e15d7ef7364fa637658f5b116dc86a6d6dd491",
+            "instance_id": 10001,
+            "previous_sha256": "d31dac61e2d86bc5580ed4e5bebfba0bd8bdc939f4f93133d226fdc12168aaab",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "0f6a11709db711f3bd18866550c31e2308f69725ac309d0844e7fbfabfaf94f6",
+            "instance_id": 10002,
+            "previous_sha256": "26229fdc41cf9bb329fb0fb8d2e15d7ef7364fa637658f5b116dc86a6d6dd491",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "c15db86859fd63473c0ec491b4a1a9e835d47da1adfa4aa61482a210a7a95f87",
+            "instance_id": 10003,
+            "previous_sha256": "0f6a11709db711f3bd18866550c31e2308f69725ac309d0844e7fbfabfaf94f6",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "e430a1c72925e3288fbd7cecc1b1eb0c8a3dd9827eec0b800c99e38444e68937",
+            "instance_id": 10004,
+            "previous_sha256": "c15db86859fd63473c0ec491b4a1a9e835d47da1adfa4aa61482a210a7a95f87",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "599c27713c5a59694119f40061ca8cd663cc5471386d924838e19b5b54f9c4f6",
+            "instance_id": 10005,
+            "previous_sha256": "e430a1c72925e3288fbd7cecc1b1eb0c8a3dd9827eec0b800c99e38444e68937",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "001e4c53a8704bce1e2ee2edf20a02bdf5c8d10b26f47c1e6a2fcb65bf765198",
+            "instance_id": 10006,
+            "previous_sha256": "599c27713c5a59694119f40061ca8cd663cc5471386d924838e19b5b54f9c4f6",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "9d932524ce96a9d1f79a6d0d3fb380476381f5c1441d24813932ebbbe6dc1848",
+            "instance_id": 10007,
+            "previous_sha256": "001e4c53a8704bce1e2ee2edf20a02bdf5c8d10b26f47c1e6a2fcb65bf765198",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "1662e21c78dbcfc22598e5947285ef49dae8955a54046a5b861af16980027ce0",
+            "instance_id": 10008,
+            "previous_sha256": "9d932524ce96a9d1f79a6d0d3fb380476381f5c1441d24813932ebbbe6dc1848",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "0223f349a2f63750a5ce060e847a85bc9c4b4e9b5edc3f088b89a63a3bb27b9c",
+            "instance_id": 10009,
+            "previous_sha256": "1662e21c78dbcfc22598e5947285ef49dae8955a54046a5b861af16980027ce0",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "51347366b858a3a931f516270173cdad0e7ecf1e8efcb52ab8aef9e028fdc8bd",
+            "instance_id": 10010,
+            "previous_sha256": "0223f349a2f63750a5ce060e847a85bc9c4b4e9b5edc3f088b89a63a3bb27b9c",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "450c1d633048369a3ae33c8088bc413b1ac77f8341e4d0b2f9ddc146daededf4",
+            "instance_id": 10011,
+            "previous_sha256": "51347366b858a3a931f516270173cdad0e7ecf1e8efcb52ab8aef9e028fdc8bd",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "56281eb6893784713a18b537d20d28a0a154d298ef0fa3f6345c7b48878f8cff",
+            "instance_id": 10000,
+            "previous_sha256": "450c1d633048369a3ae33c8088bc413b1ac77f8341e4d0b2f9ddc146daededf4",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "3faddc8eb5194ebbf0f0211e30b5cf032681cd2c547946d36ffd22dcb600dcf0",
+            "instance_id": 10001,
+            "previous_sha256": "56281eb6893784713a18b537d20d28a0a154d298ef0fa3f6345c7b48878f8cff",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "af02cd11b0278143edaeb1fc62e768c20ab2642808c81e619dbb1dfa448237c8",
+            "instance_id": 10002,
+            "previous_sha256": "3faddc8eb5194ebbf0f0211e30b5cf032681cd2c547946d36ffd22dcb600dcf0",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ffb9fea4c3b47c7eee5e26c25bfb78aaeac6fd7e70e0e3695f60edda35268a96",
+            "instance_id": 10003,
+            "previous_sha256": "af02cd11b0278143edaeb1fc62e768c20ab2642808c81e619dbb1dfa448237c8",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "7ee0e95734673fd015e9591c5fe7957d502ac1cdbd9471bbb477e432a1cfdfe2",
+            "instance_id": 10004,
+            "previous_sha256": "ffb9fea4c3b47c7eee5e26c25bfb78aaeac6fd7e70e0e3695f60edda35268a96",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "2ec6792685f8e1fed64ddb6e225c799dfbbbcad3db38ccb112e47d4c6152f3c3",
+            "instance_id": 10005,
+            "previous_sha256": "7ee0e95734673fd015e9591c5fe7957d502ac1cdbd9471bbb477e432a1cfdfe2",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "5eef9dbe623c397a4fe42700106594823b34572571559d2e16d87ed9a75b787f",
+            "instance_id": 10006,
+            "previous_sha256": "2ec6792685f8e1fed64ddb6e225c799dfbbbcad3db38ccb112e47d4c6152f3c3",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "c40eadeffd3dbc707bfec3927773e2d6fcbd381b763baaa5bae83faf74a2db38",
+            "instance_id": 10007,
+            "previous_sha256": "5eef9dbe623c397a4fe42700106594823b34572571559d2e16d87ed9a75b787f",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "7dd14e55ba12a82254cb5a7d3d7871228a23872dcb0a05ccad1aa07bb9a3d694",
+            "instance_id": 10008,
+            "previous_sha256": "c40eadeffd3dbc707bfec3927773e2d6fcbd381b763baaa5bae83faf74a2db38",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "76f8e10a6d4dd032c7e88e10ff2b506ad4a5ea42549141a7389a601a73a3eb7f",
+            "instance_id": 10009,
+            "previous_sha256": "7dd14e55ba12a82254cb5a7d3d7871228a23872dcb0a05ccad1aa07bb9a3d694",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "8427a9629e8510dcc326af3c926d60f8d95a5dd76a19ea704f6961e6dcf60477",
+            "instance_id": 10010,
+            "previous_sha256": "76f8e10a6d4dd032c7e88e10ff2b506ad4a5ea42549141a7389a601a73a3eb7f",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "1f3778d06fe4245df5e4b6595b952e0ea509e0fba27874452b9aa8e7a249b2b4",
+            "instance_id": 10011,
+            "previous_sha256": "8427a9629e8510dcc326af3c926d60f8d95a5dd76a19ea704f6961e6dcf60477",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290578574500
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "model_download_failure",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "BOOTSTRAP",
+        "DOWNLOAD_SHARDS",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: hash mismatch",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "d31dac61e2d86bc5580ed4e5bebfba0bd8bdc939f4f93133d226fdc12168aaab",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "26229fdc41cf9bb329fb0fb8d2e15d7ef7364fa637658f5b116dc86a6d6dd491",
+            "instance_id": 10001,
+            "previous_sha256": "d31dac61e2d86bc5580ed4e5bebfba0bd8bdc939f4f93133d226fdc12168aaab",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "0f6a11709db711f3bd18866550c31e2308f69725ac309d0844e7fbfabfaf94f6",
+            "instance_id": 10002,
+            "previous_sha256": "26229fdc41cf9bb329fb0fb8d2e15d7ef7364fa637658f5b116dc86a6d6dd491",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "c15db86859fd63473c0ec491b4a1a9e835d47da1adfa4aa61482a210a7a95f87",
+            "instance_id": 10003,
+            "previous_sha256": "0f6a11709db711f3bd18866550c31e2308f69725ac309d0844e7fbfabfaf94f6",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "e430a1c72925e3288fbd7cecc1b1eb0c8a3dd9827eec0b800c99e38444e68937",
+            "instance_id": 10004,
+            "previous_sha256": "c15db86859fd63473c0ec491b4a1a9e835d47da1adfa4aa61482a210a7a95f87",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "599c27713c5a59694119f40061ca8cd663cc5471386d924838e19b5b54f9c4f6",
+            "instance_id": 10005,
+            "previous_sha256": "e430a1c72925e3288fbd7cecc1b1eb0c8a3dd9827eec0b800c99e38444e68937",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "001e4c53a8704bce1e2ee2edf20a02bdf5c8d10b26f47c1e6a2fcb65bf765198",
+            "instance_id": 10006,
+            "previous_sha256": "599c27713c5a59694119f40061ca8cd663cc5471386d924838e19b5b54f9c4f6",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "9d932524ce96a9d1f79a6d0d3fb380476381f5c1441d24813932ebbbe6dc1848",
+            "instance_id": 10007,
+            "previous_sha256": "001e4c53a8704bce1e2ee2edf20a02bdf5c8d10b26f47c1e6a2fcb65bf765198",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "1662e21c78dbcfc22598e5947285ef49dae8955a54046a5b861af16980027ce0",
+            "instance_id": 10008,
+            "previous_sha256": "9d932524ce96a9d1f79a6d0d3fb380476381f5c1441d24813932ebbbe6dc1848",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "0223f349a2f63750a5ce060e847a85bc9c4b4e9b5edc3f088b89a63a3bb27b9c",
+            "instance_id": 10009,
+            "previous_sha256": "1662e21c78dbcfc22598e5947285ef49dae8955a54046a5b861af16980027ce0",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "51347366b858a3a931f516270173cdad0e7ecf1e8efcb52ab8aef9e028fdc8bd",
+            "instance_id": 10010,
+            "previous_sha256": "0223f349a2f63750a5ce060e847a85bc9c4b4e9b5edc3f088b89a63a3bb27b9c",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "450c1d633048369a3ae33c8088bc413b1ac77f8341e4d0b2f9ddc146daededf4",
+            "instance_id": 10011,
+            "previous_sha256": "51347366b858a3a931f516270173cdad0e7ecf1e8efcb52ab8aef9e028fdc8bd",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "56281eb6893784713a18b537d20d28a0a154d298ef0fa3f6345c7b48878f8cff",
+            "instance_id": 10000,
+            "previous_sha256": "450c1d633048369a3ae33c8088bc413b1ac77f8341e4d0b2f9ddc146daededf4",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "3faddc8eb5194ebbf0f0211e30b5cf032681cd2c547946d36ffd22dcb600dcf0",
+            "instance_id": 10001,
+            "previous_sha256": "56281eb6893784713a18b537d20d28a0a154d298ef0fa3f6345c7b48878f8cff",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "af02cd11b0278143edaeb1fc62e768c20ab2642808c81e619dbb1dfa448237c8",
+            "instance_id": 10002,
+            "previous_sha256": "3faddc8eb5194ebbf0f0211e30b5cf032681cd2c547946d36ffd22dcb600dcf0",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ffb9fea4c3b47c7eee5e26c25bfb78aaeac6fd7e70e0e3695f60edda35268a96",
+            "instance_id": 10003,
+            "previous_sha256": "af02cd11b0278143edaeb1fc62e768c20ab2642808c81e619dbb1dfa448237c8",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "7ee0e95734673fd015e9591c5fe7957d502ac1cdbd9471bbb477e432a1cfdfe2",
+            "instance_id": 10004,
+            "previous_sha256": "ffb9fea4c3b47c7eee5e26c25bfb78aaeac6fd7e70e0e3695f60edda35268a96",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "2ec6792685f8e1fed64ddb6e225c799dfbbbcad3db38ccb112e47d4c6152f3c3",
+            "instance_id": 10005,
+            "previous_sha256": "7ee0e95734673fd015e9591c5fe7957d502ac1cdbd9471bbb477e432a1cfdfe2",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "5eef9dbe623c397a4fe42700106594823b34572571559d2e16d87ed9a75b787f",
+            "instance_id": 10006,
+            "previous_sha256": "2ec6792685f8e1fed64ddb6e225c799dfbbbcad3db38ccb112e47d4c6152f3c3",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "c40eadeffd3dbc707bfec3927773e2d6fcbd381b763baaa5bae83faf74a2db38",
+            "instance_id": 10007,
+            "previous_sha256": "5eef9dbe623c397a4fe42700106594823b34572571559d2e16d87ed9a75b787f",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "7dd14e55ba12a82254cb5a7d3d7871228a23872dcb0a05ccad1aa07bb9a3d694",
+            "instance_id": 10008,
+            "previous_sha256": "c40eadeffd3dbc707bfec3927773e2d6fcbd381b763baaa5bae83faf74a2db38",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "76f8e10a6d4dd032c7e88e10ff2b506ad4a5ea42549141a7389a601a73a3eb7f",
+            "instance_id": 10009,
+            "previous_sha256": "7dd14e55ba12a82254cb5a7d3d7871228a23872dcb0a05ccad1aa07bb9a3d694",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "8427a9629e8510dcc326af3c926d60f8d95a5dd76a19ea704f6961e6dcf60477",
+            "instance_id": 10010,
+            "previous_sha256": "76f8e10a6d4dd032c7e88e10ff2b506ad4a5ea42549141a7389a601a73a3eb7f",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290578574500
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "1f3778d06fe4245df5e4b6595b952e0ea509e0fba27874452b9aa8e7a249b2b4",
+            "instance_id": 10011,
+            "previous_sha256": "8427a9629e8510dcc326af3c926d60f8d95a5dd76a19ea704f6961e6dcf60477",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290578574500
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290578574500,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "hash_mismatch",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "BOOTSTRAP",
+        "DOWNLOAD_SHARDS",
+        "VERIFY_MODEL",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: network too slow",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "bd4b8cf8da5c48b37eb181c173169db977fb84a131260f0a4ba552e64129aa3b",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "6d30dd43f448f76306a76630189c7e48db733b80f83ee22914194226cc99f8fa",
+            "instance_id": 10001,
+            "previous_sha256": "bd4b8cf8da5c48b37eb181c173169db977fb84a131260f0a4ba552e64129aa3b",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "c5059a1df2e1fc6436e895e4a52c00f2928b25c70b958fa852b7e586840d0a86",
+            "instance_id": 10002,
+            "previous_sha256": "6d30dd43f448f76306a76630189c7e48db733b80f83ee22914194226cc99f8fa",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "00bed7285003f49272e60dbdf8329f61cd2a6b189d2a79afbe67ba9a40972ff9",
+            "instance_id": 10003,
+            "previous_sha256": "c5059a1df2e1fc6436e895e4a52c00f2928b25c70b958fa852b7e586840d0a86",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "21ca52ccb002e29ddc89259483d171031b7b08bf23ddae9c7d0b5004ec6e009e",
+            "instance_id": 10004,
+            "previous_sha256": "00bed7285003f49272e60dbdf8329f61cd2a6b189d2a79afbe67ba9a40972ff9",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "6b2c945a0bd36dc3df3f5f9092d67beec37d5486095273946403af7303891ea8",
+            "instance_id": 10005,
+            "previous_sha256": "21ca52ccb002e29ddc89259483d171031b7b08bf23ddae9c7d0b5004ec6e009e",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "48a3961ba1f924943511a661f6e31b285148eb5c8210fd12a21db30cced4b099",
+            "instance_id": 10006,
+            "previous_sha256": "6b2c945a0bd36dc3df3f5f9092d67beec37d5486095273946403af7303891ea8",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "a020fd1713d668c9f7767f4492da45ae15f8f486b44e3561f38689c83e591533",
+            "instance_id": 10007,
+            "previous_sha256": "48a3961ba1f924943511a661f6e31b285148eb5c8210fd12a21db30cced4b099",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "04b38f35b92e6b06895d17b89854f76f69f64c7d447699fac8c2481cd33d0ea4",
+            "instance_id": 10008,
+            "previous_sha256": "a020fd1713d668c9f7767f4492da45ae15f8f486b44e3561f38689c83e591533",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "bc1e295087187c6b5e6f09c370883553401f5aa3b752fd5d722574cb6dd40a3e",
+            "instance_id": 10009,
+            "previous_sha256": "04b38f35b92e6b06895d17b89854f76f69f64c7d447699fac8c2481cd33d0ea4",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "1b6d14abdb0ce8a9545d9b2e98574c5970851e18a2c7c59ef0785cfbc81ce6a3",
+            "instance_id": 10010,
+            "previous_sha256": "bc1e295087187c6b5e6f09c370883553401f5aa3b752fd5d722574cb6dd40a3e",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "47cc10ad2d4cc6b3e6b5c01808e5b100367b7a9171cda9e517e54c1b1d4d9542",
+            "instance_id": 10011,
+            "previous_sha256": "1b6d14abdb0ce8a9545d9b2e98574c5970851e18a2c7c59ef0785cfbc81ce6a3",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "6b3fd9ffb394fce87050ad3cfb2b407fd953324928a707ce613e85bed2419b59",
+            "instance_id": 10000,
+            "previous_sha256": "47cc10ad2d4cc6b3e6b5c01808e5b100367b7a9171cda9e517e54c1b1d4d9542",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "6ee2595de05dacd4f9a5dd9e0cd3b34ee0cb49d33bd53a20a99e22188064763d",
+            "instance_id": 10001,
+            "previous_sha256": "6b3fd9ffb394fce87050ad3cfb2b407fd953324928a707ce613e85bed2419b59",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "3273e3084f770a820721ee97cd01bfb321ce379041f94329a6c88e26c70ed256",
+            "instance_id": 10002,
+            "previous_sha256": "6ee2595de05dacd4f9a5dd9e0cd3b34ee0cb49d33bd53a20a99e22188064763d",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "dbc3d67533971e1bc88f7eb09b24a73c5cae31974a72d9e2c9e895cb8210509b",
+            "instance_id": 10003,
+            "previous_sha256": "3273e3084f770a820721ee97cd01bfb321ce379041f94329a6c88e26c70ed256",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "d6c5af41eaac3574117f0e6eacaf017d52d0475aa5524f5b67043f8058836af4",
+            "instance_id": 10004,
+            "previous_sha256": "dbc3d67533971e1bc88f7eb09b24a73c5cae31974a72d9e2c9e895cb8210509b",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "b769810629ac78bb1714284a9a73e2d190f9a3b89d7f3d72e7cbe3fbe99e41e2",
+            "instance_id": 10005,
+            "previous_sha256": "d6c5af41eaac3574117f0e6eacaf017d52d0475aa5524f5b67043f8058836af4",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "2bd1ef41dcfcd65134187f0958ee726c09c9f9435308a0c6f631247ff36db418",
+            "instance_id": 10006,
+            "previous_sha256": "b769810629ac78bb1714284a9a73e2d190f9a3b89d7f3d72e7cbe3fbe99e41e2",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ac0cf29fbcc62f0fcf575e91962cc21328f0ac28093c36c61241d03c86a128a6",
+            "instance_id": 10007,
+            "previous_sha256": "2bd1ef41dcfcd65134187f0958ee726c09c9f9435308a0c6f631247ff36db418",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ac5aeb8489b28b077da44a99974280030f70f277ca3f07e943bc7dab42e41e8b",
+            "instance_id": 10008,
+            "previous_sha256": "ac0cf29fbcc62f0fcf575e91962cc21328f0ac28093c36c61241d03c86a128a6",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "983367cef0e092a2fae367d7e50304933778dfe507d62cfdda39c804f29adc90",
+            "instance_id": 10009,
+            "previous_sha256": "ac5aeb8489b28b077da44a99974280030f70f277ca3f07e943bc7dab42e41e8b",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "b7d79d6913a485fc6a5681b68edc0f4407566f29511375c7008007dd9d110e18",
+            "instance_id": 10010,
+            "previous_sha256": "983367cef0e092a2fae367d7e50304933778dfe507d62cfdda39c804f29adc90",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "c20e81e78d48f14e5d614669d710c3f0801adc3a83a9e3948d4132c1baffc4cc",
+            "instance_id": 10011,
+            "previous_sha256": "b7d79d6913a485fc6a5681b68edc0f4407566f29511375c7008007dd9d110e18",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290579083800
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "network_too_slow",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "BOOTSTRAP",
+        "DOWNLOAD_SHARDS",
+        "VERIFY_MODEL",
+        "REGISTER_WORKERS",
+        "MEASURE_NETWORK",
+        "VALIDATE_TOPOLOGY",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: worker health failure",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "bd4b8cf8da5c48b37eb181c173169db977fb84a131260f0a4ba552e64129aa3b",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "6d30dd43f448f76306a76630189c7e48db733b80f83ee22914194226cc99f8fa",
+            "instance_id": 10001,
+            "previous_sha256": "bd4b8cf8da5c48b37eb181c173169db977fb84a131260f0a4ba552e64129aa3b",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "c5059a1df2e1fc6436e895e4a52c00f2928b25c70b958fa852b7e586840d0a86",
+            "instance_id": 10002,
+            "previous_sha256": "6d30dd43f448f76306a76630189c7e48db733b80f83ee22914194226cc99f8fa",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "00bed7285003f49272e60dbdf8329f61cd2a6b189d2a79afbe67ba9a40972ff9",
+            "instance_id": 10003,
+            "previous_sha256": "c5059a1df2e1fc6436e895e4a52c00f2928b25c70b958fa852b7e586840d0a86",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "21ca52ccb002e29ddc89259483d171031b7b08bf23ddae9c7d0b5004ec6e009e",
+            "instance_id": 10004,
+            "previous_sha256": "00bed7285003f49272e60dbdf8329f61cd2a6b189d2a79afbe67ba9a40972ff9",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "6b2c945a0bd36dc3df3f5f9092d67beec37d5486095273946403af7303891ea8",
+            "instance_id": 10005,
+            "previous_sha256": "21ca52ccb002e29ddc89259483d171031b7b08bf23ddae9c7d0b5004ec6e009e",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "48a3961ba1f924943511a661f6e31b285148eb5c8210fd12a21db30cced4b099",
+            "instance_id": 10006,
+            "previous_sha256": "6b2c945a0bd36dc3df3f5f9092d67beec37d5486095273946403af7303891ea8",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "a020fd1713d668c9f7767f4492da45ae15f8f486b44e3561f38689c83e591533",
+            "instance_id": 10007,
+            "previous_sha256": "48a3961ba1f924943511a661f6e31b285148eb5c8210fd12a21db30cced4b099",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "04b38f35b92e6b06895d17b89854f76f69f64c7d447699fac8c2481cd33d0ea4",
+            "instance_id": 10008,
+            "previous_sha256": "a020fd1713d668c9f7767f4492da45ae15f8f486b44e3561f38689c83e591533",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "bc1e295087187c6b5e6f09c370883553401f5aa3b752fd5d722574cb6dd40a3e",
+            "instance_id": 10009,
+            "previous_sha256": "04b38f35b92e6b06895d17b89854f76f69f64c7d447699fac8c2481cd33d0ea4",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290579083800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "3e1ee4c62f48cfcd8e41007429b4af74f1cdc8f40870a935d10db37a1536f016",
+            "instance_id": 10010,
+            "previous_sha256": "bc1e295087187c6b5e6f09c370883553401f5aa3b752fd5d722574cb6dd40a3e",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "8e0a1efef5284a1ffcc2dc6973b19871c97fa3271f9eeb4f051c4d58c466a8ec",
+            "instance_id": 10011,
+            "previous_sha256": "3e1ee4c62f48cfcd8e41007429b4af74f1cdc8f40870a935d10db37a1536f016",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "36ba494bc543565ef3cc6dc7f470a03ccc558b504b6088a185b07af5c480a0e4",
+            "instance_id": 10000,
+            "previous_sha256": "8e0a1efef5284a1ffcc2dc6973b19871c97fa3271f9eeb4f051c4d58c466a8ec",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "a3ca717c36035a5141fdb323cdc8827df865e52b4d15524f1c9e58ae50c173dd",
+            "instance_id": 10001,
+            "previous_sha256": "36ba494bc543565ef3cc6dc7f470a03ccc558b504b6088a185b07af5c480a0e4",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "29acad32cd9ec10026ed444ddb3566cdc2b57984a9b84668c9d371b8f50d4715",
+            "instance_id": 10002,
+            "previous_sha256": "a3ca717c36035a5141fdb323cdc8827df865e52b4d15524f1c9e58ae50c173dd",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "55c82e8a41e9c94c9a52f202924ffc21dfab43d8e72cf16d16afb1aeb00b6775",
+            "instance_id": 10003,
+            "previous_sha256": "29acad32cd9ec10026ed444ddb3566cdc2b57984a9b84668c9d371b8f50d4715",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "ceeeb39a20031f8bc1ce80fc360e904d24519025c1c2fbbcb2c746598aad720b",
+            "instance_id": 10004,
+            "previous_sha256": "55c82e8a41e9c94c9a52f202924ffc21dfab43d8e72cf16d16afb1aeb00b6775",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "91a08631ac694b6bdc00860d97ceb99c0e60c539b31d8cd077a8b56671ea5407",
+            "instance_id": 10005,
+            "previous_sha256": "ceeeb39a20031f8bc1ce80fc360e904d24519025c1c2fbbcb2c746598aad720b",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "3e46c890a43f890db4d5614b7506cf38270d345bff3111d9f9829dac0ed8a124",
+            "instance_id": 10006,
+            "previous_sha256": "91a08631ac694b6bdc00860d97ceb99c0e60c539b31d8cd077a8b56671ea5407",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "7f8f504285e535efcd49b797903262c59fb468dd6e5fd3a14f34e82b4c353e84",
+            "instance_id": 10007,
+            "previous_sha256": "3e46c890a43f890db4d5614b7506cf38270d345bff3111d9f9829dac0ed8a124",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "02b91d1278113c89dcc42c61081c05af4e6d5cca8f9298ec53bb7ec0e7559eca",
+            "instance_id": 10008,
+            "previous_sha256": "7f8f504285e535efcd49b797903262c59fb468dd6e5fd3a14f34e82b4c353e84",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "b9868d5417490c18f8ee06db7967aaf3ab14c0458409c1890c62096dc715d5bd",
+            "instance_id": 10009,
+            "previous_sha256": "02b91d1278113c89dcc42c61081c05af4e6d5cca8f9298ec53bb7ec0e7559eca",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "772d047ba97355a4d1b5a1bdb9a99861e3df717b88bedec7930953818b281265",
+            "instance_id": 10010,
+            "previous_sha256": "b9868d5417490c18f8ee06db7967aaf3ab14c0458409c1890c62096dc715d5bd",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "8c00b4ff25e84a72bca6e3fd2c9b7418783cb3b6053ac53aa47a5bcaed1768db",
+            "instance_id": 10011,
+            "previous_sha256": "772d047ba97355a4d1b5a1bdb9a99861e3df717b88bedec7930953818b281265",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290579603800
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579083800,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "worker_health_failure",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "BOOTSTRAP",
+        "DOWNLOAD_SHARDS",
+        "VERIFY_MODEL",
+        "REGISTER_WORKERS",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    },
+    {
+      "created_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "destroyed_instance_ids": [
+        10000,
+        10001,
+        10002,
+        10003,
+        10004,
+        10005,
+        10006,
+        10007,
+        10008,
+        10009,
+        10010,
+        10011
+      ],
+      "failure": "RuntimeError: controller crash",
+      "ledger": {
+        "events": [
+          {
+            "action": "CREATED",
+            "event_sha256": "0bc4f1066aa2b16882ac1c7cb50f4314fe2c8809c4996f163f38f46f2e655427",
+            "instance_id": 10000,
+            "previous_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "sequence": 0,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "cf238fb64c41ad98555999890f4c2589ec93be283715c925e339ee6c6ee983b8",
+            "instance_id": 10001,
+            "previous_sha256": "0bc4f1066aa2b16882ac1c7cb50f4314fe2c8809c4996f163f38f46f2e655427",
+            "sequence": 1,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "3e04ae9fa3dbfb036b025a9d220cdc99a058a465687434c4491a1ffca369a74a",
+            "instance_id": 10002,
+            "previous_sha256": "cf238fb64c41ad98555999890f4c2589ec93be283715c925e339ee6c6ee983b8",
+            "sequence": 2,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "34f4f33827e7199756988a17e375171a479e68b39288c4a32c74055d445b298f",
+            "instance_id": 10003,
+            "previous_sha256": "3e04ae9fa3dbfb036b025a9d220cdc99a058a465687434c4491a1ffca369a74a",
+            "sequence": 3,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "497ca78dee6e629f6fb3a6a2a4a511be48a00be511dd611973b05cc629df3592",
+            "instance_id": 10004,
+            "previous_sha256": "34f4f33827e7199756988a17e375171a479e68b39288c4a32c74055d445b298f",
+            "sequence": 4,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "d90adfe56e6ad3d6be05b07a838bac1893fb3d41a24090be6538baf2ecb346e9",
+            "instance_id": 10005,
+            "previous_sha256": "497ca78dee6e629f6fb3a6a2a4a511be48a00be511dd611973b05cc629df3592",
+            "sequence": 5,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "0f9abeaeab0c7886e7609f8476f7b551cd5989beced5e21aea8d49ccef8c1cf5",
+            "instance_id": 10006,
+            "previous_sha256": "d90adfe56e6ad3d6be05b07a838bac1893fb3d41a24090be6538baf2ecb346e9",
+            "sequence": 6,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "155d54bcdd7f8664dfe9c9980ce525b6e26b2cc501d19a6500c3f7d5b19e4b97",
+            "instance_id": 10007,
+            "previous_sha256": "0f9abeaeab0c7886e7609f8476f7b551cd5989beced5e21aea8d49ccef8c1cf5",
+            "sequence": 7,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "b5f168f06452a91090d1e6a34d3392a2256f402069a07f0429e892c00232f89e",
+            "instance_id": 10008,
+            "previous_sha256": "155d54bcdd7f8664dfe9c9980ce525b6e26b2cc501d19a6500c3f7d5b19e4b97",
+            "sequence": 8,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "e4fb1b6885d6192ef4093583192dfb1d68b7a908c4959161132a66dbb408d9b5",
+            "instance_id": 10009,
+            "previous_sha256": "b5f168f06452a91090d1e6a34d3392a2256f402069a07f0429e892c00232f89e",
+            "sequence": 9,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "43f9f7aab458900ad7110779469e7b43d5e39a4a3909d6faddbaaa79f3a916e8",
+            "instance_id": 10010,
+            "previous_sha256": "e4fb1b6885d6192ef4093583192dfb1d68b7a908c4959161132a66dbb408d9b5",
+            "sequence": 10,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "CREATED",
+            "event_sha256": "22ca9bc7b918ff175de6cff40948c1a14fc5b1735777c8e2dfb329e50a79910f",
+            "instance_id": 10011,
+            "previous_sha256": "43f9f7aab458900ad7110779469e7b43d5e39a4a3909d6faddbaaa79f3a916e8",
+            "sequence": 11,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "28df8e23ff0c00a110098df4ecc70355ad6f2cf8d69e36418d0184fe8019407d",
+            "instance_id": 10000,
+            "previous_sha256": "22ca9bc7b918ff175de6cff40948c1a14fc5b1735777c8e2dfb329e50a79910f",
+            "sequence": 12,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "95e2b93c7591d355ec8faecd912c27a4dfe7dd94441ed6cbd4f5e94f36a2420b",
+            "instance_id": 10001,
+            "previous_sha256": "28df8e23ff0c00a110098df4ecc70355ad6f2cf8d69e36418d0184fe8019407d",
+            "sequence": 13,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "42b4ab9cc7cafda048575475b1d22c69bda2ef438759424c37c25febf5138060",
+            "instance_id": 10002,
+            "previous_sha256": "95e2b93c7591d355ec8faecd912c27a4dfe7dd94441ed6cbd4f5e94f36a2420b",
+            "sequence": 14,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "d214785ba636f28ccbf5969246e00b32920abc98760455226cb213450dad96bb",
+            "instance_id": 10003,
+            "previous_sha256": "42b4ab9cc7cafda048575475b1d22c69bda2ef438759424c37c25febf5138060",
+            "sequence": 15,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "499bf0cd2bf6a2eee723e8e8bf38d30b5807325618582e1ccdabd5d654b53da4",
+            "instance_id": 10004,
+            "previous_sha256": "d214785ba636f28ccbf5969246e00b32920abc98760455226cb213450dad96bb",
+            "sequence": 16,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "76426325b493c21731d9ff3b5a742ca43696f1c4a12d72ecc589df54dc90c0bf",
+            "instance_id": 10005,
+            "previous_sha256": "499bf0cd2bf6a2eee723e8e8bf38d30b5807325618582e1ccdabd5d654b53da4",
+            "sequence": 17,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "e52da4180cb5a495e1df03450632e6cc50c6a521b588419bf54232d5b3bfe873",
+            "instance_id": 10006,
+            "previous_sha256": "76426325b493c21731d9ff3b5a742ca43696f1c4a12d72ecc589df54dc90c0bf",
+            "sequence": 18,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "21ad501a05fbcc7a06a08c80b194c7a31b096fbaa97bf5e4a2680aa2e042f050",
+            "instance_id": 10007,
+            "previous_sha256": "e52da4180cb5a495e1df03450632e6cc50c6a521b588419bf54232d5b3bfe873",
+            "sequence": 19,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "498c5359f7579d5690781aaddc389eb5e1700dd8112c99edfc2dcffd803657a3",
+            "instance_id": 10008,
+            "previous_sha256": "21ad501a05fbcc7a06a08c80b194c7a31b096fbaa97bf5e4a2680aa2e042f050",
+            "sequence": 20,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "3d3eee2f20b1a3feea723e4a111b38311b839deb6502fa907a1efa618c3a02c9",
+            "instance_id": 10009,
+            "previous_sha256": "498c5359f7579d5690781aaddc389eb5e1700dd8112c99edfc2dcffd803657a3",
+            "sequence": 21,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "40d2915217595794a125db546959874b69ecc630c42bc61b4db9630bd738cc02",
+            "instance_id": 10010,
+            "previous_sha256": "3d3eee2f20b1a3feea723e4a111b38311b839deb6502fa907a1efa618c3a02c9",
+            "sequence": 22,
+            "timestamp_unix_ns": 1786606290579603800
+          },
+          {
+            "action": "DESTROYED",
+            "event_sha256": "8223f5dcc7b4cf8151c43c486000a00e8fe8a31f8328aefdaf1ec57209b18802",
+            "instance_id": 10011,
+            "previous_sha256": "40d2915217595794a125db546959874b69ecc630c42bc61b4db9630bd738cc02",
+            "sequence": 23,
+            "timestamp_unix_ns": 1786606290579603800
+          }
+        ],
+        "immutable": true,
+        "records": [
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10000,
+            "label": "swarm-e021-mock-run-pod-000",
+            "machine_id": 30000,
+            "offer_id": 20000,
+            "pod_assignment": "pod-000"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10001,
+            "label": "swarm-e021-mock-run-pod-001",
+            "machine_id": 30001,
+            "offer_id": 20001,
+            "pod_assignment": "pod-001"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10002,
+            "label": "swarm-e021-mock-run-pod-002",
+            "machine_id": 30002,
+            "offer_id": 20002,
+            "pod_assignment": "pod-002"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10003,
+            "label": "swarm-e021-mock-run-pod-003",
+            "machine_id": 30003,
+            "offer_id": 20003,
+            "pod_assignment": "pod-003"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10004,
+            "label": "swarm-e021-mock-run-pod-004",
+            "machine_id": 30004,
+            "offer_id": 20004,
+            "pod_assignment": "pod-004"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10005,
+            "label": "swarm-e021-mock-run-pod-005",
+            "machine_id": 30005,
+            "offer_id": 20005,
+            "pod_assignment": "pod-005"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10006,
+            "label": "swarm-e021-mock-run-pod-006",
+            "machine_id": 30006,
+            "offer_id": 20006,
+            "pod_assignment": "pod-006"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10007,
+            "label": "swarm-e021-mock-run-pod-007",
+            "machine_id": 30007,
+            "offer_id": 20007,
+            "pod_assignment": "pod-007"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10008,
+            "label": "swarm-e021-mock-run-pod-008",
+            "machine_id": 30008,
+            "offer_id": 20008,
+            "pod_assignment": "pod-008"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10009,
+            "label": "swarm-e021-mock-run-pod-009",
+            "machine_id": 30009,
+            "offer_id": 20009,
+            "pod_assignment": "pod-009"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10010,
+            "label": "swarm-e021-mock-run-pod-010",
+            "machine_id": 30010,
+            "offer_id": 20010,
+            "pod_assignment": "pod-010"
+          },
+          {
+            "creation_time_unix_ns": 1786606290579603800,
+            "hourly_rate": 4.0,
+            "instance_id": 10011,
+            "label": "swarm-e021-mock-run-pod-011",
+            "machine_id": 30011,
+            "offer_id": 20011,
+            "pod_assignment": "pod-011"
+          }
+        ],
+        "schema_version": "experiment-021-rental-ledger-v1",
+        "valid": true
+      },
+      "ledger_valid": true,
+      "no_orphans": true,
+      "scenario": "controller_crash",
+      "schema_version": "experiment-020-mock-provisioning-v1",
+      "states": [
+        "DISCOVER_OFFERS",
+        "PLAN_FLEET",
+        "USER_BUDGET_GATE",
+        "RENT_CONTROLLER_POD",
+        "WAIT_CONTROLLER",
+        "DISCOVER_CONTROLLER_ADDRESS",
+        "RENT_WORKER_PODS",
+        "WAIT_INSTANCES",
+        "BOOTSTRAP",
+        "DOWNLOAD_SHARDS",
+        "VERIFY_MODEL",
+        "REGISTER_WORKERS",
+        "MEASURE_NETWORK",
+        "VALIDATE_TOPOLOGY",
+        "READY",
+        "RUN_EXPERIMENT",
+        "DESTROY_ALL",
+        "VERIFY_DESTROYED"
+      ],
+      "status": "ABORTED_CLEAN"
+    }
+  ],
+  "schema_version": "experiment-020-mock-provisioning-suite-v1",
+  "status": "PASS"
+}

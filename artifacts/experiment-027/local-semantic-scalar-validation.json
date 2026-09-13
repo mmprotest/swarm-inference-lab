@@ -1,0 +1,80 @@
+{
+  "correctness_pass": true,
+  "evidence_class": "PHYSICAL_SINGLE_MACHINE_DIAGNOSTIC",
+  "layer_ranges": [
+    [
+      0,
+      22
+    ],
+    [
+      22,
+      44
+    ],
+    [
+      44,
+      64
+    ]
+  ],
+  "model": "Qwen3.8-27B Q4_K_M",
+  "model_sha256": "31629f53165ab6a7dad8c9847dcfd1fdf55829dac1e6e748f4a68581b0033d34",
+  "prompt_results": [
+    {
+      "distributed_token_sha256": "a64fdd4370b606997316d4d5481ab26c3c90d3d8d7200ed941205b2045e2ff78",
+      "generated_tokens": 64,
+      "greedy_token_match": true,
+      "max_abs_logit_error": 0.0,
+      "mean_abs_logit_error": 0.0,
+      "next_token_logits_cosine": 1.0000000000000775,
+      "next_token_top1_match": true,
+      "next_token_topk_set_agreement": 1.0,
+      "prompt_id": "e027-factual",
+      "prompt_logits_mean_cosine": 1.000000000000078,
+      "prompt_logits_relative_l2": 0.0,
+      "prompt_tokens": 34,
+      "reference_token_sha256": "a64fdd4370b606997316d4d5481ab26c3c90d3d8d7200ed941205b2045e2ff78",
+      "semantic_pass": true,
+      "teacher_forced_top1_agreement": 1.0,
+      "teacher_forced_top1_mismatch_rows": [],
+      "teacher_forced_topk_set_agreement": 1.0
+    },
+    {
+      "distributed_token_sha256": "ed4974953617c0dd72d75640b0d04b3c38bb4d12095978145efbc07863e8d492",
+      "generated_tokens": 64,
+      "greedy_token_match": true,
+      "max_abs_logit_error": 0.0,
+      "mean_abs_logit_error": 0.0,
+      "next_token_logits_cosine": 1.0000000000000777,
+      "next_token_top1_match": true,
+      "next_token_topk_set_agreement": 1.0,
+      "prompt_id": "e027-code",
+      "prompt_logits_mean_cosine": 1.0000000000000804,
+      "prompt_logits_relative_l2": 0.0,
+      "prompt_tokens": 42,
+      "reference_token_sha256": "ed4974953617c0dd72d75640b0d04b3c38bb4d12095978145efbc07863e8d492",
+      "semantic_pass": true,
+      "teacher_forced_top1_agreement": 1.0,
+      "teacher_forced_top1_mismatch_rows": [],
+      "teacher_forced_topk_set_agreement": 1.0
+    },
+    {
+      "distributed_token_sha256": "7245a6b2ba7959b357c7200a9c5a38ea46d0ca975994abc90fc9505f1088ef49",
+      "generated_tokens": 64,
+      "greedy_token_match": true,
+      "max_abs_logit_error": 0.0,
+      "mean_abs_logit_error": 0.0,
+      "next_token_logits_cosine": 1.0000000000000917,
+      "next_token_top1_match": true,
+      "next_token_topk_set_agreement": 1.0,
+      "prompt_id": "e027-reasoning",
+      "prompt_logits_mean_cosine": 1.0000000000000775,
+      "prompt_logits_relative_l2": 0.0,
+      "prompt_tokens": 41,
+      "reference_token_sha256": "7245a6b2ba7959b357c7200a9c5a38ea46d0ca975994abc90fc9505f1088ef49",
+      "semantic_pass": true,
+      "teacher_forced_top1_agreement": 1.0,
+      "teacher_forced_top1_mismatch_rows": [],
+      "teacher_forced_topk_set_agreement": 1.0
+    }
+  ],
+  "validation_definition": "exact 32-token greedy hashes and consumed next-token top-1; full teacher-forced logits retained as numerical diagnostics"
+}

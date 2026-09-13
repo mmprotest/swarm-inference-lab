@@ -1,0 +1,55 @@
+{
+  "evidence_class": "SHAPED NETWORK",
+  "simulator_version": "e028-des-2",
+  "complete": true,
+  "passed": false,
+  "threshold_absolute_relative_error": 0.1,
+  "conditions": [
+    {
+      "k": 0,
+      "w": 1,
+      "network": "WAN-30",
+      "committed_tokens": 64,
+      "measured_runtime_ms": 5702.97089999076,
+      "predicted_runtime_ms": 5231.673736527495,
+      "absolute_relative_error": 0.08264063971710404,
+      "passed": true,
+      "actual_injected_delays": 256,
+      "requested_delay_ms": 4173.318174028527,
+      "actual_delay_ms": 4349.30810003425,
+      "timing_source": "independent unshaped E028 workload medians; no fitting to validation wall time",
+      "trace": "traces\\validation-k0-rtt30.json"
+    },
+    {
+      "k": 0,
+      "w": 1,
+      "network": "WAN-60",
+      "committed_tokens": 64,
+      "measured_runtime_ms": 10163.3985999797,
+      "predicted_runtime_ms": 9088.719270556048,
+      "absolute_relative_error": 0.10574015363579253,
+      "passed": false,
+      "actual_injected_delays": 256,
+      "requested_delay_ms": 8030.363708057057,
+      "actual_delay_ms": 8228.235699789366,
+      "timing_source": "independent unshaped E028 workload medians; no fitting to validation wall time",
+      "trace": "traces\\validation-k0-rtt60.json"
+    },
+    {
+      "k": 3,
+      "w": 1,
+      "network": "WAN-60",
+      "committed_tokens": 64,
+      "measured_runtime_ms": 5212.25240000058,
+      "predicted_runtime_ms": 4933.962626769288,
+      "absolute_relative_error": 0.05339146147858464,
+      "passed": true,
+      "actual_injected_delays": 112,
+      "requested_delay_ms": 3739.5237823606544,
+      "actual_delay_ms": 3821.8263001181185,
+      "timing_source": "independent unshaped E028 workload medians; no fitting to validation wall time",
+      "trace": "traces\\validation-k3-rtt60.json"
+    }
+  ],
+  "interpretation": "Validates serial causal service/transfer accounting only. Does not validate physical three-GPU contention, transport, or async throughput."
+}

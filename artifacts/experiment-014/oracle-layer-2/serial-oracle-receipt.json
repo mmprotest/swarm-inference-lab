@@ -1,0 +1,232 @@
+{
+  "checkpoint": "F:\\models\\Kimi-K3",
+  "command": [
+    "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.exe",
+    "F:\\models\\Kimi-K3",
+    "Hi",
+    "--ngen",
+    "2"
+  ],
+  "component_status": {
+    "chat_template": "NOT_TESTED",
+    "embedding": "PASS",
+    "eos": "PASS",
+    "final_norm": "PASS",
+    "kda_state": "PASS",
+    "lm_head": "PASS",
+    "mla_cache": "PASS",
+    "sampler": "PASS",
+    "stateful_step": "PASS",
+    "tokenizer": "PASS"
+  },
+  "configured_layers": 93,
+  "decoded_tokens": 2,
+  "duration_seconds": 78.4580351000186,
+  "environment_overrides": {
+    "COLI_TEMP": "0",
+    "K3_CHUNK": "1",
+    "K3_LAYERS": "2",
+    "K3_LOGITS": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\prefill-logits.f32",
+    "K3_STATE_TRACE": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\states.txt",
+    "K3_TOKENIZER": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\tokenizer\\tokenizer.json",
+    "K3_TRACE": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\hidden-trace.f32",
+    "ROUTE_TRACE": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\routes.txt"
+  },
+  "executable": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\kimi_k3.exe",
+  "executable_sha256": "90f8ce814f376dd03fac4054b1e43255b169104dff7b64d5085dc8119619701c",
+  "executed_layers": 2,
+  "full_graph": false,
+  "generated_at_utc": "2026-08-10T09:06:06.192219+00:00",
+  "generated_token_ids": [
+    17215
+  ],
+  "layers": [
+    {
+      "layer": 0,
+      "status": "PASS",
+      "step_fingerprints": [
+        {
+          "finite": true,
+          "l2": 3.146168260734288,
+          "max_abs": 0.1696513593196869,
+          "sha256": "fb83ade3d67fd897c656e564646841f69dc4d6343bd5f8d6643dce77057529fb",
+          "step": 0
+        },
+        {
+          "finite": true,
+          "l2": 1.0017537821205067,
+          "max_abs": 0.16051962971687317,
+          "sha256": "a57eac694d7cfcf46889b8de68142914f07d2ca68e1a60b485edb06aa7d5c52c",
+          "step": 1
+        },
+        {
+          "finite": true,
+          "l2": 0.9402008942576231,
+          "max_abs": 0.24005275964736938,
+          "sha256": "d4c555a44d72080dbe2c6b733979e6b8b5eb8b25f1dbdfcb007dc2ccda800e34",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "layer": 1,
+      "status": "PASS",
+      "step_fingerprints": [
+        {
+          "finite": true,
+          "l2": 3.3436079996116366,
+          "max_abs": 0.14673157036304474,
+          "sha256": "4b4677da35d712876ab9be8cdf4042f44ee0de370fff220e644d4a154cbaeaad",
+          "step": 0
+        },
+        {
+          "finite": true,
+          "l2": 1.9788803990117696,
+          "max_abs": 0.3315185010433197,
+          "sha256": "b654f754fe58c3736d32f6eebe51a53e126b5ac6abe58d5772a54fcd6da491fd",
+          "step": 1
+        },
+        {
+          "finite": true,
+          "l2": 1.4443849064236758,
+          "max_abs": 0.22939825057983398,
+          "sha256": "f92648bf573dff8d067195c9f40dc9284cc5664e60dbd82687057bed6ff35bc7",
+          "step": 2
+        }
+      ]
+    }
+  ],
+  "logits": {
+    "bytes": 1310720,
+    "sha256": "e9dc2a5a651ef01ddc2456668815234d9b9151ea594f38f1f850d249b047ca6a",
+    "structurally_valid": true
+  },
+  "precision_disclosure": {
+    "non_expert_weights": "load-time Colibri quantization controlled by K3_BITS/K3_MLA_BITS/K3_HEAD_BITS",
+    "production_mxfp8_activation_gate": "NOT_CERTIFIED_BY_THIS_ORACLE",
+    "reference_activations": "FP32",
+    "routed_expert_weights": "native checkpoint MXFP4 E2M1/UE8M0"
+  },
+  "prompt": "Hi",
+  "prompt_tokens": 2,
+  "raw_artifacts": {
+    "hidden_trace": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\hidden-trace.f32",
+    "prefill_logits": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\prefill-logits.f32",
+    "routes": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\routes.txt",
+    "states": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\states.txt",
+    "stderr": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\stderr.txt",
+    "stdout": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-layer-2\\stdout.txt"
+  },
+  "requested_generated_tokens": 2,
+  "return_code": 0,
+  "routes": {
+    "complete_route_calls": 0,
+    "malformed": [],
+    "route_calls": 1,
+    "route_sha256": "7dd90ec26df5fe2220cfb36d0f38ff26ac055c34cdaf1b7817fccc23ac0ad832",
+    "selection_count": 48,
+    "status": "FAIL"
+  },
+  "schema_version": "experiment-014-k3-serial-oracle-v1",
+  "started_at_utc": "2026-08-10T09:04:47.703925+00:00",
+  "stateful_decode": false,
+  "states": {
+    "changed_step_transitions": 2,
+    "complete_steps": true,
+    "fingerprinted_steps": 3,
+    "malformed": [],
+    "state_sha256": "8df885e36793f7d53d2355a72008aa65d93e20ca341b3d9be886214107b0dfb3",
+    "status": "PASS"
+  },
+  "status": "FAIL",
+  "timed_out": false,
+  "trace": {
+    "all_finite": true,
+    "final_hidden": [
+      {
+        "finite": true,
+        "l2": 68.55136974347293,
+        "max_abs": 3.4181933403015137,
+        "sha256": "8c5a4548772b9fdf57f0dcf1a06d1c27fcbae7c2dacaaa1a5169b9b19d1f0e22",
+        "step": 0
+      },
+      {
+        "finite": true,
+        "l2": 66.37624954946396,
+        "max_abs": 5.2893853187561035,
+        "sha256": "88b3e86fd8ff944194537f366a19127bc9b6e88d9873cfaed32ebb3e893b9ae0",
+        "step": 1
+      },
+      {
+        "finite": true,
+        "l2": 66.61836133663398,
+        "max_abs": 10.866338729858398,
+        "sha256": "f634ce237ee734b6b5f0595d14ec4c3f88f3c4064a2ca3c3e97f7c384b97c661",
+        "step": 2
+      }
+    ],
+    "forward_steps": 3,
+    "layers": [
+      {
+        "layer": 0,
+        "status": "PASS",
+        "step_fingerprints": [
+          {
+            "finite": true,
+            "l2": 3.146168260734288,
+            "max_abs": 0.1696513593196869,
+            "sha256": "fb83ade3d67fd897c656e564646841f69dc4d6343bd5f8d6643dce77057529fb",
+            "step": 0
+          },
+          {
+            "finite": true,
+            "l2": 1.0017537821205067,
+            "max_abs": 0.16051962971687317,
+            "sha256": "a57eac694d7cfcf46889b8de68142914f07d2ca68e1a60b485edb06aa7d5c52c",
+            "step": 1
+          },
+          {
+            "finite": true,
+            "l2": 0.9402008942576231,
+            "max_abs": 0.24005275964736938,
+            "sha256": "d4c555a44d72080dbe2c6b733979e6b8b5eb8b25f1dbdfcb007dc2ccda800e34",
+            "step": 2
+          }
+        ]
+      },
+      {
+        "layer": 1,
+        "status": "PASS",
+        "step_fingerprints": [
+          {
+            "finite": true,
+            "l2": 3.3436079996116366,
+            "max_abs": 0.14673157036304474,
+            "sha256": "4b4677da35d712876ab9be8cdf4042f44ee0de370fff220e644d4a154cbaeaad",
+            "step": 0
+          },
+          {
+            "finite": true,
+            "l2": 1.9788803990117696,
+            "max_abs": 0.3315185010433197,
+            "sha256": "b654f754fe58c3736d32f6eebe51a53e126b5ac6abe58d5772a54fcd6da491fd",
+            "step": 1
+          },
+          {
+            "finite": true,
+            "l2": 1.4443849064236758,
+            "max_abs": 0.22939825057983398,
+            "sha256": "f92648bf573dff8d067195c9f40dc9284cc5664e60dbd82687057bed6ff35bc7",
+            "step": 2
+          }
+        ]
+      }
+    ],
+    "rows": 9,
+    "trace_bytes": 258048,
+    "trace_sha256": "56db45053d20a7dd67f9a3c2970e2dff5e6b0d1c81622a03b709bf57655b6ca6"
+  },
+  "validation_errors": [
+    "routing trace failed validation"
+  ]
+}

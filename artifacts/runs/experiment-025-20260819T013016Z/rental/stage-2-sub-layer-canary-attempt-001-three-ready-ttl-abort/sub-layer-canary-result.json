@@ -1,0 +1,112 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-19T06:07:09.882803+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "physical-sub-layer-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48083295,
+      48083296,
+      48083297,
+      48083298
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "PHYSICAL_OR_RUNTIME_DEFECT_REQUIRES_OFFLINE_REVIEW",
+    "error": "Vast instance 48083296 disappeared after appearing in 3 consecutive live queries",
+    "error_type": "RuntimeError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 504, in run_sub_layer_canary_stage\n    fragments = list(pool.map(provision_fragment, range(4)))\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 619, in result_iterator\n    yield _result_or_cancel(fs.pop())\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 317, in _result_or_cancel\n    return fut.result(timeout)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 456, in result\n    return self.__get_result()\n           ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\_base.py\", line 401, in __get_result\n    raise self._exception\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\concurrent\\futures\\thread.py\", line 58, in run\n    result = self.fn(*self.args, **self.kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 484, in provision_fragment\n    return provision_worker(\n           ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 312, in provision_worker\n    return wait_for_worker(\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 180, in wait_for_worker\n    raise RuntimeError(\nRuntimeError: Vast instance 48083296 disappeared after appearing in 3 consecutive live queries\n"
+  },
+  "fragments": [],
+  "generated_at_utc": "2026-08-19T06:07:09.904638+00:00",
+  "image_digest": "sha256:fe90415fbbf146031f2cf0f458cb36422644fce7b644394bc3ec854a04fc1a51",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:fe90415fbbf146031f2cf0f458cb36422644fce7b644394bc3ec854a04fc1a51",
+  "parent": null,
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0.11104814335000002,
+    "estimated_storage_cost_usd": 0.013653183854938269,
+    "generated_at_utc": "2026-08-19T06:07:09.900636+00:00",
+    "instance_count": 4,
+    "instances": [
+      {
+        "active_rental_rate_usd_per_hour": 0.07333333333333333,
+        "created_at_utc": "2026-08-19T05:50:24.908350+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-19T06:06:47.942935+00:00",
+        "elapsed_seconds": 983.034585,
+        "estimated_active_cost_usd": 0.020024778583333333,
+        "estimated_storage_cost_usd": 0.0030340573611111104,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3060",
+        "instance_id": 48083295,
+        "machine_id": 84895,
+        "offer_id": 46870038,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.16666666666666666,
+        "created_at_utc": "2026-08-19T05:50:24.894218+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-19T06:06:48.005203+00:00",
+        "elapsed_seconds": 983.110985,
+        "estimated_active_cost_usd": 0.045514397453703705,
+        "estimated_storage_cost_usd": 0.003034293163580246,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3080 Ti",
+        "instance_id": 48083296,
+        "machine_id": 140510,
+        "offer_id": 46117245,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.07333333333333333,
+        "created_at_utc": "2026-08-19T05:50:25.042554+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-19T06:06:48.026369+00:00",
+        "elapsed_seconds": 982.983815,
+        "estimated_active_cost_usd": 0.02002374437962963,
+        "estimated_storage_cost_usd": 0.0030339006635802463,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3070",
+        "instance_id": 48083297,
+        "machine_id": 117724,
+        "offer_id": 45948114,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.1333333333333333
+      },
+      {
+        "active_rental_rate_usd_per_hour": 0.09333333333333334,
+        "created_at_utc": "2026-08-19T05:50:25.042554+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-19T06:06:48.044010+00:00",
+        "elapsed_seconds": 983.001456,
+        "estimated_active_cost_usd": 0.025485222933333336,
+        "estimated_storage_cost_usd": 0.004550932666666666,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3080 Ti",
+        "instance_id": 48083298,
+        "machine_id": 86690,
+        "offer_id": 46730907,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.19999999999999998
+      }
+    ],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "PASS",
+    "total_elapsed_instance_seconds": 3932.130841
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-sub-layer-canary-stage-v1",
+  "status": "FAIL"
+}

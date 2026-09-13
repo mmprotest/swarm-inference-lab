@@ -1,0 +1,464 @@
+{
+  "checkpoint": {
+    "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+    "config_sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
+    "required_tensor_count": 497052,
+    "required_weight_bytes": 1559965606912,
+    "revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+    "shard_count": 96
+  },
+  "coverage": {
+    "assignment_sha256": "ba23635700c947546d23107ce20827c4b302f45b035f7d7589862a1292f1c154",
+    "scope": "one exact worker package; global coverage is in the frozen E025 manifest",
+    "source_weight_bytes": 4690023424,
+    "tensor_count": 24,
+    "worker_id": "e025-stage-000"
+  },
+  "generated_at_utc": "2026-08-19T01:30:37.250260+00:00",
+  "model_id": "moonshotai/Kimi-K3",
+  "schema_version": "experiment-025-physical-placement-v1",
+  "status": "PASS",
+  "topology": {
+    "backbone_stage_count": 93,
+    "class": "MIXED_WHOLE_LAYER_PLUS_SUB_LAYER",
+    "controller_compute_resource": false,
+    "controller_relay_permitted": true,
+    "physical_worker_count": 97,
+    "sub_layer_parent_count": 1,
+    "sub_layer_worker_count": 4,
+    "sub_layer_workers_require_distinct_machine_ids": true
+  },
+  "workers": [
+    {
+      "assignment_sha256": "ba23635700c947546d23107ce20827c4b302f45b035f7d7589862a1292f1c154",
+      "assignment_units": [
+        {
+          "attention_type": null,
+          "kind": "embedding",
+          "layer": null,
+          "routed_expert": null,
+          "state_bytes": 0,
+          "tensors": [
+            {
+              "byte_range": [
+                2348810824,
+                4697621064
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.embed_tokens.weight",
+              "physical_bytes": 2348810240,
+              "safetensors_file": "model-00094-of-000096.safetensors",
+              "shape": [
+                163840,
+                7168
+              ]
+            }
+          ],
+          "unit_id": "embedding",
+          "weight_bytes": 2348810240
+        },
+        {
+          "attention_type": "kda",
+          "kind": "layer_core",
+          "layer": 0,
+          "routed_expert": null,
+          "state_bytes": 27525120,
+          "tensors": [
+            {
+              "byte_range": [
+                2928,
+                3440
+              ],
+              "dtype": "F32",
+              "name": "language_model.model.layers.0.self_attn.A_log",
+              "physical_bytes": 512,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                128
+              ]
+            },
+            {
+              "byte_range": [
+                3440,
+                52592
+              ],
+              "dtype": "F32",
+              "name": "language_model.model.layers.0.self_attn.dt_bias",
+              "physical_bytes": 49152,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288
+              ]
+            },
+            {
+              "byte_range": [
+                52592,
+                249200
+              ],
+              "dtype": "F32",
+              "name": "language_model.model.layers.0.self_attn.k_conv1d.weight",
+              "physical_bytes": 196608,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                1,
+                4
+              ]
+            },
+            {
+              "byte_range": [
+                249200,
+                249712
+              ],
+              "dtype": "F32",
+              "name": "language_model.model.layers.0.self_attn.o_norm.weight",
+              "physical_bytes": 512,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                128
+              ]
+            },
+            {
+              "byte_range": [
+                249712,
+                446320
+              ],
+              "dtype": "F32",
+              "name": "language_model.model.layers.0.self_attn.q_conv1d.weight",
+              "physical_bytes": 196608,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                1,
+                4
+              ]
+            },
+            {
+              "byte_range": [
+                446320,
+                642928
+              ],
+              "dtype": "F32",
+              "name": "language_model.model.layers.0.self_attn.v_conv1d.weight",
+              "physical_bytes": 196608,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                1,
+                4
+              ]
+            },
+            {
+              "byte_range": [
+                642928,
+                657264
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.input_layernorm.weight",
+              "physical_bytes": 14336,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                657264,
+                485099376
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.mlp.down_proj.weight",
+              "physical_bytes": 484442112,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                7168,
+                33792
+              ]
+            },
+            {
+              "byte_range": [
+                485099376,
+                969541488
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.mlp.gate_proj.weight",
+              "physical_bytes": 484442112,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                33792,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                969541488,
+                1453983600
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.mlp.up_proj.weight",
+              "physical_bytes": 484442112,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                33792,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1453983600,
+                1453997936
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.mlp_res_norm.weight",
+              "physical_bytes": 14336,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1453997936,
+                1454012272
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.mlp_res_proj.weight",
+              "physical_bytes": 14336,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                1,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1454012272,
+                1454026608
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.post_attention_layernorm.weight",
+              "physical_bytes": 14336,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1454026608,
+                1454040944
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attention_res_norm.weight",
+              "physical_bytes": 14336,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1454040944,
+                1454055280
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attention_res_proj.weight",
+              "physical_bytes": 14336,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                1,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1454055280,
+                1455431536
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.b_proj.weight",
+              "physical_bytes": 1376256,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                96,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1455431536,
+                1457266544
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.f_a_proj.weight",
+              "physical_bytes": 1835008,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                128,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1457266544,
+                1460412272
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.f_b_proj.weight",
+              "physical_bytes": 3145728,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                128
+              ]
+            },
+            {
+              "byte_range": [
+                1460412272,
+                1636573040
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.g_proj.weight",
+              "physical_bytes": 176160768,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1636573040,
+                1812733808
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.k_proj.weight",
+              "physical_bytes": 176160768,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                1812733808,
+                1988894576
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.o_proj.weight",
+              "physical_bytes": 176160768,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                7168,
+                12288
+              ]
+            },
+            {
+              "byte_range": [
+                1988894576,
+                2165055344
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.q_proj.weight",
+              "physical_bytes": 176160768,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                7168
+              ]
+            },
+            {
+              "byte_range": [
+                2165055344,
+                2341216112
+              ],
+              "dtype": "BF16",
+              "name": "language_model.model.layers.0.self_attn.v_proj.weight",
+              "physical_bytes": 176160768,
+              "safetensors_file": "model-00001-of-000096.safetensors",
+              "shape": [
+                12288,
+                7168
+              ]
+            }
+          ],
+          "unit_id": "layer_core-layer-00",
+          "weight_bytes": 2341213184
+        }
+      ],
+      "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+      "consumer_gpu_required": true,
+      "expected_compute": {
+        "context_tokens": 8192,
+        "physical_status": "PROJECTED_PENDING_3090_CANARY",
+        "production_batch": 1,
+        "projected_rtx3090_wall_p50_ms": 4.914216224370451
+      },
+      "expected_network": {
+        "edge_class": "kimi_coarse_stage_fp32_v1",
+        "incoming_activation_payload_bytes": 0,
+        "maximum_rtt_ms": 5.0,
+        "minimum_bandwidth_gbps": 10.0,
+        "outgoing_activation_payload_bytes": 258048
+      },
+      "expected_on_disk_package_bytes_excluding_header": 4690023424,
+      "independent_physical_machine_required": true,
+      "memory": {
+        "activation_and_communication_reserve_bytes": 67108864,
+        "feasible": true,
+        "measured_cuda_baseline_bytes": 1761148928,
+        "measured_or_representative_resident_device_bytes": 3040870400,
+        "physical_vram_bytes": 25769803776,
+        "planned_total_vram_bytes": 7903811994,
+        "production_eight_stream_state_bytes": 55050240,
+        "remaining_unallocated_bytes": 17865991782,
+        "safety_headroom_bytes": 2576980378,
+        "serving_scheduler_reserve_bytes": 134217728,
+        "total_headroom_bytes": 20442972160,
+        "workspace_reserve_bytes": 268435456
+      },
+      "model_and_runtime": {
+        "candidate_pending_final_same_binary_regression": false,
+        "checkpoint_fingerprint": "25162130a11904bac1220a7d654a3f7dfd616ea5f4035d488e40ac74ddea8f94",
+        "cuda_library_sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+        "cuda_target": "sm_86 SASS + compute_86 PTX",
+        "maximum_certified_routed_expert_batch": 8,
+        "model_revision": "9f62e4e9fffbd0a83ddd60e1c209d828994b3569",
+        "promoted_for_pre_canary_use": true
+      },
+      "owned_components": [
+        "embedding",
+        "layer_0"
+      ],
+      "owned_expert_count": 0,
+      "owned_expert_ids": [],
+      "owned_layers": [
+        0
+      ],
+      "physical_role": "BACKBONE_STAGE",
+      "recovery": {
+        "generation_must_match": true,
+        "incomplete_stage_response_policy": "FAIL_CLOSED",
+        "replacement_assignment": "k3-worker-000"
+      },
+      "safetensor_source_files": [
+        "model-00001-of-000096.safetensors",
+        "model-00094-of-000096.safetensors"
+      ],
+      "source_weight_bytes": 4690023424,
+      "source_worker_id": "k3-worker-000",
+      "source_worker_indices": [
+        0,
+        1
+      ],
+      "tensor_count": 24,
+      "topology_group": "coarse-stage-000",
+      "whole_layer_fallback": false,
+      "worker_id": "e025-stage-000",
+      "worker_index": 0,
+      "worker_role": "BACKBONE_STAGE"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "cycle_id": "H015-MODEL-001",
+  "evidence_class": "VALIDATED MODEL",
+  "held_out_predictions": [
+    {
+      "absolute_percentage_error": 2.652061597811105,
+      "actual_ms": 8.040287971496582,
+      "calibration_points": {
+        "1": 3.3029760122299194,
+        "2": 5.187119960784912,
+        "8": 13.305903911590576
+      },
+      "evidence_class": "MEASURED",
+      "held_out": "KDA batch-4",
+      "predicted_ms": 8.253521361142068
+    },
+    {
+      "absolute_percentage_error": 3.5284755460962125,
+      "actual_ms": 7.692607879638672,
+      "calibration_points": {
+        "1": 3.016416072845459,
+        "2": 4.909535884857178,
+        "8": 12.875679969787598
+      },
+      "evidence_class": "MEASURED",
+      "held_out": "MLA batch-4",
+      "predicted_ms": 7.964039667528793
+    },
+    {
+      "absolute_percentage_error": 0.2604743586403921,
+      "actual_ms": 5.427743911743164,
+      "calibration_points": {
+        "1024": 3.3185598850250244,
+        "4096": 4.298719882965088,
+        "16384": 7.814879894256592
+      },
+      "evidence_class": "MEASURED",
+      "held_out": "MLA 8K context decode",
+      "predicted_ms": 5.44188179288592
+    },
+    {
+      "absolute_percentage_error": 5.2780041487322915,
+      "actual_ms": 4.618449999999999,
+      "calibration_points": {
+        "2": 4.1461500000000004,
+        "4": 4.5222999999999995,
+        "16": 5.1531
+      },
+      "evidence_class": "MEASURED",
+      "held_out": "8-worker expert layer",
+      "predicted_ms": 4.862211982607126
+    }
+  ],
+  "maximum_absolute_percentage_error_percent": 5.2780041487322915,
+  "median_absolute_percentage_error_percent": 3.0902685719536587,
+  "p95_absolute_percentage_error_percent": 5.015574858336879,
+  "schema_version": "experiment-015-service-model-validation-v1",
+  "status": "PASS",
+  "validation_design": {
+    "calibration_and_held_out_disjoint": true,
+    "note": "Validation is local component/composite interpolation. It does not validate a physical multi-GPU or fleet transfer.",
+    "target_median_absolute_percentage_error_percent": 10.0
+  }
+}

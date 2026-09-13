@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "path": "src/swarm_inference/experiments/experiment_025/wire.py",
+      "sha256": "a405815c7e3c093d6b4efbeca9409b03b7ca5bdde97442a6ea66ecfef2962839"
+    },
+    {
+      "path": "src/swarm_inference/experiments/experiment_025/controller.py",
+      "sha256": "3ec72f8c38888723aad9c15c38515f6ec63518c60859e4e23221b0d0ba9ddc4f"
+    },
+    {
+      "path": "src/swarm_inference/experiments/experiment_025/worker.py",
+      "sha256": "8ee04abd3ccc58ed8bf574b142b5573bd3e6695c7ae43d1e779846ee0f4a78b2"
+    },
+    {
+      "path": "src/swarm_inference/experiments/experiment_025/expert_partition.py",
+      "sha256": "7e51fd15aeec882a2c7c7741c9ca0cdf864190f478cb0858a6ef4a19635cab70"
+    },
+    {
+      "path": "src/swarm_inference/execution/kimi_k3_stage.py",
+      "sha256": "f3af49463f3bc2b7bc8bece7161ca9152e7f1ed583ce6f4e9dbaf4e22ad99e62"
+    },
+    {
+      "path": "src/swarm_inference/experiments/experiment_022/native_dispatch.py",
+      "sha256": "330fce9cbd25928cdc52181cc37f33a91d7b613bddc1faffb863956b948ebe08"
+    }
+  ],
+  "functional_test_required": "tests/test_experiment_025_dispatch.py",
+  "gates": {
+    "authenticated_execute_shard_frame": true,
+    "controller_has_no_generation_api_client": true,
+    "controller_imports_no_model_executor": true,
+    "e022_native_lineage_present": true,
+    "external_real_expert_dispatch": true,
+    "native_cuda_primitives_called": true,
+    "native_stage_implementation_called": true,
+    "no_controller_compute_fallback": true,
+    "real_tensor_result_returned": true,
+    "sampled_token_originates_in_worker_result": true,
+    "worker_dispatches_execute_stage": true,
+    "worker_rejects_cached_or_synthetic_claims": true
+  },
+  "generated_at_utc": "2026-08-19T06:17:00.867755+00:00",
+  "path": [
+    "controller task",
+    "HMAC-authenticated EXECUTE_SHARD frame over TLS",
+    "independent worker process",
+    "PersistentKimiStageExecutor or ExpertPartitionExecutor",
+    "real native CUDA primitive",
+    "fresh real tensor result",
+    "authenticated SHARD_RESULT frame"
+  ],
+  "schema_version": "experiment-025-native-dispatch-attestation-v1",
+  "status": "PASS"
+}

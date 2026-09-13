@@ -1,0 +1,414 @@
+{
+  "batches": {},
+  "configuration": {
+    "attempted_batches": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "attention_type": "KDA",
+    "device": 0,
+    "fixture": "three exact retained stateful decode boundaries, row-rotated",
+    "layer": 89,
+    "phase_profile_calls": 5,
+    "retained_calls": 50,
+    "warmup_calls": 10
+  },
+  "cycle_id": "H014-029a",
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "failure": {
+    "gpu_health": {
+      "compute_cap": "12.0",
+      "driver_version": "591.86",
+      "index": "0",
+      "memory.free": "29895",
+      "memory.total": "32607",
+      "memory.used": "2293",
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci.bus_id": "00000000:02:00.0",
+      "pstate": "P0",
+      "status": "MEASURED",
+      "temperature.gpu": "55",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "message": "serial complete-stage baseline regressed",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\complete_stage_batch.py\", line 763, in benchmark_complete_stage_batch\n    return asyncio.run(\n           ^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\runners.py\", line 190, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\asyncio\\base_events.py\", line 654, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\complete_stage_batch.py\", line 624, in _benchmark_complete_stage_batch\n    raise RuntimeError(\"serial complete-stage baseline regressed\")\nRuntimeError: serial complete-stage baseline regressed\n",
+    "type": "RuntimeError"
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30392",
+    "memory.total": "32607",
+    "memory.used": "1796",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P3",
+    "status": "MEASURED",
+    "temperature.gpu": "50",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": {
+    "minimum_material_throughput_gain": 1.5,
+    "prediction": "Grouping rows only when their real top-16 routes share an expert, while batching latent projections and the shared expert, will retain serial semantics and yield at least 1.5x complete-stage aggregate throughput at one certified batch without GPU or lifecycle degradation."
+  },
+  "implementation": {
+    "attention_state": "independent persistent state per decode stream",
+    "larger_than_target_executed": false,
+    "reduction": "unchanged deterministic per-row top-16 reduction",
+    "routed_experts": "expert-ID grouped gather/row-cooperative execute/scatter",
+    "router": "one exact real Kimi router call per row",
+    "shared_expert": "row-cooperative across all active rows",
+    "workspace": "fixed persistent allocation before READY"
+  },
+  "load": {
+    "accepted": true,
+    "assignment_source_weight_bytes": 16990092800,
+    "elapsed_ms": 217338.6833,
+    "lifecycle": {
+      "active_sessions": 0,
+      "backend_identity": "nvidia_cuda_persistent_kimi_stage",
+      "batch_capacity": 16,
+      "batch_execute_count": 0,
+      "batch_supported_sizes": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "batch_workspace_bytes": 8486912,
+      "cpu_mathematical_fallbacks": 0,
+      "cuda_library_sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff",
+      "execute_count": 0,
+      "measured_free_memory_delta_bytes": 18272485376,
+      "model_materialization_count": 1,
+      "persistent_buffer_allocation_count": 35,
+      "prepare_warmup": {
+        "count": 1,
+        "maximum_temporary_device_bytes": 8388608,
+        "measured_device_ms": 25.51958394050598,
+        "measured_wall_ms": 37.9842,
+        "primitive": "isolated assigned-stage Kimi CUDA fixture",
+        "stage_fixture": {
+          "active_sessions_after": 0,
+          "cpu_mathematical_fallbacks": 0,
+          "device": {
+            "maximum_ms": 4.153024196624756,
+            "mean_ms": 3.6456548486437117,
+            "minimum_ms": 3.504767894744873,
+            "p50_ms": 3.518656015396118,
+            "p95_ms": 4.045830535888672,
+            "p99_ms": 4.1315854644775385,
+            "standard_deviation_ms": 0.22884482186669505
+          },
+          "device_ms_values": [
+            3.7957119941711426,
+            4.153024196624756,
+            3.509183883666992,
+            3.518656015396118,
+            3.515615940093994,
+            3.5226240158081055,
+            3.504767894744873
+          ],
+          "free_bytes_after_close": 14156824576,
+          "free_bytes_before": 14156824576,
+          "input": "float32 zero [1,9,7168]",
+          "iterations": 7,
+          "last_selected_expert_ids": [
+            728,
+            878,
+            28,
+            122,
+            814,
+            287,
+            4,
+            475,
+            297,
+            107,
+            866,
+            546,
+            467,
+            544,
+            778,
+            189
+          ],
+          "measured_device_ms": 25.51958394050598,
+          "measured_wall_ms": 37.9842,
+          "output_fingerprint": "sha256:f04993ef97d6659709c4fcd6d7d95df637093b52cd06a4893ac0701c14926511",
+          "output_finite": true,
+          "research_records_removed": true,
+          "serving_execute_count_restored": true,
+          "temporary_device_bytes": 8388608,
+          "temporary_memory_recovered": true
+        },
+        "temporary_device_bytes": 8388608,
+        "temporary_memory_recovered": true,
+        "total_measured_wall_ms": 37.9842
+      },
+      "prepare_warmup_count": 1,
+      "resident_device_bytes": 18272485376,
+      "resident_expert_count": 896,
+      "session_close_count": 1,
+      "session_open_count": 1,
+      "tracked_device_bytes": 16121007360,
+      "weight_fingerprint": "sha256:3f75cb42b481a2411696ad288a83b26ebe26918fa63653d09e47780dc02e26a0",
+      "weight_load_count": 1
+    },
+    "resident_device_bytes": 18272485376,
+    "weight_fingerprint": "sha256:3f75cb42b481a2411696ad288a83b26ebe26918fa63653d09e47780dc02e26a0"
+  },
+  "progress": [
+    {
+      "phase": "preregistered"
+    },
+    {
+      "phase": "gpu_health_before",
+      "status": "MEASURED"
+    },
+    {
+      "accepted": true,
+      "phase": "production_stage_loaded_and_prepared",
+      "resident_device_bytes": 18272485376
+    },
+    {
+      "phase": "serial_baseline",
+      "status": "FAIL"
+    }
+  ],
+  "schema_version": "experiment-014-k3-complete-stage-static-batch-v1",
+  "serial_baseline": {
+    "device": {
+      "maximum_ms": 3.9042880535125732,
+      "mean_ms": 3.503843846321106,
+      "minimum_ms": 3.013184070587158,
+      "p50_ms": 3.477679967880249,
+      "p95_ms": 3.8800848364830016,
+      "p99_ms": 3.900760052204132,
+      "standard_deviation_ms": 0.16054710591380844
+    },
+    "lifecycle_delta": {
+      "model_materialization_count": 0,
+      "persistent_buffer_allocation_count": 0,
+      "weight_load_count": 0
+    },
+    "lifecycle_deltas_zero": true,
+    "oracle_correctness": {
+      "maximum_relative_l2_error": 0.00022179327478527553,
+      "pass": false,
+      "positions": [
+        {
+          "expected_expert_ids": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "expected_output_fingerprint": "sha256:47289b2ffa94561c32431ad5d2b3d7d02c8528e723ea9aae6f8146922ca9082d",
+          "metrics": {
+            "actual_finite": true,
+            "actual_l2": 813.3859269157467,
+            "cosine_similarity": 0.9999999993786465,
+            "maximum_absolute_error": 0.0013751983642578125,
+            "mean_absolute_error": 3.0055996426704547e-05,
+            "reference_finite": true,
+            "reference_l2": 813.3859458911177,
+            "relative_l2_error": 3.525205857676237e-05
+          },
+          "output_fingerprint": "sha256:16ca5c3a014f4856df2bd846596c3d92c83f17b30346b4866504d2e9a33210aa",
+          "position": 0,
+          "routing_equality": true,
+          "selected_expert_ids": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ]
+        },
+        {
+          "expected_expert_ids": [
+            888,
+            692,
+            62,
+            757,
+            263,
+            832,
+            662,
+            504,
+            777,
+            895,
+            885,
+            51,
+            756,
+            399,
+            569,
+            478
+          ],
+          "expected_output_fingerprint": "sha256:8e092e967ddedc7152ca0e0e9b5ffd5647c335cb81d04af5e609ee9d174569c8",
+          "metrics": {
+            "actual_finite": true,
+            "actual_l2": 508.6913333710042,
+            "cosine_similarity": 0.9999999935678772,
+            "maximum_absolute_error": 0.0028191059827804565,
+            "mean_absolute_error": 6.0064369458742144e-05,
+            "reference_finite": true,
+            "reference_l2": 508.6914397913698,
+            "relative_l2_error": 0.0001134208380071001
+          },
+          "output_fingerprint": "sha256:14e49561ccb15a88192ed138d2673755030021bd3d8a3648621c4760ffb6fd44",
+          "position": 1,
+          "routing_equality": true,
+          "selected_expert_ids": [
+            888,
+            692,
+            62,
+            757,
+            263,
+            832,
+            662,
+            504,
+            777,
+            895,
+            885,
+            51,
+            756,
+            399,
+            569,
+            478
+          ]
+        },
+        {
+          "expected_expert_ids": [
+            832,
+            186,
+            756,
+            888,
+            62,
+            692,
+            51,
+            777,
+            569,
+            757,
+            504,
+            624,
+            885,
+            350,
+            31,
+            263
+          ],
+          "expected_output_fingerprint": "sha256:f5c1d351262ed87eb2658502a26435cfec086ff60f6bf473f7451e3c0447a07a",
+          "metrics": {
+            "actual_finite": true,
+            "actual_l2": 225.0957009970111,
+            "cosine_similarity": 0.9999999754041492,
+            "maximum_absolute_error": 0.0022700875997543335,
+            "mean_absolute_error": 5.2561871179643765e-05,
+            "reference_finite": true,
+            "reference_l2": 225.09553874221731,
+            "relative_l2_error": 0.00022179327478527553
+          },
+          "output_fingerprint": "sha256:a14d09353ef4236087b595ea1c787167044748791281027374d6b86f084f7124",
+          "position": 2,
+          "routing_equality": true,
+          "selected_expert_ids": [
+            832,
+            186,
+            756,
+            888,
+            62,
+            692,
+            51,
+            777,
+            569,
+            757,
+            504,
+            624,
+            885,
+            350,
+            31,
+            263
+          ]
+        }
+      ]
+    },
+    "retained_iterations": 50,
+    "rows_per_second_at_device_p50": 287.5480231752119,
+    "state": {
+      "attention_type": "KDA",
+      "bytes": 6881280,
+      "cache_sequence_length": 60,
+      "fingerprint": "sha256:ae4ae645d5a38a82f60e7c29d8aab98ffcded0f103186324b32d0385a97ae8ee",
+      "finite": true,
+      "nonzero_prefix": true,
+      "zero_suffix": true
+    },
+    "status": "FAIL",
+    "wall": {
+      "maximum_ms": 4.1823,
+      "mean_ms": 3.7433159999999996,
+      "minimum_ms": 3.2337,
+      "p50_ms": 3.71475,
+      "p95_ms": 4.109285,
+      "p99_ms": 4.156134,
+      "standard_deviation_ms": 0.16534778179340656
+    },
+    "warmup_iterations": 10
+  },
+  "sources": {
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "cuda_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-028d-b16-candidate.dll",
+      "sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff"
+    },
+    "identity_manifest": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\persistent\\h014-026b-model-identity.json",
+      "sha256": "f41ddaf2972e2a8f5b91a03a1f925382b683aa7014de9944f543e7bc045adb66"
+    },
+    "oracle_routes": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\routes.txt",
+      "sha256": "4d0fbfbc1c2fedba69533d219af7c23daa19087b9064aba147c1c1de0aa0001d"
+    },
+    "oracle_trace": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93\\hidden-trace.f32",
+      "sha256": "95012ceb968aaa31f51ccbea38beff44e47dec72572b8c22ca4fe01bbadd56ae"
+    }
+  },
+  "status": "FAIL"
+}

@@ -1,0 +1,170 @@
+{
+  "generated_at_utc": "2026-08-23T09:23:11.103599+00:00",
+  "machine_ids": [
+    31390,
+    51857,
+    68203,
+    84895,
+    86690,
+    108924,
+    114019,
+    131228,
+    137644,
+    137843,
+    140510
+  ],
+  "policy": "exclude a physical machine after any prior instance for this stage failed authenticated WORKER_READY or participated in a frozen physical canary receipt whose status was not PASS",
+  "progress_aware_reclassification": {
+    "basis": "For each CREATE_ID_LOST attempt, successfully created siblings were destroyed only because a separate provider create lost its ID. For each progress-aware stall, only the machine with a BOOTSTRAP_STALLED event is excluded; progressing siblings are retained as eligible. Attempt 004 was aborted for a reproducible snapshot-restart software defect, not a physical host failure.",
+    "bootstrap_stalled_machines_temporarily_excluded": true,
+    "create_id_lost_machines_temporarily_excluded": true,
+    "healthy_progressing_fragment_machines_blacklisted": false,
+    "software_bootstrap_failure_machines_blacklisted": false,
+    "stage_directories": [
+      "stage-2-sub-layer-canary-attempt-003-parent-create-id-lost-machine114019",
+      "stage-2-sub-layer-canary-attempt-004-parent-snapshot-reactivation-machine10134",
+      "stage-2-sub-layer-canary-attempt-005-fragment-create-id-lost-machine86690",
+      "stage-2-sub-layer-canary-attempt-006-container-bootstrap-stall-machine68203",
+      "stage-2-sub-layer-canary-attempt-007-gpu-load-stall-machine31390",
+      "stage-2-sub-layer-canary-attempt-008-bootstrap-stall-machines84895-51857",
+      "stage-2-sub-layer-canary-attempt-009-container-bootstrap-stall-machine137843",
+      "stage-2-sub-layer-canary-attempt-010-model-download-stall-machines131228-137644"
+    ]
+  },
+  "schema_version": "experiment-025-failed-machine-exclusions-v1",
+  "sources": [
+    {
+      "machine_id": 31390,
+      "observations": [
+        {
+          "instance_id": 48455229,
+          "offer_id": 36243482,
+          "physical_failure_receipt": "bootstrap-progress.jsonl",
+          "reason": "GPU_LOAD made no observable progress for 266.93799999996554 seconds; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-007-gpu-load-stall-machine31390"
+        }
+      ]
+    },
+    {
+      "machine_id": 51857,
+      "observations": [
+        {
+          "instance_id": 48456131,
+          "offer_id": 45587623,
+          "physical_failure_receipt": "bootstrap-progress.jsonl",
+          "reason": "MODEL_DOWNLOAD made no observable progress for 240.1720000000205 seconds; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-008-bootstrap-stall-machines84895-51857"
+        }
+      ]
+    },
+    {
+      "machine_id": 68203,
+      "observations": [
+        {
+          "instance_id": 48454540,
+          "offer_id": 34596403,
+          "physical_failure_receipt": "bootstrap-progress.jsonl",
+          "reason": "CONTAINER_RUNNING made no observable progress for 241.90700000000652 seconds; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-006-container-bootstrap-stall-machine68203"
+        }
+      ]
+    },
+    {
+      "machine_id": 84895,
+      "observations": [
+        {
+          "instance_id": 48456132,
+          "offer_id": 46870040,
+          "physical_failure_receipt": "bootstrap-progress.jsonl",
+          "reason": "CONTAINER_RUNNING made no observable progress for 240.15599999995902 seconds; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-008-bootstrap-stall-machines84895-51857"
+        }
+      ]
+    },
+    {
+      "machine_id": 86690,
+      "observations": [
+        {
+          "instance_id": null,
+          "offer_id": 46730905,
+          "physical_failure_receipt": null,
+          "reason": "provider create returned no recoverable instance ID; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-005-fragment-create-id-lost-machine86690"
+        }
+      ]
+    },
+    {
+      "machine_id": 108924,
+      "observations": [
+        {
+          "instance_id": 48442617,
+          "offer_id": 36757250,
+          "physical_failure_receipt": null,
+          "reason": "prior instance never reached WORKER_READY",
+          "stage_directory": "stage-2-sub-layer-canary-pass-fd609590-before-headline-readiness-fix"
+        }
+      ]
+    },
+    {
+      "machine_id": 114019,
+      "observations": [
+        {
+          "instance_id": null,
+          "offer_id": 46739601,
+          "physical_failure_receipt": null,
+          "reason": "provider create returned no recoverable instance ID; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-003-parent-create-id-lost-machine114019"
+        }
+      ]
+    },
+    {
+      "machine_id": 131228,
+      "observations": [
+        {
+          "instance_id": 48457287,
+          "offer_id": 47824796,
+          "physical_failure_receipt": "bootstrap-progress.jsonl",
+          "reason": "MODEL_DOWNLOAD made no observable progress for 240.06299999996554 seconds; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-010-model-download-stall-machines131228-137644"
+        }
+      ]
+    },
+    {
+      "machine_id": 137644,
+      "observations": [
+        {
+          "instance_id": 48457419,
+          "offer_id": 39270987,
+          "physical_failure_receipt": "bootstrap-progress.jsonl",
+          "reason": "MODEL_DOWNLOAD made no observable progress for 240.06299999996554 seconds; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-010-model-download-stall-machines131228-137644"
+        }
+      ]
+    },
+    {
+      "machine_id": 137843,
+      "observations": [
+        {
+          "instance_id": 48456702,
+          "offer_id": 43060079,
+          "physical_failure_receipt": "bootstrap-progress.jsonl",
+          "reason": "CONTAINER_RUNNING made no observable progress for 243.18799999996554 seconds; use a ranked alternate for the immediate retry",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-009-container-bootstrap-stall-machine137843"
+        }
+      ]
+    },
+    {
+      "machine_id": 140510,
+      "observations": [
+        {
+          "instance_id": 48083296,
+          "offer_id": 46117245,
+          "physical_failure_receipt": null,
+          "reason": "prior instance never reached WORKER_READY",
+          "stage_directory": "stage-2-sub-layer-canary-attempt-001-three-ready-ttl-abort"
+        }
+      ]
+    }
+  ],
+  "stage_prefix": "stage-2-sub-layer-canary"
+}

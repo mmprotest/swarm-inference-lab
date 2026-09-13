@@ -1,0 +1,518 @@
+{
+  "cycle_id": "H015-PACK-001",
+  "decision": "MEMORY_PACKING_ONLY; NO PAID_GPU_REDUCTION_ADMITTED",
+  "evidence_class": "PROJECTED",
+  "hardware_classes": [
+    {
+      "compute_relative": null,
+      "hourly_price_usd": null,
+      "memory_bandwidth_gbps": null,
+      "name": "generic-8gb",
+      "vram_gib": 8.0
+    },
+    {
+      "compute_relative": null,
+      "hourly_price_usd": null,
+      "memory_bandwidth_gbps": null,
+      "name": "generic-12gb",
+      "vram_gib": 12.0
+    },
+    {
+      "compute_relative": null,
+      "hourly_price_usd": null,
+      "memory_bandwidth_gbps": null,
+      "name": "generic-16gb",
+      "vram_gib": 16.0
+    },
+    {
+      "compute_relative": null,
+      "hourly_price_usd": null,
+      "memory_bandwidth_gbps": null,
+      "name": "generic-24gb",
+      "vram_gib": 24.0
+    },
+    {
+      "compute_relative": null,
+      "hourly_price_usd": null,
+      "memory_bandwidth_gbps": null,
+      "name": "generic-32gb",
+      "vram_gib": 32.0
+    },
+    {
+      "compute_relative": null,
+      "hourly_price_usd": null,
+      "memory_bandwidth_gbps": null,
+      "name": "generic-48gb",
+      "vram_gib": 48.0
+    }
+  ],
+  "minimum_economically_useful_worker_memory_gib": "NOT_ESTABLISHED",
+  "minimum_memory_class_that_can_host_measured_four_worker_ready_delta_gib": 8,
+  "packing_assumptions": {
+    "compute_and_bandwidth_constraints_are_not_inferred_from_vram": true,
+    "fixed_runtime_bytes_per_device": 1073741824,
+    "safety_fraction": 0.1,
+    "unknown_prices_are_not_imputed": true
+  },
+  "rows": [
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-8gb",
+        "vram_gib": 8.0
+      },
+      "logical_workers_per_layer": 2,
+      "memory_devices_for_one_layer": null,
+      "memory_slots_per_device": 0,
+      "name": "expert-2-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 7861417984,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-12gb",
+        "vram_gib": 12.0
+      },
+      "logical_workers_per_layer": 2,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 1,
+      "name": "expert-2-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 7861417984,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-16gb",
+        "vram_gib": 16.0
+      },
+      "logical_workers_per_layer": 2,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 1,
+      "name": "expert-2-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 7861417984,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-24gb",
+        "vram_gib": 24.0
+      },
+      "logical_workers_per_layer": 2,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 2,
+      "name": "expert-2-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 7861417984,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-32gb",
+        "vram_gib": 32.0
+      },
+      "logical_workers_per_layer": 2,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 3,
+      "name": "expert-2-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 7861417984,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-48gb",
+        "vram_gib": 48.0
+      },
+      "logical_workers_per_layer": 2,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 5,
+      "name": "expert-2-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 7861417984,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-8gb",
+        "vram_gib": 8.0
+      },
+      "logical_workers_per_layer": 4,
+      "memory_devices_for_one_layer": 4,
+      "memory_slots_per_device": 1,
+      "name": "expert-4-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 3931060224,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-12gb",
+        "vram_gib": 12.0
+      },
+      "logical_workers_per_layer": 4,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 2,
+      "name": "expert-4-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 3931060224,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-16gb",
+        "vram_gib": 16.0
+      },
+      "logical_workers_per_layer": 4,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 3,
+      "name": "expert-4-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 3931060224,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-24gb",
+        "vram_gib": 24.0
+      },
+      "logical_workers_per_layer": 4,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 5,
+      "name": "expert-4-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 3931060224,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-32gb",
+        "vram_gib": 32.0
+      },
+      "logical_workers_per_layer": 4,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 7,
+      "name": "expert-4-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 3931060224,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-48gb",
+        "vram_gib": 48.0
+      },
+      "logical_workers_per_layer": 4,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 11,
+      "name": "expert-4-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 3931060224,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-8gb",
+        "vram_gib": 8.0
+      },
+      "logical_workers_per_layer": 8,
+      "memory_devices_for_one_layer": 3,
+      "memory_slots_per_device": 3,
+      "name": "expert-8-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 1965537280,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-12gb",
+        "vram_gib": 12.0
+      },
+      "logical_workers_per_layer": 8,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 5,
+      "name": "expert-8-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 1965537280,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-16gb",
+        "vram_gib": 16.0
+      },
+      "logical_workers_per_layer": 8,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 7,
+      "name": "expert-8-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 1965537280,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-24gb",
+        "vram_gib": 24.0
+      },
+      "logical_workers_per_layer": 8,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 11,
+      "name": "expert-8-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 1965537280,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-32gb",
+        "vram_gib": 32.0
+      },
+      "logical_workers_per_layer": 8,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 15,
+      "name": "expert-8-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 1965537280,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-48gb",
+        "vram_gib": 48.0
+      },
+      "logical_workers_per_layer": 8,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 23,
+      "name": "expert-8-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 1965537280,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-8gb",
+        "vram_gib": 8.0
+      },
+      "logical_workers_per_layer": 16,
+      "memory_devices_for_one_layer": 3,
+      "memory_slots_per_device": 6,
+      "name": "expert-16-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 982890496,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-12gb",
+        "vram_gib": 12.0
+      },
+      "logical_workers_per_layer": 16,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 10,
+      "name": "expert-16-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 982890496,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-16gb",
+        "vram_gib": 16.0
+      },
+      "logical_workers_per_layer": 16,
+      "memory_devices_for_one_layer": 2,
+      "memory_slots_per_device": 14,
+      "name": "expert-16-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 982890496,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-24gb",
+        "vram_gib": 24.0
+      },
+      "logical_workers_per_layer": 16,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 22,
+      "name": "expert-16-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 982890496,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-32gb",
+        "vram_gib": 32.0
+      },
+      "logical_workers_per_layer": 16,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 30,
+      "name": "expert-16-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 982890496,
+      "source_worker_evidence_class": "MEASURED"
+    },
+    {
+      "concurrent_compute_devices_required": "NOT_ESTABLISHED",
+      "economic_result_admitted": false,
+      "evidence_class": "PROJECTED",
+      "hardware": {
+        "compute_relative": null,
+        "hourly_price_usd": null,
+        "memory_bandwidth_gbps": null,
+        "name": "generic-48gb",
+        "vram_gib": 48.0
+      },
+      "logical_workers_per_layer": 16,
+      "memory_devices_for_one_layer": 1,
+      "memory_slots_per_device": 46,
+      "name": "expert-16-way-shard",
+      "paid_gpu_equivalent": "NOT_ESTABLISHED",
+      "resident_worker_bytes": 982890496,
+      "source_worker_evidence_class": "MEASURED"
+    }
+  ],
+  "schema_version": "experiment-015-worker-packing-v1",
+  "smallest_measured_logical_worker_bytes": 982890496,
+  "status": "PASS"
+}

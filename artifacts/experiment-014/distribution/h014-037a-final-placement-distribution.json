@@ -1,0 +1,76 @@
+{
+  "acceptance_gates": {
+    "all_93_layers_covered_once": true,
+    "all_workers_memory_feasible": true,
+    "corruption_rejected": true,
+    "exact_93_workers": true,
+    "minimum_one_gib_unallocated_after_safety": true,
+    "no_duplicate_tensor_ownership": true,
+    "no_worker_downloads_complete_checkpoint": true,
+    "remote_atomic_activation": true,
+    "remote_cache_reuse": true,
+    "remote_partial_resume": true,
+    "remote_retry": true,
+    "required_source_bytes_exact": true,
+    "required_tensor_count_exact": true,
+    "role_specific_eight_k_state": true,
+    "runtime_binary_matches_selected_candidate": true,
+    "worker_scoped_targeted_acquisition": true
+  },
+  "benchmark": {
+    "acquisition_fault_fixture": {
+      "corrupt_attempts_rejected": 2,
+      "downloaded_bytes_after_partial": 983040,
+      "injected_transient_failures": 1,
+      "preseeded_partial_bytes": 65536,
+      "server_requests_after_warm_cache_repeat": 0,
+      "source_bytes": 1048576
+    },
+    "distribution": {
+      "checkpoint_source_bytes": 1560041353768,
+      "maximum_assigned_tensor_bytes": 18915537408,
+      "median_cold_download_bytes": 16990916912,
+      "median_source_shards_per_worker": 1,
+      "minimum_assigned_tensor_bytes": 4690023424,
+      "worst_cold_download_bytes": 21265171248,
+      "worst_source_shards_per_worker": 2
+    },
+    "placement": {
+      "canonical_ownership_sha256": "d63e097482bbe0014aff519cac8b1192dcbca6f26b517c15a187092807b6c1e8",
+      "duplicate_tensor_count": 0,
+      "minimum_remaining_unallocated_bytes": 1499817574,
+      "minimum_total_headroom_bytes": 4076797952,
+      "required_source_weight_bytes": 1559965606912,
+      "required_tensor_count": 497052,
+      "worker_count": 93
+    }
+  },
+  "bottleneck": "Cold bootstrap is source-shard transfer: the median worker downloads 16,990,916,912 bytes and the worst endpoint downloads 21,265,171,248 bytes before exact-range package extraction. Warm-cache generation performs no model transfer.",
+  "cycle_id": "H014-037a",
+  "decision": "RETAIN_93_WORKER_PLACEMENT_AND_REMOTE_ACQUISITION",
+  "hypothesis": "Mechanically merging the immutable 96-worker ownership map into the selected 93-stage topology preserves exact one-time ownership of all required Kimi tensors and bytes, keeps every 24-GiB worker above the post-safety 1-GiB gate, and permits worker-scoped immutable acquisition with resume, retry, hashes, corruption rejection, cache reuse and atomic activation.",
+  "implementation": "Merged source workers 0+1, mapped source 2..92 one-to-one, and merged source 93+94+95. Reused every exact source byte range. Added a content-addressed immutable downloader and the existing deterministic exact-range Safetensors package activation path.",
+  "inspection": "All 497,052 names and 1,559,965,606,912 source tensor bytes are owned exactly once across layers 0..92. KDA workers reserve 55,050,240 state bytes and Gated-MLA workers reserve 151,013,376 at batch 8 and 8K. The final endpoint remains the limiting worker with 1,499,817,574 bytes unallocated after safety. The local HTTP fixture proved a repeated Range request across one 503, exact SHA acceptance, two corrupt-body rejections, zero warm-cache requests and no partial activation.",
+  "redesign": "H014-037b wraps these immutable assignments in clean Linux bootstrap, hardware/network admission, PREPARE/canary/READY, cost guard, logical rehearsal and fail-closed whole-stage recovery.",
+  "result": "PASS",
+  "schema_version": "experiment-014-final-placement-distribution-summary-v1",
+  "source_artifacts": {
+    "acquisition_fixture": {
+      "path": "artifacts/experiment-014/distribution/h014-037a-remote-acquisition-fixture.json",
+      "sha256": "e25a91028b42c2138499420c7d7d50519899085467a235683d9d0a33060e6b7a"
+    },
+    "cuda_candidate": {
+      "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+      "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+    },
+    "distribution_manifest": {
+      "path": "artifacts/experiment-015-deployment/manifests/k3-weight-distribution-manifest.json",
+      "sha256": "68fde734677704e299210e7fb66de7f102a4bb7f67ab2d74ab2c87b13d3767a5"
+    },
+    "placement_manifest": {
+      "path": "artifacts/experiment-015-deployment/manifests/k3-3090-placement-manifest.json",
+      "sha256": "fdb09a39bae9a4d0a74f75665fb16d9e5a4dca888e736bef2a9338e17705549b"
+    }
+  },
+  "status": "PASS"
+}

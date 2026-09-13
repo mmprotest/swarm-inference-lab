@@ -1,0 +1,173 @@
+{
+  "acceptance_gates": {
+    "absolute_placement": true,
+    "broadened_native_source": true,
+    "changed_byte": true,
+    "logical_certificate": true,
+    "missing_assigned_stage_receipt": true,
+    "missing_placement": true,
+    "missing_preinstall_package_verification": true,
+    "placement_hash_mismatch": true,
+    "private_identity_transport": true,
+    "relaxed_cost_guard": true,
+    "removed_file": true,
+    "repository_checkout_dependency": true,
+    "traversal_placement": true,
+    "unhashed_dependency_install": true,
+    "unqualified_fleet_launch": true,
+    "wrong_qualified_runtime_sha": true
+  },
+  "cycle_id": "H014-038al",
+  "fleet_activation_allowed": false,
+  "hypothesis": "The no-checkout Experiment 015 package is closed under its SHA-256 lock and rejects path, source, cost, certificate, and activation bypass tampering.",
+  "negative_controls": {
+    "absolute_placement": {
+      "error": "distribution placement reference must be one sibling filename",
+      "expected": "one sibling",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "broadened_native_source": {
+      "error": "native source allowlist is incomplete or expanded",
+      "expected": "native source allowlist",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "changed_byte": {
+      "error": "package size/link identity differs: README.md",
+      "expected": "package size/link identity differs",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "logical_certificate": {
+      "error": "a physical certificate may not be manufactured in the static package",
+      "expected": "physical certificate",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "missing_assigned_stage_receipt": {
+      "error": "per-node assigned-stage FLEET admission has a bypass",
+      "expected": "assigned-stage FLEET admission",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "missing_placement": {
+      "error": "distribution placement manifest is absent or linked",
+      "expected": "absent or linked",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "missing_preinstall_package_verification": {
+      "error": "pre-install package/hardware verification has a bypass",
+      "expected": "pre-install package/hardware verification",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "placement_hash_mismatch": {
+      "error": "distribution placement manifest SHA-256 differs",
+      "expected": "SHA-256 differs",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "private_identity_transport": {
+      "error": "worker trust transports private identity material",
+      "expected": "private identity material",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "relaxed_cost_guard": {
+      "error": "cost guard is missing or relaxed",
+      "expected": "cost guard",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "removed_file": {
+      "error": "package file set differs from package lock",
+      "expected": "package file set differs",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "repository_checkout_dependency": {
+      "error": "deployment depends on a repository checkout",
+      "expected": "repository checkout",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "traversal_placement": {
+      "error": "distribution placement reference must be one sibling filename",
+      "expected": "one sibling",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "unhashed_dependency_install": {
+      "error": "pre-install package/hardware verification has a bypass",
+      "expected": "pre-install package/hardware verification",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "unqualified_fleet_launch": {
+      "error": "fleet activation has an unqualified bypass",
+      "expected": "unqualified bypass",
+      "rejected": true,
+      "validator_rejected": true
+    },
+    "wrong_qualified_runtime_sha": {
+      "error": "qualified runtime acquisition has a hash/certificate bypass",
+      "expected": "hash/certificate bypass",
+      "rejected": true,
+      "validator_rejected": true
+    }
+  },
+  "out_of_band_archive_sha256_required": true,
+  "physical_3090_canary": "NOT_RUN",
+  "positive_validation": {
+    "acceptance_gates": {
+      "all_93_pre_canary_requirements_exact": true,
+      "certificate_only_fleet_binding": true,
+      "certificate_revalidated_at_worker_launch": true,
+      "coarse_and_fine_network_classes_separate": true,
+      "cost_guard_exact": true,
+      "exact_93_worker_placement": true,
+      "fleet_admission_required_before_registration": true,
+      "four_role_canary_required": true,
+      "hardware_preflight_before_install": true,
+      "logical_execution_plan_portable": true,
+      "native_build_contract_exact": true,
+      "native_source_allowlist_exact": true,
+      "no_repository_checkout": true,
+      "package_lock_exact": true,
+      "per_node_assigned_stage_canary_required": true,
+      "physical_canary_fixture_exact": true,
+      "physical_certificate_not_manufactured": true,
+      "portable_worker_scoped_distribution": true,
+      "public_fingerprint_only_trust": true,
+      "python_and_cuda_dependencies_hash_locked": true,
+      "qualified_runtime_activation_atomic": true,
+      "qualified_runtime_distributed_by_exact_hash": true,
+      "release_pre_canary_fail_closed": true,
+      "standalone_preinstall_package_verification": true,
+      "wheel_contains_production_canary": true
+    },
+    "distribution_sha256": "0be53929c9036b20358d2af863ff6acf7292ff7b378c4944476261a6fca0e701",
+    "file_count": 155,
+    "fleet_activation_allowed": false,
+    "native_source_manifest_sha256": "779705ede213842680aafd79f97f1387567fe744780d401308269709d389bc17",
+    "package_bytes": 278512852,
+    "package_directory": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment-h014-038al-final-staging",
+    "package_lock_sha256": "6daa53129d115e8601c36cda3978f2e65a86f61411c69dbed64f2247f4a209b4",
+    "physical_canary_status": "NOT_RUN",
+    "placement_sha256": "943fe0748b055d11f097827bd9e483c3209b6b696bde319e8230083825fda982",
+    "schema_version": "experiment-014-k3-deployment-package-validation-v1",
+    "status": "PASS",
+    "wheel_sha256": "265f1819fe2c33914a783a3c0528a09c7a3365765ab6d6f69b8b7d86783cd5d8"
+  },
+  "release_archive": {
+    "bytes": 18007450,
+    "member_count": 155,
+    "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment-h014-038al-final-staging.zip",
+    "sha256": "d84a7238edda5697e1433c06388011dabf308f6c020437c1cccde10c659d2b50",
+    "status": "PASS"
+  },
+  "schema_version": "experiment-014-k3-deployment-package-validation-v1",
+  "status": "PASS"
+}

@@ -1,0 +1,459 @@
+{
+  "artifact_inspection": {
+    "compute86_ptx": true,
+    "cuobjdump": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.0\\bin\\cuobjdump.exe",
+    "pass": true,
+    "returncodes": {
+      "elf": 0,
+      "ptx": 0,
+      "ptx_text": 0,
+      "sass": 0
+    },
+    "row_cooperative_symbols": {
+      "mxfp4_matmul_pair_rows": {
+        "compute86_ptx": true,
+        "sm86_sass": true
+      },
+      "mxfp4_matmul_rows": {
+        "compute86_ptx": true,
+        "sm86_sass": true
+      }
+    },
+    "sm86_cubin": true
+  },
+  "bottleneck": "Cross-row weight traversal was materially amortized.",
+  "candidate": {
+    "binary_sha256": "e0f94e1d930417ab609d2c2be483eb0045faadba70833161a62199cf190f2119",
+    "max_certified_batch": 2,
+    "modes": {
+      "batch2": {
+        "batch": 2,
+        "device": {
+          "maximum_ms": 0.4859839975833893,
+          "mean_ms": 0.08622816026210785,
+          "minimum_ms": 0.07731200009584427,
+          "p50_ms": 0.07931200042366982,
+          "p95_ms": 0.09216160140931606,
+          "p99_ms": 0.3697241580486296,
+          "standard_deviation_ms": 0.04074899808926946
+        },
+        "input_fingerprint": "sha256:048ce6d2dbc854520af03c9ce2b5c3ad0b0e59b1ac0221316c2d9a4aea9f4af7",
+        "memory": {
+          "explicit_io_bytes": 57344,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:2a45c0d5903485e31bed71449f6cc0a230306cda0f3ffe2727e8e8240a52b182",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4948,
+          "mean_ms": 0.09498566666666666,
+          "minimum_ms": 0.0845,
+          "p50_ms": 0.0868,
+          "p95_ms": 0.1196,
+          "p99_ms": 0.37703599999999987,
+          "standard_deviation_ms": 0.04139483334776079
+        },
+        "warmup_calls": 50
+      },
+      "row0": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.5333439707756042,
+          "mean_ms": 0.07830261367062728,
+          "minimum_ms": 0.06803199648857117,
+          "p50_ms": 0.07527999952435493,
+          "p95_ms": 0.0776992030441761,
+          "p99_ms": 0.14820064231753247,
+          "standard_deviation_ms": 0.030872358183457262
+        },
+        "input_fingerprint": "sha256:26b1e9d920d6d166795113456ac4eb4a01cb292808caee27f3ef7591160daf4c",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32408338432,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32408338432,
+          "persistent_growth_bytes": 2097152
+        },
+        "output_fingerprint": "sha256:eff6063a504be0098ffc05d4729fc76a8182fc1f55505abf4c8ef08ea36d97cb",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.5607,
+          "mean_ms": 0.08639933333333333,
+          "minimum_ms": 0.0791,
+          "p50_ms": 0.0827,
+          "p95_ms": 0.0858,
+          "p99_ms": 0.26751299999999995,
+          "standard_deviation_ms": 0.03454223790601233
+        },
+        "warmup_calls": 50
+      },
+      "row1": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.4339520037174225,
+          "mean_ms": 0.07885034687817097,
+          "minimum_ms": 0.07459200173616409,
+          "p50_ms": 0.07631999999284744,
+          "p95_ms": 0.07946080155670643,
+          "p99_ms": 0.08891327887773512,
+          "standard_deviation_ms": 0.025837468495417838
+        },
+        "input_fingerprint": "sha256:c305b0bec57a501c0727676f0c9ea17b7b2bb4402a9f3a3d82432712b59a1309",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:c372cb3a79e1b876cf88caa587acb14ee2a2849bda5aa4b38bd1174aeb0c55f4",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4419,
+          "mean_ms": 0.08654333333333333,
+          "minimum_ms": 0.0825,
+          "p50_ms": 0.0839,
+          "p95_ms": 0.08700999999999999,
+          "p99_ms": 0.10143999999999996,
+          "standard_deviation_ms": 0.025889230493692846
+        },
+        "warmup_calls": 50
+      }
+    }
+  },
+  "comparison": {
+    "candidate_batch2_vs_candidate_serial": {
+      "actual_finite": true,
+      "actual_l2": 9.339175992301767,
+      "bit_exact": true,
+      "cosine_similarity": 0.9999999999999999,
+      "maximum_absolute_error": 0.0,
+      "mean_absolute_error": 0.0,
+      "reference_finite": true,
+      "reference_l2": 9.339175992301767,
+      "relative_l2_error": 0.0
+    },
+    "candidate_vs_deployed": {
+      "all_bit_exact": true,
+      "bit_exact_by_mode": {
+        "batch2": true,
+        "row0": true,
+        "row1": true
+      }
+    },
+    "gates": {
+      "batch1_regression_at_most_5_percent": true,
+      "batch2_bit_exact_to_candidate_serial": true,
+      "candidate_bit_exact_to_deployed": true,
+      "pair_throughput_at_least_1_50x": true
+    },
+    "performance": {
+      "candidate_batch1_device_p50_mean_ms": 0.07579999975860119,
+      "candidate_batch2_device_p50_ms": 0.07931200042366982,
+      "candidate_over_deployed_batch1_ratio": 0.993499003188464,
+      "candidate_over_deployed_batch2_ratio": 0.5960798498236748,
+      "candidate_pair_throughput_speedup": 1.9114383536839779,
+      "candidate_serial_pair_device_p50_ms": 0.15159999951720238,
+      "deployed_batch1_device_p50_mean_ms": 0.0762959998100996,
+      "deployed_batch2_device_p50_ms": 0.13305599987506866,
+      "deployed_pair_throughput_speedup": 1.1468253950477516,
+      "deployed_serial_pair_device_p50_ms": 0.1525919996201992,
+      "maximum_preregistered_batch1_regression_ratio": 1.05,
+      "minimum_preregistered_pair_throughput_speedup": 1.5
+    }
+  },
+  "configuration": {
+    "cpu_mathematical_fallbacks": 0,
+    "device": 0,
+    "expert_id": 803,
+    "layer": 89,
+    "retained_calls": 300,
+    "tested_batches_in_order": [
+      1,
+      2
+    ],
+    "timed_transfer_bytes": 0,
+    "warmup_calls": 50
+  },
+  "cycle_id": "H014-028a",
+  "decision": "RETAIN_AND_BUILD_SEPARATE_BATCH4_CANDIDATE",
+  "deployed_control": {
+    "binary_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+    "max_certified_batch": 2,
+    "modes": {
+      "batch2": {
+        "batch": 2,
+        "device": {
+          "maximum_ms": 0.18726399540901184,
+          "mean_ms": 0.1332860806087653,
+          "minimum_ms": 0.13104000687599182,
+          "p50_ms": 0.13305599987506866,
+          "p95_ms": 0.13422079384326935,
+          "p99_ms": 0.13806688040494913,
+          "standard_deviation_ms": 0.003462458992881512
+        },
+        "input_fingerprint": "sha256:048ce6d2dbc854520af03c9ce2b5c3ad0b0e59b1ac0221316c2d9a4aea9f4af7",
+        "memory": {
+          "explicit_io_bytes": 57344,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:2a45c0d5903485e31bed71449f6cc0a230306cda0f3ffe2727e8e8240a52b182",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1952,
+          "mean_ms": 0.140711,
+          "minimum_ms": 0.1383,
+          "p50_ms": 0.1402,
+          "p95_ms": 0.14231000000000002,
+          "p99_ms": 0.151221,
+          "standard_deviation_ms": 0.003732020766287348
+        },
+        "warmup_calls": 50
+      },
+      "row0": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.4132480025291443,
+          "mean_ms": 0.07851050687332949,
+          "minimum_ms": 0.06697600334882736,
+          "p50_ms": 0.07627199962735176,
+          "p95_ms": 0.07769760303199291,
+          "p99_ms": 0.08541440077125921,
+          "standard_deviation_ms": 0.023274259381105354
+        },
+        "input_fingerprint": "sha256:26b1e9d920d6d166795113456ac4eb4a01cb292808caee27f3ef7591160daf4c",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:eff6063a504be0098ffc05d4729fc76a8182fc1f55505abf4c8ef08ea36d97cb",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4205,
+          "mean_ms": 0.08758266666666667,
+          "minimum_ms": 0.0824,
+          "p50_ms": 0.0838,
+          "p95_ms": 0.085715,
+          "p99_ms": 0.2255429999999996,
+          "standard_deviation_ms": 0.02806490512286752
+        },
+        "warmup_calls": 50
+      },
+      "row1": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.18991999328136444,
+          "mean_ms": 0.0771397335578998,
+          "minimum_ms": 0.07449600100517273,
+          "p50_ms": 0.07631999999284744,
+          "p95_ms": 0.07856480218470097,
+          "p99_ms": 0.08647648267447948,
+          "standard_deviation_ms": 0.006764567266955594
+        },
+        "input_fingerprint": "sha256:c305b0bec57a501c0727676f0c9ea17b7b2bb4402a9f3a3d82432712b59a1309",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:c372cb3a79e1b876cf88caa587acb14ee2a2849bda5aa4b38bd1174aeb0c55f4",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.2006,
+          "mean_ms": 0.08491433333333333,
+          "minimum_ms": 0.0824,
+          "p50_ms": 0.0839,
+          "p95_ms": 0.08712,
+          "p99_ms": 0.09926399999999994,
+          "standard_deviation_ms": 0.0071592430620996675
+        },
+        "warmup_calls": 50
+      }
+    }
+  },
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "effective_weight_reuse": {
+    "architectural_rows_per_weight_traversal": 2,
+    "deployed_rows_per_weight_traversal": 1,
+    "measured_dram_bytes": null,
+    "qualification": "source-level traversal reuse; hardware DRAM traffic requires a profiler counter and is not inferred from source alone"
+  },
+  "fixture": {
+    "activation_fingerprint": "sha256:048ce6d2dbc854520af03c9ce2b5c3ad0b0e59b1ac0221316c2d9a4aea9f4af7",
+    "activation_shape": [
+      2,
+      3584
+    ],
+    "expert_source_bytes": 17547264,
+    "expert_source_shards": [
+      "model-00090-of-000096.safetensors"
+    ],
+    "real_checkpoint_weights": true
+  },
+  "gates": {
+    "artifact_contract": true,
+    "batch1_regression_at_most_5_percent": true,
+    "batch2_bit_exact_to_candidate_serial": true,
+    "candidate_bit_exact_to_deployed": true,
+    "candidate_memory_stable": true,
+    "deployed_memory_stable": true,
+    "gpu_health": true,
+    "native_ceiling_still_two": true,
+    "pair_throughput_at_least_1_50x": true
+  },
+  "gpu_health_after_candidate_batch2": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "29583",
+    "memory.total": "32607",
+    "memory.used": "2605",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P1",
+    "status": "MEASURED",
+    "temperature.gpu": "50",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30096",
+    "memory.total": "32607",
+    "memory.used": "2092",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "48",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_final": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "29603",
+    "memory.total": "32607",
+    "memory.used": "2585",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P1",
+    "status": "MEASURED",
+    "temperature.gpu": "50",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": {
+    "maximum_batch1_regression_ratio": 1.05,
+    "minimum_pair_throughput_speedup": 1.5,
+    "prediction": "Sharing each real MXFP4 expert weight traversal across exactly two token rows yields >=1.50x pair throughput versus two batch-1 calls, with bit-exact output and <=5% batch-1 regression."
+  },
+  "hypothesis_result": "SUPPORTED",
+  "hypothesis_supported": true,
+  "implementation": {
+    "batch1_path_changed": false,
+    "change": "Two-row templated gate/up pair and down-projection kernels reuse one MXFP4 nibble/scale load across both rows.",
+    "deployment_binary_mutated": false,
+    "larger_batches_executed": false,
+    "native_certified_ceiling": 2
+  },
+  "inspection": "The exact row-cooperative batch-2 path delivered 1.911438x pair throughput; numerical, batch-1, memory, artifact, and GPU-health gates were inspected separately.",
+  "progress": [
+    {
+      "passed": true,
+      "phase": "candidate_sm86_and_compute86_inspection"
+    },
+    {
+      "phase": "gpu_health_before",
+      "status": "MEASURED"
+    },
+    {
+      "phase": "candidate_real_expert_batch1_row0"
+    },
+    {
+      "phase": "candidate_real_expert_batch1_row1"
+    },
+    {
+      "nvidia_smi": "MEASURED",
+      "phase": "candidate_real_expert_batch2_and_health"
+    },
+    {
+      "phase": "deployed_binary_batch1_batch2_control"
+    },
+    {
+      "hypothesis": "SUPPORTED",
+      "phase": "final_h014_028a_inspection"
+    }
+  ],
+  "redesign": "Instantiate the same design for exactly batch 4 and certify it alone.",
+  "schema_version": "experiment-014-k3-row-cooperative-batch2-v1",
+  "sources": {
+    "candidate_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-028-b2-candidate.dll",
+      "sha256": "e0f94e1d930417ab609d2c2be483eb0045faadba70833161a62199cf190f2119"
+    },
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "cuda_header": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\backend_cuda.h",
+      "sha256": "c4bc12591ec66be54eca4479327612979841684fe98f1a9d3a1f01bdcc8b594d"
+    },
+    "cuda_source": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\backend_cuda.cu",
+      "sha256": "bfb2cd90667ea4a61e23c9f0a9e66948bce28e4d8f13cb411bd1b40170d2edb0"
+    },
+    "cuobjdump": {
+      "path": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.0\\bin\\cuobjdump.exe",
+      "sha256": "70310d1ae8005e5d9910b5fcc65c14a355a5229b0f1ec6123a2f3f78d9a8361a"
+    },
+    "deployed_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll",
+      "sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968"
+    }
+  },
+  "status": "PASS"
+}

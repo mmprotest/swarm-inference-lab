@@ -1,0 +1,140 @@
+{
+  "experiment": "E029_LOCAL_COMMIT_ANCHORED_WAN_TREE",
+  "seed": 290913,
+  "model_path": ".runtime/experiment-026/models/Qwen3.8-27B-Q4_K_M.gguf",
+  "model_sha256": "31629f53165ab6a7dad8c9847dcfd1fdf55829dac1e6e748f4a68581b0033d34",
+  "llama_commit": "f1b6fbf35cfa010b0a8d6301fdfccbb7f41bd903",
+  "draft_model_path": ".runtime/experiment-029/models/Qwen3.8-27B-DFlash2-Q4_K_M.gguf",
+  "draft_model_sha256": "1a25c56858e1ebe93f2718ac1d49d1151f9323325c1bbfd6209370f4db131ebd",
+  "fallback_draft_model_path": ".runtime/experiment-026/models/mtp-Qwen3.8-27B-Q8_0.gguf",
+  "stage_ranges": [
+    [
+      0,
+      22
+    ],
+    [
+      22,
+      45
+    ],
+    [
+      45,
+      64
+    ]
+  ],
+  "context_tokens": 8192,
+  "prefill_batch_tokens": 256,
+  "branch_slots": 34,
+  "node_budgets": [
+    8,
+    16,
+    32
+  ],
+  "max_depths": [
+    4,
+    6,
+    8
+  ],
+  "optional_64": false,
+  "committed_tokens_per_prompt": 256,
+  "network_profiles": [
+    {
+      "name": "LOCAL",
+      "rtt_ms": 0,
+      "bandwidth_mbps": null,
+      "jitter_ms": 0
+    },
+    {
+      "name": "WAN-30",
+      "rtt_ms": 30,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 3
+    },
+    {
+      "name": "WAN-60",
+      "rtt_ms": 60,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 6
+    },
+    {
+      "name": "WAN-100",
+      "rtt_ms": 100,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 10
+    },
+    {
+      "name": "WAN-150",
+      "rtt_ms": 150,
+      "bandwidth_mbps": 100,
+      "jitter_ms": 15
+    }
+  ],
+  "network_seeds": [
+    290913,
+    290914,
+    290915
+  ],
+  "policies": [
+    "LINEAR_CONTROL",
+    "STATIC_TREE",
+    "PROBABILITY_TREE",
+    "WAN_AWARE_TREE",
+    "ORACLE_TREE_UPPER_BOUND"
+  ],
+  "immutable_root": true,
+  "max_uncommitted_rounds": 1,
+  "hypothesis": "A commit-anchored scored tree increases useful committed tokens per WAN round without E028 causal invalidation.",
+  "budget_definition": "Maximum executed candidate nodes including the known greedy anchor; all nodes and its compute are charged. D counts executed nodes on a root-to-leaf path. DFlash2 proposes seven further positions after the anchor.",
+  "measurement_classes": {
+    "local": "PHYSICAL single RTX 5090",
+    "validation": "SHAPED NETWORK on the same physical runtime",
+    "wan": "PHYSICALLY GROUNDED MODEL: three independent virtual stages"
+  },
+  "metrics": {
+    "discarded_target_compute_fraction": "Measured scalar-node synchronized decode plus attributed fork/restore time for off-path nodes, divided by all target/state compute including accepted-path commit replay. Shared ancestor state costs are allocated to direct children. All costs also enter wall time; CUDA-event-only timing is unavailable.",
+    "committed_tokens_per_wan_traversal": "Actual executed accepted nodes / completed tree rounds; no bonus token counted until executed.",
+    "wan_wait_fraction": "Fraction of decode wall time occupied only by network waits, with no resource service.",
+    "throughput": "Total committed tokens / total decode time, excludes one-time model load and prefill consistently with E028."
+  },
+  "preregistered_criteria": {
+    "simulator_error_max": 0.1,
+    "pass_strong": {
+      "commits_min": 5,
+      "discard_max": 0.3,
+      "speedup_sync_min": 1.5,
+      "speedup_async_min": 1.25,
+      "retention100_min": 0.65,
+      "retention150_min": 0.45,
+      "target_compute_ratio_max": 1.5,
+      "peak_vram_gib_max": 32
+    },
+    "pass": {
+      "commits_min": 4,
+      "discard_max": 0.4,
+      "speedup_sync_min": 1.25,
+      "speedup_async_min": 1.0,
+      "retention100_min": 0.55
+    },
+    "fail_any": [
+      "correctness failure",
+      "genericity failure",
+      "simulator validity failure",
+      "commits < 3",
+      "discard > 0.50",
+      "tps60 < E028 spec sync",
+      "WAN-aware gain over probability < 10%",
+      "oracle fails PASS efficiency/throughput",
+      "no PASS criteria satisfied"
+    ],
+    "decisions": [
+      "CONTINUE_SWARM if real WAN-aware passes",
+      "DRAFTER_LIMITED if real fails and oracle passes strongly",
+      "STOP_AUTOREGRESSIVE_WAN_SWARM if both fail"
+    ]
+  },
+  "verification_mode": "Canonical DFS scalar nodes with device-resident partial-state checkpoints, KV-tail truncation, and measured accepted-path replay; generic linear-chain checkpoint fast path",
+  "verification_deviation": "Packed multi-sequence and sequence-fork candidates changed long-run greedy continuation. The final verifier uses one canonical working KV sequence and generic partial-state checkpoints; all copies, restores and replay calls are charged.",
+  "workload_matrix": "Scaling profile crosses all 3 N and 3 D. Decision workload uses three preregistered paired operating points (8,4), (16,6), (32,8), all policies and all network profiles; linear uses min(N,D) executed nodes. This avoids a large hyperparameter search.",
+  "runtime_version": "canonical-dfs-device-partial-linear-cow-v2",
+  "checkpoint_design": "At most one partial-state checkpoint per active depth; no full-context duplication per node. Native sequence slots 1..8 identify reusable device checkpoint storage; slot 9 anchors a linear root. All actual node execution uses sequence 0.",
+  "linear_state_strategy": "Shared-prefix sequence checkpoints for a single chain; no full-context or explicit per-position tensor export. Branched trees use canonical DFS partial-state snapshots and measured local accepted-path replay."
+}

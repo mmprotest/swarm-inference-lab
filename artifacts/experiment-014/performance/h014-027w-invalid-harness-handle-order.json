@@ -1,0 +1,150 @@
+{
+  "candidate": {
+    "binary_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+    "capability_negotiation": {
+      "sm_120": true,
+      "sm_75": false,
+      "sm_86": true,
+      "sm_89": true
+    },
+    "capability_source": "native_export",
+    "forward_ptx": true,
+    "max_certified_batch": 2,
+    "minimum_compute_capability": 86
+  },
+  "configuration": {
+    "batch_sequence": [
+      1,
+      2,
+      4,
+      1
+    ],
+    "cpu_mathematical_fallbacks": 0,
+    "device": 0,
+    "expert_id": 803,
+    "layer": 89,
+    "retained_calls": 100,
+    "unsafe_multi_size_sweep_run": false,
+    "warmup_calls": 20
+  },
+  "cycle_id": "H014-027w",
+  "decision": "KEEP_CANDIDATE_QUARANTINED",
+  "device_identity_before": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "failure": {
+    "message": "resident Kimi CUDA expert rejected execution",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\batch_safety.py\", line 429, in validate_failclosed_batch_candidate\n    candidate_modes[\"batch1_pre\"] = _run_mode(\n                                    ^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\batch_safety.py\", line 115, in _run_mode\n    runtime.execute_resident(handles, output_pointer, input_pointer, batch)\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_014\\cuda.py\", line 1175, in execute_resident\n    raise KimiCudaError(\"resident Kimi CUDA expert rejected execution\")\nswarm_inference.experiments.experiment_014.cuda.KimiCudaError: resident Kimi CUDA expert rejected execution\n",
+    "type": "KimiCudaError"
+  },
+  "fixture": {
+    "activation_fingerprint": "sha256:faef5d1a5818639c9251ce4eada6d8895961946a5ed984eebd5c61d8576cb545",
+    "activation_shape": [
+      4,
+      3584
+    ],
+    "expert_source_bytes": 17547264,
+    "expert_source_shards": [
+      "model-00090-of-000096.safetensors"
+    ],
+    "real_checkpoint_weights": true
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30675",
+    "memory.total": "32607",
+    "memory.used": "1513",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P3",
+    "status": "MEASURED",
+    "temperature.gpu": "47",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_on_failure": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30150",
+    "memory.total": "32607",
+    "memory.used": "2038",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P3",
+    "status": "MEASURED",
+    "temperature.gpu": "47",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": "The max_certified_batch=2 contract preserves real expert batch 1/2, rejects batch 4 before the native CUDA boundary, and leaves the GPU healthy for a subsequent real batch-1 fixture.",
+  "hypothesis_supported": false,
+  "implementation": "Quarantined candidate; production API sequence 1 -> 2 -> rejected 4 -> 1; a native-call sentinel makes the rejection test physically incapable of launching batch 4; retained binary executed separately at only batch 1/2.",
+  "progress": [
+    {
+      "phase": "gpu_identity_and_nvidia_smi_before",
+      "status": "MEASURED"
+    },
+    {
+      "capability_source": "native_export",
+      "max_certified_batch": 2,
+      "phase": "candidate_cuda_initialization"
+    }
+  ],
+  "redesign": "Inspect the retained failure before any further GPU work.",
+  "schema_version": "experiment-014-k3-failclosed-batch-validation-v1",
+  "source_integrity": {
+    "all_match": true,
+    "artifacts": {
+      "candidate_binary": {
+        "actual_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+        "expected_sha256": "c666e37c36667bb102088aa7a5bd678c9f20f297f98a27f2b75f4c1ee0fe1968",
+        "match": true,
+        "path": "artifacts/experiment-014/cuda/native/coli_cuda-sm86-h014-027w-candidate.dll"
+      },
+      "cuda_binding": {
+        "actual_sha256": "d0734f0c38d78c49b4fd104db59978093c673af705e21acb004d049a297a815f",
+        "expected_sha256": "d0734f0c38d78c49b4fd104db59978093c673af705e21acb004d049a297a815f",
+        "match": true,
+        "path": "src/swarm_inference/experiments/experiment_014/cuda.py"
+      },
+      "deployment_binary_unchanged": {
+        "actual_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+        "expected_sha256": "c93b8f9d428032cec45527bd2ff1ef9cb237114976dd9e43c00b268819441044",
+        "match": true,
+        "path": "artifacts/experiment-015-deployment/native/windows/coli_cuda-sm86.dll"
+      },
+      "native_header": {
+        "actual_sha256": "c4bc12591ec66be54eca4479327612979841684fe98f1a9d3a1f01bdcc8b594d",
+        "expected_sha256": "c4bc12591ec66be54eca4479327612979841684fe98f1a9d3a1f01bdcc8b594d",
+        "match": true,
+        "path": "third_party/colibri/c/backend_cuda.h"
+      },
+      "native_source": {
+        "actual_sha256": "a08bb7c8afbec55a334b7770a7dee5ed5f9b1ca72b702cc45f4ba2b7b7a09a6d",
+        "expected_sha256": "a08bb7c8afbec55a334b7770a7dee5ed5f9b1ca72b702cc45f4ba2b7b7a09a6d",
+        "match": true,
+        "path": "third_party/colibri/c/backend_cuda.cu"
+      },
+      "preflight_test": {
+        "actual_sha256": "eb029b5ea88542ad533eeb0e2437cc15d9b63322a7404a5a2a61e7fa4cdf7b32",
+        "expected_sha256": "eb029b5ea88542ad533eeb0e2437cc15d9b63322a7404a5a2a61e7fa4cdf7b32",
+        "match": true,
+        "path": "tests/unit/test_experiment_014_full_cuda.py"
+      }
+    }
+  },
+  "sources": {
+    "candidate_build_receipt": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027w-failclosed-batch-candidate.json",
+    "candidate_build_receipt_sha256": "eb10c0c5fd278e49b103dd0842afc0c7819355449ccada9ae61f505d827ee22f",
+    "candidate_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-027w-candidate.dll",
+    "checkpoint": "F:\\models\\Kimi-K3",
+    "retained_library": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-015-deployment\\native\\windows\\coli_cuda-sm86.dll"
+  },
+  "status": "FAIL"
+}

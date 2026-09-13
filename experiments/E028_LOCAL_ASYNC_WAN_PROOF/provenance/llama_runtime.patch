@@ -1,0 +1,125 @@
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index d10b60a..8fbceb1 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -28,6 +28,7 @@
+ #include <algorithm>
+ #include <cassert>
+ #include <cfloat>
++#include <cstdlib>
+ #include <cstdint>
+ #include <cstring>
+ #include <cmath>
+@@ -1493,8 +1494,37 @@ bool llama_model_base::load_tensors(llama_model_loader & ml) {
+ 
+     const int i_gpu_start = std::max(n_layer_all + 1 - n_gpu_layers, 0);
+     const int act_gpu_layers = devices.empty() ? 0 : std::min(n_gpu_layers, n_layer_all + 1);
++    int e027_stage_start = 0;
++    int e027_stage_end = n_layer_all;
++    bool e027_stage_enabled = false;
++    if (const char * start_text = std::getenv("E027_STAGE_START")) {
++        const char * end_text = std::getenv("E027_STAGE_END");
++        if (end_text == nullptr) {
++            throw std::runtime_error("E027_STAGE_END is required with E027_STAGE_START");
++        }
++        e027_stage_start = std::stoi(start_text);
++        e027_stage_end = std::stoi(end_text);
++        if (e027_stage_start < 0 || e027_stage_end <= e027_stage_start ||
++                e027_stage_end > n_layer_all) {
++            throw std::runtime_error("invalid E027 model stage bounds");
++        }
++        e027_stage_enabled = true;
++        LLAMA_LOG_INFO("load_tensors: E027 stage range [%d, %d) of %d layers\n",
++            e027_stage_start, e027_stage_end, n_layer_all);
++    } else if (std::getenv("E027_STAGE_END") != nullptr) {
++        throw std::runtime_error("E027_STAGE_START is required with E027_STAGE_END");
++    }
+     auto get_layer_buft_list = [&](int il) -> llama_model::impl::layer_dev {
+         const bool is_swa = il < n_layer_all && hparams.is_swa(il);
++        if (e027_stage_enabled) {
++            const bool owned_layer = il >= e027_stage_start && il < e027_stage_end;
++            const bool owned_output = il == n_layer_all && e027_stage_end == n_layer_all;
++            if (!owned_layer && !owned_output) {
++                LLAMA_LOG_DEBUG("load_tensors: E027 unowned layer %3d assigned to device %s\n",
++                    il, ggml_backend_dev_name(cpu_dev));
++                return {cpu_dev, &pimpl->cpu_buft_list};
++            }
++        }
+         if (il < i_gpu_start || (il - i_gpu_start) >= act_gpu_layers) {
+             LLAMA_LOG_DEBUG("load_tensors: layer %3d assigned to device %s, is_swa = %d\n", il, ggml_backend_dev_name(cpu_dev), is_swa);
+             return {cpu_dev, &pimpl->cpu_buft_list};
+diff --git a/src/models/qwen35.cpp b/src/models/qwen35.cpp
+index a1e2635..6c367e1 100644
+--- a/src/models/qwen35.cpp
++++ b/src/models/qwen35.cpp
+@@ -1,6 +1,32 @@
+ #include "models.h"
+ #include "llama-memory-recurrent.h"
+ 
++#include <cstdlib>
++#include <stdexcept>
++#include <string>
++#include <utility>
++
++namespace {
++
++std::pair<int, int> e027_qwen35_stage_bounds(int n_layer) {
++    const char * start_text = std::getenv("E027_STAGE_START");
++    const char * end_text = std::getenv("E027_STAGE_END");
++    if (start_text == nullptr && end_text == nullptr) {
++        return {0, n_layer};
++    }
++    if (start_text == nullptr || end_text == nullptr) {
++        throw std::runtime_error("E027 stage bounds must set both start and end");
++    }
++    const int start = std::stoi(start_text);
++    const int end = std::stoi(end_text);
++    if (start < 0 || end <= start || end > n_layer) {
++        throw std::runtime_error("invalid E027 Qwen35 stage bounds");
++    }
++    return {start, end};
++}
++
++} // namespace
++
+ void llama_model_qwen35::load_arch_hparams(llama_model_loader & ml) {
+     ml.get_key(LLM_KV_ATTENTION_LAYERNORM_RMS_EPS,       hparams.f_norm_rms_eps);
+     ml.get_key_or_arr(LLM_KV_ROPE_DIMENSION_SECTIONS,    hparams.rope_sections, 4, true);
+@@ -149,10 +175,16 @@ llama_model_qwen35::graph::graph(const llama_model & model, const llm_graph_para
+     auto * inp = build_inp_mem_hybrid();
+ 
+     ggml_tensor * inp_pos     = build_inp_pos();
+-    ggml_tensor * inp_out_ids = build_inp_out_ids();
++    ggml_tensor * inp_out_ids = nullptr;
++
++    const auto [stage_start, stage_end] = e027_qwen35_stage_bounds(n_layer);
++    if (stage_end == n_layer) {
++        inp_out_ids = build_inp_out_ids();
++    }
+ 
+     // MTP/NextN layers are loaded as extra decoder blocks but not executed in the main pass.
+-    for (int il = 0; il < n_layer; ++il) {
++    // E027 deliberately builds only the contiguous interval resident in this process.
++    for (int il = stage_start; il < stage_end; ++il) {
+         res->t_layer_inp[il] = inpL;
+ 
+         ggml_tensor * inpSA = inpL;
+@@ -203,6 +235,18 @@ llama_model_qwen35::graph::graph(const llama_model & model, const llm_graph_para
+     }
+     cur = inpL;
+ 
++    if (stage_end < n_layer) {
++        // Expose the unnormalised residual stream through explicit layer-input capture.
++        // The next stage receives these exact FP32 rows through llama_batch.embd.
++        // Materialize a dense [n_embd, n_tokens] tensor before capture; Qwen
++        // graph operations can leave `cur` as a strided view.
++        cur = ggml_cont(ctx0, cur);
++        cb(cur, "e027_stage_boundary", stage_end - 1);
++        res->t_layer_inp[stage_end] = cur;
++        ggml_build_forward_expand(gf, cur);
++        return;
++    }
++
+     cur = build_norm(cur, model.output_norm, nullptr, LLM_NORM_RMS, -1);
+ 
+     cb(cur, "h_nextn", -1);

@@ -1,0 +1,1305 @@
+{
+  "artifact_inspection": {
+    "compute86_ptx": true,
+    "cuobjdump": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.0\\bin\\cuobjdump.exe",
+    "pass": true,
+    "returncodes": {
+      "elf": 0,
+      "ptx": 0,
+      "ptx_text": 0,
+      "sass": 0
+    },
+    "sm86_cubin": true,
+    "target_pair": {
+      "compute86_ptx": true,
+      "sm86_sass": true
+    },
+    "target_single": {
+      "compute86_ptx": true,
+      "sm86_sass": true
+    },
+    "target_template_marker": "ILi16E"
+  },
+  "bottleneck": "The new size is numerically characterized, but its aggregate speedup or prior-size preservation is below the preregistered gate.",
+  "candidate": {
+    "batch_set_capability_source": "native_exact_size_export",
+    "binary_sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff",
+    "cuda_error_state_query": true,
+    "max_certified_batch": 16,
+    "modes": {
+      "batch1": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.07862400263547897,
+          "mean_ms": 0.07354869447648525,
+          "minimum_ms": 0.06943999975919724,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07424159906804562,
+          "p99_ms": 0.07560576185584067,
+          "standard_deviation_ms": 0.0007158990517692959
+        },
+        "input_fingerprint": "sha256:e670b3a90b92a6bccb170ac17e956765fb2af99b9bab8f90f3a0855515f98463",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32408338432,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32408338432,
+          "persistent_growth_bytes": 2097152
+        },
+        "output_fingerprint": "sha256:58d7b344f9f3573322cc2153dd9d834fe8d22161c90530b82990fe58e0310017",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1163,
+          "mean_ms": 0.08000566666666666,
+          "minimum_ms": 0.0784,
+          "p50_ms": 0.0797,
+          "p95_ms": 0.08100500000000001,
+          "p99_ms": 0.08504299999999997,
+          "standard_deviation_ms": 0.002807407087608699
+        },
+        "warmup_calls": 50
+      },
+      "batch16": {
+        "batch": 16,
+        "device": {
+          "maximum_ms": 0.18492799997329712,
+          "mean_ms": 0.17794165323177974,
+          "minimum_ms": 0.17523199319839478,
+          "p50_ms": 0.1781120002269745,
+          "p95_ms": 0.18028960153460502,
+          "p99_ms": 0.18164127722382545,
+          "standard_deviation_ms": 0.001507892948839373
+        },
+        "input_fingerprint": "sha256:93a02bb2c8cf5171ad4a909673c64062432d7e5f3e76fbd9914b829a5fca031a",
+        "memory": {
+          "explicit_io_bytes": 458752,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:a45e6068cd5e250805b61ec0b001326be834953763a966b5c58e4af8aaaf4a62",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.2182,
+          "mean_ms": 0.18435733333333335,
+          "minimum_ms": 0.1811,
+          "p50_ms": 0.1842,
+          "p95_ms": 0.186805,
+          "p99_ms": 0.18998099999999993,
+          "standard_deviation_ms": 0.0028079137371998363
+        },
+        "warmup_calls": 50
+      },
+      "batch1_post_target": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.11382400244474411,
+          "mean_ms": 0.0742429869621992,
+          "minimum_ms": 0.0727040022611618,
+          "p50_ms": 0.07363200187683105,
+          "p95_ms": 0.07603679783642292,
+          "p99_ms": 0.07993535749614236,
+          "standard_deviation_ms": 0.002713629761978173
+        },
+        "input_fingerprint": "sha256:e670b3a90b92a6bccb170ac17e956765fb2af99b9bab8f90f3a0855515f98463",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:58d7b344f9f3573322cc2153dd9d834fe8d22161c90530b82990fe58e0310017",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1281,
+          "mean_ms": 0.08080833333333333,
+          "minimum_ms": 0.0789,
+          "p50_ms": 0.08,
+          "p95_ms": 0.08260500000000001,
+          "p99_ms": 0.09391899999999997,
+          "standard_deviation_ms": 0.0037109967963098837
+        },
+        "warmup_calls": 50
+      },
+      "batch2": {
+        "batch": 2,
+        "device": {
+          "maximum_ms": 0.08662399649620056,
+          "mean_ms": 0.07585109335680802,
+          "minimum_ms": 0.07459200173616409,
+          "p50_ms": 0.07577600330114365,
+          "p95_ms": 0.07671040259301663,
+          "p99_ms": 0.08103231854736805,
+          "standard_deviation_ms": 0.0010265130886917672
+        },
+        "input_fingerprint": "sha256:b02a20b3b57c806a2d2045ac3f943c7226b012ace2cff1ba1803b922e06dc017",
+        "memory": {
+          "explicit_io_bytes": 57344,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:41da23bc7905ae141f28cbf46e6697c476a62b2427330ddf3481937ec1b31334",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1022,
+          "mean_ms": 0.08215599999999999,
+          "minimum_ms": 0.0807,
+          "p50_ms": 0.0818,
+          "p95_ms": 0.08332,
+          "p99_ms": 0.09195599999999994,
+          "standard_deviation_ms": 0.00220922248766393
+        },
+        "warmup_calls": 50
+      },
+      "batch4": {
+        "batch": 4,
+        "device": {
+          "maximum_ms": 0.4103679955005646,
+          "mean_ms": 0.08283807908495268,
+          "minimum_ms": 0.07836800068616867,
+          "p50_ms": 0.07993599772453308,
+          "p95_ms": 0.082091199234128,
+          "p99_ms": 0.12105952344834693,
+          "standard_deviation_ms": 0.024502113698721066
+        },
+        "input_fingerprint": "sha256:7e414c333668a70e586bb309f38df5d1cfc2fde397d3e6a85f7b3da68bf6f96a",
+        "memory": {
+          "explicit_io_bytes": 114688,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:08a67277b788f955584c99bd03aa85edb803ca961c58e944977e856095c8d512",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.417,
+          "mean_ms": 0.08965099999999998,
+          "minimum_ms": 0.0847,
+          "p50_ms": 0.0859,
+          "p95_ms": 0.092015,
+          "p99_ms": 0.1595899999999992,
+          "standard_deviation_ms": 0.02521209165592309
+        },
+        "warmup_calls": 50
+      },
+      "batch8": {
+        "batch": 8,
+        "device": {
+          "maximum_ms": 0.11779200285673141,
+          "mean_ms": 0.10986197310189406,
+          "minimum_ms": 0.10633599758148193,
+          "p50_ms": 0.11027199774980545,
+          "p95_ms": 0.11151999980211258,
+          "p99_ms": 0.11347295977175235,
+          "standard_deviation_ms": 0.00131722880668645
+        },
+        "input_fingerprint": "sha256:76a089fd8ad4d0a0e83ea4bd7388d9c72b10d2b07f7a4bbf0398ea008379d337",
+        "memory": {
+          "explicit_io_bytes": 229376,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:92a4b6e105ddcef5c144c9cc054ea504b277d07f6060ad2f3c6ee47d97289d45",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1301,
+          "mean_ms": 0.11605633333333334,
+          "minimum_ms": 0.1122,
+          "p50_ms": 0.1163,
+          "p95_ms": 0.11781,
+          "p99_ms": 0.11971099999999998,
+          "standard_deviation_ms": 0.0014925570526970002
+        },
+        "warmup_calls": 50
+      },
+      "serial_row0": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.07862400263547897,
+          "mean_ms": 0.07354869447648525,
+          "minimum_ms": 0.06943999975919724,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07424159906804562,
+          "p99_ms": 0.07560576185584067,
+          "standard_deviation_ms": 0.0007158990517692959
+        },
+        "input_fingerprint": "sha256:e670b3a90b92a6bccb170ac17e956765fb2af99b9bab8f90f3a0855515f98463",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32408338432,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32408338432,
+          "persistent_growth_bytes": 2097152
+        },
+        "output_fingerprint": "sha256:58d7b344f9f3573322cc2153dd9d834fe8d22161c90530b82990fe58e0310017",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1163,
+          "mean_ms": 0.08000566666666666,
+          "minimum_ms": 0.0784,
+          "p50_ms": 0.0797,
+          "p95_ms": 0.08100500000000001,
+          "p99_ms": 0.08504299999999997,
+          "standard_deviation_ms": 0.002807407087608699
+        },
+        "warmup_calls": 50
+      },
+      "serial_row1": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.08303999900817871,
+          "mean_ms": 0.07388160064816475,
+          "minimum_ms": 0.07231999933719635,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07568160258233547,
+          "p99_ms": 0.0764489609748125,
+          "standard_deviation_ms": 0.0010157703743339734
+        },
+        "input_fingerprint": "sha256:74527b768a0c8dc9847769f6f7c98e646acf83032af9ee7bb42d8a4668b69996",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:67dee20091e63ee61f7e59a05cb4bf3d40f70c7eaff39fab3a285e61bda6d464",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.0953,
+          "mean_ms": 0.08025199999999999,
+          "minimum_ms": 0.0785,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0818,
+          "p99_ms": 0.08474399999999996,
+          "standard_deviation_ms": 0.001446822725837551
+        },
+        "warmup_calls": 50
+      },
+      "serial_row10": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.07964800298213959,
+          "mean_ms": 0.07384469409783681,
+          "minimum_ms": 0.07241600006818771,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.0756480023264885,
+          "p99_ms": 0.07629791975021362,
+          "standard_deviation_ms": 0.0009205857386080327
+        },
+        "input_fingerprint": "sha256:eb3095ceee529fccfd5b5e133624ede02f9a8b5d04a1f94b3c4dfb5de09fbaee",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:625919fa4bdb2c6c2d801e870a83a9835810fefeef5d3d8320a5073cdd5ce43e",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.0902,
+          "mean_ms": 0.08016999999999999,
+          "minimum_ms": 0.0786,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0816,
+          "p99_ms": 0.08310399999999998,
+          "standard_deviation_ms": 0.0011187344039881267
+        },
+        "warmup_calls": 50
+      },
+      "serial_row11": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.10953599959611893,
+          "mean_ms": 0.07400245423118273,
+          "minimum_ms": 0.07228799909353256,
+          "p50_ms": 0.07353600114583969,
+          "p95_ms": 0.0756176020950079,
+          "p99_ms": 0.09229792237281799,
+          "standard_deviation_ms": 0.0030177731580809954
+        },
+        "input_fingerprint": "sha256:7387da1e6d4acbb5ef725d09b7636f0f7c7952e92975ccad3956cb5363d116c5",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:fb30d16c3466318a41b99e5e71963fbeeb6f63aac7f1ed4fceec98454c0b7e9b",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1528,
+          "mean_ms": 0.08068299999999999,
+          "minimum_ms": 0.0784,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0817,
+          "p99_ms": 0.1115109999999999,
+          "standard_deviation_ms": 0.0060394048547849485
+        },
+        "warmup_calls": 50
+      },
+      "serial_row12": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.08262400329113007,
+          "mean_ms": 0.07379317432641982,
+          "minimum_ms": 0.07238399982452393,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.0756176020950079,
+          "p99_ms": 0.07625919952988625,
+          "standard_deviation_ms": 0.000959062161939893
+        },
+        "input_fingerprint": "sha256:bdd3c50a5f5dbd116f5bb35138f3bca899c2fdce2c91c6ce22b354e31d6eff69",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:2ff1c04602c8bfca9359acfa55959a7531ed92a787b42c8bc6547ae9a78024bf",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.0884,
+          "mean_ms": 0.08003899999999999,
+          "minimum_ms": 0.0786,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0816,
+          "p99_ms": 0.08312499999999998,
+          "standard_deviation_ms": 0.0010282569393557886
+        },
+        "warmup_calls": 50
+      },
+      "serial_row13": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.08473599702119827,
+          "mean_ms": 0.07384149422248204,
+          "minimum_ms": 0.07241600006818771,
+          "p50_ms": 0.07358400151133537,
+          "p95_ms": 0.07568000257015228,
+          "p99_ms": 0.07623551927506923,
+          "standard_deviation_ms": 0.0010405862731946581
+        },
+        "input_fingerprint": "sha256:f2b40a6262115bc1c6a0d654f72ee3e2e552b00f68ac94cda6ddb50c9480bb47",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:24b3c3c1374b52d3e6bf8b48528e3dda1cb5a21a2ce893109df8407d31c73c71",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1013,
+          "mean_ms": 0.080219,
+          "minimum_ms": 0.0787,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.081805,
+          "p99_ms": 0.08492099999999998,
+          "standard_deviation_ms": 0.0018115018630959236
+        },
+        "warmup_calls": 50
+      },
+      "serial_row14": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.2680000066757202,
+          "mean_ms": 0.0749905075877905,
+          "minimum_ms": 0.07215999811887741,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07574560306966305,
+          "p99_ms": 0.0830035182833671,
+          "standard_deviation_ms": 0.013795660449729918
+        },
+        "input_fingerprint": "sha256:a44c72b64c848c778e5cc3c7b1ff127dd5184f067958bf3a127fe618c8b323d5",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:f1d107b7325dd58300de30514471de96bb3f400bdaf15ceb80fc8ef87c6a4b57",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.2751,
+          "mean_ms": 0.08138433333333334,
+          "minimum_ms": 0.0786,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.08231,
+          "p99_ms": 0.09431899999999997,
+          "standard_deviation_ms": 0.013863034343974708
+        },
+        "warmup_calls": 50
+      },
+      "serial_row15": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.19139200448989868,
+          "mean_ms": 0.0804907733698686,
+          "minimum_ms": 0.07273600250482559,
+          "p50_ms": 0.07859200239181519,
+          "p95_ms": 0.10090080089867115,
+          "p99_ms": 0.10774464063346383,
+          "standard_deviation_ms": 0.01099886911284369
+        },
+        "input_fingerprint": "sha256:e105e9c1e98396f95691a84fa9945148e2c73978f5090372666672aefcda2b20",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:ed0147ed254f30a1e4cadc99f3afa0c60bcf518f28f6e0cb5f4d351d851d9a7b",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.333,
+          "mean_ms": 0.090082,
+          "minimum_ms": 0.0791,
+          "p50_ms": 0.0858,
+          "p95_ms": 0.117125,
+          "p99_ms": 0.20879099999999992,
+          "standard_deviation_ms": 0.02186790363371243
+        },
+        "warmup_calls": 50
+      },
+      "serial_row2": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.40323200821876526,
+          "mean_ms": 0.07525493423144022,
+          "minimum_ms": 0.07260800153017044,
+          "p50_ms": 0.07360000163316727,
+          "p95_ms": 0.07577760331332684,
+          "p99_ms": 0.09322944171726699,
+          "standard_deviation_ms": 0.019213660894544994
+        },
+        "input_fingerprint": "sha256:f2ba2f6d4962f1c1ed05129141e27c7cf5a22a02f5fcf181a491bfee07bc375b",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:e98a2c56a13714b28e8e78067953e2c3ab4a00bfc6d61e28c1e24bcaefb3ad35",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4091,
+          "mean_ms": 0.08205666666666665,
+          "minimum_ms": 0.0789,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.082,
+          "p99_ms": 0.12343399999999996,
+          "standard_deviation_ms": 0.01990809187798324
+        },
+        "warmup_calls": 50
+      },
+      "serial_row3": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.08502399921417236,
+          "mean_ms": 0.07380821419258912,
+          "minimum_ms": 0.0727040022611618,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07558560185134411,
+          "p99_ms": 0.07635520026087761,
+          "standard_deviation_ms": 0.0009647722242314386
+        },
+        "input_fingerprint": "sha256:fda65dd9d0946d26adc7f6512bf6399ee94effca99503689d0ecf9fe98e0a47f",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:03b4afc96c226765055b36aa7ce2670defdbe59a92731a350e9f4a02dd404a35",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.0918,
+          "mean_ms": 0.08010166666666667,
+          "minimum_ms": 0.0789,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0816,
+          "p99_ms": 0.08280599999999999,
+          "standard_deviation_ms": 0.0009990481581096198
+        },
+        "warmup_calls": 50
+      },
+      "serial_row4": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.08303999900817871,
+          "mean_ms": 0.07381429433822632,
+          "minimum_ms": 0.07251200079917908,
+          "p50_ms": 0.07360000163316727,
+          "p95_ms": 0.07568160258233547,
+          "p99_ms": 0.07619455903768539,
+          "standard_deviation_ms": 0.0009431252050774809
+        },
+        "input_fingerprint": "sha256:ccbcd3e4f1dc5527c13e7de81731297a067f7d6b7c6c372676b8c43848e25256",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:3d4531481393ddf0ed1ea35e42f6baa9e39be5c001a9caec1eb99b6a7a47cb0d",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.0955,
+          "mean_ms": 0.080061,
+          "minimum_ms": 0.0786,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0816,
+          "p99_ms": 0.082503,
+          "standard_deviation_ms": 0.0011976834584591493
+        },
+        "warmup_calls": 50
+      },
+      "serial_row5": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.43190398812294006,
+          "mean_ms": 0.07493045419454575,
+          "minimum_ms": 0.07260800153017044,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.0756480023264885,
+          "p99_ms": 0.07612831853330135,
+          "standard_deviation_ms": 0.02065598574273794
+        },
+        "input_fingerprint": "sha256:9cdc6ed3118a49c6dfca0fc35a7e0f2fbd4afcb543159c914aeb55b3da41ffc1",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:ae0b67ee8e11451e1f39805bb253e708f03d4e3ec281543c3dc57f21f58af70b",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4385,
+          "mean_ms": 0.08132366666666666,
+          "minimum_ms": 0.0788,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0816,
+          "p99_ms": 0.08522399999999998,
+          "standard_deviation_ms": 0.020728425086232564
+        },
+        "warmup_calls": 50
+      },
+      "serial_row6": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.4200640022754669,
+          "mean_ms": 0.07588138761619727,
+          "minimum_ms": 0.07251200079917908,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07552160136401653,
+          "p99_ms": 0.0776294422894716,
+          "standard_deviation_ms": 0.02628238500754044
+        },
+        "input_fingerprint": "sha256:03947aba8ab092e951e648df86e8312b7bf0579a71ea702f3c7dc1454505ad3d",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:af62e69ae8702f0fb44997bb7a3f11fd419c03af5754343878ba443c2409e61f",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4271,
+          "mean_ms": 0.08214166666666665,
+          "minimum_ms": 0.0785,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.08150500000000001,
+          "p99_ms": 0.08496399999999994,
+          "standard_deviation_ms": 0.026320784510006957
+        },
+        "warmup_calls": 50
+      },
+      "serial_row7": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.10556799918413162,
+          "mean_ms": 0.07403637439012528,
+          "minimum_ms": 0.07260800153017044,
+          "p50_ms": 0.07356800138950348,
+          "p95_ms": 0.07568000257015228,
+          "p99_ms": 0.08111551836132992,
+          "standard_deviation_ms": 0.0026093832306253745
+        },
+        "input_fingerprint": "sha256:da4a3b2fe3e159be5de8b606dd2b3c837d589f4ea53ead1d4076d2e8f3c79f2d",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:ef4116c50e569958cb35d4b1e153e0fed20abd5c92fc1f69a92be58d98697f41",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1469,
+          "mean_ms": 0.08062166666666666,
+          "minimum_ms": 0.0787,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0817,
+          "p99_ms": 0.10682099999999999,
+          "standard_deviation_ms": 0.005231745778312331
+        },
+        "warmup_calls": 50
+      },
+      "serial_row8": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.08617600053548813,
+          "mean_ms": 0.0737947741895914,
+          "minimum_ms": 0.07254400104284286,
+          "p50_ms": 0.07353600114583969,
+          "p95_ms": 0.07564960233867168,
+          "p99_ms": 0.07763264253735543,
+          "standard_deviation_ms": 0.0011403767535017133
+        },
+        "input_fingerprint": "sha256:b0ae7033ac29cc016b2bae12843c6fd2c6269ee3e05eb4b5f5e9c96b8eeaa3e3",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:122e63d5eedeaca9752721f85b07b920ca2380603f43f72445a4acb38153e6ec",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.0982,
+          "mean_ms": 0.08010866666666668,
+          "minimum_ms": 0.0786,
+          "p50_ms": 0.0798,
+          "p95_ms": 0.0816,
+          "p99_ms": 0.08612499999999998,
+          "standard_deviation_ms": 0.0015904899315060828
+        },
+        "warmup_calls": 50
+      },
+      "serial_row9": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.447488009929657,
+          "mean_ms": 0.07516181364655494,
+          "minimum_ms": 0.07251200079917908,
+          "p50_ms": 0.07360000163316727,
+          "p95_ms": 0.07584799639880657,
+          "p99_ms": 0.0778499165922403,
+          "standard_deviation_ms": 0.0215568284249118
+        },
+        "input_fingerprint": "sha256:70cd26c4ad46a0ef660e3c2c5d49c13f41ebd334d8bb870ec9dd1e971792eeda",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:39b2ca48c98315425bdc33c081f3c156abbb1fb38636bf1075018d5e2ac8a047",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.4557,
+          "mean_ms": 0.08157666666666666,
+          "minimum_ms": 0.0788,
+          "p50_ms": 0.0799,
+          "p95_ms": 0.0825,
+          "p99_ms": 0.086708,
+          "standard_deviation_ms": 0.021670374298156974
+        },
+        "warmup_calls": 50
+      }
+    },
+    "supported_batches": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ]
+  },
+  "comparison": {
+    "performance": {
+      "aggregate_rows_per_second_p50": 89831.11738462669,
+      "minimum_preregistered_speedup": 8.0,
+      "per_row_service_ms_p50": 0.011132000014185905,
+      "serial_device_p50_sum_ms": 1.182160023599863,
+      "target_device_p50_ms": 0.1781120002269745,
+      "target_device_p95_ms": 0.18028960153460502,
+      "target_device_p99_ms": 0.18164127722382545,
+      "target_pair_throughput_speedup": 6.637172240463272,
+      "target_wall_p50_ms": 0.1842,
+      "target_wall_p95_ms": 0.186805,
+      "target_wall_p99_ms": 0.18998099999999993
+    },
+    "post_target_batch1_bit_exact_to_pre": true,
+    "prior_size_controls": {
+      "batch1": {
+        "bit_exact": true,
+        "candidate_device_p50_ms": 0.07356800138950348,
+        "prior_device_p50_ms": 0.0764480009675026,
+        "ratio": 0.9623273396092675
+      },
+      "batch2": {
+        "bit_exact": true,
+        "candidate_device_p50_ms": 0.07577600330114365,
+        "prior_device_p50_ms": 0.07964800298213959,
+        "ratio": 0.9513861046602234
+      },
+      "batch4": {
+        "bit_exact": true,
+        "candidate_device_p50_ms": 0.07993599772453308,
+        "prior_device_p50_ms": 0.0825280025601387,
+        "ratio": 0.9685924200853303
+      },
+      "batch8": {
+        "bit_exact": true,
+        "candidate_device_p50_ms": 0.11027199774980545,
+        "prior_device_p50_ms": 0.11235199868679047,
+        "ratio": 0.9814867473538808
+      }
+    },
+    "target_vs_serial": {
+      "actual_finite": true,
+      "actual_l2": 24.968936203304388,
+      "bit_exact": true,
+      "cosine_similarity": 1.0,
+      "maximum_absolute_error": 0.0,
+      "mean_absolute_error": 0.0,
+      "reference_finite": true,
+      "reference_l2": 24.968936203304388,
+      "relative_l2_error": 0.0
+    }
+  },
+  "configuration": {
+    "candidate_batch_order": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "cpu_mathematical_fallbacks": 0,
+    "device": 0,
+    "expert_id": 803,
+    "layer": 89,
+    "post_target_safe_fixture": 1,
+    "retained_calls": 300,
+    "timed_d2h_bytes": 0,
+    "timed_h2d_bytes": 0,
+    "warmup_calls": 50
+  },
+  "cycle_id": "H014-028d",
+  "decision": "DO_NOT_EXPOSE_THE_NEXT_BATCH_SIZE",
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "effective_weight_reuse": {
+    "architectural_rows_per_weight_traversal": 16,
+    "measured_dram_bytes": null,
+    "qualification": "source-level reuse; profiler counters remain separate"
+  },
+  "fixture": {
+    "activation_fingerprint": "sha256:93a02bb2c8cf5171ad4a909673c64062432d7e5f3e76fbd9914b829a5fca031a",
+    "activation_shape": [
+      16,
+      3584
+    ],
+    "expert_source_bytes": 17547264,
+    "expert_source_shards": [
+      "model-00090-of-000096.safetensors"
+    ],
+    "real_checkpoint_weights": true
+  },
+  "gates": {
+    "artifact_contract": true,
+    "candidate_memory_stable": true,
+    "exact_supported_batch_set": true,
+    "gpu_health": true,
+    "post_safe_cuda_error_state": true,
+    "post_target_cuda_error_state": true,
+    "post_target_safe_fixture_bit_exact": true,
+    "prior_memory_stable": true,
+    "prior_sizes_bit_exact": true,
+    "prior_sizes_within_5_percent": true,
+    "target_bit_exact_to_serial": true,
+    "target_speedup_gate": false,
+    "unsupported_sizes_preflight": true
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30129",
+    "memory.total": "32607",
+    "memory.used": "2059",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "52",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_final": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "29614",
+    "memory.total": "32607",
+    "memory.used": "2574",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P1",
+    "status": "MEASURED",
+    "temperature.gpu": "55",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "hypothesis": {
+    "maximum_prior_size_regression_ratio": 1.05,
+    "minimum_target_speedup": 8.0,
+    "prediction": "The exact row-cooperative batch-16 path yields at least 8.00x aggregate throughput versus 16 batch-1 calls, remains bit exact, preserves every previously certified size within 5%, and leaves CUDA, VRAM, and the physical GPU healthy for a known-safe batch-1 fixture."
+  },
+  "hypothesis_result": "FALSIFIED",
+  "hypothesis_supported": false,
+  "implementation": {
+    "deployed_binary_mutated": false,
+    "expected_exact_supported_sizes": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "larger_batch_executed": false,
+    "newly_attempted_batch": 16,
+    "one_size_per_cycle": true,
+    "target_template_rows": 16
+  },
+  "inspection": "Batch 16 delivered 6.637172x aggregate throughput at device p50 0.178112 ms; p95/p99, exact outputs, prior-size drift, sticky error state, safe recovery, memory, and nvidia-smi were retained independently.",
+  "post_target_checks": {
+    "cuda_error_state_ok": true,
+    "cuda_synchronize": "PASS",
+    "free_vram_bytes": 32406241280,
+    "nvidia_smi": {
+      "compute_cap": "12.0",
+      "driver_version": "591.86",
+      "index": "0",
+      "memory.free": "29594",
+      "memory.total": "32607",
+      "memory.used": "2594",
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci.bus_id": "00000000:02:00.0",
+      "pstate": "P1",
+      "status": "MEASURED",
+      "temperature.gpu": "53",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    }
+  },
+  "post_target_safe_fixture": {
+    "batch": 1,
+    "cuda_error_state_ok": true,
+    "cuda_synchronize": "PASS",
+    "free_vram_bytes": 32406241280,
+    "nvidia_smi": {
+      "compute_cap": "12.0",
+      "driver_version": "591.86",
+      "index": "0",
+      "memory.free": "29594",
+      "memory.total": "32607",
+      "memory.used": "2594",
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci.bus_id": "00000000:02:00.0",
+      "pstate": "P1",
+      "status": "MEASURED",
+      "temperature.gpu": "53",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    }
+  },
+  "prior_binary_control": {
+    "binary_sha256": "70d654782d932473bdcae6bbbc8fe79543ce431321d008a04cda678e3c9da398",
+    "modes": {
+      "batch1": {
+        "batch": 1,
+        "device": {
+          "maximum_ms": 0.11017599701881409,
+          "mean_ms": 0.07754005367557208,
+          "minimum_ms": 0.07487999647855759,
+          "p50_ms": 0.0764480009675026,
+          "p95_ms": 0.08081119693815708,
+          "p99_ms": 0.09446879640221592,
+          "standard_deviation_ms": 0.0038817900112573913
+        },
+        "input_fingerprint": "sha256:e670b3a90b92a6bccb170ac17e956765fb2af99b9bab8f90f3a0855515f98463",
+        "memory": {
+          "explicit_io_bytes": 28672,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:58d7b344f9f3573322cc2153dd9d834fe8d22161c90530b82990fe58e0310017",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.149,
+          "mean_ms": 0.08583866666666666,
+          "minimum_ms": 0.0823,
+          "p50_ms": 0.084,
+          "p95_ms": 0.09123,
+          "p99_ms": 0.12223299999999997,
+          "standard_deviation_ms": 0.007028373796421347
+        },
+        "warmup_calls": 50
+      },
+      "batch2": {
+        "batch": 2,
+        "device": {
+          "maximum_ms": 0.09174399822950363,
+          "mean_ms": 0.07954261362552643,
+          "minimum_ms": 0.07740800082683563,
+          "p50_ms": 0.07964800298213959,
+          "p95_ms": 0.08224320039153099,
+          "p99_ms": 0.08412447959184643,
+          "standard_deviation_ms": 0.0015112649793482646
+        },
+        "input_fingerprint": "sha256:b02a20b3b57c806a2d2045ac3f943c7226b012ace2cff1ba1803b922e06dc017",
+        "memory": {
+          "explicit_io_bytes": 57344,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:41da23bc7905ae141f28cbf46e6697c476a62b2427330ddf3481937ec1b31334",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.1102,
+          "mean_ms": 0.08720900000000001,
+          "minimum_ms": 0.0848,
+          "p50_ms": 0.0868,
+          "p95_ms": 0.09111,
+          "p99_ms": 0.09822499999999998,
+          "standard_deviation_ms": 0.002551460823397712
+        },
+        "warmup_calls": 50
+      },
+      "batch4": {
+        "batch": 4,
+        "device": {
+          "maximum_ms": 0.4517439901828766,
+          "mean_ms": 0.08407690654198328,
+          "minimum_ms": 0.08099199831485748,
+          "p50_ms": 0.0825280025601387,
+          "p95_ms": 0.084323201328516,
+          "p99_ms": 0.08808224000036714,
+          "standard_deviation_ms": 0.021327009658431723
+        },
+        "input_fingerprint": "sha256:7e414c333668a70e586bb309f38df5d1cfc2fde397d3e6a85f7b3da68bf6f96a",
+        "memory": {
+          "explicit_io_bytes": 114688,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:08a67277b788f955584c99bd03aa85edb803ca961c58e944977e856095c8d512",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.46,
+          "mean_ms": 0.092664,
+          "minimum_ms": 0.0887,
+          "p50_ms": 0.09,
+          "p95_ms": 0.093905,
+          "p99_ms": 0.11058499999999974,
+          "standard_deviation_ms": 0.024669528518667185
+        },
+        "warmup_calls": 50
+      },
+      "batch8": {
+        "batch": 8,
+        "device": {
+          "maximum_ms": 0.1265919953584671,
+          "mean_ms": 0.1122215464214484,
+          "minimum_ms": 0.1093439981341362,
+          "p50_ms": 0.11235199868679047,
+          "p95_ms": 0.11369760148227215,
+          "p99_ms": 0.11555232070386409,
+          "standard_deviation_ms": 0.0013474358973629733
+        },
+        "input_fingerprint": "sha256:76a089fd8ad4d0a0e83ea4bd7388d9c72b10d2b07f7a4bbf0398ea008379d337",
+        "memory": {
+          "explicit_io_bytes": 229376,
+          "free_after_allocation_bytes": 32406241280,
+          "free_after_free_bytes": 32406241280,
+          "free_after_warmup_bytes": 32406241280,
+          "free_before_bytes": 32406241280,
+          "persistent_growth_bytes": 0
+        },
+        "output_fingerprint": "sha256:92a4b6e105ddcef5c144c9cc054ea504b277d07f6060ad2f3c6ee47d97289d45",
+        "output_finite": true,
+        "retained_calls": 300,
+        "timed_d2h_bytes": 0,
+        "timed_h2d_bytes": 0,
+        "wall": {
+          "maximum_ms": 0.134,
+          "mean_ms": 0.12124766666666666,
+          "minimum_ms": 0.118,
+          "p50_ms": 0.1215,
+          "p95_ms": 0.122505,
+          "p99_ms": 0.12533099999999997,
+          "standard_deviation_ms": 0.0013966249397108096
+        },
+        "warmup_calls": 50
+      }
+    },
+    "supported_batches": [
+      1,
+      2,
+      4,
+      8
+    ]
+  },
+  "prior_evidence": {
+    "cycle_id": "H014-028c",
+    "hypothesis_supported": true,
+    "status": "PASS"
+  },
+  "progress": [
+    {
+      "passed": true,
+      "phase": "candidate_binary_inspection"
+    },
+    {
+      "phase": "gpu_health_before",
+      "status": "MEASURED"
+    },
+    {
+      "phase": "candidate_cuda_initialization",
+      "supported_batches": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ]
+    },
+    {
+      "phase": "candidate_previously_certified_batch1"
+    },
+    {
+      "phase": "candidate_previously_certified_batch2"
+    },
+    {
+      "phase": "candidate_previously_certified_batch4"
+    },
+    {
+      "phase": "candidate_previously_certified_batch8"
+    },
+    {
+      "gpu_health": "MEASURED",
+      "phase": "armed_new_batch16",
+      "prior_sizes_completed": [
+        1,
+        2,
+        4,
+        8
+      ]
+    },
+    {
+      "error_state_ok": true,
+      "nvidia_smi": "MEASURED",
+      "phase": "new_batch16_completed_and_checked"
+    },
+    {
+      "error_state_ok": true,
+      "nvidia_smi": "MEASURED",
+      "phase": "known_safe_batch1_after_target"
+    },
+    {
+      "passed": true,
+      "phase": "unsupported_sizes_rejected_before_native_boundary"
+    },
+    {
+      "phase": "prior_binary_safe_size_controls"
+    },
+    {
+      "hypothesis": "FALSIFIED",
+      "phase": "final_incremental_batch_gate"
+    }
+  ],
+  "redesign": "Inspect kernel resources and tail behavior before redesign.",
+  "schema_version": "experiment-014-k3-incremental-row-cooperative-batch-v1",
+  "sources": {
+    "candidate_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-028d-b16-candidate.dll",
+      "sha256": "cbaa45f124f15822b99afea5b0f1ece215372aa1680293693d311d1367d488ff"
+    },
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "cuda_header": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\backend_cuda.h",
+      "sha256": "0557db184f62341de83de5963e086ada40799cffb16aca2bddbadf60d887842b"
+    },
+    "cuda_source": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\third_party\\colibri\\c\\backend_cuda.cu",
+      "sha256": "0b1b89e5cd7505d15bb264b6430c556e49ffc19d9ddfb992d0d4510a264c5065"
+    },
+    "cuobjdump": {
+      "path": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.0\\bin\\cuobjdump.exe",
+      "sha256": "70310d1ae8005e5d9910b5fcc65c14a355a5229b0f1ec6123a2f3f78d9a8361a"
+    },
+    "prior_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-028c-b8-candidate.dll",
+      "sha256": "70d654782d932473bdcae6bbbc8fe79543ce431321d008a04cda678e3c9da398"
+    },
+    "prior_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-028c-row-cooperative-batch8.json",
+      "sha256": "16181f5879a725c85f8b26ccf836456203849328b15fb3f61428fa592ad542e4"
+    }
+  },
+  "status": "PASS",
+  "unsupported_size_preflight": [
+    {
+      "error": "Kimi CUDA expert batch rejected before launch: requested=3, certified_max=16, certified_sizes=(1, 2, 4, 8, 16)",
+      "native_call_attempts": 0,
+      "native_sentinel_armed": true,
+      "pass": true,
+      "requested_batch": 3
+    },
+    {
+      "error": "Kimi CUDA expert batch rejected before launch: requested=32, certified_max=16, certified_sizes=(1, 2, 4, 8, 16)",
+      "native_call_attempts": 0,
+      "native_sentinel_armed": true,
+      "pass": true,
+      "requested_batch": 32
+    }
+  ]
+}

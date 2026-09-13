@@ -1,0 +1,60 @@
+{
+  "cleanup": {
+    "generated_at_utc": "2026-08-19T07:46:18.439562+00:00",
+    "label_prefix": "e025-20260819t013016z-",
+    "label_recovered_instance_ids": [],
+    "other_live_e025_instance_ids": [],
+    "reason": "single-backbone-canary-complete-or-aborted",
+    "run_id": "20260819T013016Z",
+    "schema_version": "experiment-025-cleanup-verification-v1",
+    "status": "PASS",
+    "surviving_instance_ids": [],
+    "target_instance_ids": [
+      48089692
+    ],
+    "unrelated_instances_destroyed": false,
+    "zero_live_e025_instances": true
+  },
+  "failure": {
+    "classification": "INCOMPLETE_TIMEOUT",
+    "error": "E025 worker e025-stage-001 was not READY: TimeoutError: timed out",
+    "error_type": "TimeoutError",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\stages.py\", line 404, in run_backbone_canary_stage\n    worker = provision_worker(\n             ^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 396, in provision_worker\n    return wait_for_worker(\n           ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\src\\swarm_inference\\experiments\\experiment_025\\provisioning.py\", line 356, in wait_for_worker\n    raise TimeoutError(f\"E025 worker {worker_id} was not READY: {last_error}\")\nTimeoutError: E025 worker e025-stage-001 was not READY: TimeoutError: timed out\n"
+  },
+  "generated_at_utc": "2026-08-19T07:46:18.464547+00:00",
+  "image_digest": "sha256:9d7a1148183eb7f7af5cbcde1b7bc35baf76e98d514c32cf73cdb77e362bf712",
+  "image_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:9d7a1148183eb7f7af5cbcde1b7bc35baf76e98d514c32cf73cdb77e362bf712",
+  "rental_costs": {
+    "basis": "ledger elapsed time multiplied by advertised active and storage rates; this is not represented as a provider invoice",
+    "estimated_active_cost_usd": 0.07376057251851852,
+    "estimated_storage_cost_usd": 0.004470337728395062,
+    "generated_at_utc": "2026-08-19T07:46:18.459130+00:00",
+    "instance_count": 1,
+    "instances": [
+      {
+        "active_rental_rate_usd_per_hour": 0.29333333333333333,
+        "created_at_utc": "2026-08-19T07:31:11.474295+00:00",
+        "destroy_receipt_present": true,
+        "destroyed_at_utc": "2026-08-19T07:46:16.717685+00:00",
+        "elapsed_seconds": 905.24339,
+        "estimated_active_cost_usd": 0.07376057251851852,
+        "estimated_storage_cost_usd": 0.004470337728395062,
+        "gpu_count": 1,
+        "gpu_model": "RTX 3090",
+        "instance_id": 48089692,
+        "machine_id": 122589,
+        "offer_id": 47876163,
+        "requested_disk_gb": 60.0,
+        "storage_rate_usd_per_gb_month": 0.21333333333333335
+      }
+    ],
+    "schema_version": "experiment-025-ledger-cost-summary-v1",
+    "status": "PASS",
+    "total_elapsed_instance_seconds": 905.24339
+  },
+  "result": null,
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-backbone-canary-stage-v1",
+  "status": "FAIL",
+  "worker": null
+}

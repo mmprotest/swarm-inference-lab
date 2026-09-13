@@ -1,0 +1,32 @@
+{
+  "cycle_id": "H014-SUB-002",
+  "status": "PASS_WITH_FALSIFIED_PERFORMANCE_HYPOTHESIS",
+  "raw_receipt_sha256": "02f9b8297e9e9a39d1cf9910d77f720a83373d914710d0fd01125481c5c0e5bf",
+  "receipt_plumbing_issue": "The CLI parsed both command-line thresholds but the dispatcher omitted them from benchmark_real_expert_microwork, so the raw receipt recorded null thresholds. The benchmark payloads, timings, correctness, memory, lifecycle, shutdown, and health data are unaffected.",
+  "preregistered_hypothesis": {
+    "maximum_critical_worker_device_p50_ms": 0.42925,
+    "minimum_whole_layer_relative_throughput": 0.70,
+    "maximum_worker_fraction_percent": 25.0
+  },
+  "measured": {
+    "critical_worker_device_p50_ms": 0.4780320078134537,
+    "critical_worker_improvement_vs_two_workers_percent": 27.61301661301115,
+    "whole_layer_relative_throughput": 0.8137120491785155,
+    "worker_fraction_percent": 21.504889983220515,
+    "maximum_relative_l2_error": 0.0,
+    "state_exact": true,
+    "gpu_health": "MEASURED"
+  },
+  "gates": {
+    "critical_worker_time": "FAIL",
+    "whole_layer_retention": "PASS",
+    "worker_memory": "PASS",
+    "correctness": "PASS",
+    "health": "PASS"
+  },
+  "hypothesis_supported": false,
+  "inspection": "Four-way ownership halves worker model state but selected-expert imbalance (2 to 6 hits per contacted worker) prevents the predicted 35% critical-path reduction. Extra messages also raise mean framed transport from 259522.667 bytes at two workers to 289550.6 bytes at four.",
+  "bottleneck": "Routing imbalance plus per-worker process/transport fixed cost, not expert arithmetic correctness.",
+  "decision": "RETAIN_CHARACTERIZATION_AND_MODIFY_SCALING_HYPOTHESIS",
+  "redesign": "Test eight workers for the required scaling curve with a weaker, evidence-based prediction: worker footprint below 12%, exactness retained, and same-GPU complete-layer throughput at least 65%; do not require proportional compute scaling."
+}

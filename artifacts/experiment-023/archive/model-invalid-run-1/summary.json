@@ -1,0 +1,91 @@
+{
+  "capacity_cohort_summary": {
+    "inventory_count": 6,
+    "median_efficiency_uplift_percent": 0.0,
+    "median_raw_throughput_uplift_percent": 0.0,
+    "promotion_eligible": false,
+    "replica_using_inventory_count": 3
+  },
+  "correctness_status": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE",
+  "deterministic_headline_wall_clock_seconds": 10520.509755800012,
+  "diagnostic_qualifying_families_if_valid": [],
+  "diagnostic_zero_new_node_gate_if_valid": {
+    "cases_ge_20_percent": 0,
+    "family_gates": {
+      "compute-heterogeneous": false,
+      "full-mixed": false,
+      "memory-fragmented": false,
+      "network-heterogeneous": false
+    },
+    "general_gate": false,
+    "median_efficiency_uplift_percent": 0.0,
+    "median_raw_throughput_uplift_percent": 0.0,
+    "zero_new_node_wedge": false
+  },
+  "evidence_class": "PHYSICALLY GROUNDED MODEL + SHAPED NETWORK",
+  "experiment_id": "023",
+  "final_verdict": "MODEL_INVALID",
+  "flex_free_median_efficiency_uplift_percent": 0.0,
+  "headline_cases_ge_20_percent": 0,
+  "headline_inventory_count": 18,
+  "hedging_diagnostic": {
+    "conclusion_suppressed": true,
+    "hedge_service_drift": true,
+    "seed_count_run": 0,
+    "status": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE",
+    "tail_diagnostic_positive": false
+  },
+  "legacy_network_summary": {
+    "inventory_count": 18,
+    "median_efficiency_uplift_percent": 0.0,
+    "nonnegative_inventory_count": 18,
+    "promotion_status": "NOT_EVALUATED_DUE_MODEL_INVALID"
+  },
+  "maximum_efficiency_uplift_percent": 0.0,
+  "mean_efficiency_uplift_percent": 0.0,
+  "median_efficiency_uplift_percent": 0.0,
+  "median_optionality_only_percent": 0.0,
+  "median_raw_throughput_uplift_percent": 0.0,
+  "minimum_efficiency_uplift_percent": 0.0,
+  "negative_control_failures": [
+    {
+      "arm": "FLEX_POOL",
+      "efficiency_uplift_percent": -77.0887932221718,
+      "failure": "CONTROL_REGRESSION_WORSE_THAN_5_PERCENT",
+      "inventory_id": "coarse-friendly-03",
+      "throughput_uplift_percent": -77.58903996762861
+    }
+  ],
+  "p90_efficiency_uplift_percent": 0.0,
+  "physical_replica_validation": {
+    "all_finite": true,
+    "all_zero_persistent_state": true,
+    "case_count": 12,
+    "evidence_class": "PHYSICAL local RTX 5090 production-native primitive",
+    "hedge_service_drift": true,
+    "hedging_conclusion_suppressed": true,
+    "maximum_a_b_relative_l2": 0.0,
+    "maximum_absolute_service_drift_percent": 71.93110756234796,
+    "maximum_e022_reference_relative_l2": 0.0,
+    "maximum_replica_memory_error_percent": 3.8087815298161036,
+    "primary_gate": "PASS",
+    "service_drift_cell_count": 12,
+    "service_sample_count": 2400,
+    "status": "PASS"
+  },
+  "primary_conclusion_status": "NOT_PROMOTABLE_MODEL_INVALID",
+  "qualifying_families": [],
+  "replica_using_headline_inventory_count": 0,
+  "reproducibility_status": "NOT_RUN_AFTER_MANDATORY_CONTROL_FAILURE",
+  "schema_version": "experiment-023-summary-v1",
+  "thresholds_changed_after_headline": false,
+  "total_experiment_wall_clock_seconds": null,
+  "total_wall_clock_runtime_available": false,
+  "valid_headline_inventory_count": 18,
+  "validity_failures": [
+    "CONTROL_REGRESSION_WORSE_THAN_5_PERCENT:coarse-friendly-03:FLEX_POOL"
+  ],
+  "worst_efficiency_regression_percent": 0.0,
+  "worst_raw_throughput_regression_percent": 0.0,
+  "zero_new_node_wedge": false
+}

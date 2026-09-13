@@ -1,0 +1,122 @@
+{
+  "acceptance_gate": {
+    "denominator": "measured held-out value",
+    "execution_gates_must_pass": true,
+    "maximum_percent": 10.0,
+    "statistic": "median absolute percentage error across the three slices"
+  },
+  "cycle_id": "H014-035a",
+  "decision": "FREEZE_PREDICTIONS_THEN_EXECUTE_H014_035B",
+  "hypothesis": "Architecture-class depth interpolation plus an O(T) Gated-MLA context fit predicts three unseen real Kimi slices with median absolute percentage error <= 10%.",
+  "implementation": "Ordinary least-squares linear fits over immutable retained evidence; no held-out receipt is an input and the validator is forbidden to refit.",
+  "models": {
+    "gated_mla_context": {
+      "form": "device_p50_ms = intercept_ms + slope_ms_per_unit * x",
+      "intercept_ms": 2.962630701253165,
+      "r_squared_on_training_points": 0.9999987260261088,
+      "slope_ms_per_unit": 0.00028520168027522765,
+      "training_points": [
+        {
+          "device_p50_ms": 3.25711989402771,
+          "x": 1024.0
+        },
+        {
+          "device_p50_ms": 4.12827205657959,
+          "x": 4096.0
+        },
+        {
+          "device_p50_ms": 5.2982399463653564,
+          "x": 8192.0
+        },
+        {
+          "device_p50_ms": 7.636240005493164,
+          "x": 16384.0
+        }
+      ]
+    },
+    "gated_mla_depth": {
+      "form": "device_p50_ms = intercept_ms + slope_ms_per_unit * x",
+      "intercept_ms": 2.734719927563812,
+      "r_squared_on_training_points": 0.9278601380530908,
+      "slope_ms_per_unit": 0.0009600005366585472,
+      "training_points": [
+        {
+          "device_p50_ms": 2.730799913406372,
+          "x": 3.0
+        },
+        {
+          "device_p50_ms": 2.7934399843215942,
+          "x": 47.0
+        },
+        {
+          "device_p50_ms": 2.815279960632324,
+          "x": 91.0
+        }
+      ]
+    },
+    "kda_depth": {
+      "form": "device_p50_ms = intercept_ms + slope_ms_per_unit * x",
+      "intercept_ms": 3.0148213668303057,
+      "r_squared_on_training_points": 0.9731822115975018,
+      "slope_ms_per_unit": 0.0006880001588301225,
+      "training_points": [
+        {
+          "device_p50_ms": 3.012608051300049,
+          "x": 1.0
+        },
+        {
+          "device_p50_ms": 3.051584005355835,
+          "x": 45.0
+        },
+        {
+          "device_p50_ms": 3.0731520652770996,
+          "x": 89.0
+        }
+      ]
+    }
+  },
+  "predictions": {
+    "gated_mla_layer_67_batch1_device_p50_ms": 2.7990399635199346,
+    "gated_mla_layer_91_context_2048_last256_device_p50_ms": 3.546723742456831,
+    "kda_layer_65_batch1_device_p50_ms": 3.0595413771542637
+  },
+  "schema_version": "experiment-014-k3-performance-model-preregistration-v1",
+  "sources": {
+    "cuda_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+      "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+    },
+    "depth_profile": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-027m-depth-profile.json",
+      "sha256": "c01b2dddd56dd1f7a80d9b36445e0d9b7a11c54449e1a2773d71326904b3baec"
+    },
+    "mla_context_profile": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\performance\\h014-033c-prefill-layer91-mla16k.json",
+      "sha256": "8ff01603baf239b89e595a789a84503d03acd7ec5601e9931dde51bda45f2b48"
+    }
+  },
+  "status": "PASS",
+  "training_scope": {
+    "gated_mla_context_tokens": [
+      1024,
+      4096,
+      8192,
+      16384
+    ],
+    "gated_mla_depth_layers": [
+      3,
+      47,
+      91
+    ],
+    "held_out_slices_not_executed_or_read": [
+      "KDA layer 65 batch-1 warm production device p50",
+      "Gated MLA layer 67 batch-1 warm production device p50",
+      "Gated MLA layer 91 context 2048 last-256 device p50"
+    ],
+    "kda_depth_layers": [
+      1,
+      45,
+      89
+    ]
+  }
+}

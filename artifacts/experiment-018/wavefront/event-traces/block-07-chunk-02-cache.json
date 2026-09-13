@@ -1,0 +1,6031 @@
+{
+  "claim_boundary": "deterministic independent-resource execution using physical real-K3 service and shaped communication",
+  "configuration": {
+    "accepted_rows": 8,
+    "actual_chunk_rows": [
+      2,
+      2,
+      2,
+      2
+    ],
+    "attnres_cache": true,
+    "block_candidates": 7,
+    "maximum_chunk_rows": 2
+  },
+  "event_run": {
+    "critical_path": [
+      "control:bulk-dispatch",
+      "compute:c00:q000",
+      "compute:c00:q001",
+      "compute:c00:q002",
+      "compute:c00:q003",
+      "handoff:c00-c01:q003",
+      "compute:c01:q003",
+      "handoff:c01-c02:q003",
+      "compute:c02:q003",
+      "handoff:c02-c03:q003",
+      "compute:c03:q003",
+      "handoff:c03-c04:q003",
+      "compute:c04:q003",
+      "handoff:c04-c05:q003",
+      "compute:c05:q003",
+      "handoff:c05-c06:q003",
+      "compute:c06:q003",
+      "handoff:c06-c07:q003",
+      "compute:c07:q003",
+      "handoff:c07-c08:q003",
+      "compute:c08:q003",
+      "handoff:c08-c09:q003",
+      "compute:c09:q003",
+      "handoff:c09-c10:q003",
+      "compute:c10:q003",
+      "handoff:c10-c11:q003",
+      "compute:c11:q003"
+    ],
+    "makespan_ms": 1809.6445206759436,
+    "peak_concurrency": 6,
+    "records": [
+      {
+        "critical_predecessor": null,
+        "dependencies": [],
+        "duration_ms": 0.17535,
+        "finish_ms": 0.17535,
+        "kind": "control",
+        "metadata": {},
+        "ready_ms": 0.0,
+        "resource_id": "coordinator",
+        "start_ms": 0.0,
+        "task_id": "control:bulk-dispatch"
+      },
+      {
+        "critical_predecessor": "control:bulk-dispatch",
+        "dependencies": [
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 162.4186557108771,
+        "finish_ms": 162.5940057108771,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 0,
+          "compute_ms": 157.14308163087708,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27557408,
+          "internal_payload_bytes": 402024,
+          "required_attnres_layers": [],
+          "rows": 2
+        },
+        "ready_ms": 0.17535,
+        "resource_id": "microcell:00",
+        "start_ms": 0.17535,
+        "task_id": "compute:c00:q000"
+      },
+      {
+        "critical_predecessor": "compute:c00:q000",
+        "dependencies": [
+          "compute:c00:q000",
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 162.4186557108771,
+        "finish_ms": 325.01266142175416,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 1,
+          "compute_ms": 157.14308163087708,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27557408,
+          "internal_payload_bytes": 402024,
+          "required_attnres_layers": [],
+          "rows": 2
+        },
+        "ready_ms": 162.5940057108771,
+        "resource_id": "microcell:00",
+        "start_ms": 162.5940057108771,
+        "task_id": "compute:c00:q001"
+      },
+      {
+        "critical_predecessor": "compute:c00:q000",
+        "dependencies": [
+          "compute:c00:q000"
+        ],
+        "duration_ms": 3.2022087999999997,
+        "finish_ms": 165.7962145108771,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 1,
+          "chunk": 0,
+          "payload_bytes": 114776,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 162.5940057108771,
+        "resource_id": "coarse-link:00",
+        "start_ms": 162.5940057108771,
+        "task_id": "handoff:c00-c01:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q000"
+        ],
+        "duration_ms": 102.53462809827667,
+        "finish_ms": 268.33084260915376,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 10,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 0,
+          "compute_ms": 97.25903097827667,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2755971200000005,
+          "internal_payload_bytes": 402096,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 2
+        },
+        "ready_ms": 165.7962145108771,
+        "resource_id": "microcell:01",
+        "start_ms": 165.7962145108771,
+        "task_id": "compute:c01:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q000",
+        "dependencies": [
+          "handoff:c00-c01:q000"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 168.9525289108771,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 2
+        },
+        "ready_ms": 165.7962145108771,
+        "resource_id": "coarse-link:01",
+        "start_ms": 165.7962145108771,
+        "task_id": "seed:l00:q000:link01"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link01",
+        "dependencies": [
+          "seed:l00:q000:link01"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 172.10884331087712,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 3
+        },
+        "ready_ms": 168.9525289108771,
+        "resource_id": "coarse-link:02",
+        "start_ms": 168.9525289108771,
+        "task_id": "seed:l00:q000:link02"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link02",
+        "dependencies": [
+          "seed:l00:q000:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 175.26515771087713,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 4
+        },
+        "ready_ms": 172.10884331087712,
+        "resource_id": "coarse-link:03",
+        "start_ms": 172.10884331087712,
+        "task_id": "seed:l00:q000:link03"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link03",
+        "dependencies": [
+          "seed:l00:q000:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 178.42147211087715,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 5
+        },
+        "ready_ms": 175.26515771087713,
+        "resource_id": "coarse-link:04",
+        "start_ms": 175.26515771087713,
+        "task_id": "seed:l00:q000:link04"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link04",
+        "dependencies": [
+          "seed:l00:q000:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 181.57778651087716,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 6
+        },
+        "ready_ms": 178.42147211087715,
+        "resource_id": "coarse-link:05",
+        "start_ms": 178.42147211087715,
+        "task_id": "seed:l00:q000:link05"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link05",
+        "dependencies": [
+          "seed:l00:q000:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 184.73410091087717,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 7
+        },
+        "ready_ms": 181.57778651087716,
+        "resource_id": "coarse-link:06",
+        "start_ms": 181.57778651087716,
+        "task_id": "seed:l00:q000:link06"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link06",
+        "dependencies": [
+          "seed:l00:q000:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 187.8904153108772,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 8
+        },
+        "ready_ms": 184.73410091087717,
+        "resource_id": "coarse-link:07",
+        "start_ms": 184.73410091087717,
+        "task_id": "seed:l00:q000:link07"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link07",
+        "dependencies": [
+          "seed:l00:q000:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 191.0467297108772,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 9
+        },
+        "ready_ms": 187.8904153108772,
+        "resource_id": "coarse-link:08",
+        "start_ms": 187.8904153108772,
+        "task_id": "seed:l00:q000:link08"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link08",
+        "dependencies": [
+          "seed:l00:q000:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 194.20304411087722,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 10
+        },
+        "ready_ms": 191.0467297108772,
+        "resource_id": "coarse-link:09",
+        "start_ms": 191.0467297108772,
+        "task_id": "seed:l00:q000:link09"
+      },
+      {
+        "critical_predecessor": "seed:l00:q000:link09",
+        "dependencies": [
+          "seed:l00:q000:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 197.35935851087723,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l0:v1:422090a4a87de035",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 11
+        },
+        "ready_ms": 194.20304411087722,
+        "resource_id": "coarse-link:10",
+        "start_ms": 194.20304411087722,
+        "task_id": "seed:l00:q000:link10"
+      },
+      {
+        "critical_predecessor": "compute:c01:q000",
+        "dependencies": [
+          "compute:c01:q000"
+        ],
+        "duration_ms": 3.202228,
+        "finish_ms": 271.53307060915375,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 0,
+          "payload_bytes": 114800,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 268.33084260915376,
+        "resource_id": "coarse-link:01",
+        "start_ms": 268.33084260915376,
+        "task_id": "handoff:c01-c02:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q000",
+          "seed:l00:q000:link01"
+        ],
+        "duration_ms": 116.44922887488224,
+        "finish_ms": 387.982299484036,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 14,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 0,
+          "compute_ms": 111.17360103488224,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27562784,
+          "internal_payload_bytes": 402192,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 271.53307060915375,
+        "resource_id": "microcell:02",
+        "start_ms": 271.53307060915375,
+        "task_id": "compute:c02:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q000",
+        "dependencies": [
+          "handoff:c01-c02:q000"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 274.68938500915374,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 3
+        },
+        "ready_ms": 271.53307060915375,
+        "resource_id": "coarse-link:02",
+        "start_ms": 271.53307060915375,
+        "task_id": "seed:l12:q000:link02"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link02",
+        "dependencies": [
+          "seed:l12:q000:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 277.8456994091537,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 4
+        },
+        "ready_ms": 274.68938500915374,
+        "resource_id": "coarse-link:03",
+        "start_ms": 274.68938500915374,
+        "task_id": "seed:l12:q000:link03"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link03",
+        "dependencies": [
+          "seed:l12:q000:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 281.0020138091537,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 5
+        },
+        "ready_ms": 277.8456994091537,
+        "resource_id": "coarse-link:04",
+        "start_ms": 277.8456994091537,
+        "task_id": "seed:l12:q000:link04"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link04",
+        "dependencies": [
+          "seed:l12:q000:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 284.1583282091537,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 6
+        },
+        "ready_ms": 281.0020138091537,
+        "resource_id": "coarse-link:05",
+        "start_ms": 281.0020138091537,
+        "task_id": "seed:l12:q000:link05"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link05",
+        "dependencies": [
+          "seed:l12:q000:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 287.3146426091537,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 7
+        },
+        "ready_ms": 284.1583282091537,
+        "resource_id": "coarse-link:06",
+        "start_ms": 284.1583282091537,
+        "task_id": "seed:l12:q000:link06"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link06",
+        "dependencies": [
+          "seed:l12:q000:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 290.47095700915366,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 8
+        },
+        "ready_ms": 287.3146426091537,
+        "resource_id": "coarse-link:07",
+        "start_ms": 287.3146426091537,
+        "task_id": "seed:l12:q000:link07"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link07",
+        "dependencies": [
+          "seed:l12:q000:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 293.62727140915365,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 9
+        },
+        "ready_ms": 290.47095700915366,
+        "resource_id": "coarse-link:08",
+        "start_ms": 290.47095700915366,
+        "task_id": "seed:l12:q000:link08"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link08",
+        "dependencies": [
+          "seed:l12:q000:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 296.78358580915364,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 10
+        },
+        "ready_ms": 293.62727140915365,
+        "resource_id": "coarse-link:09",
+        "start_ms": 293.62727140915365,
+        "task_id": "seed:l12:q000:link09"
+      },
+      {
+        "critical_predecessor": "seed:l12:q000:link09",
+        "dependencies": [
+          "seed:l12:q000:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 299.9399002091536,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l12:v1:beb72ee082bfab5d",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 11
+        },
+        "ready_ms": 296.78358580915364,
+        "resource_id": "coarse-link:10",
+        "start_ms": 296.78358580915364,
+        "task_id": "seed:l12:q000:link10"
+      },
+      {
+        "critical_predecessor": "compute:c00:q001",
+        "dependencies": [
+          "compute:c00:q001",
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 162.4186557108771,
+        "finish_ms": 487.43131713263125,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 2,
+          "compute_ms": 157.14308163087708,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27557408,
+          "internal_payload_bytes": 402024,
+          "required_attnres_layers": [],
+          "rows": 2
+        },
+        "ready_ms": 325.01266142175416,
+        "resource_id": "microcell:00",
+        "start_ms": 325.01266142175416,
+        "task_id": "compute:c00:q002"
+      },
+      {
+        "critical_predecessor": "compute:c00:q001",
+        "dependencies": [
+          "compute:c00:q001"
+        ],
+        "duration_ms": 3.2022087999999997,
+        "finish_ms": 328.21487022175415,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 1,
+          "chunk": 1,
+          "payload_bytes": 114776,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 325.01266142175416,
+        "resource_id": "coarse-link:00",
+        "start_ms": 325.01266142175416,
+        "task_id": "handoff:c00-c01:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q001",
+        "dependencies": [
+          "compute:c01:q000",
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q001"
+        ],
+        "duration_ms": 102.53462809827667,
+        "finish_ms": 430.74949832003085,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 10,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 1,
+          "compute_ms": 97.25903097827667,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2755971200000005,
+          "internal_payload_bytes": 402096,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 2
+        },
+        "ready_ms": 328.21487022175415,
+        "resource_id": "microcell:01",
+        "start_ms": 328.21487022175415,
+        "task_id": "compute:c01:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q001",
+        "dependencies": [
+          "handoff:c00-c01:q001"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 331.37118462175414,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 2
+        },
+        "ready_ms": 328.21487022175415,
+        "resource_id": "coarse-link:01",
+        "start_ms": 328.21487022175415,
+        "task_id": "seed:l00:q001:link01"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link01",
+        "dependencies": [
+          "seed:l00:q001:link01"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 334.5274990217541,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 3
+        },
+        "ready_ms": 331.37118462175414,
+        "resource_id": "coarse-link:02",
+        "start_ms": 331.37118462175414,
+        "task_id": "seed:l00:q001:link02"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link02",
+        "dependencies": [
+          "seed:l00:q001:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 337.6838134217541,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 4
+        },
+        "ready_ms": 334.5274990217541,
+        "resource_id": "coarse-link:03",
+        "start_ms": 334.5274990217541,
+        "task_id": "seed:l00:q001:link03"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link03",
+        "dependencies": [
+          "seed:l00:q001:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 340.8401278217541,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 5
+        },
+        "ready_ms": 337.6838134217541,
+        "resource_id": "coarse-link:04",
+        "start_ms": 337.6838134217541,
+        "task_id": "seed:l00:q001:link04"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link04",
+        "dependencies": [
+          "seed:l00:q001:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 343.9964422217541,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 6
+        },
+        "ready_ms": 340.8401278217541,
+        "resource_id": "coarse-link:05",
+        "start_ms": 340.8401278217541,
+        "task_id": "seed:l00:q001:link05"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link05",
+        "dependencies": [
+          "seed:l00:q001:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 347.15275662175407,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 7
+        },
+        "ready_ms": 343.9964422217541,
+        "resource_id": "coarse-link:06",
+        "start_ms": 343.9964422217541,
+        "task_id": "seed:l00:q001:link06"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link06",
+        "dependencies": [
+          "seed:l00:q001:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 350.30907102175405,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 8
+        },
+        "ready_ms": 347.15275662175407,
+        "resource_id": "coarse-link:07",
+        "start_ms": 347.15275662175407,
+        "task_id": "seed:l00:q001:link07"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link07",
+        "dependencies": [
+          "seed:l00:q001:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 353.46538542175404,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 9
+        },
+        "ready_ms": 350.30907102175405,
+        "resource_id": "coarse-link:08",
+        "start_ms": 350.30907102175405,
+        "task_id": "seed:l00:q001:link08"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link08",
+        "dependencies": [
+          "seed:l00:q001:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 356.621699821754,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 10
+        },
+        "ready_ms": 353.46538542175404,
+        "resource_id": "coarse-link:09",
+        "start_ms": 353.46538542175404,
+        "task_id": "seed:l00:q001:link09"
+      },
+      {
+        "critical_predecessor": "seed:l00:q001:link09",
+        "dependencies": [
+          "seed:l00:q001:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 359.778014221754,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l0:v1:c29ee19a89e308cf",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 11
+        },
+        "ready_ms": 356.621699821754,
+        "resource_id": "coarse-link:10",
+        "start_ms": 356.621699821754,
+        "task_id": "seed:l00:q001:link10"
+      },
+      {
+        "critical_predecessor": "compute:c02:q000",
+        "dependencies": [
+          "compute:c02:q000"
+        ],
+        "duration_ms": 3.1563528,
+        "finish_ms": 391.13865228403597,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 0,
+          "payload_bytes": 57456,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 387.982299484036,
+        "resource_id": "coarse-link:02",
+        "start_ms": 387.982299484036,
+        "task_id": "handoff:c02-c03:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q000",
+          "seed:l00:q000:link02",
+          "seed:l12:q000:link02"
+        ],
+        "duration_ms": 107.12656908322104,
+        "finish_ms": 498.265221367257,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 21,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 0,
+          "compute_ms": 101.85088748322104,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2756815999999995,
+          "internal_payload_bytes": 402360,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 391.13865228403597,
+        "resource_id": "microcell:03",
+        "start_ms": 391.13865228403597,
+        "task_id": "compute:c03:q000"
+      },
+      {
+        "critical_predecessor": "compute:c01:q001",
+        "dependencies": [
+          "compute:c01:q001"
+        ],
+        "duration_ms": 3.202228,
+        "finish_ms": 433.95172632003084,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 1,
+          "payload_bytes": 114800,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 430.74949832003085,
+        "resource_id": "coarse-link:01",
+        "start_ms": 430.74949832003085,
+        "task_id": "handoff:c01-c02:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q001",
+        "dependencies": [
+          "compute:c02:q000",
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q001",
+          "seed:l00:q001:link01"
+        ],
+        "duration_ms": 116.44922887488224,
+        "finish_ms": 550.4009551949131,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 14,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 1,
+          "compute_ms": 111.17360103488224,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27562784,
+          "internal_payload_bytes": 402192,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 433.95172632003084,
+        "resource_id": "microcell:02",
+        "start_ms": 433.95172632003084,
+        "task_id": "compute:c02:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q001",
+        "dependencies": [
+          "handoff:c01-c02:q001"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 437.10804072003083,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 3
+        },
+        "ready_ms": 433.95172632003084,
+        "resource_id": "coarse-link:02",
+        "start_ms": 433.95172632003084,
+        "task_id": "seed:l12:q001:link02"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link02",
+        "dependencies": [
+          "seed:l12:q001:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 440.2643551200308,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 4
+        },
+        "ready_ms": 437.10804072003083,
+        "resource_id": "coarse-link:03",
+        "start_ms": 437.10804072003083,
+        "task_id": "seed:l12:q001:link03"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link03",
+        "dependencies": [
+          "seed:l12:q001:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 443.4206695200308,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 5
+        },
+        "ready_ms": 440.2643551200308,
+        "resource_id": "coarse-link:04",
+        "start_ms": 440.2643551200308,
+        "task_id": "seed:l12:q001:link04"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link04",
+        "dependencies": [
+          "seed:l12:q001:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 446.5769839200308,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 6
+        },
+        "ready_ms": 443.4206695200308,
+        "resource_id": "coarse-link:05",
+        "start_ms": 443.4206695200308,
+        "task_id": "seed:l12:q001:link05"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link05",
+        "dependencies": [
+          "seed:l12:q001:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 449.73329832003077,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 7
+        },
+        "ready_ms": 446.5769839200308,
+        "resource_id": "coarse-link:06",
+        "start_ms": 446.5769839200308,
+        "task_id": "seed:l12:q001:link06"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link06",
+        "dependencies": [
+          "seed:l12:q001:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 452.88961272003075,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 8
+        },
+        "ready_ms": 449.73329832003077,
+        "resource_id": "coarse-link:07",
+        "start_ms": 449.73329832003077,
+        "task_id": "seed:l12:q001:link07"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link07",
+        "dependencies": [
+          "seed:l12:q001:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 456.04592712003074,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 9
+        },
+        "ready_ms": 452.88961272003075,
+        "resource_id": "coarse-link:08",
+        "start_ms": 452.88961272003075,
+        "task_id": "seed:l12:q001:link08"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link08",
+        "dependencies": [
+          "seed:l12:q001:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 459.2022415200307,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 10
+        },
+        "ready_ms": 456.04592712003074,
+        "resource_id": "coarse-link:09",
+        "start_ms": 456.04592712003074,
+        "task_id": "seed:l12:q001:link09"
+      },
+      {
+        "critical_predecessor": "seed:l12:q001:link09",
+        "dependencies": [
+          "seed:l12:q001:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 462.3585559200307,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l12:v1:45facbd48c8da2b0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 11
+        },
+        "ready_ms": 459.2022415200307,
+        "resource_id": "coarse-link:10",
+        "start_ms": 459.2022415200307,
+        "task_id": "seed:l12:q001:link10"
+      },
+      {
+        "critical_predecessor": "compute:c00:q002",
+        "dependencies": [
+          "compute:c00:q002",
+          "control:bulk-dispatch"
+        ],
+        "duration_ms": 162.4186557108771,
+        "finish_ms": 649.8499728435083,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "bottleneck_operator": "dense_layer_0",
+          "cell": 0,
+          "chunk": 3,
+          "compute_ms": 157.14308163087708,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27557408,
+          "internal_payload_bytes": 402024,
+          "required_attnres_layers": [],
+          "rows": 2
+        },
+        "ready_ms": 487.43131713263125,
+        "resource_id": "microcell:00",
+        "start_ms": 487.43131713263125,
+        "task_id": "compute:c00:q003"
+      },
+      {
+        "critical_predecessor": "compute:c00:q002",
+        "dependencies": [
+          "compute:c00:q002"
+        ],
+        "duration_ms": 3.2022087999999997,
+        "finish_ms": 490.63352593263124,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 1,
+          "chunk": 2,
+          "payload_bytes": 114776,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 487.43131713263125,
+        "resource_id": "coarse-link:00",
+        "start_ms": 487.43131713263125,
+        "task_id": "handoff:c00-c01:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q002",
+        "dependencies": [
+          "compute:c01:q001",
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q002"
+        ],
+        "duration_ms": 102.53462809827667,
+        "finish_ms": 593.1681540309079,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 10,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 2,
+          "compute_ms": 97.25903097827667,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2755971200000005,
+          "internal_payload_bytes": 402096,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 2
+        },
+        "ready_ms": 490.63352593263124,
+        "resource_id": "microcell:01",
+        "start_ms": 490.63352593263124,
+        "task_id": "compute:c01:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q002",
+        "dependencies": [
+          "handoff:c00-c01:q002"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 493.78984033263123,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 2
+        },
+        "ready_ms": 490.63352593263124,
+        "resource_id": "coarse-link:01",
+        "start_ms": 490.63352593263124,
+        "task_id": "seed:l00:q002:link01"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link01",
+        "dependencies": [
+          "seed:l00:q002:link01"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 496.9461547326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 3
+        },
+        "ready_ms": 493.78984033263123,
+        "resource_id": "coarse-link:02",
+        "start_ms": 493.78984033263123,
+        "task_id": "seed:l00:q002:link02"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link02",
+        "dependencies": [
+          "seed:l00:q002:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 500.1024691326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 4
+        },
+        "ready_ms": 496.9461547326312,
+        "resource_id": "coarse-link:03",
+        "start_ms": 496.9461547326312,
+        "task_id": "seed:l00:q002:link03"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link03",
+        "dependencies": [
+          "compute:c03:q000"
+        ],
+        "duration_ms": 3.2022472,
+        "finish_ms": 503.3047163326312,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 3,
+          "chunk": 0,
+          "payload_bytes": 114824,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 498.265221367257,
+        "resource_id": "coarse-link:03",
+        "start_ms": 500.1024691326312,
+        "task_id": "handoff:c03-c04:q000"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link03",
+        "dependencies": [
+          "seed:l00:q002:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 503.2587835326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 5
+        },
+        "ready_ms": 500.1024691326312,
+        "resource_id": "coarse-link:04",
+        "start_ms": 500.1024691326312,
+        "task_id": "seed:l00:q002:link04"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link04",
+        "dependencies": [
+          "seed:l00:q002:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 506.41509793263117,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 6
+        },
+        "ready_ms": 503.2587835326312,
+        "resource_id": "coarse-link:05",
+        "start_ms": 503.2587835326312,
+        "task_id": "seed:l00:q002:link05"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q000",
+          "seed:l00:q000:link03",
+          "seed:l12:q000:link03"
+        ],
+        "duration_ms": 101.66686198246336,
+        "finish_ms": 604.9715783150946,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 24,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 0,
+          "compute_ms": 96.39115734246336,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27570464,
+          "internal_payload_bytes": 402432,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 2
+        },
+        "ready_ms": 503.3047163326312,
+        "resource_id": "microcell:04",
+        "start_ms": 503.3047163326312,
+        "task_id": "compute:c04:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q000",
+        "dependencies": [
+          "handoff:c03-c04:q000"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 506.4610307326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l24:v1:48b0a586ebee1fcd",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 5
+        },
+        "ready_ms": 503.3047163326312,
+        "resource_id": "coarse-link:04",
+        "start_ms": 503.3047163326312,
+        "task_id": "seed:l24:q000:link04"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link05",
+        "dependencies": [
+          "seed:l00:q002:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 509.57141233263116,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 7
+        },
+        "ready_ms": 506.41509793263117,
+        "resource_id": "coarse-link:06",
+        "start_ms": 506.41509793263117,
+        "task_id": "seed:l00:q002:link06"
+      },
+      {
+        "critical_predecessor": "seed:l24:q000:link04",
+        "dependencies": [
+          "seed:l24:q000:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 509.61734513263116,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l24:v1:48b0a586ebee1fcd",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 6
+        },
+        "ready_ms": 506.4610307326312,
+        "resource_id": "coarse-link:05",
+        "start_ms": 506.4610307326312,
+        "task_id": "seed:l24:q000:link05"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link06",
+        "dependencies": [
+          "seed:l00:q002:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 512.7277267326311,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 8
+        },
+        "ready_ms": 509.57141233263116,
+        "resource_id": "coarse-link:07",
+        "start_ms": 509.57141233263116,
+        "task_id": "seed:l00:q002:link07"
+      },
+      {
+        "critical_predecessor": "seed:l24:q000:link05",
+        "dependencies": [
+          "seed:l24:q000:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 512.7736595326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l24:v1:48b0a586ebee1fcd",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 7
+        },
+        "ready_ms": 509.61734513263116,
+        "resource_id": "coarse-link:06",
+        "start_ms": 509.61734513263116,
+        "task_id": "seed:l24:q000:link06"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link07",
+        "dependencies": [
+          "seed:l00:q002:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 515.8840411326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 9
+        },
+        "ready_ms": 512.7277267326311,
+        "resource_id": "coarse-link:08",
+        "start_ms": 512.7277267326311,
+        "task_id": "seed:l00:q002:link08"
+      },
+      {
+        "critical_predecessor": "seed:l24:q000:link06",
+        "dependencies": [
+          "seed:l24:q000:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 515.9299739326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l24:v1:48b0a586ebee1fcd",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 8
+        },
+        "ready_ms": 512.7736595326312,
+        "resource_id": "coarse-link:07",
+        "start_ms": 512.7736595326312,
+        "task_id": "seed:l24:q000:link07"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link08",
+        "dependencies": [
+          "seed:l00:q002:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 519.0403555326312,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 10
+        },
+        "ready_ms": 515.8840411326312,
+        "resource_id": "coarse-link:09",
+        "start_ms": 515.8840411326312,
+        "task_id": "seed:l00:q002:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q000:link07",
+        "dependencies": [
+          "seed:l24:q000:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 519.0862883326313,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l24:v1:48b0a586ebee1fcd",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 9
+        },
+        "ready_ms": 515.9299739326312,
+        "resource_id": "coarse-link:08",
+        "start_ms": 515.9299739326312,
+        "task_id": "seed:l24:q000:link08"
+      },
+      {
+        "critical_predecessor": "seed:l00:q002:link09",
+        "dependencies": [
+          "seed:l00:q002:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 522.1966699326313,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l0:v1:87cfb73bbde993f5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 11
+        },
+        "ready_ms": 519.0403555326312,
+        "resource_id": "coarse-link:10",
+        "start_ms": 519.0403555326312,
+        "task_id": "seed:l00:q002:link10"
+      },
+      {
+        "critical_predecessor": "seed:l24:q000:link08",
+        "dependencies": [
+          "seed:l24:q000:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 522.2426027326313,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l24:v1:48b0a586ebee1fcd",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 10
+        },
+        "ready_ms": 519.0862883326313,
+        "resource_id": "coarse-link:09",
+        "start_ms": 519.0862883326313,
+        "task_id": "seed:l24:q000:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q000:link09",
+        "dependencies": [
+          "seed:l24:q000:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 525.3989171326314,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l24:v1:48b0a586ebee1fcd",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 11
+        },
+        "ready_ms": 522.2426027326313,
+        "resource_id": "coarse-link:10",
+        "start_ms": 522.2426027326313,
+        "task_id": "seed:l24:q000:link10"
+      },
+      {
+        "critical_predecessor": "compute:c02:q001",
+        "dependencies": [
+          "compute:c02:q001"
+        ],
+        "duration_ms": 3.1563528,
+        "finish_ms": 553.5573079949131,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 1,
+          "payload_bytes": 57456,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 550.4009551949131,
+        "resource_id": "coarse-link:02",
+        "start_ms": 550.4009551949131,
+        "task_id": "handoff:c02-c03:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q001",
+        "dependencies": [
+          "compute:c03:q000",
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q001",
+          "seed:l00:q001:link02",
+          "seed:l12:q001:link02"
+        ],
+        "duration_ms": 107.12656908322104,
+        "finish_ms": 660.6838770781342,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 21,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 1,
+          "compute_ms": 101.85088748322104,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2756815999999995,
+          "internal_payload_bytes": 402360,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 553.5573079949131,
+        "resource_id": "microcell:03",
+        "start_ms": 553.5573079949131,
+        "task_id": "compute:c03:q001"
+      },
+      {
+        "critical_predecessor": "compute:c01:q002",
+        "dependencies": [
+          "compute:c01:q002"
+        ],
+        "duration_ms": 3.202228,
+        "finish_ms": 596.3703820309079,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 2,
+          "payload_bytes": 114800,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 593.1681540309079,
+        "resource_id": "coarse-link:01",
+        "start_ms": 593.1681540309079,
+        "task_id": "handoff:c01-c02:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q002",
+        "dependencies": [
+          "compute:c02:q001",
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q002",
+          "seed:l00:q002:link01"
+        ],
+        "duration_ms": 116.44922887488224,
+        "finish_ms": 712.8196109057901,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 14,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 2,
+          "compute_ms": 111.17360103488224,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27562784,
+          "internal_payload_bytes": 402192,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 596.3703820309079,
+        "resource_id": "microcell:02",
+        "start_ms": 596.3703820309079,
+        "task_id": "compute:c02:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q002",
+        "dependencies": [
+          "handoff:c01-c02:q002"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 599.5266964309079,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 3
+        },
+        "ready_ms": 596.3703820309079,
+        "resource_id": "coarse-link:02",
+        "start_ms": 596.3703820309079,
+        "task_id": "seed:l12:q002:link02"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link02",
+        "dependencies": [
+          "seed:l12:q002:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 602.683010830908,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 4
+        },
+        "ready_ms": 599.5266964309079,
+        "resource_id": "coarse-link:03",
+        "start_ms": 599.5266964309079,
+        "task_id": "seed:l12:q002:link03"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link03",
+        "dependencies": [
+          "seed:l12:q002:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 605.839325230908,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 5
+        },
+        "ready_ms": 602.683010830908,
+        "resource_id": "coarse-link:04",
+        "start_ms": 602.683010830908,
+        "task_id": "seed:l12:q002:link04"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link04",
+        "dependencies": [
+          "compute:c04:q000"
+        ],
+        "duration_ms": 3.2022664,
+        "finish_ms": 609.041591630908,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 0,
+          "payload_bytes": 114848,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 604.9715783150946,
+        "resource_id": "coarse-link:04",
+        "start_ms": 605.839325230908,
+        "task_id": "handoff:c04-c05:q000"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link04",
+        "dependencies": [
+          "seed:l12:q002:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 608.995639630908,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 6
+        },
+        "ready_ms": 605.839325230908,
+        "resource_id": "coarse-link:05",
+        "start_ms": 605.839325230908,
+        "task_id": "seed:l12:q002:link05"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link05",
+        "dependencies": [
+          "seed:l12:q002:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 612.1519540309081,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 7
+        },
+        "ready_ms": 608.995639630908,
+        "resource_id": "coarse-link:06",
+        "start_ms": 608.995639630908,
+        "task_id": "seed:l12:q002:link06"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q000",
+          "seed:l00:q000:link04",
+          "seed:l12:q000:link04",
+          "seed:l24:q000:link04"
+        ],
+        "duration_ms": 105.75685168157752,
+        "finish_ms": 714.7984433124855,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 28,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 0,
+          "compute_ms": 100.48111632157752,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2757353600000005,
+          "internal_payload_bytes": 402528,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 609.041591630908,
+        "resource_id": "microcell:05",
+        "start_ms": 609.041591630908,
+        "task_id": "compute:c05:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q000",
+        "dependencies": [
+          "handoff:c04-c05:q000"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 612.197906030908,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l36:v1:98622d2439821dc5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 6
+        },
+        "ready_ms": 609.041591630908,
+        "resource_id": "coarse-link:05",
+        "start_ms": 609.041591630908,
+        "task_id": "seed:l36:q000:link05"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link06",
+        "dependencies": [
+          "seed:l12:q002:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 615.3082684309081,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 8
+        },
+        "ready_ms": 612.1519540309081,
+        "resource_id": "coarse-link:07",
+        "start_ms": 612.1519540309081,
+        "task_id": "seed:l12:q002:link07"
+      },
+      {
+        "critical_predecessor": "seed:l36:q000:link05",
+        "dependencies": [
+          "seed:l36:q000:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 615.3542204309081,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l36:v1:98622d2439821dc5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 7
+        },
+        "ready_ms": 612.197906030908,
+        "resource_id": "coarse-link:06",
+        "start_ms": 612.197906030908,
+        "task_id": "seed:l36:q000:link06"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link07",
+        "dependencies": [
+          "seed:l12:q002:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 618.4645828309082,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 9
+        },
+        "ready_ms": 615.3082684309081,
+        "resource_id": "coarse-link:08",
+        "start_ms": 615.3082684309081,
+        "task_id": "seed:l12:q002:link08"
+      },
+      {
+        "critical_predecessor": "seed:l36:q000:link06",
+        "dependencies": [
+          "seed:l36:q000:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 618.5105348309081,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l36:v1:98622d2439821dc5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 8
+        },
+        "ready_ms": 615.3542204309081,
+        "resource_id": "coarse-link:07",
+        "start_ms": 615.3542204309081,
+        "task_id": "seed:l36:q000:link07"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link08",
+        "dependencies": [
+          "seed:l12:q002:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 621.6208972309082,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 10
+        },
+        "ready_ms": 618.4645828309082,
+        "resource_id": "coarse-link:09",
+        "start_ms": 618.4645828309082,
+        "task_id": "seed:l12:q002:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q000:link07",
+        "dependencies": [
+          "seed:l36:q000:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 621.6668492309082,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l36:v1:98622d2439821dc5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 9
+        },
+        "ready_ms": 618.5105348309081,
+        "resource_id": "coarse-link:08",
+        "start_ms": 618.5105348309081,
+        "task_id": "seed:l36:q000:link08"
+      },
+      {
+        "critical_predecessor": "seed:l12:q002:link09",
+        "dependencies": [
+          "seed:l12:q002:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 624.7772116309083,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l12:v1:71878490f504a252",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 11
+        },
+        "ready_ms": 621.6208972309082,
+        "resource_id": "coarse-link:10",
+        "start_ms": 621.6208972309082,
+        "task_id": "seed:l12:q002:link10"
+      },
+      {
+        "critical_predecessor": "seed:l36:q000:link08",
+        "dependencies": [
+          "seed:l36:q000:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 624.8231636309082,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l36:v1:98622d2439821dc5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 10
+        },
+        "ready_ms": 621.6668492309082,
+        "resource_id": "coarse-link:09",
+        "start_ms": 621.6668492309082,
+        "task_id": "seed:l36:q000:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q000:link09",
+        "dependencies": [
+          "seed:l36:q000:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 627.9794780309082,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l36:v1:98622d2439821dc5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 11
+        },
+        "ready_ms": 624.8231636309082,
+        "resource_id": "coarse-link:10",
+        "start_ms": 624.8231636309082,
+        "task_id": "seed:l36:q000:link10"
+      },
+      {
+        "critical_predecessor": "compute:c00:q003",
+        "dependencies": [
+          "compute:c00:q003"
+        ],
+        "duration_ms": 3.2022087999999997,
+        "finish_ms": 653.0521816435083,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 1,
+          "chunk": 3,
+          "payload_bytes": 114776,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 0,
+          "target_cell": 1
+        },
+        "ready_ms": 649.8499728435083,
+        "resource_id": "coarse-link:00",
+        "start_ms": 649.8499728435083,
+        "task_id": "handoff:c00-c01:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q003",
+        "dependencies": [
+          "compute:c01:q002",
+          "control:bulk-dispatch",
+          "handoff:c00-c01:q003"
+        ],
+        "duration_ms": 102.53462809827667,
+        "finish_ms": 755.586809741785,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 10,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 1,
+          "chunk": 3,
+          "compute_ms": 97.25903097827667,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2755971200000005,
+          "internal_payload_bytes": 402096,
+          "required_attnres_layers": [
+            0
+          ],
+          "rows": 2
+        },
+        "ready_ms": 653.0521816435083,
+        "resource_id": "microcell:01",
+        "start_ms": 653.0521816435083,
+        "task_id": "compute:c01:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c00-c01:q003",
+        "dependencies": [
+          "handoff:c00-c01:q003"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 656.2084960435084,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 2
+        },
+        "ready_ms": 653.0521816435083,
+        "resource_id": "coarse-link:01",
+        "start_ms": 653.0521816435083,
+        "task_id": "seed:l00:q003:link01"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link01",
+        "dependencies": [
+          "seed:l00:q003:link01"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 659.3648104435084,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 3
+        },
+        "ready_ms": 656.2084960435084,
+        "resource_id": "coarse-link:02",
+        "start_ms": 656.2084960435084,
+        "task_id": "seed:l00:q003:link02"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link02",
+        "dependencies": [
+          "seed:l00:q003:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 662.5211248435085,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 4
+        },
+        "ready_ms": 659.3648104435084,
+        "resource_id": "coarse-link:03",
+        "start_ms": 659.3648104435084,
+        "task_id": "seed:l00:q003:link03"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link03",
+        "dependencies": [
+          "compute:c03:q001"
+        ],
+        "duration_ms": 3.2022472,
+        "finish_ms": 665.7233720435084,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 3,
+          "chunk": 1,
+          "payload_bytes": 114824,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 660.6838770781342,
+        "resource_id": "coarse-link:03",
+        "start_ms": 662.5211248435085,
+        "task_id": "handoff:c03-c04:q001"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link03",
+        "dependencies": [
+          "seed:l00:q003:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 665.6774392435085,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 5
+        },
+        "ready_ms": 662.5211248435085,
+        "resource_id": "coarse-link:04",
+        "start_ms": 662.5211248435085,
+        "task_id": "seed:l00:q003:link04"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link04",
+        "dependencies": [
+          "seed:l00:q003:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 668.8337536435085,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 6
+        },
+        "ready_ms": 665.6774392435085,
+        "resource_id": "coarse-link:05",
+        "start_ms": 665.6774392435085,
+        "task_id": "seed:l00:q003:link05"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q001",
+        "dependencies": [
+          "compute:c04:q000",
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q001",
+          "seed:l00:q001:link03",
+          "seed:l12:q001:link03"
+        ],
+        "duration_ms": 101.66686198246336,
+        "finish_ms": 767.3902340259718,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 24,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 1,
+          "compute_ms": 96.39115734246336,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27570464,
+          "internal_payload_bytes": 402432,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 2
+        },
+        "ready_ms": 665.7233720435084,
+        "resource_id": "microcell:04",
+        "start_ms": 665.7233720435084,
+        "task_id": "compute:c04:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q001",
+        "dependencies": [
+          "handoff:c03-c04:q001"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 668.8796864435085,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l24:v1:493d91d977a5efb5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 5
+        },
+        "ready_ms": 665.7233720435084,
+        "resource_id": "coarse-link:04",
+        "start_ms": 665.7233720435084,
+        "task_id": "seed:l24:q001:link04"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link05",
+        "dependencies": [
+          "seed:l00:q003:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 671.9900680435086,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 7
+        },
+        "ready_ms": 668.8337536435085,
+        "resource_id": "coarse-link:06",
+        "start_ms": 668.8337536435085,
+        "task_id": "seed:l00:q003:link06"
+      },
+      {
+        "critical_predecessor": "seed:l24:q001:link04",
+        "dependencies": [
+          "seed:l24:q001:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 672.0360008435085,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l24:v1:493d91d977a5efb5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 6
+        },
+        "ready_ms": 668.8796864435085,
+        "resource_id": "coarse-link:05",
+        "start_ms": 668.8796864435085,
+        "task_id": "seed:l24:q001:link05"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link06",
+        "dependencies": [
+          "seed:l00:q003:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 675.1463824435086,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 8
+        },
+        "ready_ms": 671.9900680435086,
+        "resource_id": "coarse-link:07",
+        "start_ms": 671.9900680435086,
+        "task_id": "seed:l00:q003:link07"
+      },
+      {
+        "critical_predecessor": "seed:l24:q001:link05",
+        "dependencies": [
+          "seed:l24:q001:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 675.1923152435086,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l24:v1:493d91d977a5efb5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 7
+        },
+        "ready_ms": 672.0360008435085,
+        "resource_id": "coarse-link:06",
+        "start_ms": 672.0360008435085,
+        "task_id": "seed:l24:q001:link06"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link07",
+        "dependencies": [
+          "seed:l00:q003:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 678.3026968435087,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 9
+        },
+        "ready_ms": 675.1463824435086,
+        "resource_id": "coarse-link:08",
+        "start_ms": 675.1463824435086,
+        "task_id": "seed:l00:q003:link08"
+      },
+      {
+        "critical_predecessor": "seed:l24:q001:link06",
+        "dependencies": [
+          "seed:l24:q001:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 678.3486296435086,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l24:v1:493d91d977a5efb5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 8
+        },
+        "ready_ms": 675.1923152435086,
+        "resource_id": "coarse-link:07",
+        "start_ms": 675.1923152435086,
+        "task_id": "seed:l24:q001:link07"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link08",
+        "dependencies": [
+          "seed:l00:q003:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 681.4590112435087,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 10
+        },
+        "ready_ms": 678.3026968435087,
+        "resource_id": "coarse-link:09",
+        "start_ms": 678.3026968435087,
+        "task_id": "seed:l00:q003:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q001:link07",
+        "dependencies": [
+          "seed:l24:q001:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 681.5049440435087,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l24:v1:493d91d977a5efb5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 9
+        },
+        "ready_ms": 678.3486296435086,
+        "resource_id": "coarse-link:08",
+        "start_ms": 678.3486296435086,
+        "task_id": "seed:l24:q001:link08"
+      },
+      {
+        "critical_predecessor": "seed:l00:q003:link09",
+        "dependencies": [
+          "seed:l00:q003:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 684.6153256435088,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l0:v1:3377a99652f556d3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 0,
+          "target_cell": 11
+        },
+        "ready_ms": 681.4590112435087,
+        "resource_id": "coarse-link:10",
+        "start_ms": 681.4590112435087,
+        "task_id": "seed:l00:q003:link10"
+      },
+      {
+        "critical_predecessor": "seed:l24:q001:link08",
+        "dependencies": [
+          "seed:l24:q001:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 684.6612584435087,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l24:v1:493d91d977a5efb5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 10
+        },
+        "ready_ms": 681.5049440435087,
+        "resource_id": "coarse-link:09",
+        "start_ms": 681.5049440435087,
+        "task_id": "seed:l24:q001:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q001:link09",
+        "dependencies": [
+          "seed:l24:q001:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 687.8175728435087,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l24:v1:493d91d977a5efb5",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 11
+        },
+        "ready_ms": 684.6612584435087,
+        "resource_id": "coarse-link:10",
+        "start_ms": 684.6612584435087,
+        "task_id": "seed:l24:q001:link10"
+      },
+      {
+        "critical_predecessor": "compute:c02:q002",
+        "dependencies": [
+          "compute:c02:q002"
+        ],
+        "duration_ms": 3.1563528,
+        "finish_ms": 715.9759637057902,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 2,
+          "payload_bytes": 57456,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 712.8196109057901,
+        "resource_id": "coarse-link:02",
+        "start_ms": 712.8196109057901,
+        "task_id": "handoff:c02-c03:q002"
+      },
+      {
+        "critical_predecessor": "compute:c05:q000",
+        "dependencies": [
+          "compute:c05:q000"
+        ],
+        "duration_ms": 3.1563912,
+        "finish_ms": 717.9548345124855,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 0,
+          "payload_bytes": 57504,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 714.7984433124855,
+        "resource_id": "coarse-link:05",
+        "start_ms": 714.7984433124855,
+        "task_id": "handoff:c05-c06:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q002",
+        "dependencies": [
+          "compute:c03:q001",
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q002",
+          "seed:l00:q002:link02",
+          "seed:l12:q002:link02"
+        ],
+        "duration_ms": 107.12656908322104,
+        "finish_ms": 823.1025327890112,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 21,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 2,
+          "compute_ms": 101.85088748322104,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2756815999999995,
+          "internal_payload_bytes": 402360,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 715.9759637057902,
+        "resource_id": "microcell:03",
+        "start_ms": 715.9759637057902,
+        "task_id": "compute:c03:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q000",
+          "seed:l00:q000:link05",
+          "seed:l12:q000:link05",
+          "seed:l24:q000:link05",
+          "seed:l36:q000:link05"
+        ],
+        "duration_ms": 102.05161726556462,
+        "finish_ms": 820.0064517780501,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 35,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 0,
+          "compute_ms": 96.77582814556462,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275789119999999,
+          "internal_payload_bytes": 402696,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 717.9548345124855,
+        "resource_id": "microcell:06",
+        "start_ms": 717.9548345124855,
+        "task_id": "compute:c06:q000"
+      },
+      {
+        "critical_predecessor": "compute:c01:q003",
+        "dependencies": [
+          "compute:c01:q003"
+        ],
+        "duration_ms": 3.202228,
+        "finish_ms": 758.789037741785,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 3,
+          "payload_bytes": 114800,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 1,
+          "target_cell": 2
+        },
+        "ready_ms": 755.586809741785,
+        "resource_id": "coarse-link:01",
+        "start_ms": 755.586809741785,
+        "task_id": "handoff:c01-c02:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q003",
+        "dependencies": [
+          "compute:c02:q002",
+          "control:bulk-dispatch",
+          "handoff:c01-c02:q003",
+          "seed:l00:q003:link01"
+        ],
+        "duration_ms": 116.44922887488224,
+        "finish_ms": 875.2382666166673,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 14,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 2,
+          "chunk": 3,
+          "compute_ms": 111.17360103488224,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27562784,
+          "internal_payload_bytes": 402192,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 758.789037741785,
+        "resource_id": "microcell:02",
+        "start_ms": 758.789037741785,
+        "task_id": "compute:c02:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c01-c02:q003",
+        "dependencies": [
+          "handoff:c01-c02:q003"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 761.9453521417851,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 3
+        },
+        "ready_ms": 758.789037741785,
+        "resource_id": "coarse-link:02",
+        "start_ms": 758.789037741785,
+        "task_id": "seed:l12:q003:link02"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link02",
+        "dependencies": [
+          "seed:l12:q003:link02"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 765.1016665417851,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 4
+        },
+        "ready_ms": 761.9453521417851,
+        "resource_id": "coarse-link:03",
+        "start_ms": 761.9453521417851,
+        "task_id": "seed:l12:q003:link03"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link03",
+        "dependencies": [
+          "seed:l12:q003:link03"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 768.2579809417851,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 5
+        },
+        "ready_ms": 765.1016665417851,
+        "resource_id": "coarse-link:04",
+        "start_ms": 765.1016665417851,
+        "task_id": "seed:l12:q003:link04"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link04",
+        "dependencies": [
+          "compute:c04:q001"
+        ],
+        "duration_ms": 3.2022664,
+        "finish_ms": 771.4602473417851,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 1,
+          "payload_bytes": 114848,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 767.3902340259718,
+        "resource_id": "coarse-link:04",
+        "start_ms": 768.2579809417851,
+        "task_id": "handoff:c04-c05:q001"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link04",
+        "dependencies": [
+          "seed:l12:q003:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 771.4142953417852,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 6
+        },
+        "ready_ms": 768.2579809417851,
+        "resource_id": "coarse-link:05",
+        "start_ms": 768.2579809417851,
+        "task_id": "seed:l12:q003:link05"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link05",
+        "dependencies": [
+          "seed:l12:q003:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 774.5706097417852,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 7
+        },
+        "ready_ms": 771.4142953417852,
+        "resource_id": "coarse-link:06",
+        "start_ms": 771.4142953417852,
+        "task_id": "seed:l12:q003:link06"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q001",
+        "dependencies": [
+          "compute:c05:q000",
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q001",
+          "seed:l00:q001:link04",
+          "seed:l12:q001:link04",
+          "seed:l24:q001:link04"
+        ],
+        "duration_ms": 105.75685168157752,
+        "finish_ms": 877.2170990233626,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 28,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 1,
+          "compute_ms": 100.48111632157752,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2757353600000005,
+          "internal_payload_bytes": 402528,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 771.4602473417851,
+        "resource_id": "microcell:05",
+        "start_ms": 771.4602473417851,
+        "task_id": "compute:c05:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q001",
+        "dependencies": [
+          "handoff:c04-c05:q001"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 774.6165617417852,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l36:v1:2635321fc3e17a0c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 6
+        },
+        "ready_ms": 771.4602473417851,
+        "resource_id": "coarse-link:05",
+        "start_ms": 771.4602473417851,
+        "task_id": "seed:l36:q001:link05"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link06",
+        "dependencies": [
+          "seed:l12:q003:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 777.7269241417853,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 8
+        },
+        "ready_ms": 774.5706097417852,
+        "resource_id": "coarse-link:07",
+        "start_ms": 774.5706097417852,
+        "task_id": "seed:l12:q003:link07"
+      },
+      {
+        "critical_predecessor": "seed:l36:q001:link05",
+        "dependencies": [
+          "seed:l36:q001:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 777.7728761417852,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l36:v1:2635321fc3e17a0c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 7
+        },
+        "ready_ms": 774.6165617417852,
+        "resource_id": "coarse-link:06",
+        "start_ms": 774.6165617417852,
+        "task_id": "seed:l36:q001:link06"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link07",
+        "dependencies": [
+          "seed:l12:q003:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 780.8832385417853,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 9
+        },
+        "ready_ms": 777.7269241417853,
+        "resource_id": "coarse-link:08",
+        "start_ms": 777.7269241417853,
+        "task_id": "seed:l12:q003:link08"
+      },
+      {
+        "critical_predecessor": "seed:l36:q001:link06",
+        "dependencies": [
+          "seed:l36:q001:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 780.9291905417853,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l36:v1:2635321fc3e17a0c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 8
+        },
+        "ready_ms": 777.7728761417852,
+        "resource_id": "coarse-link:07",
+        "start_ms": 777.7728761417852,
+        "task_id": "seed:l36:q001:link07"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link08",
+        "dependencies": [
+          "seed:l12:q003:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 784.0395529417854,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 10
+        },
+        "ready_ms": 780.8832385417853,
+        "resource_id": "coarse-link:09",
+        "start_ms": 780.8832385417853,
+        "task_id": "seed:l12:q003:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q001:link07",
+        "dependencies": [
+          "seed:l36:q001:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 784.0855049417853,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l36:v1:2635321fc3e17a0c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 9
+        },
+        "ready_ms": 780.9291905417853,
+        "resource_id": "coarse-link:08",
+        "start_ms": 780.9291905417853,
+        "task_id": "seed:l36:q001:link08"
+      },
+      {
+        "critical_predecessor": "seed:l12:q003:link09",
+        "dependencies": [
+          "seed:l12:q003:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 787.1958673417854,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l12:v1:456cb0f759c44614",
+          "payload_bytes": 57408,
+          "snapshot_layer": 12,
+          "target_cell": 11
+        },
+        "ready_ms": 784.0395529417854,
+        "resource_id": "coarse-link:10",
+        "start_ms": 784.0395529417854,
+        "task_id": "seed:l12:q003:link10"
+      },
+      {
+        "critical_predecessor": "seed:l36:q001:link08",
+        "dependencies": [
+          "seed:l36:q001:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 787.2418193417853,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l36:v1:2635321fc3e17a0c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 10
+        },
+        "ready_ms": 784.0855049417853,
+        "resource_id": "coarse-link:09",
+        "start_ms": 784.0855049417853,
+        "task_id": "seed:l36:q001:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q001:link09",
+        "dependencies": [
+          "seed:l36:q001:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 790.3981337417854,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l36:v1:2635321fc3e17a0c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 11
+        },
+        "ready_ms": 787.2418193417853,
+        "resource_id": "coarse-link:10",
+        "start_ms": 787.2418193417853,
+        "task_id": "seed:l36:q001:link10"
+      },
+      {
+        "critical_predecessor": "compute:c06:q000",
+        "dependencies": [
+          "compute:c06:q000"
+        ],
+        "duration_ms": 3.2022855999999997,
+        "finish_ms": 823.20873737805,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 5,
+          "chunk": 0,
+          "payload_bytes": 114872,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 820.0064517780501,
+        "resource_id": "coarse-link:06",
+        "start_ms": 820.0064517780501,
+        "task_id": "handoff:c06-c07:q000"
+      },
+      {
+        "critical_predecessor": "compute:c03:q002",
+        "dependencies": [
+          "compute:c03:q002"
+        ],
+        "duration_ms": 3.2022472,
+        "finish_ms": 826.3047799890112,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 3,
+          "chunk": 2,
+          "payload_bytes": 114824,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 823.1025327890112,
+        "resource_id": "coarse-link:03",
+        "start_ms": 823.1025327890112,
+        "task_id": "handoff:c03-c04:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q000",
+          "seed:l00:q000:link06",
+          "seed:l12:q000:link06",
+          "seed:l24:q000:link06",
+          "seed:l36:q000:link06"
+        ],
+        "duration_ms": 104.83736951773174,
+        "finish_ms": 928.0461068957818,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 38,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 0,
+          "compute_ms": 99.56155735773174,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27581216,
+          "internal_payload_bytes": 402768,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 2
+        },
+        "ready_ms": 823.20873737805,
+        "resource_id": "microcell:07",
+        "start_ms": 823.20873737805,
+        "task_id": "compute:c07:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q000",
+        "dependencies": [
+          "handoff:c06-c07:q000"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 826.3650517780501,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l48:v1:2e47b6d25b7acfe8",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 8
+        },
+        "ready_ms": 823.20873737805,
+        "resource_id": "coarse-link:07",
+        "start_ms": 823.20873737805,
+        "task_id": "seed:l48:q000:link07"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q002",
+        "dependencies": [
+          "compute:c04:q001",
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q002",
+          "seed:l00:q002:link03",
+          "seed:l12:q002:link03"
+        ],
+        "duration_ms": 101.66686198246336,
+        "finish_ms": 927.9716419714746,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 24,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 2,
+          "compute_ms": 96.39115734246336,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27570464,
+          "internal_payload_bytes": 402432,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 2
+        },
+        "ready_ms": 826.3047799890112,
+        "resource_id": "microcell:04",
+        "start_ms": 826.3047799890112,
+        "task_id": "compute:c04:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q002",
+        "dependencies": [
+          "handoff:c03-c04:q002"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 829.4610943890112,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l24:v1:35fc58fb05203c9c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 5
+        },
+        "ready_ms": 826.3047799890112,
+        "resource_id": "coarse-link:04",
+        "start_ms": 826.3047799890112,
+        "task_id": "seed:l24:q002:link04"
+      },
+      {
+        "critical_predecessor": "seed:l48:q000:link07",
+        "dependencies": [
+          "seed:l48:q000:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 829.5213661780501,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l48:v1:2e47b6d25b7acfe8",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 9
+        },
+        "ready_ms": 826.3650517780501,
+        "resource_id": "coarse-link:08",
+        "start_ms": 826.3650517780501,
+        "task_id": "seed:l48:q000:link08"
+      },
+      {
+        "critical_predecessor": "seed:l24:q002:link04",
+        "dependencies": [
+          "seed:l24:q002:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 832.6174087890113,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l24:v1:35fc58fb05203c9c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 6
+        },
+        "ready_ms": 829.4610943890112,
+        "resource_id": "coarse-link:05",
+        "start_ms": 829.4610943890112,
+        "task_id": "seed:l24:q002:link05"
+      },
+      {
+        "critical_predecessor": "seed:l48:q000:link08",
+        "dependencies": [
+          "seed:l48:q000:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 832.6776805780502,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l48:v1:2e47b6d25b7acfe8",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 10
+        },
+        "ready_ms": 829.5213661780501,
+        "resource_id": "coarse-link:09",
+        "start_ms": 829.5213661780501,
+        "task_id": "seed:l48:q000:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q002:link05",
+        "dependencies": [
+          "seed:l24:q002:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 835.7737231890113,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l24:v1:35fc58fb05203c9c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 7
+        },
+        "ready_ms": 832.6174087890113,
+        "resource_id": "coarse-link:06",
+        "start_ms": 832.6174087890113,
+        "task_id": "seed:l24:q002:link06"
+      },
+      {
+        "critical_predecessor": "seed:l48:q000:link09",
+        "dependencies": [
+          "seed:l48:q000:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 835.8339949780502,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l48:v1:2e47b6d25b7acfe8",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 11
+        },
+        "ready_ms": 832.6776805780502,
+        "resource_id": "coarse-link:10",
+        "start_ms": 832.6776805780502,
+        "task_id": "seed:l48:q000:link10"
+      },
+      {
+        "critical_predecessor": "seed:l24:q002:link06",
+        "dependencies": [
+          "seed:l24:q002:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 838.9300375890114,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l24:v1:35fc58fb05203c9c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 8
+        },
+        "ready_ms": 835.7737231890113,
+        "resource_id": "coarse-link:07",
+        "start_ms": 835.7737231890113,
+        "task_id": "seed:l24:q002:link07"
+      },
+      {
+        "critical_predecessor": "seed:l24:q002:link07",
+        "dependencies": [
+          "seed:l24:q002:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 842.0863519890114,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l24:v1:35fc58fb05203c9c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 9
+        },
+        "ready_ms": 838.9300375890114,
+        "resource_id": "coarse-link:08",
+        "start_ms": 838.9300375890114,
+        "task_id": "seed:l24:q002:link08"
+      },
+      {
+        "critical_predecessor": "seed:l24:q002:link08",
+        "dependencies": [
+          "seed:l24:q002:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 845.2426663890114,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l24:v1:35fc58fb05203c9c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 10
+        },
+        "ready_ms": 842.0863519890114,
+        "resource_id": "coarse-link:09",
+        "start_ms": 842.0863519890114,
+        "task_id": "seed:l24:q002:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q002:link09",
+        "dependencies": [
+          "seed:l24:q002:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 848.3989807890115,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l24:v1:35fc58fb05203c9c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 11
+        },
+        "ready_ms": 845.2426663890114,
+        "resource_id": "coarse-link:10",
+        "start_ms": 845.2426663890114,
+        "task_id": "seed:l24:q002:link10"
+      },
+      {
+        "critical_predecessor": "compute:c02:q003",
+        "dependencies": [
+          "compute:c02:q003"
+        ],
+        "duration_ms": 3.1563528,
+        "finish_ms": 878.3946194166673,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 2,
+          "chunk": 3,
+          "payload_bytes": 57456,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 2,
+          "target_cell": 3
+        },
+        "ready_ms": 875.2382666166673,
+        "resource_id": "coarse-link:02",
+        "start_ms": 875.2382666166673,
+        "task_id": "handoff:c02-c03:q003"
+      },
+      {
+        "critical_predecessor": "compute:c05:q001",
+        "dependencies": [
+          "compute:c05:q001"
+        ],
+        "duration_ms": 3.1563912,
+        "finish_ms": 880.3734902233626,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 1,
+          "payload_bytes": 57504,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 877.2170990233626,
+        "resource_id": "coarse-link:05",
+        "start_ms": 877.2170990233626,
+        "task_id": "handoff:c05-c06:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c02-c03:q003",
+        "dependencies": [
+          "compute:c03:q002",
+          "control:bulk-dispatch",
+          "handoff:c02-c03:q003",
+          "seed:l00:q003:link02",
+          "seed:l12:q003:link02"
+        ],
+        "duration_ms": 107.12656908322104,
+        "finish_ms": 985.5211884998884,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 21,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 3,
+          "chunk": 3,
+          "compute_ms": 101.85088748322104,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2756815999999995,
+          "internal_payload_bytes": 402360,
+          "required_attnres_layers": [
+            0,
+            12
+          ],
+          "rows": 2
+        },
+        "ready_ms": 878.3946194166673,
+        "resource_id": "microcell:03",
+        "start_ms": 878.3946194166673,
+        "task_id": "compute:c03:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q001",
+        "dependencies": [
+          "compute:c06:q000",
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q001",
+          "seed:l00:q001:link05",
+          "seed:l12:q001:link05",
+          "seed:l24:q001:link05",
+          "seed:l36:q001:link05"
+        ],
+        "duration_ms": 102.05161726556462,
+        "finish_ms": 982.4251074889272,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 35,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 1,
+          "compute_ms": 96.77582814556462,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275789119999999,
+          "internal_payload_bytes": 402696,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 880.3734902233626,
+        "resource_id": "microcell:06",
+        "start_ms": 880.3734902233626,
+        "task_id": "compute:c06:q001"
+      },
+      {
+        "critical_predecessor": "compute:c04:q002",
+        "dependencies": [
+          "compute:c04:q002"
+        ],
+        "duration_ms": 3.2022664,
+        "finish_ms": 931.1739083714746,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 2,
+          "payload_bytes": 114848,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 927.9716419714746,
+        "resource_id": "coarse-link:04",
+        "start_ms": 927.9716419714746,
+        "task_id": "handoff:c04-c05:q002"
+      },
+      {
+        "critical_predecessor": "compute:c07:q000",
+        "dependencies": [
+          "compute:c07:q000"
+        ],
+        "duration_ms": 3.2023048,
+        "finish_ms": 931.2484116957818,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 0,
+          "payload_bytes": 114896,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 928.0461068957818,
+        "resource_id": "coarse-link:07",
+        "start_ms": 928.0461068957818,
+        "task_id": "handoff:c07-c08:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q002",
+        "dependencies": [
+          "compute:c05:q001",
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q002",
+          "seed:l00:q002:link04",
+          "seed:l12:q002:link04",
+          "seed:l24:q002:link04"
+        ],
+        "duration_ms": 105.75685168157752,
+        "finish_ms": 1036.9307600530522,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 28,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 2,
+          "compute_ms": 100.48111632157752,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2757353600000005,
+          "internal_payload_bytes": 402528,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 931.1739083714746,
+        "resource_id": "microcell:05",
+        "start_ms": 931.1739083714746,
+        "task_id": "compute:c05:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q002",
+        "dependencies": [
+          "handoff:c04-c05:q002"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 934.3302227714746,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l36:v1:1f4030b70a4b765b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 6
+        },
+        "ready_ms": 931.1739083714746,
+        "resource_id": "coarse-link:05",
+        "start_ms": 931.1739083714746,
+        "task_id": "seed:l36:q002:link05"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q000",
+          "seed:l00:q000:link07",
+          "seed:l12:q000:link07",
+          "seed:l24:q000:link07",
+          "seed:l36:q000:link07",
+          "seed:l48:q000:link07"
+        ],
+        "duration_ms": 104.22707349181637,
+        "finish_ms": 1035.4754851875982,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 42,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 0,
+          "compute_ms": 98.95123061181637,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27584288,
+          "internal_payload_bytes": 402864,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 931.2484116957818,
+        "resource_id": "microcell:08",
+        "start_ms": 931.2484116957818,
+        "task_id": "compute:c08:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q000",
+        "dependencies": [
+          "handoff:c07-c08:q000"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 934.4047260957818,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l60:v1:288086a08f81dc36",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 9
+        },
+        "ready_ms": 931.2484116957818,
+        "resource_id": "coarse-link:08",
+        "start_ms": 931.2484116957818,
+        "task_id": "seed:l60:q000:link08"
+      },
+      {
+        "critical_predecessor": "seed:l36:q002:link05",
+        "dependencies": [
+          "seed:l36:q002:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 937.4865371714747,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l36:v1:1f4030b70a4b765b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 7
+        },
+        "ready_ms": 934.3302227714746,
+        "resource_id": "coarse-link:06",
+        "start_ms": 934.3302227714746,
+        "task_id": "seed:l36:q002:link06"
+      },
+      {
+        "critical_predecessor": "seed:l60:q000:link08",
+        "dependencies": [
+          "seed:l60:q000:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 937.5610404957819,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l60:v1:288086a08f81dc36",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 10
+        },
+        "ready_ms": 934.4047260957818,
+        "resource_id": "coarse-link:09",
+        "start_ms": 934.4047260957818,
+        "task_id": "seed:l60:q000:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q002:link06",
+        "dependencies": [
+          "seed:l36:q002:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 940.6428515714747,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l36:v1:1f4030b70a4b765b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 8
+        },
+        "ready_ms": 937.4865371714747,
+        "resource_id": "coarse-link:07",
+        "start_ms": 937.4865371714747,
+        "task_id": "seed:l36:q002:link07"
+      },
+      {
+        "critical_predecessor": "seed:l60:q000:link09",
+        "dependencies": [
+          "seed:l60:q000:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 940.7173548957819,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l60:v1:288086a08f81dc36",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 11
+        },
+        "ready_ms": 937.5610404957819,
+        "resource_id": "coarse-link:10",
+        "start_ms": 937.5610404957819,
+        "task_id": "seed:l60:q000:link10"
+      },
+      {
+        "critical_predecessor": "seed:l36:q002:link07",
+        "dependencies": [
+          "seed:l36:q002:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 943.7991659714747,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l36:v1:1f4030b70a4b765b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 9
+        },
+        "ready_ms": 940.6428515714747,
+        "resource_id": "coarse-link:08",
+        "start_ms": 940.6428515714747,
+        "task_id": "seed:l36:q002:link08"
+      },
+      {
+        "critical_predecessor": "seed:l36:q002:link08",
+        "dependencies": [
+          "seed:l36:q002:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 946.9554803714748,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l36:v1:1f4030b70a4b765b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 10
+        },
+        "ready_ms": 943.7991659714747,
+        "resource_id": "coarse-link:09",
+        "start_ms": 943.7991659714747,
+        "task_id": "seed:l36:q002:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q002:link09",
+        "dependencies": [
+          "seed:l36:q002:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 950.1117947714748,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l36:v1:1f4030b70a4b765b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 11
+        },
+        "ready_ms": 946.9554803714748,
+        "resource_id": "coarse-link:10",
+        "start_ms": 946.9554803714748,
+        "task_id": "seed:l36:q002:link10"
+      },
+      {
+        "critical_predecessor": "compute:c06:q001",
+        "dependencies": [
+          "compute:c06:q001"
+        ],
+        "duration_ms": 3.2022855999999997,
+        "finish_ms": 985.6273930889272,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 5,
+          "chunk": 1,
+          "payload_bytes": 114872,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 982.4251074889272,
+        "resource_id": "coarse-link:06",
+        "start_ms": 982.4251074889272,
+        "task_id": "handoff:c06-c07:q001"
+      },
+      {
+        "critical_predecessor": "compute:c03:q003",
+        "dependencies": [
+          "compute:c03:q003"
+        ],
+        "duration_ms": 3.2022472,
+        "finish_ms": 988.7234356998883,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 3,
+          "chunk": 3,
+          "payload_bytes": 114824,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 3,
+          "target_cell": 4
+        },
+        "ready_ms": 985.5211884998884,
+        "resource_id": "coarse-link:03",
+        "start_ms": 985.5211884998884,
+        "task_id": "handoff:c03-c04:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q001",
+        "dependencies": [
+          "compute:c07:q000",
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q001",
+          "seed:l00:q001:link06",
+          "seed:l12:q001:link06",
+          "seed:l24:q001:link06",
+          "seed:l36:q001:link06"
+        ],
+        "duration_ms": 104.83736951773174,
+        "finish_ms": 1090.464762606659,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 38,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 1,
+          "compute_ms": 99.56155735773174,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27581216,
+          "internal_payload_bytes": 402768,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 2
+        },
+        "ready_ms": 985.6273930889272,
+        "resource_id": "microcell:07",
+        "start_ms": 985.6273930889272,
+        "task_id": "compute:c07:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q001",
+        "dependencies": [
+          "handoff:c06-c07:q001"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 988.7837074889272,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l48:v1:ee04c721ddc8c123",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 8
+        },
+        "ready_ms": 985.6273930889272,
+        "resource_id": "coarse-link:07",
+        "start_ms": 985.6273930889272,
+        "task_id": "seed:l48:q001:link07"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q003",
+        "dependencies": [
+          "compute:c04:q002",
+          "control:bulk-dispatch",
+          "handoff:c03-c04:q003",
+          "seed:l00:q003:link03",
+          "seed:l12:q003:link03"
+        ],
+        "duration_ms": 101.66686198246336,
+        "finish_ms": 1090.3902976823517,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 24,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 4,
+          "chunk": 3,
+          "compute_ms": 96.39115734246336,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27570464,
+          "internal_payload_bytes": 402432,
+          "required_attnres_layers": [
+            0,
+            12,
+            24
+          ],
+          "rows": 2
+        },
+        "ready_ms": 988.7234356998883,
+        "resource_id": "microcell:04",
+        "start_ms": 988.7234356998883,
+        "task_id": "compute:c04:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c03-c04:q003",
+        "dependencies": [
+          "handoff:c03-c04:q003"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 991.8797500998884,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l24:v1:ab065a3527a8de7b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 5
+        },
+        "ready_ms": 988.7234356998883,
+        "resource_id": "coarse-link:04",
+        "start_ms": 988.7234356998883,
+        "task_id": "seed:l24:q003:link04"
+      },
+      {
+        "critical_predecessor": "seed:l48:q001:link07",
+        "dependencies": [
+          "seed:l48:q001:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 991.9400218889273,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l48:v1:ee04c721ddc8c123",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 9
+        },
+        "ready_ms": 988.7837074889272,
+        "resource_id": "coarse-link:08",
+        "start_ms": 988.7837074889272,
+        "task_id": "seed:l48:q001:link08"
+      },
+      {
+        "critical_predecessor": "seed:l24:q003:link04",
+        "dependencies": [
+          "seed:l24:q003:link04"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 995.0360644998884,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l24:v1:ab065a3527a8de7b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 6
+        },
+        "ready_ms": 991.8797500998884,
+        "resource_id": "coarse-link:05",
+        "start_ms": 991.8797500998884,
+        "task_id": "seed:l24:q003:link05"
+      },
+      {
+        "critical_predecessor": "seed:l48:q001:link08",
+        "dependencies": [
+          "seed:l48:q001:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 995.0963362889273,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l48:v1:ee04c721ddc8c123",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 10
+        },
+        "ready_ms": 991.9400218889273,
+        "resource_id": "coarse-link:09",
+        "start_ms": 991.9400218889273,
+        "task_id": "seed:l48:q001:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q003:link05",
+        "dependencies": [
+          "seed:l24:q003:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 998.1923788998885,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l24:v1:ab065a3527a8de7b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 7
+        },
+        "ready_ms": 995.0360644998884,
+        "resource_id": "coarse-link:06",
+        "start_ms": 995.0360644998884,
+        "task_id": "seed:l24:q003:link06"
+      },
+      {
+        "critical_predecessor": "seed:l48:q001:link09",
+        "dependencies": [
+          "seed:l48:q001:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 998.2526506889274,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l48:v1:ee04c721ddc8c123",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 11
+        },
+        "ready_ms": 995.0963362889273,
+        "resource_id": "coarse-link:10",
+        "start_ms": 995.0963362889273,
+        "task_id": "seed:l48:q001:link10"
+      },
+      {
+        "critical_predecessor": "seed:l24:q003:link06",
+        "dependencies": [
+          "seed:l24:q003:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1001.3486932998885,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l24:v1:ab065a3527a8de7b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 8
+        },
+        "ready_ms": 998.1923788998885,
+        "resource_id": "coarse-link:07",
+        "start_ms": 998.1923788998885,
+        "task_id": "seed:l24:q003:link07"
+      },
+      {
+        "critical_predecessor": "seed:l24:q003:link07",
+        "dependencies": [
+          "seed:l24:q003:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1004.5050076998886,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l24:v1:ab065a3527a8de7b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 9
+        },
+        "ready_ms": 1001.3486932998885,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1001.3486932998885,
+        "task_id": "seed:l24:q003:link08"
+      },
+      {
+        "critical_predecessor": "seed:l24:q003:link08",
+        "dependencies": [
+          "seed:l24:q003:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1007.6613220998886,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l24:v1:ab065a3527a8de7b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 10
+        },
+        "ready_ms": 1004.5050076998886,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1004.5050076998886,
+        "task_id": "seed:l24:q003:link09"
+      },
+      {
+        "critical_predecessor": "seed:l24:q003:link09",
+        "dependencies": [
+          "seed:l24:q003:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1010.8176364998886,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l24:v1:ab065a3527a8de7b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 24,
+          "target_cell": 11
+        },
+        "ready_ms": 1007.6613220998886,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1007.6613220998886,
+        "task_id": "seed:l24:q003:link10"
+      },
+      {
+        "critical_predecessor": "compute:c08:q000",
+        "dependencies": [
+          "compute:c08:q000"
+        ],
+        "duration_ms": 3.1564296,
+        "finish_ms": 1038.6319147875981,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 0,
+          "payload_bytes": 57552,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 1035.4754851875982,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1035.4754851875982,
+        "task_id": "handoff:c08-c09:q000"
+      },
+      {
+        "critical_predecessor": "compute:c05:q002",
+        "dependencies": [
+          "compute:c05:q002"
+        ],
+        "duration_ms": 3.1563912,
+        "finish_ms": 1040.087151253052,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 2,
+          "payload_bytes": 57504,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 1036.9307600530522,
+        "resource_id": "coarse-link:05",
+        "start_ms": 1036.9307600530522,
+        "task_id": "handoff:c05-c06:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c08-c09:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q000",
+          "seed:l00:q000:link08",
+          "seed:l12:q000:link08",
+          "seed:l24:q000:link08",
+          "seed:l36:q000:link08",
+          "seed:l48:q000:link08",
+          "seed:l60:q000:link08"
+        ],
+        "duration_ms": 104.86824525698512,
+        "finish_ms": 1143.5001600445833,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 49,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 0,
+          "compute_ms": 99.59234861698512,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275896639999999,
+          "internal_payload_bytes": 403032,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1038.6319147875981,
+        "resource_id": "microcell:09",
+        "start_ms": 1038.6319147875981,
+        "task_id": "compute:c09:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q002",
+        "dependencies": [
+          "compute:c06:q001",
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q002",
+          "seed:l00:q002:link05",
+          "seed:l12:q002:link05",
+          "seed:l24:q002:link05",
+          "seed:l36:q002:link05"
+        ],
+        "duration_ms": 102.05161726556462,
+        "finish_ms": 1142.1387685186166,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 35,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 2,
+          "compute_ms": 96.77582814556462,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275789119999999,
+          "internal_payload_bytes": 402696,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1040.087151253052,
+        "resource_id": "microcell:06",
+        "start_ms": 1040.087151253052,
+        "task_id": "compute:c06:q002"
+      },
+      {
+        "critical_predecessor": "compute:c04:q003",
+        "dependencies": [
+          "compute:c04:q003"
+        ],
+        "duration_ms": 3.2022664,
+        "finish_ms": 1093.5925640823518,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 3,
+          "payload_bytes": 114848,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 4,
+          "target_cell": 5
+        },
+        "ready_ms": 1090.3902976823517,
+        "resource_id": "coarse-link:04",
+        "start_ms": 1090.3902976823517,
+        "task_id": "handoff:c04-c05:q003"
+      },
+      {
+        "critical_predecessor": "compute:c07:q001",
+        "dependencies": [
+          "compute:c07:q001"
+        ],
+        "duration_ms": 3.2023048,
+        "finish_ms": 1093.667067406659,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 1,
+          "payload_bytes": 114896,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 1090.464762606659,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1090.464762606659,
+        "task_id": "handoff:c07-c08:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q003",
+        "dependencies": [
+          "compute:c05:q002",
+          "control:bulk-dispatch",
+          "handoff:c04-c05:q003",
+          "seed:l00:q003:link04",
+          "seed:l12:q003:link04",
+          "seed:l24:q003:link04"
+        ],
+        "duration_ms": 105.75685168157752,
+        "finish_ms": 1199.3494157639293,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 28,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 5,
+          "chunk": 3,
+          "compute_ms": 100.48111632157752,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.2757353600000005,
+          "internal_payload_bytes": 402528,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1093.5925640823518,
+        "resource_id": "microcell:05",
+        "start_ms": 1093.5925640823518,
+        "task_id": "compute:c05:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c04-c05:q003",
+        "dependencies": [
+          "handoff:c04-c05:q003"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1096.7488784823518,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l36:v1:63c02bf6fb627bb2",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 6
+        },
+        "ready_ms": 1093.5925640823518,
+        "resource_id": "coarse-link:05",
+        "start_ms": 1093.5925640823518,
+        "task_id": "seed:l36:q003:link05"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q001",
+        "dependencies": [
+          "compute:c08:q000",
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q001",
+          "seed:l00:q001:link07",
+          "seed:l12:q001:link07",
+          "seed:l24:q001:link07",
+          "seed:l36:q001:link07",
+          "seed:l48:q001:link07"
+        ],
+        "duration_ms": 104.22707349181637,
+        "finish_ms": 1197.8941408984754,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 42,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 1,
+          "compute_ms": 98.95123061181637,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27584288,
+          "internal_payload_bytes": 402864,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1093.667067406659,
+        "resource_id": "microcell:08",
+        "start_ms": 1093.667067406659,
+        "task_id": "compute:c08:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q001",
+        "dependencies": [
+          "handoff:c07-c08:q001"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1096.823381806659,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l60:v1:ba6ba135e778e27b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 9
+        },
+        "ready_ms": 1093.667067406659,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1093.667067406659,
+        "task_id": "seed:l60:q001:link08"
+      },
+      {
+        "critical_predecessor": "seed:l36:q003:link05",
+        "dependencies": [
+          "seed:l36:q003:link05"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1099.9051928823517,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l36:v1:63c02bf6fb627bb2",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 7
+        },
+        "ready_ms": 1096.7488784823518,
+        "resource_id": "coarse-link:06",
+        "start_ms": 1096.7488784823518,
+        "task_id": "seed:l36:q003:link06"
+      },
+      {
+        "critical_predecessor": "seed:l60:q001:link08",
+        "dependencies": [
+          "seed:l60:q001:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1099.979696206659,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l60:v1:ba6ba135e778e27b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 10
+        },
+        "ready_ms": 1096.823381806659,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1096.823381806659,
+        "task_id": "seed:l60:q001:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q003:link06",
+        "dependencies": [
+          "seed:l36:q003:link06"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1103.0615072823516,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l36:v1:63c02bf6fb627bb2",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 8
+        },
+        "ready_ms": 1099.9051928823517,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1099.9051928823517,
+        "task_id": "seed:l36:q003:link07"
+      },
+      {
+        "critical_predecessor": "seed:l60:q001:link09",
+        "dependencies": [
+          "seed:l60:q001:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1103.1360106066588,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l60:v1:ba6ba135e778e27b",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 11
+        },
+        "ready_ms": 1099.979696206659,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1099.979696206659,
+        "task_id": "seed:l60:q001:link10"
+      },
+      {
+        "critical_predecessor": "seed:l36:q003:link07",
+        "dependencies": [
+          "seed:l36:q003:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1106.2178216823515,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l36:v1:63c02bf6fb627bb2",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 9
+        },
+        "ready_ms": 1103.0615072823516,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1103.0615072823516,
+        "task_id": "seed:l36:q003:link08"
+      },
+      {
+        "critical_predecessor": "seed:l36:q003:link08",
+        "dependencies": [
+          "seed:l36:q003:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1109.3741360823515,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l36:v1:63c02bf6fb627bb2",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 10
+        },
+        "ready_ms": 1106.2178216823515,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1106.2178216823515,
+        "task_id": "seed:l36:q003:link09"
+      },
+      {
+        "critical_predecessor": "seed:l36:q003:link09",
+        "dependencies": [
+          "seed:l36:q003:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1112.5304504823514,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l36:v1:63c02bf6fb627bb2",
+          "payload_bytes": 57408,
+          "snapshot_layer": 36,
+          "target_cell": 11
+        },
+        "ready_ms": 1109.3741360823515,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1109.3741360823515,
+        "task_id": "seed:l36:q003:link10"
+      },
+      {
+        "critical_predecessor": "compute:c06:q002",
+        "dependencies": [
+          "compute:c06:q002"
+        ],
+        "duration_ms": 3.2022855999999997,
+        "finish_ms": 1145.3410541186167,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 5,
+          "chunk": 2,
+          "payload_bytes": 114872,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 1142.1387685186166,
+        "resource_id": "coarse-link:06",
+        "start_ms": 1142.1387685186166,
+        "task_id": "handoff:c06-c07:q002"
+      },
+      {
+        "critical_predecessor": "compute:c09:q000",
+        "dependencies": [
+          "compute:c09:q000"
+        ],
+        "duration_ms": 3.202324,
+        "finish_ms": 1146.7024840445833,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "chunk": 0,
+          "payload_bytes": 114920,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1143.5001600445833,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1143.5001600445833,
+        "task_id": "handoff:c09-c10:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q002",
+        "dependencies": [
+          "compute:c07:q001",
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q002",
+          "seed:l00:q002:link06",
+          "seed:l12:q002:link06",
+          "seed:l24:q002:link06",
+          "seed:l36:q002:link06"
+        ],
+        "duration_ms": 104.83736951773174,
+        "finish_ms": 1250.1784236363485,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 38,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 2,
+          "compute_ms": 99.56155735773174,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27581216,
+          "internal_payload_bytes": 402768,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1145.3410541186167,
+        "resource_id": "microcell:07",
+        "start_ms": 1145.3410541186167,
+        "task_id": "compute:c07:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q002",
+        "dependencies": [
+          "handoff:c06-c07:q002"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1148.4973685186167,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l48:v1:5a84da08f6fc80a0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 8
+        },
+        "ready_ms": 1145.3410541186167,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1145.3410541186167,
+        "task_id": "seed:l48:q002:link07"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q000",
+          "seed:l00:q000:link09",
+          "seed:l12:q000:link09",
+          "seed:l24:q000:link09",
+          "seed:l36:q000:link09",
+          "seed:l48:q000:link09",
+          "seed:l60:q000:link09"
+        ],
+        "duration_ms": 105.34465306514824,
+        "finish_ms": 1252.0471371097315,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 52,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 0,
+          "compute_ms": 100.06873338514824,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27591968,
+          "internal_payload_bytes": 403104,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1146.7024840445833,
+        "resource_id": "microcell:10",
+        "start_ms": 1146.7024840445833,
+        "task_id": "compute:c10:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q000",
+        "dependencies": [
+          "handoff:c09-c10:q000"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1149.8587984445833,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 0,
+          "object_id": "attnres:experiment-018:block-7:0:l72:v1:959b7b8adf92797c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 72,
+          "target_cell": 11
+        },
+        "ready_ms": 1146.7024840445833,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1146.7024840445833,
+        "task_id": "seed:l72:q000:link10"
+      },
+      {
+        "critical_predecessor": "seed:l48:q002:link07",
+        "dependencies": [
+          "seed:l48:q002:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1151.6536829186166,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l48:v1:5a84da08f6fc80a0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 9
+        },
+        "ready_ms": 1148.4973685186167,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1148.4973685186167,
+        "task_id": "seed:l48:q002:link08"
+      },
+      {
+        "critical_predecessor": "seed:l48:q002:link08",
+        "dependencies": [
+          "seed:l48:q002:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1154.8099973186165,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l48:v1:5a84da08f6fc80a0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 10
+        },
+        "ready_ms": 1151.6536829186166,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1151.6536829186166,
+        "task_id": "seed:l48:q002:link09"
+      },
+      {
+        "critical_predecessor": "seed:l48:q002:link09",
+        "dependencies": [
+          "seed:l48:q002:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1157.9663117186165,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l48:v1:5a84da08f6fc80a0",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 11
+        },
+        "ready_ms": 1154.8099973186165,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1154.8099973186165,
+        "task_id": "seed:l48:q002:link10"
+      },
+      {
+        "critical_predecessor": "compute:c08:q001",
+        "dependencies": [
+          "compute:c08:q001"
+        ],
+        "duration_ms": 3.1564296,
+        "finish_ms": 1201.0505704984753,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 1,
+          "payload_bytes": 57552,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 1197.8941408984754,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1197.8941408984754,
+        "task_id": "handoff:c08-c09:q001"
+      },
+      {
+        "critical_predecessor": "compute:c05:q003",
+        "dependencies": [
+          "compute:c05:q003"
+        ],
+        "duration_ms": 3.1563912,
+        "finish_ms": 1202.5058069639292,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 4,
+          "chunk": 3,
+          "payload_bytes": 57504,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 5,
+          "target_cell": 6
+        },
+        "ready_ms": 1199.3494157639293,
+        "resource_id": "coarse-link:05",
+        "start_ms": 1199.3494157639293,
+        "task_id": "handoff:c05-c06:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c08-c09:q001",
+        "dependencies": [
+          "compute:c09:q000",
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q001",
+          "seed:l00:q001:link08",
+          "seed:l12:q001:link08",
+          "seed:l24:q001:link08",
+          "seed:l36:q001:link08",
+          "seed:l48:q001:link08",
+          "seed:l60:q001:link08"
+        ],
+        "duration_ms": 104.86824525698512,
+        "finish_ms": 1305.9188157554604,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 49,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 1,
+          "compute_ms": 99.59234861698512,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275896639999999,
+          "internal_payload_bytes": 403032,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1201.0505704984753,
+        "resource_id": "microcell:09",
+        "start_ms": 1201.0505704984753,
+        "task_id": "compute:c09:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c05-c06:q003",
+        "dependencies": [
+          "compute:c06:q002",
+          "control:bulk-dispatch",
+          "handoff:c05-c06:q003",
+          "seed:l00:q003:link05",
+          "seed:l12:q003:link05",
+          "seed:l24:q003:link05",
+          "seed:l36:q003:link05"
+        ],
+        "duration_ms": 102.05161726556462,
+        "finish_ms": 1304.5574242294938,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 35,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 6,
+          "chunk": 3,
+          "compute_ms": 96.77582814556462,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275789119999999,
+          "internal_payload_bytes": 402696,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1202.5058069639292,
+        "resource_id": "microcell:06",
+        "start_ms": 1202.5058069639292,
+        "task_id": "compute:c06:q003"
+      },
+      {
+        "critical_predecessor": "compute:c07:q002",
+        "dependencies": [
+          "compute:c07:q002"
+        ],
+        "duration_ms": 3.2023048,
+        "finish_ms": 1253.3807284363486,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 2,
+          "payload_bytes": 114896,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 1250.1784236363485,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1250.1784236363485,
+        "task_id": "handoff:c07-c08:q002"
+      },
+      {
+        "critical_predecessor": "compute:c10:q000",
+        "dependencies": [
+          "compute:c10:q000"
+        ],
+        "duration_ms": 3.2023432,
+        "finish_ms": 1255.2494803097316,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 8,
+          "chunk": 0,
+          "payload_bytes": 114944,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1252.0471371097315,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1252.0471371097315,
+        "task_id": "handoff:c10-c11:q000"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q002",
+        "dependencies": [
+          "compute:c08:q001",
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q002",
+          "seed:l00:q002:link07",
+          "seed:l12:q002:link07",
+          "seed:l24:q002:link07",
+          "seed:l36:q002:link07",
+          "seed:l48:q002:link07"
+        ],
+        "duration_ms": 104.22707349181637,
+        "finish_ms": 1357.607801928165,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 42,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 2,
+          "compute_ms": 98.95123061181637,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27584288,
+          "internal_payload_bytes": 402864,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1253.3807284363486,
+        "resource_id": "microcell:08",
+        "start_ms": 1253.3807284363486,
+        "task_id": "compute:c08:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q002",
+        "dependencies": [
+          "handoff:c07-c08:q002"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1256.5370428363485,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l60:v1:3975308dc71a4dec",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 9
+        },
+        "ready_ms": 1253.3807284363486,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1253.3807284363486,
+        "task_id": "seed:l60:q002:link08"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q000",
+        "dependencies": [
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q000",
+          "seed:l00:q000:link10",
+          "seed:l12:q000:link10",
+          "seed:l24:q000:link10",
+          "seed:l36:q000:link10",
+          "seed:l48:q000:link10",
+          "seed:l60:q000:link10",
+          "seed:l72:q000:link10"
+        ],
+        "duration_ms": 69.84406791476792,
+        "finish_ms": 1325.0935482244995,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 32,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 0,
+          "compute_ms": 66.82923911476792,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.0148288,
+          "internal_payload_bytes": 230400,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1255.2494803097316,
+        "resource_id": "microcell:11",
+        "start_ms": 1255.2494803097316,
+        "task_id": "compute:c11:q000"
+      },
+      {
+        "critical_predecessor": "seed:l60:q002:link08",
+        "dependencies": [
+          "seed:l60:q002:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1259.6933572363484,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l60:v1:3975308dc71a4dec",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 10
+        },
+        "ready_ms": 1256.5370428363485,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1256.5370428363485,
+        "task_id": "seed:l60:q002:link09"
+      },
+      {
+        "critical_predecessor": "seed:l60:q002:link09",
+        "dependencies": [
+          "seed:l60:q002:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1262.8496716363484,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l60:v1:3975308dc71a4dec",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 11
+        },
+        "ready_ms": 1259.6933572363484,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1259.6933572363484,
+        "task_id": "seed:l60:q002:link10"
+      },
+      {
+        "critical_predecessor": "compute:c06:q003",
+        "dependencies": [
+          "compute:c06:q003"
+        ],
+        "duration_ms": 3.2022855999999997,
+        "finish_ms": 1307.7597098294939,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 5,
+          "chunk": 3,
+          "payload_bytes": 114872,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 6,
+          "target_cell": 7
+        },
+        "ready_ms": 1304.5574242294938,
+        "resource_id": "coarse-link:06",
+        "start_ms": 1304.5574242294938,
+        "task_id": "handoff:c06-c07:q003"
+      },
+      {
+        "critical_predecessor": "compute:c09:q001",
+        "dependencies": [
+          "compute:c09:q001"
+        ],
+        "duration_ms": 3.202324,
+        "finish_ms": 1309.1211397554605,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "chunk": 1,
+          "payload_bytes": 114920,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1305.9188157554604,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1305.9188157554604,
+        "task_id": "handoff:c09-c10:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q003",
+        "dependencies": [
+          "compute:c07:q002",
+          "control:bulk-dispatch",
+          "handoff:c06-c07:q003",
+          "seed:l00:q003:link06",
+          "seed:l12:q003:link06",
+          "seed:l24:q003:link06",
+          "seed:l36:q003:link06"
+        ],
+        "duration_ms": 104.83736951773174,
+        "finish_ms": 1412.5970793472256,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 38,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 7,
+          "chunk": 3,
+          "compute_ms": 99.56155735773174,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27581216,
+          "internal_payload_bytes": 402768,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1307.7597098294939,
+        "resource_id": "microcell:07",
+        "start_ms": 1307.7597098294939,
+        "task_id": "compute:c07:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c06-c07:q003",
+        "dependencies": [
+          "handoff:c06-c07:q003"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1310.9160242294938,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l48:v1:409d548dffa8daf6",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 8
+        },
+        "ready_ms": 1307.7597098294939,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1307.7597098294939,
+        "task_id": "seed:l48:q003:link07"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q001",
+        "dependencies": [
+          "compute:c10:q000",
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q001",
+          "seed:l00:q001:link09",
+          "seed:l12:q001:link09",
+          "seed:l24:q001:link09",
+          "seed:l36:q001:link09",
+          "seed:l48:q001:link09",
+          "seed:l60:q001:link09"
+        ],
+        "duration_ms": 105.34465306514824,
+        "finish_ms": 1414.4657928206088,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 52,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 1,
+          "compute_ms": 100.06873338514824,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27591968,
+          "internal_payload_bytes": 403104,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1309.1211397554605,
+        "resource_id": "microcell:10",
+        "start_ms": 1309.1211397554605,
+        "task_id": "compute:c10:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q001",
+        "dependencies": [
+          "handoff:c09-c10:q001"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1312.2774541554604,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 1,
+          "object_id": "attnres:experiment-018:block-7:1:l72:v1:9231d1110c2423ef",
+          "payload_bytes": 57408,
+          "snapshot_layer": 72,
+          "target_cell": 11
+        },
+        "ready_ms": 1309.1211397554605,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1309.1211397554605,
+        "task_id": "seed:l72:q001:link10"
+      },
+      {
+        "critical_predecessor": "seed:l48:q003:link07",
+        "dependencies": [
+          "seed:l48:q003:link07"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1314.0723386294937,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l48:v1:409d548dffa8daf6",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 9
+        },
+        "ready_ms": 1310.9160242294938,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1310.9160242294938,
+        "task_id": "seed:l48:q003:link08"
+      },
+      {
+        "critical_predecessor": "seed:l48:q003:link08",
+        "dependencies": [
+          "seed:l48:q003:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1317.2286530294937,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l48:v1:409d548dffa8daf6",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 10
+        },
+        "ready_ms": 1314.0723386294937,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1314.0723386294937,
+        "task_id": "seed:l48:q003:link09"
+      },
+      {
+        "critical_predecessor": "seed:l48:q003:link09",
+        "dependencies": [
+          "seed:l48:q003:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1320.3849674294936,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l48:v1:409d548dffa8daf6",
+          "payload_bytes": 57408,
+          "snapshot_layer": 48,
+          "target_cell": 11
+        },
+        "ready_ms": 1317.2286530294937,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1317.2286530294937,
+        "task_id": "seed:l48:q003:link10"
+      },
+      {
+        "critical_predecessor": "compute:c08:q002",
+        "dependencies": [
+          "compute:c08:q002"
+        ],
+        "duration_ms": 3.1564296,
+        "finish_ms": 1360.7642315281648,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 2,
+          "payload_bytes": 57552,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 1357.607801928165,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1357.607801928165,
+        "task_id": "handoff:c08-c09:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c08-c09:q002",
+        "dependencies": [
+          "compute:c09:q001",
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q002",
+          "seed:l00:q002:link08",
+          "seed:l12:q002:link08",
+          "seed:l24:q002:link08",
+          "seed:l36:q002:link08",
+          "seed:l48:q002:link08",
+          "seed:l60:q002:link08"
+        ],
+        "duration_ms": 104.86824525698512,
+        "finish_ms": 1465.63247678515,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 49,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 2,
+          "compute_ms": 99.59234861698512,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275896639999999,
+          "internal_payload_bytes": 403032,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1360.7642315281648,
+        "resource_id": "microcell:09",
+        "start_ms": 1360.7642315281648,
+        "task_id": "compute:c09:q002"
+      },
+      {
+        "critical_predecessor": "compute:c07:q003",
+        "dependencies": [
+          "compute:c07:q003"
+        ],
+        "duration_ms": 3.2023048,
+        "finish_ms": 1415.7993841472257,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 3,
+          "payload_bytes": 114896,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 7,
+          "target_cell": 8
+        },
+        "ready_ms": 1412.5970793472256,
+        "resource_id": "coarse-link:07",
+        "start_ms": 1412.5970793472256,
+        "task_id": "handoff:c07-c08:q003"
+      },
+      {
+        "critical_predecessor": "compute:c10:q001",
+        "dependencies": [
+          "compute:c10:q001"
+        ],
+        "duration_ms": 3.2023432,
+        "finish_ms": 1417.668136020609,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 8,
+          "chunk": 1,
+          "payload_bytes": 114944,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1414.4657928206088,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1414.4657928206088,
+        "task_id": "handoff:c10-c11:q001"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q003",
+        "dependencies": [
+          "compute:c08:q002",
+          "control:bulk-dispatch",
+          "handoff:c07-c08:q003",
+          "seed:l00:q003:link07",
+          "seed:l12:q003:link07",
+          "seed:l24:q003:link07",
+          "seed:l36:q003:link07",
+          "seed:l48:q003:link07"
+        ],
+        "duration_ms": 104.22707349181637,
+        "finish_ms": 1520.026457639042,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 42,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 8,
+          "chunk": 3,
+          "compute_ms": 98.95123061181637,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27584288,
+          "internal_payload_bytes": 402864,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1415.7993841472257,
+        "resource_id": "microcell:08",
+        "start_ms": 1415.7993841472257,
+        "task_id": "compute:c08:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c07-c08:q003",
+        "dependencies": [
+          "handoff:c07-c08:q003"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1418.9556985472257,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l60:v1:0e6652e3546ed289",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 9
+        },
+        "ready_ms": 1415.7993841472257,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1415.7993841472257,
+        "task_id": "seed:l60:q003:link08"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q001",
+        "dependencies": [
+          "compute:c11:q000",
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q001",
+          "seed:l00:q001:link10",
+          "seed:l12:q001:link10",
+          "seed:l24:q001:link10",
+          "seed:l36:q001:link10",
+          "seed:l48:q001:link10",
+          "seed:l60:q001:link10",
+          "seed:l72:q001:link10"
+        ],
+        "duration_ms": 69.84406791476792,
+        "finish_ms": 1487.5122039353769,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 32,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 1,
+          "compute_ms": 66.82923911476792,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.0148288,
+          "internal_payload_bytes": 230400,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1417.668136020609,
+        "resource_id": "microcell:11",
+        "start_ms": 1417.668136020609,
+        "task_id": "compute:c11:q001"
+      },
+      {
+        "critical_predecessor": "seed:l60:q003:link08",
+        "dependencies": [
+          "seed:l60:q003:link08"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1422.1120129472256,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l60:v1:0e6652e3546ed289",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 10
+        },
+        "ready_ms": 1418.9556985472257,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1418.9556985472257,
+        "task_id": "seed:l60:q003:link09"
+      },
+      {
+        "critical_predecessor": "seed:l60:q003:link09",
+        "dependencies": [
+          "seed:l60:q003:link09"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1425.2683273472255,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l60:v1:0e6652e3546ed289",
+          "payload_bytes": 57408,
+          "snapshot_layer": 60,
+          "target_cell": 11
+        },
+        "ready_ms": 1422.1120129472256,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1422.1120129472256,
+        "task_id": "seed:l60:q003:link10"
+      },
+      {
+        "critical_predecessor": "compute:c09:q002",
+        "dependencies": [
+          "compute:c09:q002"
+        ],
+        "duration_ms": 3.202324,
+        "finish_ms": 1468.83480078515,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "chunk": 2,
+          "payload_bytes": 114920,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1465.63247678515,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1465.63247678515,
+        "task_id": "handoff:c09-c10:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q002",
+        "dependencies": [
+          "compute:c10:q001",
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q002",
+          "seed:l00:q002:link09",
+          "seed:l12:q002:link09",
+          "seed:l24:q002:link09",
+          "seed:l36:q002:link09",
+          "seed:l48:q002:link09",
+          "seed:l60:q002:link09"
+        ],
+        "duration_ms": 105.34465306514824,
+        "finish_ms": 1574.1794538502982,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 52,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 2,
+          "compute_ms": 100.06873338514824,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27591968,
+          "internal_payload_bytes": 403104,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1468.83480078515,
+        "resource_id": "microcell:10",
+        "start_ms": 1468.83480078515,
+        "task_id": "compute:c10:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q002",
+        "dependencies": [
+          "handoff:c09-c10:q002"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1471.99111518515,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 2,
+          "object_id": "attnres:experiment-018:block-7:2:l72:v1:2f2bee8ac3f8408c",
+          "payload_bytes": 57408,
+          "snapshot_layer": 72,
+          "target_cell": 11
+        },
+        "ready_ms": 1468.83480078515,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1468.83480078515,
+        "task_id": "seed:l72:q002:link10"
+      },
+      {
+        "critical_predecessor": "compute:c08:q003",
+        "dependencies": [
+          "compute:c08:q003"
+        ],
+        "duration_ms": 3.1564296,
+        "finish_ms": 1523.182887239042,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 6,
+          "chunk": 3,
+          "payload_bytes": 57552,
+          "rows": 2,
+          "seed_object_bytes": 0,
+          "source_cell": 8,
+          "target_cell": 9
+        },
+        "ready_ms": 1520.026457639042,
+        "resource_id": "coarse-link:08",
+        "start_ms": 1520.026457639042,
+        "task_id": "handoff:c08-c09:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c08-c09:q003",
+        "dependencies": [
+          "compute:c09:q002",
+          "control:bulk-dispatch",
+          "handoff:c08-c09:q003",
+          "seed:l00:q003:link08",
+          "seed:l12:q003:link08",
+          "seed:l24:q003:link08",
+          "seed:l36:q003:link08",
+          "seed:l48:q003:link08",
+          "seed:l60:q003:link08"
+        ],
+        "duration_ms": 104.86824525698512,
+        "finish_ms": 1628.051132496027,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 49,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 9,
+          "chunk": 3,
+          "compute_ms": 99.59234861698512,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.275896639999999,
+          "internal_payload_bytes": 403032,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1523.182887239042,
+        "resource_id": "microcell:09",
+        "start_ms": 1523.182887239042,
+        "task_id": "compute:c09:q003"
+      },
+      {
+        "critical_predecessor": "compute:c10:q002",
+        "dependencies": [
+          "compute:c10:q002"
+        ],
+        "duration_ms": 3.2023432,
+        "finish_ms": 1577.3817970502982,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 8,
+          "chunk": 2,
+          "payload_bytes": 114944,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1574.1794538502982,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1574.1794538502982,
+        "task_id": "handoff:c10-c11:q002"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q002",
+        "dependencies": [
+          "compute:c11:q001",
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q002",
+          "seed:l00:q002:link10",
+          "seed:l12:q002:link10",
+          "seed:l24:q002:link10",
+          "seed:l36:q002:link10",
+          "seed:l48:q002:link10",
+          "seed:l60:q002:link10",
+          "seed:l72:q002:link10"
+        ],
+        "duration_ms": 69.84406791476792,
+        "finish_ms": 1647.2258649650662,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 32,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 2,
+          "compute_ms": 66.82923911476792,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.0148288,
+          "internal_payload_bytes": 230400,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1577.3817970502982,
+        "resource_id": "microcell:11",
+        "start_ms": 1577.3817970502982,
+        "task_id": "compute:c11:q002"
+      },
+      {
+        "critical_predecessor": "compute:c09:q003",
+        "dependencies": [
+          "compute:c09:q003"
+        ],
+        "duration_ms": 3.202324,
+        "finish_ms": 1631.2534564960272,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 7,
+          "chunk": 3,
+          "payload_bytes": 114920,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 9,
+          "target_cell": 10
+        },
+        "ready_ms": 1628.051132496027,
+        "resource_id": "coarse-link:09",
+        "start_ms": 1628.051132496027,
+        "task_id": "handoff:c09-c10:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q003",
+        "dependencies": [
+          "compute:c10:q002",
+          "control:bulk-dispatch",
+          "handoff:c09-c10:q003",
+          "seed:l00:q003:link09",
+          "seed:l12:q003:link09",
+          "seed:l24:q003:link09",
+          "seed:l36:q003:link09",
+          "seed:l48:q003:link09",
+          "seed:l60:q003:link09"
+        ],
+        "duration_ms": 105.34465306514824,
+        "finish_ms": 1736.5981095611755,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 52,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 10,
+          "chunk": 3,
+          "compute_ms": 100.06873338514824,
+          "internal_boundaries": 7,
+          "internal_communication_ms": 5.27591968,
+          "internal_payload_bytes": 403104,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1631.2534564960272,
+        "resource_id": "microcell:10",
+        "start_ms": 1631.2534564960272,
+        "task_id": "compute:c10:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c09-c10:q003",
+        "dependencies": [
+          "handoff:c09-c10:q003"
+        ],
+        "duration_ms": 3.1563144,
+        "finish_ms": 1634.409770896027,
+        "kind": "cache_seed",
+        "metadata": {
+          "chunk": 3,
+          "object_id": "attnres:experiment-018:block-7:3:l72:v1:1dc6da1c6eaa47c3",
+          "payload_bytes": 57408,
+          "snapshot_layer": 72,
+          "target_cell": 11
+        },
+        "ready_ms": 1631.2534564960272,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1631.2534564960272,
+        "task_id": "seed:l72:q003:link10"
+      },
+      {
+        "critical_predecessor": "compute:c10:q003",
+        "dependencies": [
+          "compute:c10:q003"
+        ],
+        "duration_ms": 3.2023432,
+        "finish_ms": 1739.8004527611756,
+        "kind": "handoff",
+        "metadata": {
+          "attnres_reference_count": 8,
+          "chunk": 3,
+          "payload_bytes": 114944,
+          "rows": 2,
+          "seed_object_bytes": 57344,
+          "source_cell": 10,
+          "target_cell": 11
+        },
+        "ready_ms": 1736.5981095611755,
+        "resource_id": "coarse-link:10",
+        "start_ms": 1736.5981095611755,
+        "task_id": "handoff:c10-c11:q003"
+      },
+      {
+        "critical_predecessor": "handoff:c10-c11:q003",
+        "dependencies": [
+          "compute:c11:q002",
+          "control:bulk-dispatch",
+          "handoff:c10-c11:q003",
+          "seed:l00:q003:link10",
+          "seed:l12:q003:link10",
+          "seed:l24:q003:link10",
+          "seed:l36:q003:link10",
+          "seed:l48:q003:link10",
+          "seed:l60:q003:link10",
+          "seed:l72:q003:link10"
+        ],
+        "duration_ms": 69.84406791476792,
+        "finish_ms": 1809.6445206759436,
+        "kind": "compute",
+        "metadata": {
+          "attnres_reference_count": 32,
+          "bottleneck_operator": "routed_expert_compute",
+          "cell": 11,
+          "chunk": 3,
+          "compute_ms": 66.82923911476792,
+          "internal_boundaries": 4,
+          "internal_communication_ms": 3.0148288,
+          "internal_payload_bytes": 230400,
+          "required_attnres_layers": [
+            0,
+            12,
+            24,
+            36,
+            48,
+            60,
+            72,
+            84
+          ],
+          "rows": 2
+        },
+        "ready_ms": 1739.8004527611756,
+        "resource_id": "microcell:11",
+        "start_ms": 1739.8004527611756,
+        "task_id": "compute:c11:q003"
+      }
+    ],
+    "resource_utilization": {
+      "coarse-link:00": 0.00707809464989047,
+      "coarse-link:01": 0.014054787727315502,
+      "coarse-link:02": 0.020930036793000914,
+      "coarse-link:03": 0.021031480804740536,
+      "coarse-link:04": 0.02800817388216557,
+      "coarse-link:05": 0.03488342294785098,
+      "coarse-link:06": 0.034984866959590605,
+      "coarse-link:07": 0.041961560037015636,
+      "coarse-link:08": 0.048836809102701044,
+      "coarse-link:09": 0.04893825311444068,
+      "coarse-link:10": 0.05591494619186571,
+      "coordinator": 9.689748345410003e-05,
+      "microcell:00": 0.35900676371558327,
+      "microcell:01": 0.2266403747847177,
+      "microcell:02": 0.2573969142434356,
+      "microcell:03": 0.23679030408294072,
+      "microcell:04": 0.2247222829033593,
+      "microcell:05": 0.2337627096885855,
+      "microcell:06": 0.2255727378489694,
+      "microcell:07": 0.2317303057477224,
+      "microcell:08": 0.23038132031120714,
+      "microcell:09": 0.2317985528291809,
+      "microcell:10": 0.23285159457902727,
+      "microcell:11": 0.15438185150015996
+    },
+    "scheduler_cpu_ms": 0.771,
+    "serial_sum_ms": 5794.038468173269
+  },
+  "result": {
+    "accepted_rows": 8,
+    "block_candidates": 7,
+    "bytes": 13550848,
+    "cache_enabled": true,
+    "chunk_size": 2,
+    "compute_only_wavefront_ms": 1697.5070569159986,
+    "critical_path_communication_ms": 35.0873816,
+    "critical_path_fraction": 0.3123287031344968,
+    "drain_ms": 69.84406791476795,
+    "evidence_class": "VALIDATED INDEPENDENT-RESOURCE MODEL + SHAPED NETWORK",
+    "fill_ms": 1255.2494803097316,
+    "ideal_balanced_compute_pipeline_ms": 1532.5972650291399,
+    "ideal_balanced_pipeline_ms": 1608.9072774291399,
+    "loss_communication_ms": 111.96211375994493,
+    "loss_control_plane_ms": 0.17535,
+    "loss_explicit_state_barrier_ms": 0.0,
+    "loss_fill_drain_ms": 1123.9046610213693,
+    "loss_stage_imbalance_ms": 164.90979188685878,
+    "max_chunks_in_flight": 4,
+    "median_steady_utilization": 0.23176442928845165,
+    "messages": 204,
+    "messages_per_accepted_token": 25.5,
+    "network": {
+      "cache_hits": 1600,
+      "cache_misses": 0,
+      "cache_reference_bytes": 38400,
+      "cache_seed_bytes": 11020288,
+      "cached_attnres_total_bytes": 11058688,
+      "cached_total_bytes": 32184832,
+      "coarse_boundary_bytes": 13550848,
+      "current_attnres_bytes": 168820736,
+      "current_total_bytes": 189923328,
+      "internal_boundary_bytes": 18633984,
+      "invalidations": 0,
+      "steady_state_attnres_reduction_fraction": 0.9997725397903726,
+      "total_attnres_reduction_fraction": 0.9344944924301242
+    },
+    "oracle_tok_s_per_user": 4.420757728159681,
+    "pipeline_efficiency": 0.8890736600734028,
+    "pipeline_efficiency_definition": "balanced pipeline latency using the mean measured stage compute service for each actual chunk, excluding handoff, divided by observed event-DAG makespan including communication",
+    "result_class": "C_wavefront_attnres_cache",
+    "scheduler_overhead_ms": 0.17535,
+    "serial_baseline_ms": 2997.238528880436,
+    "serial_baseline_oracle_tok_s_per_user": 2.6691235692169797,
+    "serial_waits": 26,
+    "serial_waits_per_accepted_token": 3.25,
+    "simulation_cpu_ms": 0.771,
+    "slowest_stage": 0,
+    "speedup_vs_corresponding_serial": 1.6562581737107678,
+    "stage_utilization": {
+      "0": 0.35900676371558327,
+      "1": 0.2266403747847177,
+      "2": 0.2573969142434356,
+      "3": 0.23679030408294072,
+      "4": 0.2247222829033593,
+      "5": 0.2337627096885855,
+      "6": 0.2255727378489694,
+      "7": 0.2317303057477224,
+      "8": 0.23038132031120714,
+      "9": 0.2317985528291809,
+      "10": 0.23285159457902727,
+      "11": 0.15438185150015996
+    },
+    "steady_stage_period_ms": 162.41865571087737,
+    "steady_stage_utilization": {
+      "0": 0.35900676371558327,
+      "1": 0.2266403747847177,
+      "2": 0.2573969142434356,
+      "3": 0.23679030408294072,
+      "4": 0.2247222829033593,
+      "5": 0.2337627096885855,
+      "6": 0.2255727378489694,
+      "7": 0.2317303057477224,
+      "8": 0.23038132031120714,
+      "9": 0.2317985528291809,
+      "10": 0.23285159457902727,
+      "11": 0.15438185150015996
+    },
+    "total_ms": 1809.6445206759436,
+    "useful_parallelism": 2.8891256905897493,
+    "worker_idle_ms_by_microcell": {
+      "0": 1159.9698978324352,
+      "1": 1399.506008282837,
+      "2": 1343.8476051764146,
+      "3": 1381.1382443430596,
+      "4": 1402.9770727460902,
+      "5": 1386.6171139496334,
+      "6": 1401.438051613685,
+      "7": 1390.2950426050165,
+      "8": 1392.736226708678,
+      "9": 1390.171539648003,
+      "10": 1388.2659084153506,
+      "11": 1530.268249016872
+    }
+  },
+  "schema_version": "experiment-018-event-trace-v1"
+}

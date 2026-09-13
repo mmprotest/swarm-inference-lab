@@ -1,0 +1,109 @@
+{
+  "acceptance_gates": {
+    "cancellation_drains_late_response": true,
+    "duplicate_suppressed_exactly_once": true,
+    "exact_replacement_retry_passes": true,
+    "no_failed_fault_advances_state": true,
+    "partial_fails_closed": true,
+    "real_coarse_payload_size": true,
+    "stale_generation_fails_closed": true,
+    "timeout_fails_closed": true,
+    "worker_loss_fails_closed": true,
+    "wrong_replacement_assignment_rejected": true
+  },
+  "configuration": {
+    "assignment_sha256": "700407701bcedfd1a3a1af07c98575986e47ea6e214959beb6fd4670d22d978a",
+    "frame_bytes": 258305,
+    "framing_bytes": 257,
+    "payload_bytes": 258048
+  },
+  "cycle_id": "H014-037b",
+  "decision": "RETAIN_FAIL_CLOSED_COARSE_RECOVERY_CONTRACT",
+  "disclosure": "Deterministic protocol fault fixture over the real production payload size; H014-032c separately proves real persistent TCP transport.",
+  "faults": [
+    {
+      "cache_position_after": -1,
+      "elapsed_ns": 150300,
+      "error": "StageResponseRejected: response digest mismatch or partial response",
+      "fault": "partial_response",
+      "incomplete_output_exposed": false,
+      "output_emissions": 0,
+      "pass": true
+    },
+    {
+      "cache_position_after": -1,
+      "elapsed_ns": 3800,
+      "error": "TimeoutError: stage deadline expired",
+      "fault": "timeout",
+      "incomplete_output_exposed": false,
+      "output_emissions": 0,
+      "pass": true
+    },
+    {
+      "cache_position_after": -1,
+      "elapsed_ns": 2100,
+      "error": "ConnectionError: stage connection closed",
+      "fault": "worker_loss",
+      "incomplete_output_exposed": false,
+      "output_emissions": 0,
+      "pass": true
+    },
+    {
+      "cache_position_after": -1,
+      "elapsed_ns": 153400,
+      "error": "StageResponseRejected: stale or contradictory response identity: {'session_id': 'h014-037b-session', 'request_generation': 1, 'cache_position': 0, 'operation_id': 'layer-89', 'assignment_sha256': '700407701bcedfd1a3a1af07c98575986e47ea6e214959beb6fd4670d22d978a'}",
+      "fault": "stale_generation",
+      "incomplete_output_exposed": false,
+      "output_emissions": 0,
+      "pass": true
+    },
+    {
+      "cache_position_after": -1,
+      "elapsed_ns": 64900,
+      "error": "StageResponseRejected: late response for cancelled attempt",
+      "fault": "cancellation_late_response",
+      "incomplete_output_exposed": false,
+      "output_emissions": 0,
+      "pass": true
+    },
+    {
+      "cache_position_after": 0,
+      "duplicate_output_exposed": false,
+      "elapsed_ns": 244700,
+      "fault": "duplicate_response",
+      "first_status": "COMMITTED",
+      "output_emissions": 1,
+      "pass": true,
+      "second_status": "DUPLICATE_SUPPRESSED"
+    },
+    {
+      "cache_position_after": -1,
+      "elapsed_ns": 144500,
+      "error": "StageResponseRejected: stale or contradictory response identity: {'session_id': 'h014-037b-session', 'request_generation': 2, 'cache_position': 0, 'operation_id': 'layer-89', 'assignment_sha256': '8810ad581e59f2bc3928b261707a71308f7e139eb04820366dc4d5c18d980225'}",
+      "fault": "replacement_assignment_mismatch",
+      "incomplete_output_exposed": false,
+      "output_emissions": 0,
+      "pass": true
+    }
+  ],
+  "hypothesis": "Whole-stage partial, timeout, loss, stale, cancellation, duplicate and replacement-identity faults fail closed or suppress duplicates without advancing state, while an exact assignment replacement can retry once.",
+  "inspection": {
+    "duplicate_output_emissions": 1,
+    "failed_output_emissions": 0,
+    "replacement_numerically_exact": true,
+    "replacement_output_emissions": 1
+  },
+  "replacement_retry": {
+    "assignment_sha256": "700407701bcedfd1a3a1af07c98575986e47ea6e214959beb6fd4670d22d978a",
+    "baseline_fingerprint": "159dc29f11b7da5db060994b92cb2344ee1385157585715545a36664bb3e6124",
+    "cache_position_after": 0,
+    "output_emissions": 1,
+    "output_fingerprint": "159dc29f11b7da5db060994b92cb2344ee1385157585715545a36664bb3e6124",
+    "pass": true,
+    "replacement_worker": "replacement-worker",
+    "request_generation": 3,
+    "status": "COMMITTED"
+  },
+  "schema_version": "experiment-014-k3-coarse-stage-recovery-v1",
+  "status": "PASS"
+}

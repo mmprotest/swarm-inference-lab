@@ -1,0 +1,18 @@
+{
+  "schema_version": "experiment-014-k3-fixture-failure-v1",
+  "cycle_id": "H014-038c",
+  "status": "EXPECTED_FAIL_CLOSED",
+  "hypothesis": "The legacy H014-026b model identity remains sufficient for the registered persistent-stage regression after deployment identity hardening.",
+  "input_identity": {
+    "path": "artifacts/experiment-014/persistent/h014-026b-model-identity.json",
+    "schema_version": "swarm-model-identity-v1",
+    "worker_id_present": false,
+    "assignment_sha256_present": false
+  },
+  "error": "configured model identity has no valid assignment SHA-256",
+  "unsafe_work_reached": false,
+  "model_weights_loaded": false,
+  "cuda_execution_reached": false,
+  "inspection": "The strengthened production runtime rejected the stale pre-placement identity before model loading. This is a fixture-identity regression and a successful fail-closed deployment control, not a Kimi arithmetic failure.",
+  "decision": "Retain the rejection. Build a new worker-scoped regression identity from the exact final physical placement assignment; do not weaken the validator."
+}

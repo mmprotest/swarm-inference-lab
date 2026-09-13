@@ -1,0 +1,5 @@
+candidate,topology,workers,gpu_gib,max_worker_model_gib,aggregate_tok_s,fleet_cost_hour_at_0_165,cost_per_million_at_0_165,tok_s_per_fleet_dollar_hour,network_class,memory_feasible
+A,checkpoint-aligned whole-layer pipeline,96,24.0,15.823256969451904,37.33967497839291,15.84,117.83712639561318,2.3573027132823805,kimi_coarse_stage_fp32_v1,True
+B,canonical packed whole-layer pipeline,93,24.0,18.080078125,37.33967497839291,15.345,114.15471619575028,2.4333447362914895,kimi_coarse_stage_fp32_v1,True
+C,dedicated four-way sub-layer expert groups,461,8.0,3.6608715057373047,28.866643979576303,76.065,731.9578500921671,0.37949969078520085,kimi_sub_layer_expert_v1,True
+D,hybrid coarse pipeline plus packed expert domains,185,24.0,14.643486022949219,28.866643979576303,30.525000000000002,293.73579667473086,0.945672202443122,coarse plus kimi_sub_layer_expert_v1,True

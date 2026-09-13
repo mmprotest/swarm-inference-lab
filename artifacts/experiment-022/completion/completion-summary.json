@@ -1,0 +1,87 @@
+{
+  "chart_status": "PASS",
+  "claim_boundary": "In a physically validated local Kimi K3 execution model across the exact preregistered heterogeneous inventories, adaptive mixed-granularity placement does or does not materially outperform the strongest whole-layer-only planner.",
+  "claim_boundary_applied": false,
+  "completion_pass": true,
+  "dynamic_fail_count": 4,
+  "dynamic_failure_cases": [
+    {
+      "changed_resource_used_after": false,
+      "inventory_id": "full-mixed-01",
+      "scenario": "JOIN_USEFUL",
+      "throughput_change": 0.0
+    },
+    {
+      "changed_resource_used_after": false,
+      "inventory_id": "full-mixed-02",
+      "scenario": "JOIN_USEFUL",
+      "throughput_change": 0.0
+    },
+    {
+      "changed_resource_used_after": false,
+      "inventory_id": "full-mixed-03",
+      "scenario": "JOIN_USEFUL",
+      "throughput_change": 0.0
+    },
+    {
+      "changed_resource_used_after": false,
+      "inventory_id": "full-mixed-05",
+      "scenario": "JOIN_USEFUL",
+      "throughput_change": 0.0
+    }
+  ],
+  "dynamic_pass_count": 21,
+  "dynamic_row_count": 25,
+  "dynamic_status": "FAIL",
+  "evidence_class": "PHYSICAL local RTX 5090 + PHYSICALLY GROUNDED MODEL + SHAPED NETWORK",
+  "experiment": 22,
+  "final_answer": "MODEL INVALID",
+  "final_correctness_status": "PASS",
+  "gates": {
+    "accounting": true,
+    "bindings": true,
+    "candidate_catalog": true,
+    "chunk_2": true,
+    "chunk_4": true,
+    "containment": true,
+    "dominance": true,
+    "dynamic": false,
+    "final_correctness": true,
+    "frozen_inputs": true,
+    "model": true,
+    "optimizer_oracle": true,
+    "representatives": true,
+    "residual": true,
+    "same_optimizer": true,
+    "whole_expert": true
+  },
+  "gpu_rentals": 0,
+  "inventory_count": 27,
+  "inventory_suite_sha256": "3e949a8eee0a71e128493f64e0be903bd373d3baad4be86a8869d87279d4bb49",
+  "original_result": "MODEL_INVALID",
+  "physical_multi_machine_swarm_tested": false,
+  "representative_correctness_status": "PASS",
+  "schema_version": "experiment-022-completion-summary-v1",
+  "statistics": {
+    "a_feasible_inventory_count": 21,
+    "adaptive_regressions_gt_1_percent": 0,
+    "capacity_unlocks": 6,
+    "coarse_controls_retain_mostly_whole": true,
+    "heterogeneous_a_feasible": 18,
+    "heterogeneous_median_uplift_percent": 0.0,
+    "heterogeneous_wins_ge_20_percent": 0,
+    "outcome_rule_matched": true,
+    "stranded_memory_benefit": false,
+    "target_crossings": 0
+  },
+  "status": "FAIL",
+  "validation": {
+    "global_correction_factor": false,
+    "maximum_error_percent": 8.840475063046842,
+    "maximum_unexplained_fraction": 0.005605181326625346,
+    "median_error_percent": 3.2806018076935235,
+    "normalization": false,
+    "p90_error_percent": 7.030403733821702
+  },
+  "verdict_category": "MODEL_INVALID"
+}

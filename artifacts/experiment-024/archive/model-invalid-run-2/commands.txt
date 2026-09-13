@@ -1,0 +1,18 @@
+python scripts/experiment_024_freeze.py
+python scripts/experiment_024_calibrate.py --arm dense
+python scripts/experiment_024_calibrate.py --arm whole
+python scripts/experiment_024_calibrate.py --arm p8
+python scripts/experiment_024_calibrate.py --arm fusion
+python scripts/experiment_024_calibrate.py --arm assemble
+python scripts/experiment_024_code_freeze.py
+python scripts/experiment_024_physical.py
+python scripts/experiment_024_stage_a.py
+python scripts/experiment_024_stage_b.py
+python scripts/experiment_024_correctness.py
+python scripts/experiment_024_reproduce.py
+python scripts/experiment_024_finalize.py
+python -m compileall src/swarm_inference/experiments/experiment_024 scripts
+pytest -q tests/test_experiment_024.py tests/test_experiment_024_completion.py tests/test_experiment_023.py tests/test_experiment_023_completion.py tests/test_experiment_022.py tests/test_experiment_022_completion.py
+pytest -q
+ruff check src/swarm_inference/experiments/experiment_024 scripts/experiment_024*.py tests/test_experiment_024.py tests/test_experiment_024_completion.py
+ruff check .

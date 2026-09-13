@@ -1,0 +1,735 @@
+{
+  "manifest": {
+    "blocks": [
+      {
+        "body": "# E025 Headline Attempt 005: acquisition stopped before inference",
+        "id": "title",
+        "type": "markdown"
+      },
+      {
+        "body": "## Attempt 005 stopped before inference\n\n**INCOMPLETE.** Peak simultaneously-live readiness was **46 of 97 roles**. All four Layer 89 fragments reached READY on distinct machines, but the required fleet and Layer 89 parent did not finish acquisition before the hard cutoff.\n\nNo Token 1, Token 2, or public generation was attempted. Cleanup passed with **zero live E025 instances**.",
+        "id": "summary",
+        "type": "markdown"
+      },
+      {
+        "body": "## Isolated replacement worked; fleet completion did not\n\nThe corrected controller monitored 41 backbone groups and four fragment groups concurrently, recorded **19 targeted replacements**, and retained progressing siblings. The readiness curve below shows acquisition state, not inference throughput.",
+        "id": "lifecycle",
+        "type": "markdown"
+      },
+      {
+        "chartId": "readiness-chart",
+        "id": "readiness",
+        "type": "chart"
+      },
+      {
+        "body": "## Provider churn consumed the acquisition window\n\nCreated and destroyed instances reconcile one-for-one. Replacement and timeout counts show why retained healthy workers were insufficient to assemble all 97 roles before the reserve boundary.",
+        "id": "churn-text",
+        "type": "markdown"
+      },
+      {
+        "body": "## Four Layer 89 fragments became READY, not executed\n\nEach fragment verified its checkpoint and loaded its assigned expert shard on a distinct consumer-GPU machine. The bars show minutes from run start to READY. Because Token 1 never started, these workers have no per-token execution evidence in Attempt 005.",
+        "id": "sublayer-text",
+        "type": "markdown"
+      },
+      {
+        "body": "## Scope, definitions, and evidence classes\n\n**PHYSICAL** applies to instance lifecycle, remote worker preparation, and readiness. **NOT REACHED** applies to all inference, communication, routing, reduction, sampling, and decoded-output claims. `READY` is replayed from canonical lifecycle events and removed by matching unhealthy, disconnect, or destroy events. Location labels are raw Vast-reported host metadata; no missing geography is inferred.",
+        "id": "scope",
+        "type": "markdown"
+      },
+      {
+        "body": "## Attempted machines spanned the supplied raw location labels\n\nThis comparison counts distinct attempted machine IDs by Vast's raw `geolocation` value. It is an infrastructure-distribution view, not proof of geographic accuracy or a statement about inference participation.",
+        "id": "locations-text",
+        "type": "markdown"
+      },
+      {
+        "body": "## Validation method\n\nThe finalizer validated **2521 contiguous unique events**, replayed readiness in event-ID/monotonic order, reconciled 65 unique created instances with destruction evidence, and verified all 574 ledger entries against their hash chain. The frozen event-stream SHA-256 is `84fef174ca83...937f10d7225e`; the complete digest remains in the source evidence.",
+        "id": "method",
+        "type": "markdown"
+      },
+      {
+        "body": "## Cost and cleanup remained bounded\n\nActive rental plus storage is a **$24.8311 ledger estimate**, not a provider invoice. The completed-download ingress value is a lower bound because incomplete downloads and provider counters are not fully observed. All Attempt 005 instances were destroyed and the watchdog stopped only after zero-live verification.",
+        "id": "cost-text",
+        "type": "markdown"
+      },
+      {
+        "body": "## What this attempt does not establish\n\nThe complete Kimi K3 physical path, numerical correctness, stateful two-token decode, public generation, token latency, throughput, and per-token Layer 89 participation were not measured. The 46-role peak is an acquisition-state statistic and is not an E025 PASS substitute.",
+        "id": "limits",
+        "type": "markdown"
+      },
+      {
+        "body": "## Recommended next step\n\nPreserve Attempt 005 as physical acquisition evidence and keep every scientific PASS gate unchanged. Any future paid attempt should be separately authorized and should use this attempt's offer, timeout, and replacement history to improve live-fleet feasibility while retaining the corrected per-instance policy and 15-minute reserve.",
+        "id": "next",
+        "type": "markdown"
+      },
+      {
+        "body": "## Further questions\n\n- Which offer and bootstrap attributes best predict READY completion?\n- How much alternate depth is required for the observed churn?\n- Should the wrapper emit a dedicated hard-deadline event before teardown?",
+        "id": "questions",
+        "type": "markdown"
+      }
+    ],
+    "cards": [],
+    "charts": [
+      {
+        "dataset": "readiness_summary",
+        "encodings": {
+          "x": {
+            "field": "state",
+            "label": "Fleet state",
+            "type": "nominal"
+          },
+          "y": {
+            "field": "roles",
+            "label": "Worker roles",
+            "type": "quantitative"
+          }
+        },
+        "id": "readiness-chart",
+        "sourceId": "readiness-query",
+        "subtitle": "Acquisition peaked 51 roles short of the required frozen fleet",
+        "title": "Required versus peak live READY roles",
+        "type": "bar",
+        "valueFormat": "number"
+      },
+      {
+        "dataset": "lifecycle_churn",
+        "encodings": {
+          "x": {
+            "field": "event",
+            "label": "Lifecycle measure",
+            "type": "nominal"
+          },
+          "y": {
+            "field": "count",
+            "label": "Count",
+            "type": "quantitative"
+          }
+        },
+        "id": "churn-chart",
+        "sourceId": "churn-query",
+        "subtitle": "Canonical lifecycle events and unique instance identities",
+        "title": "Acquisition lifecycle counts",
+        "type": "bar",
+        "valueFormat": "number"
+      },
+      {
+        "dataset": "sublayer_workers",
+        "encodings": {
+          "tooltip": [
+            {
+              "field": "machine_id",
+              "label": "Machine ID",
+              "type": "quantitative"
+            },
+            {
+              "field": "gpu",
+              "label": "GPU",
+              "type": "nominal"
+            },
+            {
+              "field": "raw_location",
+              "label": "Raw Vast location",
+              "type": "nominal"
+            }
+          ],
+          "x": {
+            "field": "worker",
+            "label": "Fragment worker",
+            "type": "nominal"
+          },
+          "y": {
+            "field": "ready_minutes",
+            "label": "Minutes to READY",
+            "type": "quantitative"
+          }
+        },
+        "id": "sublayer-chart",
+        "sourceId": "sublayer-query",
+        "subtitle": "Four distinct physical machines; execution was not reached",
+        "title": "Layer 89 fragment time to READY",
+        "type": "bar",
+        "valueFormat": "number"
+      },
+      {
+        "dataset": "location_counts",
+        "encodings": {
+          "x": {
+            "field": "raw_location",
+            "label": "Vast-reported host location metadata",
+            "type": "nominal"
+          },
+          "y": {
+            "field": "distinct_machines",
+            "label": "Distinct machines",
+            "type": "quantitative"
+          }
+        },
+        "id": "locations-chart",
+        "sourceId": "locations-query",
+        "subtitle": "Top 10 raw labels by distinct machine count; full inventory is retained separately",
+        "title": "Attempted machines by raw Vast location label",
+        "type": "bar",
+        "valueFormat": "number"
+      }
+    ],
+    "description": "Technical audit of the physical fleet acquisition, terminal cutoff, and cleanup.",
+    "filters": [],
+    "generatedAt": "2026-08-23T21:45:10.634001+00:00",
+    "sources": [
+      {
+        "id": "readiness-query",
+        "label": "Canonical readiness replay",
+        "path": "final/attempt-005-report.sqlite",
+        "query": {
+          "description": "Selects the required-fleet and peak-live-readiness comparison derived from the canonical event stream.",
+          "engine": "sqlite",
+          "executed_at": "2026-08-23T21:45:10.634001+00:00",
+          "filters": [],
+          "language": "sql",
+          "sql": "SELECT state, roles, sort_order FROM readiness_summary ORDER BY sort_order",
+          "tables_used": [
+            "readiness_summary"
+          ]
+        }
+      },
+      {
+        "id": "churn-query",
+        "label": "Canonical lifecycle reconciliation",
+        "path": "final/attempt-005-report.sqlite",
+        "query": {
+          "description": "Selects lifecycle counts reconciled from the canonical event stream and ledger.",
+          "engine": "sqlite",
+          "executed_at": "2026-08-23T21:45:10.634001+00:00",
+          "filters": [],
+          "language": "sql",
+          "sql": "SELECT event, count, sort_order FROM lifecycle_churn ORDER BY sort_order",
+          "tables_used": [
+            "lifecycle_churn"
+          ]
+        }
+      },
+      {
+        "id": "sublayer-query",
+        "label": "Layer 89 readiness identities",
+        "path": "final/attempt-005-report.sqlite",
+        "query": {
+          "description": "Selects the four physical Layer 89 readiness records derived from WORKER_READY events.",
+          "engine": "sqlite",
+          "executed_at": "2026-08-23T21:45:10.634001+00:00",
+          "filters": [],
+          "language": "sql",
+          "sql": "SELECT worker, machine_id, gpu, ready_minutes, raw_location, execution_status FROM sublayer_workers ORDER BY worker",
+          "tables_used": [
+            "sublayer_workers"
+          ]
+        }
+      },
+      {
+        "id": "locations-query",
+        "label": "Vast-reported location labels",
+        "path": "final/attempt-005-report.sqlite",
+        "query": {
+          "description": "Selects distinct attempted-machine counts by raw Vast geolocation label.",
+          "engine": "sqlite",
+          "executed_at": "2026-08-23T21:45:10.634001+00:00",
+          "filters": [],
+          "language": "sql",
+          "sql": "SELECT raw_location, distinct_machines FROM location_counts ORDER BY distinct_machines DESC, raw_location LIMIT 10",
+          "tables_used": [
+            "location_counts"
+          ]
+        }
+      },
+      {
+        "id": "cost-query",
+        "label": "Attempt 005 cost reconciliation",
+        "path": "final/attempt-005-report.sqlite",
+        "query": {
+          "description": "Selects ledger-derived cost components and the completed-download ingress lower bound.",
+          "engine": "sqlite",
+          "executed_at": "2026-08-23T21:45:10.634001+00:00",
+          "filters": [],
+          "language": "sql",
+          "sql": "SELECT component, usd, basis, sort_order FROM cost_components ORDER BY sort_order",
+          "tables_used": [
+            "cost_components"
+          ]
+        }
+      },
+      {
+        "id": "gates-query",
+        "label": "Attempt 005 terminal PASS gates",
+        "path": "final/attempt-005-report.sqlite",
+        "query": {
+          "description": "Selects terminal gate values from the headline summary.",
+          "engine": "sqlite",
+          "executed_at": "2026-08-23T21:45:10.634001+00:00",
+          "filters": [],
+          "language": "sql",
+          "sql": "SELECT gate, result FROM pass_gates ORDER BY gate",
+          "tables_used": [
+            "pass_gates"
+          ]
+        }
+      },
+      {
+        "id": "events",
+        "label": "Attempt 005 canonical physical event stream",
+        "path": "telemetry/physical-run-events.jsonl"
+      },
+      {
+        "id": "ledger",
+        "label": "Attempt 005 append-only rental ledger",
+        "path": "rental/stage-4-headline/instance-ledger.jsonl"
+      },
+      {
+        "id": "offers",
+        "label": "Frozen Attempt 005 live-offer snapshot",
+        "path": "preflight/full-fleet-offer-snapshot-attempt-005.json"
+      },
+      {
+        "id": "cleanup",
+        "label": "Attempt 005 cleanup verification",
+        "path": "rental/stage-4-headline/cleanup-verification.json"
+      }
+    ],
+    "surface": "report",
+    "tables": [
+      {
+        "columns": [
+          {
+            "field": "worker",
+            "label": "Worker",
+            "type": "text"
+          },
+          {
+            "field": "machine_id",
+            "format": "number",
+            "label": "Machine ID"
+          },
+          {
+            "field": "gpu",
+            "label": "GPU",
+            "type": "text"
+          },
+          {
+            "field": "ready_minutes",
+            "format": "number",
+            "label": "Minutes to READY"
+          },
+          {
+            "field": "raw_location",
+            "label": "Raw Vast location",
+            "type": "text"
+          },
+          {
+            "field": "execution_status",
+            "label": "Execution",
+            "type": "text"
+          }
+        ],
+        "dataset": "sublayer_workers",
+        "defaultSort": {
+          "direction": "asc",
+          "field": "worker"
+        },
+        "density": "spacious",
+        "id": "sublayer-table",
+        "sourceId": "sublayer-query",
+        "subtitle": "Physical readiness identities; no token execution occurred",
+        "title": "Layer 89 fragment worker identities"
+      },
+      {
+        "columns": [
+          {
+            "field": "component",
+            "label": "Component",
+            "type": "text"
+          },
+          {
+            "field": "usd",
+            "format": "currency",
+            "label": "USD"
+          },
+          {
+            "field": "basis",
+            "label": "Basis",
+            "type": "text"
+          }
+        ],
+        "dataset": "cost_components",
+        "defaultSort": {
+          "direction": "asc",
+          "field": "component"
+        },
+        "density": "spacious",
+        "id": "cost-table",
+        "sourceId": "cost-query",
+        "subtitle": "USD estimates derived from ledger lifetimes and advertised rates",
+        "title": "Attempt 005 cost reconciliation"
+      },
+      {
+        "columns": [
+          {
+            "field": "gate",
+            "label": "Gate",
+            "type": "text"
+          },
+          {
+            "field": "result",
+            "label": "Terminal result",
+            "type": "text"
+          }
+        ],
+        "dataset": "pass_gates",
+        "defaultSort": {
+          "direction": "asc",
+          "field": "gate"
+        },
+        "density": "dense",
+        "id": "gates-table",
+        "sourceId": "gates-query",
+        "subtitle": "Unreached scientific gates remain not established",
+        "title": "Terminal E025 PASS-gate state"
+      }
+    ],
+    "title": "E025 Headline Attempt 005: acquisition stopped before inference",
+    "version": 1
+  },
+  "package_info": {
+    "controls": {
+      "edit": false,
+      "refresh": false
+    },
+    "originUrl": "artifact://experiment-025-attempt-005"
+  },
+  "snapshot": {
+    "accessIssues": [],
+    "datasets": {
+      "cost_components": [
+        {
+          "basis": "Ledger lifetime x advertised active rate",
+          "component": "Active rental",
+          "sort_order": 1,
+          "usd": 24.138600594924075
+        },
+        {
+          "basis": "Ledger lifetime x advertised storage rate",
+          "component": "Storage",
+          "sort_order": 2,
+          "usd": 0.692476963252201
+        },
+        {
+          "basis": "Ledger estimate; not provider invoice",
+          "component": "Active + storage",
+          "sort_order": 3,
+          "usd": 24.831077558176275
+        },
+        {
+          "basis": "Completed worker download bytes x selected offer rate",
+          "component": "Completed-download ingress lower bound",
+          "sort_order": 4,
+          "usd": 5.966582905155479
+        }
+      ],
+      "lifecycle_churn": [
+        {
+          "count": 71,
+          "event": "Create requested",
+          "sort_order": 1
+        },
+        {
+          "count": 65,
+          "event": "Instance created",
+          "sort_order": 2
+        },
+        {
+          "count": 19,
+          "event": "Targeted replacement",
+          "sort_order": 3
+        },
+        {
+          "count": 17,
+          "event": "Instance no-progress timeout",
+          "sort_order": 4
+        },
+        {
+          "count": 65,
+          "event": "Instance destroyed",
+          "sort_order": 5
+        }
+      ],
+      "location_counts": [
+        {
+          "distinct_machines": 6,
+          "raw_location": "California, US"
+        },
+        {
+          "distinct_machines": 4,
+          "raw_location": ", US"
+        },
+        {
+          "distinct_machines": 4,
+          "raw_location": "Norway, NO"
+        },
+        {
+          "distinct_machines": 4,
+          "raw_location": "Oregon, US"
+        },
+        {
+          "distinct_machines": 4,
+          "raw_location": "South Korea, KR"
+        },
+        {
+          "distinct_machines": 4,
+          "raw_location": "Virginia, US"
+        },
+        {
+          "distinct_machines": 3,
+          "raw_location": "Quebec, CA"
+        },
+        {
+          "distinct_machines": 3,
+          "raw_location": "Texas, US"
+        },
+        {
+          "distinct_machines": 2,
+          "raw_location": "Czechia, CZ"
+        },
+        {
+          "distinct_machines": 2,
+          "raw_location": "Estonia, EE"
+        }
+      ],
+      "pass_gates": [
+        {
+          "gate": "G10_sub_layer_necessity",
+          "result": "PASS"
+        },
+        {
+          "gate": "G11_numerical_correctness",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G12_stateful_autoregressive_correctness",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G13_human_readable_generation",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G14_physical_trace_complete",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G15_cleanup",
+          "result": "PASS"
+        },
+        {
+          "gate": "G1_authoritative_kimi_k3",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G2_full_physical_multi_machine_path",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G3_consumer_only_headline_compute",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G4_real_native_execution",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G5_required_model_coverage",
+          "result": "PASS"
+        },
+        {
+          "gate": "G6_physical_sub_layer_workers",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G7_complete_layer_cannot_fit",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G8_fragment_fits",
+          "result": "NOT ESTABLISHED"
+        },
+        {
+          "gate": "G9_no_hidden_full_layer_fallback",
+          "result": "NOT ESTABLISHED"
+        }
+      ],
+      "readiness_summary": [
+        {
+          "roles": 97,
+          "sort_order": 1,
+          "state": "Required fleet"
+        },
+        {
+          "roles": 46,
+          "sort_order": 2,
+          "state": "Peak live READY"
+        }
+      ],
+      "sublayer_workers": [
+        {
+          "execution_status": "Not reached",
+          "gpu": "RTX 3080",
+          "machine_id": 143869,
+          "raw_location": "Austria, AT",
+          "ready_minutes": 17.922704,
+          "worker": "sub-00"
+        },
+        {
+          "execution_status": "Not reached",
+          "gpu": "RTX 3070",
+          "machine_id": 141803,
+          "raw_location": "France, FR",
+          "ready_minutes": 15.467603,
+          "worker": "sub-01"
+        },
+        {
+          "execution_status": "Not reached",
+          "gpu": "RTX 3080 Ti",
+          "machine_id": 57056,
+          "raw_location": "Quebec, CA",
+          "ready_minutes": 26.653047,
+          "worker": "sub-02"
+        },
+        {
+          "execution_status": "Not reached",
+          "gpu": "RTX 3070",
+          "machine_id": 31715,
+          "raw_location": "Florida, US",
+          "ready_minutes": 14.324744,
+          "worker": "sub-03"
+        }
+      ]
+    },
+    "generatedAt": "2026-08-23T21:45:10.634001+00:00",
+    "status": "ready",
+    "version": 1
+  },
+  "sources": [
+    {
+      "id": "readiness-query",
+      "label": "Canonical readiness replay",
+      "path": "final/attempt-005-report.sqlite",
+      "query": {
+        "description": "Selects the required-fleet and peak-live-readiness comparison derived from the canonical event stream.",
+        "engine": "sqlite",
+        "executed_at": "2026-08-23T21:45:10.634001+00:00",
+        "filters": [],
+        "language": "sql",
+        "sql": "SELECT state, roles, sort_order FROM readiness_summary ORDER BY sort_order",
+        "tables_used": [
+          "readiness_summary"
+        ]
+      }
+    },
+    {
+      "id": "churn-query",
+      "label": "Canonical lifecycle reconciliation",
+      "path": "final/attempt-005-report.sqlite",
+      "query": {
+        "description": "Selects lifecycle counts reconciled from the canonical event stream and ledger.",
+        "engine": "sqlite",
+        "executed_at": "2026-08-23T21:45:10.634001+00:00",
+        "filters": [],
+        "language": "sql",
+        "sql": "SELECT event, count, sort_order FROM lifecycle_churn ORDER BY sort_order",
+        "tables_used": [
+          "lifecycle_churn"
+        ]
+      }
+    },
+    {
+      "id": "sublayer-query",
+      "label": "Layer 89 readiness identities",
+      "path": "final/attempt-005-report.sqlite",
+      "query": {
+        "description": "Selects the four physical Layer 89 readiness records derived from WORKER_READY events.",
+        "engine": "sqlite",
+        "executed_at": "2026-08-23T21:45:10.634001+00:00",
+        "filters": [],
+        "language": "sql",
+        "sql": "SELECT worker, machine_id, gpu, ready_minutes, raw_location, execution_status FROM sublayer_workers ORDER BY worker",
+        "tables_used": [
+          "sublayer_workers"
+        ]
+      }
+    },
+    {
+      "id": "locations-query",
+      "label": "Vast-reported location labels",
+      "path": "final/attempt-005-report.sqlite",
+      "query": {
+        "description": "Selects distinct attempted-machine counts by raw Vast geolocation label.",
+        "engine": "sqlite",
+        "executed_at": "2026-08-23T21:45:10.634001+00:00",
+        "filters": [],
+        "language": "sql",
+        "sql": "SELECT raw_location, distinct_machines FROM location_counts ORDER BY distinct_machines DESC, raw_location LIMIT 10",
+        "tables_used": [
+          "location_counts"
+        ]
+      }
+    },
+    {
+      "id": "cost-query",
+      "label": "Attempt 005 cost reconciliation",
+      "path": "final/attempt-005-report.sqlite",
+      "query": {
+        "description": "Selects ledger-derived cost components and the completed-download ingress lower bound.",
+        "engine": "sqlite",
+        "executed_at": "2026-08-23T21:45:10.634001+00:00",
+        "filters": [],
+        "language": "sql",
+        "sql": "SELECT component, usd, basis, sort_order FROM cost_components ORDER BY sort_order",
+        "tables_used": [
+          "cost_components"
+        ]
+      }
+    },
+    {
+      "id": "gates-query",
+      "label": "Attempt 005 terminal PASS gates",
+      "path": "final/attempt-005-report.sqlite",
+      "query": {
+        "description": "Selects terminal gate values from the headline summary.",
+        "engine": "sqlite",
+        "executed_at": "2026-08-23T21:45:10.634001+00:00",
+        "filters": [],
+        "language": "sql",
+        "sql": "SELECT gate, result FROM pass_gates ORDER BY gate",
+        "tables_used": [
+          "pass_gates"
+        ]
+      }
+    },
+    {
+      "id": "events",
+      "label": "Attempt 005 canonical physical event stream",
+      "path": "telemetry/physical-run-events.jsonl"
+    },
+    {
+      "id": "ledger",
+      "label": "Attempt 005 append-only rental ledger",
+      "path": "rental/stage-4-headline/instance-ledger.jsonl"
+    },
+    {
+      "id": "offers",
+      "label": "Frozen Attempt 005 live-offer snapshot",
+      "path": "preflight/full-fleet-offer-snapshot-attempt-005.json"
+    },
+    {
+      "id": "cleanup",
+      "label": "Attempt 005 cleanup verification",
+      "path": "rental/stage-4-headline/cleanup-verification.json"
+    }
+  ],
+  "surface": "report"
+}

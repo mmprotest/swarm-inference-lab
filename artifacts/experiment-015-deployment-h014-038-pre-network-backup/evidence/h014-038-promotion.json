@@ -1,0 +1,263 @@
+{
+  "candidate": {
+    "bytes": 792576,
+    "path": "artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-033c-mla16k-candidate.dll",
+    "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326"
+  },
+  "cycle_id": "H014-038",
+  "decision": "PROMOTED_FOR_PRE_CANARY_USE",
+  "final_binary": {
+    "bytes": 792576,
+    "compute86_ptx": true,
+    "path": "artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-038-final.dll",
+    "physical_sm86_execution": false,
+    "sha256": "c3bdb40d49a1b0e512ddb1e84485e0bdcf9d2e6ac6fa4049d81ff2ecd12ae326",
+    "sm86_sass": true
+  },
+  "generated_at_utc": "2026-08-11T22:32:14.249168+00:00",
+  "health_after": {
+    "compute_cap": "12.0",
+    "memory.free": "30248",
+    "memory.total": "32607",
+    "memory.used": "1940",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "health_before": {
+    "compute_cap": "12.0",
+    "memory.free": "30248",
+    "memory.total": "32607",
+    "memory.used": "1940",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "invalid_or_nonpromotable_evidence": {
+    "h014_038_missing_bos": "invalid fixture input",
+    "h014_038a_timeout": "incomplete external timeout",
+    "h014_038h": "mixed oracle family; lifecycle diagnostic only",
+    "h014_038i": "mixed oracle family; lifecycle diagnostic only"
+  },
+  "oracle_manifest": {
+    "bundle_sha256": "69ed31c9d80a74e25a7070bdb1cf1c2ef4e4bb4f184f68ee622d4a780eea1da6",
+    "cycle_id": "H014-038j",
+    "directory": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0",
+    "expected_final_stage_input_fingerprints": [
+      "sha256:4c234e5cc2baa412f4f64f470c5af83a6ca84a958ae2da56b3612cd0de4dab27",
+      "sha256:05bf26eda750a1f025c1368d03901e759b49017bb0199b49bdfca80ee0f37375",
+      "sha256:efea01868cd7d154a44531f84fa0e211f91a67936e927ec031d8be6a5233c798"
+    ],
+    "family": "checkpoint-faithful deterministic router K3_IDOT=0",
+    "files": {
+      "hidden-trace.f32": {
+        "bytes": 8085504,
+        "sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d"
+      },
+      "prefill-logits.f32": {
+        "bytes": 1310720,
+        "sha256": "8cd947eb8f2fddda751b0527d81f5f68c306a57c2526fefbcea937d81f590248"
+      },
+      "routes.txt": {
+        "bytes": 50703,
+        "sha256": "c734d864e8ac40ada5fd1fbd6c64da5959b9610561313ec63e7b79a499a91288"
+      },
+      "serial-oracle-receipt.json": {
+        "bytes": 162681,
+        "sha256": "c3be4979b428c952dad341d481c1aa2e7f52e9d11b1004b3ebf6512033962fd0"
+      },
+      "states.txt": {
+        "bytes": 11511,
+        "sha256": "5dec2304fce303f42d0da5d2acb9f1d80ad3eeaf63cd29342364624d064ba0a9"
+      }
+    },
+    "schema_version": "experiment-014-h014-038-oracle-family-v1",
+    "status": "PASS"
+  },
+  "regenerated": {
+    "operation_matrix": {
+      "path": "artifacts\\experiment-014\\k3-cuda-operation-matrix.json",
+      "sha256": "cd9b5bd85d34bae3510387a4a51e63e0cc35b418ae51b69a93472a5f927400d1"
+    },
+    "oracle_manifest": {
+      "path": "artifacts\\experiment-014\\cuda\\h014-038-canonical-oracle-family.json",
+      "sha256": "d05a727e5b846c181f15e4baa4631decc7f045731abe85acfd30f56ad0e72f26"
+    },
+    "same_binary_qualification": {
+      "path": "artifacts\\experiment-014\\cuda\\h014-038-promoted-same-binary-qualification.json",
+      "sha256": "27c8bd64e6ac7f02c85b8ffa01d30dc7b8995e1e280283dc7460bf1cc6864205"
+    },
+    "sm86_certificate": {
+      "path": "artifacts\\experiment-014\\rtx3090-sm86-certification.json",
+      "sha256": "4accd07e71083143e69634152cb2cee33c649f7fd21e50861ecc56457674bdc9"
+    },
+    "source_manifest": {
+      "path": "artifacts\\experiment-014\\cuda\\h014-038-source-manifest.json",
+      "sha256": "58bfbf27c6857f31d929d64f4e007ae819a7a8371f93086db9e2c66cba3ddf24"
+    }
+  },
+  "schema_version": "experiment-014-h014-038-promotion-v1",
+  "source_manifest": {
+    "cycle_id": "H014-038",
+    "files": {
+      "pyproject.toml": {
+        "bytes": 4422,
+        "sha256": "2803609d7eb85148be38a55f17093b5f9affce52837f01d1de4ee9d8c571aba2"
+      },
+      "src/swarm_inference/execution/kimi_cuda_runtime.py": {
+        "bytes": 67267,
+        "sha256": "8fc0909851b915e3dbccc9991d5157cce54e6731004d4ee46749bd35d48e89e6"
+      },
+      "src/swarm_inference/execution/kimi_k3_graph_runtime.py": {
+        "bytes": 56403,
+        "sha256": "ac4ab4afab7b63dd7746980daae4dbecf084c0b730ad59704bf524277a7d8e90"
+      },
+      "src/swarm_inference/execution/kimi_k3_stage.py": {
+        "bytes": 127381,
+        "sha256": "596d940a6f8b1db38f33d4aded238ccc17accfdc8a68935a14cc1c7977ac9664"
+      },
+      "src/swarm_inference/experiments/experiment_014/__main__.py": {
+        "bytes": 109702,
+        "sha256": "9ab525961e2e108bf3ff3f956a586414036dd07461a677082ed795dd1c6bce78"
+      },
+      "src/swarm_inference/experiments/experiment_014/capacity_topology.py": {
+        "bytes": 33279,
+        "sha256": "b3e4d1047b3fca3a5a34ef408fa49d8c21a9c3f1fbb3dbdd36239e3f987fa40b"
+      },
+      "src/swarm_inference/experiments/experiment_014/cuda.py": {
+        "bytes": 167491,
+        "sha256": "e315953d29a3bc1a0a5bd06ab5f0b8e5b9a367b4786851a0fbf2761cc38e0e4c"
+      },
+      "src/swarm_inference/experiments/experiment_014/deployment_admission.py": {
+        "bytes": 21969,
+        "sha256": "31bdad1d1678e2fb9a88278eb0a8e5413191b5f14aa4bf1d52c001dcae40b162"
+      },
+      "src/swarm_inference/experiments/experiment_014/deployment_canary.py": {
+        "bytes": 50554,
+        "sha256": "d699dccaea45b3a21a793ee6369032e6d918e6bdc5b7a75f9ea421b912dffffb"
+      },
+      "src/swarm_inference/experiments/experiment_014/deployment_recovery.py": {
+        "bytes": 12916,
+        "sha256": "7127e8b592066cd031acc0394a32a875298704beca315292c6481ec4df2f48bb"
+      },
+      "src/swarm_inference/experiments/experiment_014/experiment_015_package.py": {
+        "bytes": 61417,
+        "sha256": "6ffada45a41a4b840ef83b4fb35d2e7ba7633591f8c6789bff161e357279b4ed"
+      },
+      "src/swarm_inference/experiments/experiment_014/final_deployment.py": {
+        "bytes": 17182,
+        "sha256": "5b35e88c2b36c7a7fab8c8cd79da33e75d07887b60604b9296817d1ac8cbf00c"
+      },
+      "src/swarm_inference/experiments/experiment_014/full_cuda.py": {
+        "bytes": 10093,
+        "sha256": "ea08477fd9ae652e8d7eb80c97362bd8aae45ba45b66857b794fa650342a5277"
+      },
+      "src/swarm_inference/experiments/experiment_014/performance.py": {
+        "bytes": 148622,
+        "sha256": "9b5e6d6251877123909d1a44b89cf8c7967b9dd721371d84000084c66347877d"
+      },
+      "src/swarm_inference/experiments/experiment_014/performance_model.py": {
+        "bytes": 16237,
+        "sha256": "7c04e5326b4e9fb9d2d7c4d0929db78af554f6fc1978ae8fcb60182bddd4be34"
+      },
+      "src/swarm_inference/experiments/experiment_014/persistent_stages.py": {
+        "bytes": 47048,
+        "sha256": "546c33a40aff37600ab14643abf05cc226da09192c72ed7544b1a605ac79d158"
+      },
+      "src/swarm_inference/experiments/experiment_014/remote_acquisition.py": {
+        "bytes": 43253,
+        "sha256": "4f3143f1c185da74b3fa109d7c8f485716edb2c8fec85e135a9e994e2a9022f0"
+      },
+      "src/swarm_inference/experiments/experiment_014/runtime_qualification.py": {
+        "bytes": 11644,
+        "sha256": "b7e3ed6c4a3421b1011c890c4a293596f01fe81502de8db7e8e32c1e3df01d9e"
+      },
+      "src/swarm_inference/experiments/experiment_014/sub_layer_microwork.py": {
+        "bytes": 76838,
+        "sha256": "46ae88b159f48e1f622aa2f8f95b38dfa98fe78d182b740c9a8e4bc1822390fe"
+      },
+      "src/swarm_inference/model/kimi_k3.py": {
+        "bytes": 17431,
+        "sha256": "b4b2b25c2e41647d892c73cc1a4dbdd5181f324a3d1db3b7fef02f4e14e7e3ce"
+      },
+      "src/swarm_inference/model/kimi_tokenizer.py": {
+        "bytes": 4067,
+        "sha256": "67437730430134f27d8e27f636fd37b6e6fc170662b43cd8fd12b67f6a442d6a"
+      },
+      "src/swarm_inference/model/mxfp4.py": {
+        "bytes": 1748,
+        "sha256": "de426b7b0ac9895628c7b90f86b88d2eda448e5ea371cd6b44df02b3e11c8545"
+      },
+      "src/swarm_inference/transport/stage_tensor.py": {
+        "bytes": 10139,
+        "sha256": "5796be30c76d867cc761ebe5d2a47a1003b4597f646c7d336a9bb1013ca51c0f"
+      },
+      "src/swarm_inference/worker/stage_runtime.py": {
+        "bytes": 123565,
+        "sha256": "0f656efa801cf0876d8ca9073629daad87f4e0edba698da37c8f51c31024256f"
+      },
+      "third_party/colibri/c/backend_cuda.cu": {
+        "bytes": 175806,
+        "sha256": "8dd70504db0fe7bc43b4d9769c6472281578cbc49f5e61970bed94868404c6a8"
+      },
+      "third_party/colibri/c/backend_cuda.h": {
+        "bytes": 17653,
+        "sha256": "b2a5b735d2fee2b4934f19c42618ed0d064000076667df7d107d793e44b92ca7"
+      },
+      "third_party/colibri/c/backend_gpu_compat.h": {
+        "bytes": 5045,
+        "sha256": "bc1cd457b42800fd6754a7f59b9269e5a956d164c9ce0f34f8cbcf2319f3d455"
+      },
+      "uv.lock": {
+        "bytes": 476661,
+        "sha256": "55429e291382ce50b422eaef2033551a482f076890682beffe25ca57e25d3709"
+      }
+    },
+    "schema_version": "experiment-014-h014-038-source-manifest-v1",
+    "source_bundle_sha256": "2db68148aca0772221bb02d8ba8354632d70fb3c051de08daceaed137c361656",
+    "status": "PASS"
+  },
+  "status": "PASS",
+  "summary": {
+    "component_receipts": 12,
+    "critical_operation_classes": 11,
+    "first_rejected_batch": 9,
+    "full_graph_layers": 93,
+    "native_max_batch": 16,
+    "p1_roles": [
+      "stage_zero",
+      "KDA",
+      "Gated_MLA",
+      "final_head"
+    ],
+    "physical_sm86_execution": "PENDING_EXPERIMENT_015_CANARY",
+    "production_batch": 8,
+    "routed_expert_calls": 4416,
+    "router_calls": 276
+  },
+  "validated_inputs": {
+    "artifacts\\experiment-014\\cuda\\h014-038-final-operation-matrix.json": "c2bf9ade2ac315aa6d95af373b8f7ed76d17c628dc32fb2d4068f903bae17335",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-attnres.json": "ceae0c61b65d22ee3d8ac91c1d3f09bccfcc423ec520507a2715f1b24cc6325a",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-dense-large.json": "f62c7fcd9cf606cb0149f5cab7d44c7a30b4e921ffd1cccc4f4476e0e6e36343",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-dense-small.json": "7241fc153806ddebce37c6c9f58ec39769b738e81493081fce0cf5e94422f236",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-embedding.json": "ad8bad4b5030c202bbbc42d6173f07e11ff076ada81f4e946e431cfd26ae8174",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-expert.json": "f9403941323d3b5fef7d81e72510e810f64dd13d0321ade09c1601865dcaed80",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-final-norm.json": "5b7b8e67f91bb5a4fe2c1386b289313749736c11c53c5013f1eb105e396174c5",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-full-93-layer.json": "c4a5836ac1c6c576c2675c696faefa92e2f3ae4f836b10a086f92d27ea0fcb57",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-kda-stage.json": "2dfa7919ac99bef2827096dcfd3d43d531472fff1a64e9c2eda4b09baa6a7ac7",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-lm-head.json": "cd5fbc091159d597458e988370ec580636421ce249d060da6352b004538af740",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-mla-stage.json": "97624dfcd02c4260d75e000d14536fad731054c4af2a6eb04d77d0cd7137b114",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-moe-reduction.json": "a67044da1abbee03c5d866cdd1abe79c2dd271f1f4d75dd57ae24e4fd53d6772",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-router.json": "2d48e0058e497dd197d740b72619d1d469d0cfdb15e1056d962bd596a0f1231e",
+    "artifacts\\experiment-014\\cuda\\h014-038-regression-shared-expert.json": "89ddf42342dd890dbe3014f0bbe281be7c3f08e6126ca120d079ed5008167f1e",
+    "artifacts\\experiment-014\\persistent\\h014-038-regression-final-stage.json": "7645a1fb5cf378af70a481947d638caa340c89c8241d143ab9fa79ff8c3c990a",
+    "artifacts\\experiment-014\\persistent\\h014-038-regression-nonfinal-stages.json": "87315dfe3d3c55e2ed67369544d78b8df81d2879cc90d34276da5759333bbfab",
+    "artifacts\\experiment-014\\persistent\\h014-038-regression-stage-zero.json": "ce05797d1c6a83f0a5c71f4883ed90605e731aac1dfafca35420815ac9136f23",
+    "artifacts\\experiment-014\\persistent\\h014-038u-final-repeat-1.json": "9ccb3016926e568e62f9d6c7ba4109f61e1634e46c70a00e4db32b521461f739",
+    "artifacts\\experiment-014\\persistent\\h014-038u-final-repeat-2.json": "9166991bd2ddfd6cc425e4b75998b7dd2c8ebeeb4557a72560f0df3b4f7d1823"
+  }
+}

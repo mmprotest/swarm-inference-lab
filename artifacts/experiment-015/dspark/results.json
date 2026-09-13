@@ -1,0 +1,173 @@
+{
+  "acceptance": {
+    "first_gate_2x": "NOT_EVALUABLE",
+    "swarm_mean_accepted_length": null,
+    "target_traversals_per_output_token": null
+  },
+  "checkpoint": {
+    "checkpoint": "F:\\models\\Kimi-K3-DSpark",
+    "config_sha256": "5a3c2f4f91c965ed93b14de5f12a4e9c17fd98d8c99916ed2deb26ce8702f970",
+    "mask_token_id": 163837,
+    "model_bytes": 7124633450,
+    "model_sha256": "f9972a636d92a11994cdcfc88fd4c5b5d50d6eb2a89af016031593b8c65c2053",
+    "revision": "cf6b8244620e7ea4b0651d214f28e89eac75bed6"
+  },
+  "cycle_id": "H015-001A-H015-001B",
+  "decision": "STOP_STANDARD_DSPARK_GATE_UNRESOLVED",
+  "limiting_mechanism": "one streamed 93-layer target traversal takes roughly an hour locally, and the pinned public runtime rejects DSpark pipeline parallelism",
+  "reference_execution": {
+    "blocks": [
+      {
+        "backbone_wall_ms": 492.76860000099987,
+        "base_argmax_token_ids": [
+          566
+        ],
+        "block_size": 1,
+        "draft_token_ids": [
+          1362
+        ],
+        "finite": true,
+        "markov_wall_ms": 9.620400000130758,
+        "query_token_ids": [
+          374
+        ],
+        "reference_wall_ms": 502.3890000011306,
+        "timing_scope": "CPU BF16 correctness reference; excludes load; not GPU capacity evidence"
+      },
+      {
+        "backbone_wall_ms": 170.1184999983525,
+        "base_argmax_token_ids": [
+          300,
+          13
+        ],
+        "block_size": 2,
+        "draft_token_ids": [
+          1362,
+          308
+        ],
+        "finite": true,
+        "markov_wall_ms": 6.248499994399026,
+        "query_token_ids": [
+          374,
+          163837
+        ],
+        "reference_wall_ms": 176.36699999275152,
+        "timing_scope": "CPU BF16 correctness reference; excludes load; not GPU capacity evidence"
+      },
+      {
+        "backbone_wall_ms": 165.78819999995176,
+        "base_argmax_token_ids": [
+          300,
+          13,
+          13
+        ],
+        "block_size": 3,
+        "draft_token_ids": [
+          1913,
+          308,
+          1833
+        ],
+        "finite": true,
+        "markov_wall_ms": 9.53270000172779,
+        "query_token_ids": [
+          374,
+          163837,
+          163837
+        ],
+        "reference_wall_ms": 175.32090000167955,
+        "timing_scope": "CPU BF16 correctness reference; excludes load; not GPU capacity evidence"
+      },
+      {
+        "backbone_wall_ms": 173.07489999802783,
+        "base_argmax_token_ids": [
+          300,
+          13,
+          13,
+          13,
+          13
+        ],
+        "block_size": 5,
+        "draft_token_ids": [
+          1913,
+          308,
+          1833,
+          472,
+          276
+        ],
+        "finite": true,
+        "markov_wall_ms": 15.43400000082329,
+        "query_token_ids": [
+          374,
+          163837,
+          163837,
+          163837,
+          163837
+        ],
+        "reference_wall_ms": 188.50889999885112,
+        "timing_scope": "CPU BF16 correctness reference; excludes load; not GPU capacity evidence"
+      },
+      {
+        "backbone_wall_ms": 180.48680000356399,
+        "base_argmax_token_ids": [
+          300,
+          1495,
+          13,
+          13,
+          13,
+          13,
+          13
+        ],
+        "block_size": 7,
+        "draft_token_ids": [
+          1913,
+          308,
+          1833,
+          472,
+          276,
+          7574,
+          13
+        ],
+        "finite": true,
+        "markov_wall_ms": 19.922799998312257,
+        "query_token_ids": [
+          374,
+          163837,
+          163837,
+          163837,
+          163837,
+          163837,
+          163837
+        ],
+        "reference_wall_ms": 200.40960000187624,
+        "timing_scope": "CPU BF16 correctness reference; excludes load; not GPU capacity evidence"
+      }
+    ],
+    "correctness": {
+      "all_finite": true,
+      "deterministic_greedy": true,
+      "target_distribution_equivalence": "NOT_ESTABLISHED_BY_DRAFT_REFERENCE_ALONE"
+    },
+    "evidence_class": null,
+    "scientific_result": false,
+    "scope": "real public Kimi K3 DSpark BF16 weights and real Kimi target hidden states; CPU correctness/reference timing only"
+  },
+  "schema_version": "experiment-015-dspark-results-v1",
+  "sources": {
+    "acceptance_trace": {
+      "bytes": 7005,
+      "path": "artifacts/experiment-015/speculation/acceptance-traces.json",
+      "sha256": "897c2cd1f15b4deeccd2b2d9a5bc0375aa7cf6fcd49e8917d36473dcf1148059"
+    },
+    "reference_sweep": {
+      "bytes": 4688,
+      "path": "artifacts/experiment-015/dspark/h015-001b-dspark-reference-sweep.json",
+      "sha256": "85cf5509dedd7038afa39c5e4a07ec753bb24c6fe4a821d80e7dd9e0f435aea3"
+    },
+    "repeat": {
+      "bytes": 4689,
+      "path": "artifacts/experiment-015/dspark/h015-001c-dspark-reference-repeat.json",
+      "sha256": "3fcb1f95a882adc68b5bd24956808ab896e48df9825d4c2fc6220726acddca86"
+    }
+  },
+  "status": "FAIL"
+}

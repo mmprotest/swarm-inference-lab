@@ -1,0 +1,95 @@
+{
+  "anonymous_registry_probe": {
+    "anonymous_token_http_status": 200,
+    "authentication": "anonymous_bearer_token",
+    "computed_digest": "sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+    "credentials_supplied": false,
+    "digest_match": true,
+    "docker_credential_store_consulted": false,
+    "header_digest": "sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+    "initial_http_status": 401,
+    "local_docker_engine_consulted": false,
+    "manifest_bytes": 856,
+    "manifest_content_type": "application/vnd.oci.image.index.v1+json",
+    "manifest_http_status": 200,
+    "probe_method": "RAW_OCI_ANONYMOUS_BEARER_CHALLENGE",
+    "registry": "ghcr.io",
+    "repository": "mmprotest/swarm-inference-lab",
+    "requested_digest": "sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+    "schema_version": "experiment-025-anonymous-registry-probe-v1",
+    "status": "PASS",
+    "token_persisted": false
+  },
+  "anonymous_registry_resolve_status": "PASS",
+  "base_images": {
+    "devel": "nvidia/cuda:13.0.1-devel-ubuntu24.04@sha256:7d2f6a8c2071d911524f95061a0db363e24d27aa51ec831fcccf9e76eb72bc92",
+    "runtime": "nvidia/cuda:13.0.1-runtime-ubuntu24.04@sha256:c3fde347d52d578c84fd644bc177bc7ec333feaf11550d990da4084d7612e4c7"
+  },
+  "build_status": "PASS",
+  "build_stderr_tail": "stage-1  9/10] RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --extra cuda\n#22 0.195    Building swarm-inference-lab @ file:///opt/swarm\n#22 0.431       Built swarm-inference-lab @ file:///opt/swarm\n#22 0.433 Prepared 1 package in 238ms\n#22 0.433 warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.\n#22 0.433          If the cache and target directories are on different filesystems, hardlinking may not be supported.\n#22 0.433          If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.\n#22 4.056 Installed 73 packages in 3.62s\n#22 4.056  + annotated-doc==0.0.5\n#22 4.056  + annotated-types==0.8.0\n#22 4.056  + certifi==2026.7.22\n#22 4.056  + cffi==2.1.0\n#22 4.056  + charset-normalizer==3.4.9\n#22 4.056  + contourpy==1.3.3\n#22 4.056  + cryptography==49.0.0\n#22 4.056  + cuda-bindings==13.3.1\n#22 4.056  + cuda-pathfinder==1.6.0\n#22 4.056  + cuda-toolkit==13.0.3.0\n#22 4.056  + cycler==0.12.1\n#22 4.056  + filelock==3.32.0\n#22 4.056  + fonttools==4.63.0\n#22 4.056  + fsspec==2026.7.0\n#22 4.056  + grpcio==1.83.0\n#22 4.056  + hf-xet==1.5.2\n#22 4.056  + huggingface-hub==0.36.2\n#22 4.056  + idna==3.18\n#22 4.056  + jinja2==3.1.6\n#22 4.056  + kiwisolver==1.5.0\n#22 4.056  + markdown-it-py==4.2.0\n#22 4.056  + markupsafe==3.0.3\n#22 4.056  + matplotlib==3.11.1\n#22 4.057  + mdurl==0.1.2\n#22 4.057  + mpmath==1.3.0\n#22 4.057  + networkx==3.6.1\n#22 4.057  + numpy==2.5.1\n#22 4.057  + nvidia-cublas==13.1.1.3\n#22 4.057  + nvidia-cuda-cupti==13.0.85\n#22 4.057  + nvidia-cuda-nvrtc==13.0.88\n#22 4.057  + nvidia-cuda-runtime==13.0.96\n#22 4.057  + nvidia-cudnn-cu13==9.20.0.48\n#22 4.057  + nvidia-cufft==12.0.0.61\n#22 4.057  + nvidia-cufile==1.15.1.6\n#22 4.057  + nvidia-curand==10.4.0.35\n#22 4.057  + nvidia-cusolver==12.0.4.66\n#22 4.057  + nvidia-cusparse==12.6.3.3\n#22 4.057  + nvidia-cusparselt-cu13==0.8.1\n#22 4.057  + nvidia-nccl-cu13==2.29.7\n#22 4.057  + nvidia-nvjitlink==13.3.33\n#22 4.057  + nvidia-nvshmem-cu13==3.4.5\n#22 4.057  + nvidia-nvtx==13.0.85\n#22 4.057  + packaging==26.2\n#22 4.057  + pandas==3.0.5\n#22 4.057  + pillow==12.3.0\n#22 4.057  + protobuf==7.35.1\n#22 4.057  + psutil==7.2.2\n#22 4.057  + pycparser==3.0\n#22 4.057  + pydantic==2.13.4\n#22 4.057  + pydantic-core==2.46.4\n#22 4.057  + pygments==2.20.0\n#22 4.057  + pyparsing==3.3.2\n#22 4.057  + python-dateutil==2.9.0.post0\n#22 4.057  + pyyaml==6.0.3\n#22 4.057  + regex==2026.7.19\n#22 4.057  + requests==2.34.2\n#22 4.057  + rich==15.0.0\n#22 4.057  + safetensors==0.8.0\n#22 4.057  + setuptools==83.0.0\n#22 4.057  + shellingham==1.5.4\n#22 4.057  + six==1.17.0\n#22 4.057  + swarm-inference-lab==0.1.0rc11 (from file:///opt/swarm)\n#22 4.057  + sympy==1.14.0\n#22 4.057  + tiktoken==0.13.0\n#22 4.057  + tokenizers==0.22.2\n#22 4.057  + torch==2.13.0+cu130\n#22 4.057  + tqdm==4.70.0\n#22 4.057  + transformers==4.57.6\n#22 4.057  + triton==3.7.1\n#22 4.057  + typer==0.27.0\n#22 4.057  + typing-extensions==4.16.0\n#22 4.057  + typing-inspection==0.4.2\n#22 4.057  + urllib3==2.7.0\n#22 DONE 5.4s\n\n#23 [stage-1 10/10] RUN useradd --create-home --uid 10001 swarm     && mkdir -p /var/lib/swarm/e025     && chown -R swarm:swarm /opt/swarm /var/lib/swarm\n#23 DONE 1.5s\n\n#24 exporting to image\n#24 exporting layers\n#24 exporting layers 76.2s done\n#24 exporting manifest sha256:ccc5696da09b4ea69e4738a6bfa57e632f33c6e77d3ce50f153ee41ad63110a2 done\n#24 exporting config sha256:1dfb429335def83659d02e69b0493aeb3fc4c5f2183322160fc86ddbaf735217 done\n#24 exporting attestation manifest sha256:fa5a8f5cedf08545f2078b79b3768dccd38fa55dfb736a9a6e75c1d14f1029dc 0.0s done\n#24 exporting manifest list sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2 done\n#24 naming to ghcr.io/mmprotest/swarm-inference-lab:e025-20260819t013016z done\n#24 unpacking to ghcr.io/mmprotest/swarm-inference-lab:e025-20260819t013016z\n#24 unpacking to ghcr.io/mmprotest/swarm-inference-lab:e025-20260819t013016z 13.4s done\n#24 DONE 89.7s\n",
+  "build_stdout_tail": "",
+  "dockerfile": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\deployment\\Dockerfile.e025",
+  "dockerfile_sha256": "976d0cf80284923606003c089051e3de1232171c26fde3d0a050df248f3341d5",
+  "generated_at_utc": "2026-08-23T01:40:43.460569+00:00",
+  "image_input_index_sha256": "997d03c395e00c55b290f4a6daf9324f45d9c0f0da1a397961c8377d0df45ce3",
+  "immutable_digest": "sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+  "immutable_reference": "ghcr.io/mmprotest/swarm-inference-lab@sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+  "local_inspect": {
+    "architecture": "amd64",
+    "created": "2026-08-23T01:30:54.261549655Z",
+    "id": "sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+    "labels": {
+      "maintainer": "NVIDIA CORPORATION <cudatools@nvidia.com>",
+      "org.opencontainers.image.description": "Pinned physical consumer-GPU worker; no model weights or secrets embedded",
+      "org.opencontainers.image.ref.name": "ubuntu",
+      "org.opencontainers.image.revision": "d93927c696170d1cf7078313fceac5735221b526d9d451d24a212ff2e70497ee",
+      "org.opencontainers.image.title": "Swarm Inference Lab E025 Kimi K3 consumer worker",
+      "org.opencontainers.image.version": "24.04"
+    },
+    "os": "linux",
+    "repo_digests": [
+      "ghcr.io/mmprotest/swarm-inference-lab@sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2"
+    ],
+    "repo_tags": [
+      "ghcr.io/mmprotest/swarm-inference-lab:e025-20260819t013016z"
+    ],
+    "size_bytes": 4545323962
+  },
+  "native_architecture": "sm_86+sm_89+sm_120+compute_120_ptx",
+  "native_consumer_targets": [
+    "sm_86",
+    "sm_89",
+    "sm_120"
+  ],
+  "platform": "linux/amd64",
+  "push_requested": true,
+  "push_status": "PASS",
+  "push_stderr_tail": "",
+  "push_stdout_tail": "80b42416: Waiting\nab7341a40ee7: Waiting\n8fb7ecb711ef: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\nc03b8ec8dd33: Waiting\ne5e67e85e11e: Waiting\n401d11fb2a09: Waiting\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Waiting\nc20926c42231: Waiting\n76249c7cd503: Waiting\ndfb91a95abf5: Waiting\nafcf80b42416: Waiting\nab7341a40ee7: Waiting\n8fb7ecb711ef: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\nc03b8ec8dd33: Waiting\ne5e67e85e11e: Waiting\n401d11fb2a09: Waiting\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Waiting\nc20926c42231: Waiting\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\nab7341a40ee7: Waiting\n8fb7ecb711ef: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\nc03b8ec8dd33: Waiting\ne5e67e85e11e: Waiting\n401d11fb2a09: Waiting\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Waiting\nc20926c42231: Waiting\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\n76249c7cd503: Waiting\ndfb91a95abf5: Waiting\nafcf80b42416: Waiting\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\n76249c7cd503: Waiting\ndfb91a95abf5: Waiting\nafcf80b42416: Waiting\nab7341a40ee7: Waiting\n8fb7ecb711ef: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\nc03b8ec8dd33: Waiting\ne5e67e85e11e: Waiting\n401d11fb2a09: Waiting\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Waiting\nc20926c42231: Waiting\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\n76249c7cd503: Waiting\ndfb91a95abf5: Waiting\nafcf80b42416: Waiting\nab7341a40ee7: Waiting\n8fb7ecb711ef: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\nc03b8ec8dd33: Waiting\ne5e67e85e11e: Waiting\n401d11fb2a09: Waiting\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Waiting\nc20926c42231: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\nc03b8ec8dd33: Waiting\ne5e67e85e11e: Waiting\n401d11fb2a09: Waiting\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Waiting\nc20926c42231: Waiting\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\n76249c7cd503: Waiting\ndfb91a95abf5: Waiting\nafcf80b42416: Waiting\nab7341a40ee7: Waiting\n8fb7ecb711ef: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc03b8ec8dd33: Waiting\ne5e67e85e11e: Waiting\n401d11fb2a09: Waiting\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Waiting\nc20926c42231: Waiting\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\n76249c7cd503: Waiting\ndfb91a95abf5: Waiting\nafcf80b42416: Layer already exists\nab7341a40ee7: Waiting\n8fb7ecb711ef: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\n76249c7cd503: Layer already exists\ndfb91a95abf5: Waiting\nab7341a40ee7: Layer already exists\n8fb7ecb711ef: Layer already exists\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\nd7913b78456a: Layer already exists\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\nc03b8ec8dd33: Layer already exists\ne5e67e85e11e: Waiting\n401d11fb2a09: Layer already exists\nfcfbf4a3a6c6: Waiting\neea924c2c8fb: Layer already exists\nc20926c42231: Layer already exists\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\ne5e67e85e11e: Waiting\nfcfbf4a3a6c6: Waiting\n0a0847e965fa: Waiting\nc6f11e87a212: Waiting\ndfb91a95abf5: Waiting\n2ce2d06da4c1: Waiting\ne642bc5ff9e2: Waiting\nc711f43c4b66: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\n0a0847e965fa: Waiting\n2fecaf883c21: Waiting\ndbb26ddfc67a: Waiting\ne5e67e85e11e: Waiting\nfcfbf4a3a6c6: Waiting\nfcfbf4a3a6c6: Pushed\n2fecaf883c21: Pushed\n2ce2d06da4c1: Pushed\ne5e67e85e11e: Pushed\ne642bc5ff9e2: Pushed\ndbb26ddfc67a: Pushed\n0a0847e965fa: Pushed\ndfb91a95abf5: Pushed\nc711f43c4b66: Pushed\nc6f11e87a212: Pushed\ne025-20260819t013016z: digest: sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2 size: 856\n",
+  "reference": "ghcr.io/mmprotest/swarm-inference-lab:e025-20260819t013016z",
+  "remote_inspect": {
+    "architecture": "amd64",
+    "created": "2026-08-23T01:30:54.261549655Z",
+    "id": "sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+    "labels": {
+      "maintainer": "NVIDIA CORPORATION <cudatools@nvidia.com>",
+      "org.opencontainers.image.description": "Pinned physical consumer-GPU worker; no model weights or secrets embedded",
+      "org.opencontainers.image.ref.name": "ubuntu",
+      "org.opencontainers.image.revision": "d93927c696170d1cf7078313fceac5735221b526d9d451d24a212ff2e70497ee",
+      "org.opencontainers.image.title": "Swarm Inference Lab E025 Kimi K3 consumer worker",
+      "org.opencontainers.image.version": "24.04"
+    },
+    "os": "linux",
+    "repo_digests": [
+      "ghcr.io/mmprotest/swarm-inference-lab@sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2"
+    ],
+    "repo_tags": [
+      "ghcr.io/mmprotest/swarm-inference-lab:e025-20260819t013016z"
+    ],
+    "size_bytes": 4545323962
+  },
+  "schema_version": "experiment-025-deployment-image-v2",
+  "secrets_logged": false,
+  "source_id": "d93927c696170d1cf7078313fceac5735221b526d9d451d24a212ff2e70497ee",
+  "status": "PASS"
+}

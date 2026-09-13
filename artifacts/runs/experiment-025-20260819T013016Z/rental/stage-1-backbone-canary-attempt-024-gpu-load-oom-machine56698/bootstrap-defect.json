@@ -1,0 +1,26 @@
+{
+  "schema_version": "experiment-025-stage1-bootstrap-defect-v1",
+  "run_id": "20260819T013016Z",
+  "instance_id": 48439900,
+  "machine_id": 56698,
+  "gpu_model": "RTX 3090",
+  "image_digest": "sha256:fd6095906046f6398b4b9bf5f4c6d7ffc522a9d237c22d469d34f573e33901a2",
+  "classification": "CODE_OR_RUNTIME_CONTRACT_FAILURE",
+  "last_demonstrated_bootstrap_stage": "GPU_LOAD",
+  "worker_ready": false,
+  "observations": {
+    "container_running": true,
+    "model_download_progress_observed": true,
+    "package_assembly_progress_observed": true,
+    "native_cuda_device_loaded": true,
+    "gpu_load_progress_experts": 512,
+    "gpu_load_total_experts": 896,
+    "gpu_load_failure": "native MXFP4 CUDA tensor upload failed after CUDA out of memory",
+    "retry_failure": "activated snapshot replacement refused",
+    "terminal_retry_failure": "no space left on device while rematerializing package"
+  },
+  "cleanup_receipt": "progress2-cleanup-verification.json",
+  "zero_live_e025_instances": true,
+  "provider_invoice_claimed": false,
+  "source_log": "logs/e025-stage-001-user-observed.log"
+}

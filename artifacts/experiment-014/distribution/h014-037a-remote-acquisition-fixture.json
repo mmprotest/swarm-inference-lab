@@ -1,0 +1,127 @@
+{
+  "acceptance_gates": {
+    "atomic_package_activation": true,
+    "corrupt_object_not_activated": true,
+    "corruption_rejected": true,
+    "download_hash_exact": true,
+    "loadable_snapshot_atomic": true,
+    "loadable_snapshot_config_exact": true,
+    "loadable_snapshot_index_exact": true,
+    "package_hash_measured": true,
+    "partial_package_absent": true,
+    "partial_range_resume_used": true,
+    "snapshot_partial_directory_absent": true,
+    "targeted_worker_scope": true,
+    "transient_failure_retried": true,
+    "warm_cache_zero_download": true,
+    "warm_cache_zero_requests": true
+  },
+  "corruption": {
+    "message": "immutable object acquisition failed after 2 attempts: attempt 1: SHA-256 8f990ba0b577b51cf009ea049368c16bbda1b21e1b93be07a824758bb253c39b != fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83; attempt 2: SHA-256 8f990ba0b577b51cf009ea049368c16bbda1b21e1b93be07a824758bb253c39b != fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+    "rejected": true
+  },
+  "cycle_id": "H014-037a",
+  "decision": "RETAIN_REMOTE_ACQUISITION_CONTRACT",
+  "first_acquisition": {
+    "attempts": 2,
+    "cache_hit": false,
+    "corrupt_attempts_rejected": 0,
+    "downloaded_bytes": 983040,
+    "object_path": "C:\\Users\\Simon\\AppData\\Local\\Temp\\h014-037a-6lws5ccp\\cache\\objects\\fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+    "range_resume_used": true,
+    "sha256": "fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+    "status": "PASS"
+  },
+  "fixture": {
+    "expected_sha256": "fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+    "preseeded_partial_bytes": 65536,
+    "range_headers": [
+      "bytes=65536-",
+      "bytes=65536-",
+      null,
+      null
+    ],
+    "server_request_counts": {
+      "/corrupt": 2,
+      "/good": 2
+    },
+    "source_bytes": 1048576
+  },
+  "hypothesis": "Worker-scoped immutable acquisition resumes a partial after one transient failure, rejects corruption, reuses a verified cache with zero download, and atomically activates an exact worker Safetensors package.",
+  "inspection": {
+    "activated_package_bytes": 608,
+    "activated_package_sha256": "4b319a1eb3949133e508e10c2858c8c14467072f8c5bd93e6098818097e21801",
+    "source_view_hash_exact": true
+  },
+  "package": {
+    "all_cache_hits": true,
+    "atomic_activation": true,
+    "distribution_manifest": "C:\\Users\\Simon\\AppData\\Local\\Temp\\h014-037a-6lws5ccp\\distribution.json",
+    "distribution_manifest_sha256": "662255abcdab10e898f43ac5aba208c0a2e57606c6df49f78c44e5bc9c69e9f5",
+    "downloaded_bytes": 0,
+    "downloads": [
+      {
+        "attempts": 0,
+        "cache_hit": true,
+        "corrupt_attempts_rejected": 0,
+        "downloaded_bytes": 0,
+        "object_path": "C:\\Users\\Simon\\AppData\\Local\\Temp\\h014-037a-6lws5ccp\\cache\\objects\\fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+        "range_resume_used": false,
+        "sha256": "fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+        "source_name": "fixture-source.safetensors",
+        "source_url": "http://127.0.0.1:62966/good",
+        "status": "PASS"
+      }
+    ],
+    "immutable_revision": "fixture-immutable-revision",
+    "package": {
+      "checkpoint_fingerprint": "fixture-checkpoint",
+      "package_bytes": 608,
+      "package_sha256": "4b319a1eb3949133e508e10c2858c8c14467072f8c5bd93e6098818097e21801",
+      "schema_version": "experiment-014-k3-worker-package-v1",
+      "status": "PASS",
+      "tensor_bytes": 384,
+      "tensor_count": 1,
+      "worker_id": "fixture-worker"
+    },
+    "partial_package_absent": true,
+    "schema_version": "experiment-014-k3-remote-acquisition-v1",
+    "source_shard_count": 1,
+    "status": "PASS",
+    "targeted_acquisition": true,
+    "worker_id": "fixture-worker"
+  },
+  "schema_version": "experiment-014-k3-remote-acquisition-fixture-v1",
+  "snapshot": {
+    "activation_receipt_sha256": "1d528577eeca62c2d9110562e3f64049e0e04937603150a03076541b45ee160e",
+    "atomic_activation": true,
+    "checkpoint_fingerprint": "fixture-checkpoint",
+    "checkpoint_revision": "fixture-immutable-revision",
+    "config_sha256": "5fd62e52b0d6691c1bbc42c93bef373001e6d26c3a48f17c8dd1643c13b9f0b0",
+    "index_sha256": "d5588a2f5b59b04c4681a7b559cb2e0f6ca298d5f692964a2174330030b18366",
+    "owned_layers": [
+      1
+    ],
+    "package_sha256": "4b319a1eb3949133e508e10c2858c8c14467072f8c5bd93e6098818097e21801",
+    "partial_directory_absent": true,
+    "placement_manifest_sha256": "5f432f511e80fae90b644ea01ddf96fd001389d41992042bdb5c2f8fff766cb0",
+    "schema_version": "experiment-015-k3-worker-snapshot-v1",
+    "snapshot_path": "C:\\Users\\Simon\\AppData\\Local\\Temp\\h014-037a-6lws5ccp\\activated-fixture-worker",
+    "source_weight_bytes": 384,
+    "status": "PASS",
+    "tensor_count": 1,
+    "worker_id": "fixture-worker",
+    "worker_role": "whole_layer_stage"
+  },
+  "status": "PASS",
+  "warm_cache_acquisition": {
+    "attempts": 0,
+    "cache_hit": true,
+    "corrupt_attempts_rejected": 0,
+    "downloaded_bytes": 0,
+    "object_path": "C:\\Users\\Simon\\AppData\\Local\\Temp\\h014-037a-6lws5ccp\\cache\\objects\\fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+    "range_resume_used": false,
+    "sha256": "fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+    "status": "PASS"
+  }
+}

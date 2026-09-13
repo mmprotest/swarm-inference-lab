@@ -1,0 +1,128 @@
+{
+  "acquisition_policy_canonical_sha256": "36db76edb9c29119411f55d8b04620454b9c588f1ebadcabf58f956c7cefa32e",
+  "acquisition_policy_file_sha256": "3350f604c57d194bcbde368dcb47be3455edbbe28e4829a4477026a2bafe87fe",
+  "artifact_sha256": "9ce445a28fc7f92c56e0e929b7f9d88315485865bce483e6df9cf36565720785",
+  "attempt": 6,
+  "attempt_006_launch_authorized": false,
+  "controller_source_sha256": "23cd686ec9d4b41b3288f98647df1bcd57119dc8ebf13b498394cece5dfdb963",
+  "decision": "NO_GO_CREATE_NO_PAID_INSTANCES",
+  "failed_gate_numbers": [
+    12,
+    14
+  ],
+  "fresh_budget": {
+    "acquisition_cost_guard_usd": 45.0,
+    "api_key_persisted": false,
+    "conservative_available_usd": 45.80512448978996,
+    "identity_fields_persisted": false,
+    "projected_acquisition_cost_usd": 42.72031664573977,
+    "projected_hard_stage_plus_ingress_usd": 51.752706793887924,
+    "required_with_safety_multiplier_usd": 59.515612812971106
+  },
+  "fresh_marketplace": {
+    "capacity_assessed_separately_from_budget": true,
+    "capacity_gate_passed": true,
+    "combined_snapshot_status": "NO_GO",
+    "distinct_fragment_machine_count": 4,
+    "distinct_selected_machine_count": 67,
+    "fleet_plan_status": "NO_GO",
+    "marketplace_blocker": null,
+    "maximum_expected_ready_seconds": 1199.2462875675676,
+    "offer_snapshot": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\attempt-006-live-offer-snapshot.json",
+    "query_succeeded": true,
+    "raw_offer_count": 241,
+    "selected_instance_group_count": 67,
+    "selected_worker_count": 97
+  },
+  "frozen_model_placement_source": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\runs\\experiment-025-20260819T013016Z\\preflight\\FULL_FLEET_GO-attempt-005.json",
+  "frozen_required_role_count": 97,
+  "generated_at_utc": "2026-08-24T08:29:16.632930+00:00",
+  "go_gates": [
+    {
+      "description": "Layer 89 parent serialization removed",
+      "gate": 1,
+      "passed": true
+    },
+    {
+      "description": "READY roles remain under supervision through freeze",
+      "gate": 2,
+      "passed": true
+    },
+    {
+      "description": "dead READY roles are replaceable",
+      "gate": 3,
+      "passed": true
+    },
+    {
+      "description": "bounded live alternate refresh implemented and tested",
+      "gate": 4,
+      "passed": true
+    },
+    {
+      "description": "reliability-aware scoring active in fresh ranking",
+      "gate": 5,
+      "passed": true
+    },
+    {
+      "description": "bounded hedging tested if selected",
+      "gate": 6,
+      "passed": true
+    },
+    {
+      "description": "readiness requires 97 simultaneous healthy current roles",
+      "gate": 7,
+      "passed": true
+    },
+    {
+      "description": "Layer 89 parent/fragment generations must match",
+      "gate": 8,
+      "passed": true
+    },
+    {
+      "description": "focused recovery tests pass",
+      "gate": 9,
+      "passed": true
+    },
+    {
+      "description": "worker image and physical canary validity intact",
+      "gate": 10,
+      "passed": true
+    },
+    {
+      "description": "fresh marketplace has compatible capacity",
+      "gate": 11,
+      "passed": true
+    },
+    {
+      "description": "fresh budget and acquisition cost guards pass",
+      "gate": 12,
+      "passed": false
+    },
+    {
+      "description": "watchdog and cleanup paths armed",
+      "gate": 13,
+      "passed": true
+    },
+    {
+      "description": "offline analysis finds a credible acquisition path",
+      "gate": 14,
+      "passed": false
+    }
+  ],
+  "offline_decision": "NO_GO_NO_PAID_INSTANCES",
+  "offline_simulation_file_sha256": "8ba48d5ce1413221e48050e065f3339c70607d3f5ccaf574d1fa9da6027f3e27",
+  "paid_instances_created": 0,
+  "provider_mutations": [],
+  "query_mode": "READ_ONLY_ON_DEMAND",
+  "recovery_tests_file_sha256": "4b5c3e79ec94c8135e9b050f2e4a6024f1425cc9ba13d99a26f1a9eb8e289664",
+  "run_id": "20260819T013016Z",
+  "schema_version": "experiment-025-attempt-006-live-preflight-v1",
+  "status": "NO_GO",
+  "worker_image_digest": "sha256:46cad5a031b98aeecdee9ba471e2e8338eb8e9e485d1d2e90a1505f8890ee8e4",
+  "zero_live_e025": {
+    "after_query": true,
+    "attributable_after": [],
+    "attributable_before": [],
+    "before_query": true
+  }
+}

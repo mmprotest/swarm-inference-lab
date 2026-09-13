@@ -1,0 +1,3042 @@
+{
+  "acceptance_gates": {
+    "all_retries_exact": true,
+    "all_scenarios_pass": true,
+    "baseline_exact": true,
+    "cancellation_drained": true,
+    "duplicate_deduplicated": true,
+    "final_worker_cuda_health": true,
+    "fresh_slot_exact": true,
+    "partial_failed_closed": true,
+    "stale_failed_closed": true,
+    "timeout_failed_closed": true,
+    "worker_loss_failed_closed": true
+  },
+  "configuration": {
+    "batch": 1,
+    "delay_fault_seconds": 0.3,
+    "experts_per_worker": 224,
+    "layer": 89,
+    "response_timeout_seconds": 0.1,
+    "workers": 4
+  },
+  "coordinator_lifecycle_delta": {
+    "connection_establishment": 0,
+    "model_materialization": 0,
+    "persistent_buffer_allocation": 360,
+    "process_creation": 4,
+    "task_creation": 0,
+    "thread_creation": 2,
+    "topology_rebuilds": 0,
+    "weight_loading": 0
+  },
+  "cycle_id": "H014-SUB-009b",
+  "decision": {
+    "next_hypothesis": "H014-SUB-010 will test whether retained real Kimi decode routes create persistent static-ownership hotspots large enough to justify expert reassignment or replication.",
+    "persistent_collective_recovery": "RETAIN"
+  },
+  "device_identity": {
+    "compute_capability": "12.0",
+    "driver_version": "591.86",
+    "memory_total_mib": 32607.0,
+    "name": "NVIDIA GeForce RTX 5090",
+    "status": "MEASURED",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "final_group_shutdown": {
+    "gpu_health": {
+      "compute_cap": "12.0",
+      "driver_version": "591.86",
+      "index": "0",
+      "memory.free": "29415",
+      "memory.total": "32607",
+      "memory.used": "2773",
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci.bus_id": "00000000:02:00.0",
+      "pstate": "P1",
+      "status": "MEASURED",
+      "temperature.gpu": "53",
+      "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+    },
+    "worker_shutdown": [
+      {
+        "cuda_error_state_ok": true,
+        "drained_result_frames": 0,
+        "execute_count": 1,
+        "exit_code": 0,
+        "kind": "CLOSED",
+        "worker_id": 3
+      },
+      {
+        "cuda_error_state_ok": true,
+        "drained_result_frames": 0,
+        "execute_count": 1,
+        "exit_code": 0,
+        "kind": "CLOSED",
+        "worker_id": 2
+      },
+      {
+        "cuda_error_state_ok": true,
+        "drained_result_frames": 0,
+        "execute_count": 1,
+        "exit_code": 0,
+        "kind": "CLOSED",
+        "worker_id": 1
+      },
+      {
+        "cuda_error_state_ok": true,
+        "drained_result_frames": 0,
+        "execute_count": 1,
+        "exit_code": 0,
+        "kind": "CLOSED",
+        "worker_id": 0
+      }
+    ]
+  },
+  "final_worker_health": [
+    {
+      "cuda_error_state_ok": true,
+      "execute_count": 1,
+      "memory": {
+        "free_bytes": 27960279040,
+        "total_bytes": 34190458880
+      },
+      "response_bytes": 145,
+      "worker_id": 0
+    },
+    {
+      "cuda_error_state_ok": true,
+      "execute_count": 1,
+      "memory": {
+        "free_bytes": 27960279040,
+        "total_bytes": 34190458880
+      },
+      "response_bytes": 145,
+      "worker_id": 1
+    },
+    {
+      "cuda_error_state_ok": true,
+      "execute_count": 1,
+      "memory": {
+        "free_bytes": 27960279040,
+        "total_bytes": 34190458880
+      },
+      "response_bytes": 145,
+      "worker_id": 2
+    },
+    {
+      "cuda_error_state_ok": true,
+      "execute_count": 1,
+      "memory": {
+        "free_bytes": 27960279040,
+        "total_bytes": 34190458880
+      },
+      "response_bytes": 145,
+      "worker_id": 3
+    }
+  ],
+  "gpu_health_after": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "10386",
+    "memory.total": "32607",
+    "memory.used": "21802",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P1",
+    "status": "MEASURED",
+    "temperature.gpu": "53",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "gpu_health_before": {
+    "compute_cap": "12.0",
+    "driver_version": "591.86",
+    "index": "0",
+    "memory.free": "30318",
+    "memory.total": "32607",
+    "memory.used": "1870",
+    "name": "NVIDIA GeForce RTX 5090",
+    "pci.bus_id": "00000000:02:00.0",
+    "pstate": "P8",
+    "status": "MEASURED",
+    "temperature.gpu": "46",
+    "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+  },
+  "groups": [
+    {
+      "group": 0,
+      "ready": {
+        "complete_disjoint_ownership": true,
+        "tracked_worker_bytes": [
+          3934371840,
+          3934371840,
+          3934371840,
+          3934371840
+        ],
+        "worker_ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "workers": [
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3645.9559,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 892,
+            "owned_expert_min": 0,
+            "ownership_fingerprint": "sha256:335e1c9a143e342272f3c6b0ff04ac9bf0995ac994cd7f1648cb8efcebc36c97",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 33692,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0159358978271484,
+                "mean_ms": 0.4991679862141609,
+                "minimum_ms": 0.07619199901819229,
+                "p50_ms": 0.07680000364780426,
+                "p95_ms": 2.1395903281867485,
+                "p99_ms": 2.840666783899067,
+                "standard_deviation_ms": 1.0274852406846982
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:35d5ffe02a832bf2467dc4a9a7118692eb8b68ded73230011f7ef99e90a93142",
+            "worker_id": 0
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3649.8968,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 893,
+            "owned_expert_min": 1,
+            "ownership_fingerprint": "sha256:19bb300bcac89adbe2c801950ff25ec840414f3d74ba2894ea54f58a54858cbf",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 30960,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0350399017333984,
+                "mean_ms": 0.5005028428775924,
+                "minimum_ms": 0.07427199929952621,
+                "p50_ms": 0.07622399926185608,
+                "p95_ms": 2.151993530243633,
+                "p99_ms": 2.8584306274354443,
+                "standard_deviation_ms": 1.0347357383470914
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:a9c4a2d582a0677e162c4f9fa00cbeb864918cc0ca5b44a92dc4fefd234e569d",
+            "worker_id": 1
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3639.0556,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 894,
+            "owned_expert_min": 2,
+            "ownership_fingerprint": "sha256:09c67f5840d9957d487107c2bbc0ff6c6e48ad6d8a260ec3fdfe41157e0a747f",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 29912,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0639679431915283,
+                "mean_ms": 0.5052022774304662,
+                "minimum_ms": 0.07500799745321274,
+                "p50_ms": 0.077504001557827,
+                "p95_ms": 2.1714079596102214,
+                "p99_ms": 2.885455946475266,
+                "standard_deviation_ms": 1.044620799386574
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:59ad28fbab25ca16324bb2cc4a196470051be172fb5d35824b0c449295df8c57",
+            "worker_id": 2
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3647.2471,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 895,
+            "owned_expert_min": 3,
+            "ownership_fingerprint": "sha256:1758982a260459ad61446817870d56a0b8875a637ef072cbe09d3e82da571788",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 26676,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.243680000305176,
+                "mean_ms": 0.5314057150057384,
+                "minimum_ms": 0.0745600014925003,
+                "p50_ms": 0.07548800110816956,
+                "p95_ms": 2.300019200891254,
+                "p99_ms": 3.0549478404223906,
+                "standard_deviation_ms": 1.107309186570105
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:3260dd4c7a97940312c7a7664e27ece35f900bb51af5531de27230f0b10f86ff",
+            "worker_id": 3
+          }
+        ]
+      },
+      "shutdown_after_fault": {
+        "gpu_health": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "29415",
+          "memory.total": "32607",
+          "memory.used": "2773",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "49",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "worker_shutdown": [
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 6,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 3
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 6,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 6,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 1
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 0,
+            "execute_count": 6,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 0
+          }
+        ]
+      }
+    },
+    {
+      "group": 1,
+      "ready": {
+        "complete_disjoint_ownership": true,
+        "tracked_worker_bytes": [
+          3934371840,
+          3934371840,
+          3934371840,
+          3934371840
+        ],
+        "worker_ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "workers": [
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3651.7667,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 892,
+            "owned_expert_min": 0,
+            "ownership_fingerprint": "sha256:335e1c9a143e342272f3c6b0ff04ac9bf0995ac994cd7f1648cb8efcebc36c97",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 30204,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.887295961380005,
+                "mean_ms": 0.48007770840610775,
+                "minimum_ms": 0.0745600014925003,
+                "p50_ms": 0.07628799974918365,
+                "p95_ms": 2.0494367718696576,
+                "p99_ms": 2.7197241234779344,
+                "standard_deviation_ms": 0.9827641834795067
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:35d5ffe02a832bf2467dc4a9a7118692eb8b68ded73230011f7ef99e90a93142",
+            "worker_id": 0
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3639.2358,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 893,
+            "owned_expert_min": 1,
+            "ownership_fingerprint": "sha256:19bb300bcac89adbe2c801950ff25ec840414f3d74ba2894ea54f58a54858cbf",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 29580,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.7982399463653564,
+                "mean_ms": 0.47650285065174103,
+                "minimum_ms": 0.07548800110816956,
+                "p50_ms": 0.10102400183677673,
+                "p95_ms": 1.9908511631190757,
+                "p99_ms": 2.6367621897160993,
+                "standard_deviation_ms": 0.9479332278786337
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:a9c4a2d582a0677e162c4f9fa00cbeb864918cc0ca5b44a92dc4fefd234e569d",
+            "worker_id": 1
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3667.9539,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 894,
+            "owned_expert_min": 2,
+            "ownership_fingerprint": "sha256:09c67f5840d9957d487107c2bbc0ff6c6e48ad6d8a260ec3fdfe41157e0a747f",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 28148,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0136959552764893,
+                "mean_ms": 0.498651422560215,
+                "minimum_ms": 0.07683199644088745,
+                "p50_ms": 0.07785599678754807,
+                "p95_ms": 2.1356895685195902,
+                "p99_ms": 2.8380946779251084,
+                "standard_deviation_ms": 1.0267676755377504
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:59ad28fbab25ca16324bb2cc4a196470051be172fb5d35824b0c449295df8c57",
+            "worker_id": 2
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3665.3591,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 895,
+            "owned_expert_min": 3,
+            "ownership_fingerprint": "sha256:1758982a260459ad61446817870d56a0b8875a637ef072cbe09d3e82da571788",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 33096,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0189120769500732,
+                "mean_ms": 0.49898058282477514,
+                "minimum_ms": 0.0764480009675026,
+                "p50_ms": 0.07683199644088745,
+                "p95_ms": 2.139484854787586,
+                "p99_ms": 2.8430266325175744,
+                "standard_deviation_ms": 1.0287642932741963
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:3260dd4c7a97940312c7a7664e27ece35f900bb51af5531de27230f0b10f86ff",
+            "worker_id": 3
+          }
+        ]
+      },
+      "restores": "partial",
+      "shutdown_after_fault": {
+        "gpu_health": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "29415",
+          "memory.total": "32607",
+          "memory.used": "2773",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "50",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "worker_shutdown": [
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 3
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 1
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 0,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 0
+          }
+        ]
+      }
+    },
+    {
+      "group": 2,
+      "ready": {
+        "complete_disjoint_ownership": true,
+        "tracked_worker_bytes": [
+          3934371840,
+          3934371840,
+          3934371840,
+          3934371840
+        ],
+        "worker_ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "workers": [
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3673.2645,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 892,
+            "owned_expert_min": 0,
+            "ownership_fingerprint": "sha256:335e1c9a143e342272f3c6b0ff04ac9bf0995ac994cd7f1648cb8efcebc36c97",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 26712,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0633599758148193,
+                "mean_ms": 0.5059017102633204,
+                "minimum_ms": 0.07689599692821503,
+                "p50_ms": 0.07820799946784973,
+                "p95_ms": 2.170444782823322,
+                "p99_ms": 2.8847769372165186,
+                "standard_deviation_ms": 1.0440828333273036
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:35d5ffe02a832bf2467dc4a9a7118692eb8b68ded73230011f7ef99e90a93142",
+            "worker_id": 0
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3641.6801,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 893,
+            "owned_expert_min": 1,
+            "ownership_fingerprint": "sha256:19bb300bcac89adbe2c801950ff25ec840414f3d74ba2894ea54f58a54858cbf",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 32288,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.2085440158843994,
+                "mean_ms": 0.5271131460155759,
+                "minimum_ms": 0.07625599950551987,
+                "p50_ms": 0.07676800340414047,
+                "p95_ms": 2.2749344103038287,
+                "p99_ms": 3.021822094768284,
+                "standard_deviation_ms": 1.0947105304496973
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:a9c4a2d582a0677e162c4f9fa00cbeb864918cc0ca5b44a92dc4fefd234e569d",
+            "worker_id": 1
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3632.953,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 894,
+            "owned_expert_min": 2,
+            "ownership_fingerprint": "sha256:09c67f5840d9957d487107c2bbc0ff6c6e48ad6d8a260ec3fdfe41157e0a747f",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 33072,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.1264960765838623,
+                "mean_ms": 0.5162102963243212,
+                "minimum_ms": 0.07599999755620956,
+                "p50_ms": 0.07715199887752533,
+                "p95_ms": 2.2190848536789396,
+                "p99_ms": 2.9450138320028763,
+                "standard_deviation_ms": 1.0656795794344263
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:59ad28fbab25ca16324bb2cc4a196470051be172fb5d35824b0c449295df8c57",
+            "worker_id": 2
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3649.799,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 895,
+            "owned_expert_min": 3,
+            "ownership_fingerprint": "sha256:1758982a260459ad61446817870d56a0b8875a637ef072cbe09d3e82da571788",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 19796,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.8601279258728027,
+                "mean_ms": 0.47731656048979076,
+                "minimum_ms": 0.07648000121116638,
+                "p50_ms": 0.07689599692821503,
+                "p95_ms": 2.0307359471917135,
+                "p99_ms": 2.694249530136584,
+                "standard_deviation_ms": 0.9727995172691348
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:3260dd4c7a97940312c7a7664e27ece35f900bb51af5531de27230f0b10f86ff",
+            "worker_id": 3
+          }
+        ]
+      },
+      "restores": "stale",
+      "shutdown_after_fault": {
+        "gpu_health": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "29415",
+          "memory.total": "32607",
+          "memory.used": "2773",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "51",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "worker_shutdown": [
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 3
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 1
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 0
+          }
+        ]
+      }
+    },
+    {
+      "group": 3,
+      "ready": {
+        "complete_disjoint_ownership": true,
+        "tracked_worker_bytes": [
+          3934371840,
+          3934371840,
+          3934371840,
+          3934371840
+        ],
+        "worker_ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "workers": [
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3642.3535,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 892,
+            "owned_expert_min": 0,
+            "ownership_fingerprint": "sha256:335e1c9a143e342272f3c6b0ff04ac9bf0995ac994cd7f1648cb8efcebc36c97",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 31864,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.8378241062164307,
+                "mean_ms": 0.49400687324149267,
+                "minimum_ms": 0.07664000242948532,
+                "p50_ms": 0.1120000034570694,
+                "p95_ms": 2.0242720738053306,
+                "p99_ms": 2.6751136997342098,
+                "standard_deviation_ms": 0.9570198895314705
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:35d5ffe02a832bf2467dc4a9a7118692eb8b68ded73230011f7ef99e90a93142",
+            "worker_id": 0
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3633.1312,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 893,
+            "owned_expert_min": 1,
+            "ownership_fingerprint": "sha256:19bb300bcac89adbe2c801950ff25ec840414f3d74ba2894ea54f58a54858cbf",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 30144,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.9996800422668457,
+                "mean_ms": 0.5016000057969775,
+                "minimum_ms": 0.07532799988985062,
+                "p50_ms": 0.0769599974155426,
+                "p95_ms": 2.134556830674408,
+                "p99_ms": 2.826655399948357,
+                "standard_deviation_ms": 1.0199276044180103
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:a9c4a2d582a0677e162c4f9fa00cbeb864918cc0ca5b44a92dc4fefd234e569d",
+            "worker_id": 1
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3632.7324,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 894,
+            "owned_expert_min": 2,
+            "ownership_fingerprint": "sha256:09c67f5840d9957d487107c2bbc0ff6c6e48ad6d8a260ec3fdfe41157e0a747f",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 32508,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0127999782562256,
+                "mean_ms": 0.49871999663966043,
+                "minimum_ms": 0.07683199644088745,
+                "p50_ms": 0.07756800204515457,
+                "p95_ms": 2.1365119844675045,
+                "p99_ms": 2.83754237949848,
+                "standard_deviation_ms": 1.0263811866120374
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:59ad28fbab25ca16324bb2cc4a196470051be172fb5d35824b0c449295df8c57",
+            "worker_id": 2
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3647.1417,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 895,
+            "owned_expert_min": 3,
+            "ownership_fingerprint": "sha256:1758982a260459ad61446817870d56a0b8875a637ef072cbe09d3e82da571788",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 32736,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.802367925643921,
+                "mean_ms": 0.46827427617141176,
+                "minimum_ms": 0.07568000257015228,
+                "p50_ms": 0.0769599974155426,
+                "p95_ms": 1.9888063490390757,
+                "p99_ms": 2.6396556103229507,
+                "standard_deviation_ms": 0.9529016310669034
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:3260dd4c7a97940312c7a7664e27ece35f900bb51af5531de27230f0b10f86ff",
+            "worker_id": 3
+          }
+        ]
+      },
+      "restores": "timeout",
+      "shutdown_after_fault": {
+        "gpu_health": {
+          "compute_cap": "12.0",
+          "driver_version": "591.86",
+          "index": "0",
+          "memory.free": "29415",
+          "memory.total": "32607",
+          "memory.used": "2773",
+          "name": "NVIDIA GeForce RTX 5090",
+          "pci.bus_id": "00000000:02:00.0",
+          "pstate": "P1",
+          "status": "MEASURED",
+          "temperature.gpu": "52",
+          "uuid": "GPU-8e79b31d-7efe-e59d-a370-0e0add109e49"
+        },
+        "worker_shutdown": [
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 3
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 2
+          },
+          {
+            "cuda_error_state_ok": true,
+            "drained_result_frames": 1,
+            "execute_count": 2,
+            "exit_code": 0,
+            "kind": "CLOSED",
+            "worker_id": 1
+          },
+          {
+            "exit_code": 0,
+            "kind": "NOT_RUNNING"
+          }
+        ]
+      }
+    },
+    {
+      "group": 4,
+      "ready": {
+        "complete_disjoint_ownership": true,
+        "tracked_worker_bytes": [
+          3934371840,
+          3934371840,
+          3934371840,
+          3934371840
+        ],
+        "worker_ids": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "workers": [
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3633.5754,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 892,
+            "owned_expert_min": 0,
+            "ownership_fingerprint": "sha256:335e1c9a143e342272f3c6b0ff04ac9bf0995ac994cd7f1648cb8efcebc36c97",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 13728,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.9299840927124023,
+                "mean_ms": 0.48671087090458187,
+                "minimum_ms": 0.0756480023264885,
+                "p50_ms": 0.07760000228881836,
+                "p95_ms": 2.0788096643984297,
+                "p99_ms": 2.759749207049607,
+                "standard_deviation_ms": 0.9974775224734316
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:35d5ffe02a832bf2467dc4a9a7118692eb8b68ded73230011f7ef99e90a93142",
+            "worker_id": 0
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3648.7403,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 893,
+            "owned_expert_min": 1,
+            "ownership_fingerprint": "sha256:19bb300bcac89adbe2c801950ff25ec840414f3d74ba2894ea54f58a54858cbf",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 28988,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 3.0230400562286377,
+                "mean_ms": 0.5038171516997474,
+                "minimum_ms": 0.07596799731254578,
+                "p50_ms": 0.07859200239181519,
+                "p95_ms": 2.1462048403918725,
+                "p99_ms": 2.8476730130612835,
+                "standard_deviation_ms": 1.0285107454208178
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:a9c4a2d582a0677e162c4f9fa00cbeb864918cc0ca5b44a92dc4fefd234e569d",
+            "worker_id": 1
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3640.9533,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 894,
+            "owned_expert_min": 2,
+            "ownership_fingerprint": "sha256:09c67f5840d9957d487107c2bbc0ff6c6e48ad6d8a260ec3fdfe41157e0a747f",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 30480,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.880415916442871,
+                "mean_ms": 0.48615313108478275,
+                "minimum_ms": 0.0753600001335144,
+                "p50_ms": 0.07680000364780426,
+                "p95_ms": 2.052118341624735,
+                "p99_ms": 2.7147564014792427,
+                "standard_deviation_ms": 0.9775742286002899
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:59ad28fbab25ca16324bb2cc4a196470051be172fb5d35824b0c449295df8c57",
+            "worker_id": 2
+          },
+          {
+            "batch_capacity": 8,
+            "cuda_library_sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120",
+            "kind": "READY",
+            "load_wall_ms": 3665.997,
+            "measured_free_delta_at_ready_bytes": 4469030912,
+            "owned_expert_count": 224,
+            "owned_expert_max": 895,
+            "owned_expert_min": 3,
+            "ownership_fingerprint": "sha256:1758982a260459ad61446817870d56a0b8875a637ef072cbe09d3e82da571788",
+            "persistent_runtime_buffer_bytes": 3784704,
+            "pid": 29980,
+            "prepare": {
+              "calls": 7,
+              "device": {
+                "maximum_ms": 2.858272075653076,
+                "mean_ms": 0.48984229671103613,
+                "minimum_ms": 0.07513599842786789,
+                "p50_ms": 0.10527999699115753,
+                "p95_ms": 2.0364352539181687,
+                "p99_ms": 2.693904711306094,
+                "standard_deviation_ms": 0.9670642579591373
+              },
+              "persistent_buffer_recreation_after_ready": 0,
+              "topology_rebuilds": 0,
+              "weight_loads_after_ready": 0
+            },
+            "resident_expert_tensor_bytes": 3930587136,
+            "tracked_worker_bytes": 3934371840,
+            "weight_fingerprint": "sha256:3260dd4c7a97940312c7a7664e27ece35f900bb51af5531de27230f0b10f86ff",
+            "worker_id": 3
+          }
+        ]
+      },
+      "restores": "loss"
+    }
+  ],
+  "hypothesis": "The real persistent expert collective fails closed on timeout, worker loss, partial, duplicate and stale responses; cancellation drains work, restored ownership retries exactly and fresh slots remain reusable.",
+  "hypothesis_supported": true,
+  "inspection": {
+    "actual_bottleneck": "Duplicate and cancellation recover in place, but any poisoned generation requires replacing the complete four-owner expert domain; measured worker load was 3.633-3.673 s and the sequential launcher took about 14.59 s per restored group.",
+    "recovery_scope": "Real worker processes and real CUDA expert computation; injected faults alter only response timing/envelopes or process availability."
+  },
+  "progress": [
+    {
+      "phase": "preregistered"
+    },
+    {
+      "phase": "initial_group_ready"
+    },
+    {
+      "passed": true,
+      "phase": "baseline_exact"
+    },
+    {
+      "passed": true,
+      "phase": "duplicate_deduplicated"
+    },
+    {
+      "passed": true,
+      "phase": "cancelled_and_drained"
+    },
+    {
+      "passed": true,
+      "phase": "fresh_slot_reused"
+    },
+    {
+      "passed": true,
+      "phase": "fault_partial_persisted"
+    },
+    {
+      "gpu_health": "MEASURED",
+      "phase": "fault_partial_group_closed"
+    },
+    {
+      "passed": true,
+      "phase": "retry_after_partial"
+    },
+    {
+      "passed": true,
+      "phase": "fault_stale_persisted"
+    },
+    {
+      "gpu_health": "MEASURED",
+      "phase": "fault_stale_group_closed"
+    },
+    {
+      "passed": true,
+      "phase": "retry_after_stale"
+    },
+    {
+      "passed": true,
+      "phase": "fault_timeout_persisted"
+    },
+    {
+      "gpu_health": "MEASURED",
+      "phase": "fault_timeout_group_closed"
+    },
+    {
+      "passed": true,
+      "phase": "retry_after_timeout"
+    },
+    {
+      "passed": true,
+      "phase": "fault_loss_persisted"
+    },
+    {
+      "gpu_health": "MEASURED",
+      "phase": "fault_loss_group_closed"
+    },
+    {
+      "passed": true,
+      "phase": "retry_after_loss"
+    },
+    {
+      "phase": "complete",
+      "status": "PASS"
+    }
+  ],
+  "scenarios": {
+    "baseline": {
+      "pass": true,
+      "positions": [
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "expected_routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 1.5332,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 1.0748,
+            "duplicate_frames_discarded": 0,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 1.3208,
+            "framing_bytes": 32,
+            "generation": 1,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.0146,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58391,
+            "response_bytes": 232720,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 2.6235,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 291111,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 0.7392320036888123,
+            "worker_compute_critical_wall_ms": 1.3027,
+            "worker_compute_total_device_ms": 2.0480320304632187,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0753,
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.23321600258350372,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "input_gather_and_expert_device_ms": 0.23321600258350372,
+                "native_expert_calls": 2,
+                "output_d2h_wall_ms": 0.0511,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.5195
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0822,
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.6168320178985596,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "input_gather_and_expert_device_ms": 0.6168320178985596,
+                "native_expert_calls": 6,
+                "output_d2h_wall_ms": 0.1012,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 1.0885
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.4783,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.45875200629234314,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.45875200629234314,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0806,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.2439
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.3536,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.7392320036888123,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.7392320036888123,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0771,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.3027
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "position": 0,
+          "routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "routes_exact": true
+        }
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 1,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "cancellation": {
+      "cache_length_not_advanced": true,
+      "cancel_record": {
+        "collect_after_cancel_rejected": true,
+        "generation": 4,
+        "output_bytes_discarded": 229376,
+        "reduction_performed": false,
+        "state": "CANCELLED",
+        "tasks_discarded": 16,
+        "worker_records": [
+          {
+            "generation": 4,
+            "output_bytes_discarded": 28672,
+            "response_bytes": 29488,
+            "tasks_discarded": 2,
+            "worker_id": 0
+          },
+          {
+            "generation": 4,
+            "output_bytes_discarded": 86016,
+            "response_bytes": 86875,
+            "tasks_discarded": 6,
+            "worker_id": 1
+          },
+          {
+            "generation": 4,
+            "output_bytes_discarded": 57344,
+            "response_bytes": 58178,
+            "tasks_discarded": 4,
+            "worker_id": 2
+          },
+          {
+            "generation": 4,
+            "output_bytes_discarded": 57344,
+            "response_bytes": 58179,
+            "tasks_discarded": 4,
+            "worker_id": 3
+          }
+        ],
+        "workers_drained": 4
+      },
+      "collective_poisoned_reason": null,
+      "error": {
+        "message": "injected expert generation cancellation",
+        "type": "RuntimeError"
+      },
+      "fault": "cancel",
+      "handle_state": "CANCELLED",
+      "pass": true,
+      "reduction_output_exposed": false,
+      "session_state_after_failure": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 0,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "stage_returned_output": false,
+      "target_worker": 0
+    },
+    "duplicate_response": {
+      "duplicate_frame_discarded": true,
+      "fresh_generation_after_duplicate_exact": true,
+      "pass": true,
+      "positions": [
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "expected_routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 1.6093,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 0.6165,
+            "duplicate_frames_discarded": 1,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 0.9113999999999998,
+            "framing_bytes": 32,
+            "generation": 2,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.0108,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58448,
+            "response_bytes": 262258,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 2.2371,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 320706,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 1.1034560203552246,
+            "worker_compute_critical_wall_ms": 1.3257,
+            "worker_compute_total_device_ms": 2.8453759998083115,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0324,
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.2425280064344406,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "input_gather_and_expert_device_ms": 0.2425280064344406,
+                "native_expert_calls": 2,
+                "output_d2h_wall_ms": 0.1496,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.5315
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0217,
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.6196159720420837,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "input_gather_and_expert_device_ms": 0.6196159720420837,
+                "native_expert_calls": 6,
+                "output_d2h_wall_ms": 0.0789,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 0.8381
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.04,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.8797760009765625,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.8797760009765625,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0694,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.1096
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0362,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 1.1034560203552246,
+                "execute_count": 2,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 1.1034560203552246,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0503,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.3257
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "position": 0,
+          "routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "routes_exact": true
+        },
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+          "expected_routes": [
+            888,
+            692,
+            62,
+            757,
+            263,
+            832,
+            662,
+            504,
+            777,
+            895,
+            885,
+            51,
+            756,
+            399,
+            569,
+            478
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 1.5673,
+            "critical_path_payload_bytes": 86016,
+            "dispatch_ms": 0.3775,
+            "duplicate_frames_discarded": 0,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 0.6255000000000002,
+            "framing_bytes": 32,
+            "generation": 3,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:402877d5b6038194739f6fe2649b11728cc730b71b73a7fccd692a5ba2a66df8",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.0077,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58394,
+            "response_bytes": 232723,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 1.953,
+            "selected_expert_ids": [
+              [
+                888,
+                692,
+                62,
+                757,
+                263,
+                832,
+                662,
+                504,
+                777,
+                895,
+                885,
+                51,
+                756,
+                399,
+                569,
+                478
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 291117,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 1.2046079635620117,
+            "worker_compute_critical_wall_ms": 1.3275,
+            "worker_compute_total_device_ms": 3.369983971118927,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0275,
+                "activation_rows": 1,
+                "critical_payload_bytes": 86016,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.47519999742507935,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 5
+                },
+                "input_gather_and_expert_device_ms": 0.47519999742507935,
+                "native_expert_calls": 5,
+                "output_d2h_wall_ms": 0.0787,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 71680,
+                "tasks": 5,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 5,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.7192
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0311,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.7638400197029114,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.7638400197029114,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0631,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 0.9103
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0443,
+                "activation_rows": 1,
+                "critical_payload_bytes": 57344,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.9263359904289246,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 3
+                },
+                "input_gather_and_expert_device_ms": 0.9263359904289246,
+                "native_expert_calls": 3,
+                "output_d2h_wall_ms": 0.0624,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 43008,
+                "tasks": 3,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 3,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.083
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0226,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 1.2046079635620117,
+                "execute_count": 3,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 1.2046079635620117,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0343,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.3275
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:0ddd64f98a1d40fd8a408d88bc552e984268b4def53cdf3b8539f47ecf03852f",
+          "position": 1,
+          "routes": [
+            888,
+            692,
+            62,
+            757,
+            263,
+            832,
+            662,
+            504,
+            777,
+            895,
+            885,
+            51,
+            756,
+            399,
+            569,
+            478
+          ],
+          "routes_exact": true
+        }
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 2,
+        "fingerprint": "sha256:f0ba7e3c9d22720e1b5a3355fa1a63ad300ba5c7625b91a00a8c65351695d105",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "fresh_slot_after_cancel": {
+      "pass": true,
+      "positions": [
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "expected_routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 1.686,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 0.4263,
+            "duplicate_frames_discarded": 0,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 0.7614999999999998,
+            "framing_bytes": 32,
+            "generation": 5,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.0133,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58391,
+            "response_bytes": 232720,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 2.1262,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 291111,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 1.1730879545211792,
+            "worker_compute_critical_wall_ms": 1.3647,
+            "worker_compute_total_device_ms": 3.069568008184433,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0323,
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.24057599902153015,
+                "execute_count": 5,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "input_gather_and_expert_device_ms": 0.24057599902153015,
+                "native_expert_calls": 2,
+                "output_d2h_wall_ms": 0.0631,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.4324
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0466,
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.6895040273666382,
+                "execute_count": 5,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "input_gather_and_expert_device_ms": 0.6895040273666382,
+                "native_expert_calls": 6,
+                "output_d2h_wall_ms": 0.0621,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 0.9124
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0212,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.9664000272750854,
+                "execute_count": 5,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.9664000272750854,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0584,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.1202
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0727,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 1.1730879545211792,
+                "execute_count": 5,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 1.1730879545211792,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0345,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.3647
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "position": 0,
+          "routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "routes_exact": true
+        }
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 1,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "loss": {
+      "all_required_workers_present_before_fault": true,
+      "cache_length_not_advanced": true,
+      "collective_poisoned_reason": "expert worker 0 was lost for generation 2: EOFError: ",
+      "error": {
+        "message": "expert worker 0 was lost for generation 2: EOFError: ",
+        "type": "RuntimeError"
+      },
+      "fault": "loss",
+      "handle_state": "FAILED",
+      "pass": true,
+      "reduction_blocked": true,
+      "reduction_output_exposed": false,
+      "session_state_after_failure": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 0,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "stage_returned_output": false,
+      "target_worker": 0
+    },
+    "partial": {
+      "all_required_workers_present_before_fault": true,
+      "cache_length_not_advanced": true,
+      "collective_poisoned_reason": "expert batch worker changed or omitted task ordering",
+      "error": {
+        "message": "expert batch worker changed or omitted task ordering",
+        "type": "RuntimeError"
+      },
+      "fault": "partial",
+      "handle_state": "FAILED",
+      "pass": true,
+      "reduction_blocked": true,
+      "reduction_output_exposed": false,
+      "session_state_after_failure": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 0,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "stage_returned_output": false,
+      "target_worker": 0
+    },
+    "retry_after_loss": {
+      "pass": true,
+      "positions": [
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "expected_routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 2.0512,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 0.6887,
+            "duplicate_frames_discarded": 0,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 1.0230000000000001,
+            "framing_bytes": 32,
+            "generation": 1,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.009,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58391,
+            "response_bytes": 232720,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 2.7494,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 291111,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 1.2383040189743042,
+            "worker_compute_critical_wall_ms": 1.7264,
+            "worker_compute_total_device_ms": 3.2578560411930084,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0754,
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.23289600014686584,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "input_gather_and_expert_device_ms": 0.23289600014686584,
+                "native_expert_calls": 2,
+                "output_d2h_wall_ms": 0.0661,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.5215
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.1626,
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.828544020652771,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "input_gather_and_expert_device_ms": 0.828544020652771,
+                "native_expert_calls": 6,
+                "output_d2h_wall_ms": 0.1072,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 1.4076
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.1646,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.9581120014190674,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.9581120014190674,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0881,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.4398
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.2216,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 1.2383040189743042,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 1.2383040189743042,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0913,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.7264
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "position": 0,
+          "routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "routes_exact": true
+        }
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 1,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "retry_after_partial": {
+      "pass": true,
+      "positions": [
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "expected_routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 1.962,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 0.5464,
+            "duplicate_frames_discarded": 0,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 0.8129,
+            "framing_bytes": 32,
+            "generation": 1,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.0107,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58391,
+            "response_bytes": 232720,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 2.5196,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 291111,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 1.2528640031814575,
+            "worker_compute_critical_wall_ms": 1.7067,
+            "worker_compute_total_device_ms": 3.1342400312423706,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0755,
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.23500800132751465,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "input_gather_and_expert_device_ms": 0.23500800132751465,
+                "native_expert_calls": 2,
+                "output_d2h_wall_ms": 0.0656,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.5189
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.1994,
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.6802560091018677,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "input_gather_and_expert_device_ms": 0.6802560091018677,
+                "native_expert_calls": 6,
+                "output_d2h_wall_ms": 0.0791,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 1.1588
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.1902,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.9661120176315308,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.9661120176315308,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0709,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.3923
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.2244,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 1.2528640031814575,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 1.2528640031814575,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0521,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.7067
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "position": 0,
+          "routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "routes_exact": true
+        }
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 1,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "retry_after_stale": {
+      "pass": true,
+      "positions": [
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "expected_routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 1.9637,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 0.482,
+            "duplicate_frames_discarded": 0,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 0.7161,
+            "framing_bytes": 32,
+            "generation": 1,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.0093,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58391,
+            "response_bytes": 232720,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 2.4556,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 291111,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 1.2608000040054321,
+            "worker_compute_critical_wall_ms": 1.7395,
+            "worker_compute_total_device_ms": 3.1906559765338898,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.076,
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.23315200209617615,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "input_gather_and_expert_device_ms": 0.23315200209617615,
+                "native_expert_calls": 2,
+                "output_d2h_wall_ms": 0.0616,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.5156
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.2447,
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.7056319713592529,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "input_gather_and_expert_device_ms": 0.7056319713592529,
+                "native_expert_calls": 6,
+                "output_d2h_wall_ms": 0.0816,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 1.2375
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.1879,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.9910719990730286,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.9910719990730286,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0701,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.4227
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.2767,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 1.2608000040054321,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 1.2608000040054321,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0596,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.7395
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "position": 0,
+          "routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "routes_exact": true
+        }
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 1,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "retry_after_timeout": {
+      "pass": true,
+      "positions": [
+        {
+          "all_selected_experts_executed_once": true,
+          "expected_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "expected_routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "external_record": {
+            "all_selected_experts_executed_once": true,
+            "avoided_expert_weight_launches": 0,
+            "batch": 1,
+            "collection_ms": 1.9737,
+            "critical_path_payload_bytes": 100352,
+            "dispatch_ms": 0.7841,
+            "duplicate_frames_discarded": 0,
+            "effective_weight_reuse_rows_per_native_call": 1.0,
+            "exposed_loopback_and_coordination_ms": 1.0773,
+            "framing_bytes": 32,
+            "generation": 1,
+            "input_activation_bytes": 57344,
+            "messages": 8,
+            "native_expert_calls": 16,
+            "output_fingerprint": "sha256:445cde8d77b8d84254f9c58a7fc6c1812a0b666935bb9768c738c53d5eeda872",
+            "ownership_strategy": "static_disjoint_expert_id_mod_worker_count",
+            "parent_overlap_window_ms": 0.0081,
+            "repeated_expert_hits": 0,
+            "request_bytes": 58391,
+            "response_bytes": 232720,
+            "returned_expert_output_bytes": 229376,
+            "root_messages": 8,
+            "roundtrip_ms": 2.7664,
+            "selected_expert_ids": [
+              [
+                803,
+                567,
+                190,
+                501,
+                347,
+                282,
+                843,
+                388,
+                173,
+                233,
+                885,
+                45,
+                586,
+                673,
+                120,
+                546
+              ]
+            ],
+            "synchronization_points": 2,
+            "total_selections": 16,
+            "total_transport_bytes": 291111,
+            "unique_experts": 16,
+            "worker_compute_critical_device_ms": 0.9673600196838379,
+            "worker_compute_critical_wall_ms": 1.6891,
+            "worker_compute_total_device_ms": 2.603200063109398,
+            "worker_messages": 8,
+            "worker_records": [
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0754,
+                "activation_rows": 1,
+                "critical_payload_bytes": 43008,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.2340800017118454,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 2
+                },
+                "input_gather_and_expert_device_ms": 0.2340800017118454,
+                "native_expert_calls": 2,
+                "output_d2h_wall_ms": 0.0582,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 28672,
+                "tasks": 2,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 2,
+                "weight_loads_during_execute": 0,
+                "worker_id": 0,
+                "worker_wall_ms": 0.5145
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0775,
+                "activation_rows": 1,
+                "critical_payload_bytes": 100352,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.6574720144271851,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 6
+                },
+                "input_gather_and_expert_device_ms": 0.6574720144271851,
+                "native_expert_calls": 6,
+                "output_d2h_wall_ms": 0.0998,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 86016,
+                "tasks": 6,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 6,
+                "weight_loads_during_execute": 0,
+                "worker_id": 1,
+                "worker_wall_ms": 1.1184
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.0944,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.9673600196838379,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.9673600196838379,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0829,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 2,
+                "worker_wall_ms": 1.3886
+              },
+              {
+                "activation_h2d_enqueue_wall_ms": 0.6588,
+                "activation_rows": 1,
+                "critical_payload_bytes": 71680,
+                "device_measurement_scope": "combined_activation_h2d_device_gather_and_expert_compute",
+                "device_ms": 0.7442880272865295,
+                "execute_count": 1,
+                "expert_group_size_histogram": {
+                  "1": 4
+                },
+                "input_gather_and_expert_device_ms": 0.7442880272865295,
+                "native_expert_calls": 4,
+                "output_d2h_wall_ms": 0.0717,
+                "persistent_buffer_allocations_during_execute": 0,
+                "repeated_expert_hits": 0,
+                "request_activation_bytes": 14336,
+                "returned_output_bytes": 57344,
+                "tasks": 4,
+                "topology_rebuilds_during_execute": 0,
+                "unique_experts": 4,
+                "weight_loads_during_execute": 0,
+                "worker_id": 3,
+                "worker_wall_ms": 1.6891
+              }
+            ],
+            "workers_contacted": 4
+          },
+          "output_exact": true,
+          "output_fingerprint": "sha256:f676fb0f6c2a94a3534ee7dc0c508a5436111d5d32448a341f76b3a7dd6828e5",
+          "position": 0,
+          "routes": [
+            803,
+            567,
+            190,
+            501,
+            347,
+            282,
+            843,
+            388,
+            173,
+            233,
+            885,
+            45,
+            586,
+            673,
+            120,
+            546
+          ],
+          "routes_exact": true
+        }
+      ],
+      "state": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 1,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      }
+    },
+    "stale": {
+      "all_required_workers_present_before_fault": true,
+      "cache_length_not_advanced": true,
+      "collective_poisoned_reason": "stale expert batch worker generation: expected=2, observed=1",
+      "error": {
+        "message": "stale expert batch worker generation: expected=2, observed=1",
+        "type": "RuntimeError"
+      },
+      "fault": "stale",
+      "handle_state": "FAILED",
+      "pass": true,
+      "reduction_blocked": true,
+      "reduction_output_exposed": false,
+      "session_state_after_failure": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 0,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "stage_returned_output": false,
+      "target_worker": 0
+    },
+    "timeout": {
+      "all_required_workers_present_before_fault": true,
+      "cache_length_not_advanced": true,
+      "collective_poisoned_reason": "expert worker 0 timed out for generation 2",
+      "error": {
+        "message": "expert worker 0 timed out for generation 2",
+        "type": "TimeoutError"
+      },
+      "fault": "timeout",
+      "handle_state": "FAILED",
+      "pass": true,
+      "reduction_blocked": true,
+      "reduction_output_exposed": false,
+      "session_state_after_failure": {
+        "attention_type": "KDA",
+        "bytes": 6881280,
+        "cache_sequence_length": 0,
+        "fingerprint": "sha256:ecaae56f58dd8d9bd44962f56a20bd08c1cd5494e86be31e27b3d054f04b4b13",
+        "finite": true,
+        "nonzero_prefix": true,
+        "zero_suffix": true
+      },
+      "stage_returned_output": false,
+      "target_worker": 0
+    }
+  },
+  "schema_version": "experiment-014-k3-real-expert-recovery-v1",
+  "sources": {
+    "checkpoint": {
+      "path": "F:\\models\\Kimi-K3",
+      "sha256": null
+    },
+    "cuda_library": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\cuda\\native\\coli_cuda-sm86-h014-030d-row-reuse-dense-candidate.dll",
+      "sha256": "5d33aded516e41adaa2928a6136317e01c15168cb6a59336c51577c878f20120"
+    },
+    "oracle_trace": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\oracle-full-93-idot0\\hidden-trace.f32",
+      "sha256": "0a432e25af5897e1d0ba62eb5560f5da8c8fbadb3eb93db63571b6db562b1a8d"
+    },
+    "passing_batch_receipt": {
+      "path": "C:\\Users\\Simon\\OneDrive\\Documents\\Python Scripts\\swarm-inference-lab\\artifacts\\experiment-014\\sub-layer\\h014-sub-006f-single-interval-four-worker-batch.json",
+      "sha256": "6119f19e5e5af23818cdc32e8750024c545a8d27bcdbc221d883366ee95ba108"
+    }
+  },
+  "status": "PASS"
+}

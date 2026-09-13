@@ -1,0 +1,42 @@
+{
+  "downstream_performance_execution_prevented": true,
+  "fabricated_performance_rows": 0,
+  "phase0_audit": {
+    "candidate_catalog_path": "artifacts/experiment-022/completion/rerun/candidate-catalog.json",
+    "candidate_catalog_sha256": "3f1d8e8519fb2b759b7ec5678bfc1458a782a49a6e438eeb1b26d2077258ccd7",
+    "checkpoint_exists": true,
+    "complete_p8_only_placement_possible": false,
+    "e022_inventory_count": 27,
+    "e022_inventory_hashes_valid": true,
+    "e023_final_verdict": "NO_WEDGE",
+    "layer_zero_admitted_p8_candidate_count": 0,
+    "layer_zero_candidates": [
+      {
+        "candidate_id": "layer-00:ATTENTION_PROJECTION_SHARD:p8",
+        "candidate_type": "ATTENTION_PROJECTION_SHARD",
+        "chunk_sizes_physically_validated": [],
+        "correctness_status": "INELIGIBLE_UNVALIDATED",
+        "headline_eligible": false,
+        "production_native_binding": false,
+        "service_status": "NO_HEADLINE_SERVICE"
+      },
+      {
+        "candidate_id": "layer-00:FULL_MIXED_STRIPE:p8",
+        "candidate_type": "FULL_MIXED_STRIPE",
+        "chunk_sizes_physically_validated": [],
+        "correctness_status": "INELIGIBLE_UNVALIDATED",
+        "headline_eligible": false,
+        "production_native_binding": false,
+        "service_status": "NO_HEADLINE_SERVICE"
+      }
+    ],
+    "layer_zero_p8_candidate_count": 2,
+    "mandatory_failure_id": "NO_PRODUCTION_NATIVE_P8_CANDIDATE_FOR_LAYER_0",
+    "reason": "The frozen E022 catalog has no physically admitted, production-native degree-8 candidate for transformer layer 0. E024 forbids WHOLE_LAYER for every transformer layer, so no complete 93-layer P8-only placement can exist at any commodity node budget.",
+    "repaired_service_path": "artifacts/experiment-022/completion/validation/repaired-resident-service.csv",
+    "repaired_service_sha256": "ee240937dfc36a6ce04161812f61ff0021359a2861ecb783772d44e2614bcf2b",
+    "status": "MODEL_INVALID",
+    "transformer_layer_count": 93
+  },
+  "status": "MODEL_INVALID"
+}
